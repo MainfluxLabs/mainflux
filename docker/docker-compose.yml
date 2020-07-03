@@ -1,7 +1,7 @@
 # Copyright (c) Mainflux
 # SPDX-License-Identifier: Apache-2.0
 
-version: "3.7"
+version: "3.3"
 
 networks:
   mainflux-base-net:
@@ -14,12 +14,11 @@ volumes:
   mainflux-mqtt-broker-volume:
   mainflux-mosquitto-data:
   mainflux-mosquitto-log:
-  
 
 services:
 
   nats:
-    image: nats:1.3.0
+    image: arm32v7/nats:1.3.0
     container_name: mainflux-nats
     command: "-c /etc/nats/nats.conf"
     restart: on-failure
@@ -29,7 +28,7 @@ services:
       - mainflux-base-net
 
   mosquitto:
-    image: eclipse-mosquitto
+    image: arm32v6/eclipse-mosquitto
     container_name: mainflux-mosquitto
     restart: on-failure
     networks:
@@ -39,7 +38,7 @@ services:
       - mainflux-mosquitto-log:/mosquitto/log
 
   things-db:
-    image: postgres:10.8-alpine
+    image: arm32v7/postgres:10.8-alpine
     container_name: mainflux-things-db
     restart: on-failure
     environment:
@@ -52,7 +51,7 @@ services:
       - mainflux-things-db-volume:/var/lib/postgresql/data
 
   auth-redis:
-    image: redis:5.0-alpine
+    image: arm32v7/redis:5.0-alpine
     container_name: mainflux-auth-redis
     restart: on-failure
     networks:
@@ -61,7 +60,7 @@ services:
       - mainflux-auth-redis-volume:/data
 
   things:
-    image: mainflux/things:latest
+    image: mainflux/things-arm:latest
     container_name: mainflux-things
     restart: on-failure
     environment:
@@ -88,9 +87,8 @@ services:
     networks:
       - mainflux-base-net
 
-
   mqtt-adapter:
-    image: mainflux/mqtt:latest
+    image: mainflux/mqtt-arm:latest
     container_name: mainflux-mqtt
     depends_on:
       - mosquitto
@@ -115,10 +113,8 @@ services:
     ports:
       - ${MF_MQTT_ADAPTER_MQTT_PORT}:${MF_MQTT_ADAPTER_MQTT_PORT}
 
-
-
   es-redis:
-    image: redis:5.0-alpine
+    image: arm32v7/redis:5.0-alpine
     container_name: mainflux-es-redis
     restart: on-failure
     networks:
