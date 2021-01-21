@@ -1,0 +1,5 @@
+default:
+  host: localhost
+  port: "4222"
+  channel: "be368e46-c6f0-40d4-907d-7e5311caa849"
+  subtopic: ""
