@@ -30,3 +30,19 @@ func (res pingRes) Headers() map[string]string {
 func (res pingRes) Empty() bool {
 	return false
 }
+
+type createRes struct {
+	Result string `json:"result"`
+}
+
+func (res createRes) Code() int {
+	return http.StatusOK
+}
+
+func (res createRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createRes) Empty() bool {
+	return false
+}

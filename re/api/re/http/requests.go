@@ -24,3 +24,15 @@ func (req pingReq) validate() error {
 
 	return nil
 }
+
+// {"sql":"create stream my_stream (id bigint, name string, score float) WITH ( datasource = \"topic/temperature\", FORMAT = \"json\", KEY = \"id\")"}
+type streamReq struct {
+	SQL string `json:"sql"`
+}
+
+func (req streamReq) validate() error {
+	if req.SQL == "" {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}

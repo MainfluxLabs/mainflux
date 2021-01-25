@@ -33,3 +33,21 @@ func pingEndpoint(svc re.Service) endpoint.Endpoint {
 		return res, nil
 	}
 }
+
+func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(streamReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		result, err := svc.CreateStream(req.SQL)
+		if err != nil {
+			return nil, err
+		}
+
+		return createRes{
+			Result: result,
+		}, nil
+	}
+}

@@ -49,6 +49,13 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
+	r.Post("/streams", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_stream")(createStreamEndpoint(svc)),
+		decodeCreateStream,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/version", mainflux.Version("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -61,6 +68,20 @@ func decodePing(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	req := pingReq{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errUnsupportedContentType
+	}
+
+	req := streamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 
 		return nil, err
