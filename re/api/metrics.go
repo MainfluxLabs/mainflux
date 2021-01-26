@@ -34,19 +34,19 @@ func MetricsMiddleware(svc re.Service, counter metrics.Counter, latency metrics.
 	}
 }
 
-func (ms *metricsMiddleware) Ping(secret string) (response string, err error) {
+func (ms *metricsMiddleware) Info() (info re.Info, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "ping").Add(1)
-		ms.latency.With("method", "ping").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "info").Add(1)
+		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Ping(secret)
+	return ms.svc.Info()
 }
 
 func (ms *metricsMiddleware) CreateStream(sql string) (result string, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "ping").Add(1)
-		ms.latency.With("method", "ping").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_stream").Add(1)
+		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.CreateStream(sql)

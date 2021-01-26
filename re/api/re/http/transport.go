@@ -42,9 +42,9 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 
 	r := bone.New()
 
-	r.Post("/re", kithttp.NewServer(
-		kitot.TraceServer(tracer, "ping")(pingEndpoint(svc)),
-		decodePing,
+	r.Get("/", kithttp.NewServer(
+		kitot.TraceServer(tracer, "info")(infoEndpoint(svc)),
+		decodeInfo,
 		encodeResponse,
 		opts...,
 	))
@@ -62,18 +62,8 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 	return r
 }
 
-func decodePing(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errUnsupportedContentType
-	}
-
-	req := pingReq{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-
-		return nil, err
-	}
-
-	return req, nil
+func decodeInfo(_ context.Context, r *http.Request) (interface{}, error) {
+	return nil, nil
 }
 
 func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {

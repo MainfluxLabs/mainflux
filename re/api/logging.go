@@ -29,9 +29,9 @@ func LoggingMiddleware(svc re.Service, logger log.Logger) re.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Ping(secret string) (response string, err error) {
+func (lm *loggingMiddleware) Info() (info re.Info, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method ping for secret %s took %s to complete", secret, time.Since(begin))
+		message := fmt.Sprintf("Method info for took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -39,7 +39,7 @@ func (lm *loggingMiddleware) Ping(secret string) (response string, err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Ping(secret)
+	return lm.svc.Info()
 }
 
 func (lm *loggingMiddleware) CreateStream(sql string) (result string, err error) {

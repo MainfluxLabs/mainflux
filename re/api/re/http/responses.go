@@ -13,21 +13,23 @@ import (
 	"github.com/mainflux/mainflux"
 )
 
-var _ mainflux.Response = (*pingRes)(nil)
+var _ mainflux.Response = (*infoRes)(nil)
 
-type pingRes struct {
-	Greeting string `json:"greeting"`
+type infoRes struct {
+	Version       string `json:"version"`
+	Os            string `json:"os"`
+	UpTimeSeconds int    `json:"upTimeSeconds"`
 }
 
-func (res pingRes) Code() int {
+func (res infoRes) Code() int {
 	return http.StatusOK
 }
 
-func (res pingRes) Headers() map[string]string {
+func (res infoRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res pingRes) Empty() bool {
+func (res infoRes) Empty() bool {
 	return false
 }
 

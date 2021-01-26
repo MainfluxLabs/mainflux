@@ -10,12 +10,15 @@ package re
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/mainflux/mainflux/pkg/errors"
+)
+
+const (
+	url = "http://localhost:9081"
 )
 
 var (
@@ -31,11 +34,17 @@ var (
 	ErrKuiperSever = errors.New("kuiper internal server error")
 )
 
+type Info struct {
+	Version       string `json:"version"`
+	Os            string `json:"os"`
+	UpTimeSeconds int    `json:"upTimeSeconds"`
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// Ping compares a given string with secret
-	Ping(string) (string, error)
+	Info() (Info, error)
 	// CreateStream
 	CreateStream(string) (string, error)
 }
@@ -53,27 +62,21 @@ func New(secret string) Service {
 	}
 }
 
-type info struct {
-	Version       string `json:"version"`
-	Os            string `json:"os"`
-	UpTimeSeconds int    `json:"upTimeSeconds"`
-}
-
-func (re *reService) Ping(secret string) (string, error) {
-	res, err := http.Get("http://localhost:9081")
+func (re *reService) Info() (Info, error) {
+	res, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("%+v\n", err) // output for debug
+		return Info{}, errors.Wrap(ErrKuiperSever, err)
 
 	}
 	defer res.Body.Close()
 
-	var ki info
-	err = json.NewDecoder(res.Body).Decode(&ki)
+	var i Info
+	err = json.NewDecoder(res.Body).Decode(&i)
 	if err != nil {
-		fmt.Printf("%+v\n", err) // output for debug
+		return Info{}, errors.Wrap(ErrKuiperSever, err)
 	}
 
-	return fmt.Sprintf("%+v\n", ki), nil
+	return i, nil
 }
 
 func (re *reService) CreateStream(sql string) (string, error) {
@@ -83,7 +86,7 @@ func (re *reService) CreateStream(sql string) (string, error) {
 		return "", errors.Wrap(ErrMalformedEntity, err)
 	}
 
-	res, err := http.Post("http://localhost:9081/streams", "application/json",
+	res, err := http.Post(url+"/streams", "application/json",
 		bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperSever, err)

@@ -14,21 +14,16 @@ import (
 	"github.com/mainflux/mainflux/re"
 )
 
-func pingEndpoint(svc re.Service) endpoint.Endpoint {
+func infoEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(pingReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		greeting, err := svc.Ping(req.Secret)
+		info, err := svc.Info()
 		if err != nil {
 			return nil, err
 		}
-
-		res := pingRes{
-			Greeting: greeting,
+		res := infoRes{
+			Version:       info.Version,
+			Os:            info.Os,
+			UpTimeSeconds: info.UpTimeSeconds,
 		}
 		return res, nil
 	}
