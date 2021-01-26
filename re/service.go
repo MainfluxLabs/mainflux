@@ -47,6 +47,7 @@ type Service interface {
 	Info() (Info, error)
 	// CreateStream
 	CreateStream(string) (string, error)
+	View() ([]string, error)
 }
 
 type reService struct {
@@ -104,4 +105,20 @@ func (re *reService) CreateStream(sql string) (string, error) {
 	}
 
 	return result, nil
+}
+
+func (re *reService) View() ([]string, error) {
+	var streams []string
+	res, err := http.Get(url + "/streams")
+	if err != nil {
+		return streams, errors.Wrap(ErrKuiperSever, err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&streams)
+	if err != nil {
+		return streams, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	return streams, nil
 }

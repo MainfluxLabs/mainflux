@@ -31,7 +31,7 @@ func LoggingMiddleware(svc re.Service, logger log.Logger) re.Service {
 
 func (lm *loggingMiddleware) Info() (info re.Info, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method info for took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method info took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -53,4 +53,17 @@ func (lm *loggingMiddleware) CreateStream(sql string) (result string, err error)
 	}(time.Now())
 
 	return lm.svc.CreateStream(sql)
+}
+
+func (lm *loggingMiddleware) View() (streams []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.View()
 }

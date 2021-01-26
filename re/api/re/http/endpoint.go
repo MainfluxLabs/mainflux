@@ -20,12 +20,23 @@ func infoEndpoint(svc re.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		res := infoRes{
+		return infoRes{
 			Version:       info.Version,
 			Os:            info.Os,
 			UpTimeSeconds: info.UpTimeSeconds,
+		}, nil
+	}
+}
+
+func viewEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		streams, err := svc.View()
+		if err != nil {
+			return nil, err
 		}
-		return res, nil
+		return viewRes{
+			Streams: streams,
+		}, nil
 	}
 }
 

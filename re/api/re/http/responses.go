@@ -14,6 +14,8 @@ import (
 )
 
 var _ mainflux.Response = (*infoRes)(nil)
+var _ mainflux.Response = (*createRes)(nil)
+var _ mainflux.Response = (*viewRes)(nil)
 
 type infoRes struct {
 	Version       string `json:"version"`
@@ -46,5 +48,21 @@ func (res createRes) Headers() map[string]string {
 }
 
 func (res createRes) Empty() bool {
+	return false
+}
+
+type viewRes struct {
+	Streams []string `json:"streams"`
+}
+
+func (res viewRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewRes) Empty() bool {
 	return false
 }
