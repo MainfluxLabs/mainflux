@@ -11,10 +11,12 @@ import (
 	"net/http"
 
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/re"
 )
 
 var _ mainflux.Response = (*infoRes)(nil)
 var _ mainflux.Response = (*createRes)(nil)
+var _ mainflux.Response = (*listRes)(nil)
 var _ mainflux.Response = (*viewRes)(nil)
 
 type infoRes struct {
@@ -51,8 +53,24 @@ func (res createRes) Empty() bool {
 	return false
 }
 
-type viewRes struct {
+type listRes struct {
 	Streams []string `json:"streams"`
+}
+
+func (res listRes) Code() int {
+	return http.StatusOK
+}
+
+func (res listRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res listRes) Empty() bool {
+	return false
+}
+
+type viewRes struct {
+	Stream re.Stream
 }
 
 func (res viewRes) Code() int {

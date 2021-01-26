@@ -52,11 +52,20 @@ func (ms *metricsMiddleware) CreateStream(sql string) (result string, err error)
 	return ms.svc.CreateStream(sql)
 }
 
-func (ms *metricsMiddleware) View() (streams []string, err error) {
+func (ms *metricsMiddleware) List() (streams []string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "info").Add(1)
 		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.View()
+	return ms.svc.List()
+}
+
+func (ms *metricsMiddleware) View(id string) (stream re.Stream, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "info").Add(1)
+		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.View(id)
 }

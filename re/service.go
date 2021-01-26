@@ -40,6 +40,18 @@ type Info struct {
 	UpTimeSeconds int    `json:"upTimeSeconds"`
 }
 
+type Stream struct {
+	Name         string `json:"Name"`
+	StreamFields []struct {
+		Name      string `json:"Name"`
+		FieldType string `json:"FieldType"`
+	} `json:"StreamFields"`
+	Options struct {
+		DATASOURCE string `json:"DATASOURCE"`
+		FORMAT     string `json:"FORMAT"`
+	} `json:"Options"`
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -47,7 +59,8 @@ type Service interface {
 	Info() (Info, error)
 	// CreateStream
 	CreateStream(string) (string, error)
-	View() ([]string, error)
+	List() ([]string, error)
+	View(string) (Stream, error)
 }
 
 type reService struct {
@@ -107,7 +120,7 @@ func (re *reService) CreateStream(sql string) (string, error) {
 	return result, nil
 }
 
-func (re *reService) View() ([]string, error) {
+func (re *reService) List() ([]string, error) {
 	var streams []string
 	res, err := http.Get(url + "/streams")
 	if err != nil {
@@ -121,4 +134,20 @@ func (re *reService) View() ([]string, error) {
 	}
 
 	return streams, nil
+}
+
+func (re *reService) View(id string) (Stream, error) {
+	var stream Stream
+	res, err := http.Get(url + "/streams/" + id)
+	if err != nil {
+		return stream, errors.Wrap(ErrKuiperSever, err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&stream)
+	if err != nil {
+		return stream, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	return stream, nil
 }

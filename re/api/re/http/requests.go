@@ -20,3 +20,15 @@ func (req streamReq) validate() error {
 	}
 	return nil
 }
+
+type viewReq struct {
+	// token string
+	id string
+}
+
+func (req viewReq) validate() error {
+	if req.id == "" {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}
