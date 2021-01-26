@@ -58,7 +58,7 @@ type Service interface {
 	// Ping compares a given string with secret
 	Info() (Info, error)
 	// CreateStream
-	CreateStream(string) (string, error)
+	CreateStream(...string) (string, error)
 	List() ([]string, error)
 	View(string) (Stream, error)
 }
@@ -93,28 +93,42 @@ func (re *reService) Info() (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(sql string) (string, error) {
-	body := map[string]string{"sql": sql}
-	jsonBody, err := json.Marshal(body)
+func (re *reService) CreateStream(params ...string) (string, error) {
+	sql := params[0]
+	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return "", errors.Wrap(ErrMalformedEntity, err)
 	}
 
-	res, err := http.Post(url+"/streams", "application/json",
-		bytes.NewBuffer(jsonBody))
+	path := "/streams"
+	action := "creation"
+	status := http.StatusCreated
+	method := "POST"
+	if len(params) > 1 {
+		path += "/" + params[1]
+		action = "update"
+		status = http.StatusOK
+		method = "PUT"
+	}
+
+	req, err := http.NewRequest(method, url+path, bytes.NewBuffer(body))
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperSever, err)
+	}
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperSever, err)
 	}
 
-	result := "Successfully created stream."
-	if res.StatusCode != http.StatusCreated {
+	result := "Steam " + action + " successful."
+	if res.StatusCode != status {
 		defer res.Body.Close()
 		reason, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return "", errors.Wrap(ErrKuiperSever, err)
 		}
 
-		result = "Stream creation failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+		result = "Stream " + action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
 	}
 
 	return result, nil

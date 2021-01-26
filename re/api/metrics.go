@@ -43,13 +43,13 @@ func (ms *metricsMiddleware) Info() (info re.Info, err error) {
 	return ms.svc.Info()
 }
 
-func (ms *metricsMiddleware) CreateStream(sql string) (result string, err error) {
+func (ms *metricsMiddleware) CreateStream(params ...string) (result string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_stream").Add(1)
 		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateStream(sql)
+	return ms.svc.CreateStream(params...)
 }
 
 func (ms *metricsMiddleware) List() (streams []string, err error) {

@@ -32,3 +32,18 @@ func (req viewReq) validate() error {
 	}
 	return nil
 }
+
+type updateReq struct {
+	id  string
+	SQL string `json:"sql"`
+}
+
+func (req updateReq) validate() error {
+	if req.SQL == "" {
+		return re.ErrMalformedEntity
+	}
+	if req.id == "" {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}

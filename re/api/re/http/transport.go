@@ -63,9 +63,16 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
+	r.Put("/streams/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
+		decodeUpdate,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_stream")(createStreamEndpoint(svc)),
-		decodeCreateStream,
+		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
+		decodeCreate,
 		encodeResponse,
 		opts...,
 	))
@@ -88,16 +95,30 @@ func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, errUnsupportedContentType
 	}
 
 	req := streamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-
 		return nil, err
 	}
+
+	return req, nil
+}
+
+func decodeUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errUnsupportedContentType
+	}
+
+	req := updateReq{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, err
+	}
+
+	req.id = bone.GetValue(r, "id")
 
 	return req, nil
 }
