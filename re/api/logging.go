@@ -42,9 +42,9 @@ func (lm *loggingMiddleware) Info() (info re.Info, err error) {
 	return lm.svc.Info()
 }
 
-func (lm *loggingMiddleware) CreateStream(params ...string) (result string, err error) {
+func (lm *loggingMiddleware) CreateStream(sql string) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_string for sql %s took %s to complete", params[0], time.Since(begin))
+		message := fmt.Sprintf("Method create_string for sql %s took %s to complete", sql, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -52,7 +52,20 @@ func (lm *loggingMiddleware) CreateStream(params ...string) (result string, err 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateStream(params...)
+	return lm.svc.CreateStream(sql)
+}
+
+func (lm *loggingMiddleware) UpdateStream(sql, id string) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_string for sql %s and stream %s took %s to complete", sql, id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateStream(sql, id)
 }
 
 func (lm *loggingMiddleware) ListStreams() (streams []string, err error) {

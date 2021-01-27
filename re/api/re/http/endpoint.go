@@ -53,7 +53,7 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(req.SQL, req.id)
+		result, err := svc.UpdateStream(req.SQL, req.id)
 		if err != nil {
 			return nil, err
 		}

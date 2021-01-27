@@ -58,7 +58,8 @@ type Service interface {
 	// Ping compares a given string with secret
 	Info() (Info, error)
 	// CreateStream
-	CreateStream(...string) (string, error)
+	CreateStream(sql string) (string, error)
+	UpdateStream(sql, id string) (string, error)
 	ListStreams() ([]string, error)
 	ViewStream(string) (Stream, error)
 }
@@ -93,25 +94,10 @@ func (re *reService) Info() (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(params ...string) (string, error) {
-	sql := params[0]
+func (re *reService) CreateStream(sql string) (string, error) {
 	body, err := json.Marshal(map[string]string{"sql": sql})
-	if err != nil {
-		return "", errors.Wrap(ErrMalformedEntity, err)
-	}
 
-	path := "/streams"
-	action := "creation"
-	status := http.StatusCreated
-	method := "POST"
-	if len(params) > 1 {
-		path += "/" + params[1]
-		action = "update"
-		status = http.StatusOK
-		method = "PUT"
-	}
-
-	req, err := http.NewRequest(method, url+path, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", url+"/streams", bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperSever, err)
 	}
@@ -120,39 +106,28 @@ func (re *reService) CreateStream(params ...string) (string, error) {
 		return "", errors.Wrap(ErrKuiperSever, err)
 	}
 
-	result := "Steam " + action + " successful."
-	if res.StatusCode != status {
+	result := "Steam creation successful."
+	if res.StatusCode != http.StatusCreated {
 		defer res.Body.Close()
 		reason, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return "", errors.Wrap(ErrKuiperSever, err)
 		}
-
-		result = "Stream " + action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+		result = "Stream creation failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
 	}
 
 	return result, nil
 }
 
-func (re *reService) UpdateStream(params ...string) (string, error) {
-	sql := params[0]
+func (re *reService) UpdateStream(sql, id string) (string, error) {
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return "", errors.Wrap(ErrMalformedEntity, err)
 	}
 
-	path := "/streams"
-	action := "creation"
-	status := http.StatusCreated
-	method := "POST"
-	if len(params) > 1 {
-		path += "/" + params[1]
-		action = "update"
-		status = http.StatusOK
-		method = "PUT"
-	}
+	path := "/streams/" + id
 
-	req, err := http.NewRequest(method, url+path, bytes.NewBuffer(body))
+	req, err := http.NewRequest("PUT", url+path, bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperSever, err)
 	}
@@ -161,15 +136,15 @@ func (re *reService) UpdateStream(params ...string) (string, error) {
 		return "", errors.Wrap(ErrKuiperSever, err)
 	}
 
-	result := "Steam " + action + " successful."
-	if res.StatusCode != status {
+	result := "Stream update successful."
+	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
 		reason, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return "", errors.Wrap(ErrKuiperSever, err)
 		}
 
-		result = "Stream " + action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
 	}
 
 	return result, nil
