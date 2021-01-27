@@ -30,12 +30,12 @@ func infoEndpoint(svc re.Service) endpoint.Endpoint {
 
 func createEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createStreamReq)
+		req := request.(streamReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(req.SQL)
+		result, err := svc.CreateStream(req.Name, req.Topic, req.Row)
 		if err != nil {
 			return nil, err
 		}
@@ -48,12 +48,12 @@ func createEndpoint(svc re.Service) endpoint.Endpoint {
 
 func updateEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateStreamReq)
+		req := request.(streamReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		result, err := svc.UpdateStream(req.SQL, req.id)
+		result, err := svc.UpdateStream(req.Name, req.Topic, req.Row)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func viewEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		stream, err := svc.ViewStream(req.id)
+		stream, err := svc.ViewStream(req.name)
 		if err != nil {
 			return nil, err
 		}

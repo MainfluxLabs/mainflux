@@ -10,6 +10,7 @@ package re
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	url = "http://localhost:9081"
+	url    = "http://localhost:9081"
+	FORMAT = "json"
 )
 
 var (
@@ -55,11 +57,9 @@ type Stream struct {
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// Ping compares a given string with secret
 	Info() (Info, error)
-	// CreateStream
-	CreateStream(sql string) (string, error)
-	UpdateStream(sql, id string) (string, error)
+	CreateStream(name, topic, row string) (string, error)
+	UpdateStream(name, topic, row string) (string, error)
 	ListStreams() ([]string, error)
 	ViewStream(string) (Stream, error)
 }
@@ -94,9 +94,9 @@ func (re *reService) Info() (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(sql string) (string, error) {
+func (re *reService) CreateStream(name, topic, row string) (string, error) {
+	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
-
 	req, err := http.NewRequest("POST", url+"/streams", bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperSever, err)
@@ -119,13 +119,13 @@ func (re *reService) CreateStream(sql string) (string, error) {
 	return result, nil
 }
 
-func (re *reService) UpdateStream(sql, id string) (string, error) {
+func (re *reService) UpdateStream(name, topic, row string) (string, error) {
+	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return "", errors.Wrap(ErrMalformedEntity, err)
 	}
-
-	path := "/streams/" + id
+	path := "/streams/" + name
 
 	req, err := http.NewRequest("PUT", url+path, bytes.NewBuffer(body))
 	if err != nil {
@@ -180,4 +180,8 @@ func (re *reService) ViewStream(id string) (Stream, error) {
 	}
 
 	return stream, nil
+}
+
+func sql(name, topic, row string) string {
+	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"json\")", name, row, topic)
 }

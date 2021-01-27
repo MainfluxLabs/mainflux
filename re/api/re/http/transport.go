@@ -49,21 +49,7 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
-	r.Get("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list")(listEndpoint(svc)),
-		decodeGet,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Get("/streams/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(viewEndpoint(svc)),
-		decodeViewStream,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Put("/streams/:id", kithttp.NewServer(
+	r.Put("/streams/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
 		decodeUpdateStream,
 		encodeResponse,
@@ -73,6 +59,20 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 	r.Post("/streams", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
 		decodeCreateStream,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/streams", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list")(listEndpoint(svc)),
+		decodeGet,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/streams/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view")(viewEndpoint(svc)),
+		decodeViewStream,
 		encodeResponse,
 		opts...,
 	))
@@ -90,7 +90,7 @@ func decodeGet(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewStreamReq{
 		// token: r.Header.Get("Authorization"),
-		id: bone.GetValue(r, "id"),
+		name: bone.GetValue(r, "name"),
 	}
 	return req, nil
 }
@@ -100,7 +100,7 @@ func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, errUnsupportedContentType
 	}
 
-	req := createStreamReq{}
+	req := streamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
@@ -113,12 +113,12 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, errUnsupportedContentType
 	}
 
-	req := updateStreamReq{}
+	req := streamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
 
-	req.id = bone.GetValue(r, "id")
+	req.Name = bone.GetValue(r, "name")
 
 	return req, nil
 }
