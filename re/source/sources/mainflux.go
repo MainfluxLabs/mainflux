@@ -28,6 +28,7 @@ type mainfluxSource struct {
 	logger   api.Logger
 	cfg      *mainfluxConfig
 	pubSub   nats.PubSub
+	topic    string
 }
 
 var _ api.Source = (*mainfluxSource)(nil)
@@ -44,6 +45,7 @@ func (ms *mainfluxSource) Configure(topic string, props map[string]interface{}) 
 		return fmt.Errorf("Property Port is required.")
 	}
 	ms.cfg = cfg
+	ms.topic = topic
 
 	return nil
 }
@@ -60,7 +62,9 @@ func (ms *mainfluxSource) Open(ctx api.StreamContext, consumer chan<- api.Source
 	ms.pubSub = pubSub
 
 	topic := nats.SubjectAllChannels
-	if len(ms.cfg.Channel) > 0 {
+	if len(ms.topic) > 0 {
+		topic = "channels." + ms.topic
+	} else if len(ms.cfg.Channel) > 0 {
 		topic = "channels." + ms.cfg.Channel
 		if len(ms.cfg.Subtopic) > 0 {
 			topic += "." + ms.cfg.Subtopic
