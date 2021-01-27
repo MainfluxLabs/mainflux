@@ -55,7 +55,7 @@ func (lm *loggingMiddleware) CreateStream(params ...string) (result string, err 
 	return lm.svc.CreateStream(params...)
 }
 
-func (lm *loggingMiddleware) List() (streams []string, err error) {
+func (lm *loggingMiddleware) ListStreams() (streams []string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list took %s to complete", time.Since(begin))
 		if err != nil {
@@ -65,10 +65,10 @@ func (lm *loggingMiddleware) List() (streams []string, err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.List()
+	return lm.svc.ListStreams()
 }
 
-func (lm *loggingMiddleware) View(id string) (stream re.Stream, err error) {
+func (lm *loggingMiddleware) ViewStream(id string) (stream re.Stream, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view with id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -78,5 +78,5 @@ func (lm *loggingMiddleware) View(id string) (stream re.Stream, err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.View(id)
+	return lm.svc.ViewStream(id)
 }

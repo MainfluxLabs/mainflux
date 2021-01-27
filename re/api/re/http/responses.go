@@ -15,9 +15,9 @@ import (
 )
 
 var _ mainflux.Response = (*infoRes)(nil)
-var _ mainflux.Response = (*createRes)(nil)
-var _ mainflux.Response = (*listRes)(nil)
-var _ mainflux.Response = (*viewRes)(nil)
+var _ mainflux.Response = (*createStreamRes)(nil)
+var _ mainflux.Response = (*listStreamsRes)(nil)
+var _ mainflux.Response = (*viewStreamRes)(nil)
 
 type infoRes struct {
 	Version       string `json:"version"`
@@ -37,50 +37,50 @@ func (res infoRes) Empty() bool {
 	return false
 }
 
-type createRes struct {
+type createStreamRes struct {
 	Result string `json:"result"`
 }
 
-func (res createRes) Code() int {
+func (res createStreamRes) Code() int {
 	return http.StatusOK
 }
 
-func (res createRes) Headers() map[string]string {
+func (res createStreamRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createRes) Empty() bool {
+func (res createStreamRes) Empty() bool {
 	return false
 }
 
-type listRes struct {
+type listStreamsRes struct {
 	Streams []string `json:"streams"`
 }
 
-func (res listRes) Code() int {
+func (res listStreamsRes) Code() int {
 	return http.StatusOK
 }
 
-func (res listRes) Headers() map[string]string {
+func (res listStreamsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listRes) Empty() bool {
+func (res listStreamsRes) Empty() bool {
 	return false
 }
 
-type viewRes struct {
+type viewStreamRes struct {
 	Stream re.Stream
 }
 
-func (res viewRes) Code() int {
+func (res viewStreamRes) Code() int {
 	return http.StatusOK
 }
 
-func (res viewRes) Headers() map[string]string {
+func (res viewStreamRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res viewRes) Empty() bool {
+func (res viewStreamRes) Empty() bool {
 	return false
 }

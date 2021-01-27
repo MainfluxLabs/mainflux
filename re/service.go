@@ -59,8 +59,8 @@ type Service interface {
 	Info() (Info, error)
 	// CreateStream
 	CreateStream(...string) (string, error)
-	List() ([]string, error)
-	View(string) (Stream, error)
+	ListStreams() ([]string, error)
+	ViewStream(string) (Stream, error)
 }
 
 type reService struct {
@@ -134,7 +134,48 @@ func (re *reService) CreateStream(params ...string) (string, error) {
 	return result, nil
 }
 
-func (re *reService) List() ([]string, error) {
+func (re *reService) UpdateStream(params ...string) (string, error) {
+	sql := params[0]
+	body, err := json.Marshal(map[string]string{"sql": sql})
+	if err != nil {
+		return "", errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	path := "/streams"
+	action := "creation"
+	status := http.StatusCreated
+	method := "POST"
+	if len(params) > 1 {
+		path += "/" + params[1]
+		action = "update"
+		status = http.StatusOK
+		method = "PUT"
+	}
+
+	req, err := http.NewRequest(method, url+path, bytes.NewBuffer(body))
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperSever, err)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperSever, err)
+	}
+
+	result := "Steam " + action + " successful."
+	if res.StatusCode != status {
+		defer res.Body.Close()
+		reason, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return "", errors.Wrap(ErrKuiperSever, err)
+		}
+
+		result = "Stream " + action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	}
+
+	return result, nil
+}
+
+func (re *reService) ListStreams() ([]string, error) {
 	var streams []string
 	res, err := http.Get(url + "/streams")
 	if err != nil {
@@ -150,7 +191,7 @@ func (re *reService) List() ([]string, error) {
 	return streams, nil
 }
 
-func (re *reService) View(id string) (Stream, error) {
+func (re *reService) ViewStream(id string) (Stream, error) {
 	var stream Stream
 	res, err := http.Get(url + "/streams/" + id)
 	if err != nil {

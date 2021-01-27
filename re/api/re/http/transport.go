@@ -58,21 +58,21 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 
 	r.Get("/streams/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view")(viewEndpoint(svc)),
-		decodeView,
+		decodeViewStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/streams/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
-		decodeUpdate,
+		decodeUpdateStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/streams", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
-		decodeCreate,
+		decodeCreateStream,
 		encodeResponse,
 		opts...,
 	))
@@ -87,20 +87,20 @@ func decodeGet(_ context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
 
-func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewReq{
+func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewStreamReq{
 		// token: r.Header.Get("Authorization"),
 		id: bone.GetValue(r, "id"),
 	}
 	return req, nil
 }
 
-func decodeCreate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, errUnsupportedContentType
 	}
 
-	req := streamReq{}
+	req := createStreamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
@@ -108,12 +108,12 @@ func decodeCreate(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, errUnsupportedContentType
 	}
 
-	req := updateReq{}
+	req := updateStreamReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}

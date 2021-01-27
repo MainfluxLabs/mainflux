@@ -30,7 +30,7 @@ func infoEndpoint(svc re.Service) endpoint.Endpoint {
 
 func createEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(streamReq)
+		req := request.(createStreamReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func createEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createRes{
+		return createStreamRes{
 			Result: result,
 		}, nil
 	}
@@ -48,7 +48,7 @@ func createEndpoint(svc re.Service) endpoint.Endpoint {
 
 func updateEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateReq)
+		req := request.(updateStreamReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createRes{
+		return createStreamRes{
 			Result: result,
 		}, nil
 	}
@@ -66,11 +66,11 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 
 func listEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		streams, err := svc.List()
+		streams, err := svc.ListStreams()
 		if err != nil {
 			return nil, err
 		}
-		return listRes{
+		return listStreamsRes{
 			Streams: streams,
 		}, nil
 	}
@@ -78,16 +78,16 @@ func listEndpoint(svc re.Service) endpoint.Endpoint {
 
 func viewEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewReq)
+		req := request.(viewStreamReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		stream, err := svc.View(req.id)
+		stream, err := svc.ViewStream(req.id)
 		if err != nil {
 			return nil, err
 		}
-		return viewRes{
+		return viewStreamRes{
 			Stream: stream,
 		}, nil
 	}
