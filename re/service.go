@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	url    = "http://localhost:9081"
+	host   = "http://localhost:9081"
 	FORMAT = "json"
+	TYPE   = "mainflux"
 )
 
 var (
@@ -32,8 +33,8 @@ var (
 	// when accessing a protected resource.
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
 
-	// ErrKuiperSever indicates internal kuiper rules engine server error
-	ErrKuiperSever = errors.New("kuiper internal server error")
+	// ErrKuiperServer indicates internal kuiper rules engine server error
+	ErrKuiperServer = errors.New("kuiper internal server error")
 )
 
 type Info struct {
@@ -62,6 +63,7 @@ type Service interface {
 	UpdateStream(name, topic, row string) (string, error)
 	ListStreams() ([]string, error)
 	ViewStream(string) (Stream, error)
+	DeleteStream(string) (string, error)
 }
 
 type reService struct {
@@ -78,9 +80,9 @@ func New(secret string) Service {
 }
 
 func (re *reService) Info() (Info, error) {
-	res, err := http.Get(url)
+	res, err := http.Get(host)
 	if err != nil {
-		return Info{}, errors.Wrap(ErrKuiperSever, err)
+		return Info{}, errors.Wrap(ErrKuiperServer, err)
 
 	}
 	defer res.Body.Close()
@@ -88,7 +90,7 @@ func (re *reService) Info() (Info, error) {
 	var i Info
 	err = json.NewDecoder(res.Body).Decode(&i)
 	if err != nil {
-		return Info{}, errors.Wrap(ErrKuiperSever, err)
+		return Info{}, errors.Wrap(ErrKuiperServer, err)
 	}
 
 	return i, nil
@@ -97,13 +99,13 @@ func (re *reService) Info() (Info, error) {
 func (re *reService) CreateStream(name, topic, row string) (string, error) {
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
-	req, err := http.NewRequest("POST", url+"/streams", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", host+"/streams", bytes.NewBuffer(body))
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperSever, err)
+		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperSever, err)
+		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
 	result := "Steam creation successful."
@@ -111,7 +113,7 @@ func (re *reService) CreateStream(name, topic, row string) (string, error) {
 		defer res.Body.Close()
 		reason, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return "", errors.Wrap(ErrKuiperSever, err)
+			return "", errors.Wrap(ErrKuiperServer, err)
 		}
 		result = "Stream creation failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
 	}
@@ -127,13 +129,13 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 	}
 	path := "/streams/" + name
 
-	req, err := http.NewRequest("PUT", url+path, bytes.NewBuffer(body))
+	req, err := http.NewRequest("PUT", host+path, bytes.NewBuffer(body))
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperSever, err)
+		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperSever, err)
+		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
 	result := "Stream update successful."
@@ -141,7 +143,7 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 		defer res.Body.Close()
 		reason, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return "", errors.Wrap(ErrKuiperSever, err)
+			return "", errors.Wrap(ErrKuiperServer, err)
 		}
 
 		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
@@ -152,9 +154,9 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 
 func (re *reService) ListStreams() ([]string, error) {
 	var streams []string
-	res, err := http.Get(url + "/streams")
+	res, err := http.Get(host + "/streams")
 	if err != nil {
-		return streams, errors.Wrap(ErrKuiperSever, err)
+		return streams, errors.Wrap(ErrKuiperServer, err)
 	}
 	defer res.Body.Close()
 
@@ -166,11 +168,11 @@ func (re *reService) ListStreams() ([]string, error) {
 	return streams, nil
 }
 
-func (re *reService) ViewStream(id string) (Stream, error) {
+func (re *reService) ViewStream(name string) (Stream, error) {
 	var stream Stream
-	res, err := http.Get(url + "/streams/" + id)
+	res, err := http.Get(host + "/streams/" + name)
 	if err != nil {
-		return stream, errors.Wrap(ErrKuiperSever, err)
+		return stream, errors.Wrap(ErrKuiperServer, err)
 	}
 	defer res.Body.Close()
 
@@ -182,6 +184,29 @@ func (re *reService) ViewStream(id string) (Stream, error) {
 	return stream, nil
 }
 
+func (re *reService) DeleteStream(name string) (string, error) {
+	req, err := http.NewRequest("DELETE", host+"/streams/"+name, nil)
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperServer, err)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperServer, err)
+	}
+
+	result := "Stream delete successful."
+	if res.StatusCode != http.StatusOK {
+		defer res.Body.Close()
+		reason, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return "", errors.Wrap(ErrKuiperServer, err)
+		}
+
+		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	}
+	return result, nil
+}
+
 func sql(name, topic, row string) string {
-	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"json\")", name, row, topic)
+	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", name, row, topic, FORMAT, TYPE)
 }

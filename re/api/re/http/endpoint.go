@@ -40,7 +40,7 @@ func createEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createStreamRes{
+		return streamRes{
 			Result: result,
 		}, nil
 	}
@@ -58,7 +58,7 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createStreamRes{
+		return streamRes{
 			Result: result,
 		}, nil
 	}
@@ -89,6 +89,24 @@ func viewEndpoint(svc re.Service) endpoint.Endpoint {
 		}
 		return viewStreamRes{
 			Stream: stream,
+		}, nil
+	}
+}
+
+func deleteEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewStreamReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		result, err := svc.DeleteStream(req.name)
+		if err != nil {
+			return nil, err
+		}
+
+		return streamRes{
+			Result: result,
 		}, nil
 	}
 }

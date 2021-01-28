@@ -81,9 +81,9 @@ func (lm *loggingMiddleware) ListStreams() (streams []string, err error) {
 	return lm.svc.ListStreams()
 }
 
-func (lm *loggingMiddleware) ViewStream(id string) (stream re.Stream, err error) {
+func (lm *loggingMiddleware) ViewStream(name string) (stream re.Stream, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view with id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method view for %s took %s to complete", name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -91,5 +91,18 @@ func (lm *loggingMiddleware) ViewStream(id string) (stream re.Stream, err error)
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewStream(id)
+	return lm.svc.ViewStream(name)
+}
+
+func (lm *loggingMiddleware) DeleteStream(name string) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method delete for %s took %s to complete", name, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DeleteStream(name)
 }

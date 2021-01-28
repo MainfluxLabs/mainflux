@@ -63,8 +63,8 @@ func (ms *metricsMiddleware) UpdateStream(name, topic, row string) (result strin
 
 func (ms *metricsMiddleware) ListStreams() (streams []string, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "info").Add(1)
-		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_streams").Add(1)
+		ms.latency.With("method", "list_streams").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ListStreams()
@@ -72,9 +72,18 @@ func (ms *metricsMiddleware) ListStreams() (streams []string, err error) {
 
 func (ms *metricsMiddleware) ViewStream(id string) (stream re.Stream, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "info").Add(1)
-		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_stream").Add(1)
+		ms.latency.With("method", "view_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ViewStream(id)
+}
+
+func (ms *metricsMiddleware) DeleteStream(id string) (result string, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "delete_stream").Add(1)
+		ms.latency.With("method", "delete_stream").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.DeleteStream(id)
 }
