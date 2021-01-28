@@ -11,6 +11,7 @@ import "github.com/mainflux/mainflux/re"
 
 // {"sql":"create stream my_stream (id bigint, name string, score float) WITH ( topic = \"topic/temperature\", FORMAT = \"json\", KEY = \"id\")"}
 type streamReq struct {
+	token string
 	Name  string `json:"name,omitempty"`
 	Row   string `json:"row"`
 	Topic string `json:"topic"`
@@ -30,8 +31,8 @@ func (req streamReq) validate() error {
 }
 
 type viewStreamReq struct {
-	// token string
-	name string
+	token string
+	name  string
 }
 
 func (req viewStreamReq) validate() error {

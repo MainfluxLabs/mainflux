@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-kit/kit/metrics"
@@ -34,56 +35,56 @@ func MetricsMiddleware(svc re.Service, counter metrics.Counter, latency metrics.
 	}
 }
 
-func (ms *metricsMiddleware) Info() (info re.Info, err error) {
+func (ms *metricsMiddleware) Info(ctx context.Context) (info re.Info, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "info").Add(1)
 		ms.latency.With("method", "info").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Info()
+	return ms.svc.Info(ctx)
 }
 
-func (ms *metricsMiddleware) CreateStream(name, topic, row string) (result string, err error) {
+func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_stream").Add(1)
 		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateStream(name, topic, row)
+	return ms.svc.CreateStream(ctx, token, name, topic, row)
 }
 
-func (ms *metricsMiddleware) UpdateStream(name, topic, row string) (result string, err error) {
+func (ms *metricsMiddleware) UpdateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_stream").Add(1)
 		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateStream(name, topic, row)
+	return ms.svc.UpdateStream(ctx, token, name, topic, row)
 }
 
-func (ms *metricsMiddleware) ListStreams() (streams []string, err error) {
+func (ms *metricsMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_streams").Add(1)
 		ms.latency.With("method", "list_streams").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListStreams()
+	return ms.svc.ListStreams(ctx, token)
 }
 
-func (ms *metricsMiddleware) ViewStream(id string) (stream re.Stream, err error) {
+func (ms *metricsMiddleware) ViewStream(ctx context.Context, token, id string) (stream re.Stream, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_stream").Add(1)
 		ms.latency.With("method", "view_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewStream(id)
+	return ms.svc.ViewStream(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) DeleteStream(id string) (result string, err error) {
+func (ms *metricsMiddleware) DeleteStream(ctx context.Context, token string, id string) (result string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "delete_stream").Add(1)
 		ms.latency.With("method", "delete_stream").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.DeleteStream(id)
+	return ms.svc.DeleteStream(ctx, token, id)
 }

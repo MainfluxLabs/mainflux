@@ -9,12 +9,15 @@ package re
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
+	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
@@ -32,6 +35,9 @@ var (
 	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
 	// when accessing a protected resource.
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
+
+	// ErrNotFound indicates a non-existent entity request.
+	ErrNotFound = errors.New("non-existent entity")
 
 	// ErrKuiperServer indicates internal kuiper rules engine server error
 	ErrKuiperServer = errors.New("kuiper internal server error")
@@ -58,28 +64,30 @@ type Stream struct {
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	Info() (Info, error)
-	CreateStream(name, topic, row string) (string, error)
-	UpdateStream(name, topic, row string) (string, error)
-	ListStreams() ([]string, error)
-	ViewStream(string) (Stream, error)
-	DeleteStream(string) (string, error)
+	Info(ctx context.Context) (Info, error)
+	CreateStream(ctx context.Context, token, name, topic, row string) (string, error)
+	UpdateStream(ctx context.Context, token, name, topic, row string) (string, error)
+	ListStreams(ctx context.Context, token string) ([]string, error)
+	ViewStream(ctx context.Context, token, name string) (Stream, error)
+	DeleteStream(ctx context.Context, token, name string) (string, error)
 }
 
 type reService struct {
-	secret string
+	auth   mainflux.AuthServiceClient
+	logger logger.Logger
 }
 
 var _ Service = (*reService)(nil)
 
 // New instantiates the re service implementation.
-func New(secret string) Service {
+func New(auth mainflux.AuthServiceClient, logger logger.Logger) Service {
 	return &reService{
-		secret: secret,
+		auth:   auth,
+		logger: logger,
 	}
 }
 
-func (re *reService) Info() (Info, error) {
+func (re *reService) Info(_ context.Context) (Info, error) {
 	res, err := http.Get(host)
 	if err != nil {
 		return Info{}, errors.Wrap(ErrKuiperServer, err)
@@ -96,7 +104,20 @@ func (re *reService) Info() (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(name, topic, row string) (string, error) {
+func (re *reService) CreateStream(ctx context.Context, token, name, topic, row string) (string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+	_ = ui
+
+	// id, err = re.idProvider.ID()
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// owner := ui.GetEmail()
+
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	url := fmt.Sprintf("%s/%s", host, "streams")
@@ -122,7 +143,13 @@ func (re *reService) CreateStream(name, topic, row string) (string, error) {
 	return result, nil
 }
 
-func (re *reService) UpdateStream(name, topic, row string) (string, error) {
+func (re *reService) UpdateStream(ctx context.Context, token, name, topic, row string) (string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+	_ = ui
+
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
@@ -152,7 +179,13 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 	return result, nil
 }
 
-func (re *reService) ListStreams() ([]string, error) {
+func (re *reService) ListStreams(ctx context.Context, token string) ([]string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return []string{}, ErrUnauthorizedAccess
+	}
+	_ = ui
+
 	var streams []string
 	url := fmt.Sprintf("%s/%s", host, "streams")
 	res, err := http.Get(url)
@@ -169,12 +202,22 @@ func (re *reService) ListStreams() ([]string, error) {
 	return streams, nil
 }
 
-func (re *reService) ViewStream(name string) (Stream, error) {
+func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Stream{}, ErrUnauthorizedAccess
+	}
+	_ = ui
+
 	var stream Stream
 	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
+
 	res, err := http.Get(url)
 	if err != nil {
 		return stream, errors.Wrap(ErrKuiperServer, err)
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return stream, errors.Wrap(ErrNotFound, err)
 	}
 	defer res.Body.Close()
 
@@ -186,7 +229,13 @@ func (re *reService) ViewStream(name string) (Stream, error) {
 	return stream, nil
 }
 
-func (re *reService) DeleteStream(name string) (string, error) {
+func (re *reService) DeleteStream(ctx context.Context, token, name string) (string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+	_ = ui
+
 	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {

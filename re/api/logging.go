@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -29,7 +30,7 @@ func LoggingMiddleware(svc re.Service, logger log.Logger) re.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Info() (info re.Info, err error) {
+func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method info took %s to complete", time.Since(begin))
 		if err != nil {
@@ -39,10 +40,10 @@ func (lm *loggingMiddleware) Info() (info re.Info, err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Info()
+	return lm.svc.Info(ctx)
 }
 
-func (lm *loggingMiddleware) CreateStream(name, topic, row string) (result string, err error) {
+func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_string for stream %s with topic %s took %s to complete", name, topic, time.Since(begin))
 		if err != nil {
@@ -52,10 +53,10 @@ func (lm *loggingMiddleware) CreateStream(name, topic, row string) (result strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateStream(name, topic, row)
+	return lm.svc.CreateStream(ctx, token, name, topic, row)
 }
 
-func (lm *loggingMiddleware) UpdateStream(name, topic, row string) (result string, err error) {
+func (lm *loggingMiddleware) UpdateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_string for stream %s and topic %s took %s to complete", name, topic, time.Since(begin))
 		if err != nil {
@@ -65,10 +66,10 @@ func (lm *loggingMiddleware) UpdateStream(name, topic, row string) (result strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UpdateStream(name, topic, row)
+	return lm.svc.UpdateStream(ctx, token, name, topic, row)
 }
 
-func (lm *loggingMiddleware) ListStreams() (streams []string, err error) {
+func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list took %s to complete", time.Since(begin))
 		if err != nil {
@@ -78,10 +79,10 @@ func (lm *loggingMiddleware) ListStreams() (streams []string, err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListStreams()
+	return lm.svc.ListStreams(ctx, token)
 }
 
-func (lm *loggingMiddleware) ViewStream(name string) (stream re.Stream, err error) {
+func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string) (stream re.Stream, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view for %s took %s to complete", name, time.Since(begin))
 		if err != nil {
@@ -91,10 +92,10 @@ func (lm *loggingMiddleware) ViewStream(name string) (stream re.Stream, err erro
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewStream(name)
+	return lm.svc.ViewStream(ctx, token, name)
 }
 
-func (lm *loggingMiddleware) DeleteStream(name string) (result string, err error) {
+func (lm *loggingMiddleware) DeleteStream(ctx context.Context, token, name string) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete for %s took %s to complete", name, time.Since(begin))
 		if err != nil {
@@ -104,5 +105,5 @@ func (lm *loggingMiddleware) DeleteStream(name string) (result string, err error
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.DeleteStream(name)
+	return lm.svc.DeleteStream(ctx, token, name)
 }

@@ -15,13 +15,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/mainflux/mainflux"
+	authapi "github.com/mainflux/mainflux/auth/api/grpc"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/re"
 	"github.com/mainflux/mainflux/re/api"
 	rehttpapi "github.com/mainflux/mainflux/re/api/re/http"
+	localusers "github.com/mainflux/mainflux/things/users"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -30,30 +36,45 @@ import (
 )
 
 const (
-	defLogLevel   = "info"
-	defHTTPPort   = "9099"
-	defJaegerURL  = ""
-	defServerCert = ""
-	defServerKey  = ""
-	defSecret     = "secret"
+	defLogLevel        = "info"
+	defHTTPPort        = "9099"
+	defJaegerURL       = ""
+	defServerCert      = ""
+	defServerKey       = ""
+	defSingleUserEmail = ""
+	defSingleUserToken = ""
+	defAuthURL         = "localhost:8181"
+	defAuthTimeout     = "1s"
+	defClientTLS       = "false"
+	defCACerts         = ""
 
-	envLogLevel   = "MF_RE_LOG_LEVEL"
-	envHTTPPort   = "MF_RE_HTTP_PORT"
-	envJaegerURL  = "MF_JAEGER_URL"
-	envServerCert = "MF_RE_SERVER_CERT"
-	envServerKey  = "MF_RE_SERVER_KEY"
-	envSecret     = "MF_RE_SECRET"
+	envLogLevel        = "MF_RE_LOG_LEVEL"
+	envHTTPPort        = "MF_RE_HTTP_PORT"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envServerCert      = "MF_RE_SERVER_CERT"
+	envServerKey       = "MF_RE_SERVER_KEY"
+	envSingleUserEmail = "MF_TWINS_SINGLE_USER_EMAIL"
+	envSingleUserToken = "MF_TWINS_SINGLE_USER_TOKEN"
+	envAuthURL         = "MF_AUTH_GRPC_URL"
+	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
+	envClientTLS       = "MF_TWINS_CLIENT_TLS"
+	envCACerts         = "MF_TWINS_CA_CERTS"
 )
 
 type config struct {
-	logLevel     string
-	httpPort     string
-	authHTTPPort string
-	authGRPCPort string
-	jaegerURL    string
-	serverCert   string
-	serverKey    string
-	secret       string
+	logLevel        string
+	httpPort        string
+	authHTTPPort    string
+	authGRPCPort    string
+	jaegerURL       string
+	serverCert      string
+	serverKey       string
+	singleUserEmail string
+	singleUserToken string
+	authURL         string
+	authTimeout     time.Duration
+	clientTLS       bool
+	caCerts         string
 }
 
 func main() {
@@ -64,13 +85,17 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	reTracer, reCloser := initJaeger("re", cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+	auth, _ := createAuthClient(cfg, authTracer, logger)
+
+	tracer, reCloser := initJaeger("re", cfg.jaegerURL, logger)
 	defer reCloser.Close()
 
-	svc := newService(cfg.secret, logger)
+	svc := newService(auth, logger)
 	errs := make(chan error, 2)
 
-	go startHTTPServer(rehttpapi.MakeHandler(reTracer, svc), cfg.httpPort, cfg, logger, errs)
+	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg.httpPort, cfg, logger, errs)
 
 	go func() {
 		c := make(chan os.Signal)
@@ -83,13 +108,28 @@ func main() {
 }
 
 func loadConfig() config {
+	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
+	if err != nil {
+		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+	}
+
+	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+	}
+
 	return config{
-		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert: mainflux.Env(envServerCert, defServerCert),
-		serverKey:  mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:  mainflux.Env(envJaegerURL, defJaegerURL),
-		secret:     mainflux.Env(envSecret, defSecret),
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		singleUserEmail: mainflux.Env(envSingleUserEmail, defSingleUserEmail),
+		singleUserToken: mainflux.Env(envSingleUserToken, defSingleUserToken),
+		authURL:         mainflux.Env(envAuthURL, defAuthURL),
+		authTimeout:     authTimeout,
+		clientTLS:       tls,
+		caCerts:         mainflux.Env(envCACerts, defCACerts),
 	}
 }
 
@@ -117,8 +157,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(secret string, logger logger.Logger) re.Service {
-	svc := re.New(secret)
+func newService(auth mainflux.AuthServiceClient, logger logger.Logger) re.Service {
+	svc := re.New(auth, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -150,4 +190,38 @@ func startHTTPServer(handler http.Handler, port string, cfg config, logger logge
 	}
 	logger.Info(fmt.Sprintf("Re service started using http on port %s", cfg.httpPort))
 	errs <- http.ListenAndServe(p, handler)
+}
+
+func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
+	if cfg.singleUserEmail != "" && cfg.singleUserToken != "" {
+		return localusers.NewSingleUserService(cfg.singleUserEmail, cfg.singleUserToken), nil
+	}
+
+	conn := connectToAuth(cfg, logger)
+	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+}
+
+func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.clientTLS {
+		if cfg.caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+		logger.Info("gRPC communication is not encrypted")
+	}
+
+	conn, err := grpc.Dial(cfg.authURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
+		os.Exit(1)
+	}
+
+	return conn
 }

@@ -94,20 +94,14 @@ func decodeGet(_ context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
 
-func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewStreamReq{
-		// token: r.Header.Get("Authorization"),
-		name: bone.GetValue(r, "name"),
-	}
-	return req, nil
-}
-
 func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, errUnsupportedContentType
 	}
 
-	req := streamReq{}
+	req := streamReq{
+		token: r.Header.Get("Authorization"),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
@@ -120,13 +114,23 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, errUnsupportedContentType
 	}
 
-	req := streamReq{}
+	req := streamReq{
+		token: r.Header.Get("Authorization"),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
 
 	req.Name = bone.GetValue(r, "name")
 
+	return req, nil
+}
+
+func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewStreamReq{
+		token: r.Header.Get("Authorization"),
+		name:  bone.GetValue(r, "name"),
+	}
 	return req, nil
 }
 
