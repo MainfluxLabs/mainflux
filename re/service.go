@@ -99,7 +99,8 @@ func (re *reService) Info() (Info, error) {
 func (re *reService) CreateStream(name, topic, row string) (string, error) {
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
-	req, err := http.NewRequest("POST", host+"/streams", bytes.NewBuffer(body))
+	url := fmt.Sprintf("%s/%s", host, "streams")
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
@@ -127,9 +128,8 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(ErrMalformedEntity, err)
 	}
-	path := "/streams/" + name
-
-	req, err := http.NewRequest("PUT", host+path, bytes.NewBuffer(body))
+	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
@@ -154,7 +154,8 @@ func (re *reService) UpdateStream(name, topic, row string) (string, error) {
 
 func (re *reService) ListStreams() ([]string, error) {
 	var streams []string
-	res, err := http.Get(host + "/streams")
+	url := fmt.Sprintf("%s/%s", host, "streams")
+	res, err := http.Get(url)
 	if err != nil {
 		return streams, errors.Wrap(ErrKuiperServer, err)
 	}
@@ -170,7 +171,8 @@ func (re *reService) ListStreams() ([]string, error) {
 
 func (re *reService) ViewStream(name string) (Stream, error) {
 	var stream Stream
-	res, err := http.Get(host + "/streams/" + name)
+	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
+	res, err := http.Get(url)
 	if err != nil {
 		return stream, errors.Wrap(ErrKuiperServer, err)
 	}
@@ -185,7 +187,8 @@ func (re *reService) ViewStream(name string) (Stream, error) {
 }
 
 func (re *reService) DeleteStream(name string) (string, error) {
-	req, err := http.NewRequest("DELETE", host+"/streams/"+name, nil)
+	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
