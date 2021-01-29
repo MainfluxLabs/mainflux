@@ -44,12 +44,12 @@ func (req getReq) validate() error {
 	return nil
 }
 
-type viewStreamReq struct {
+type viewReq struct {
 	token string
 	name  string
 }
 
-func (req viewStreamReq) validate() error {
+func (req viewReq) validate() error {
 	if req.token == "" {
 		return re.ErrMalformedEntity
 	}

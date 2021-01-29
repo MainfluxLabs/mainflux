@@ -84,7 +84,7 @@ func listStreamsEndpoint(svc re.Service) endpoint.Endpoint {
 
 func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewStreamReq)
+		req := request.(viewReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -101,7 +101,7 @@ func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
 
 func deleteStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewStreamReq)
+		req := request.(viewReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -131,6 +131,40 @@ func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
 
 		return resultRes{
 			Result: result,
+		}, nil
+	}
+}
+
+func listRulesEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		rules, err := svc.ListRules(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+		return listRulesRes{
+			Rules: rules,
+		}, nil
+	}
+}
+
+func viewRuleEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		rule, err := svc.ViewRule(ctx, req.token, req.name)
+		if err != nil {
+			return nil, err
+		}
+		return viewRuleRes{
+			Rule: rule,
 		}, nil
 	}
 }

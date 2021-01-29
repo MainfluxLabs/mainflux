@@ -60,6 +60,8 @@ type Service interface {
 	DeleteStream(ctx context.Context, token, name string) (string, error)
 
 	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
+	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
+	ViewRule(ctx context.Context, token, name string) (Rule, error)
 }
 
 type reService struct {
@@ -250,11 +252,7 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 		return "", ErrUnauthorizedAccess
 	}
 
-	rule.ID = prepend(ui.Id, rule.ID)
-	words := strings.Fields(rule.SQL)
-	idx := indexOf("from", words) + 1
-	words[idx] = prepend(ui.Id, words[idx])
-	rule.SQL = strings.Join(words, " ")
+	rulePrepend(ui.Id, &rule)
 
 	body, err := json.Marshal(rule)
 	url := fmt.Sprintf("%s/%s", host, "rules")
@@ -273,6 +271,62 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 	}
 
 	return result, nil
+}
+
+func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, error) {
+	var rules []RuleInfo
+
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return rules, ErrUnauthorizedAccess
+	}
+
+	url := fmt.Sprintf("%s/%s", host, "rules")
+	res, err := http.Get(url)
+	if err != nil {
+		return rules, errors.Wrap(ErrKuiperServer, err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&rules)
+	if err != nil {
+		return rules, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	for i, value := range rules {
+		rules[i].ID = remove(ui.Id, value.ID)
+	}
+
+	return rules, nil
+}
+
+func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, error) {
+	var rule Rule
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return rule, ErrUnauthorizedAccess
+	}
+
+	name = prepend(ui.Id, name)
+	url := fmt.Sprintf("%s/%s/%s", host, "rules", name)
+
+	res, err := http.Get(url)
+	if err != nil {
+		return rule, errors.Wrap(ErrKuiperServer, err)
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return rule, errors.Wrap(ErrNotFound, err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&rule)
+	if err != nil {
+		return rule, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	ruleRemove(ui.Id, &rule)
+
+	return rule, nil
 }
 
 func sql(name, topic, row string) string {
@@ -299,8 +353,26 @@ func indexOf(element string, data []string) int {
 	return -1 //not found.
 }
 
-func result(res *http.Response, action string, status int) (string, error) {
+func rulePrepend(id string, rule *Rule) {
+	rule.ID = prepend(id, rule.ID)
 
+	// Prepend id to stream name; sql e.g. "select * from stream_name where v > 1.2;"
+	words := strings.Fields(rule.SQL)
+	idx := indexOf("from", words) + 1
+	words[idx] = prepend(id, words[idx])
+	rule.SQL = strings.Join(words, " ")
+}
+
+func ruleRemove(id string, rule *Rule) {
+	rule.ID = remove(id, rule.ID)
+
+	words := strings.Fields(rule.SQL)
+	idx := indexOf("from", words) + 1
+	words[idx] = remove(id, words[idx])
+	rule.SQL = strings.Join(words, " ")
+}
+
+func result(res *http.Response, action string, status int) (string, error) {
 	result := action + " successful."
 	if res.StatusCode != status {
 		defer res.Body.Close()

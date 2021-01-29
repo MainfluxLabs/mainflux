@@ -97,3 +97,21 @@ func (ms *metricsMiddleware) CreateRule(ctx context.Context, token string, rule 
 
 	return ms.svc.CreateRule(ctx, token, rule)
 }
+
+func (ms *metricsMiddleware) ListRules(ctx context.Context, token string) ([]re.RuleInfo, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_rules").Add(1)
+		ms.latency.With("method", "list_rules").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListRules(ctx, token)
+}
+
+func (ms *metricsMiddleware) ViewRule(ctx context.Context, token, id string) (rule re.Rule, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_rule").Add(1)
+		ms.latency.With("method", "view_rule").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewRule(ctx, token, id)
+}

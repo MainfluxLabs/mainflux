@@ -72,14 +72,14 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 
 	r.Get("/streams/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view")(viewStreamEndpoint(svc)),
-		decodeViewStream,
+		decodeView,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/streams/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete")(deleteStreamEndpoint(svc)),
-		decodeViewStream,
+		decodeView,
 		encodeResponse,
 		opts...,
 	))
@@ -87,6 +87,20 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 	r.Post("/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_rule")(createRuleEndpoint(svc)),
 		decodeCreateRule,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list")(listRulesEndpoint(svc)),
+		decodeGet,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/rules/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view")(viewRuleEndpoint(svc)),
+		decodeView,
 		encodeResponse,
 		opts...,
 	))
@@ -136,8 +150,8 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewStreamReq{
+func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewReq{
 		token: r.Header.Get("Authorization"),
 		name:  bone.GetValue(r, "name"),
 	}

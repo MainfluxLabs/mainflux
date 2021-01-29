@@ -18,6 +18,7 @@ var _ mainflux.Response = (*infoRes)(nil)
 var _ mainflux.Response = (*resultRes)(nil)
 var _ mainflux.Response = (*listStreamsRes)(nil)
 var _ mainflux.Response = (*viewStreamRes)(nil)
+var _ mainflux.Response = (*listRulesRes)(nil)
 
 type infoRes struct {
 	Version       string `json:"version"`
@@ -82,5 +83,37 @@ func (res viewStreamRes) Headers() map[string]string {
 }
 
 func (res viewStreamRes) Empty() bool {
+	return false
+}
+
+type listRulesRes struct {
+	Rules []re.RuleInfo
+}
+
+func (res listRulesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res listRulesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res listRulesRes) Empty() bool {
+	return false
+}
+
+type viewRuleRes struct {
+	Rule re.Rule
+}
+
+func (res viewRuleRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewRuleRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewRuleRes) Empty() bool {
 	return false
 }
