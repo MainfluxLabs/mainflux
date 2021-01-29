@@ -18,6 +18,9 @@ type streamReq struct {
 }
 
 func (req streamReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
 	if req.Name == "" {
 		return re.ErrMalformedEntity
 	}
@@ -30,12 +33,26 @@ func (req streamReq) validate() error {
 	return nil
 }
 
+type getReq struct {
+	token string
+}
+
+func (req getReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}
+
 type viewStreamReq struct {
 	token string
 	name  string
 }
 
 func (req viewStreamReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
 	if req.name == "" {
 		return re.ErrMalformedEntity
 	}

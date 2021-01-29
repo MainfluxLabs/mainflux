@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	mfSDK "github.com/mainflux/mainflux/pkg/sdk/go"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
@@ -47,6 +48,10 @@ const (
 	defAuthTimeout     = "1s"
 	defClientTLS       = "false"
 	defCACerts         = ""
+	defThingsLocation  = "http://localhost"
+	defMfBSURL         = "http://localhost:8202/things/configs"
+	defMfCertsURL      = "http://localhost:8204"
+	defTLS             = "false"
 
 	envLogLevel        = "MF_RE_LOG_LEVEL"
 	envHTTPPort        = "MF_RE_HTTP_PORT"
@@ -59,6 +64,10 @@ const (
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
 	envClientTLS       = "MF_TWINS_CLIENT_TLS"
 	envCACerts         = "MF_TWINS_CA_CERTS"
+	envThingsLocation  = "MF_PROVISION_THINGS_LOCATION"
+	envMfBSURL         = "MF_PROVISION_BS_SVC_URL"
+	envMfCertsURL      = "MF_PROVISION_CERTS_SVC_URL"
+	envTLS             = "MF_PROVISION_ENV_CLIENTS_TLS"
 )
 
 type config struct {
@@ -75,6 +84,11 @@ type config struct {
 	authTimeout     time.Duration
 	clientTLS       bool
 	caCerts         string
+
+	ThingsLocation string
+	MfBSURL        string
+	MfCertsURL     string
+	TLS            bool
 }
 
 func main() {
@@ -92,7 +106,17 @@ func main() {
 	tracer, reCloser := initJaeger("re", cfg.jaegerURL, logger)
 	defer reCloser.Close()
 
-	svc := newService(auth, logger)
+	SDKCfg := mfSDK.Config{
+		BaseURL:           cfg.ThingsLocation,
+		BootstrapURL:      cfg.MfBSURL,
+		CertsURL:          cfg.MfCertsURL,
+		HTTPAdapterPrefix: "http",
+		MsgContentType:    "application/json",
+		TLSVerification:   cfg.TLS,
+	}
+	SDK := mfSDK.NewSDK(SDKCfg)
+
+	svc := newService(auth, SDK, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg.httpPort, cfg, logger, errs)
@@ -130,6 +154,10 @@ func loadConfig() config {
 		authTimeout:     authTimeout,
 		clientTLS:       tls,
 		caCerts:         mainflux.Env(envCACerts, defCACerts),
+		MfBSURL:         mainflux.Env(envMfBSURL, defMfBSURL),
+		MfCertsURL:      mainflux.Env(envMfCertsURL, defMfCertsURL),
+		ThingsLocation:  mainflux.Env(envThingsLocation, defThingsLocation),
+		TLS:             tls,
 	}
 }
 
@@ -157,8 +185,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(auth mainflux.AuthServiceClient, logger logger.Logger) re.Service {
-	svc := re.New(auth, logger)
+func newService(auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) re.Service {
+	svc := re.New(auth, sdk, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

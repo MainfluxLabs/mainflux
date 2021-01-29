@@ -15,10 +15,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
+	SDK "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
 const (
@@ -74,15 +76,17 @@ type Service interface {
 
 type reService struct {
 	auth   mainflux.AuthServiceClient
+	sdk    SDK.SDK
 	logger logger.Logger
 }
 
 var _ Service = (*reService)(nil)
 
 // New instantiates the re service implementation.
-func New(auth mainflux.AuthServiceClient, logger logger.Logger) Service {
+func New(auth mainflux.AuthServiceClient, sdk SDK.SDK, logger logger.Logger) Service {
 	return &reService{
 		auth:   auth,
+		sdk:    sdk,
 		logger: logger,
 	}
 }
@@ -109,16 +113,14 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_ = ui
+	_, err = re.sdk.Channel(topic, token)
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
-	// id, err = re.idProvider.ID()
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// owner := ui.GetEmail()
-
+	name = prepend(ui.Id, name)
 	sql := sql(name, topic, row)
+	fmt.Printf("%+v\n", sql) // output for debug
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	url := fmt.Sprintf("%s/%s", host, "streams")
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
@@ -148,8 +150,12 @@ func (re *reService) UpdateStream(ctx context.Context, token, name, topic, row s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_ = ui
+	_, err = re.sdk.Channel(topic, token)
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
+	name = prepend(ui.Id, name)
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
@@ -184,7 +190,6 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 	if err != nil {
 		return []string{}, ErrUnauthorizedAccess
 	}
-	_ = ui
 
 	var streams []string
 	url := fmt.Sprintf("%s/%s", host, "streams")
@@ -199,6 +204,10 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 		return streams, errors.Wrap(ErrMalformedEntity, err)
 	}
 
+	for i, value := range streams {
+		streams[i] = remove(ui.Id, value)
+	}
+
 	return streams, nil
 }
 
@@ -207,9 +216,9 @@ func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream
 	if err != nil {
 		return Stream{}, ErrUnauthorizedAccess
 	}
-	_ = ui
 
 	var stream Stream
+	name = prepend(ui.Id, name)
 	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
 
 	res, err := http.Get(url)
@@ -225,6 +234,7 @@ func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream
 	if err != nil {
 		return stream, errors.Wrap(ErrMalformedEntity, err)
 	}
+	stream.Name = remove(ui.Id, stream.Name)
 
 	return stream, nil
 }
@@ -234,8 +244,8 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_ = ui
 
+	name = prepend(ui.Id, name)
 	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -253,7 +263,6 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 		if err != nil {
 			return "", errors.Wrap(ErrKuiperServer, err)
 		}
-
 		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
 	}
 	return result, nil
@@ -261,4 +270,15 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 
 func sql(name, topic, row string) string {
 	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", name, row, topic, FORMAT, TYPE)
+}
+
+func prefix(id string) string {
+	return strings.ReplaceAll(id, "-", "") + "_"
+}
+func prepend(id, name string) string {
+	return fmt.Sprintf("%s%s", prefix(id), name)
+}
+
+func remove(id, name string) string {
+	return strings.Replace(name, prefix(id), "", 1)
 }

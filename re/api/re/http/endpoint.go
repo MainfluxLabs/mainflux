@@ -16,6 +16,7 @@ import (
 
 func infoEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		// TODO: infoEndpoint uses decodeGet and discards request; how to bypass decode func?
 		info, err := svc.Info(ctx)
 		if err != nil {
 			return nil, err
@@ -66,7 +67,7 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 
 func listEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewStreamReq)
+		req := request.(getReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

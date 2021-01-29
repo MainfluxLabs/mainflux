@@ -49,16 +49,16 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
-	r.Put("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
-		decodeUpdateStream,
+	r.Post("/streams", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
+		decodeCreateStream,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Post("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
-		decodeCreateStream,
+	r.Put("/streams/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
+		decodeUpdateStream,
 		encodeResponse,
 		opts...,
 	))
@@ -91,7 +91,10 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 }
 
 func decodeGet(_ context.Context, r *http.Request) (interface{}, error) {
-	return nil, nil
+	req := getReq{
+		token: r.Header.Get("Authorization"),
+	}
+	return req, nil
 }
 
 func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error) {
