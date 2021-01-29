@@ -15,7 +15,7 @@ import (
 )
 
 var _ mainflux.Response = (*infoRes)(nil)
-var _ mainflux.Response = (*streamRes)(nil)
+var _ mainflux.Response = (*resultRes)(nil)
 var _ mainflux.Response = (*listStreamsRes)(nil)
 var _ mainflux.Response = (*viewStreamRes)(nil)
 
@@ -37,19 +37,19 @@ func (res infoRes) Empty() bool {
 	return false
 }
 
-type streamRes struct {
+type resultRes struct {
 	Result string `json:"result"`
 }
 
-func (res streamRes) Code() int {
+func (res resultRes) Code() int {
 	return http.StatusOK
 }
 
-func (res streamRes) Headers() map[string]string {
+func (res resultRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res streamRes) Empty() bool {
+func (res resultRes) Empty() bool {
 	return false
 }
 

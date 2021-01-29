@@ -50,36 +50,43 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 	))
 
 	r.Post("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_stream")(createEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_stream")(createStreamEndpoint(svc)),
 		decodeCreateStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(updateEndpoint(svc)),
+		kitot.TraceServer(tracer, "view")(updateStreamEndpoint(svc)),
 		decodeUpdateStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list")(listEndpoint(svc)),
+		kitot.TraceServer(tracer, "list")(listStreamsEndpoint(svc)),
 		decodeGet,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(viewEndpoint(svc)),
+		kitot.TraceServer(tracer, "view")(viewStreamEndpoint(svc)),
 		decodeViewStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete")(deleteEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete")(deleteStreamEndpoint(svc)),
 		decodeViewStream,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_rule")(createRuleEndpoint(svc)),
+		decodeCreateRule,
 		encodeResponse,
 		opts...,
 	))
@@ -134,6 +141,21 @@ func decodeViewStream(_ context.Context, r *http.Request) (interface{}, error) {
 		token: r.Header.Get("Authorization"),
 		name:  bone.GetValue(r, "name"),
 	}
+	return req, nil
+}
+
+func decodeCreateRule(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errUnsupportedContentType
+	}
+
+	req := createRuleReq{
+		token: r.Header.Get("Authorization"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req.Rule); err != nil {
+		return nil, err
+	}
+
 	return req, nil
 }
 

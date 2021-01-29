@@ -6,7 +6,7 @@
       "mainflux": {
         "host": "localhost",
         "port": "4222",
-        "channel": "2b55520f-08d0-414e-94d6-022fef226111",
+        "channel": "a5b1040c-b7c4-491c-a01f-543aaf253208",
         "subtopic": ""
       }
     }

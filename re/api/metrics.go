@@ -88,3 +88,12 @@ func (ms *metricsMiddleware) DeleteStream(ctx context.Context, token string, id 
 
 	return ms.svc.DeleteStream(ctx, token, id)
 }
+
+func (ms *metricsMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_rule").Add(1)
+		ms.latency.With("method", "create_rule").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateRule(ctx, token, rule)
+}

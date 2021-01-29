@@ -29,7 +29,7 @@ func infoEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func createEndpoint(svc re.Service) endpoint.Endpoint {
+func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(streamReq)
 		if err := req.validate(); err != nil {
@@ -41,13 +41,13 @@ func createEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return streamRes{
+		return resultRes{
 			Result: result,
 		}, nil
 	}
 }
 
-func updateEndpoint(svc re.Service) endpoint.Endpoint {
+func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(streamReq)
 		if err := req.validate(); err != nil {
@@ -59,13 +59,13 @@ func updateEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return streamRes{
+		return resultRes{
 			Result: result,
 		}, nil
 	}
 }
 
-func listEndpoint(svc re.Service) endpoint.Endpoint {
+func listStreamsEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getReq)
 		if err := req.validate(); err != nil {
@@ -82,7 +82,7 @@ func listEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func viewEndpoint(svc re.Service) endpoint.Endpoint {
+func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewStreamReq)
 		if err := req.validate(); err != nil {
@@ -99,7 +99,7 @@ func viewEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteEndpoint(svc re.Service) endpoint.Endpoint {
+func deleteStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewStreamReq)
 		if err := req.validate(); err != nil {
@@ -111,7 +111,25 @@ func deleteEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return streamRes{
+		return resultRes{
+			Result: result,
+		}, nil
+	}
+}
+
+func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createRuleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		result, err := svc.CreateRule(ctx, req.token, req.Rule)
+		if err != nil {
+			return nil, err
+		}
+
+		return resultRes{
 			Result: result,
 		}, nil
 	}

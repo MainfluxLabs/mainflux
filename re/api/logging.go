@@ -107,3 +107,16 @@ func (lm *loggingMiddleware) DeleteStream(ctx context.Context, token, name strin
 
 	return lm.svc.DeleteStream(ctx, token, name)
 }
+
+func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create rule %s took %s to complete", rule.ID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateRule(ctx, token, rule)
+}

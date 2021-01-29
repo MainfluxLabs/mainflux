@@ -24,9 +24,7 @@ import (
 )
 
 const (
-	host   = "http://localhost:9081"
-	FORMAT = "json"
-	TYPE   = "mainflux"
+	host = "http://localhost:9081"
 )
 
 var (
@@ -51,18 +49,6 @@ type Info struct {
 	UpTimeSeconds int    `json:"upTimeSeconds"`
 }
 
-type Stream struct {
-	Name         string `json:"Name"`
-	StreamFields []struct {
-		Name      string `json:"Name"`
-		FieldType string `json:"FieldType"`
-	} `json:"StreamFields"`
-	Options struct {
-		DATASOURCE string `json:"DATASOURCE"`
-		FORMAT     string `json:"FORMAT"`
-	} `json:"Options"`
-}
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -72,6 +58,8 @@ type Service interface {
 	ListStreams(ctx context.Context, token string) ([]string, error)
 	ViewStream(ctx context.Context, token, name string) (Stream, error)
 	DeleteStream(ctx context.Context, token, name string) (string, error)
+
+	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
 }
 
 type reService struct {
@@ -120,7 +108,6 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 
 	name = prepend(ui.Id, name)
 	sql := sql(name, topic, row)
-	fmt.Printf("%+v\n", sql) // output for debug
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	url := fmt.Sprintf("%s/%s", host, "streams")
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
@@ -132,14 +119,9 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result := "Steam creation successful."
-	if res.StatusCode != http.StatusCreated {
-		defer res.Body.Close()
-		reason, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", errors.Wrap(ErrKuiperServer, err)
-		}
-		result = "Stream creation failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	result, err := result(res, "Create stream", http.StatusCreated)
+	if err != nil {
+		return "", err
 	}
 
 	return result, nil
@@ -171,15 +153,9 @@ func (re *reService) UpdateStream(ctx context.Context, token, name, topic, row s
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result := "Stream update successful."
-	if res.StatusCode != http.StatusOK {
-		defer res.Body.Close()
-		reason, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", errors.Wrap(ErrKuiperServer, err)
-		}
-
-		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	result, err := result(res, "Update stream", http.StatusOK)
+	if err != nil {
+		return "", err
 	}
 
 	return result, nil
@@ -256,15 +232,46 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result := "Stream delete successful."
-	if res.StatusCode != http.StatusOK {
-		defer res.Body.Close()
-		reason, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", errors.Wrap(ErrKuiperServer, err)
-		}
-		result = "Stream update failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	result, err := result(res, "Delete stream", http.StatusOK)
+	if err != nil {
+		return "", err
 	}
+
+	return result, nil
+}
+
+func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+	_, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+
+	rule.ID = prepend(ui.Id, rule.ID)
+	words := strings.Fields(rule.SQL)
+	idx := indexOf("from", words) + 1
+	words[idx] = prepend(ui.Id, words[idx])
+	rule.SQL = strings.Join(words, " ")
+
+	body, err := json.Marshal(rule)
+	url := fmt.Sprintf("%s/%s", host, "rules")
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperServer, err)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperServer, err)
+	}
+
+	result, err := result(res, "Create rule", http.StatusCreated)
+	if err != nil {
+		return "", err
+	}
+
 	return result, nil
 }
 
@@ -281,4 +288,27 @@ func prepend(id, name string) string {
 
 func remove(id, name string) string {
 	return strings.Replace(name, prefix(id), "", 1)
+}
+
+func indexOf(element string, data []string) int {
+	for k, v := range data {
+		if element == v {
+			return k
+		}
+	}
+	return -1 //not found.
+}
+
+func result(res *http.Response, action string, status int) (string, error) {
+
+	result := action + " successful."
+	if res.StatusCode != status {
+		defer res.Body.Close()
+		reason, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return "", errors.Wrap(ErrKuiperServer, err)
+		}
+		result = action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+	}
+	return result, nil
 }

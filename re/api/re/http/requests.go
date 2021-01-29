@@ -58,3 +58,15 @@ func (req viewStreamReq) validate() error {
 	}
 	return nil
 }
+
+type createRuleReq struct {
+	token string
+	Rule  re.Rule
+}
+
+func (req createRuleReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}
