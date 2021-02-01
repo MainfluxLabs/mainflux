@@ -36,7 +36,7 @@ func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Row)
+		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Row, false)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.UpdateStream(ctx, req.token, req.Name, req.Topic, req.Row)
+		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Row, true)
 		if err != nil {
 			return nil, err
 		}
@@ -119,12 +119,30 @@ func deleteStreamEndpoint(svc re.Service) endpoint.Endpoint {
 
 func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createRuleReq)
+		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		result, err := svc.CreateRule(ctx, req.token, req.Rule)
+		result, err := svc.CreateRule(ctx, req.token, req.Rule, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return resultRes{
+			Result: result,
+		}, nil
+	}
+}
+
+func updateRuleEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(ruleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		result, err := svc.CreateRule(ctx, req.token, req.Rule, true)
 		if err != nil {
 			return nil, err
 		}

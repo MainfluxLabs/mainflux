@@ -53,13 +53,12 @@ type Info struct {
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	Info(ctx context.Context) (Info, error)
-	CreateStream(ctx context.Context, token, name, topic, row string) (string, error)
-	UpdateStream(ctx context.Context, token, name, topic, row string) (string, error)
+	CreateStream(ctx context.Context, token, name, topic, row string, update bool) (string, error)
 	ListStreams(ctx context.Context, token string) ([]string, error)
 	ViewStream(ctx context.Context, token, name string) (Stream, error)
 	DeleteStream(ctx context.Context, token, name string) (string, error)
 
-	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
+	CreateRule(ctx context.Context, token string, rule Rule, update bool) (string, error)
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
 }
@@ -98,7 +97,7 @@ func (re *reService) Info(_ context.Context) (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(ctx context.Context, token, name, topic, row string) (string, error) {
+func (re *reService) CreateStream(ctx context.Context, token, name, topic, row string, update bool) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
@@ -111,8 +110,17 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 	name = prepend(ui.Id, name)
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
+	if err != nil {
+		return "", ErrMalformedEntity
+	}
+
+	method := "POST"
 	url := fmt.Sprintf("%s/%s", host, "streams")
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if update {
+		method = "PUT"
+		url = fmt.Sprintf("%s/%s", url, name)
+	}
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
@@ -121,41 +129,13 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result, err := result(res, "Create stream", http.StatusCreated)
-	if err != nil {
-		return "", err
+	action := "Create stream"
+	status := http.StatusCreated
+	if update {
+		action = "Update stream"
+		status = http.StatusOK
 	}
-
-	return result, nil
-}
-
-func (re *reService) UpdateStream(ctx context.Context, token, name, topic, row string) (string, error) {
-	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
-	_, err = re.sdk.Channel(topic, token)
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
-
-	name = prepend(ui.Id, name)
-	sql := sql(name, topic, row)
-	body, err := json.Marshal(map[string]string{"sql": sql})
-	if err != nil {
-		return "", errors.Wrap(ErrMalformedEntity, err)
-	}
-	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
-	}
-
-	result, err := result(res, "Update stream", http.StatusOK)
+	result, err := result(res, action, status)
 	if err != nil {
 		return "", err
 	}
@@ -242,7 +222,7 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 	return result, nil
 }
 
-func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (string, error) {
+func (re *reService) CreateRule(ctx context.Context, token string, rule Rule, update bool) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
@@ -253,10 +233,18 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 	}
 
 	rulePrepend(ui.Id, &rule)
-
 	body, err := json.Marshal(rule)
+	if err != nil {
+		return "", ErrMalformedEntity
+	}
+
+	method := "POST"
 	url := fmt.Sprintf("%s/%s", host, "rules")
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if update {
+		method = "PUT"
+		url = fmt.Sprintf("%s/%s", url, rule.ID)
+	}
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
@@ -265,7 +253,13 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result, err := result(res, "Create rule", http.StatusCreated)
+	action := "Create rule"
+	status := http.StatusCreated
+	if update {
+		action = "Update rule"
+		status = http.StatusOK
+	}
+	result, err := result(res, action, status)
 	if err != nil {
 		return "", err
 	}

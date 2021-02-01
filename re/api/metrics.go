@@ -44,22 +44,17 @@ func (ms *metricsMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return ms.svc.Info(ctx)
 }
 
-func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
+func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topic, row string, update bool) (result string, err error) {
+	method := "create_stream"
+	if update {
+		method = "update_stream"
+	}
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_stream").Add(1)
-		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", method).Add(1)
+		ms.latency.With("method", method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateStream(ctx, token, name, topic, row)
-}
-
-func (ms *metricsMiddleware) UpdateStream(ctx context.Context, token, name, topic, row string) (result string, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "update_stream").Add(1)
-		ms.latency.With("method", "create_stream").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.UpdateStream(ctx, token, name, topic, row)
+	return ms.svc.CreateStream(ctx, token, name, topic, row, update)
 }
 
 func (ms *metricsMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {
@@ -89,13 +84,17 @@ func (ms *metricsMiddleware) DeleteStream(ctx context.Context, token string, id 
 	return ms.svc.DeleteStream(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule) (string, error) {
+func (ms *metricsMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule, update bool) (string, error) {
+	method := "create_rule"
+	if update {
+		method = "update_rule"
+	}
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_rule").Add(1)
-		ms.latency.With("method", "create_rule").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", method).Add(1)
+		ms.latency.With("method", method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateRule(ctx, token, rule)
+	return ms.svc.CreateRule(ctx, token, rule, update)
 }
 
 func (ms *metricsMiddleware) ListRules(ctx context.Context, token string) ([]re.RuleInfo, error) {

@@ -12,6 +12,7 @@ import "github.com/mainflux/mainflux/re"
 // {"sql":"create stream my_stream (id bigint, name string, score float) WITH ( topic = \"topic/temperature\", FORMAT = \"json\", KEY = \"id\")"}
 type streamReq struct {
 	token string
+	// TODO: replace by name
 	Name  string `json:"name,omitempty"`
 	Row   string `json:"row"`
 	Topic string `json:"topic"`
@@ -59,12 +60,13 @@ func (req viewReq) validate() error {
 	return nil
 }
 
-type createRuleReq struct {
+type ruleReq struct {
 	token string
+	name  string
 	Rule  re.Rule
 }
 
-func (req createRuleReq) validate() error {
+func (req ruleReq) validate() error {
 	if req.token == "" {
 		return re.ErrMalformedEntity
 	}

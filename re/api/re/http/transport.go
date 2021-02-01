@@ -91,6 +91,13 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
+	r.Put("/rules/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_rule")(updateRuleEndpoint(svc)),
+		decodeUpdateRule,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list")(listRulesEndpoint(svc)),
 		decodeGet,
@@ -163,12 +170,29 @@ func decodeCreateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errUnsupportedContentType
 	}
 
-	req := createRuleReq{
+	req := ruleReq{
 		token: r.Header.Get("Authorization"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Rule); err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errUnsupportedContentType
+	}
+
+	req := ruleReq{
+		token: r.Header.Get("Authorization"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req.Rule); err != nil {
+		return nil, err
+	}
+
+	req.name = bone.GetValue(r, "name")
 
 	return req, nil
 }
