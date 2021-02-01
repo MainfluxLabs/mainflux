@@ -56,7 +56,7 @@ type Service interface {
 	CreateStream(ctx context.Context, token, name, topic, row string, update bool) (string, error)
 	ListStreams(ctx context.Context, token string) ([]string, error)
 	ViewStream(ctx context.Context, token, name string) (Stream, error)
-	DeleteStream(ctx context.Context, token, name string) (string, error)
+	Delete(ctx context.Context, token, name, kind string) (string, error)
 
 	CreateRule(ctx context.Context, token string, rule Rule, update bool) (string, error)
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
@@ -197,14 +197,14 @@ func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream
 	return stream, nil
 }
 
-func (re *reService) DeleteStream(ctx context.Context, token, name string) (string, error) {
+func (re *reService) Delete(ctx context.Context, token, name, kind string) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
+	url := fmt.Sprintf("%s/%s/%s", host, kind+"s", name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
@@ -214,7 +214,7 @@ func (re *reService) DeleteStream(ctx context.Context, token, name string) (stri
 		return "", errors.Wrap(ErrKuiperServer, err)
 	}
 
-	result, err := result(res, "Delete stream", http.StatusOK)
+	result, err := result(res, "Delete "+kind, http.StatusOK)
 	if err != nil {
 		return "", err
 	}

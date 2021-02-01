@@ -111,6 +111,12 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		encodeResponse,
 		opts...,
 	))
+	r.Delete("/rules/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete")(deleteRuleEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
 
 	r.GetFunc("/version", mainflux.Version("things"))
 	r.Handle("/metrics", promhttp.Handler())
