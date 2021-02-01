@@ -91,3 +91,22 @@ func (req controlReq) validate() error {
 	}
 	return nil
 }
+
+type deleteReq struct {
+	token string
+	name  string
+	kind  string
+}
+
+func (req deleteReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
+	if req.name == "" {
+		return re.ErrMalformedEntity
+	}
+	if !(req.kind == "streams" || req.kind == "rules") {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}

@@ -77,9 +77,9 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
-	r.Delete("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete")(deleteStreamEndpoint(svc)),
-		decodeView,
+	r.Delete("/:kind/:name", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete")(deleteEndpoint(svc)),
+		decodeDelete,
 		encodeResponse,
 		opts...,
 	))
@@ -107,12 +107,6 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 
 	r.Get("/rules/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view")(viewRuleEndpoint(svc)),
-		decodeView,
-		encodeResponse,
-		opts...,
-	))
-	r.Delete("/rules/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete")(deleteRuleEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
@@ -221,6 +215,15 @@ func decodeControl(_ context.Context, r *http.Request) (interface{}, error) {
 		token:  r.Header.Get("Authorization"),
 		name:   bone.GetValue(r, "name"),
 		action: bone.GetValue(r, "action"),
+	}
+	return req, nil
+}
+
+func decodeDelete(_ context.Context, r *http.Request) (interface{}, error) {
+	req := deleteReq{
+		token: r.Header.Get("Authorization"),
+		name:  bone.GetValue(r, "name"),
+		kind:  bone.GetValue(r, "kind"),
 	}
 	return req, nil
 }

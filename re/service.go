@@ -205,7 +205,7 @@ func (re *reService) Delete(ctx context.Context, token, name, kind string) (stri
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", host, kind+"s", name)
+	url := fmt.Sprintf("%s/%s/%s", host, kind, name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)

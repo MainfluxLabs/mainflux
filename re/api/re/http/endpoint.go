@@ -99,14 +99,14 @@ func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteStreamEndpoint(svc re.Service) endpoint.Endpoint {
+func deleteEndpoint(svc re.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewReq)
+		req := request.(deleteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		result, err := svc.Delete(ctx, req.token, req.name, "stream")
+		result, err := svc.Delete(ctx, req.token, req.name, req.kind)
 		if err != nil {
 			return nil, err
 		}
@@ -183,24 +183,6 @@ func viewRuleEndpoint(svc re.Service) endpoint.Endpoint {
 		}
 		return viewRuleRes{
 			Rule: rule,
-		}, nil
-	}
-}
-
-func deleteRuleEndpoint(svc re.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		result, err := svc.Delete(ctx, req.token, req.name, "rule")
-		if err != nil {
-			return nil, err
-		}
-
-		return resultRes{
-			Result: result,
 		}, nil
 	}
 }
