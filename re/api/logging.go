@@ -131,7 +131,7 @@ func (lm *loggingMiddleware) ListRules(ctx context.Context, token string) (ris [
 
 func (lm *loggingMiddleware) ViewRule(ctx context.Context, token, name string) (rule re.Rule, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_rule for %s took %s to complete", name, time.Since(begin))
+		message := fmt.Sprintf("Method view_rule %s took %s to complete", name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -144,7 +144,7 @@ func (lm *loggingMiddleware) ViewRule(ctx context.Context, token, name string) (
 
 func (lm *loggingMiddleware) GetRuleStatus(ctx context.Context, token, name string) (status map[string]interface{}, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_rule_status for %s took %s to complete", name, time.Since(begin))
+		message := fmt.Sprintf("Method get_rule_status for rule %s took %s to complete", name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -153,4 +153,17 @@ func (lm *loggingMiddleware) GetRuleStatus(ctx context.Context, token, name stri
 	}(time.Now())
 
 	return lm.svc.GetRuleStatus(ctx, token, name)
+}
+
+func (lm *loggingMiddleware) ControlRule(ctx context.Context, token, name, action string) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method control_rule %s with action %s took %s to complete", name, action, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ControlRule(ctx, token, name, action)
 }

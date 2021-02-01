@@ -123,3 +123,12 @@ func (ms *metricsMiddleware) GetRuleStatus(ctx context.Context, token, name stri
 
 	return ms.svc.GetRuleStatus(ctx, token, name)
 }
+
+func (ms *metricsMiddleware) ControlRule(ctx context.Context, token, name, action string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_rule_status").Add(1)
+		ms.latency.With("method", "get_rule_status").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ControlRule(ctx, token, name, action)
+}

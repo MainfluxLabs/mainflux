@@ -124,6 +124,13 @@ func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
 		opts...,
 	))
 
+	r.Post("/rules/:name/:action", kithttp.NewServer(
+		kitot.TraceServer(tracer, "control")(controlRuleEndpoint(svc)),
+		decodeControl,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/version", mainflux.Version("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -206,6 +213,15 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req.name = bone.GetValue(r, "name")
 
+	return req, nil
+}
+
+func decodeControl(_ context.Context, r *http.Request) (interface{}, error) {
+	req := controlReq{
+		token:  r.Header.Get("Authorization"),
+		name:   bone.GetValue(r, "name"),
+		action: bone.GetValue(r, "action"),
+	}
 	return req, nil
 }
 

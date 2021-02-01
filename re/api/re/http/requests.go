@@ -72,3 +72,22 @@ func (req ruleReq) validate() error {
 	}
 	return nil
 }
+
+type controlReq struct {
+	token  string
+	name   string
+	action string
+}
+
+func (req controlReq) validate() error {
+	if req.token == "" {
+		return re.ErrMalformedEntity
+	}
+	if req.name == "" {
+		return re.ErrMalformedEntity
+	}
+	if !(req.action == "start" || req.action == "stop" || req.action == "restart") {
+		return re.ErrMalformedEntity
+	}
+	return nil
+}

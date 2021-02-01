@@ -62,6 +62,7 @@ type Service interface {
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
 	GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
+	ControlRule(ctx context.Context, token, name, action string) (string, error)
 }
 
 type reService struct {
@@ -354,6 +355,25 @@ func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map
 	}
 
 	return status, nil
+}
+
+func (re *reService) ControlRule(ctx context.Context, token, name, action string) (string, error) {
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return "", ErrUnauthorizedAccess
+	}
+
+	name = prepend(ui.Id, name)
+	url := fmt.Sprintf("%s/rules/%s/%s", host, name, action)
+	res, err := http.Post(url, "", nil)
+	if err != nil {
+		return "", errors.Wrap(ErrKuiperServer, err)
+	}
+	result, err := result(res, action, http.StatusOK)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 func sql(name, topic, row string) string {

@@ -221,3 +221,21 @@ func getRuleStatusEndpoint(svc re.Service) endpoint.Endpoint {
 		return status, nil
 	}
 }
+
+func controlRuleEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(controlReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		result, err := svc.ControlRule(ctx, req.token, req.name, req.action)
+		if err != nil {
+			return nil, err
+		}
+
+		return resultRes{
+			Result: result,
+		}, nil
+	}
+}
