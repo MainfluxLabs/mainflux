@@ -114,3 +114,12 @@ func (ms *metricsMiddleware) ViewRule(ctx context.Context, token, id string) (ru
 
 	return ms.svc.ViewRule(ctx, token, id)
 }
+
+func (ms *metricsMiddleware) GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_rule_status").Add(1)
+		ms.latency.With("method", "get_rule_status").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetRuleStatus(ctx, token, name)
+}

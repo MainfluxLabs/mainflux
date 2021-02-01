@@ -61,6 +61,7 @@ type Service interface {
 	CreateRule(ctx context.Context, token string, rule Rule, update bool) (string, error)
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
+	GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
 }
 
 type reService struct {
@@ -321,6 +322,38 @@ func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, er
 	ruleRemove(ui.Id, &rule)
 
 	return rule, nil
+}
+
+func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
+	var status map[string]interface{}
+
+	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return status, ErrUnauthorizedAccess
+	}
+	name = prepend(ui.Id, name)
+	url := fmt.Sprintf("%s/rules/%s/status", host, name)
+
+	res, err := http.Get(url)
+	if err != nil {
+		return status, errors.Wrap(ErrKuiperServer, err)
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return status, errors.Wrap(ErrNotFound, err)
+	}
+	defer res.Body.Close()
+
+	err = json.NewDecoder(res.Body).Decode(&status)
+	if err != nil {
+		return status, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	for key, val := range status {
+		delete(status, key)
+		status[remove(ui.Id, key)] = val
+	}
+
+	return status, nil
 }
 
 func sql(name, topic, row string) string {

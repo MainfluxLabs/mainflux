@@ -141,3 +141,16 @@ func (lm *loggingMiddleware) ViewRule(ctx context.Context, token, name string) (
 
 	return lm.svc.ViewRule(ctx, token, name)
 }
+
+func (lm *loggingMiddleware) GetRuleStatus(ctx context.Context, token, name string) (status map[string]interface{}, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_rule_status for %s took %s to complete", name, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetRuleStatus(ctx, token, name)
+}

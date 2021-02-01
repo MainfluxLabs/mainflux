@@ -204,3 +204,20 @@ func deleteRuleEndpoint(svc re.Service) endpoint.Endpoint {
 		}, nil
 	}
 }
+
+func getRuleStatusEndpoint(svc re.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var status statusRes
+		status, err := svc.GetRuleStatus(ctx, req.token, req.name)
+		if err != nil {
+			return nil, err
+		}
+
+		return status, nil
+	}
+}
