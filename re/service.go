@@ -117,7 +117,7 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 	}
 
 	method := "POST"
-	url := fmt.Sprintf("%s/%s", host, "streams")
+	url := fmt.Sprintf("%s/streams", host)
 	if update {
 		method = "PUT"
 		url = fmt.Sprintf("%s/%s", url, name)
@@ -152,7 +152,7 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 	}
 
 	var streams []string
-	url := fmt.Sprintf("%s/%s", host, "streams")
+	url := fmt.Sprintf("%s/streams", host)
 	res, err := http.Get(url)
 	if err != nil {
 		return streams, errors.Wrap(ErrKuiperServer, err)
@@ -172,15 +172,14 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 }
 
 func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream, error) {
+	var stream Stream
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return Stream{}, ErrUnauthorizedAccess
+		return stream, ErrUnauthorizedAccess
 	}
 
-	var stream Stream
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", host, "streams", name)
-
+	url := fmt.Sprintf("%s/streams/%s", host, name)
 	res, err := http.Get(url)
 	if err != nil {
 		return stream, errors.Wrap(ErrKuiperServer, err)
@@ -241,7 +240,7 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule, up
 	}
 
 	method := "POST"
-	url := fmt.Sprintf("%s/%s", host, "rules")
+	url := fmt.Sprintf("%s/rules", host)
 	if update {
 		method = "PUT"
 		url = fmt.Sprintf("%s/%s", url, rule.ID)
@@ -277,7 +276,7 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 		return rules, ErrUnauthorizedAccess
 	}
 
-	url := fmt.Sprintf("%s/%s", host, "rules")
+	url := fmt.Sprintf("%s/rules", host)
 	res, err := http.Get(url)
 	if err != nil {
 		return rules, errors.Wrap(ErrKuiperServer, err)
@@ -304,7 +303,7 @@ func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, er
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", host, "rules", name)
+	url := fmt.Sprintf("%s/rules/%s", host, name)
 
 	res, err := http.Get(url)
 	if err != nil {
