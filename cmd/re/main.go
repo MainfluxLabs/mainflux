@@ -39,6 +39,7 @@ import (
 const (
 	defLogLevel        = "info"
 	defHTTPPort        = "9099"
+	defKuiperURL       = "http://localhost:9081"
 	defJaegerURL       = ""
 	defServerCert      = ""
 	defServerKey       = ""
@@ -55,24 +56,26 @@ const (
 
 	envLogLevel        = "MF_RE_LOG_LEVEL"
 	envHTTPPort        = "MF_RE_HTTP_PORT"
+	envKuiperURL       = "MF_KUIPER_URL"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envServerCert      = "MF_RE_SERVER_CERT"
 	envServerKey       = "MF_RE_SERVER_KEY"
-	envSingleUserEmail = "MF_TWINS_SINGLE_USER_EMAIL"
-	envSingleUserToken = "MF_TWINS_SINGLE_USER_TOKEN"
+	envSingleUserEmail = "MF_RE_SINGLE_USER_EMAIL"
+	envSingleUserToken = "MF_RE_SINGLE_USER_TOKEN"
 	envAuthURL         = "MF_AUTH_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
-	envClientTLS       = "MF_TWINS_CLIENT_TLS"
-	envCACerts         = "MF_TWINS_CA_CERTS"
-	envThingsLocation  = "MF_PROVISION_THINGS_LOCATION"
-	envMfBSURL         = "MF_PROVISION_BS_SVC_URL"
-	envMfCertsURL      = "MF_PROVISION_CERTS_SVC_URL"
-	envTLS             = "MF_PROVISION_ENV_CLIENTS_TLS"
+	envClientTLS       = "MF_RE_CLIENT_TLS"
+	envCACerts         = "MF_RE_CA_CERTS"
+	envThingsLocation  = "MF_RE_THINGS_LOCATION"
+	envMfBSURL         = "MF_RE_BS_SVC_URL"
+	envMfCertsURL      = "MF_RE_CERTS_SVC_URL"
+	envTLS             = "MF_RE_ENV_CLIENTS_TLS"
 )
 
 type config struct {
 	logLevel        string
 	httpPort        string
+	kuiperURL       string
 	authHTTPPort    string
 	authGRPCPort    string
 	jaegerURL       string
@@ -116,7 +119,7 @@ func main() {
 	}
 	SDK := mfSDK.NewSDK(SDKCfg)
 
-	svc := newService(auth, SDK, logger)
+	svc := newService(cfg.kuiperURL, auth, SDK, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg.httpPort, cfg, logger, errs)
@@ -145,6 +148,7 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		kuiperURL:       mainflux.Env(envKuiperURL, defKuiperURL),
 		serverCert:      mainflux.Env(envServerCert, defServerCert),
 		serverKey:       mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
@@ -185,8 +189,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) re.Service {
-	svc := re.New(auth, sdk, logger)
+func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) re.Service {
+	svc := re.New(kuiperURL, auth, sdk, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

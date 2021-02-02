@@ -23,10 +23,6 @@ import (
 	SDK "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
-const (
-	host = "http://localhost:9081"
-)
-
 var (
 	// ErrMalformedEntity indicates malformed entity specification (e.g.
 	// invalid username or password).
@@ -66,24 +62,26 @@ type Service interface {
 }
 
 type reService struct {
-	auth   mainflux.AuthServiceClient
-	sdk    SDK.SDK
-	logger logger.Logger
+	kuiperURL string
+	auth      mainflux.AuthServiceClient
+	sdk       SDK.SDK
+	logger    logger.Logger
 }
 
 var _ Service = (*reService)(nil)
 
 // New instantiates the re service implementation.
-func New(auth mainflux.AuthServiceClient, sdk SDK.SDK, logger logger.Logger) Service {
+func New(url string, auth mainflux.AuthServiceClient, sdk SDK.SDK, logger logger.Logger) Service {
 	return &reService{
-		auth:   auth,
-		sdk:    sdk,
-		logger: logger,
+		kuiperURL: url,
+		auth:      auth,
+		sdk:       sdk,
+		logger:    logger,
 	}
 }
 
 func (re *reService) Info(_ context.Context) (Info, error) {
-	res, err := http.Get(host)
+	res, err := http.Get(re.kuiperURL)
 	if err != nil {
 		return Info{}, errors.Wrap(ErrKuiperServer, err)
 
@@ -117,7 +115,7 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 	}
 
 	method := "POST"
-	url := fmt.Sprintf("%s/streams", host)
+	url := fmt.Sprintf("%s/streams", re.kuiperURL)
 	if update {
 		method = "PUT"
 		url = fmt.Sprintf("%s/%s", url, name)
@@ -152,7 +150,7 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 	}
 
 	var streams []string
-	url := fmt.Sprintf("%s/streams", host)
+	url := fmt.Sprintf("%s/streams", re.kuiperURL)
 	res, err := http.Get(url)
 	if err != nil {
 		return streams, errors.Wrap(ErrKuiperServer, err)
@@ -179,7 +177,7 @@ func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/streams/%s", host, name)
+	url := fmt.Sprintf("%s/streams/%s", re.kuiperURL, name)
 	res, err := http.Get(url)
 	if err != nil {
 		return stream, errors.Wrap(ErrKuiperServer, err)
@@ -205,7 +203,7 @@ func (re *reService) Delete(ctx context.Context, token, name, kind string) (stri
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", host, kind, name)
+	url := fmt.Sprintf("%s/%s/%s", re.kuiperURL, kind, name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
@@ -240,7 +238,7 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule, up
 	}
 
 	method := "POST"
-	url := fmt.Sprintf("%s/rules", host)
+	url := fmt.Sprintf("%s/rules", re.kuiperURL)
 	if update {
 		method = "PUT"
 		url = fmt.Sprintf("%s/%s", url, rule.ID)
@@ -276,7 +274,7 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 		return rules, ErrUnauthorizedAccess
 	}
 
-	url := fmt.Sprintf("%s/rules", host)
+	url := fmt.Sprintf("%s/rules", re.kuiperURL)
 	res, err := http.Get(url)
 	if err != nil {
 		return rules, errors.Wrap(ErrKuiperServer, err)
@@ -303,7 +301,7 @@ func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, er
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s", host, name)
+	url := fmt.Sprintf("%s/rules/%s", re.kuiperURL, name)
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -332,7 +330,7 @@ func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map
 		return status, ErrUnauthorizedAccess
 	}
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s/status", host, name)
+	url := fmt.Sprintf("%s/rules/%s/status", re.kuiperURL, name)
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -363,7 +361,7 @@ func (re *reService) ControlRule(ctx context.Context, token, name, action string
 	}
 
 	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s/%s", host, name, action)
+	url := fmt.Sprintf("%s/rules/%s/%s", re.kuiperURL, name, action)
 	res, err := http.Post(url, "", nil)
 	if err != nil {
 		return "", errors.Wrap(ErrKuiperServer, err)
