@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -21,6 +22,12 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	SDK "github.com/mainflux/mainflux/pkg/sdk/go"
+)
+
+var (
+	prefixStart = "id_"
+	prefixEnd   = "_"
+	remIDRegEx  = regexp.MustCompile(prefixStart + "[[:alnum:]]{32}" + prefixEnd)
 )
 
 var (
@@ -378,7 +385,7 @@ func sql(name, topic, row string) string {
 }
 
 func prefix(id string) string {
-	return strings.ReplaceAll(id, "-", "") + "_"
+	return prefixStart + strings.ReplaceAll(id, "-", "") + prefixEnd
 }
 func prepend(id, name string) string {
 	return fmt.Sprintf("%s%s", prefix(id), name)
@@ -420,11 +427,12 @@ func result(res *http.Response, action string, status int) (string, error) {
 	result := action + " successful."
 	if res.StatusCode != status {
 		defer res.Body.Close()
-		reason, err := ioutil.ReadAll(res.Body)
+		reasonBt, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return "", errors.Wrap(ErrKuiperServer, err)
 		}
-		result = action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + string(reason)
+		reasonStr := remIDRegEx.ReplaceAllString(string(reasonBt), "")
+		result = action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + reasonStr
 	}
 	return result, nil
 }
