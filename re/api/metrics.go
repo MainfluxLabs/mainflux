@@ -44,7 +44,7 @@ func (ms *metricsMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return ms.svc.Info(ctx)
 }
 
-func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topic, subtopic, row string, update bool) (result string, err error) {
+func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topic, subtopic, row, host string, update bool) (result string, err error) {
 	method := "create_stream"
 	if update {
 		method = "update_stream"
@@ -54,7 +54,7 @@ func (ms *metricsMiddleware) CreateStream(ctx context.Context, token, name, topi
 		ms.latency.With("method", method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateStream(ctx, token, name, topic, subtopic, row, update)
+	return ms.svc.CreateStream(ctx, token, name, topic, subtopic, row, host, update)
 }
 
 func (ms *metricsMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {

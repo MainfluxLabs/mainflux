@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
-	"github.com/emqx/kuiper/common"
 	"github.com/emqx/kuiper/xstream/api"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
@@ -15,36 +15,21 @@ const (
 	queue = "kuiper"
 )
 
-type mainfluxConfig struct {
-	Host string `json:"host"`
-	Port string `json:"port"`
-}
-
 type mainfluxSource struct {
 	consumer chan<- api.SourceTuple
 	errCh    chan<- error
 	logger   api.Logger
-	cfg      *mainfluxConfig
 	pubSub   nats.PubSub
+	host     string
 	topic    string
 }
 
 var _ api.Source = (*mainfluxSource)(nil)
 
 func (ms *mainfluxSource) Configure(topic string, props map[string]interface{}) error {
-	cfg := &mainfluxConfig{}
-	if err := common.MapToStruct(props, cfg); err != nil {
-		return fmt.Errorf("Read properties %v fail with error: %v", props, err)
-	}
-	if cfg.Host == "" {
-		return fmt.Errorf("Property Host is required.")
-	}
-	if cfg.Port == "" {
-		return fmt.Errorf("Property Port is required.")
-	}
-
-	ms.cfg = cfg
-	ms.topic = topic
+	conf := strings.Split(topic, ";")
+	ms.host = conf[0]
+	ms.topic = conf[1]
 
 	return nil
 }
@@ -53,7 +38,7 @@ func (ms *mainfluxSource) Open(ctx api.StreamContext, consumer chan<- api.Source
 	logger := ctx.GetLogger()
 	logger.Debug("Opening mainflux source.")
 
-	addr := fmt.Sprintf("tcp://%s:%s/", ms.cfg.Host, ms.cfg.Port)
+	addr := fmt.Sprintf("tcp://%s/", ms.host)
 	pubSub, err := nats.NewPubSub(addr, queue, nil)
 	if err != nil {
 		errCh <- fmt.Errorf("Failed to connect to nats at address %s with error: %v", addr, err)
