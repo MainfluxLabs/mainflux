@@ -16,10 +16,8 @@ const (
 )
 
 type mainfluxConfig struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Channel  string `json:"channel"`
-	Subtopic string `json:"subtopic"`
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 type mainfluxSource struct {
@@ -44,6 +42,7 @@ func (ms *mainfluxSource) Configure(topic string, props map[string]interface{}) 
 	if cfg.Port == "" {
 		return fmt.Errorf("Property Port is required.")
 	}
+
 	ms.cfg = cfg
 	ms.topic = topic
 
@@ -64,11 +63,6 @@ func (ms *mainfluxSource) Open(ctx api.StreamContext, consumer chan<- api.Source
 	topic := nats.SubjectAllChannels
 	if len(ms.topic) > 0 {
 		topic = "channels." + ms.topic
-	} else if len(ms.cfg.Channel) > 0 {
-		topic = "channels." + ms.cfg.Channel
-		if len(ms.cfg.Subtopic) > 0 {
-			topic += "." + ms.cfg.Subtopic
-		}
 	}
 	if err := ms.pubSub.Subscribe(topic, ms.handle); err != nil {
 		errCh <- fmt.Errorf("Failed to subscribe to nats topic %s with error: %v", topic, err)

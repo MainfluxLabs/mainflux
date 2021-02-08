@@ -43,7 +43,7 @@ func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return lm.svc.Info(ctx)
 }
 
-func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topic, row string, update bool) (result string, err error) {
+func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topic, subtopic, row string, update bool) (result string, err error) {
 	method := "create_stream"
 	if update {
 		method = "update_stream"
@@ -57,7 +57,7 @@ func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateStream(ctx, token, name, topic, row, update)
+	return lm.svc.CreateStream(ctx, token, name, topic, subtopic, row, update)
 }
 
 func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {

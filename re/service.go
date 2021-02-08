@@ -56,7 +56,7 @@ type Info struct {
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	Info(ctx context.Context) (Info, error)
-	CreateStream(ctx context.Context, token, name, topic, row string, update bool) (string, error)
+	CreateStream(ctx context.Context, token, name, topic, subtopic, row string, update bool) (string, error)
 	ListStreams(ctx context.Context, token string) ([]string, error)
 	ViewStream(ctx context.Context, token, name string) (Stream, error)
 	Delete(ctx context.Context, token, name, kind string) (string, error)
@@ -104,7 +104,7 @@ func (re *reService) Info(_ context.Context) (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(ctx context.Context, token, name, topic, row string, update bool) (string, error) {
+func (re *reService) CreateStream(ctx context.Context, token, name, topic, subtopic, row string, update bool) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
@@ -115,6 +115,9 @@ func (re *reService) CreateStream(ctx context.Context, token, name, topic, row s
 	}
 
 	name = prepend(ui.Id, name)
+	if len(subtopic) > 0 {
+		topic += fmt.Sprintf(".%s", subtopic)
+	}
 	sql := sql(name, topic, row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {

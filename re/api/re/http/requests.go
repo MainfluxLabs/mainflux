@@ -13,9 +13,11 @@ import "github.com/mainflux/mainflux/re"
 type streamReq struct {
 	token string
 	// TODO: replace by name
-	Name  string `json:"name,omitempty"`
-	Row   string `json:"row"`
-	Topic string `json:"topic"`
+	Name     string `json:"name,omitempty"`
+	Row      string `json:"row"`
+	Topic    string `json:"topic"`
+	Subtopic string `json:"subtopic"`
+	Host     string `json:"host"`
 }
 
 func (req streamReq) validate() error {
@@ -29,6 +31,9 @@ func (req streamReq) validate() error {
 		return re.ErrMalformedEntity
 	}
 	if req.Topic == "" {
+		return re.ErrMalformedEntity
+	}
+	if req.Host == "" {
 		return re.ErrMalformedEntity
 	}
 	return nil

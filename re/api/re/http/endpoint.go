@@ -9,6 +9,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/re"
@@ -36,7 +37,9 @@ func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Row, false)
+		fmt.Printf("%+v\n", req.Subtopic) // output for debug
+
+		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Subtopic, req.Row, false)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +57,7 @@ func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Row, true)
+		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Subtopic, req.Row, true)
 		if err != nil {
 			return nil, err
 		}
