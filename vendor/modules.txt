@@ -6,6 +6,8 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 github.com/Nvveen/Gotty
+# github.com/benbjohnson/clock v1.0.0
+github.com/benbjohnson/clock
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/cenkalti/backoff/v4 v4.1.0
@@ -35,7 +37,17 @@ github.com/dsnet/golib/memfile
 ## explicit
 github.com/eclipse/paho.mqtt.golang
 github.com/eclipse/paho.mqtt.golang/packets
+<<<<<<< HEAD
 # github.com/fatih/color v1.10.0
+=======
+# github.com/emqx/kuiper v0.0.0-20210127234832-760c1edc4e3e
+## explicit
+github.com/emqx/kuiper/common
+github.com/emqx/kuiper/xstream/api
+# github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239
+## explicit
+# github.com/fatih/color v1.9.0
+>>>>>>> 8a3131c7... Sync vendor
 ## explicit
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.9
@@ -67,6 +79,8 @@ github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
 # github.com/go-stack/stack v1.8.0
 github.com/go-stack/stack
+# github.com/go-yaml/yaml v2.1.0+incompatible
+github.com/go-yaml/yaml
 # github.com/go-zoo/bone v1.3.0
 ## explicit
 github.com/go-zoo/bone
@@ -149,10 +163,18 @@ github.com/inconshreveable/mousetrap
 github.com/influxdata/influxdb/client/v2
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
+<<<<<<< HEAD
 # github.com/jmoiron/sqlx v1.3.3
+=======
+# github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869
+## explicit
+# github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
+>>>>>>> 8a3131c7... Sync vendor
 ## explicit
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
+# github.com/keepeye/logrus-filename v0.0.0-20190711075016-ce01a4391dd1
+github.com/keepeye/logrus-filename
 # github.com/klauspost/compress v1.10.4
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
@@ -163,7 +185,16 @@ github.com/klauspost/compress/zstd/internal/xxhash
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/kr/text v0.2.0
 ## explicit
+<<<<<<< HEAD
 # github.com/lib/pq v1.10.1
+=======
+# github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
+github.com/lestrrat-go/file-rotatelogs
+github.com/lestrrat-go/file-rotatelogs/internal/option
+# github.com/lestrrat-go/strftime v1.0.3
+github.com/lestrrat-go/strftime
+# github.com/lib/pq v1.7.0
+>>>>>>> 8a3131c7... Sync vendor
 ## explicit
 github.com/lib/pq
 github.com/lib/pq/oid
@@ -183,6 +214,8 @@ github.com/mainflux/senml
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
+# github.com/mattn/go-sqlite3 v1.14.5
+github.com/mattn/go-sqlite3
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-homedir v1.1.0
@@ -312,6 +345,7 @@ github.com/rubenv/sql-migrate/sqlparse
 github.com/ryanuber/go-glob
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
+github.com/sirupsen/logrus/hooks/syslog
 # github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -334,7 +368,13 @@ github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.2.0
 ## explicit
 github.com/subosito/gotenv
+<<<<<<< HEAD
 # github.com/uber/jaeger-client-go v2.28.0+incompatible
+=======
+# github.com/tebeka/strftime v0.1.5
+## explicit
+# github.com/uber/jaeger-client-go v2.24.0+incompatible
+>>>>>>> 8a3131c7... Sync vendor
 ## explicit
 github.com/uber/jaeger-client-go
 github.com/uber/jaeger-client-go/config
@@ -569,7 +609,7 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/gorp.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/ini.v1 v1.51.0
+# gopkg.in/ini.v1 v1.62.0
 gopkg.in/ini.v1
 # gopkg.in/square/go-jose.v2 v2.5.1
 gopkg.in/square/go-jose.v2
