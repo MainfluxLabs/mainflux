@@ -8,10 +8,11 @@
 package re
 
 const (
-	FORMAT = "json"
-	TYPE   = "mainflux"
+	format     = "json"
+	pluginType = "mainflux"
 )
 
+// Stream represents data used to create kuiper stream
 type Stream struct {
 	Name     string `json:"name,omitempty"`
 	Row      string `json:"row"`
@@ -19,6 +20,8 @@ type Stream struct {
 	Subtopic string `json:"subtopic"`
 	Host     string `json:"host"`
 }
+
+// StreamInfo is used to fetch stream info from kuiper
 type StreamInfo struct {
 	Name         string `json:"Name"`
 	StreamFields []struct {

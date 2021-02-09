@@ -7,6 +7,7 @@
 
 package re
 
+// Action stores mainflux sink plugin settings
 type Action struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
@@ -14,6 +15,7 @@ type Action struct {
 	Subtopic string `json:"subtopic"`
 }
 
+// Rule represents data used to create kuiper rule
 type Rule struct {
 	ID      string `json:"id"`
 	SQL     string `json:"sql"`
@@ -25,6 +27,7 @@ type Rule struct {
 	} `json:"options"`
 }
 
+// RuleInfo is used to fetch rule status from kuiper
 type RuleInfo struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`

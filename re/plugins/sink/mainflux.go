@@ -12,7 +12,7 @@ import (
 	"github.com/mainflux/senml"
 )
 
-const baseName = "kuiper"
+const baseName = "rules_engine"
 
 type mainfluxConfig struct {
 	Host     string `json:"host"`
@@ -34,13 +34,13 @@ func (ms *mainfluxSink) Configure(props map[string]interface{}) error {
 		return fmt.Errorf("Read properties %v fail with error: %v", props, err)
 	}
 	if cfg.Host == "" {
-		return fmt.Errorf("Property Host is required.")
+		return fmt.Errorf("property Host is required")
 	}
 	if cfg.Port == "" {
-		return fmt.Errorf("Property Port is required.")
+		return fmt.Errorf("property Port is required")
 	}
 	if cfg.Channel == "" {
-		return fmt.Errorf("Property Channel is required.")
+		return fmt.Errorf("property Channel is required")
 	}
 
 	ms.cfg = cfg
@@ -81,7 +81,7 @@ func (ms *mainfluxSink) Collect(ctx api.StreamContext, item interface{}) error {
 		return fmt.Errorf("Failed to unmarshal %v to senml", item)
 	}
 	if rec[0].BaseName == "" {
-		rec[0].BaseName = "rules-engine"
+		rec[0].BaseName = baseName
 	}
 	pack := senml.Pack{Records: []senml.Record{rec[0]}}
 	payload, err := senml.Encode(pack, senml.JSON)

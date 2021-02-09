@@ -122,7 +122,7 @@ func main() {
 	svc := newService(cfg.kuiperURL, auth, SDK, logger)
 	errs := make(chan error, 2)
 
-	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg.httpPort, cfg, logger, errs)
+	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg, logger, errs)
 
 	go func() {
 		c := make(chan os.Signal)
@@ -212,11 +212,11 @@ func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK
 	return svc
 }
 
-func startHTTPServer(handler http.Handler, port string, cfg config, logger logger.Logger, errs chan error) {
-	p := fmt.Sprintf(":%s", port)
+func startHTTPServer(handler http.Handler, cfg config, logger logger.Logger, errs chan error) {
+	p := fmt.Sprintf(":%s", cfg.httpPort)
 	if cfg.serverCert != "" || cfg.serverKey != "" {
 		logger.Info(fmt.Sprintf("Re service started using https on port %s with cert %s key %s",
-			port, cfg.serverCert, cfg.serverKey))
+			cfg.httpPort, cfg.serverCert, cfg.serverKey))
 		errs <- http.ListenAndServeTLS(p, cfg.serverCert, cfg.serverKey, handler)
 		return
 	}

@@ -46,6 +46,7 @@ var (
 	ErrKuiperServer = errors.New("kuiper internal server error")
 )
 
+// Info is used to fetch kuiper running instance data
 type Info struct {
 	Version       string `json:"version"`
 	Os            string `json:"os"`
@@ -385,7 +386,7 @@ func (re *reService) ControlRule(ctx context.Context, token, name, action string
 }
 
 func sql(name, topic, row string) string {
-	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", name, row, topic, FORMAT, TYPE)
+	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", name, row, topic, format, pluginType)
 }
 
 func prefix(id string) string {

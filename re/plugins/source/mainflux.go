@@ -81,14 +81,13 @@ func (ms *mainfluxSource) handle(message messaging.Message) error {
 	}
 
 	for _, rec := range pack.Records {
-		// convert struct to map
-		recJson, err := json.Marshal(rec)
+		// Convert struct to map
+		recJSON, err := json.Marshal(rec)
 		if err != nil {
 			ms.errCh <- err
 		}
 		recMap := make(map[string]interface{})
-		err = json.Unmarshal(recJson, &recMap)
-		if err != nil {
+		if err = json.Unmarshal(recJSON, &recMap); err != nil {
 			ms.errCh <- err
 		}
 
