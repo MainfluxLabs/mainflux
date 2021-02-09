@@ -35,7 +35,7 @@ func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.stream, false)
+		result, err := svc.CreateStream(ctx, req.token, req.stream)
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +53,7 @@ func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.stream, true)
+		result, err := svc.UpdateStream(ctx, req.token, req.stream)
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateRule(ctx, req.token, req.Rule, false)
+		result, err := svc.CreateRule(ctx, req.token, req.Rule)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +141,7 @@ func updateRuleEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateRule(ctx, req.token, req.Rule, true)
+		result, err := svc.UpdateRule(ctx, req.token, req.Rule)
 		if err != nil {
 			return nil, err
 		}

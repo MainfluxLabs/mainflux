@@ -43,13 +43,9 @@ func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return lm.svc.Info(ctx)
 }
 
-func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream re.Stream, update bool) (result string, err error) {
-	method := "create_stream"
-	if update {
-		method = "update_stream"
-	}
+func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream re.Stream) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method %s for %s with topic %s took %s to complete", method, stream.Name, stream.Topic, time.Since(begin))
+		message := fmt.Sprintf("Method create_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -57,7 +53,20 @@ func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateStream(ctx, token, stream, update)
+	return lm.svc.CreateStream(ctx, token, stream)
+}
+
+func (lm *loggingMiddleware) UpdateStream(ctx context.Context, token string, stream re.Stream) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateStream(ctx, token, stream)
 }
 
 func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {
@@ -99,13 +108,9 @@ func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kin
 	return lm.svc.Delete(ctx, token, name, kind)
 }
 
-func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule, update bool) (result string, err error) {
-	method := "create_rule"
-	if update {
-		method = "update_rule"
-	}
+func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method %s %s took %s to complete", method, rule.ID, time.Since(begin))
+		message := fmt.Sprintf("Method create_rule %s took %s to complete", rule.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -113,7 +118,20 @@ func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateRule(ctx, token, rule, update)
+	return lm.svc.CreateRule(ctx, token, rule)
+}
+
+func (lm *loggingMiddleware) UpdateRule(ctx context.Context, token string, rule re.Rule) (result string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_rule %s took %s to complete", rule.ID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateRule(ctx, token, rule)
 }
 
 func (lm *loggingMiddleware) ListRules(ctx context.Context, token string) (ris []re.RuleInfo, err error) {
