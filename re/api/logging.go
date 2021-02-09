@@ -43,13 +43,13 @@ func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return lm.svc.Info(ctx)
 }
 
-func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topic, subtopic, row, host string, update bool) (result string, err error) {
+func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream re.Stream, update bool) (result string, err error) {
 	method := "create_stream"
 	if update {
 		method = "update_stream"
 	}
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method %s for %s with topic %s took %s to complete", method, name, topic, time.Since(begin))
+		message := fmt.Sprintf("Method %s for %s with topic %s took %s to complete", method, stream.Name, stream.Topic, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -57,7 +57,7 @@ func (lm *loggingMiddleware) CreateStream(ctx context.Context, token, name, topi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateStream(ctx, token, name, topic, subtopic, row, host, update)
+	return lm.svc.CreateStream(ctx, token, stream, update)
 }
 
 func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (streams []string, err error) {
@@ -73,7 +73,7 @@ func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (str
 	return lm.svc.ListStreams(ctx, token)
 }
 
-func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string) (stream re.Stream, err error) {
+func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string) (stream re.StreamInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_stream for %s took %s to complete", name, time.Since(begin))
 		if err != nil {

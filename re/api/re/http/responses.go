@@ -72,7 +72,7 @@ func (res listStreamsRes) Empty() bool {
 }
 
 type viewStreamRes struct {
-	Stream re.Stream
+	Stream re.StreamInfo
 }
 
 func (res viewStreamRes) Code() int {

@@ -9,31 +9,25 @@ package http
 
 import "github.com/mainflux/mainflux/re"
 
-// {"sql":"create stream my_stream (id bigint, name string, score float) WITH ( topic = \"topic/temperature\", FORMAT = \"json\", KEY = \"id\")"}
 type streamReq struct {
-	token string
-	// TODO: replace by name
-	Name     string `json:"name,omitempty"`
-	Row      string `json:"row"`
-	Topic    string `json:"topic"`
-	Subtopic string `json:"subtopic"`
-	Host     string `json:"host"`
+	token  string
+	stream re.Stream
 }
 
 func (req streamReq) validate() error {
 	if req.token == "" {
+		return re.ErrUnauthorizedAccess
+	}
+	if req.stream.Name == "" {
 		return re.ErrMalformedEntity
 	}
-	if req.Name == "" {
+	if req.stream.Row == "" {
 		return re.ErrMalformedEntity
 	}
-	if req.Row == "" {
+	if req.stream.Topic == "" {
 		return re.ErrMalformedEntity
 	}
-	if req.Topic == "" {
-		return re.ErrMalformedEntity
-	}
-	if req.Host == "" {
+	if req.stream.Host == "" {
 		return re.ErrMalformedEntity
 	}
 	return nil
@@ -45,7 +39,7 @@ type getReq struct {
 
 func (req getReq) validate() error {
 	if req.token == "" {
-		return re.ErrMalformedEntity
+		return re.ErrUnauthorizedAccess
 	}
 	return nil
 }
@@ -57,7 +51,7 @@ type viewReq struct {
 
 func (req viewReq) validate() error {
 	if req.token == "" {
-		return re.ErrMalformedEntity
+		return re.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
 		return re.ErrMalformedEntity
@@ -73,7 +67,7 @@ type ruleReq struct {
 
 func (req ruleReq) validate() error {
 	if req.token == "" {
-		return re.ErrMalformedEntity
+		return re.ErrUnauthorizedAccess
 	}
 	return nil
 }
@@ -86,7 +80,7 @@ type controlReq struct {
 
 func (req controlReq) validate() error {
 	if req.token == "" {
-		return re.ErrMalformedEntity
+		return re.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
 		return re.ErrMalformedEntity
@@ -105,7 +99,7 @@ type deleteReq struct {
 
 func (req deleteReq) validate() error {
 	if req.token == "" {
-		return re.ErrMalformedEntity
+		return re.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
 		return re.ErrMalformedEntity

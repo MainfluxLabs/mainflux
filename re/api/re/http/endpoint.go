@@ -36,7 +36,7 @@ func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Subtopic, req.Row, req.Host, false)
+		result, err := svc.CreateStream(ctx, req.token, req.stream, false)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateStream(ctx, req.token, req.Name, req.Topic, req.Subtopic, req.Row, req.Host, true)
+		result, err := svc.CreateStream(ctx, req.token, req.stream, true)
 		if err != nil {
 			return nil, err
 		}

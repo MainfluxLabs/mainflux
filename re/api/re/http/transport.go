@@ -146,7 +146,7 @@ func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error)
 	req := streamReq{
 		token: r.Header.Get("Authorization"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.stream); err != nil {
 		return nil, err
 	}
 
@@ -161,11 +161,11 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 	req := streamReq{
 		token: r.Header.Get("Authorization"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.stream); err != nil {
 		return nil, err
 	}
 
-	req.Name = bone.GetValue(r, "name")
+	req.stream.Name = bone.GetValue(r, "name")
 
 	return req, nil
 }

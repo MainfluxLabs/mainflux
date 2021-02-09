@@ -56,9 +56,9 @@ type Info struct {
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	Info(ctx context.Context) (Info, error)
-	CreateStream(ctx context.Context, token, name, topic, subtopic, row, host string, update bool) (string, error)
+	CreateStream(ctx context.Context, token string, stream Stream, update bool) (string, error)
 	ListStreams(ctx context.Context, token string) ([]string, error)
-	ViewStream(ctx context.Context, token, name string) (Stream, error)
+	ViewStream(ctx context.Context, token, name string) (StreamInfo, error)
 	Delete(ctx context.Context, token, name, kind string) (string, error)
 
 	CreateRule(ctx context.Context, token string, rule Rule, update bool) (string, error)
@@ -104,22 +104,22 @@ func (re *reService) Info(_ context.Context) (Info, error) {
 	return i, nil
 }
 
-func (re *reService) CreateStream(ctx context.Context, token, name, topic, subtopic, row, host string, update bool) (string, error) {
+func (re *reService) CreateStream(ctx context.Context, token string, stream Stream, update bool) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_, err = re.sdk.Channel(topic, token)
+	_, err = re.sdk.Channel(stream.Topic, token)
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
 
-	name = prepend(ui.Id, name)
-	topic = fmt.Sprintf("%s;%s", host, topic)
-	if len(subtopic) > 0 {
-		topic = fmt.Sprintf("%s.%s", topic, subtopic)
+	name := prepend(ui.Id, stream.Name)
+	topic := fmt.Sprintf("%s;%s", stream.Host, stream.Topic)
+	if len(stream.Subtopic) > 0 {
+		topic = fmt.Sprintf("%s.%s", topic, stream.Subtopic)
 	}
-	sql := sql(name, topic, row)
+	sql := sql(name, topic, stream.Row)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return "", ErrMalformedEntity
@@ -180,8 +180,8 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 	return streams, nil
 }
 
-func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream, error) {
-	var stream Stream
+func (re *reService) ViewStream(ctx context.Context, token, name string) (StreamInfo, error) {
+	var stream StreamInfo
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return stream, ErrUnauthorizedAccess
