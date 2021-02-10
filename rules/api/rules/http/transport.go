@@ -1,9 +1,5 @@
-//
-// Copyright (c) 2019
-// Mainflux
-//
+// Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
-//
 
 package http
 
@@ -42,7 +38,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 
 	r := bone.New()
 
-	r.Get("/", kithttp.NewServer(
+	r.Get("/info", kithttp.NewServer(
 		kitot.TraceServer(tracer, "info")(infoEndpoint(svc)),
 		decodeGet,
 		encodeResponse,

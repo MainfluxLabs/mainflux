@@ -1,9 +1,5 @@
-//
-// Copyright (c) 2019
-// Mainflux
-//
+// Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
-//
 
 package main
 
@@ -50,9 +46,6 @@ const (
 	defClientTLS       = "false"
 	defCACerts         = ""
 	defThingsLocation  = "http://localhost"
-	defMfBSURL         = "http://localhost:8202/things/configs"
-	defMfCertsURL      = "http://localhost:8204"
-	defTLS             = "false"
 
 	envLogLevel        = "MF_RE_LOG_LEVEL"
 	envHTTPPort        = "MF_RE_HTTP_PORT"
@@ -67,9 +60,6 @@ const (
 	envClientTLS       = "MF_RE_CLIENT_TLS"
 	envCACerts         = "MF_RE_CA_CERTS"
 	envThingsLocation  = "MF_RE_THINGS_LOCATION"
-	envMfBSURL         = "MF_RE_BS_SVC_URL"
-	envMfCertsURL      = "MF_RE_CERTS_SVC_URL"
-	envTLS             = "MF_RE_ENV_CLIENTS_TLS"
 )
 
 type config struct {
@@ -87,11 +77,7 @@ type config struct {
 	authTimeout     time.Duration
 	clientTLS       bool
 	caCerts         string
-
-	ThingsLocation string
-	MfBSURL        string
-	MfCertsURL     string
-	TLS            bool
+	ThingsLocation  string
 }
 
 func main() {
@@ -111,11 +97,8 @@ func main() {
 
 	SDKCfg := mfSDK.Config{
 		BaseURL:           cfg.ThingsLocation,
-		BootstrapURL:      cfg.MfBSURL,
-		CertsURL:          cfg.MfCertsURL,
 		HTTPAdapterPrefix: "http",
 		MsgContentType:    "application/json",
-		TLSVerification:   cfg.TLS,
 	}
 	SDK := mfSDK.NewSDK(SDKCfg)
 
@@ -158,10 +141,7 @@ func loadConfig() config {
 		authTimeout:     authTimeout,
 		clientTLS:       tls,
 		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		MfBSURL:         mainflux.Env(envMfBSURL, defMfBSURL),
-		MfCertsURL:      mainflux.Env(envMfCertsURL, defMfCertsURL),
 		ThingsLocation:  mainflux.Env(envThingsLocation, defThingsLocation),
-		TLS:             tls,
 	}
 }
 

@@ -1,11 +1,5 @@
-//
-// Copyright (c) 2019
-// Mainflux
-//
+// Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
-//
-
-// +build !test
 
 package api
 
@@ -25,8 +19,7 @@ type metricsMiddleware struct {
 	svc     rules.Service
 }
 
-// MetricsMiddleware instruments core service by tracking request count and
-// latency.
+// MetricsMiddleware instruments core service by tracking request count and latency.
 func MetricsMiddleware(svc rules.Service, counter metrics.Counter, latency metrics.Histogram) rules.Service {
 	return &metricsMiddleware{
 		counter: counter,
