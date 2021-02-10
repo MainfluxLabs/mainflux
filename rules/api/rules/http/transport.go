@@ -20,7 +20,7 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/re"
+	"github.com/mainflux/mainflux/rules"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -35,7 +35,7 @@ var (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc re.Service) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
 	}
@@ -250,9 +250,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", contentType)
 
 	switch err {
-	case re.ErrMalformedEntity:
+	case rules.ErrMalformedEntity:
 		w.WriteHeader(http.StatusBadRequest)
-	case re.ErrUnauthorizedAccess:
+	case rules.ErrUnauthorizedAccess:
 		w.WriteHeader(http.StatusForbidden)
 	case errUnsupportedContentType:
 		w.WriteHeader(http.StatusUnsupportedMediaType)

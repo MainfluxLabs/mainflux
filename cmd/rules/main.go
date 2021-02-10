@@ -22,9 +22,9 @@ import (
 	"github.com/mainflux/mainflux"
 	authapi "github.com/mainflux/mainflux/auth/api/grpc"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/re"
-	"github.com/mainflux/mainflux/re/api"
-	rehttpapi "github.com/mainflux/mainflux/re/api/re/http"
+	"github.com/mainflux/mainflux/rules"
+	"github.com/mainflux/mainflux/rules/api"
+	rehttpapi "github.com/mainflux/mainflux/rules/api/rules/http"
 	localusers "github.com/mainflux/mainflux/things/users"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -131,7 +131,7 @@ func main() {
 	}()
 
 	err = <-errs
-	logger.Error(fmt.Sprintf("Re service terminated: %s", err))
+	logger.Error(fmt.Sprintf("Rules engine service terminated: %s", err))
 }
 
 func loadConfig() config {
@@ -189,8 +189,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) re.Service {
-	svc := re.New(kuiperURL, auth, sdk, logger)
+func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) rules.Service {
+	svc := rules.New(kuiperURL, auth, sdk, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -215,12 +215,12 @@ func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK
 func startHTTPServer(handler http.Handler, cfg config, logger logger.Logger, errs chan error) {
 	p := fmt.Sprintf(":%s", cfg.httpPort)
 	if cfg.serverCert != "" || cfg.serverKey != "" {
-		logger.Info(fmt.Sprintf("Re service started using https on port %s with cert %s key %s",
+		logger.Info(fmt.Sprintf("Rules engine service started using https on port %s with cert %s key %s",
 			cfg.httpPort, cfg.serverCert, cfg.serverKey))
 		errs <- http.ListenAndServeTLS(p, cfg.serverCert, cfg.serverKey, handler)
 		return
 	}
-	logger.Info(fmt.Sprintf("Re service started using http on port %s", cfg.httpPort))
+	logger.Info(fmt.Sprintf("Rules engine service started using http on port %s", cfg.httpPort))
 	errs <- http.ListenAndServe(p, handler)
 }
 

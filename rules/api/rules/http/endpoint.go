@@ -11,10 +11,10 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/re"
+	"github.com/mainflux/mainflux/rules"
 )
 
-func infoEndpoint(svc re.Service) endpoint.Endpoint {
+func infoEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		info, err := svc.Info(ctx)
 		if err != nil {
@@ -28,7 +28,7 @@ func infoEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
+func createStreamEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(streamReq)
 		if err := req.validate(); err != nil {
@@ -46,7 +46,7 @@ func createStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
+func updateStreamEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(streamReq)
 		if err := req.validate(); err != nil {
@@ -64,7 +64,7 @@ func updateStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func listStreamsEndpoint(svc re.Service) endpoint.Endpoint {
+func listStreamsEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getReq)
 		if err := req.validate(); err != nil {
@@ -81,7 +81,7 @@ func listStreamsEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
+func viewStreamEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
@@ -98,7 +98,7 @@ func viewStreamEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteEndpoint(svc re.Service) endpoint.Endpoint {
+func deleteEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteReq)
 		if err := req.validate(); err != nil {
@@ -116,7 +116,7 @@ func deleteEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
+func createRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
@@ -134,7 +134,7 @@ func createRuleEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func updateRuleEndpoint(svc re.Service) endpoint.Endpoint {
+func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
@@ -152,7 +152,7 @@ func updateRuleEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func listRulesEndpoint(svc re.Service) endpoint.Endpoint {
+func listRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getReq)
 		if err := req.validate(); err != nil {
@@ -169,7 +169,7 @@ func listRulesEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func viewRuleEndpoint(svc re.Service) endpoint.Endpoint {
+func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
@@ -186,7 +186,7 @@ func viewRuleEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func getRuleStatusEndpoint(svc re.Service) endpoint.Endpoint {
+func getRuleStatusEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
@@ -203,7 +203,7 @@ func getRuleStatusEndpoint(svc re.Service) endpoint.Endpoint {
 	}
 }
 
-func controlRuleEndpoint(svc re.Service) endpoint.Endpoint {
+func controlRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(controlReq)
 		if err := req.validate(); err != nil {

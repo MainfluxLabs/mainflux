@@ -7,28 +7,28 @@
 
 package http
 
-import "github.com/mainflux/mainflux/re"
+import "github.com/mainflux/mainflux/rules"
 
 type streamReq struct {
 	token  string
-	stream re.Stream
+	stream rules.Stream
 }
 
 func (req streamReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	if req.stream.Name == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	if req.stream.Row == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	if req.stream.Topic == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	if req.stream.Host == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ type getReq struct {
 
 func (req getReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	return nil
 }
@@ -51,10 +51,10 @@ type viewReq struct {
 
 func (req viewReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	return nil
 }
@@ -62,12 +62,12 @@ func (req viewReq) validate() error {
 type ruleReq struct {
 	token string
 	name  string
-	Rule  re.Rule
+	Rule  rules.Rule
 }
 
 func (req ruleReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	return nil
 }
@@ -80,13 +80,13 @@ type controlReq struct {
 
 func (req controlReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	if !(req.action == "start" || req.action == "stop" || req.action == "restart") {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	return nil
 }
@@ -99,13 +99,13 @@ type deleteReq struct {
 
 func (req deleteReq) validate() error {
 	if req.token == "" {
-		return re.ErrUnauthorizedAccess
+		return rules.ErrUnauthorizedAccess
 	}
 	if req.name == "" {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	if !(req.kind == "streams" || req.kind == "rules") {
-		return re.ErrMalformedEntity
+		return rules.ErrMalformedEntity
 	}
 	return nil
 }

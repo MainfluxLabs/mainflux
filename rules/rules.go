@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-package re
+package rules
 
 // Action stores mainflux sink plugin settings
 type Action struct {

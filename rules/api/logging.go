@@ -15,22 +15,22 @@ import (
 	"time"
 
 	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/re"
+	"github.com/mainflux/mainflux/rules"
 )
 
-var _ re.Service = (*loggingMiddleware)(nil)
+var _ rules.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
 	logger log.Logger
-	svc    re.Service
+	svc    rules.Service
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc re.Service, logger log.Logger) re.Service {
+func LoggingMiddleware(svc rules.Service, logger log.Logger) rules.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error) {
+func (lm *loggingMiddleware) Info(ctx context.Context) (info rules.Info, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method info took %s to complete", time.Since(begin))
 		if err != nil {
@@ -43,7 +43,7 @@ func (lm *loggingMiddleware) Info(ctx context.Context) (info re.Info, err error)
 	return lm.svc.Info(ctx)
 }
 
-func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream re.Stream) (result string, err error) {
+func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream rules.Stream) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
 		if err != nil {
@@ -56,7 +56,7 @@ func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, str
 	return lm.svc.CreateStream(ctx, token, stream)
 }
 
-func (lm *loggingMiddleware) UpdateStream(ctx context.Context, token string, stream re.Stream) (result string, err error) {
+func (lm *loggingMiddleware) UpdateStream(ctx context.Context, token string, stream rules.Stream) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
 		if err != nil {
@@ -82,7 +82,7 @@ func (lm *loggingMiddleware) ListStreams(ctx context.Context, token string) (str
 	return lm.svc.ListStreams(ctx, token)
 }
 
-func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string) (stream re.StreamInfo, err error) {
+func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string) (stream rules.StreamInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_stream for %s took %s to complete", name, time.Since(begin))
 		if err != nil {
@@ -108,7 +108,7 @@ func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kin
 	return lm.svc.Delete(ctx, token, name, kind)
 }
 
-func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule re.Rule) (result string, err error) {
+func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule rules.Rule) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_rule %s took %s to complete", rule.ID, time.Since(begin))
 		if err != nil {
@@ -121,7 +121,7 @@ func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule 
 	return lm.svc.CreateRule(ctx, token, rule)
 }
 
-func (lm *loggingMiddleware) UpdateRule(ctx context.Context, token string, rule re.Rule) (result string, err error) {
+func (lm *loggingMiddleware) UpdateRule(ctx context.Context, token string, rule rules.Rule) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_rule %s took %s to complete", rule.ID, time.Since(begin))
 		if err != nil {
@@ -134,7 +134,7 @@ func (lm *loggingMiddleware) UpdateRule(ctx context.Context, token string, rule 
 	return lm.svc.UpdateRule(ctx, token, rule)
 }
 
-func (lm *loggingMiddleware) ListRules(ctx context.Context, token string) (ris []re.RuleInfo, err error) {
+func (lm *loggingMiddleware) ListRules(ctx context.Context, token string) (ris []rules.RuleInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_rules took %s to complete", time.Since(begin))
 		if err != nil {
@@ -147,7 +147,7 @@ func (lm *loggingMiddleware) ListRules(ctx context.Context, token string) (ris [
 	return lm.svc.ListRules(ctx, token)
 }
 
-func (lm *loggingMiddleware) ViewRule(ctx context.Context, token, name string) (rule re.Rule, err error) {
+func (lm *loggingMiddleware) ViewRule(ctx context.Context, token, name string) (rule rules.Rule, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_rule %s took %s to complete", name, time.Since(begin))
 		if err != nil {

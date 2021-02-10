@@ -11,7 +11,7 @@ import (
 	"net/http"
 
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/re"
+	"github.com/mainflux/mainflux/rules"
 )
 
 var _ mainflux.Response = (*infoRes)(nil)
@@ -72,7 +72,7 @@ func (res listStreamsRes) Empty() bool {
 }
 
 type viewStreamRes struct {
-	Stream re.StreamInfo
+	Stream rules.StreamInfo
 }
 
 func (res viewStreamRes) Code() int {
@@ -88,7 +88,7 @@ func (res viewStreamRes) Empty() bool {
 }
 
 type listRulesRes struct {
-	Rules []re.RuleInfo
+	Rules []rules.RuleInfo
 }
 
 func (res listRulesRes) Code() int {
@@ -104,7 +104,7 @@ func (res listRulesRes) Empty() bool {
 }
 
 type viewRuleRes struct {
-	Rule re.Rule
+	Rule rules.Rule
 }
 
 func (res viewRuleRes) Code() int {
