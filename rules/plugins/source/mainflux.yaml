@@ -1,3 +1,0 @@
-default:
-  host: "localhost"
-  port: "4222"
