@@ -17,7 +17,6 @@ import (
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	SDK "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
 const contentType = "application/json"
@@ -70,18 +69,18 @@ type Service interface {
 type reService struct {
 	kuiperURL string
 	auth      mainflux.AuthServiceClient
-	sdk       SDK.SDK
+	things    mainflux.ThingsServiceClient
 	logger    logger.Logger
 }
 
 var _ Service = (*reService)(nil)
 
 // New instantiates the re service implementation.
-func New(url string, auth mainflux.AuthServiceClient, sdk SDK.SDK, logger logger.Logger) Service {
+func New(url string, auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, logger logger.Logger) Service {
 	return &reService{
 		kuiperURL: url,
 		auth:      auth,
-		sdk:       sdk,
+		things:    things,
 		logger:    logger,
 	}
 }
@@ -108,10 +107,10 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_, err = re.sdk.Channel(stream.Topic, token)
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
+	// _, err = re.sdk.Channel(stream.Topic, token)
+	// if err != nil {
+	// 	return "", ErrUnauthorizedAccess
+	// }
 
 	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
 	if err != nil {
@@ -133,10 +132,10 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_, err = re.sdk.Channel(stream.Topic, token)
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
+	// _, err = re.sdk.Channel(stream.Topic, token)
+	// if err != nil {
+	// 	return "", ErrUnauthorizedAccess
+	// }
 
 	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
 	if err != nil {
@@ -244,10 +243,10 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
+	// _, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
+	// if err != nil {
+	// 	return "", ErrUnauthorizedAccess
+	// }
 
 	rulePrepend(ui.Id, &rule)
 	body, err := json.Marshal(rule)
@@ -274,10 +273,10 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	_, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
-	if err != nil {
-		return "", ErrUnauthorizedAccess
-	}
+	// _, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
+	// if err != nil {
+	// 	return "", ErrUnauthorizedAccess
+	// }
 
 	rulePrepend(ui.Id, &rule)
 	body, err := json.Marshal(rule)

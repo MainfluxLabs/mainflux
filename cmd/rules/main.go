@@ -21,12 +21,12 @@ import (
 	"github.com/mainflux/mainflux/rules"
 	"github.com/mainflux/mainflux/rules/api"
 	rehttpapi "github.com/mainflux/mainflux/rules/api/rules/http"
+	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	localusers "github.com/mainflux/mainflux/things/users"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	mfSDK "github.com/mainflux/mainflux/pkg/sdk/go"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
@@ -41,11 +41,15 @@ const (
 	defServerKey       = ""
 	defSingleUserEmail = ""
 	defSingleUserToken = ""
-	defAuthURL         = "localhost:8181"
-	defAuthTimeout     = "1s"
 	defClientTLS       = "false"
 	defCACerts         = ""
-	defThingsLocation  = "http://localhost"
+
+	defThingsLocation = "http://localhost"
+
+	defAuthURL           = "localhost:8181"
+	defAuthTimeout       = "1s"
+	defThingsAuthURL     = "localhost:8181"
+	defThingsAuthTimeout = "1s"
 
 	envLogLevel        = "MF_RE_LOG_LEVEL"
 	envHTTPPort        = "MF_RE_HTTP_PORT"
@@ -55,29 +59,31 @@ const (
 	envServerKey       = "MF_RE_SERVER_KEY"
 	envSingleUserEmail = "MF_RE_SINGLE_USER_EMAIL"
 	envSingleUserToken = "MF_RE_SINGLE_USER_TOKEN"
-	envAuthURL         = "MF_AUTH_GRPC_URL"
-	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
 	envClientTLS       = "MF_RE_CLIENT_TLS"
 	envCACerts         = "MF_RE_CA_CERTS"
-	envThingsLocation  = "MF_RE_THINGS_LOCATION"
+
+	envAuthURL           = "MF_AUTH_GRPC_URL"
+	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
+	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 )
 
 type config struct {
 	logLevel        string
 	httpPort        string
 	kuiperURL       string
-	authHTTPPort    string
-	authGRPCPort    string
 	jaegerURL       string
 	serverCert      string
 	serverKey       string
 	singleUserEmail string
 	singleUserToken string
-	authURL         string
-	authTimeout     time.Duration
 	clientTLS       bool
 	caCerts         string
-	ThingsLocation  string
+
+	authURL           string
+	authTimeout       time.Duration
+	thingsAuthURL     string
+	thingsAuthTimeout time.Duration
 }
 
 func main() {
@@ -95,14 +101,16 @@ func main() {
 	tracer, reCloser := initJaeger("re", cfg.jaegerURL, logger)
 	defer reCloser.Close()
 
-	SDKCfg := mfSDK.Config{
-		BaseURL:           cfg.ThingsLocation,
-		HTTPAdapterPrefix: "http",
-		MsgContentType:    "application/json",
-	}
-	SDK := mfSDK.NewSDK(SDKCfg)
+	// THINGS GRPC
+	conn := connectToGRPC(cfg.clientTLS, cfg.caCerts, cfg.thingsAuthURL, logger)
+	defer conn.Close()
 
-	svc := newService(cfg.kuiperURL, auth, SDK, logger)
+	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	defer thingsCloser.Close()
+
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
+
+	svc := newService(cfg.kuiperURL, auth, tc, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg, logger, errs)
@@ -128,20 +136,26 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
 	}
 
+	thAuthTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+	}
+
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		kuiperURL:       mainflux.Env(envKuiperURL, defKuiperURL),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		singleUserEmail: mainflux.Env(envSingleUserEmail, defSingleUserEmail),
-		singleUserToken: mainflux.Env(envSingleUserToken, defSingleUserToken),
-		authURL:         mainflux.Env(envAuthURL, defAuthURL),
-		authTimeout:     authTimeout,
-		clientTLS:       tls,
-		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		ThingsLocation:  mainflux.Env(envThingsLocation, defThingsLocation),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
+		kuiperURL:         mainflux.Env(envKuiperURL, defKuiperURL),
+		serverCert:        mainflux.Env(envServerCert, defServerCert),
+		serverKey:         mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		singleUserEmail:   mainflux.Env(envSingleUserEmail, defSingleUserEmail),
+		singleUserToken:   mainflux.Env(envSingleUserToken, defSingleUserToken),
+		authURL:           mainflux.Env(envAuthURL, defAuthURL),
+		authTimeout:       authTimeout,
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
+		thingsAuthTimeout: thAuthTimeout,
 	}
 }
 
@@ -169,8 +183,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(kuiperURL string, auth mainflux.AuthServiceClient, sdk mfSDK.SDK, logger logger.Logger) rules.Service {
-	svc := rules.New(kuiperURL, auth, sdk, logger)
+func newService(kuiperURL string, auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, logger logger.Logger) rules.Service {
+	svc := rules.New(kuiperURL, auth, things, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -209,15 +223,15 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 		return localusers.NewSingleUserService(cfg.singleUserEmail, cfg.singleUserToken), nil
 	}
 
-	conn := connectToAuth(cfg, logger)
+	conn := connectToGRPC(cfg.clientTLS, cfg.caCerts, cfg.authURL, logger)
 	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
 }
 
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
+func connectToGRPC(clientTLS bool, caCerts, URL string, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+	if clientTLS {
+		if caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(caCerts, "")
 			if err != nil {
 				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
 				os.Exit(1)
@@ -229,9 +243,9 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.authURL, opts...)
+	conn, err := grpc.Dial(URL, opts...)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to gRPC service: %s", err))
 		os.Exit(1)
 	}
 
