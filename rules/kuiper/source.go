@@ -42,6 +42,7 @@ func (ms *mainfluxSource) Open(ctx api.StreamContext, consumer chan<- api.Source
 	pubSub, err := nats.NewPubSub(addr, queue, nil)
 	if err != nil {
 		errCh <- fmt.Errorf("Failed to connect to nats at address %s with error: %v", addr, err)
+		return
 	}
 	ms.pubSub = pubSub
 
