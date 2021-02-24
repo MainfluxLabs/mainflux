@@ -107,10 +107,13 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	// _, err = re.sdk.Channel(stream.Topic, token)
-	// if err != nil {
-	// 	return "", ErrUnauthorizedAccess
-	// }
+
+	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
+		Owner:  ui.Email,
+		ChanID: stream.Topic,
+	}); err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
 	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
 	if err != nil {
@@ -132,10 +135,13 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	// _, err = re.sdk.Channel(stream.Topic, token)
-	// if err != nil {
-	// 	return "", ErrUnauthorizedAccess
-	// }
+
+	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
+		Owner:  ui.Email,
+		ChanID: stream.Topic,
+	}); err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
 	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
 	if err != nil {
@@ -243,10 +249,13 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	// _, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
-	// if err != nil {
-	// 	return "", ErrUnauthorizedAccess
-	// }
+
+	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
+		Owner:  ui.Email,
+		ChanID: rule.Actions[0].Mainflux.Channel,
+	}); err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
 	rulePrepend(ui.Id, &rule)
 	body, err := json.Marshal(rule)
@@ -273,10 +282,13 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
-	// _, err = re.sdk.Channel(rule.Actions[0].Mainflux.Channel, token)
-	// if err != nil {
-	// 	return "", ErrUnauthorizedAccess
-	// }
+
+	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
+		Owner:  ui.Email,
+		ChanID: rule.Actions[0].Mainflux.Channel,
+	}); err != nil {
+		return "", ErrUnauthorizedAccess
+	}
 
 	rulePrepend(ui.Id, &rule)
 	body, err := json.Marshal(rule)
