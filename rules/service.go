@@ -4,9 +4,7 @@
 package rules
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -70,6 +68,7 @@ type reService struct {
 	kuiperURL string
 	auth      mainflux.AuthServiceClient
 	things    mainflux.ThingsServiceClient
+	kuiper    KuiperAPI
 	logger    logger.Logger
 }
 
@@ -81,25 +80,13 @@ func New(url string, auth mainflux.AuthServiceClient, things mainflux.ThingsServ
 		kuiperURL: url,
 		auth:      auth,
 		things:    things,
+		kuiper:    NewKuiperAPI(url),
 		logger:    logger,
 	}
 }
 
 func (re *reService) Info(_ context.Context) (Info, error) {
-	res, err := http.Get(re.kuiperURL)
-	if err != nil {
-		return Info{}, errors.Wrap(ErrKuiperServer, err)
-
-	}
-	defer res.Body.Close()
-
-	var i Info
-	err = json.NewDecoder(res.Body).Decode(&i)
-	if err != nil {
-		return Info{}, errors.Wrap(ErrKuiperServer, err)
-	}
-
-	return i, nil
+	return re.kuiper.Info()
 }
 
 func (re *reService) CreateStream(ctx context.Context, token string, stream Stream) (string, error) {
@@ -115,13 +102,11 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 		return "", ErrUnauthorizedAccess
 	}
 
-	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
+	res, err := re.kuiper.CreateStream(sql(ui.Id, &stream))
 	if err != nil {
-		return "", ErrMalformedEntity
+		return "", err
 	}
 
-	url := fmt.Sprintf("%s/streams", re.kuiperURL)
-	res, err := http.Post(url, contentType, bytes.NewBuffer(body))
 	result, err := result(res, "Create stream", http.StatusCreated)
 	if err != nil {
 		return "", err
@@ -143,19 +128,9 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 		return "", ErrUnauthorizedAccess
 	}
 
-	body, err := json.Marshal(map[string]string{"sql": sql(ui.Id, &stream)})
+	res, err := re.kuiper.UpdateStream(sql(ui.Id, &stream), prepend(ui.Id, stream.Name))
 	if err != nil {
-		return "", ErrMalformedEntity
-	}
-
-	url := fmt.Sprintf("%s/streams/%s", re.kuiperURL, prepend(ui.Id, stream.Name))
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
+		return "", err
 	}
 
 	result, err := result(res, "Update stream", http.StatusOK)
@@ -172,17 +147,9 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 		return []string{}, ErrUnauthorizedAccess
 	}
 
-	var streams []string
-	url := fmt.Sprintf("%s/streams", re.kuiperURL)
-	res, err := http.Get(url)
+	streams, err := re.kuiper.ShowStreams()
 	if err != nil {
-		return streams, errors.Wrap(ErrKuiperServer, err)
-	}
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(&streams)
-	if err != nil {
-		return streams, errors.Wrap(ErrMalformedEntity, err)
+		return streams, err
 	}
 
 	for i, value := range streams {
@@ -193,30 +160,19 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 }
 
 func (re *reService) ViewStream(ctx context.Context, token, name string) (StreamInfo, error) {
-	var stream StreamInfo
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return stream, ErrUnauthorizedAccess
+		return StreamInfo{}, ErrUnauthorizedAccess
 	}
 
-	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/streams/%s", re.kuiperURL, name)
-	res, err := http.Get(url)
+	stream, err := re.kuiper.DescribeStream(prepend(ui.Id, name))
 	if err != nil {
-		return stream, errors.Wrap(ErrKuiperServer, err)
+		return StreamInfo{}, err
 	}
-	if res.StatusCode == http.StatusNotFound {
-		return stream, errors.Wrap(ErrNotFound, err)
-	}
-	defer res.Body.Close()
 
-	err = json.NewDecoder(res.Body).Decode(&stream)
-	if err != nil {
-		return stream, errors.Wrap(ErrMalformedEntity, err)
-	}
 	stream.Name = remove(ui.Id, stream.Name)
 
-	return stream, nil
+	return *stream, nil
 }
 
 func (re *reService) Delete(ctx context.Context, token, name, kind string) (string, error) {
@@ -225,15 +181,9 @@ func (re *reService) Delete(ctx context.Context, token, name, kind string) (stri
 		return "", ErrUnauthorizedAccess
 	}
 
-	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/%s/%s", re.kuiperURL, kind, name)
-	req, err := http.NewRequest("DELETE", url, nil)
+	res, err := re.kuiper.Drop(prepend(ui.Id, name), kind)
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
+		return "", err
 	}
 
 	result, err := result(res, "Delete "+kind, http.StatusOK)
@@ -257,16 +207,10 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 		return "", ErrUnauthorizedAccess
 	}
 
-	rulePrepend(ui.Id, &rule)
-	body, err := json.Marshal(rule)
+	rulePrependInplace(ui.Id, &rule)
+	res, err := re.kuiper.CreateRule(rule)
 	if err != nil {
-		return "", ErrMalformedEntity
-	}
-
-	url := fmt.Sprintf("%s/rules", re.kuiperURL)
-	res, err := http.Post(url, contentType, bytes.NewBuffer(body))
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
+		return "", err
 	}
 
 	result, err := result(res, "Create rule", http.StatusCreated)
@@ -290,20 +234,10 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 		return "", ErrUnauthorizedAccess
 	}
 
-	rulePrepend(ui.Id, &rule)
-	body, err := json.Marshal(rule)
+	rulePrependInplace(ui.Id, &rule)
+	res, err := re.kuiper.UpdateRule(rule)
 	if err != nil {
-		return "", ErrMalformedEntity
-	}
-
-	url := fmt.Sprintf("%s/rules/%s", re.kuiperURL, rule.ID)
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
+		return "", err
 	}
 
 	result, err := result(res, "Update rule", http.StatusOK)
@@ -315,23 +249,14 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 }
 
 func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, error) {
-	var rules []RuleInfo
-
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return rules, ErrUnauthorizedAccess
+		return []RuleInfo{}, ErrUnauthorizedAccess
 	}
 
-	url := fmt.Sprintf("%s/rules", re.kuiperURL)
-	res, err := http.Get(url)
+	rules, err := re.kuiper.ShowRules()
 	if err != nil {
-		return rules, errors.Wrap(ErrKuiperServer, err)
-	}
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(&rules)
-	if err != nil {
-		return rules, errors.Wrap(ErrMalformedEntity, err)
+		return nil, err
 	}
 
 	for i, value := range rules {
@@ -342,56 +267,32 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 }
 
 func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, error) {
-	var rule Rule
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return rule, ErrUnauthorizedAccess
+		return Rule{}, ErrUnauthorizedAccess
 	}
 
-	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s", re.kuiperURL, name)
-
-	res, err := http.Get(url)
+	rule, err := re.kuiper.DescribeRule(prepend(ui.Id, name))
 	if err != nil {
-		return rule, errors.Wrap(ErrKuiperServer, err)
-	}
-	if res.StatusCode == http.StatusNotFound {
-		return rule, errors.Wrap(ErrNotFound, err)
-	}
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(&rule)
-	if err != nil {
-		return rule, errors.Wrap(ErrMalformedEntity, err)
+		return Rule{}, err
 	}
 
-	ruleRemove(ui.Id, &rule)
+	ruleRemove(ui.Id, rule)
 
-	return rule, nil
+	return *rule, nil
 }
 
 func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
-	var status map[string]interface{}
+	// var status
 
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return status, ErrUnauthorizedAccess
+		return map[string]interface{}{}, ErrUnauthorizedAccess
 	}
-	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s/status", re.kuiperURL, name)
 
-	res, err := http.Get(url)
+	status, err := re.kuiper.GetRuleStatus(prepend(ui.Id, name))
 	if err != nil {
-		return status, errors.Wrap(ErrKuiperServer, err)
-	}
-	if res.StatusCode == http.StatusNotFound {
-		return status, errors.Wrap(ErrNotFound, err)
-	}
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(&status)
-	if err != nil {
-		return status, errors.Wrap(ErrMalformedEntity, err)
+		return nil, err
 	}
 
 	for key, val := range status {
@@ -408,12 +309,11 @@ func (re *reService) ControlRule(ctx context.Context, token, name, action string
 		return "", ErrUnauthorizedAccess
 	}
 
-	name = prepend(ui.Id, name)
-	url := fmt.Sprintf("%s/rules/%s/%s", re.kuiperURL, name, action)
-	res, err := http.Post(url, "", nil)
+	res, err := re.kuiper.ControlRule(prepend(ui.Id, name), action)
 	if err != nil {
-		return "", errors.Wrap(ErrKuiperServer, err)
+		return "", err
 	}
+
 	result, err := result(res, action, http.StatusOK)
 	if err != nil {
 		return "", err
@@ -424,6 +324,7 @@ func (re *reService) ControlRule(ctx context.Context, token, name, action string
 func prefix(id string) string {
 	return prefixStart + strings.ReplaceAll(id, "-", "") + prefixEnd
 }
+
 func prepend(id, name string) string {
 	return fmt.Sprintf("%s%s", prefix(id), name)
 }
@@ -441,7 +342,7 @@ func indexOf(element string, data []string) int {
 	return -1 //not found.
 }
 
-func rulePrepend(id string, rule *Rule) {
+func rulePrependInplace(id string, rule *Rule) *Rule {
 	rule.ID = prepend(id, rule.ID)
 
 	// Prepend id to stream name; sql e.g. "select * from stream_name where v > 1.2;"
@@ -449,6 +350,8 @@ func rulePrepend(id string, rule *Rule) {
 	idx := indexOf("from", words) + 1
 	words[idx] = prepend(id, words[idx])
 	rule.SQL = strings.Join(words, " ")
+
+	return rule
 }
 
 func ruleRemove(id string, rule *Rule) {
