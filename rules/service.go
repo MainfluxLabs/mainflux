@@ -68,7 +68,7 @@ type reService struct {
 	kuiperURL string
 	auth      mainflux.AuthServiceClient
 	things    mainflux.ThingsServiceClient
-	kuiper    KuiperAPI
+	kuiper    KuiperSDK
 	logger    logger.Logger
 }
 
@@ -80,7 +80,7 @@ func New(url string, auth mainflux.AuthServiceClient, things mainflux.ThingsServ
 		kuiperURL: url,
 		auth:      auth,
 		things:    things,
-		kuiper:    NewKuiperAPI(url),
+		kuiper:    NewKuiperSDK(url),
 		logger:    logger,
 	}
 }

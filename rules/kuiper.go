@@ -9,7 +9,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-type KuiperAPI interface {
+type KuiperSDK interface {
 	Info() (Info, error)
 	CreateStream(sql string) (*http.Response, error)
 	UpdateStream(sql, stream string) (*http.Response, error)
@@ -29,9 +29,9 @@ type kuiper struct {
 	url string
 }
 
-var _ KuiperAPI = (*kuiper)(nil)
+var _ KuiperSDK = (*kuiper)(nil)
 
-func NewKuiperAPI(url string) KuiperAPI {
+func NewKuiperSDK(url string) KuiperSDK {
 	return &kuiper{
 		url: url,
 	}
