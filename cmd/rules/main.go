@@ -110,7 +110,9 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	svc := newService(cfg.kuiperURL, auth, tc, logger)
+	kuiper := rules.NewKuiperSDK(cfg.kuiperURL)
+
+	svc := newService(kuiper, auth, tc, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg, logger, errs)
@@ -183,8 +185,8 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(kuiperURL string, auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, logger logger.Logger) rules.Service {
-	svc := rules.New(kuiperURL, auth, things, logger)
+func newService(kuiper rules.KuiperSDK, auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, logger logger.Logger) rules.Service {
+	svc := rules.New(kuiper, auth, things, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
