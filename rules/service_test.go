@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/mainflux/mainflux/logger"
@@ -12,6 +13,7 @@ import (
 	"github.com/mainflux/mainflux/rules"
 	"github.com/mainflux/mainflux/rules/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -138,5 +140,49 @@ func TestUpdateStream(t *testing.T) {
 	for _, tc := range cases {
 		_, err := svc.UpdateStream(context.Background(), tc.token, tc.stream)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestListStreams(t *testing.T) {
+	numChans := 10
+	channels := make(map[string]string)
+	for i := 0; i < numChans; i++ {
+		channels[strconv.Itoa(i)] = email
+	}
+
+	svc := newService(map[string]string{token: email}, channels)
+	for i := 0; i < numChans; i++ {
+		id := strconv.Itoa(i)
+		_, err := svc.CreateStream(context.Background(), token, rules.Stream{
+			Name:  id,
+			Topic: id,
+		})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc     string
+		token    string
+		numChans int
+		err      error
+	}{
+		{
+			desc:     "correct token",
+			token:    token,
+			numChans: numChans,
+			err:      nil,
+		},
+		{
+			desc:     "wrong token",
+			token:    wrong,
+			numChans: 0,
+			err:      rules.ErrUnauthorizedAccess,
+		},
+	}
+
+	for _, tc := range cases {
+		chans, err := svc.ListStreams(context.Background(), tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.numChans, len(chans), fmt.Sprintf("%s: expected %d got %d channels\n", tc.desc, tc.numChans, len(chans)))
 	}
 }

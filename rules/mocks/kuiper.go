@@ -66,8 +66,8 @@ func (k *kuiper) UpdateStream(sql, name string) (*http.Response, error) {
 func (k *kuiper) ShowStreams() ([]string, error) {
 	var names []string
 
-	for k := range streams {
-		names = append(names, k)
+	for chanID := range streams {
+		names = append(names, chanID)
 	}
 
 	return names, nil

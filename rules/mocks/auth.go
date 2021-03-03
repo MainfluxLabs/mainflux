@@ -15,6 +15,7 @@ import (
 var _ mainflux.AuthServiceClient = (*authServiceClient)(nil)
 
 type authServiceClient struct {
+	// map[token]email
 	users map[string]string
 }
 
