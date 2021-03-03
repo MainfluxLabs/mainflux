@@ -128,3 +128,7 @@ func (res statusRes) Headers() map[string]string {
 func (res statusRes) Empty() bool {
 	return false
 }
+
+type errorRes struct {
+	Err string `json:"error"`
+}

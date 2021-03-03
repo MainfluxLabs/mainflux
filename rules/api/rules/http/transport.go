@@ -6,11 +6,12 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/mainflux/mainflux/pkg/errors"
 
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -245,30 +246,39 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", contentType)
 
-	switch err {
-	case rules.ErrMalformedEntity:
-		w.WriteHeader(http.StatusBadRequest)
-	case rules.ErrUnauthorizedAccess:
-		w.WriteHeader(http.StatusForbidden)
-	case rules.ErrNotFound:
-		w.WriteHeader(http.StatusNotFound)
-	case errUnsupportedContentType:
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errInvalidQueryParams:
-		w.WriteHeader(http.StatusBadRequest)
-	case io.ErrUnexpectedEOF:
-		w.WriteHeader(http.StatusBadRequest)
-	case io.EOF:
-		w.WriteHeader(http.StatusBadRequest)
-	default:
-		switch err.(type) {
-		case *json.SyntaxError:
+	switch errorVal := err.(type) {
+	case errors.Error:
+		w.Header().Set("Content-Type", contentType)
+		switch {
+		case errors.Contains(errorVal, rules.ErrUnauthorizedAccess):
+			w.WriteHeader(http.StatusUnauthorized)
+
+		case errors.Contains(errorVal, rules.ErrNotFound):
+			w.WriteHeader(http.StatusNotFound)
+
+		case errors.Contains(errorVal, rules.ErrMalformedEntity),
+			errors.Contains(errorVal, rules.ErrKuiperServer),
+			errors.Contains(errorVal, errInvalidQueryParams):
 			w.WriteHeader(http.StatusBadRequest)
-		case *json.UnmarshalTypeError:
+
+		case errors.Contains(errorVal, errUnsupportedContentType):
+			w.WriteHeader(http.StatusUnsupportedMediaType)
+
+		case errors.Contains(errorVal, io.ErrUnexpectedEOF),
+			errors.Contains(errorVal, io.EOF):
 			w.WriteHeader(http.StatusBadRequest)
+
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
+		if errorVal.Msg() != "" {
+			errTxt := errorRes{Err: errorVal.Msg() + " : " + errorVal.Err().Msg()}
+			if err := json.NewEncoder(w).Encode(errTxt); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+		}
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
