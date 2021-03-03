@@ -36,7 +36,7 @@ var (
 	ErrNotFound = errors.New("non-existent entity")
 
 	// ErrKuiperServer indicates internal kuiper rules engine server error
-	ErrKuiperServer = errors.New("kuiper internal server error")
+	ErrKuiperServer = errors.New("kuiper error")
 )
 
 // Info is used to fetch kuiper running instance data
@@ -98,7 +98,7 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 		Owner:  ui.Email,
 		ChanID: stream.Topic,
 	}); err != nil {
-		return "", ErrUnauthorizedAccess
+		return "", ErrNotFound
 	}
 
 	res, err := re.kuiper.CreateStream(sql(ui.Id, &stream))
@@ -124,7 +124,7 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 		Owner:  ui.Email,
 		ChanID: stream.Topic,
 	}); err != nil {
-		return "", ErrUnauthorizedAccess
+		return "", ErrNotFound
 	}
 
 	res, err := re.kuiper.UpdateStream(sql(ui.Id, &stream), prepend(ui.Id, stream.Name))
@@ -372,6 +372,7 @@ func result(res *http.Response, action string, status int) (string, error) {
 		}
 		reasonStr := remIDRegEx.ReplaceAllString(string(reasonBt), "")
 		result = action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + reasonStr
+		return "", errors.Wrap(ErrKuiperServer, errors.New(result))
 	}
 	return result, nil
 }
