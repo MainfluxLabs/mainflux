@@ -153,7 +153,7 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 
 	var owned []string
 	for _, value := range streams {
-		if !strings.Contains(value, ui.Id) {
+		if !strings.Contains(value, prefix(ui.Id)) {
 			continue
 		}
 		owned = append(owned, remove(ui.Id, value))
@@ -264,7 +264,7 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 
 	var owned []RuleInfo
 	for i, value := range rules {
-		if !strings.Contains(value.ID, ui.Id) {
+		if !strings.Contains(value.ID, prefix(ui.Id)) {
 			continue
 		}
 		rules[i].ID = remove(ui.Id, value.ID)
