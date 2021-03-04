@@ -86,18 +86,24 @@ func (k *kuiper) DescribeStream(name string) (*re.StreamInfo, error) {
 
 func (k *kuiper) Drop(name, kind string) (*http.Response, error) {
 	var res http.Response
-	res.StatusCode = http.StatusNotFound
+	res.StatusCode = http.StatusBadRequest
 	res.Body = http.NoBody
 
-	if kind == "stream" {
+	if kind == "streams" {
 		if _, ok := k.streams[name]; !ok {
-			res.StatusCode = http.StatusNotFound
+			return &res, nil
 		}
+		delete(k.streams, name)
+		res.StatusCode = http.StatusOK
+		return &res, nil
 	}
-	if kind == "rule" {
+	if kind == "rules" {
 		if _, ok := k.rules[name]; !ok {
-			res.StatusCode = http.StatusNotFound
+			return &res, nil
 		}
+		delete(k.rules, name)
+		res.StatusCode = http.StatusOK
+		return &res, nil
 	}
 
 	return &res, nil
