@@ -19,8 +19,8 @@ type Rule struct {
 		Mainflux Action
 	}
 	Options struct {
-		SendMetaToSink bool `json:"sendMetaToSink"`
-	} `json:"options"`
+		SendMetaToSink bool
+	}
 }
 
 // RuleInfo is used to fetch rule status from kuiper

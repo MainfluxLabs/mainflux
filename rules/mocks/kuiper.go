@@ -122,7 +122,7 @@ func (k *kuiper) CreateRule(rule re.Rule) (*http.Response, error) {
 
 func (k *kuiper) UpdateRule(rule re.Rule) (*http.Response, error) {
 	var res http.Response
-	res.StatusCode = http.StatusCreated
+	res.StatusCode = http.StatusOK
 	res.Body = http.NoBody
 
 	if _, ok := rules[rule.ID]; !ok {
