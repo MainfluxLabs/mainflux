@@ -151,11 +151,15 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 		return streams, err
 	}
 
-	for i, value := range streams {
-		streams[i] = remove(ui.Id, value)
+	var owned []string
+	for _, value := range streams {
+		if !strings.Contains(value, ui.Id) {
+			continue
+		}
+		owned = append(owned, remove(ui.Id, value))
 	}
 
-	return streams, nil
+	return owned, nil
 }
 
 func (re *reService) ViewStream(ctx context.Context, token, name string) (StreamInfo, error) {
@@ -258,11 +262,16 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 		return nil, err
 	}
 
+	var owned []RuleInfo
 	for i, value := range rules {
+		if !strings.Contains(value.ID, ui.Id) {
+			continue
+		}
 		rules[i].ID = remove(ui.Id, value.ID)
+		owned = append(owned, rules[i])
 	}
 
-	return rules, nil
+	return owned, nil
 }
 
 func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, error) {

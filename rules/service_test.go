@@ -19,8 +19,10 @@ import (
 const (
 	url      = "localhost"
 	token    = "token"
+	token2   = "token2"
 	wrong    = "wrong"
 	email    = "angry_albattani@email.com"
+	email2   = "xenodochial_goldwasser@email.com"
 	channel  = "103ec2f2-2034-4d9e-8039-13f4efd36b04"
 	channel2 = "243fec72-7cf7-4bca-ac87-44a53b318510"
 	sql      = "select * from stream where v > 1.2;"
@@ -37,9 +39,9 @@ var (
 	rule2 = createRule("rule2", channel2)
 )
 
-func newService(tokens map[string]string, channels map[string]string) rules.Service {
+func newService(users map[string]string, channels map[string]string) rules.Service {
 	// map[token]email
-	auth := mocks.NewAuthServiceClient(tokens)
+	auth := mocks.NewAuthServiceClient(users)
 	// map[chanID]email
 	things := mocks.NewThingsClient(channels)
 	logger, err := logger.New(os.Stdout, "info")
@@ -137,11 +139,22 @@ func TestListStreams(t *testing.T) {
 	for i := 0; i < numChans; i++ {
 		channels[strconv.Itoa(i)] = email
 	}
+	for i := numChans; i < numChans*3; i++ {
+		channels[strconv.Itoa(i)] = email2
+	}
 
-	svc := newService(map[string]string{token: email}, channels)
+	svc := newService(map[string]string{token: email, token2: email2}, channels)
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateStream(context.Background(), token, rules.Stream{
+			Name:  id,
+			Topic: id,
+		})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+	for i := numChans; i < numChans*3; i++ {
+		id := strconv.Itoa(i)
+		_, err := svc.CreateStream(context.Background(), token2, rules.Stream{
 			Name:  id,
 			Topic: id,
 		})
@@ -155,7 +168,7 @@ func TestListStreams(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "correct token",
+			desc:     "1st correct token",
 			token:    token,
 			numChans: numChans,
 			err:      nil,
@@ -166,11 +179,17 @@ func TestListStreams(t *testing.T) {
 			numChans: 0,
 			err:      rules.ErrUnauthorizedAccess,
 		},
+		{
+			desc:     "2nd correct token",
+			token:    token2,
+			numChans: numChans * 2,
+			err:      nil,
+		},
 	}
 	for _, tc := range cases {
 		chans, err := svc.ListStreams(context.Background(), tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		assert.Equal(t, tc.numChans, len(chans), fmt.Sprintf("%s: expected %d got %d channels\n", tc.desc, tc.numChans, len(chans)))
+		assert.Equal(t, tc.numChans, len(chans), fmt.Sprintf("%s: expected %d got %d streams\n", tc.desc, tc.numChans, len(chans)))
 	}
 }
 
@@ -255,6 +274,60 @@ func TestUpdateRule(t *testing.T) {
 	for _, tc := range cases {
 		_, err := svc.UpdateRule(context.Background(), tc.token, tc.rule)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestListRules(t *testing.T) {
+	numChans := 10
+	channels := make(map[string]string)
+	for i := 0; i < numChans; i++ {
+		channels[strconv.Itoa(i)] = email
+	}
+	for i := numChans; i < numChans*3; i++ {
+		channels[strconv.Itoa(i)] = email2
+	}
+
+	svc := newService(map[string]string{token: email, token2: email2}, channels)
+	for i := 0; i < numChans; i++ {
+		id := strconv.Itoa(i)
+		_, err := svc.CreateRule(context.Background(), token, createRule(id, id))
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+	for i := numChans; i < numChans*3; i++ {
+		id := strconv.Itoa(i)
+		_, err := svc.CreateRule(context.Background(), token2, createRule(id, id))
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc     string
+		token    string
+		numChans int
+		err      error
+	}{
+		{
+			desc:     "1st correct token",
+			token:    token,
+			numChans: numChans,
+			err:      nil,
+		},
+		{
+			desc:     "wrong token",
+			token:    wrong,
+			numChans: 0,
+			err:      rules.ErrUnauthorizedAccess,
+		},
+		{
+			desc:     "2nd correct token",
+			token:    token2,
+			numChans: numChans * 2,
+			err:      nil,
+		},
+	}
+	for _, tc := range cases {
+		chans, err := svc.ListRules(context.Background(), tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.numChans, len(chans), fmt.Sprintf("%s: expected %d got %d rules\n", tc.desc, tc.numChans, len(chans)))
 	}
 }
 

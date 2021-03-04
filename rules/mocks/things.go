@@ -22,8 +22,8 @@ type thingsClient struct {
 }
 
 // NewThingsClient returns mock implementation of things service client.
-func NewThingsClient(data map[string]string) mainflux.ThingsServiceClient {
-	return &thingsClient{data}
+func NewThingsClient(channels map[string]string) mainflux.ThingsServiceClient {
+	return &thingsClient{channels}
 }
 
 func (tc thingsClient) CanAccessByKey(ctx context.Context, req *mainflux.AccessByKeyReq, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
