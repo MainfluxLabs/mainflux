@@ -203,7 +203,7 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 		Owner:  ui.Email,
 		ChanID: rule.Actions[0].Mainflux.Channel,
 	}); err != nil {
-		return "", ErrUnauthorizedAccess
+		return "", ErrNotFound
 	}
 
 	rulePrependInplace(ui.Id, &rule)
@@ -230,7 +230,7 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 		Owner:  ui.Email,
 		ChanID: rule.Actions[0].Mainflux.Channel,
 	}); err != nil {
-		return "", ErrUnauthorizedAccess
+		return "", ErrNotFound
 	}
 
 	rulePrependInplace(ui.Id, &rule)

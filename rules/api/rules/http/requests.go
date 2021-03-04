@@ -56,14 +56,25 @@ func (req viewReq) validate() error {
 }
 
 type ruleReq struct {
-	token string
-	name  string
-	Rule  rules.Rule
+	token          string
+	ID             string `json:"id"`
+	Sql            string `json:"sql"`
+	Host           string `json:"host"`
+	Port           string `json:"port"`
+	Channel        string `json:"channel"`
+	Subtopic       string `json:"subtopic"`
+	SendToMetasink bool
 }
 
 func (req ruleReq) validate() error {
 	if req.token == "" {
 		return rules.ErrUnauthorizedAccess
+	}
+	if req.Host == "" {
+		return rules.ErrMalformedEntity
+	}
+	if req.Channel == "" {
+		return rules.ErrMalformedEntity
 	}
 	return nil
 }

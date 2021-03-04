@@ -119,7 +119,7 @@ func createRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.CreateRule(ctx, req.token, req.Rule)
+		result, err := svc.CreateRule(ctx, req.token, *rule(&req))
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.UpdateRule(ctx, req.token, req.Rule)
+		result, err := svc.UpdateRule(ctx, req.token, *rule(&req))
 		if err != nil {
 			return nil, err
 		}
@@ -215,4 +215,22 @@ func controlRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			Result: result,
 		}, nil
 	}
+}
+
+func rule(req *ruleReq) *rules.Rule {
+	var rule rules.Rule
+
+	rule.ID = req.ID
+	rule.SQL = req.Sql
+	rule.Actions = append(rule.Actions, struct{ Mainflux rules.Action }{
+		Mainflux: rules.Action{
+			Host:     req.Host,
+			Port:     req.Port,
+			Channel:  req.Channel,
+			Subtopic: req.Subtopic,
+		},
+	})
+	rule.Options.SendMetaToSink = req.SendToMetasink
+
+	return &rule
 }

@@ -183,7 +183,7 @@ func decodeCreateRule(_ context.Context, r *http.Request) (interface{}, error) {
 	req := ruleReq{
 		token: r.Header.Get("Authorization"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.Rule); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
 
@@ -198,11 +198,11 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 	req := ruleReq{
 		token: r.Header.Get("Authorization"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.Rule); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
 
-	req.name = bone.GetValue(r, "name")
+	req.ID = bone.GetValue(r, "name")
 
 	return req, nil
 }
@@ -272,8 +272,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		if errorVal.Msg() != "" {
-			errTxt := errorRes{Err: errorVal.Msg() + " : " + errorVal.Err().Msg()}
-			if err := json.NewEncoder(w).Encode(errTxt); err != nil {
+			errTxt := errorVal.Msg()
+			if errorVal.Err() != nil {
+				errTxt += " : " + errorVal.Err().Msg()
+			}
+			if err := json.NewEncoder(w).Encode(errorRes{Err: errTxt}); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
