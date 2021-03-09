@@ -29,11 +29,11 @@ func (req streamReq) validate() error {
 	return nil
 }
 
-type getReq struct {
+type listReq struct {
 	token string
 }
 
-func (req getReq) validate() error {
+func (req listReq) validate() error {
 	if req.token == "" {
 		return rules.ErrUnauthorizedAccess
 	}
@@ -92,7 +92,7 @@ func (req controlReq) validate() error {
 	if req.name == "" {
 		return rules.ErrMalformedEntity
 	}
-	if !(req.action == "start" || req.action == "stop" || req.action == "restart") {
+	if req.action != "start" && req.action != "stop" && req.action != "restart" {
 		return rules.ErrMalformedEntity
 	}
 	return nil

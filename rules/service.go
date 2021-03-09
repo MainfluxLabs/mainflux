@@ -49,18 +49,31 @@ type Info struct {
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
+	// Info fetches kuiper version, os and uptime information
 	Info(ctx context.Context) (Info, error)
+	// CreateStream creates kuiper stream
 	CreateStream(ctx context.Context, token string, stream Stream) (string, error)
+	// UpdateStream updates kuiper stream
 	UpdateStream(ctx context.Context, token string, stream Stream) (string, error)
+	// ListStream list kuiper streams
 	ListStreams(ctx context.Context, token string) ([]string, error)
+	// ViewStream fetches kuiper stream info
 	ViewStream(ctx context.Context, token, name string) (StreamInfo, error)
+
+	// Delete deletes streams and rules depending on the value of kind parameter
 	Delete(ctx context.Context, token, name, kind string) (string, error)
 
+	// CreateRule creates kuiper rule
 	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
+	// UpdateRule updates kuiper rule
 	UpdateRule(ctx context.Context, token string, rule Rule) (string, error)
+	// ListRules list kuiper rules
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
+	// ViewRule fetches kuiper rule info
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
+	// GetRuleStatus fetches kuiper rule operation info
 	GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
+	// ControlRule is used to "start", "stop" and "restart" kuiper rule
 	ControlRule(ctx context.Context, token, name, action string) (string, error)
 }
 
@@ -153,7 +166,7 @@ func (re *reService) ListStreams(ctx context.Context, token string) ([]string, e
 
 	var owned []string
 	for _, value := range streams {
-		if !strings.Contains(value, prefix(ui.Id)) {
+		if !strings.HasPrefix(value, prefix(ui.Id)) {
 			continue
 		}
 		owned = append(owned, remove(ui.Id, value))
@@ -264,7 +277,7 @@ func (re *reService) ListRules(ctx context.Context, token string) ([]RuleInfo, e
 
 	var owned []RuleInfo
 	for i, value := range rules {
-		if !strings.Contains(value.ID, prefix(ui.Id)) {
+		if !strings.HasPrefix(value.ID, prefix(ui.Id)) {
 			continue
 		}
 		rules[i].ID = remove(ui.Id, value.ID)

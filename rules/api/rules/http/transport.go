@@ -24,6 +24,7 @@ import (
 
 const (
 	contentType = "application/json"
+	nameKey     = "name"
 )
 
 var (
@@ -41,7 +42,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 
 	r.Get("/info", kithttp.NewServer(
 		kitot.TraceServer(tracer, "info")(infoEndpoint(svc)),
-		decodeGet,
+		decodeList,
 		encodeResponse,
 		opts...,
 	))
@@ -54,21 +55,21 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 	))
 
 	r.Put("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(updateStreamEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_stream")(updateStreamEndpoint(svc)),
 		decodeUpdateStream,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/streams", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list")(listStreamsEndpoint(svc)),
-		decodeGet,
+		kitot.TraceServer(tracer, "list_streams")(listStreamsEndpoint(svc)),
+		decodeList,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/streams/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(viewStreamEndpoint(svc)),
+		kitot.TraceServer(tracer, "view_stream")(viewStreamEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
@@ -89,34 +90,34 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 	))
 
 	r.Put("/rules/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_rule")(updateRuleEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_rule")(updateRuleEndpoint(svc)),
 		decodeUpdateRule,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/rules", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list")(listRulesEndpoint(svc)),
-		decodeGet,
+		kitot.TraceServer(tracer, "list_rules")(listRulesEndpoint(svc)),
+		decodeList,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/rules/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view")(viewRuleEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_rule")(viewRuleEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/rules/:name/status", kithttp.NewServer(
-		kitot.TraceServer(tracer, "status")(getRuleStatusEndpoint(svc)),
+		kitot.TraceServer(tracer, "rule_status")(getRuleStatusEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/rules/:name/:action", kithttp.NewServer(
-		kitot.TraceServer(tracer, "control")(controlRuleEndpoint(svc)),
+		kitot.TraceServer(tracer, "control_rule")(controlRuleEndpoint(svc)),
 		decodeControl,
 		encodeResponse,
 		opts...,
@@ -128,8 +129,8 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 	return r
 }
 
-func decodeGet(_ context.Context, r *http.Request) (interface{}, error) {
-	req := getReq{
+func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listReq{
 		token: r.Header.Get("Authorization"),
 	}
 	return req, nil
@@ -162,7 +163,7 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, err
 	}
 
-	req.stream.Name = bone.GetValue(r, "name")
+	req.stream.Name = bone.GetValue(r, nameKey)
 
 	return req, nil
 }
@@ -170,7 +171,7 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewReq{
 		token: r.Header.Get("Authorization"),
-		name:  bone.GetValue(r, "name"),
+		name:  bone.GetValue(r, nameKey),
 	}
 	return req, nil
 }
@@ -202,7 +203,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	req.ID = bone.GetValue(r, "name")
+	req.ID = bone.GetValue(r, nameKey)
 
 	return req, nil
 }
@@ -210,7 +211,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeControl(_ context.Context, r *http.Request) (interface{}, error) {
 	req := controlReq{
 		token:  r.Header.Get("Authorization"),
-		name:   bone.GetValue(r, "name"),
+		name:   bone.GetValue(r, nameKey),
 		action: bone.GetValue(r, "action"),
 	}
 	return req, nil
@@ -219,7 +220,7 @@ func decodeControl(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeDelete(_ context.Context, r *http.Request) (interface{}, error) {
 	req := deleteReq{
 		token: r.Header.Get("Authorization"),
-		name:  bone.GetValue(r, "name"),
+		name:  bone.GetValue(r, nameKey),
 		kind:  bone.GetValue(r, "kind"),
 	}
 	return req, nil

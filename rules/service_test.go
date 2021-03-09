@@ -478,6 +478,70 @@ func TestDeleteRules(t *testing.T) {
 	}
 }
 
+func TestControlRules(t *testing.T) {
+	ctx := context.Background()
+
+	users := map[string]string{token: email, token2: email2}
+	channels := map[string]string{channel: email, channel2: email2}
+	svc := newService(users, channels)
+
+	rule := createRule("rule", channel)
+	_, err := svc.CreateRule(ctx, token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	rule2 := createRule("rule2", channel2)
+	_, err = svc.CreateRule(ctx, token2, rule2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc   string
+		token  string
+		ruleID string
+		err    error
+	}{
+		{
+			desc:   "1st correct token with owned rule",
+			token:  token,
+			ruleID: rule.ID,
+			err:    nil,
+		},
+		{
+			desc:   "2nd correct token with owned rule",
+			token:  token2,
+			ruleID: rule2.ID,
+			err:    nil,
+		},
+		{
+			desc:   "1st token with non-owned rule",
+			token:  token,
+			ruleID: rule2.ID,
+			err:    rules.ErrKuiperServer,
+		},
+		{
+			desc:   "2nd token with non-owned rule",
+			token:  token2,
+			ruleID: rule.ID,
+			err:    rules.ErrKuiperServer,
+		},
+		{
+			desc:   "correct token with non-existing rule",
+			token:  token,
+			ruleID: wrong,
+			err:    rules.ErrKuiperServer,
+		},
+		{
+			desc:   "incorrect token with existing rule",
+			token:  wrong,
+			ruleID: rule.ID,
+			err:    rules.ErrUnauthorizedAccess,
+		},
+	}
+	for _, tc := range cases {
+		_, err := svc.ControlRule(ctx, tc.token, tc.ruleID, "start")
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func createRule(id, channel string) rules.Rule {
 	var rule rules.Rule
 

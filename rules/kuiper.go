@@ -9,6 +9,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
+// KuiperSDK specifies an API that must be fullfiled by KuiperSDK implementations
 type KuiperSDK interface {
 	Info() (Info, error)
 	CreateStream(sql string) (*http.Response, error)
@@ -31,6 +32,7 @@ type kuiper struct {
 
 var _ KuiperSDK = (*kuiper)(nil)
 
+// NewKuiperSDK instantiates KuiperSDK
 func NewKuiperSDK(url string) KuiperSDK {
 	return &kuiper{
 		url: url,

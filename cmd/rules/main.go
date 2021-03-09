@@ -22,7 +22,7 @@ import (
 	"github.com/mainflux/mainflux/rules/api"
 	rehttpapi "github.com/mainflux/mainflux/rules/api/rules/http"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
-	localusers "github.com/mainflux/mainflux/things/users"
+	"github.com/mainflux/mainflux/things/users"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -98,7 +98,7 @@ func main() {
 	defer authCloser.Close()
 	auth, _ := createAuthClient(cfg, authTracer, logger)
 
-	tracer, reCloser := initJaeger("re", cfg.jaegerURL, logger)
+	tracer, reCloser := initJaeger("rules", cfg.jaegerURL, logger)
 	defer reCloser.Close()
 
 	// THINGS GRPC
@@ -192,13 +192,13 @@ func newService(kuiper rules.KuiperSDK, auth mainflux.AuthServiceClient, things 
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "re",
+			Namespace: "rules",
 			Subsystem: "api",
 			Name:      "request_count",
 			Help:      "Number of requests received.",
 		}, []string{"method"}),
 		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "re",
+			Namespace: "rules",
 			Subsystem: "api",
 			Name:      "request_latency_microseconds",
 			Help:      "Total duration of requests in microseconds.",
@@ -222,7 +222,7 @@ func startHTTPServer(handler http.Handler, cfg config, logger logger.Logger, err
 
 func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
 	if cfg.singleUserEmail != "" && cfg.singleUserToken != "" {
-		return localusers.NewSingleUserService(cfg.singleUserEmail, cfg.singleUserToken), nil
+		return users.NewSingleUserService(cfg.singleUserEmail, cfg.singleUserToken), nil
 	}
 
 	conn := connectToGRPC(cfg.clientTLS, cfg.caCerts, cfg.authURL, logger)

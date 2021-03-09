@@ -62,7 +62,7 @@ func updateStreamEndpoint(svc rules.Service) endpoint.Endpoint {
 
 func listStreamsEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getReq)
+		req := request.(listReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 
 func listRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getReq)
+		req := request.(listReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
