@@ -260,12 +260,12 @@ func TestDeleteStreams(t *testing.T) {
 			_, err := svc.Delete(ctx, tc.token, strconv.Itoa(i), "streams")
 			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		}
-		streams, err := svc.ListStreams(ctx, tc.token)
+		entities, err := svc.ListStreams(ctx, tc.token)
 		// if token != wrong
 		if !errors.Contains(err, rules.ErrUnauthorizedAccess) {
 			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		}
-		assert.Equal(t, tc.numRemain, len(streams), fmt.Sprintf("%s: expected %d got %d streams\n", tc.desc, tc.numRemain, len(streams)))
+		assert.Equal(t, tc.numRemain, len(entities), fmt.Sprintf("%s: expected %d got %d streams\n", tc.desc, tc.numRemain, len(entities)))
 	}
 }
 
@@ -405,6 +405,76 @@ func TestListRules(t *testing.T) {
 		chans, err := svc.ListRules(context.Background(), tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.numChans, len(chans), fmt.Sprintf("%s: expected %d got %d rules\n", tc.desc, tc.numChans, len(chans)))
+	}
+}
+
+func TestDeleteRules(t *testing.T) {
+	ctx := context.Background()
+
+	users := map[string]string{token: email, token2: email2}
+	numChans := 10
+	channels := make(map[string]string)
+	for i := 0; i < numChans; i++ {
+		channels[strconv.Itoa(i)] = email
+	}
+	for i := numChans; i < numChans*2; i++ {
+		channels[strconv.Itoa(i)] = email2
+	}
+	svc := newService(users, channels)
+
+	for i := 0; i < numChans; i++ {
+		id := strconv.Itoa(i)
+		_, err := svc.CreateRule(ctx, token, createRule(id, id))
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+	for i := 0; i < numChans; i++ {
+		id := strconv.Itoa(i)
+		ch := strconv.Itoa(i + numChans)
+		_, err := svc.CreateRule(ctx, token2, createRule(id, ch))
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc      string
+		token     string
+		numDel    int
+		numRemain int
+		err       error
+	}{
+		{
+			desc:      "1st correct token",
+			token:     token,
+			numDel:    numChans / 2,
+			numRemain: numChans / 2,
+			err:       nil,
+		},
+		{
+			desc:      "wrong token",
+			token:     wrong,
+			numDel:    1,
+			numRemain: 0,
+			err:       rules.ErrUnauthorizedAccess,
+		},
+		{
+			desc:      "2nd correct token",
+			token:     token2,
+			numDel:    numChans,
+			numRemain: 0,
+			err:       nil,
+		},
+	}
+
+	for _, tc := range cases {
+		for i := 0; i < tc.numDel; i++ {
+			_, err := svc.Delete(ctx, tc.token, strconv.Itoa(i), "rules")
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		}
+		entities, err := svc.ListRules(ctx, tc.token)
+		// if token != wrong
+		if !errors.Contains(err, rules.ErrUnauthorizedAccess) {
+			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		}
+		assert.Equal(t, tc.numRemain, len(entities), fmt.Sprintf("%s: expected %d got %d streams\n", tc.desc, tc.numRemain, len(entities)))
 	}
 }
 
