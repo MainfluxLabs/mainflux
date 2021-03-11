@@ -92,16 +92,16 @@ func (req controlReq) validate() error {
 	if req.name == "" {
 		return rules.ErrMalformedEntity
 	}
-	if req.action != "start" && req.action != "stop" && req.action != "restart" {
+	if req.action == "" {
 		return rules.ErrMalformedEntity
 	}
 	return nil
 }
 
 type deleteReq struct {
-	token string
-	name  string
-	kind  string
+	token      string
+	name       string
+	kuiperType string
 }
 
 func (req deleteReq) validate() error {
@@ -111,7 +111,7 @@ func (req deleteReq) validate() error {
 	if req.name == "" {
 		return rules.ErrMalformedEntity
 	}
-	if !(req.kind == "streams" || req.kind == "rules") {
+	if req.kuiperType == "" {
 		return rules.ErrMalformedEntity
 	}
 	return nil

@@ -73,13 +73,13 @@ func (ms *metricsMiddleware) ViewStream(ctx context.Context, token, id string) (
 	return ms.svc.ViewStream(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) Delete(ctx context.Context, token string, id string, kind string) (result string, err error) {
+func (ms *metricsMiddleware) Delete(ctx context.Context, token string, id string, kuiperType string) (result string, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "delete_"+kind).Add(1)
-		ms.latency.With("method", "delete_"+kind).Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "delete_"+kuiperType).Add(1)
+		ms.latency.With("method", "delete_"+kuiperType).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Delete(ctx, token, id, kind)
+	return ms.svc.Delete(ctx, token, id, kuiperType)
 }
 
 func (ms *metricsMiddleware) CreateRule(ctx context.Context, token string, rule rules.Rule) (string, error) {

@@ -60,8 +60,8 @@ type Service interface {
 	// ViewStream fetches kuiper stream info
 	ViewStream(ctx context.Context, token, name string) (StreamInfo, error)
 
-	// Delete deletes streams and rules depending on the value of kind parameter
-	Delete(ctx context.Context, token, name, kind string) (string, error)
+	// Delete deletes streams and rules depending on the value of kuiperType parameter
+	Delete(ctx context.Context, token, name, kuiperType string) (string, error)
 
 	// CreateRule creates kuiper rule
 	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
@@ -191,18 +191,18 @@ func (re *reService) ViewStream(ctx context.Context, token, name string) (Stream
 	return *stream, nil
 }
 
-func (re *reService) Delete(ctx context.Context, token, name, kind string) (string, error) {
+func (re *reService) Delete(ctx context.Context, token, name, kuiperType string) (string, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return "", ErrUnauthorizedAccess
 	}
 
-	res, err := re.kuiper.Drop(prepend(ui.Id, name), kind)
+	res, err := re.kuiper.Drop(prepend(ui.Id, name), kuiperType)
 	if err != nil {
 		return "", err
 	}
 
-	result, err := result(res, "Delete "+kind, http.StatusOK)
+	result, err := result(res, "Delete "+kuiperType, http.StatusOK)
 	if err != nil {
 		return "", err
 	}

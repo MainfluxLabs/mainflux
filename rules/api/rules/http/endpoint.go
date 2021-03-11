@@ -101,7 +101,7 @@ func deleteEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.Delete(ctx, req.token, req.name, req.kind)
+		result, err := svc.Delete(ctx, req.token, req.name, req.kuiperType)
 		if err != nil {
 			return nil, err
 		}

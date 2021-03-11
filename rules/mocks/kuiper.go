@@ -84,12 +84,16 @@ func (k *kuiper) DescribeStream(name string) (*re.StreamInfo, error) {
 	return &info, nil
 }
 
-func (k *kuiper) Drop(name, kind string) (*http.Response, error) {
+func (k *kuiper) Drop(name, kuiperType string) (*http.Response, error) {
+	if _, ok := re.KuiperType[kuiperType]; !ok {
+		return nil, re.ErrMalformedEntity
+	}
+
 	var res http.Response
 	res.StatusCode = http.StatusBadRequest
 	res.Body = http.NoBody
 
-	if kind == "streams" {
+	if kuiperType == "streams" {
 		if _, ok := k.streams[name]; !ok {
 			return &res, nil
 		}
@@ -97,7 +101,7 @@ func (k *kuiper) Drop(name, kind string) (*http.Response, error) {
 		res.StatusCode = http.StatusOK
 		return &res, nil
 	}
-	if kind == "rules" {
+	if kuiperType == "rules" {
 		if _, ok := k.rules[name]; !ok {
 			return &res, nil
 		}
@@ -172,6 +176,10 @@ func (k *kuiper) GetRuleStatus(name string) (map[string]interface{}, error) {
 }
 
 func (k *kuiper) ControlRule(name, action string) (*http.Response, error) {
+	if _, ok := re.RuleAction[action]; !ok {
+		return nil, re.ErrMalformedEntity
+	}
+
 	var res http.Response
 	res.StatusCode = http.StatusOK
 	res.Body = http.NoBody

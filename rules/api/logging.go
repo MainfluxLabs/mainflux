@@ -89,7 +89,7 @@ func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string)
 	return lm.svc.ViewStream(ctx, token, name)
 }
 
-func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kind string) (result string, err error) {
+func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kuiperType string) (result string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete_stream for %s took %s to complete", name, time.Since(begin))
 		if err != nil {
@@ -99,7 +99,7 @@ func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Delete(ctx, token, name, kind)
+	return lm.svc.Delete(ctx, token, name, kuiperType)
 }
 
 func (lm *loggingMiddleware) CreateRule(ctx context.Context, token string, rule rules.Rule) (result string, err error) {

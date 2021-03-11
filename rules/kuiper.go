@@ -9,6 +9,11 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
+var (
+	RuleAction = map[string]string{"start": "start", "stop": "stop", "restart": "restart"}
+	KuiperType = map[string]string{"streams": "streams", "rules": "rules"}
+)
+
 // KuiperSDK specifies an API that must be fullfiled by KuiperSDK implementations
 type KuiperSDK interface {
 	Info() (Info, error)
@@ -16,7 +21,7 @@ type KuiperSDK interface {
 	UpdateStream(sql, stream string) (*http.Response, error)
 	ShowStreams() ([]string, error)
 	DescribeStream(name string) (*StreamInfo, error)
-	Drop(name, kind string) (*http.Response, error)
+	Drop(name, kuiperType string) (*http.Response, error)
 
 	CreateRule(rule Rule) (*http.Response, error)
 	UpdateRule(rule Rule) (*http.Response, error)
@@ -128,8 +133,12 @@ func (k *kuiper) DescribeStream(name string) (*StreamInfo, error) {
 	return &stream, nil
 }
 
-func (k *kuiper) Drop(name, kind string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", k.url, kind, name)
+func (k *kuiper) Drop(name, kuiperType string) (*http.Response, error) {
+	if _, ok := KuiperType[kuiperType]; !ok {
+		return nil, ErrMalformedEntity
+	}
+
+	url := fmt.Sprintf("%s/%s/%s", k.url, kuiperType, name)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(ErrKuiperServer, err)
@@ -236,6 +245,10 @@ func (k *kuiper) GetRuleStatus(name string) (map[string]interface{}, error) {
 }
 
 func (k *kuiper) ControlRule(name, action string) (*http.Response, error) {
+	if _, ok := RuleAction[action]; !ok {
+		return nil, ErrMalformedEntity
+	}
+
 	url := fmt.Sprintf("%s/rules/%s/%s", k.url, name, action)
 	res, err := http.Post(url, "", nil)
 	if err != nil {

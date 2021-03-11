@@ -17,15 +17,16 @@ import (
 )
 
 const (
-	url      = "localhost"
-	token    = "token"
-	token2   = "token2"
-	wrong    = "wrong"
-	email    = "angry_albattani@email.com"
-	email2   = "xenodochial_goldwasser@email.com"
-	channel  = "103ec2f2-2034-4d9e-8039-13f4efd36b04"
-	channel2 = "243fec72-7cf7-4bca-ac87-44a53b318510"
-	sql      = "select * from stream where v > 1.2;"
+	url        = "localhost"
+	token      = "token"
+	token2     = "token2"
+	wrong      = "wrong"
+	email      = "angry_albattani@email.com"
+	email2     = "xenodochial_goldwasser@email.com"
+	channel    = "103ec2f2-2034-4d9e-8039-13f4efd36b04"
+	channel2   = "243fec72-7cf7-4bca-ac87-44a53b318510"
+	sql        = "select * from stream where v > 1.2;"
+	ruleAction = "start"
 )
 
 var (
@@ -498,46 +499,60 @@ func TestControlRules(t *testing.T) {
 		token  string
 		ruleID string
 		err    error
+		action string
 	}{
 		{
 			desc:   "1st correct token with owned rule",
 			token:  token,
 			ruleID: rule.ID,
+			action: ruleAction,
 			err:    nil,
+		},
+		{
+			desc:   "correct token with owned rule wit wrong action",
+			token:  token,
+			ruleID: rule.ID,
+			action: wrong,
+			err:    rules.ErrMalformedEntity,
 		},
 		{
 			desc:   "2nd correct token with owned rule",
 			token:  token2,
 			ruleID: rule2.ID,
+			action: ruleAction,
 			err:    nil,
 		},
 		{
 			desc:   "1st token with non-owned rule",
 			token:  token,
 			ruleID: rule2.ID,
+			action: ruleAction,
 			err:    rules.ErrKuiperServer,
 		},
 		{
 			desc:   "2nd token with non-owned rule",
 			token:  token2,
 			ruleID: rule.ID,
+			action: ruleAction,
 			err:    rules.ErrKuiperServer,
 		},
 		{
 			desc:   "correct token with non-existing rule",
 			token:  token,
 			ruleID: wrong,
+			action: ruleAction,
 			err:    rules.ErrKuiperServer,
 		},
 		{
 			desc:   "incorrect token with existing rule",
 			token:  wrong,
 			ruleID: rule.ID,
+			action: ruleAction,
 			err:    rules.ErrUnauthorizedAccess,
 		},
 	}
 	for _, tc := range cases {
-		_, err := svc.ControlRule(ctx, tc.token, tc.ruleID, "start")
+		_, err := svc.ControlRule(ctx, tc.token, tc.ruleID, tc.action)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
