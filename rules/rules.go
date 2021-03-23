@@ -16,7 +16,7 @@ type Rule struct {
 	ID      string `json:"id"`
 	SQL     string `json:"sql"`
 	Actions []struct {
-		Mainflux Action
+		Mainflux Action `json:"mainflux"`
 	}
 	Options struct {
 		SendMetaToSink bool

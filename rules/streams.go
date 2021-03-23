@@ -12,9 +12,10 @@ const (
 type Stream struct {
 	Name     string `json:"name,omitempty"`
 	Row      string `json:"row"`
-	Topic    string `json:"topic"`
+	Channel  string `json:"channel"`
 	Subtopic string `json:"subtopic"`
 	Host     string `json:"host"`
+	Port     string `json:"port"`
 }
 
 // StreamInfo is used to fetch stream info from kuiper

@@ -109,7 +109,7 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 
 	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
 		Owner:  ui.Email,
-		ChanID: stream.Topic,
+		ChanID: stream.Channel,
 	}); err != nil {
 		return "", ErrNotFound
 	}
@@ -135,7 +135,7 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 
 	if _, err = re.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{
 		Owner:  ui.Email,
-		ChanID: stream.Topic,
+		ChanID: stream.Channel,
 	}); err != nil {
 		return "", ErrNotFound
 	}
@@ -304,8 +304,6 @@ func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, er
 }
 
 func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
-	// var status
-
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return map[string]interface{}{}, ErrUnauthorizedAccess
@@ -401,7 +399,12 @@ func result(res *http.Response, action string, status int) (string, error) {
 
 func sql(id string, stream *Stream) string {
 	name := prepend(id, stream.Name)
-	topic := fmt.Sprintf("%s;%s", stream.Host, stream.Topic)
+	url := stream.Host
+	if stream.Port != "" {
+		url = fmt.Sprintf("%s:%s", url, stream.Port)
+	}
+	// Kuiper source will unpack topic in url and topic
+	topic := fmt.Sprintf("%s;%s", url, stream.Channel)
 	if len(stream.Subtopic) > 0 {
 		topic = fmt.Sprintf("%s.%s", topic, stream.Subtopic)
 	}

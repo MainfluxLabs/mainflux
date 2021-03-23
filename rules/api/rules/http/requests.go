@@ -20,7 +20,7 @@ func (req streamReq) validate() error {
 	if req.stream.Row == "" {
 		return rules.ErrMalformedEntity
 	}
-	if req.stream.Topic == "" {
+	if req.stream.Channel == "" {
 		return rules.ErrMalformedEntity
 	}
 	if req.stream.Host == "" {
@@ -63,7 +63,7 @@ type ruleReq struct {
 	Port           string `json:"port"`
 	Channel        string `json:"channel"`
 	Subtopic       string `json:"subtopic"`
-	SendToMetasink bool
+	SendToMetasink bool   `json:"send_meta_to_sink"`
 }
 
 func (req ruleReq) validate() error {

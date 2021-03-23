@@ -222,7 +222,9 @@ func rule(req *ruleReq) *rules.Rule {
 
 	rule.ID = req.ID
 	rule.SQL = req.Sql
-	rule.Actions = append(rule.Actions, struct{ Mainflux rules.Action }{
+	rule.Actions = append(rule.Actions, struct {
+		Mainflux rules.Action `json:"mainflux"`
+	}{
 		Mainflux: rules.Action{
 			Host:     req.Host,
 			Port:     req.Port,

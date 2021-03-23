@@ -48,7 +48,7 @@ const (
 
 	defAuthURL           = "localhost:8181"
 	defAuthTimeout       = "1s"
-	defThingsAuthURL     = "localhost:8181"
+	defThingsAuthURL     = "localhost:8183"
 	defThingsAuthTimeout = "1s"
 
 	envLogLevel        = "MF_RE_LOG_LEVEL"

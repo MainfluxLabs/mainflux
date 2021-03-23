@@ -39,7 +39,7 @@ func (lm *loggingMiddleware) Info(ctx context.Context) (info rules.Info, err err
 
 func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, stream rules.Stream) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
+		message := fmt.Sprintf("Method create_stream for %s with channel %s took %s to complete", stream.Name, stream.Channel, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -52,7 +52,7 @@ func (lm *loggingMiddleware) CreateStream(ctx context.Context, token string, str
 
 func (lm *loggingMiddleware) UpdateStream(ctx context.Context, token string, stream rules.Stream) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_stream for %s with topic %s took %s to complete", stream.Name, stream.Topic, time.Since(begin))
+		message := fmt.Sprintf("Method update_stream for %s with channel %s took %s to complete", stream.Name, stream.Channel, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

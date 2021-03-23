@@ -31,10 +31,10 @@ const (
 
 var (
 	stream = rules.Stream{
-		Topic: channel,
+		Channel: channel,
 	}
 	stream2 = rules.Stream{
-		Topic: channel2,
+		Channel: channel2,
 	}
 	rule  = createRule("rule", channel)
 	rule2 = createRule("rule2", channel2)
@@ -149,16 +149,16 @@ func TestListStreams(t *testing.T) {
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateStream(context.Background(), token, rules.Stream{
-			Name:  id,
-			Topic: id,
+			Name:    id,
+			Channel: id,
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	for i := numChans; i < numChans*mult; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateStream(context.Background(), token2, rules.Stream{
-			Name:  id,
-			Topic: id,
+			Name:    id,
+			Channel: id,
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
@@ -212,8 +212,8 @@ func TestDeleteStreams(t *testing.T) {
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateStream(ctx, token, rules.Stream{
-			Name:  id,
-			Topic: id,
+			Name:    id,
+			Channel: id,
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
@@ -221,7 +221,7 @@ func TestDeleteStreams(t *testing.T) {
 		_, err := svc.CreateStream(ctx, token2, rules.Stream{
 			Name: strconv.Itoa(i),
 			// i + numChans - chan IDs must be unique
-			Topic: strconv.Itoa(i + numChans),
+			Channel: strconv.Itoa(i + numChans),
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
@@ -562,7 +562,9 @@ func createRule(id, channel string) rules.Rule {
 
 	rule.ID = id
 	rule.SQL = sql
-	rule.Actions = append(rule.Actions, struct{ Mainflux rules.Action }{
+	rule.Actions = append(rule.Actions, struct {
+		Mainflux rules.Action `json:"mainflux"`
+	}{
 		Mainflux: rules.Action{
 			Channel: channel,
 		},
