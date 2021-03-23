@@ -20,7 +20,7 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/rules"
 	"github.com/mainflux/mainflux/rules/api"
-	rehttpapi "github.com/mainflux/mainflux/rules/api/rules/http"
+	rehttpapi "github.com/mainflux/mainflux/rules/api/http"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	"github.com/mainflux/mainflux/things/users"
 	"google.golang.org/grpc"

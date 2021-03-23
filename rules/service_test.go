@@ -3,12 +3,9 @@ package rules_test
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"testing"
 
-	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/rules"
 	"github.com/mainflux/mainflux/rules/mocks"
@@ -40,21 +37,8 @@ var (
 	rule2 = createRule("rule2", channel2)
 )
 
-func newService(users map[string]string, channels map[string]string) rules.Service {
-	// map[token]email
-	auth := mocks.NewAuthServiceClient(users)
-	// map[chanID]email
-	things := mocks.NewThingsClient(channels)
-	logger, err := logger.New(os.Stdout, "info")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	kuiper := mocks.NewKuiperSDK(url)
-	return rules.New(kuiper, auth, things, logger)
-}
-
 func TestCreateStream(t *testing.T) {
-	svc := newService(map[string]string{token: email}, map[string]string{channel: email})
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
 
 	cases := []struct {
 		desc   string
@@ -93,7 +77,7 @@ func TestCreateStream(t *testing.T) {
 }
 
 func TestUpdateStream(t *testing.T) {
-	svc := newService(map[string]string{token: email}, map[string]string{channel: email})
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
 
 	_, err := svc.CreateStream(context.Background(), token, stream)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -145,7 +129,7 @@ func TestListStreams(t *testing.T) {
 		channels[strconv.Itoa(i)] = email2
 	}
 
-	svc := newService(map[string]string{token: email, token2: email2}, channels)
+	svc := mocks.NewService(map[string]string{token: email, token2: email2}, channels, url)
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateStream(context.Background(), token, rules.Stream{
@@ -207,7 +191,7 @@ func TestDeleteStreams(t *testing.T) {
 	for i := numChans; i < numChans*2; i++ {
 		channels[strconv.Itoa(i)] = email2
 	}
-	svc := newService(users, channels)
+	svc := mocks.NewService(users, channels, url)
 
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
@@ -271,7 +255,7 @@ func TestDeleteStreams(t *testing.T) {
 }
 
 func TestCreateRule(t *testing.T) {
-	svc := newService(map[string]string{token: email}, map[string]string{channel: email})
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
 
 	cases := []struct {
 		desc  string
@@ -310,7 +294,7 @@ func TestCreateRule(t *testing.T) {
 }
 
 func TestUpdateRule(t *testing.T) {
-	svc := newService(map[string]string{token: email}, map[string]string{channel: email})
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
 
 	_, err := svc.CreateStream(context.Background(), token, stream)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -365,7 +349,7 @@ func TestListRules(t *testing.T) {
 		channels[strconv.Itoa(i)] = email2
 	}
 
-	svc := newService(map[string]string{token: email, token2: email2}, channels)
+	svc := mocks.NewService(map[string]string{token: email, token2: email2}, channels, url)
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		_, err := svc.CreateRule(context.Background(), token, createRule(id, id))
@@ -421,7 +405,7 @@ func TestDeleteRules(t *testing.T) {
 	for i := numChans; i < numChans*2; i++ {
 		channels[strconv.Itoa(i)] = email2
 	}
-	svc := newService(users, channels)
+	svc := mocks.NewService(users, channels, url)
 
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
@@ -484,7 +468,7 @@ func TestControlRules(t *testing.T) {
 
 	users := map[string]string{token: email, token2: email2}
 	channels := map[string]string{channel: email, channel2: email2}
-	svc := newService(users, channels)
+	svc := mocks.NewService(users, channels, url)
 
 	rule := createRule("rule", channel)
 	_, err := svc.CreateRule(ctx, token, rule)
