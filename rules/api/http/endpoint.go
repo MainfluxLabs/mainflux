@@ -36,7 +36,7 @@ func createStreamEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return resultRes{
+		return createRes{
 			Result: result,
 		}, nil
 	}
@@ -124,7 +124,7 @@ func createRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return resultRes{
+		return createRes{
 			Result: result,
 		}, nil
 	}

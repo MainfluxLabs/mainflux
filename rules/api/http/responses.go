@@ -35,6 +35,22 @@ func (res infoRes) Empty() bool {
 	return false
 }
 
+type createRes struct {
+	Result string `json:"result"`
+}
+
+func (res createRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res createRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createRes) Empty() bool {
+	return false
+}
+
 type resultRes struct {
 	Result string `json:"result"`
 }

@@ -22,7 +22,6 @@ const (
 	email2     = "xenodochial_goldwasser@email.com"
 	channel    = "103ec2f2-2034-4d9e-8039-13f4efd36b04"
 	channel2   = "243fec72-7cf7-4bca-ac87-44a53b318510"
-	sql        = "select * from stream where v > 1.2;"
 	ruleAction = "start"
 )
 
@@ -33,8 +32,8 @@ var (
 	stream2 = rules.Stream{
 		Channel: channel2,
 	}
-	rule  = createRule("rule", channel)
-	rule2 = createRule("rule2", channel2)
+	rule  = mocks.CreateRule("rule", channel)
+	rule2 = mocks.CreateRule("rule2", channel2)
 )
 
 func TestCreateStream(t *testing.T) {
@@ -352,12 +351,12 @@ func TestListRules(t *testing.T) {
 	svc := mocks.NewService(map[string]string{token: email, token2: email2}, channels, url)
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
-		_, err := svc.CreateRule(context.Background(), token, createRule(id, id))
+		_, err := svc.CreateRule(context.Background(), token, mocks.CreateRule(id, id))
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	for i := numChans; i < numChans*mult; i++ {
 		id := strconv.Itoa(i)
-		_, err := svc.CreateRule(context.Background(), token2, createRule(id, id))
+		_, err := svc.CreateRule(context.Background(), token2, mocks.CreateRule(id, id))
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -409,13 +408,13 @@ func TestDeleteRules(t *testing.T) {
 
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
-		_, err := svc.CreateRule(ctx, token, createRule(id, id))
+		_, err := svc.CreateRule(ctx, token, mocks.CreateRule(id, id))
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	for i := 0; i < numChans; i++ {
 		id := strconv.Itoa(i)
 		ch := strconv.Itoa(i + numChans)
-		_, err := svc.CreateRule(ctx, token2, createRule(id, ch))
+		_, err := svc.CreateRule(ctx, token2, mocks.CreateRule(id, ch))
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -470,11 +469,11 @@ func TestControlRules(t *testing.T) {
 	channels := map[string]string{channel: email, channel2: email2}
 	svc := mocks.NewService(users, channels, url)
 
-	rule := createRule("rule", channel)
+	rule := mocks.CreateRule("rule", channel)
 	_, err := svc.CreateRule(ctx, token, rule)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	rule2 := createRule("rule2", channel2)
+	rule2 := mocks.CreateRule("rule2", channel2)
 	_, err = svc.CreateRule(ctx, token2, rule2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -539,20 +538,4 @@ func TestControlRules(t *testing.T) {
 		_, err := svc.ControlRule(ctx, tc.token, tc.ruleID, tc.action)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
-}
-
-func createRule(id, channel string) rules.Rule {
-	var rule rules.Rule
-
-	rule.ID = id
-	rule.SQL = sql
-	rule.Actions = append(rule.Actions, struct {
-		Mainflux rules.Action `json:"mainflux"`
-	}{
-		Mainflux: rules.Action{
-			Channel: channel,
-		},
-	})
-
-	return rule
 }

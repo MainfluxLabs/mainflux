@@ -147,7 +147,7 @@ func decodeCreateStream(_ context.Context, r *http.Request) (interface{}, error)
 		token: r.Header.Get("Authorization"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.stream); err != nil {
-		return nil, err
+		return nil, errors.Wrap(rules.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -162,7 +162,7 @@ func decodeUpdateStream(_ context.Context, r *http.Request) (interface{}, error)
 		token: r.Header.Get("Authorization"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.stream); err != nil {
-		return nil, err
+		return nil, errors.Wrap(rules.ErrMalformedEntity, err)
 	}
 
 	req.stream.Name = bone.GetValue(r, name)
@@ -187,7 +187,7 @@ func decodeCreateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		token: r.Header.Get("Authorization"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, err
+		return nil, errors.Wrap(rules.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -202,7 +202,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		token: r.Header.Get("Authorization"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, err
+		return nil, errors.Wrap(rules.ErrMalformedEntity, err)
 	}
 
 	req.ID = bone.GetValue(r, name)
