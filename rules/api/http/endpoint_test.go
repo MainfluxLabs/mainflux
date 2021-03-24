@@ -4,6 +4,7 @@
 package http_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/mainflux/mainflux/rules/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -153,7 +155,7 @@ func TestCreateStream(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "add stream invalid token",
+			desc:        "add stream with invalid token",
 			req:         valid,
 			contentType: contentType,
 			auth:        wrong,
@@ -194,6 +196,138 @@ func TestCreateStream(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodPost,
 			url:         fmt.Sprintf("%s/streams", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestUpdateStream(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	valid := toJSON(stream)
+
+	invalidStream := stream
+	invalidStream.Name = ""
+	invalidName := toJSON(invalidStream)
+
+	invalidStream = stream
+	invalidStream.Row = ""
+	invalidRow := toJSON(invalidStream)
+
+	invalidStream = stream
+	invalidStream.Channel = ""
+	invalidChannel := toJSON(invalidStream)
+
+	invalidStream = stream
+	invalidStream.Host = ""
+	invalidHost := toJSON(invalidStream)
+
+	cases := []struct {
+		desc        string
+		req         string
+		contentType string
+		auth        string
+		name        string
+		status      int
+	}{
+		{
+			desc:        "update existing stream",
+			req:         valid,
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "update stream with invalid name",
+			req:         invalidName,
+			contentType: contentType,
+			auth:        token,
+			name:        "",
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream with invalid row",
+			req:         invalidRow,
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream with invalid channel",
+			req:         invalidChannel,
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream with invalid host",
+			req:         invalidHost,
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream with invalid token",
+			req:         valid,
+			contentType: contentType,
+			auth:        wrong,
+			name:        stream.Name,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "update stream with empty token",
+			req:         valid,
+			contentType: contentType,
+			auth:        "",
+			name:        stream.Name,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "update stream with invalid request format",
+			req:         "}",
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream with empty request",
+			req:         "",
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update stream without content type",
+			req:         valid,
+			contentType: "",
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPut,
+			url:         fmt.Sprintf("%s/streams/%s", ts.URL, tc.name),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.req),
@@ -328,6 +462,156 @@ func TestCreateRule(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodPost,
 			url:         fmt.Sprintf("%s/rules", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestUpdateRule(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	validReq := ruleReq{
+		token:          token,
+		ID:             rule.ID,
+		Sql:            sql,
+		Host:           url,
+		Port:           "",
+		Channel:        channel,
+		Subtopic:       "",
+		SendToMetasink: false,
+	}
+
+	valid := toJSON(validReq)
+	_ = valid
+
+	invalidReq := validReq
+	invalidReq.token = ""
+	invalidToken := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.ID = ""
+	invalidID := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Sql = ""
+	invalidSQL := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Host = ""
+	invalidHost := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Channel = ""
+	invalidChannel := toJSON(invalidReq)
+
+	cases := []struct {
+		desc        string
+		req         string
+		contentType string
+		auth        string
+		id          string
+		status      int
+	}{
+		{
+			desc:        "update rule with required data",
+			req:         valid,
+			contentType: contentType,
+			auth:        token,
+			id:          validReq.ID,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "update rule with wrong token",
+			req:         valid,
+			contentType: contentType,
+			auth:        wrong,
+			id:          validReq.ID,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "update rule with empty token",
+			req:         invalidToken,
+			contentType: contentType,
+			auth:        wrong,
+			id:          validReq.ID,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "update rule with empty ID",
+			req:         invalidID,
+			contentType: contentType,
+			auth:        wrong,
+			id:          "",
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with empty sql",
+			req:         invalidSQL,
+			contentType: contentType,
+			auth:        wrong,
+			id:          validReq.ID,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with empty host",
+			req:         invalidHost,
+			contentType: contentType,
+			auth:        wrong,
+			id:          validReq.ID,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with empty channel",
+			req:         invalidChannel,
+			contentType: contentType,
+			auth:        wrong,
+			id:          validReq.ID,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with invalid request format",
+			req:         "}",
+			contentType: contentType,
+			auth:        token,
+			id:          validReq.ID,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with empty request",
+			req:         "",
+			contentType: contentType,
+			auth:        token,
+			id:          validReq.ID,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule without content type",
+			req:         valid,
+			contentType: "",
+			auth:        token,
+			id:          validReq.ID,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPut,
+			url:         fmt.Sprintf("%s/rules/%s", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.req),
