@@ -27,7 +27,7 @@ type KuiperSDK interface {
 	UpdateRule(rule Rule) (*http.Response, error)
 	ShowRules() ([]RuleInfo, error)
 	DescribeRule(name string) (*Rule, error)
-	GetRuleStatus(name string) (map[string]interface{}, error)
+	RuleStatus(name string) (map[string]interface{}, error)
 	ControlRule(name, action string) (*http.Response, error)
 }
 
@@ -222,7 +222,7 @@ func (k *kuiper) DescribeRule(name string) (*Rule, error) {
 	return &rule, nil
 }
 
-func (k *kuiper) GetRuleStatus(name string) (map[string]interface{}, error) {
+func (k *kuiper) RuleStatus(name string) (map[string]interface{}, error) {
 	var status map[string]interface{}
 
 	url := fmt.Sprintf("%s/rules/%s/status", k.url, name)

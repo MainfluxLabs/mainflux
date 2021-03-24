@@ -363,7 +363,7 @@ func TestListStreams(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "list streams with empty token",
+			desc:        "list streams with wrong token",
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusUnauthorized,
@@ -374,6 +374,65 @@ func TestListStreams(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodGet,
 			url:         fmt.Sprintf("%s/streams", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestViewStream(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		name        string
+		status      int
+	}{
+		{
+			desc:        "view stream with valid token",
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "view stream with emtpy name",
+			contentType: contentType,
+			auth:        token,
+			name:        "",
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "view stream with empty token",
+			contentType: contentType,
+			auth:        "",
+			name:        stream.Name,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "view stream with wrong token",
+			contentType: contentType,
+			auth:        wrong,
+			name:        stream.Name,
+			status:      http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodGet,
+			url:         fmt.Sprintf("%s/streams/%s", ts.URL, tc.name),
 			contentType: tc.contentType,
 			token:       tc.auth,
 		}
@@ -680,19 +739,19 @@ func TestListRules(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "list streams with valid token",
+			desc:        "list rules with valid token",
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusOK,
 		},
 		{
-			desc:        "list streams with empty token",
+			desc:        "list rules with empty token",
 			contentType: contentType,
 			auth:        "",
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "list streams with empty token",
+			desc:        "list rules with empty token",
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusUnauthorized,
@@ -703,6 +762,204 @@ func TestListRules(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodGet,
 			url:         fmt.Sprintf("%s/rules", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestViewRule(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		id          string
+		status      int
+	}{
+		{
+			desc:        "view rule with valid token",
+			contentType: contentType,
+			auth:        token,
+			id:          rule.ID,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "view rule with emtpy name",
+			contentType: contentType,
+			auth:        token,
+			id:          "",
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "view rule with empty token",
+			contentType: contentType,
+			auth:        "",
+			id:          rule.ID,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "view rule with empty token",
+			contentType: contentType,
+			auth:        wrong,
+			id:          rule.ID,
+			status:      http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodGet,
+			url:         fmt.Sprintf("%s/rules/%s", ts.URL, tc.id),
+			contentType: tc.contentType,
+			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestDelete(t *testing.T) {
+	svc := mocks.NewService(
+		map[string]string{token: email, token2: email2},
+		map[string]string{channel: email, channel2: email2},
+		url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token2, rule2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		name        string
+		kuiperType  string
+		status      int
+	}{
+		{
+			desc:        "delete existing stream with valid token",
+			contentType: contentType,
+			auth:        token,
+			name:        stream.Name,
+			kuiperType:  "streams",
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "delete existing rule with valid token",
+			contentType: contentType,
+			auth:        token,
+			name:        rule.ID,
+			kuiperType:  "rules",
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "delete existing rule with wrong kuiper type",
+			contentType: contentType,
+			auth:        token2,
+			name:        rule2.ID,
+			kuiperType:  wrong,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "delete existing rule with empty id",
+			contentType: contentType,
+			auth:        token2,
+			name:        "",
+			kuiperType:  wrong,
+			status:      http.StatusBadRequest,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodDelete,
+			url:         fmt.Sprintf("%s/%s/%s", ts.URL, tc.kuiperType, tc.name),
+			contentType: tc.contentType,
+			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestRuleStatus(t *testing.T) {
+	svc := mocks.NewService(
+		map[string]string{token: email, token2: email2},
+		map[string]string{channel: email, channel2: email2},
+		url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token2, rule2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		id          string
+		status      int
+	}{
+		{
+			desc:        "rule status with valid token",
+			contentType: contentType,
+			auth:        token,
+			id:          rule.ID,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "rule status with emtpy name",
+			contentType: contentType,
+			auth:        token,
+			id:          "",
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "rule status with empty token",
+			contentType: contentType,
+			auth:        "",
+			id:          rule.ID,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "rule status with wrong token",
+			contentType: contentType,
+			auth:        wrong,
+			id:          rule.ID,
+			status:      http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodGet,
+			url:         fmt.Sprintf("%s/rules/%s/status", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
 		}

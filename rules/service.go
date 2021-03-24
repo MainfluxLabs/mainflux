@@ -71,8 +71,8 @@ type Service interface {
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
 	// ViewRule fetches kuiper rule info
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
-	// GetRuleStatus fetches kuiper rule operation info
-	GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
+	// RuleStatus fetches kuiper rule operation info
+	RuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
 	// ControlRule is used to "start", "stop" and "restart" kuiper rule
 	ControlRule(ctx context.Context, token, name, action string) (string, error)
 }
@@ -303,13 +303,13 @@ func (re *reService) ViewRule(ctx context.Context, token, name string) (Rule, er
 	return *rule, nil
 }
 
-func (re *reService) GetRuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
+func (re *reService) RuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error) {
 	ui, err := re.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return map[string]interface{}{}, ErrUnauthorizedAccess
 	}
 
-	status, err := re.kuiper.GetRuleStatus(prepend(ui.Id, name))
+	status, err := re.kuiper.RuleStatus(prepend(ui.Id, name))
 	if err != nil {
 		return nil, err
 	}

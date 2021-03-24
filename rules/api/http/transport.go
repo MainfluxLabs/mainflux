@@ -112,7 +112,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 		opts...,
 	))
 	r.Get("/rules/:name/status", kithttp.NewServer(
-		kitot.TraceServer(tracer, "rule_status")(getRuleStatusEndpoint(svc)),
+		kitot.TraceServer(tracer, "rule_status")(ruleStatusEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,

@@ -182,7 +182,7 @@ func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func getRuleStatusEndpoint(svc rules.Service) endpoint.Endpoint {
+func ruleStatusEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
@@ -190,7 +190,7 @@ func getRuleStatusEndpoint(svc rules.Service) endpoint.Endpoint {
 		}
 
 		var status statusRes
-		status, err := svc.GetRuleStatus(ctx, req.token, req.name)
+		status, err := svc.RuleStatus(ctx, req.token, req.name)
 		if err != nil {
 			return nil, err
 		}

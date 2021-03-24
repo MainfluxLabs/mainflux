@@ -166,7 +166,7 @@ func (k *kuiper) DescribeRule(name string) (*re.Rule, error) {
 	return &r, nil
 }
 
-func (k *kuiper) GetRuleStatus(name string) (map[string]interface{}, error) {
+func (k *kuiper) RuleStatus(name string) (map[string]interface{}, error) {
 	var status map[string]interface{}
 	if _, ok := k.rules[name]; !ok {
 		return status, re.ErrNotFound
