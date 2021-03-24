@@ -70,6 +70,12 @@ func (req ruleReq) validate() error {
 	if req.token == "" {
 		return rules.ErrUnauthorizedAccess
 	}
+	if req.ID == "" {
+		return rules.ErrMalformedEntity
+	}
+	if req.Sql == "" {
+		return rules.ErrMalformedEntity
+	}
 	if req.Host == "" {
 		return rules.ErrMalformedEntity
 	}

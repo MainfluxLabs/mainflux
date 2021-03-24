@@ -203,3 +203,148 @@ func TestCreateStream(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
+
+func TestCreateRule(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	validReq := ruleReq{
+		token:          token,
+		ID:             "id",
+		Sql:            sql,
+		Host:           url,
+		Port:           "",
+		Channel:        channel,
+		Subtopic:       "",
+		SendToMetasink: false,
+	}
+
+	valid := toJSON(validReq)
+	_ = valid
+
+	invalidReq := validReq
+	invalidReq.token = ""
+	invalidToken := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.ID = ""
+	invalidID := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Sql = ""
+	invalidSQL := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Host = ""
+	invalidHost := toJSON(invalidReq)
+
+	invalidReq = validReq
+	invalidReq.Channel = ""
+	invalidChannel := toJSON(invalidReq)
+
+	cases := []struct {
+		desc        string
+		req         string
+		contentType string
+		auth        string
+		status      int
+	}{
+		{
+			desc:        "add rule with required data",
+			req:         valid,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "add rule with wrong token",
+			req:         valid,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "add rule with empty token",
+			req:         invalidToken,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "add rule with empty ID",
+			req:         invalidID,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule with empty sql",
+			req:         invalidSQL,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule with empty host",
+			req:         invalidHost,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule with empty channel",
+			req:         invalidChannel,
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule with invalid request format",
+			req:         "}",
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule with empty request",
+			req:         "",
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "add rule without content type",
+			req:         valid,
+			contentType: "",
+			auth:        token,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/rules", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+type ruleReq struct {
+	token          string
+	ID             string `json:"id"`
+	Sql            string `json:"sql"`
+	Host           string `json:"host"`
+	Port           string `json:"port"`
+	Channel        string `json:"channel"`
+	Subtopic       string `json:"subtopic"`
+	SendToMetasink bool   `json:"send_meta_to_sink"`
+}
