@@ -338,6 +338,51 @@ func TestUpdateStream(t *testing.T) {
 	}
 }
 
+func TestListStreams(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		status      int
+	}{
+		{
+			desc:        "list streams with valid token",
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "list streams with empty token",
+			contentType: contentType,
+			auth:        "",
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "list streams with empty token",
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodGet,
+			url:         fmt.Sprintf("%s/streams", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestCreateRule(t *testing.T) {
 	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
 
@@ -615,6 +660,51 @@ func TestUpdateRule(t *testing.T) {
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestListRules(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		contentType string
+		auth        string
+		status      int
+	}{
+		{
+			desc:        "list streams with valid token",
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "list streams with empty token",
+			contentType: contentType,
+			auth:        "",
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "list streams with empty token",
+			contentType: contentType,
+			auth:        wrong,
+			status:      http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodGet,
+			url:         fmt.Sprintf("%s/rules", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
