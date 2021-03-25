@@ -206,7 +206,7 @@ func controlRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		result, err := svc.ControlRule(ctx, req.token, req.name, req.action)
+		result, err := svc.ControlRule(ctx, req.token, req.id, req.action)
 		if err != nil {
 			return nil, err
 		}

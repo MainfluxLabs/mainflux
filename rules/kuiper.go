@@ -16,18 +16,31 @@ var (
 
 // KuiperSDK specifies an API that must be fullfiled by KuiperSDK implementations
 type KuiperSDK interface {
+	// Info gets the version number, system type, and Kuiper running time
 	Info() (Info, error)
+	// CreateStream creates a Kuiper stream
 	CreateStream(sql string) (*http.Response, error)
+	// UpdateStream updates a stream definition
 	UpdateStream(sql, stream string) (*http.Response, error)
+	// ShowStreams displays all defined streams
 	ShowStreams() ([]string, error)
+	// DescribeStream prints the detailed definition of a stream
 	DescribeStream(name string) (*StreamInfo, error)
+
+	// Drop deletes the stream or rule definition
 	Drop(name, kuiperType string) (*http.Response, error)
 
+	// CreateRule creates and starts a rule
 	CreateRule(rule Rule) (*http.Response, error)
+	// UpdateRule updates a rule
 	UpdateRule(rule Rule) (*http.Response, error)
+	// ShowRules displays all of rules with a brief status
 	ShowRules() ([]RuleInfo, error)
+	// DescribeRule prints the detailed rule definition
 	DescribeRule(name string) (*Rule, error)
+	// RuleStatus gets the rule status
 	RuleStatus(name string) (map[string]interface{}, error)
+	// ControlRule starts, stops or restarts the rule
 	ControlRule(name, action string) (*http.Response, error)
 }
 

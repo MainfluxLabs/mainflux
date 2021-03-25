@@ -31,7 +31,7 @@ const (
 	email2      = "xenodochial_goldwasser@email.com"
 	channel     = "103ec2f2-2034-4d9e-8039-13f4efd36b04"
 	channel2    = "243fec72-7cf7-4bca-ac87-44a53b318510"
-	ruleAction  = "start"
+	action      = "start"
 	name        = "name"
 	name2       = "name2"
 	row         = "v float, n string"
@@ -962,6 +962,73 @@ func TestRuleStatus(t *testing.T) {
 			url:         fmt.Sprintf("%s/rules/%s/status", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestControlRule(t *testing.T) {
+	svc := mocks.NewService(map[string]string{token: email}, map[string]string{channel: email}, url)
+
+	_, err := svc.CreateStream(context.Background(), token, stream)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateRule(context.Background(), token, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc   string
+		auth   string
+		id     string
+		action string
+		status int
+	}{
+		{
+			desc:   "control rule with valid token",
+			auth:   token,
+			id:     rule.ID,
+			action: action,
+			status: http.StatusOK,
+		},
+		{
+			desc:   "control rule with invalid action",
+			auth:   token,
+			id:     "",
+			action: wrong,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "control rule with emtpy name",
+			auth:   token,
+			id:     "",
+			action: action,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "control rule with empty token",
+			auth:   "",
+			id:     rule.ID,
+			action: action,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "control rule with wrong token",
+			auth:   wrong,
+			id:     rule.ID,
+			action: action,
+			status: http.StatusUnauthorized,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/rules/%s/%s", ts.URL, tc.id, tc.action),
+			token:  tc.auth,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))

@@ -20,7 +20,7 @@ import (
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/rules"
 	"github.com/mainflux/mainflux/rules/api"
-	rehttpapi "github.com/mainflux/mainflux/rules/api/http"
+	rulesapi "github.com/mainflux/mainflux/rules/api/http"
 	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
 	"github.com/mainflux/mainflux/things/users"
 	"google.golang.org/grpc"
@@ -51,17 +51,16 @@ const (
 	defThingsAuthURL     = "localhost:8183"
 	defThingsAuthTimeout = "1s"
 
-	envLogLevel        = "MF_RE_LOG_LEVEL"
-	envHTTPPort        = "MF_RE_HTTP_PORT"
-	envKuiperURL       = "MF_KUIPER_URL"
-	envJaegerURL       = "MF_JAEGER_URL"
-	envServerCert      = "MF_RE_SERVER_CERT"
-	envServerKey       = "MF_RE_SERVER_KEY"
-	envSingleUserEmail = "MF_RE_SINGLE_USER_EMAIL"
-	envSingleUserToken = "MF_RE_SINGLE_USER_TOKEN"
-	envClientTLS       = "MF_RE_CLIENT_TLS"
-	envCACerts         = "MF_RE_CA_CERTS"
-
+	envLogLevel          = "MF_RULES_LOG_LEVEL"
+	envHTTPPort          = "MF_RULES_HTTP_PORT"
+	envServerCert        = "MF_RULES_SERVER_CERT"
+	envServerKey         = "MF_RULES_SERVER_KEY"
+	envSingleUserEmail   = "MF_RULES_SINGLE_USER_EMAIL"
+	envSingleUserToken   = "MF_RULES_SINGLE_USER_TOKEN"
+	envClientTLS         = "MF_RULES_CLIENT_TLS"
+	envCACerts           = "MF_RULES_CA_CERTS"
+	envKuiperURL         = "MF_KUIPER_URL"
+	envJaegerURL         = "MF_JAEGER_URL"
 	envAuthURL           = "MF_AUTH_GRPC_URL"
 	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
@@ -115,7 +114,7 @@ func main() {
 	svc := newService(kuiper, auth, tc, logger)
 	errs := make(chan error, 2)
 
-	go startHTTPServer(rehttpapi.MakeHandler(tracer, svc), cfg, logger, errs)
+	go startHTTPServer(rulesapi.MakeHandler(tracer, svc), cfg, logger, errs)
 
 	go func() {
 		c := make(chan os.Signal)

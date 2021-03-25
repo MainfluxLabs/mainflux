@@ -87,7 +87,7 @@ func (req ruleReq) validate() error {
 
 type controlReq struct {
 	token  string
-	name   string
+	id     string
 	action string
 }
 
@@ -95,7 +95,7 @@ func (req controlReq) validate() error {
 	if req.token == "" {
 		return rules.ErrUnauthorizedAccess
 	}
-	if req.name == "" {
+	if req.id == "" {
 		return rules.ErrMalformedEntity
 	}
 	if req.action == "" {

@@ -106,7 +106,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 	))
 
 	r.Get("/rules/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_rule")(viewRuleEndpoint(svc)),
+		kitot.TraceServer(tracer, "view_rule")(viewRuleEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
@@ -213,7 +213,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeControl(_ context.Context, r *http.Request) (interface{}, error) {
 	req := controlReq{
 		token:  r.Header.Get("Authorization"),
-		name:   bone.GetValue(r, name),
+		id:     bone.GetValue(r, name),
 		action: bone.GetValue(r, action),
 	}
 	return req, nil
