@@ -1,7 +1,6 @@
-# Re
+# Rules
 
-Re service provides a barebones HTTP API for development of a Mainflux
-service.
+Rules service provides an HTTP API for managing [Kuiper](https://github.com/emqx/kuiper) rules engine entities. Use Rules to perform CRUD operations on streams - Kuiper entities defining message stream going from Mainflux into the Kuiper rules engine - and rules - Kuiper entities defining filtering and transforming operations on the message stream going from the Kuiper rules engine into the Mainflux.
 
 ## Configuration
 
@@ -11,12 +10,12 @@ default values.
 
 | Variable              | Description                                             | Default |
 |-----------------------|---------------------------------------------------------|---------|
-| MF_RE_LOG_LEVEL   | Log level for re service (debug, info, warn, error) | error   |
-| MF_RE_HTTP_PORT   | Re service HTTP port                                | 9021    |
-| MF_RE_SERVER_CERT | Path to server certificate in pem format                |         |
+| MF_RULES_LOG_LEVEL   | Log level for re service (debug, info, warn, error) | error   |
+| MF_RULES_HTTP_PORT   | Re service HTTP port                                | 9021    |
+| MF_RULES_SERVER_CERT | Path to server certificate in pem format                |         |
 | MF_RE_SERVER_KEY  | Path to server key in pem format                        |         |
 | MF_JAEGER_URL         | Jaeger server URL                                       |         |
-| MF_RE_SECRET      | Re service secret                                   | secret  |
+| MF_RULES_SECRET      | Re service secret                                   | secret  |
 
 ## Deployment
 
