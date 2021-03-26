@@ -33,19 +33,16 @@ import (
 )
 
 const (
-	defLogLevel        = "info"
-	defHTTPPort        = "9099"
-	defKuiperURL       = "http://localhost:9081"
-	defJaegerURL       = ""
-	defServerCert      = ""
-	defServerKey       = ""
-	defSingleUserEmail = ""
-	defSingleUserToken = ""
-	defClientTLS       = "false"
-	defCACerts         = ""
-
-	defThingsLocation = "http://localhost"
-
+	defLogLevel          = "info"
+	defHTTPPort          = "9099"
+	defKuiperURL         = "http://localhost:9081"
+	defServerCert        = ""
+	defServerKey         = ""
+	defSingleUserEmail   = ""
+	defSingleUserToken   = ""
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defJaegerURL         = ""
 	defAuthURL           = "localhost:8181"
 	defAuthTimeout       = "1s"
 	defThingsAuthURL     = "localhost:8183"
