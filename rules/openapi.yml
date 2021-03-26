@@ -1,0 +1,202 @@
+openapi: 3.0.1
+info:
+  title: Mainflux rules service
+  description: HTTP API for managing rules engine and its entities, streams and rules.
+  version: '1.0.0'
+
+paths:
+  /info:
+    {}
+
+  /streams:
+    post:
+      requestBody:
+        $ref: "#/components/requestBodies/StreamReq"
+      responses:
+       '201':
+        description: "ok"
+
+    get:
+      responses:
+        '200':
+          $ref: "#/components/responses/ListStreamRes"
+
+  /streams/{name}:
+    put:
+      parameters:
+        - $ref: '#/components/parameters/Name'
+      responses:
+        '201':
+          description: "ok"
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Name'
+      responses:
+        '200':
+          $ref: "#/components/responses/ViewStreamRes"
+
+  /rules/{id}:
+    put:
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '201':
+          description: "ok"
+    get:
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          $ref: "#/components/responses/ViewStreamRes"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Name:
+      name: name
+      description: "Stream name"
+      in: path
+      schema:
+        type: string
+      required: true
+    ID:
+      name: id
+      description: "Rule ID"
+      in: path
+      schema:
+        type: string
+      required: true
+
+  schemas:
+    Info:
+      type: object
+      items:
+        type: string
+      properties:
+        version:
+          type: string
+        os:
+          type: string
+        upTimeSeconds:
+          type: string
+      required:
+        - version
+        - os
+        - upTimeSeconds
+    Result:
+      type: object
+      properties:
+        result:
+          type: string
+      required:
+        - result
+    Streams:
+      type: object
+      properties:
+        streams:
+          type: array
+          items:
+            type: string
+    StreamInfo:
+      type: object
+      properties:
+        Name:
+          type: string
+      required:
+        - Name
+
+  requestBodies:
+    StreamReq:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              row:
+                type: string
+              channel:
+                type: string
+              subtopic:
+                type: string
+              host:
+                type: string
+              port:
+                type: string
+            required:
+              - name
+              - row
+              - channel
+              - host
+    RuleReq:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+              sql:
+                type: string
+              host:
+                type: string
+              port:
+                type: string
+              channel:
+                type: string
+              subtopic:
+                type: string
+              send_meta_to_sink:
+                type: string
+            required:
+              - id
+              - sql
+              - host
+              - channel
+
+  responses:
+    InfoRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Info'
+    CreateRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+    ResultRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+    ListStreamRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Streams'
+    ViewStreamRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StreamInfo'
+    ViewRuleRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StreamInfo'
+
+security:
+  - bearerAuth: []
