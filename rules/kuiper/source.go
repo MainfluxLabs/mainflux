@@ -38,7 +38,7 @@ func (ms *mainfluxSource) Open(ctx api.StreamContext, consumer chan<- api.Source
 	logger := ctx.GetLogger()
 	logger.Debug("Opening mainflux source.")
 
-	addr := fmt.Sprintf("tcp://%s/", ms.host)
+	addr := fmt.Sprintf("%s/", ms.host)
 	pubSub, err := nats.NewPubSub(addr, queue, nil)
 	if err != nil {
 		errCh <- fmt.Errorf("Failed to connect to nats at address %s with error: %v", addr, err)

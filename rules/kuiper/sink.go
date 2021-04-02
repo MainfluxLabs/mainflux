@@ -52,7 +52,7 @@ func (ms *mainfluxSink) Open(ctx api.StreamContext) (err error) {
 	logger := ctx.GetLogger()
 	logger.Debug("Opening mainflux sink")
 
-	addr := fmt.Sprintf("tcp://%s:%s/", ms.cfg.Host, ms.cfg.Port)
+	addr := fmt.Sprintf("%s:%s/", ms.cfg.Host, ms.cfg.Port)
 	pub, err := nats.NewPublisher(addr)
 	if err != nil {
 		return fmt.Errorf("Failed to connect to nats at address %s with error: %v", addr, err)
