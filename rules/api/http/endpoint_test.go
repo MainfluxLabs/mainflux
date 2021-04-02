@@ -219,19 +219,15 @@ func TestUpdateStream(t *testing.T) {
 
 	invalidStream := stream
 	invalidStream.Name = ""
-	invalidName := toJSON(invalidStream)
+	emptyName := toJSON(invalidStream)
 
 	invalidStream = stream
 	invalidStream.Row = ""
-	invalidRow := toJSON(invalidStream)
+	emptyRow := toJSON(invalidStream)
 
 	invalidStream = stream
 	invalidStream.Channel = ""
-	invalidChannel := toJSON(invalidStream)
-
-	invalidStream = stream
-	invalidStream.Host = ""
-	invalidHost := toJSON(invalidStream)
+	emptyChannel := toJSON(invalidStream)
 
 	cases := []struct {
 		desc        string
@@ -251,7 +247,7 @@ func TestUpdateStream(t *testing.T) {
 		},
 		{
 			desc:        "update stream with invalid name",
-			req:         invalidName,
+			req:         emptyName,
 			contentType: contentType,
 			auth:        token,
 			name:        "",
@@ -259,7 +255,7 @@ func TestUpdateStream(t *testing.T) {
 		},
 		{
 			desc:        "update stream with invalid row",
-			req:         invalidRow,
+			req:         emptyRow,
 			contentType: contentType,
 			auth:        token,
 			name:        stream.Name,
@@ -267,15 +263,7 @@ func TestUpdateStream(t *testing.T) {
 		},
 		{
 			desc:        "update stream with invalid channel",
-			req:         invalidChannel,
-			contentType: contentType,
-			auth:        token,
-			name:        stream.Name,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update stream with invalid host",
-			req:         invalidHost,
+			req:         emptyChannel,
 			contentType: contentType,
 			auth:        token,
 			name:        stream.Name,
@@ -464,23 +452,19 @@ func TestCreateRule(t *testing.T) {
 
 	invalidReq := validReq
 	invalidReq.token = ""
-	invalidToken := toJSON(invalidReq)
+	emptyToken := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.ID = ""
-	invalidID := toJSON(invalidReq)
+	emptyID := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.Sql = ""
-	invalidSQL := toJSON(invalidReq)
-
-	invalidReq = validReq
-	invalidReq.Host = ""
-	invalidHost := toJSON(invalidReq)
+	emptySQL := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.Channel = ""
-	invalidChannel := toJSON(invalidReq)
+	emptyChannel := toJSON(invalidReq)
 
 	cases := []struct {
 		desc        string
@@ -505,35 +489,28 @@ func TestCreateRule(t *testing.T) {
 		},
 		{
 			desc:        "add rule with empty token",
-			req:         invalidToken,
+			req:         emptyToken,
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "add rule with empty ID",
-			req:         invalidID,
+			req:         emptyID,
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "add rule with empty sql",
-			req:         invalidSQL,
-			contentType: contentType,
-			auth:        wrong,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "add rule with empty host",
-			req:         invalidHost,
+			req:         emptySQL,
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "add rule with empty channel",
-			req:         invalidChannel,
+			req:         emptyChannel,
 			contentType: contentType,
 			auth:        wrong,
 			status:      http.StatusBadRequest,
@@ -603,23 +580,19 @@ func TestUpdateRule(t *testing.T) {
 
 	invalidReq := validReq
 	invalidReq.token = ""
-	invalidToken := toJSON(invalidReq)
+	emptyToken := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.ID = ""
-	invalidID := toJSON(invalidReq)
+	emptyID := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.Sql = ""
-	invalidSQL := toJSON(invalidReq)
-
-	invalidReq = validReq
-	invalidReq.Host = ""
-	invalidHost := toJSON(invalidReq)
+	emptySQL := toJSON(invalidReq)
 
 	invalidReq = validReq
 	invalidReq.Channel = ""
-	invalidChannel := toJSON(invalidReq)
+	emptyChannel := toJSON(invalidReq)
 
 	cases := []struct {
 		desc        string
@@ -647,7 +620,7 @@ func TestUpdateRule(t *testing.T) {
 		},
 		{
 			desc:        "update rule with empty token",
-			req:         invalidToken,
+			req:         emptyToken,
 			contentType: contentType,
 			auth:        wrong,
 			id:          validReq.ID,
@@ -655,7 +628,7 @@ func TestUpdateRule(t *testing.T) {
 		},
 		{
 			desc:        "update rule with empty ID",
-			req:         invalidID,
+			req:         emptyID,
 			contentType: contentType,
 			auth:        wrong,
 			id:          "",
@@ -663,15 +636,7 @@ func TestUpdateRule(t *testing.T) {
 		},
 		{
 			desc:        "update rule with empty sql",
-			req:         invalidSQL,
-			contentType: contentType,
-			auth:        wrong,
-			id:          validReq.ID,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update rule with empty host",
-			req:         invalidHost,
+			req:         emptySQL,
 			contentType: contentType,
 			auth:        wrong,
 			id:          validReq.ID,
@@ -679,7 +644,7 @@ func TestUpdateRule(t *testing.T) {
 		},
 		{
 			desc:        "update rule with empty channel",
-			req:         invalidChannel,
+			req:         emptyChannel,
 			contentType: contentType,
 			auth:        wrong,
 			id:          validReq.ID,

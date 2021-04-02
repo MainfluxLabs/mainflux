@@ -23,9 +23,6 @@ func (req streamReq) validate() error {
 	if req.stream.Channel == "" {
 		return rules.ErrMalformedEntity
 	}
-	if req.stream.Host == "" {
-		return rules.ErrMalformedEntity
-	}
 	return nil
 }
 
@@ -74,9 +71,6 @@ func (req ruleReq) validate() error {
 		return rules.ErrMalformedEntity
 	}
 	if req.Sql == "" {
-		return rules.ErrMalformedEntity
-	}
-	if req.Host == "" {
 		return rules.ErrMalformedEntity
 	}
 	if req.Channel == "" {

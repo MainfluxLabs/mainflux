@@ -9,7 +9,7 @@ import (
 
 type kuiper struct {
 	url     string
-	streams map[string]string
+	streams map[string]re.Stream
 	rules   map[string]re.Rule
 }
 
@@ -18,7 +18,7 @@ var _ re.KuiperSDK = (*kuiper)(nil)
 func NewKuiperSDK(url string) re.KuiperSDK {
 	return &kuiper{
 		url:     url,
-		streams: make(map[string]string),
+		streams: make(map[string]re.Stream),
 		rules:   make(map[string]re.Rule),
 	}
 }
@@ -31,32 +31,31 @@ func (k *kuiper) Info() (re.Info, error) {
 	}, nil
 }
 
-func (k *kuiper) CreateStream(sql string) (*http.Response, error) {
+func (k *kuiper) CreateStream(stream re.Stream) (*http.Response, error) {
 	var res http.Response
 	res.StatusCode = http.StatusCreated
 	res.Body = http.NoBody
 
-	n := name(sql)
-	if _, ok := k.streams[n]; ok {
+	if _, ok := k.streams[stream.Name]; ok {
 		res.StatusCode = http.StatusConflict
 		return &res, nil
 	}
 
-	k.streams[n] = sql
+	k.streams[stream.Name] = stream
 
 	return &res, nil
 }
 
-func (k *kuiper) UpdateStream(sql, name string) (*http.Response, error) {
+func (k *kuiper) UpdateStream(stream re.Stream) (*http.Response, error) {
 	var res http.Response
 	res.StatusCode = http.StatusNotFound
 	res.Body = http.NoBody
 
-	if _, ok := k.streams[name]; !ok {
+	if _, ok := k.streams[stream.Name]; !ok {
 		return &res, nil
 	}
 
-	k.streams[name] = sql
+	k.streams[stream.Name] = stream
 	res.StatusCode = http.StatusOK
 
 	return &res, nil
@@ -78,8 +77,8 @@ func (k *kuiper) DescribeStream(name string) (*re.StreamInfo, error) {
 	}
 
 	info := re.StreamInfo{}
+	fields(k.streams[name].Row, &info)
 	info.Name = name
-	fields(k.streams[name], &info)
 
 	return &info, nil
 }
@@ -191,14 +190,11 @@ func (k *kuiper) ControlRule(name, action string) (*http.Response, error) {
 	return &res, nil
 }
 
-func name(sql string) string {
-	tokens := strings.Split(sql, " ")
-	return tokens[2]
-}
-
 func fields(sql string, info *re.StreamInfo) {
-	fieldStr := sql[strings.Index(sql, "(")+1 : strings.Index(sql, ")")]
-	fieldArr := strings.Split(fieldStr, ", ")
+	if sql == "" {
+		return
+	}
+	fieldArr := strings.Split(sql, ", ")
 	for _, v := range fieldArr {
 		info.StreamFields = append(info.StreamFields, struct {
 			Name      string "json:\"Name\""
