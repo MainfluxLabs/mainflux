@@ -36,6 +36,8 @@ const (
 	defLogLevel          = "info"
 	defHTTPPort          = "9099"
 	defKuiperURL         = "http://localhost:9081"
+	defKuiperPluginHost  = "tcp://localhost"
+	defKuiperPluginPort  = "4222"
 	defServerCert        = ""
 	defServerKey         = ""
 	defSingleUserEmail   = ""
@@ -57,6 +59,8 @@ const (
 	envClientTLS         = "MF_RULES_CLIENT_TLS"
 	envCACerts           = "MF_RULES_CA_CERTS"
 	envKuiperURL         = "MF_KUIPER_URL"
+	envKuiperPluginHost  = "MF_KUIPER_PLUGIN_HOST"
+	envKuiperPluginPort  = "MF_KUIPER_PLUGIN_PORT"
 	envJaegerURL         = "MF_JAEGER_URL"
 	envAuthURL           = "MF_AUTH_GRPC_URL"
 	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
@@ -65,16 +69,18 @@ const (
 )
 
 type config struct {
-	logLevel        string
-	httpPort        string
-	kuiperURL       string
-	jaegerURL       string
-	serverCert      string
-	serverKey       string
-	singleUserEmail string
-	singleUserToken string
-	clientTLS       bool
-	caCerts         string
+	logLevel         string
+	httpPort         string
+	kuiperURL        string
+	kuiperPluginHost string
+	kuiperPluginPort string
+	jaegerURL        string
+	serverCert       string
+	serverKey        string
+	singleUserEmail  string
+	singleUserToken  string
+	clientTLS        bool
+	caCerts          string
 
 	authURL           string
 	authTimeout       time.Duration
@@ -106,7 +112,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	kuiper := rules.NewKuiperSDK(cfg.kuiperURL)
+	kuiper := rules.NewKuiperSDK(cfg.kuiperURL, cfg.kuiperPluginHost, cfg.kuiperPluginPort)
 
 	svc := newService(kuiper, auth, tc, logger)
 	errs := make(chan error, 2)
@@ -143,6 +149,8 @@ func loadConfig() config {
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
 		kuiperURL:         mainflux.Env(envKuiperURL, defKuiperURL),
+		kuiperPluginHost:  mainflux.Env(envKuiperPluginHost, defKuiperPluginHost),
+		kuiperPluginPort:  mainflux.Env(envKuiperPluginPort, defKuiperPluginPort),
 		serverCert:        mainflux.Env(envServerCert, defServerCert),
 		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),

@@ -19,9 +19,9 @@ type KuiperSDK interface {
 	// Info gets the version number, system type, and Kuiper running time
 	Info() (Info, error)
 	// CreateStream creates a Kuiper stream
-	CreateStream(sql string) (*http.Response, error)
+	CreateStream(stream Stream) (*http.Response, error)
 	// UpdateStream updates a stream definition
-	UpdateStream(sql, stream string) (*http.Response, error)
+	UpdateStream(stream Stream) (*http.Response, error)
 	// ShowStreams displays all defined streams
 	ShowStreams() ([]string, error)
 	// DescribeStream prints the detailed definition of a stream
@@ -45,15 +45,19 @@ type KuiperSDK interface {
 }
 
 type kuiper struct {
-	url string
+	url        string
+	pluginHost string
+	pluginPort string
 }
 
 var _ KuiperSDK = (*kuiper)(nil)
 
 // NewKuiperSDK instantiates KuiperSDK
-func NewKuiperSDK(url string) KuiperSDK {
+func NewKuiperSDK(url, pluginHost, pluginPort string) KuiperSDK {
 	return &kuiper{
-		url: url,
+		url:        url,
+		pluginHost: pluginHost,
+		pluginPort: pluginPort,
 	}
 }
 
@@ -75,7 +79,8 @@ func (k *kuiper) Info() (Info, error) {
 	return i, nil
 }
 
-func (k *kuiper) CreateStream(sql string) (*http.Response, error) {
+func (k *kuiper) CreateStream(stream Stream) (*http.Response, error) {
+	sql := k.sql(&stream)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return nil, ErrMalformedEntity
@@ -90,13 +95,14 @@ func (k *kuiper) CreateStream(sql string) (*http.Response, error) {
 	return res, nil
 }
 
-func (k *kuiper) UpdateStream(sql, name string) (*http.Response, error) {
+func (k *kuiper) UpdateStream(stream Stream) (*http.Response, error) {
+	sql := k.sql(&stream)
 	body, err := json.Marshal(map[string]string{"sql": sql})
 	if err != nil {
 		return nil, ErrMalformedEntity
 	}
 
-	url := fmt.Sprintf("%s/streams/%s", k.url, name)
+	url := fmt.Sprintf("%s/streams/%s", k.url, stream.Name)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, ErrMalformedEntity
@@ -164,6 +170,8 @@ func (k *kuiper) Drop(name, kuiperType string) (*http.Response, error) {
 }
 
 func (k *kuiper) CreateRule(rule Rule) (*http.Response, error) {
+	k.ruleUrl(&rule)
+
 	body, err := json.Marshal(rule)
 	if err != nil {
 		return nil, ErrMalformedEntity
@@ -178,6 +186,8 @@ func (k *kuiper) CreateRule(rule Rule) (*http.Response, error) {
 }
 
 func (k *kuiper) UpdateRule(rule Rule) (*http.Response, error) {
+	k.ruleUrl(&rule)
+
 	body, err := json.Marshal(rule)
 	if err != nil {
 		return nil, ErrMalformedEntity
@@ -268,4 +278,29 @@ func (k *kuiper) ControlRule(name, action string) (*http.Response, error) {
 		return nil, errors.Wrap(ErrKuiperServer, err)
 	}
 	return res, nil
+}
+
+func (k *kuiper) sql(stream *Stream) string {
+	if stream.Host == "" {
+		stream.Host = k.pluginHost
+	}
+	if stream.Port == "" {
+		stream.Port = k.pluginPort
+	}
+	url := fmt.Sprintf("%s:%s", stream.Host, stream.Port)
+	// Kuiper source will unpack topic in url and topic
+	topic := fmt.Sprintf("%s;%s", url, stream.Channel)
+	if len(stream.Subtopic) > 0 {
+		topic = fmt.Sprintf("%s.%s", topic, stream.Subtopic)
+	}
+	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", stream.Name, stream.Row, topic, format, pluginType)
+}
+
+func (k *kuiper) ruleUrl(rule *Rule) {
+	if rule.Actions[0].Mainflux.Host == "" {
+		rule.Actions[0].Mainflux.Host = k.pluginHost
+	}
+	if rule.Actions[0].Mainflux.Port == "" {
+		rule.Actions[0].Mainflux.Port = k.pluginPort
+	}
 }
