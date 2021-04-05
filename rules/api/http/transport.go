@@ -56,7 +56,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 		opts...,
 	))
 
-	r.Put("/streams/:"+name, kithttp.NewServer(
+	r.Put("/streams/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_stream")(updateStreamEndpoint(svc)),
 		decodeUpdateStream,
 		encodeResponse,
@@ -70,14 +70,14 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 		opts...,
 	))
 
-	r.Get("/streams/:"+name, kithttp.NewServer(
+	r.Get("/streams/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_stream")(viewStreamEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/:"+kuiperType+"/:"+name, kithttp.NewServer(
+	r.Delete("/:"+kuiperType+"/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete")(deleteEndpoint(svc)),
 		decodeDelete,
 		encodeResponse,
@@ -91,7 +91,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 		opts...,
 	))
 
-	r.Put("/rules/:"+name, kithttp.NewServer(
+	r.Put("/rules/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_rule")(updateRuleEndpoint(svc)),
 		decodeUpdateRule,
 		encodeResponse,
@@ -118,7 +118,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service) http.Handler {
 		opts...,
 	))
 
-	r.Post("/rules/:name/:"+action, kithttp.NewServer(
+	r.Post("/rules/:name/:action", kithttp.NewServer(
 		kitot.TraceServer(tracer, "control_rule")(controlRuleEndpoint(svc)),
 		decodeControl,
 		encodeResponse,

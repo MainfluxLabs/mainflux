@@ -26,32 +26,15 @@ The service is configured using the environment variables presented in the follo
 
 ## Deployment
 
-The service is distributed as Docker container. The following snippet provides a compose file template that can be used to deploy the service container locally:
+### Using docker-compose
 
-```yaml
-version: "3"
-services:
-  re:
-    image: mainflux/re:[version]
-    container_name: [instance name]
-    ports:
-      - [host machine port]:[configured HTTP port]
-    environment:
-      MF_RULES_LOG_LEVEL: [Rules log level]
-      MF_RULES_HTTP_PORT: [Rules HTTP port]
-      MF_RULES_SERVER_CERT: [Path to server certificate file]
-      MF_RULES_SERVER_KEY: [Path to server key file]
-      MF_RULES_SINGLE_USER_EMAIL: [User email for single user mode]
-      MF_RULES_SINGLE_USER_TOKEN: [User token for single user mode]
-      MF_RULES_CLIENT_TLS: [Flag to turn on/off TLS]
-      MF_RULES_CA_CERTS: [Path to trusted CAs]
-      MF_KUIPER_URL: [Kuiper rules engine url]
-      MF_JAEGER_URL: [Jaeger server url]
-      MF_AUTH_GRPC_URL: [Auth gRPC url]
-      MF_AUTH_GRPC_TIMEOUT: [Auth request timeout in seconds]
-      MF_THINGS_AUTH_GRPC_URL: [Things gRPC url]
-      MF_THINGS_AUTH_GRPC_TIMEOUT: [Things request timeout in seconds]
+This service can be deployed using docker containers. Docker compose file is available in `<project_root>/docker/addons/rules/docker-compose.yml`. In order to run Mainflux rules service, execute the following command:
+
+```bash
+docker-compose -f docker/addons/rules/docker-compose.yml up -d
 ```
+
+### Native deployment
 
 To start the service outside of the container, execute the following shell script:
 

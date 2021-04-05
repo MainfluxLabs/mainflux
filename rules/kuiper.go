@@ -103,7 +103,7 @@ func (k *kuiper) UpdateStream(stream Stream) (*http.Response, error) {
 	}
 
 	url := fmt.Sprintf("%s/streams/%s", k.url, stream.Name)
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, ErrMalformedEntity
 	}
@@ -158,7 +158,7 @@ func (k *kuiper) Drop(name, kuiperType string) (*http.Response, error) {
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", k.url, kuiperType, name)
-	req, err := http.NewRequest("DELETE", url, nil)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(ErrKuiperServer, err)
 	}
@@ -194,7 +194,7 @@ func (k *kuiper) UpdateRule(rule Rule) (*http.Response, error) {
 	}
 
 	url := fmt.Sprintf("%s/rules/%s", k.url, rule.ID)
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, errors.Wrap(ErrKuiperServer, err)
 	}

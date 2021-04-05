@@ -103,7 +103,6 @@ func main() {
 	tracer, reCloser := initJaeger("rules", cfg.jaegerURL, logger)
 	defer reCloser.Close()
 
-	// THINGS GRPC
 	conn := connectToGRPC(cfg.clientTLS, cfg.caCerts, cfg.thingsAuthURL, logger)
 	defer conn.Close()
 

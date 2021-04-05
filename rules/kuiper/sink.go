@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -79,6 +80,9 @@ func (ms *mainfluxSink) Collect(ctx api.StreamContext, item interface{}) error {
 	var rec []senml.Record
 	if err := json.Unmarshal(itemBytes, &rec); err != nil {
 		return fmt.Errorf("Failed to unmarshal %v to senml", item)
+	}
+	if len(rec) == 0 {
+		return errors.New("Empty senml array")
 	}
 	if rec[0].BaseName == "" {
 		rec[0].BaseName = baseName
