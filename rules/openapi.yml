@@ -6,57 +6,215 @@ info:
 
 paths:
   /info:
-    {}
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          $ref: "#/components/responses/InfoRes"
+        '500':
+          $ref: '#/components/responses/ServiceError'
 
   /streams:
     post:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
       requestBody:
         $ref: "#/components/requestBodies/StreamReq"
       responses:
-       '201':
-        description: "ok"
+        '201':
+          $ref: "#/components/responses/CreateRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '403':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '404':
+          description: Channel does not exist.
+        '500':
+          $ref: '#/components/responses/ServiceError'
 
     get:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
       responses:
         '200':
           $ref: "#/components/responses/ListStreamRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '403':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: '#/components/responses/ServiceError'
 
   /streams/{name}:
     put:
       parameters:
+        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/Name'
       responses:
-        '201':
-          description: "ok"
+        '200':
+          $ref: "#/components/responses/ResultRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '403':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '404':
+          description: Channel does not exist.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
     get:
       parameters:
+        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/Name'
       responses:
         '200':
           $ref: "#/components/responses/ViewStreamRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '403':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Stream does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /rules:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        $ref: "#/components/requestBodies/RuleReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '403':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          $ref: "#/components/responses/ViewRulesRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '403':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: '#/components/responses/ServiceError'
 
   /rules/{id}:
     put:
       parameters:
+        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/ID'
+      requestBody:
+        $ref: "#/components/requestBodies/RuleReq"
       responses:
-        '201':
-          description: "ok"
+        '200':
+          $ref: "#/components/responses/ResultRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '403':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Channel/Rule does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: '#/components/responses/ServiceError'
     get:
       parameters:
+        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/ID'
       responses:
         '200':
-          $ref: "#/components/responses/ViewStreamRes"
+          $ref: "#/components/responses/ViewRuleRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '403':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Rule does not exist.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /rules/{id}/status:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          $ref: "#/components/responses/StatusRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '404':
+          description: Rule does not exist.
+        '403':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /rules/{id}/{action}:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Action'
+      responses:
+        '200':
+          $ref: "#/components/responses/ResultRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '404':
+          description: Rule does not exist.
+        '403':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /{type}/{name}:
+    delete:
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/Name'
+      responses:
+        '200':
+          $ref: "#/components/responses/ResultRes"
+        '400':
+          description: Failed due to malformed request or internal kuiper server error.
+        '404':
+          description: Rule does not exist.
+        '403':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: '#/components/responses/ServiceError'
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
 
   parameters:
+    Authorization:
+      name: Authorization
+      description: User's access token.
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: true
     Name:
       name: name
       description: "Stream name"
@@ -70,6 +228,22 @@ components:
       in: path
       schema:
         type: string
+      required: true
+    Type:
+      name: type
+      description: "Kuiper entity type"
+      in: path
+      schema:
+        type: string
+        enum: [streams, rules]
+      required: true
+    Action:
+      name: action
+      description: "Rule action"
+      in: path
+      schema:
+        type: string
+        enum: [start, stop, restart]
       required: true
 
   schemas:
@@ -95,6 +269,25 @@ components:
           type: string
       required:
         - result
+    Stream:
+      type: object
+      properties:
+        name:
+          type: string
+        row:
+          type: string
+        channel:
+          type: string
+        subtopic:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+      required:
+        - name
+        - row
+        - channel
     Streams:
       type: object
       properties:
@@ -105,70 +298,130 @@ components:
     StreamInfo:
       type: object
       properties:
-        Name:
-          type: string
+        Stream:
+          type: object
+          properties:
+            Name:
+              type: string
+            StreamFields:
+              type: array
+              items:
+                type: object
+                properties:
+                  Name:
+                    type: string
+                  FieldType:
+                    type: string
+                required:
+                  - Name
+                  - FieldType
+            Options:
+              type: object
+              properties:
+                DATASOURCE:
+                  type: string
+                FORMAT:
+                  type: string
+              required:
+                - DATASOURCE
+                - FORMAT
+          required:
+            - Name
       required:
         - Name
+    Rule:
+      type: object
+      properties:
+        id:
+          type: string
+        sql:
+          type: string
+        channel:
+          type: string
+        subtopic:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+      required:
+        - id
+        - sql
+        - channel
+    RuleInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - status
+    RulesInfo:
+      type: array
+      items:
+        $ref: "#/components/schemas/RuleInfo"
+    Action:
+      type: object
+      properties:
+        host:
+          type: string
+        port:
+          type: string
+        channel:
+          type: string
+        subtopic:
+          type: string
+      required:
+        - host
+        - channel
+    RuleRes:
+      type: object
+      properties:
+        rule:
+          type: object
+          properties:
+            id:
+              type: string
+            sql:
+              type: string
+            actions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Action"
+            options:
+              type: object
+              properties:
+                SendMetaToSink:
+                  type: boolean
+    Status:
+      type: object
+      additionalProperties: true
+
 
   requestBodies:
     StreamReq:
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              name:
-                type: string
-              row:
-                type: string
-              channel:
-                type: string
-              subtopic:
-                type: string
-              host:
-                type: string
-              port:
-                type: string
-            required:
-              - name
-              - row
-              - channel
-              - host
+            $ref: "#/components/schemas/Stream"
+
     RuleReq:
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              id:
-                type: string
-              sql:
-                type: string
-              host:
-                type: string
-              port:
-                type: string
-              channel:
-                type: string
-              subtopic:
-                type: string
-              send_meta_to_sink:
-                type: string
-            required:
-              - id
-              - sql
-              - host
-              - channel
+            $ref: '#/components/schemas/Rule'
 
   responses:
     InfoRes:
-      description: ""
+      description: "Kuiper version, os and uptime information"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Info'
     CreateRes:
-      description: ""
+      description: "Information related to entity creation"
       content:
         application/json:
           schema:
@@ -180,13 +433,13 @@ components:
           schema:
             $ref: '#/components/schemas/Result'
     ListStreamRes:
-      description: ""
+      description: "Kuiper streams string list"
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Streams'
     ViewStreamRes:
-      description: ""
+      description: "Information describing individual stream"
       content:
         application/json:
           schema:
@@ -196,7 +449,18 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/StreamInfo'
-
-security:
-  - bearerAuth: []
+            $ref: '#/components/schemas/RuleRes'
+    ViewRulesRes:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RulesInfo'
+    StatusRes:
+      description: "kuiper rule operation info"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Status'
+    ServiceError:
+      description: Unexpected server-side error occurred.
