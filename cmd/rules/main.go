@@ -64,8 +64,8 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envAuthURL           = "MF_AUTH_GRPC_URL"
 	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
-	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {

@@ -13,6 +13,16 @@ networks:
     external: true
 
 services:
+  kuiper:
+    image: darkodraskovic/kuiper # TODO darkodraskovic/kuiper -> mainflux/kuiper
+    command: "./bin/kuiperd"
+    container_name: mainflux-kuiper
+    restart: on-failure
+    ports:
+      - ${MF_KUIPER_PORT}:${MF_KUIPER_PORT}
+    networks:
+      docker_mainflux-base-net:
+    
   rules:
     image: mainflux/rules:${MF_RELEASE_TAG}
     container_name: mainflux-rules
@@ -37,4 +47,6 @@ services:
     ports:
       - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}
     networks:
-      - docker_mainflux-base-net
+       docker_mainflux-base-net:
+    depends_on:
+      - kuiper
