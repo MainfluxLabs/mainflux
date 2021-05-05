@@ -1,3 +1,5 @@
+// +build kuiper
+
 package main
 
 import (

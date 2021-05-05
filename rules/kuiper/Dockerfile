@@ -14,9 +14,9 @@ RUN make build_without_edgex
 # mainflux plugins
 RUN git clone -b re https://github.com/darkodraskovic/mainflux # TODO: darkodraskovic -> mainflux
 RUN cp mainflux/rules/kuiper/source.go plugins/sources/mainflux.go \
-    && go build -trimpath --buildmode=plugin -o plugins/sources/mainflux.so plugins/sources/mainflux.go
+    && go build -trimpath --buildmode=plugin -tags kuiper -o plugins/sources/mainflux.so plugins/sources/mainflux.go
 RUN cp mainflux/rules/kuiper/sink.go plugins/sinks/mainflux.go \
-    && go build -trimpath --buildmode=plugin -o plugins/sinks/mainflux.so plugins/sinks/mainflux.go
+    && go build -trimpath --buildmode=plugin -tags kuiper -o plugins/sinks/mainflux.so plugins/sinks/mainflux.go
 
 FROM alpine:3.12
 
