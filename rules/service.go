@@ -86,7 +86,7 @@ type reService struct {
 
 var _ Service = (*reService)(nil)
 
-// New instantiates the re service implementation.
+// New instantiates the rules service implementation.
 func New(kuiper KuiperSDK, auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, logger logger.Logger) Service {
 	return &reService{
 		auth:   auth,

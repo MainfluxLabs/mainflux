@@ -1,7 +1,7 @@
 package common
 
 import (
-	"bytes"
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"github.com/benbjohnson/clock"
@@ -15,17 +15,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
 const (
 	logFileName     = "stream.log"
-	etc_dir         = "/etc/"
-	data_dir        = "/data/"
-	log_dir         = "/log/"
+	etc_dir         = "etc"
+	data_dir        = "data"
+	log_dir         = "log"
+	plugins_dir     = "plugins"
 	StreamConf      = "kuiper.yaml"
 	KuiperBaseKey   = "KuiperBaseKey"
 	KuiperSyslogKey = "KuiperSyslogKey"
@@ -33,12 +32,18 @@ const (
 )
 
 var (
-	Log          *logrus.Logger
-	Config       *KuiperConf
-	IsTesting    bool
-	Clock        clock.Clock
-	logFile      *os.File
-	LoadFileType = "relative"
+	Log             *logrus.Logger
+	Config          *KuiperConf
+	IsTesting       bool
+	Clock           clock.Clock
+	logFile         *os.File
+	LoadFileType    = "relative"
+	AbsoluteMapping = map[string]string{
+		etc_dir:     "/etc/kuiper",
+		data_dir:    "/var/lib/kuiper/data",
+		log_dir:     "/var/log/kuiper",
+		plugins_dir: "/var/lib/kuiper/plugins",
+	}
 )
 
 func LoadConf(confName string) ([]byte, error) {
@@ -124,6 +129,7 @@ func InitConf() {
 			Concurrency:        1,
 			BufferLength:       1024,
 			CheckpointInterval: 300000, //5 minutes
+			SendError:          true,
 		},
 	}
 	if err := yaml.Unmarshal(b, &kc); err != nil {
@@ -170,17 +176,6 @@ func InitConf() {
 	}
 }
 
-func PrintMap(m map[string]string, buff *bytes.Buffer) {
-	si := make([]string, 0, len(m))
-	for s := range m {
-		si = append(si, s)
-	}
-	sort.Strings(si)
-	for _, s := range si {
-		buff.WriteString(fmt.Sprintf("%s: %s\n", s, m[s]))
-	}
-}
-
 func CloseLogger() {
 	if logFile != nil {
 		logFile.Close()
@@ -197,7 +192,7 @@ func GetDataLoc() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		d := path.Join(path.Dir(dataDir), "test")
+		d := path.Join(dataDir, "test")
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			err = os.MkdirAll(d, 0755)
 			if err != nil {
@@ -209,29 +204,24 @@ func GetDataLoc() (string, error) {
 	return GetLoc(data_dir)
 }
 
-func absolutePath(subdir string) (dir string, err error) {
-	subdir = strings.TrimLeft(subdir, `/`)
-	subdir = strings.TrimRight(subdir, `/`)
-	switch subdir {
-	case "etc":
-		dir = "/etc/kuiper/"
-		break
-	case "data":
-		dir = "/var/lib/kuiper/data/"
-		break
-	case "log":
-		dir = "/var/log/kuiper/"
-		break
-	case "plugins":
-		dir = "/var/lib/kuiper/plugins/"
-		break
+func GetPluginsLoc() (string, error) {
+	return GetLoc(plugins_dir)
+}
+
+func absolutePath(loc string) (dir string, err error) {
+	for relDir, absoluteDir := range AbsoluteMapping {
+		if strings.HasPrefix(loc, relDir) {
+			dir = strings.Replace(loc, relDir, absoluteDir, 1)
+			break
+		}
 	}
 	if 0 == len(dir) {
-		return "", fmt.Errorf("no find such file : %s", subdir)
+		return "", fmt.Errorf("location %s is not allowed for absolue mode", loc)
 	}
 	return dir, nil
 }
 
+// GetLoc subdir must be a relative path
 func GetLoc(subdir string) (string, error) {
 	if "relative" == LoadFileType {
 		return relativePath(subdir)
@@ -253,7 +243,7 @@ func relativePath(subdir string) (dir string, err error) {
 		Log.Infof("Specified Kuiper base folder at location %s.\n", base)
 		dir = base
 	}
-	confDir := dir + subdir
+	confDir := path.Join(dir, subdir)
 	if _, err := os.Stat(confDir); os.IsNotExist(err) {
 		lastdir := dir
 		for len(dir) > 0 {
@@ -261,7 +251,7 @@ func relativePath(subdir string) (dir string, err error) {
 			if lastdir == dir {
 				break
 			}
-			confDir = dir + subdir
+			confDir = path.Join(dir, subdir)
 			if _, err := os.Stat(confDir); os.IsNotExist(err) {
 				lastdir = dir
 				continue
@@ -289,83 +279,6 @@ func ProcessPath(p string) (string, error) {
 	}
 }
 
-/*********** Type Cast Utilities *****/
-//TODO datetime type
-func ToString(input interface{}) string {
-	return fmt.Sprintf("%v", input)
-}
-func ToInt(input interface{}) (int, error) {
-	switch t := input.(type) {
-	case float64:
-		return int(t), nil
-	case int64:
-		return int(t), nil
-	case int:
-		return t, nil
-	default:
-		return 0, fmt.Errorf("unsupported type %T of %[1]v", input)
-	}
-}
-
-/*
-*   Convert a map into a struct. The output parameter must be a pointer to a struct
-*   The struct can have the json meta data
- */
-func MapToStruct(input, output interface{}) error {
-	// convert map to json
-	jsonString, err := json.Marshal(input)
-	if err != nil {
-		return err
-	}
-
-	// convert json to struct
-	return json.Unmarshal(jsonString, output)
-}
-
-func ConvertMap(s map[interface{}]interface{}) map[string]interface{} {
-	r := make(map[string]interface{})
-	for k, v := range s {
-		switch t := v.(type) {
-		case map[interface{}]interface{}:
-			v = ConvertMap(t)
-		case []interface{}:
-			v = ConvertArray(t)
-		}
-		r[fmt.Sprintf("%v", k)] = v
-	}
-	return r
-}
-
-func ConvertArray(s []interface{}) []interface{} {
-	r := make([]interface{}, len(s))
-	for i, e := range s {
-		switch t := e.(type) {
-		case map[interface{}]interface{}:
-			e = ConvertMap(t)
-		case []interface{}:
-			e = ConvertArray(t)
-		}
-		r[i] = e
-	}
-	return r
-}
-
-func SyncMapToMap(sm *sync.Map) map[string]interface{} {
-	m := make(map[string]interface{})
-	sm.Range(func(k interface{}, v interface{}) bool {
-		m[fmt.Sprintf("%v", k)] = v
-		return true
-	})
-	return m
-}
-func MapToSyncMap(m map[string]interface{}) *sync.Map {
-	sm := new(sync.Map)
-	for k, v := range m {
-		sm.Store(k, v)
-	}
-	return sm
-}
-
 func ReadJsonUnmarshal(path string, ret interface{}) error {
 	sliByte, err := ioutil.ReadFile(path)
 	if nil != err {
@@ -377,6 +290,14 @@ func ReadJsonUnmarshal(path string, ret interface{}) error {
 	}
 	return nil
 }
+func WriteYamlMarshal(path string, data interface{}) error {
+	y, err := yaml.Marshal(data)
+	if nil != err {
+		return err
+	}
+	return ioutil.WriteFile(path, y, 0666)
+}
+
 func ReadYamlUnmarshal(path string, ret interface{}) error {
 	sliByte, err := ioutil.ReadFile(path)
 	if nil != err {
@@ -388,10 +309,44 @@ func ReadYamlUnmarshal(path string, ret interface{}) error {
 	}
 	return nil
 }
-func WriteYamlMarshal(path string, data interface{}) error {
-	y, err := yaml.Marshal(data)
-	if nil != err {
+
+func UnzipTo(f *zip.File, fpath string) error {
+	_, err := os.Stat(fpath)
+
+	if f.FileInfo().IsDir() {
+		// Make Folder
+		if _, err := os.Stat(fpath); os.IsNotExist(err) {
+			if err := os.MkdirAll(fpath, os.ModePerm); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if err == nil || !os.IsNotExist(err) {
+		if err = os.RemoveAll(fpath); err != nil {
+			return fmt.Errorf("failed to delete file %s", fpath)
+		}
+	}
+	if _, err := os.Stat(filepath.Dir(fpath)); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, y, 0666)
+
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(outFile, rc)
+
+	outFile.Close()
+	rc.Close()
+	return err
 }

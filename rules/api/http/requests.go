@@ -55,12 +55,12 @@ func (req viewReq) validate() error {
 type ruleReq struct {
 	token          string
 	ID             string `json:"id"`
-	Sql            string `json:"sql"`
+	SQL            string `json:"sql"`
 	Host           string `json:"host"`
 	Port           string `json:"port"`
 	Channel        string `json:"channel"`
 	Subtopic       string `json:"subtopic"`
-	SendToMetasink bool   `json:"send_meta_to_sink"`
+	SendMetaToSink bool   `json:"send_meta_to_sink"`
 }
 
 func (req ruleReq) validate() error {
@@ -70,7 +70,7 @@ func (req ruleReq) validate() error {
 	if req.ID == "" {
 		return rules.ErrMalformedEntity
 	}
-	if req.Sql == "" {
+	if req.SQL == "" {
 		return rules.ErrMalformedEntity
 	}
 	if req.Channel == "" {

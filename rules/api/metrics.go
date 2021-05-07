@@ -129,8 +129,8 @@ func (ms *metricsMiddleware) RuleStatus(ctx context.Context, token, name string)
 
 func (ms *metricsMiddleware) ControlRule(ctx context.Context, token, name, action string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_rule_status").Add(1)
-		ms.latency.With("method", "get_rule_status").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "control_rule").Add(1)
+		ms.latency.With("method", "control_rule").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ControlRule(ctx, token, name, action)

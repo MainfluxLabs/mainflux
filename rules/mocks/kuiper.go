@@ -15,6 +15,7 @@ type kuiper struct {
 
 var _ re.KuiperSDK = (*kuiper)(nil)
 
+// NewKuiperSDK instantiates Kuiper API wrapper mock implementation.
 func NewKuiperSDK(url string) re.KuiperSDK {
 	return &kuiper{
 		url:     url,

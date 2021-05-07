@@ -439,12 +439,12 @@ func TestCreateRule(t *testing.T) {
 	validReq := ruleReq{
 		token:          token,
 		ID:             "id",
-		Sql:            sql,
+		SQL:            sql,
 		Host:           url,
 		Port:           "",
 		Channel:        channel,
 		Subtopic:       "",
-		SendToMetasink: false,
+		SendMetaToSink: false,
 	}
 
 	valid := toJSON(validReq)
@@ -459,7 +459,7 @@ func TestCreateRule(t *testing.T) {
 	emptyID := toJSON(invalidReq)
 
 	invalidReq = validReq
-	invalidReq.Sql = ""
+	invalidReq.SQL = ""
 	emptySQL := toJSON(invalidReq)
 
 	invalidReq = validReq
@@ -567,12 +567,12 @@ func TestUpdateRule(t *testing.T) {
 	validReq := ruleReq{
 		token:          token,
 		ID:             rule.ID,
-		Sql:            sql,
+		SQL:            sql,
 		Host:           url,
 		Port:           "",
 		Channel:        channel,
 		Subtopic:       "",
-		SendToMetasink: false,
+		SendMetaToSink: false,
 	}
 
 	valid := toJSON(validReq)
@@ -587,7 +587,7 @@ func TestUpdateRule(t *testing.T) {
 	emptyID := toJSON(invalidReq)
 
 	invalidReq = validReq
-	invalidReq.Sql = ""
+	invalidReq.SQL = ""
 	emptySQL := toJSON(invalidReq)
 
 	invalidReq = validReq
@@ -1004,10 +1004,10 @@ func TestControlRule(t *testing.T) {
 type ruleReq struct {
 	token          string
 	ID             string `json:"id"`
-	Sql            string `json:"sql"`
+	SQL            string `json:"sql"`
 	Host           string `json:"host"`
 	Port           string `json:"port"`
 	Channel        string `json:"channel"`
 	Subtopic       string `json:"subtopic"`
-	SendToMetasink bool   `json:"send_meta_to_sink"`
+	SendMetaToSink bool   `json:"send_meta_to_sink"`
 }

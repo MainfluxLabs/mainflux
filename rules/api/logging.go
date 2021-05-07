@@ -91,7 +91,7 @@ func (lm *loggingMiddleware) ViewStream(ctx context.Context, token, name string)
 
 func (lm *loggingMiddleware) Delete(ctx context.Context, token, name string, kuiperType string) (result string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method delete_stream for %s took %s to complete", name, time.Since(begin))
+		message := fmt.Sprintf("Method delete_%s for %s took %s to complete", kuiperType, name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

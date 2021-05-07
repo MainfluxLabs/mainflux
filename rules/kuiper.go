@@ -10,7 +10,9 @@ import (
 )
 
 var (
+	// RuleAction is a map of sink actions
 	RuleAction = map[string]string{"start": "start", "stop": "stop", "restart": "restart"}
+	// KuiperType is a map of kuiper base entities
 	KuiperType = map[string]string{"streams": "streams", "rules": "rules"}
 )
 
@@ -170,7 +172,7 @@ func (k *kuiper) Drop(name, kuiperType string) (*http.Response, error) {
 }
 
 func (k *kuiper) CreateRule(rule Rule) (*http.Response, error) {
-	k.ruleUrl(&rule)
+	k.ruleURL(&rule)
 
 	body, err := json.Marshal(rule)
 	if err != nil {
@@ -186,7 +188,7 @@ func (k *kuiper) CreateRule(rule Rule) (*http.Response, error) {
 }
 
 func (k *kuiper) UpdateRule(rule Rule) (*http.Response, error) {
-	k.ruleUrl(&rule)
+	k.ruleURL(&rule)
 
 	body, err := json.Marshal(rule)
 	if err != nil {
@@ -296,7 +298,7 @@ func (k *kuiper) sql(stream *Stream) string {
 	return fmt.Sprintf("create stream %s (%s) WITH (DATASOURCE = \"%s\" FORMAT = \"%s\" TYPE = \"%s\")", stream.Name, stream.Row, topic, format, pluginType)
 }
 
-func (k *kuiper) ruleUrl(rule *Rule) {
+func (k *kuiper) ruleURL(rule *Rule) {
 	if rule.Actions[0].Mainflux.Host == "" {
 		rule.Actions[0].Mainflux.Host = k.pluginHost
 	}

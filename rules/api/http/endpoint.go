@@ -221,7 +221,7 @@ func rule(req *ruleReq) *rules.Rule {
 	var rule rules.Rule
 
 	rule.ID = req.ID
-	rule.SQL = req.Sql
+	rule.SQL = req.SQL
 	rule.Actions = append(rule.Actions, struct {
 		Mainflux rules.Action `json:"mainflux"`
 	}{
@@ -232,7 +232,7 @@ func rule(req *ruleReq) *rules.Rule {
 			Subtopic: req.Subtopic,
 		},
 	})
-	rule.Options.SendMetaToSink = req.SendToMetasink
+	rule.Options.SendMetaToSink = req.SendMetaToSink
 
 	return &rule
 }

@@ -63,6 +63,14 @@ type Source interface {
 	Closable
 }
 
+type TableSource interface {
+	// Load the data at batch
+	Load(ctx StreamContext) ([]SourceTuple, error)
+	//Called during initialization. Configure the source with the data source(e.g. topic for mqtt) and the properties
+	//read from the yaml
+	Configure(datasource string, props map[string]interface{}) error
+}
+
 type Sink interface {
 	//Should be sync function for normal case. The container will run it in go func
 	Open(ctx StreamContext) error
@@ -96,6 +104,7 @@ type RuleOption struct {
 	Concurrency        int   `json:"concurrency" yaml:"concurrency"`
 	BufferLength       int   `json:"bufferLength" yaml:"bufferLength"`
 	SendMetaToSink     bool  `json:"sendMetaToSink" yaml:"sendMetaToSink"`
+	SendError          bool  `json:"sendError" yaml:"sendError"`
 	Qos                Qos   `json:"qos" yaml:"qos"`
 	CheckpointInterval int   `json:"checkpointInterval" yaml:"checkpointInterval"`
 }
@@ -114,6 +123,7 @@ type StreamContext interface {
 	GetRuleId() string
 	GetOpId() string
 	GetInstanceId() int
+	GetRootPath() string
 	WithMeta(ruleId string, opId string, store Store) StreamContext
 	WithInstance(instanceId int) StreamContext
 	WithCancel() (StreamContext, context.CancelFunc)

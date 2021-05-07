@@ -15,6 +15,7 @@ const (
 	sql = "select * from stream where v > 1.2;"
 )
 
+// NewService instantiates the rules service mock implementation.
 func NewService(users map[string]string, channels map[string]string, kuiperURL string) rules.Service {
 	// map[token]email
 	auth := NewAuthServiceClient(users)
@@ -28,6 +29,7 @@ func NewService(users map[string]string, channels map[string]string, kuiperURL s
 	return rules.New(kuiper, auth, things, logger)
 }
 
+// CreateRule creates Kuiper rule representation
 func CreateRule(id, channel string) rules.Rule {
 	var rule rules.Rule
 

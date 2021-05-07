@@ -96,9 +96,12 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("rules_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
-	auth, _ := createAuthClient(cfg, authTracer, logger)
+	auth, close := createAuthClient(cfg, authTracer, logger)
+	if close != nil {
+		defer close()
+	}
 
 	tracer, reCloser := initJaeger("rules", cfg.jaegerURL, logger)
 	defer reCloser.Close()
@@ -106,7 +109,7 @@ func main() {
 	conn := connectToGRPC(cfg.clientTLS, cfg.caCerts, cfg.thingsAuthURL, logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("rules_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
