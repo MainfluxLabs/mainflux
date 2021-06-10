@@ -20,12 +20,16 @@ var (
 type KuiperSDK interface {
 	// Info gets the version number, system type, and Kuiper running time
 	Info() (Info, error)
+
 	// CreateStream creates a Kuiper stream
 	CreateStream(stream Stream) (*http.Response, error)
+
 	// UpdateStream updates a stream definition
 	UpdateStream(stream Stream) (*http.Response, error)
+
 	// ShowStreams displays all defined streams
 	ShowStreams() ([]string, error)
+
 	// DescribeStream prints the detailed definition of a stream
 	DescribeStream(name string) (*StreamInfo, error)
 
@@ -34,14 +38,19 @@ type KuiperSDK interface {
 
 	// CreateRule creates and starts a rule
 	CreateRule(rule Rule) (*http.Response, error)
+
 	// UpdateRule updates a rule
 	UpdateRule(rule Rule) (*http.Response, error)
+
 	// ShowRules displays all of rules with a brief status
 	ShowRules() ([]RuleInfo, error)
+
 	// DescribeRule prints the detailed rule definition
 	DescribeRule(name string) (*Rule, error)
+
 	// RuleStatus gets the rule status
 	RuleStatus(name string) (map[string]interface{}, error)
+
 	// ControlRule starts, stops or restarts the rule
 	ControlRule(name, action string) (*http.Response, error)
 }
@@ -69,7 +78,6 @@ func (k *kuiper) Info() (Info, error) {
 	res, err := http.Get(k.url)
 	if err != nil {
 		return i, errors.Wrap(ErrKuiperServer, err)
-
 	}
 	defer res.Body.Close()
 

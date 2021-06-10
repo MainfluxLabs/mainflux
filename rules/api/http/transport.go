@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -270,7 +269,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		case errors.Contains(errorVal, io.ErrUnexpectedEOF),
 			errors.Contains(errorVal, io.EOF):
 			w.WriteHeader(http.StatusBadRequest)
-
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -286,36 +284,4 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-func readUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
-	vals := bone.GetQuery(r, key)
-	if len(vals) > 1 {
-		return 0, errInvalidQueryParams
-	}
-
-	if len(vals) == 0 {
-		return def, nil
-	}
-
-	strval := vals[0]
-	val, err := strconv.ParseUint(strval, 10, 64)
-	if err != nil {
-		return 0, errInvalidQueryParams
-	}
-
-	return val, nil
-}
-
-func readStringQuery(r *http.Request, key string) (string, error) {
-	vals := bone.GetQuery(r, key)
-	if len(vals) > 1 {
-		return "", errInvalidQueryParams
-	}
-
-	if len(vals) == 0 {
-		return "", nil
-	}
-
-	return vals[0], nil
 }

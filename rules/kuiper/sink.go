@@ -65,7 +65,7 @@ func (ms *mainfluxSink) Open(ctx api.StreamContext) (err error) {
 	return
 }
 
-// Collect publishes messages transferred to sink to nats
+// Collect publishes messages to Mainflux NATS broker
 func (ms *mainfluxSink) Collect(ctx api.StreamContext, item interface{}) error {
 	logger := ctx.GetLogger()
 	logger.Debugf("mainflux sink receive %v", item)

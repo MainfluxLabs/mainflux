@@ -50,12 +50,16 @@ type Info struct {
 type Service interface {
 	// Info fetches kuiper version, os and uptime information
 	Info(ctx context.Context) (Info, error)
+
 	// CreateStream creates kuiper stream
 	CreateStream(ctx context.Context, token string, stream Stream) (string, error)
+
 	// UpdateStream updates kuiper stream
 	UpdateStream(ctx context.Context, token string, stream Stream) (string, error)
+
 	// ListStream list kuiper streams
 	ListStreams(ctx context.Context, token string) ([]string, error)
+
 	// ViewStream fetches kuiper stream info
 	ViewStream(ctx context.Context, token, name string) (StreamInfo, error)
 
@@ -64,14 +68,19 @@ type Service interface {
 
 	// CreateRule creates kuiper rule
 	CreateRule(ctx context.Context, token string, rule Rule) (string, error)
+
 	// UpdateRule updates kuiper rule
 	UpdateRule(ctx context.Context, token string, rule Rule) (string, error)
+
 	// ListRules list kuiper rules
 	ListRules(ctx context.Context, token string) ([]RuleInfo, error)
+
 	// ViewRule fetches kuiper rule info
 	ViewRule(ctx context.Context, token, name string) (Rule, error)
+
 	// RuleStatus fetches kuiper rule operation info
 	RuleStatus(ctx context.Context, token, name string) (map[string]interface{}, error)
+
 	// ControlRule is used to "start", "stop" and "restart" kuiper rule
 	ControlRule(ctx context.Context, token, name, action string) (string, error)
 }
