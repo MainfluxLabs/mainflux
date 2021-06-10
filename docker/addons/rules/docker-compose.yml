@@ -14,7 +14,7 @@ networks:
 
 services:
   kuiper:
-    image: darkodraskovic/kuiper # TODO darkodraskovic/kuiper -> mainflux/kuiper
+    image: emqx/kuiper:1.2.1-alpine
     command: "./bin/kuiperd"
     container_name: mainflux-kuiper
     restart: on-failure

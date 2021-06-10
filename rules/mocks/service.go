@@ -31,17 +31,18 @@ func NewService(users map[string]string, channels map[string]string, kuiperURL s
 
 // CreateRule creates Kuiper rule representation
 func CreateRule(id, channel string) rules.Rule {
-	var rule rules.Rule
-
-	rule.ID = id
-	rule.SQL = sql
-	rule.Actions = append(rule.Actions, struct {
-		Mainflux rules.Action `json:"mainflux"`
-	}{
-		Mainflux: rules.Action{
-			Channel: channel,
+	return rules.Rule{
+		ID:  id,
+		SQL: sql,
+		Actions: []struct {
+			Mainflux rules.Action `json:"mainflux"`
+		}{
+			{
+				Mainflux: rules.Action{
+					Channel: channel,
+				},
+			},
 		},
-	})
-
-	return rule
+		Options: struct{ SendMetaToSink bool }{},
+	}
 }

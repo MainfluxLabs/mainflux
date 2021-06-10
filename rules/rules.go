@@ -11,13 +11,15 @@ type Action struct {
 	Subtopic string `json:"subtopic"`
 }
 
+type Actions []struct {
+	Mainflux Action `json:"mainflux"`
+}
+
 // Rule represents data used to create kuiper rule
 type Rule struct {
 	ID      string `json:"id"`
 	SQL     string `json:"sql"`
-	Actions []struct {
-		Mainflux Action `json:"mainflux"`
-	}
+	Actions Actions
 	Options struct {
 		SendMetaToSink bool
 	}
