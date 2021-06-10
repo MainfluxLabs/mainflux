@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/mainflux/mainflux"
@@ -77,6 +76,19 @@ type Service interface {
 	ControlRule(ctx context.Context, token, name, action string) (string, error)
 }
 
+var actions = map[string]string{
+	"createStream": "Create stream",
+	"updateStream": "Update stream",
+	"createRule":   "Create rule",
+	"updateRule":   "Update rule",
+	"delete":       "Delete",
+}
+
+var results = map[string]string{
+	"success": "successful",
+	"fail":    "failed",
+}
+
 type reService struct {
 	auth   mainflux.AuthServiceClient
 	things mainflux.ThingsServiceClient
@@ -119,7 +131,7 @@ func (re *reService) CreateStream(ctx context.Context, token string, stream Stre
 		return "", err
 	}
 
-	result, err := result(res, "Create stream", http.StatusCreated)
+	result, err := makeResult(res, actions["createStream"], http.StatusCreated)
 	if err != nil {
 		return "", err
 	}
@@ -146,7 +158,7 @@ func (re *reService) UpdateStream(ctx context.Context, token string, stream Stre
 		return "", err
 	}
 
-	result, err := result(res, "Update stream", http.StatusOK)
+	result, err := makeResult(res, actions["updateStream"], http.StatusOK)
 	if err != nil {
 		return "", err
 	}
@@ -203,7 +215,7 @@ func (re *reService) Delete(ctx context.Context, token, name, kuiperType string)
 		return "", err
 	}
 
-	result, err := result(res, "Delete "+kuiperType, http.StatusOK)
+	result, err := makeResult(res, fmt.Sprintf("%s %s", actions["Delete"], kuiperType), http.StatusOK)
 	if err != nil {
 		return "", err
 	}
@@ -230,7 +242,7 @@ func (re *reService) CreateRule(ctx context.Context, token string, rule Rule) (s
 		return "", err
 	}
 
-	result, err := result(res, "Create rule", http.StatusCreated)
+	result, err := makeResult(res, actions["createRule"], http.StatusCreated)
 	if err != nil {
 		return "", err
 	}
@@ -257,7 +269,7 @@ func (re *reService) UpdateRule(ctx context.Context, token string, rule Rule) (s
 		return "", err
 	}
 
-	result, err := result(res, "Update rule", http.StatusOK)
+	result, err := makeResult(res, actions["updateRule"], http.StatusOK)
 	if err != nil {
 		return "", err
 	}
@@ -334,7 +346,7 @@ func (re *reService) ControlRule(ctx context.Context, token, name, action string
 		return "", err
 	}
 
-	result, err := result(res, action, http.StatusOK)
+	result, err := makeResult(res, action, http.StatusOK)
 	if err != nil {
 		return "", err
 	}
@@ -383,8 +395,8 @@ func ruleRemove(id string, rule *Rule) {
 	rule.SQL = strings.Join(words, " ")
 }
 
-func result(res *http.Response, action string, status int) (string, error) {
-	result := action + " successful."
+func makeResult(res *http.Response, action string, status int) (string, error) {
+	result := fmt.Sprintf("%s %s", action, results["success"])
 	if res.StatusCode != status {
 		defer res.Body.Close()
 		reasonBt, err := ioutil.ReadAll(res.Body)
@@ -392,7 +404,7 @@ func result(res *http.Response, action string, status int) (string, error) {
 			return "", errors.Wrap(ErrKuiperServer, err)
 		}
 		reasonStr := remIDRegEx.ReplaceAllString(string(reasonBt), "")
-		result = action + " failed. Kuiper http status: " + strconv.Itoa(res.StatusCode) + ". " + reasonStr
+		result = fmt.Sprintf("%s %s. Kuiper http status %d: %s", action, results["fail"], res.StatusCode, reasonStr)
 		return "", errors.Wrap(ErrKuiperServer, errors.New(result))
 	}
 	return result, nil
