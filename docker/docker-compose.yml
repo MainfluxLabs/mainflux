@@ -14,6 +14,7 @@ volumes:
   mainflux-mqtt-broker-volume:
   mainflux-mosquitto-data:
   mainflux-mosquitto-log:
+  mainflux-influxdb-volume:
 
 services:
 
@@ -28,7 +29,7 @@ services:
       - mainflux-base-net
 
   mosquitto:
-    image: arm32v6/eclipse-mosquitto
+    image: arm32v6/eclipse-mosquitto:1.5
     container_name: mainflux-mosquitto
     restart: on-failure
     networks:
@@ -60,7 +61,7 @@ services:
       - mainflux-auth-redis-volume:/data
 
   things:
-    image: mainflux/things-arm:latest
+    image: mteodor/things:arm32v7
     container_name: mainflux-things
     restart: on-failure
     environment:
@@ -88,7 +89,7 @@ services:
       - mainflux-base-net
 
   mqtt-adapter:
-    image: mainflux/mqtt-arm:latest
+    image: mteodor/mqtt:arm32v7
     container_name: mainflux-mqtt
     depends_on:
       - mosquitto
@@ -121,4 +122,44 @@ services:
       - mainflux-base-net
     volumes:
       - mainflux-es-redis-volume:/data
+  
+  influxdb:
+    image: arm32v7/influxdb:1.8.5
+    container_name: mainflux-influxdb
+    restart: on-failure
+    environment:
+      INFLUXDB_DB: ${MF_INFLUX_WRITER_DB}
+      INFLUXDB_ADMIN_USER: ${MF_INFLUX_WRITER_DB_USER}
+      INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUX_WRITER_DB_PASS}
+    networks:
+      - mainflux-base-net
+    ports:
+      - ${MF_INFLUX_WRITER_DB_PORT}:${MF_INFLUX_WRITER_DB_PORT}
+    volumes:
+      - mainflux-influxdb-volume:/var/lib/influxdb
+
+  influxdb-writer:
+    image: mteodor/influxdb-writer:arm32v7
+    container_name: mainflux-influxdb-writer
+    depends_on:
+      - influxdb
+      - nats
+    restart: on-failure
+    environment:
+      MF_INFLUX_WRITER_LOG_LEVEL: debug
+      MF_NATS_URL: ${MF_NATS_URL}
+      MF_INFLUX_WRITER_PORT: ${MF_INFLUX_WRITER_PORT}
+      MF_INFLUX_WRITER_BATCH_SIZE: ${MF_INFLUX_WRITER_BATCH_SIZE}
+      MF_INFLUX_WRITER_BATCH_TIMEOUT: ${MF_INFLUX_WRITER_BATCH_TIMEOUT}
+      MF_INFLUX_WRITER_DB: ${MF_INFLUX_WRITER_DB}
+      MF_INFLUX_WRITER_DB_HOST: mainflux-influxdb
+      MF_INFLUX_WRITER_DB_PORT: ${MF_INFLUX_WRITER_DB_PORT}
+      MF_INFLUX_WRITER_DB_USER: ${MF_INFLUX_WRITER_DB_USER}
+      MF_INFLUX_WRITER_DB_PASS: ${MF_INFLUX_WRITER_DB_PASS}
+    ports:
+      - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
+    networks:
+      - mainflux-base-net
+    volumes:
+      - ./subjects.toml:/config/subjects.toml
 
