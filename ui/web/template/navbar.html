@@ -1,0 +1,29 @@
+{{define "navbar"}}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+    <div class="position-sticky pt-3">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          {{$active := "dashboard"}}
+          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} aria-current="page" href="/">
+            <i class="fas fa-home"></i>
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          {{$active = "things"}}
+          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} href="things">
+            <i class="fas fa-microchip"></i>
+            Things
+          </a>
+        </li>
+        <li class="nav-item">
+          {{$active = "channels"}}
+          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} href="channels">
+            <i class="fas fa-exchange-alt"></i>
+            Channels
+          </a>
+        </li>
+      </ul>
+    </div>
+</nav>
+{{end}}
