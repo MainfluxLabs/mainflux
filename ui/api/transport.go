@@ -121,11 +121,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 		return nil
 	}
 
-	err := ar.template.ExecuteTemplate(w, ar.name, ar.data)
-	if err != nil {
-		println(err.Error())
-	}
-
+	w.Write(ar.html)
 	return nil
 }
 

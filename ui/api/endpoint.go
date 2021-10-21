@@ -15,9 +15,7 @@ func indexEndpoint(svc ui.Service) endpoint.Endpoint {
 		req := request.(indexReq)
 		res, err := svc.Index(ctx, req.token)
 		return uiRes{
-			template: res.Template,
-			name:     res.Name,
-			data:     res.Data,
+			html: res,
 		}, err
 	}
 }
@@ -27,9 +25,7 @@ func thingsEndpoint(svc ui.Service) endpoint.Endpoint {
 		req := request.(thingsReq)
 		res, err := svc.Things(ctx, req.token)
 		return uiRes{
-			template: res.Template,
-			name:     res.Name,
-			data:     res.Data,
+			html: res,
 		}, err
 	}
 }
@@ -39,9 +35,7 @@ func channelsEndpoint(svc ui.Service) endpoint.Endpoint {
 		req := request.(channelsReq)
 		res, err := svc.Channels(ctx, req.token)
 		return uiRes{
-			template: res.Template,
-			name:     res.Name,
-			data:     res.Data,
+			html: res,
 		}, err
 	}
 }

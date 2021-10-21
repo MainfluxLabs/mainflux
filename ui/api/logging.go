@@ -26,7 +26,7 @@ func LoggingMiddleware(svc ui.Service, logger log.Logger) ui.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Index(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (lm *loggingMiddleware) Index(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method index took %s to complete", time.Since(begin))
 		if err != nil {
@@ -39,7 +39,7 @@ func (lm *loggingMiddleware) Index(ctx context.Context, token string) (td ui.Tem
 	return lm.svc.Index(ctx, token)
 }
 
-func (lm *loggingMiddleware) Things(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (lm *loggingMiddleware) Things(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method things took %s to complete", time.Since(begin))
 		if err != nil {
@@ -52,7 +52,7 @@ func (lm *loggingMiddleware) Things(ctx context.Context, token string) (td ui.Te
 	return lm.svc.Things(ctx, token)
 }
 
-func (lm *loggingMiddleware) Channels(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (lm *loggingMiddleware) Channels(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method channels took %s to complete", time.Since(begin))
 		if err != nil {

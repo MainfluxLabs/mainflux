@@ -30,7 +30,7 @@ func MetricsMiddleware(svc ui.Service, counter metrics.Counter, latency metrics.
 	}
 }
 
-func (mm *metricsMiddleware) Index(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (mm *metricsMiddleware) Index(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "index").Add(1)
 		mm.latency.With("method", "index").Observe(time.Since(begin).Seconds())
@@ -39,7 +39,7 @@ func (mm *metricsMiddleware) Index(ctx context.Context, token string) (td ui.Tem
 	return mm.svc.Index(ctx, token)
 }
 
-func (mm *metricsMiddleware) Things(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (mm *metricsMiddleware) Things(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "things").Add(1)
 		mm.latency.With("method", "things").Observe(time.Since(begin).Seconds())
@@ -48,7 +48,7 @@ func (mm *metricsMiddleware) Things(ctx context.Context, token string) (td ui.Te
 	return mm.svc.Things(ctx, token)
 }
 
-func (mm *metricsMiddleware) Channels(ctx context.Context, token string) (td ui.TemplateData, err error) {
+func (mm *metricsMiddleware) Channels(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "channels").Add(1)
 		mm.latency.With("method", "channels").Observe(time.Since(begin).Seconds())

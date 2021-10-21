@@ -4,7 +4,6 @@
 package api
 
 import (
-	"html/template"
 	"net/http"
 
 	"github.com/mainflux/mainflux"
@@ -15,9 +14,7 @@ var (
 )
 
 type uiRes struct {
-	template *template.Template
-	name     string
-	data     interface{}
+	html []byte
 }
 
 func (res uiRes) Code() int {

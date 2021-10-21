@@ -6,6 +6,7 @@
 package ui
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"html/template"
@@ -20,9 +21,9 @@ const (
 
 // Service specifies coap service API.
 type Service interface {
-	Index(ctx context.Context, token string) (TemplateData, error)
-	Things(ctx context.Context, token string) (TemplateData, error)
-	Channels(ctx context.Context, token string) (TemplateData, error)
+	Index(ctx context.Context, token string) ([]byte, error)
+	Things(ctx context.Context, token string) ([]byte, error)
+	Channels(ctx context.Context, token string) ([]byte, error)
 }
 
 var _ Service = (*uiService)(nil)
@@ -30,12 +31,6 @@ var _ Service = (*uiService)(nil)
 type uiService struct {
 	things mainflux.ThingsServiceClient
 	sdk    sdk.SDK
-}
-
-type TemplateData struct {
-	Template *template.Template
-	Name     string
-	Data     interface{}
 }
 
 // New instantiates the HTTP adapter implementation.
@@ -46,10 +41,10 @@ func New(things mainflux.ThingsServiceClient, sdk sdk.SDK) Service {
 	}
 }
 
-func (gs *uiService) Index(ctx context.Context, token string) (TemplateData, error) {
-	tmpl, err := template.ParseGlob(templateDir + "/*")
+func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
+	tpl, err := template.ParseGlob(templateDir + "/*")
 	if err != nil {
-		return TemplateData{}, err
+		return []byte{}, err
 	}
 
 	data := struct {
@@ -58,22 +53,23 @@ func (gs *uiService) Index(ctx context.Context, token string) (TemplateData, err
 		"dashboard",
 	}
 
-	return TemplateData{
-		Template: tmpl,
-		Name:     "index",
-		Data:     data,
-	}, nil
+	var btpl bytes.Buffer
+	if err := tpl.ExecuteTemplate(&btpl, "index", data); err != nil {
+		println(err.Error())
+	}
+
+	return btpl.Bytes(), nil
 }
 
-func (gs *uiService) Things(ctx context.Context, token string) (TemplateData, error) {
-	tmpl, err := template.ParseGlob(templateDir + "/*")
+func (gs *uiService) Things(ctx context.Context, token string) ([]byte, error) {
+	tpl, err := template.ParseGlob(templateDir + "/*")
 	if err != nil {
-		return TemplateData{}, err
+		return []byte{}, err
 	}
 
 	things, err := gs.sdk.Things("123", 0, 100, "")
 	if err != nil {
-		return TemplateData{}, err
+		return []byte{}, err
 	}
 	fmt.Println(things)
 
@@ -83,17 +79,18 @@ func (gs *uiService) Things(ctx context.Context, token string) (TemplateData, er
 		"things",
 	}
 
-	return TemplateData{
-		Template: tmpl,
-		Name:     "things",
-		Data:     data,
-	}, nil
+	var btpl bytes.Buffer
+	if err := tpl.ExecuteTemplate(&btpl, "things", data); err != nil {
+		println(err.Error())
+	}
+
+	return btpl.Bytes(), nil
 }
 
-func (gs *uiService) Channels(ctx context.Context, token string) (TemplateData, error) {
-	tmpl, err := template.ParseGlob(templateDir + "/*")
+func (gs *uiService) Channels(ctx context.Context, token string) ([]byte, error) {
+	tpl, err := template.ParseGlob(templateDir + "/*")
 	if err != nil {
-		return TemplateData{}, err
+		return []byte{}, err
 	}
 
 	data := struct {
@@ -102,9 +99,10 @@ func (gs *uiService) Channels(ctx context.Context, token string) (TemplateData, 
 		"channels",
 	}
 
-	return TemplateData{
-		Template: tmpl,
-		Name:     "channels",
-		Data:     data,
-	}, nil
+	var btpl bytes.Buffer
+	if err := tpl.ExecuteTemplate(&btpl, "channels", data); err != nil {
+		println(err.Error())
+	}
+
+	return btpl.Bytes(), nil
 }
