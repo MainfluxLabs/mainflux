@@ -67,16 +67,18 @@ func (gs *uiService) Things(ctx context.Context, token string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	things, err := gs.sdk.Things("123", 0, 100, "")
+	thsPage, err := gs.sdk.Things("123", 0, 100, "")
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println(things)
+	fmt.Println(thsPage.Things)
 
 	data := struct {
 		NavbarActive string
+		Things       []sdk.Thing
 	}{
 		"things",
+		thsPage.Things,
 	}
 
 	var btpl bytes.Buffer

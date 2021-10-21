@@ -12,17 +12,24 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-            <h2>Things</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tellus enim, commodo ut viverra ac,
-              pretium consectetur arcu. Phasellus tincidunt laoreet est, id gravida turpis maximus sed. Cras ante nibh,
-              egestas at suscipit eu, varius sit amet tortor. Vestibulum ante ipsum primis in faucibus orci luctus et
-              ultrices posuere cubilia curae; Maecenas sed massa sed sem convallis laoreet eget ac velit.
-              Aenean suscipit metus est, at gravida lectus hendrerit id. Vestibulum egestas feugiat cursus.
-              Integer vehicula luctus sem, et varius risus dapibus vel. Pellentesque at eros aliquam, volutpat odio id,
-              bibendum ligula. Proin libero ligula, feugiat sed nisl in, dictum fermentum risus.
-              In vestibulum sit amet ipsum eu convallis. Phasellus ullamcorper mi sit amet vulputate aliquam.
-            </p>
-            <p><a class="btn btn-secondary" href="#" role="button">View details &raquo;</a></p>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">ID</th>
+                  <th scope="col">NAME</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range $i, $t := .Things }}
+                  <tr>
+                    <th scope="row">{{ $i }}</th>
+                    <td>{{ $t.ID }}</td>
+                    <td>{{ $t.Name }}</td>
+                  </tr>
+                {{ end }}
+              </tbody>
+            </table>
           </div>
           <!-- End of partial-->
 
