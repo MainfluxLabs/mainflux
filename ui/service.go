@@ -8,6 +8,7 @@ package ui
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 
@@ -19,11 +20,27 @@ const (
 	templateDir = "ui/web/template"
 )
 
+var (
+	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
+	// when accessing a protected resource.
+	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
+
+	// ErrMalformedEntity indicates malformed entity specification (e.g.
+	// invalid username or password).
+	ErrMalformedEntity = errors.New("malformed entity specification")
+)
+
 // Service specifies coap service API.
 type Service interface {
 	Index(ctx context.Context, token string) ([]byte, error)
-	Things(ctx context.Context, token string) ([]byte, error)
-	Channels(ctx context.Context, token string) ([]byte, error)
+	// CreateThings adds things to the user identified by the provided key.
+	CreateThings(ctx context.Context, token string, things ...sdk.Thing) ([]byte, error)
+	// ListThings retrieves data about subset of things that belongs to the
+	// user identified by the provided key.
+	ListThings(ctx context.Context, token string) ([]byte, error)
+	// ListChannels retrieves data about subset of channels that belongs to the
+	// user identified by the provided key.
+	ListChannels(ctx context.Context, token string) ([]byte, error)
 }
 
 var _ Service = (*uiService)(nil)
@@ -61,7 +78,20 @@ func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
 	return btpl.Bytes(), nil
 }
 
-func (gs *uiService) Things(ctx context.Context, token string) ([]byte, error) {
+func (gs *uiService) CreateThings(ctx context.Context, token string, things ...sdk.Thing) ([]byte, error) {
+
+	for i := range things {
+		fmt.Println(things[i])
+		_, err := gs.sdk.CreateThing(things[i], "123")
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+
+	return gs.ListThings(ctx, "123")
+}
+
+func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, error) {
 	tpl, err := template.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
@@ -89,7 +119,7 @@ func (gs *uiService) Things(ctx context.Context, token string) ([]byte, error) {
 	return btpl.Bytes(), nil
 }
 
-func (gs *uiService) Channels(ctx context.Context, token string) ([]byte, error) {
+func (gs *uiService) ListChannels(ctx context.Context, token string) ([]byte, error) {
 	tpl, err := template.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err

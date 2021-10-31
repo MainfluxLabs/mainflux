@@ -30,7 +30,7 @@ func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
 		return "", err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +57,7 @@ func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
 		return []Thing{}, err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return []Thing{}, err
 	}
@@ -89,7 +89,7 @@ func (sdk mfSDK) Things(token string, offset, limit uint64, name string) (Things
 		return ThingsPage{}, err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -119,7 +119,7 @@ func (sdk mfSDK) ThingsByChannel(token, chanID string, offset, limit uint64, dis
 		return ThingsPage{}, err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -150,7 +150,7 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 		return Thing{}, err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return Thing{}, err
 	}
@@ -186,7 +186,7 @@ func (sdk mfSDK) UpdateThing(t Thing, token string) error {
 		return err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (sdk mfSDK) DeleteThing(id, token string) error {
 		return err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
 		return err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) error {
 		return err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return err
 	}

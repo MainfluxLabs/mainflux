@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
+	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/ui"
 )
 
@@ -20,10 +21,34 @@ func indexEndpoint(svc ui.Service) endpoint.Endpoint {
 	}
 }
 
-func thingsEndpoint(svc ui.Service) endpoint.Endpoint {
+func createThingsEndpoint(svc ui.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(thingsReq)
-		res, err := svc.Things(ctx, req.token)
+		req := request.(createThingsReq)
+
+		// if err := req.validate(); err != nil {
+		// 	return nil, err
+		// }
+
+		th := sdk.Thing{
+			Key:      req.Key,
+			Name:     req.Name,
+			Metadata: req.Metadata,
+		}
+		res, err := svc.CreateThings(ctx, req.token, th)
+		if err != nil {
+			return nil, err
+		}
+
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func listThingsEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listThingsReq)
+		res, err := svc.ListThings(ctx, req.token)
 		return uiRes{
 			html: res,
 		}, err
@@ -32,8 +57,8 @@ func thingsEndpoint(svc ui.Service) endpoint.Endpoint {
 
 func channelsEndpoint(svc ui.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(channelsReq)
-		res, err := svc.Channels(ctx, req.token)
+		req := request.(listChannelsReq)
+		res, err := svc.ListChannels(ctx, req.token)
 		return uiRes{
 			html: res,
 		}, err

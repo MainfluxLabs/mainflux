@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/mainflux/mainflux/logger"
+	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/ui"
 )
 
@@ -39,9 +40,9 @@ func (lm *loggingMiddleware) Index(ctx context.Context, token string) (b []byte,
 	return lm.svc.Index(ctx, token)
 }
 
-func (lm *loggingMiddleware) Things(ctx context.Context, token string) (b []byte, err error) {
+func (lm *loggingMiddleware) CreateThings(ctx context.Context, token string, things ...sdk.Thing) (b []byte, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method things took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method create_things took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -49,12 +50,12 @@ func (lm *loggingMiddleware) Things(ctx context.Context, token string) (b []byte
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Things(ctx, token)
+	return lm.svc.CreateThings(ctx, token, things...)
 }
 
-func (lm *loggingMiddleware) Channels(ctx context.Context, token string) (b []byte, err error) {
+func (lm *loggingMiddleware) ListThings(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method channels took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method list_things took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -62,5 +63,18 @@ func (lm *loggingMiddleware) Channels(ctx context.Context, token string) (b []by
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Channels(ctx, token)
+	return lm.svc.ListThings(ctx, token)
+}
+
+func (lm *loggingMiddleware) ListChannels(ctx context.Context, token string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_channels took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListChannels(ctx, token)
 }

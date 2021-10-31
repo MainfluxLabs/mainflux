@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
+	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/ui"
 )
 
@@ -39,20 +40,29 @@ func (mm *metricsMiddleware) Index(ctx context.Context, token string) (b []byte,
 	return mm.svc.Index(ctx, token)
 }
 
-func (mm *metricsMiddleware) Things(ctx context.Context, token string) (b []byte, err error) {
+func (mm *metricsMiddleware) CreateThings(ctx context.Context, token string, things ...sdk.Thing) (b []byte, err error) {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "things").Add(1)
-		mm.latency.With("method", "things").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "create_things").Add(1)
+		mm.latency.With("method", "create_things").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Things(ctx, token)
+	return mm.svc.CreateThings(ctx, token, things...)
 }
 
-func (mm *metricsMiddleware) Channels(ctx context.Context, token string) (b []byte, err error) {
+func (mm *metricsMiddleware) ListThings(ctx context.Context, token string) (b []byte, err error) {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "channels").Add(1)
-		mm.latency.With("method", "channels").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "list_things").Add(1)
+		mm.latency.With("method", "list_things").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Channels(ctx, token)
+	return mm.svc.ListThings(ctx, token)
+}
+
+func (mm *metricsMiddleware) ListChannels(ctx context.Context, token string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "list_channels").Add(1)
+		mm.latency.With("method", "list_channels").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListChannels(ctx, token)
 }
