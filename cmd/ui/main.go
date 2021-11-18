@@ -84,6 +84,7 @@ func main() {
 	sdk := sdk.NewSDK(sdkConf)
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
+
 	svc := ui.New(tc, sdk)
 
 	svc = api.LoggingMiddleware(svc, logger)

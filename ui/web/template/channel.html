@@ -1,4 +1,4 @@
-{{define "things"}}
+{{define "channel"}}
 <!doctype html>
 <html lang="en">
   {{template "header"}}
@@ -12,18 +12,14 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-
-            <!-- Button trigger modal -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-              Add
+              Update
             </button>
-
-            <!-- Modal -->
             <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="addModalLabel">Add Thing</h5>
+                    <h5 class="modal-title" id="addModalLabel">Update Channel</h5>
                   </div>
                   <div class="modal-body">
                     <form method="post">
@@ -43,21 +39,20 @@
                 </div>
               </div>
             </div>
-
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal1">
+              Delete
+            </button>
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">NAME</th>
-                  <th scope="col">ID</th>
+                  <th scope="row">CHANNEL</th>
                 </tr>
               </thead>
               <tbody>
-                {{ range $i, $t := .Things }}
+                {{ range $key, $value := .JSONChannel}}
                   <tr>
-                    <th scope="row">{{ $i }}</th>
-                    <td>{{ $t.Name }}</td>
-                    <td><a href={{printf "/things/%s" $t.ID}}>{{ $t.ID }} </a></td>
+                    <td>{{ $key }}</td>
+                    <td>{{ $value }}</td>
                   </tr>
                 {{ end }}
               </tbody>

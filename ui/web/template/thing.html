@@ -1,0 +1,47 @@
+{{define "thing"}}
+<!doctype html>
+<html lang="en">
+  {{template "header"}}
+
+  <body>
+    <main role="main">
+      <div class="container-fluid">
+        <div class="row">
+
+          {{template "navbar" .}}
+
+          <!-- Partial goes here -->
+          <div class="col-md-4">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal1">
+              Update
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal1">
+              Delete
+            </button>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="row">THING</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range $key, $value := .JSONThing}}
+                  <tr>
+                    <td>{{ $key }}</td>
+                    <td>{{ $value }}</td>
+                  </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+          <!-- End of partial-->
+
+        </div>
+      </div> <!-- /container -->
+    </main>
+
+    {{template "footer"}}
+
+  </body>
+</html>
+{{end}}

@@ -5,10 +5,11 @@ package api
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -54,6 +55,20 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 		opts...,
 	))
 
+	r.Get("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_thing")(viewThingEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_things")(updateThingsEndpoint(svc)),
+		decodeThingUpdate,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_things")(listThingsEndpoint(svc)),
 		decodeListThingsRequest,
@@ -61,8 +76,36 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 		opts...,
 	))
 
+	r.Delete("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_thing")(removeThingEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_channels")(createChannelsEndpoint(svc)),
+		decodeChannelsCreation,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/channels/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_channel")(viewChannelEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/channels/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_channel")(updateChannelEndpoint(svc)),
+		decodeChannelUpdate,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_channels")(channelsEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_channels")(listChannelsEndpoint(svc)),
 		decodeListChannelsRequest,
 		encodeResponse,
 		opts...,
@@ -90,12 +133,6 @@ func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error
 	// if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 	// 	return nil, errors.ErrUnsupportedContentType
 	// }
-
-	fmt.Println("HERE!!!")
-	fmt.Println(r.Method)
-	fmt.Println(r.PostFormValue("name"))
-	fmt.Println(r.PostFormValue("metadata"))
-
 	req := createThingsReq{
 		token: r.Header.Get("Authorization"),
 		Name:  r.PostFormValue("name"),
@@ -104,9 +141,58 @@ func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
+func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewResourceReq{
+		token: r.Header.Get("Authorization"),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
+func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := updateThingReq{
+		id: bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(things.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func decodeListThingsRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := listThingsReq{
 		token: r.Header.Get("Authorization"),
+	}
+
+	return req, nil
+}
+
+func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, error) {
+
+	req := createChannelsReq{
+		token: r.Header.Get("Authorization"),
+		Name:  r.PostFormValue("name"),
+	}
+	return req, nil
+
+}
+
+func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := updateChannelReq{
+		id: bone.GetValue(r, "id"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(things.ErrMalformedEntity, err)
 	}
 
 	return req, nil

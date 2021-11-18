@@ -4,23 +4,37 @@
       <ul class="nav flex-column">
         <li class="nav-item">
           {{$active := "dashboard"}}
-          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} aria-current="page" href="/">
+          <a class="nav-link active" {{if eq .NavbarActive $active}} style="color:black" {{end}} href="/">
             <i class="fas fa-home"></i>
             Dashboard
           </a>
         </li>
         <li class="nav-item">
           {{$active = "things"}}
-          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} href="things">
+          <a class="nav-link active" {{if eq .NavbarActive $active}} style="color:black" {{end}} href="/things">
             <i class="fas fa-microchip"></i>
             Things
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item active">
           {{$active = "channels"}}
-          <a class="nav-link" {{if eq .NavbarActive $active}} active {{end}} href="channels">
+          <a class="nav-link" {{if eq .NavbarActive $active}} style="color:black"{{end}} href="/channels">
             <i class="fas fa-exchange-alt"></i>
             Channels
+          </a>
+        </li>
+        <li class="nav-item active">
+          {{$active = "groups"}}
+          <a class="nav-link" {{if eq .NavbarActive $active}} style="color:black"{{end}} href="/groups">
+            <i class="fas fa-exchange-alt"></i>
+            Groups
+          </a>
+        </li>
+        <li class="nav-item">
+          {{$active = "messages"}}
+          <a class="nav-link" {{if eq .NavbarActive $active}} class="active" style="background-color:gray"{{end}} href="/messages">
+            <i class="fas fa-exchange-alt"></i>
+            Messages
           </a>
         </li>
       </ul>
