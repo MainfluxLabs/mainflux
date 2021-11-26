@@ -1,4 +1,4 @@
-{{define "thing"}}
+{{define "group"}}
 <!doctype html>
 <html lang="en">
   {{template "header"}}
@@ -12,17 +12,17 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateThingModal">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateGroupModal">
               Update
             </button>
             <td><a type="button" class="btn btn-primary" href= {{printf "%s/delete" .ID}}>
               Delete
             </a></td>
-            <div class="modal fade" id="updateThingModal" tabindex="-1" role="dialog" aria-labelledby="updateThingModalLabel" aria-hidden="true">
+            <div class="modal fade" id="updateGroupModal" tabindex="-1" role="dialog" aria-labelledby="updateGroupModalLabel" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="updateThingModalLabel">Update Thing</h5>
+                    <h5 class="modal-title" id="updateGroupModalLabel">Update Group</h5>
                   </div>
                   <div class="modal-body">
                     <form method="post">
@@ -45,26 +45,26 @@
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th scope="row">THING</th>
+                  <th scope="row">GROUP</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th>Name</th>
-                  <td>{{.Thing.Name}}</td>
-                </tr>
-                <tr>
+                  <tr>
+                    <th>Name</th>
+                    <td>{{.Group.Name}}</td>
+                  </tr>
                   <th>ID</th>
-                  <td>{{.Thing.ID}}</td>
+                  <td>{{.Group.ID}}</td>
                 </tr>
                 <tr>
                   <th>Key</th>
-                  <td>{{.Thing.Key}}</td>
+                  <td>{{.Group.Key}}</td>
                 </tr>
                 <tr>
                   <th>Metadata</th>
                   <td>
-                    <pre>{{toJSON .Thing.Metadata}}</pre>
+                    <pre>{{toJSON .Channel.Metadata}}</pre>
                     </td>
                 </tr>
               </tbody>

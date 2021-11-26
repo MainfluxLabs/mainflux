@@ -58,13 +58,13 @@ func (mm *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (b
 	return mm.svc.ViewThing(ctx, token, id)
 }
 
-func (mm *metricsMiddleware) UpdateThing(ctx context.Context, token string, thing sdk.Thing) (b []byte, err error) {
+func (mm *metricsMiddleware) UpdateThing(ctx context.Context, token, id string, thing sdk.Thing) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "update_thing").Add(1)
 		mm.latency.With("method", "update_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.UpdateThing(ctx, token, thing)
+	return mm.svc.UpdateThing(ctx, token, id, thing)
 }
 
 func (mm *metricsMiddleware) ListThings(ctx context.Context, token string) (b []byte, err error) {
@@ -81,7 +81,6 @@ func (mm *metricsMiddleware) RemoveThing(ctx context.Context, token, id string) 
 		mm.counter.With("method", "remove_thing").Add(1)
 		mm.latency.With("method", "remove_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-
 	return mm.svc.RemoveThing(ctx, token, id)
 }
 
@@ -119,4 +118,58 @@ func (mm *metricsMiddleware) ListChannels(ctx context.Context, token string) (b 
 	}(time.Now())
 
 	return mm.svc.ListChannels(ctx, token)
+}
+
+func (mm *metricsMiddleware) RemoveChannel(ctx context.Context, token, id string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "remove_channel").Add(1)
+		mm.latency.With("method", "remove_channel").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.RemoveChannel(ctx, token, id)
+}
+
+func (mm *metricsMiddleware) CreateGroups(ctx context.Context, token string, groups ...sdk.Group) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "create_groups").Add(1)
+		mm.latency.With("method", "create_groups").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.CreateGroups(ctx, token, groups...)
+}
+
+func (mm *metricsMiddleware) ListGroups(ctx context.Context, token string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "list_groups").Add(1)
+		mm.latency.With("method", "list_groups").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListGroups(ctx, token)
+}
+
+func (mm *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "view_group").Add(1)
+		mm.latency.With("method", "view_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ViewGroup(ctx, token, id)
+}
+
+func (mm *metricsMiddleware) UpdateGroup(ctx context.Context, token, id string, group sdk.Group) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "update_group").Add(1)
+		mm.latency.With("method", "update_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.UpdateGroup(ctx, token, id, group)
+}
+
+func (mm *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "remove_group").Add(1)
+		mm.latency.With("method", "remove_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.RemoveGroup(ctx, token, id)
 }

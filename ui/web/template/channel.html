@@ -12,14 +12,17 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateChannelModal">
               Update
             </button>
-            <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+            <td><a type="button" class="btn btn-primary" href= {{printf "%s/delete" .ID}}>
+              Delete
+            </a></td>
+            <div class="modal fade" id="updateChannelModal" tabindex="-1" role="dialog" aria-labelledby="updateChannelModalLabel" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="addModalLabel">Update Channel</h5>
+                    <h5 class="modal-title" id="updateChannelModalLabel">Update Channel</h5>
                   </div>
                   <div class="modal-body">
                     <form method="post">
@@ -39,9 +42,6 @@
                 </div>
               </div>
             </div>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal1">
-              Delete
-            </button>
             <table class="table table-striped">
               <thead>
                 <tr>
@@ -49,12 +49,24 @@
                 </tr>
               </thead>
               <tbody>
-                {{ range $key, $value := .JSONChannel}}
+                <tr>
                   <tr>
-                    <td>{{ $key }}</td>
-                    <td>{{ $value }}</td>
+                    <th>Name</th>
+                    <td>{{.Channel.Name}}</td>
                   </tr>
-                {{ end }}
+                  <th>ID</th>
+                  <td>{{.Channel.ID}}</td>
+                </tr>
+                <tr>
+                  <th>Key</th>
+                  <td>{{.Channel.Key}}</td>
+                </tr>
+                <tr>
+                  <th>Metadata</th>
+                  <td>
+                    <pre>{{toJSON .Channel.Metadata}}</pre>
+                    </td>
+                </tr>
               </tbody>
             </table>
           </div>

@@ -10,10 +10,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/auth"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
@@ -36,13 +36,19 @@ type Service interface {
 	Index(ctx context.Context, token string) ([]byte, error)
 	CreateThings(ctx context.Context, token string, things ...sdk.Thing) ([]byte, error)
 	ViewThing(ctx context.Context, token, id string) ([]byte, error)
+	UpdateThing(ctx context.Context, token, id string, thing sdk.Thing) ([]byte, error)
 	ListThings(ctx context.Context, token string) ([]byte, error)
-	UpdateThing(ctx context.Context, token string, thing sdk.Thing) ([]byte, error)
 	RemoveThing(ctx context.Context, token, id string) ([]byte, error)
 	CreateChannels(ctx context.Context, token string, channels ...sdk.Channel) ([]byte, error)
 	ViewChannel(ctx context.Context, token, id string) ([]byte, error)
 	UpdateChannel(ctx context.Context, token, id string, channel sdk.Channel) ([]byte, error)
 	ListChannels(ctx context.Context, token string) ([]byte, error)
+	RemoveChannel(ctx context.Context, token, id string) ([]byte, error)
+	CreateGroups(ctx context.Context, token string, groups ...sdk.Group) ([]byte, error)
+	ViewGroup(ctx context.Context, token, id string) ([]byte, error)
+	UpdateGroup(ctx context.Context, token, id string, group sdk.Group) ([]byte, error)
+	ListGroups(ctx context.Context, token string) ([]byte, error)
+	RemoveGroup(ctx context.Context, token, id string) ([]byte, error)
 }
 
 var _ Service = (*uiService)(nil)
@@ -61,7 +67,16 @@ func New(things mainflux.ThingsServiceClient, sdk sdk.SDK) Service {
 }
 
 func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl := template.New("index")
+	tpl = tpl.Funcs(template.FuncMap{
+		"toJSON": func(data map[string]interface{}) string {
+			ret, _ := json.Marshal(data)
+			return string(ret)
+		},
+	})
+	var err error
+
+	tpl, err = tpl.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -83,7 +98,6 @@ func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
 func (gs *uiService) CreateThings(ctx context.Context, token string, things ...sdk.Thing) ([]byte, error) {
 
 	for i := range things {
-		fmt.Println(things[i])
 		_, err := gs.sdk.CreateThing(things[i], "123")
 		if err != nil {
 			return []byte{}, err
@@ -94,7 +108,16 @@ func (gs *uiService) CreateThings(ctx context.Context, token string, things ...s
 }
 
 func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl := template.New("things")
+	tpl = tpl.Funcs(template.FuncMap{
+		"toJSON": func(data map[string]interface{}) string {
+			ret, _ := json.Marshal(data)
+			return string(ret)
+		},
+	})
+	var err error
+
+	tpl, err = tpl.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -103,7 +126,6 @@ func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, erro
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println(thsPage.Things)
 
 	data := struct {
 		NavbarActive string
@@ -122,7 +144,15 @@ func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, erro
 }
 
 func (gs *uiService) ViewThing(ctx context.Context, token, id string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl := template.New("things")
+	tpl = tpl.Funcs(template.FuncMap{
+		"toJSON": func(data map[string]interface{}) string {
+			ret, _ := json.Marshal(data)
+			return string(ret)
+		},
+	})
+	var err error
+	tpl, err = tpl.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -130,69 +160,59 @@ func (gs *uiService) ViewThing(ctx context.Context, token, id string) ([]byte, e
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println(thing)
-
-	j, err := json.Marshal(thing)
-	fmt.Println(string(j))
-	if err != nil {
-		return []byte{}, err
-	}
-
-	m := make(map[string]interface{})
-	json.Unmarshal(j, &m)
 
 	data := struct {
 		NavbarActive string
-		JSONThing    map[string]interface{}
+		ID           string
+		Thing        sdk.Thing
 	}{
 		"things",
-		m,
+		id,
+		thing,
 	}
 
 	var btpl bytes.Buffer
 	if err := tpl.ExecuteTemplate(&btpl, "thing", data); err != nil {
 		println(err.Error())
 	}
-	fmt.Println(btpl.String())
 	return btpl.Bytes(), nil
 }
 
-func (gs *uiService) UpdateThing(ctx context.Context, token string, thing sdk.Thing) ([]byte, error) {
-	_, err := template.ParseGlob(templateDir + "/*")
-	if err != nil {
+func (gs *uiService) UpdateThing(ctx context.Context, token, id string, thing sdk.Thing) ([]byte, error) {
+	if err := gs.sdk.UpdateThing(thing, "123"); err != nil {
 		return []byte{}, err
 	}
-
-	return gs.ListThings(ctx, "123")
+	return gs.ViewThing(ctx, "123", id)
 }
 
 func (gs *uiService) RemoveThing(ctx context.Context, token, id string) ([]byte, error) {
-	_, err := template.ParseGlob(templateDir + "/*")
+	err := gs.sdk.DeleteThing(id, "123")
 	if err != nil {
 		return []byte{}, err
 	}
-
-	// if err := gs.thingCache.Remove(ctx, tpl); err != nil {
-	// 	return err
-	// }
-	return gs.ListChannels(ctx, "123")
+	return []byte{}, nil
 }
 
 func (gs *uiService) CreateChannels(ctx context.Context, token string, channels ...sdk.Channel) ([]byte, error) {
-	fmt.Println("assss")
 	for i := range channels {
-		fmt.Println(channels[i])
 		_, err := gs.sdk.CreateChannel(channels[i], "123")
 		if err != nil {
 			return []byte{}, err
 		}
 	}
-
 	return gs.ListChannels(ctx, "123")
 }
 
 func (gs *uiService) ViewChannel(ctx context.Context, token, id string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl := template.New("channels")
+	tpl = tpl.Funcs(template.FuncMap{
+		"toJSON": func(data map[string]interface{}) string {
+			ret, _ := json.Marshal(data)
+			return string(ret)
+		},
+	})
+	var err error
+	tpl, err = tpl.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -200,30 +220,21 @@ func (gs *uiService) ViewChannel(ctx context.Context, token, id string) ([]byte,
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println(channel)
-
-	j, err := json.Marshal(channel)
-	fmt.Println(string(j))
-	if err != nil {
-		return []byte{}, err
-	}
-
-	m := make(map[string]interface{})
-	json.Unmarshal(j, &m)
 
 	data := struct {
 		NavbarActive string
-		JSONChannel  map[string]interface{}
+		ID           string
+		Channel      sdk.Channel
 	}{
 		"channels",
-		m,
+		id,
+		channel,
 	}
 
 	var btpl bytes.Buffer
 	if err := tpl.ExecuteTemplate(&btpl, "channel", data); err != nil {
 		println(err.Error())
 	}
-	fmt.Println(btpl.String())
 	return btpl.Bytes(), nil
 }
 
@@ -231,20 +242,27 @@ func (gs *uiService) UpdateChannel(ctx context.Context, token, id string, channe
 	if err := gs.sdk.UpdateChannel(channel, "123"); err != nil {
 		return []byte{}, err
 	}
-	return gs.ViewChannel(ctx, id, "123")
+	return gs.ViewChannel(ctx, "123", id)
 }
 
 func (gs *uiService) ListChannels(ctx context.Context, token string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl := template.New("channels")
+	tpl = tpl.Funcs(template.FuncMap{
+		"toJSON": func(data map[string]interface{}) string {
+			ret, _ := json.Marshal(data)
+			return string(ret)
+		},
+	})
+	var err error
+
+	tpl, err = tpl.ParseGlob(templateDir + "/*")
 	if err != nil {
 		return []byte{}, err
 	}
-
 	chsPage, err := gs.sdk.Channels("123", 0, 100, "")
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println(chsPage.Channels)
 
 	data := struct {
 		NavbarActive string
@@ -260,4 +278,98 @@ func (gs *uiService) ListChannels(ctx context.Context, token string) ([]byte, er
 	}
 
 	return btpl.Bytes(), nil
+}
+
+func (gs *uiService) RemoveChannel(ctx context.Context, token, id string) ([]byte, error) {
+	err := gs.sdk.DeleteChannel(id, "123")
+	if err != nil {
+		return []byte{}, err
+	}
+	return gs.ListChannels(ctx, "123")
+}
+
+func (gs *uiService) CreateGroups(ctx context.Context, token string, groups ...sdk.Group) ([]byte, error) {
+	for i := range groups {
+		_, err := gs.sdk.CreateGroup(groups[i], "123")
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+	return gs.ListGroups(ctx, "123")
+}
+
+func (gs *uiService) ListGroups(ctx context.Context, token string) ([]byte, error) {
+	tpl, err := template.ParseGlob(templateDir + "/*")
+	if err != nil {
+		return []byte{}, err
+	}
+
+	grpsPage, err := gs.sdk.Groups(0, 100, "123")
+	if err != nil {
+		return []byte{}, err
+	}
+
+	data := struct {
+		NavbarActive string
+		Groups       []auth.Group
+	}{
+		"groups",
+		grpsPage.Groups,
+	}
+
+	var btpl bytes.Buffer
+	if err := tpl.ExecuteTemplate(&btpl, "groups", data); err != nil {
+		println(err.Error())
+	}
+
+	return btpl.Bytes(), nil
+}
+
+func (gs *uiService) ViewGroup(ctx context.Context, token, id string) ([]byte, error) {
+	tpl, err := template.ParseGlob(templateDir + "/*")
+	if err != nil {
+		return []byte{}, err
+	}
+	group, err := gs.sdk.Group(id, "123")
+	if err != nil {
+		return []byte{}, err
+	}
+
+	j, err := json.Marshal(group)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	m := make(map[string]interface{})
+	json.Unmarshal(j, &m)
+
+	data := struct {
+		NavbarActive string
+		ID           string
+		JSONGroup    map[string]interface{}
+	}{
+		"groups",
+		id,
+		m,
+	}
+	var btpl bytes.Buffer
+	if err := tpl.ExecuteTemplate(&btpl, "group", data); err != nil {
+		println(err.Error())
+	}
+	return btpl.Bytes(), nil
+}
+
+func (gs *uiService) UpdateGroup(ctx context.Context, token, id string, group sdk.Group) ([]byte, error) {
+	if err := gs.sdk.UpdateGroup(group, "123"); err != nil {
+		return []byte{}, err
+	}
+	return gs.ViewGroup(ctx, "123", id)
+}
+
+func (gs *uiService) RemoveGroup(ctx context.Context, token, id string) ([]byte, error) {
+	err := gs.sdk.DeleteGroup(id, "123")
+	if err != nil {
+		return []byte{}, err
+	}
+	return []byte{}, nil
 }

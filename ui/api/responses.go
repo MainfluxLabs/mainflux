@@ -14,17 +14,27 @@ var (
 )
 
 type uiRes struct {
-	html []byte
+	code    int
+	headers map[string]string
+	html    []byte
 }
 
 func (res uiRes) Code() int {
-	return http.StatusCreated
+	if res.code == 0 {
+		return http.StatusCreated
+	}
+
+	return res.code
 }
 
 func (res uiRes) Headers() map[string]string {
-	return map[string]string{}
+	if res.headers == nil {
+		return map[string]string{}
+	}
+
+	return res.headers
 }
 
 func (res uiRes) Empty() bool {
-	return false
+	return res.html == nil
 }

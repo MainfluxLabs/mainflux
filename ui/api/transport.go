@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -32,10 +31,12 @@ const (
 var (
 	errMalformedData     = errors.New("malformed request data")
 	errMalformedSubtopic = errors.New("malformed subtopic")
+	redirectURL          = ""
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
+func MakeHandler(svc ui.Service, redirect string, tracer opentracing.Tracer) http.Handler {
+	redirectURL = redirect
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
 	}
@@ -49,7 +50,7 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 	))
 
 	r.Post("/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_things")(createThingEndpoint(svc)),
 		decodeThingCreation,
 		encodeResponse,
 		opts...,
@@ -62,8 +63,8 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 		opts...,
 	))
 
-	r.Put("/things/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_things")(updateThingsEndpoint(svc)),
+	r.Post("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_thing")(updateThingEndpoint(svc)),
 		decodeThingUpdate,
 		encodeResponse,
 		opts...,
@@ -76,7 +77,7 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 		opts...,
 	))
 
-	r.Delete("/things/:id", kithttp.NewServer(
+	r.Get("/things/:id/delete", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_thing")(removeThingEndpoint(svc)),
 		decodeView,
 		encodeResponse,
@@ -84,7 +85,7 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 	))
 
 	r.Post("/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_channels")(createChannelsEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_channels")(createChannelEndpoint(svc)),
 		decodeChannelsCreation,
 		encodeResponse,
 		opts...,
@@ -97,7 +98,7 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 		opts...,
 	))
 
-	r.Put("/channels/:id", kithttp.NewServer(
+	r.Post("/channels/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_channel")(updateChannelEndpoint(svc)),
 		decodeChannelUpdate,
 		encodeResponse,
@@ -107,6 +108,48 @@ func MakeHandler(svc ui.Service, tracer opentracing.Tracer) http.Handler {
 	r.Get("/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_channels")(listChannelsEndpoint(svc)),
 		decodeListChannelsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/channels/:id/delete", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_channel")(removeChannelEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_groups")(createGroupEndpoint(svc)),
+		decodeGroupCreation,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
+		decodeListGroupsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group")(viewGroupEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
+		decodeGroupUpdate,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:id/delete", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_group")(removeGroupEndpoint(svc)),
+		decodeView,
 		encodeResponse,
 		opts...,
 	))
@@ -130,12 +173,15 @@ func decodeIndexRequest(ctx context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error) {
-	// if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-	// 	return nil, errors.ErrUnsupportedContentType
-	// }
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
+	}
+
 	req := createThingsReq{
-		token: r.Header.Get("Authorization"),
-		Name:  r.PostFormValue("name"),
+		token:    r.Header.Get("Authorization"),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
 	}
 
 	return req, nil
@@ -146,22 +192,21 @@ func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 		token: r.Header.Get("Authorization"),
 		id:    bone.GetValue(r, "id"),
 	}
-
 	return req, nil
 }
 
 func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
 	}
 
 	req := updateThingReq{
-		id: bone.GetValue(r, "id"),
+		token:    r.Header.Get("Authorization"),
+		id:       bone.GetValue(r, "id"),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(things.ErrMalformedEntity, err)
-	}
-
 	return req, nil
 }
 
@@ -175,26 +220,32 @@ func decodeListThingsRequest(ctx context.Context, r *http.Request) (interface{},
 
 func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, error) {
 
-	req := createChannelsReq{
-		token: r.Header.Get("Authorization"),
-		Name:  r.PostFormValue("name"),
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
 	}
-	return req, nil
 
+	req := createChannelsReq{
+		token:    r.Header.Get("Authorization"),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
+	}
+
+	return req, nil
 }
 
 func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
 	}
 
 	req := updateChannelReq{
-		id: bone.GetValue(r, "id"),
+		token:    r.Header.Get("Authorization"),
+		id:       bone.GetValue(r, "id"),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(things.ErrMalformedEntity, err)
-	}
-
 	return req, nil
 }
 
@@ -203,6 +254,39 @@ func decodeListChannelsRequest(ctx context.Context, r *http.Request) (interface{
 		token: r.Header.Get("Authorization"),
 	}
 
+	return req, nil
+}
+
+func decodeGroupCreation(_ context.Context, r *http.Request) (interface{}, error) {
+
+	req := createGroupsReq{
+		ID:   r.Header.Get("Authorization"),
+		Name: r.PostFormValue("name"),
+	}
+
+	return req, nil
+}
+
+func decodeListGroupsRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	req := listGroupsReq{
+		token: r.Header.Get("Authorization"),
+	}
+
+	return req, nil
+}
+
+func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
+	}
+
+	req := updateGroupReq{
+		token:    r.Header.Get("Authorization"),
+		id:       bone.GetValue(r, "id"),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
+	}
 	return req, nil
 }
 
@@ -232,7 +316,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	if ar.Empty() {
 		return nil
 	}
-
 	w.Write(ar.html)
 	return nil
 }

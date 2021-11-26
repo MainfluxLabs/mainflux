@@ -1,4 +1,4 @@
-{{define "thing"}}
+{{define "groups"}}
 <!doctype html>
 <html lang="en">
   {{template "header"}}
@@ -12,17 +12,18 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateThingModal">
-              Update
+
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
+              Add
             </button>
-            <td><a type="button" class="btn btn-primary" href= {{printf "%s/delete" .ID}}>
-              Delete
-            </a></td>
-            <div class="modal fade" id="updateThingModal" tabindex="-1" role="dialog" aria-labelledby="updateThingModalLabel" aria-hidden="true">
+
+            <!-- Modal -->
+            <div class="modal fade" id="addGroupModal" tabindex="-1" role="dialog" aria-labelledby="addGroupModalLabel" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="updateThingModalLabel">Update Thing</h5>
+                    <h5 class="modal-title" id="addGroupModalLabel">Add Group</h5>
                   </div>
                   <div class="modal-body">
                     <form method="post">
@@ -33,7 +34,7 @@
                       </div>
                       <div class="mb-3">
                         <label for="meatadata" class="form-label">Metadata</label>
-                        <input type="text" class="form-control" name="metadata" id="metadata">
+                        <input type="text" class="form-control" name= "metadata" id="metadata">
                         <div id="metadataHelp" class="form-text">Enter device metadata in JSON format.</div>
                       </div>
                       <button type="submit" class="btn btn-primary">Submit</button>
@@ -42,31 +43,23 @@
                 </div>
               </div>
             </div>
+
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th scope="row">THING</th>
+                  <th scope="col">#</th>
+                  <th scope="col">NAME</th>
+                  <th scope="col">ID</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <th>Name</th>
-                  <td>{{.Thing.Name}}</td>
-                </tr>
-                <tr>
-                  <th>ID</th>
-                  <td>{{.Thing.ID}}</td>
-                </tr>
-                <tr>
-                  <th>Key</th>
-                  <td>{{.Thing.Key}}</td>
-                </tr>
-                <tr>
-                  <th>Metadata</th>
-                  <td>
-                    <pre>{{toJSON .Thing.Metadata}}</pre>
-                    </td>
-                </tr>
+                {{range $i, $g := .Groups}}
+                  <tr>
+                    <th scope="row">{{$i}}</th>
+                    <td>{{$g.Name}}</td>
+                    <td><a href={{printf "/groups/%s" $g.ID}}>{{$g.ID}}</a></td>
+                  </tr>
+                {{end}}
               </tbody>
             </table>
           </div>

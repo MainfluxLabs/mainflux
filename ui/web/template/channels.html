@@ -14,16 +14,16 @@
           <div class="col-md-4">
 
             <!-- Button trigger modal -->
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChannelModal">
               Add
             </button>
 
             <!-- Modal -->
-            <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+            <div class="modal fade" id="addChannelModal" tabindex="-1" role="dialog" aria-labelledby="addChannelModalLabel" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="addModalLabel">Add Channel</h5>
+                    <h5 class="modal-title" id="addChannelModalLabel">Add Channel</h5>
                   </div>
                   <div class="modal-body">
                     <form method="post">
@@ -53,13 +53,13 @@
                 </tr>
               </thead>
               <tbody>
-                {{ range $i, $t := .Channels }}
+                {{range $i, $c := .Channels}}
                   <tr>
-                    <th scope="row">{{ $i }}</th>
-                    <td>{{ $t.Name }}</td>
-                    <td><a href={{printf "/channels/%s" $t.ID}}>{{ $t.ID }} </a></td>
+                    <th scope="row">{{$i}}</th>
+                    <td>{{$c.Name}}</td>
+                    <td><a href={{printf "/channels/%s" $c.ID}}>{{$c.ID}}</a></td>
                   </tr>
-                {{ end }}
+                {{end}}
               </tbody>
             </table>
           </div>

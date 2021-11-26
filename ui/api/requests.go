@@ -62,6 +62,7 @@ func (req viewResourceReq) validate() error {
 }
 
 type updateThingReq struct {
+	token    string
 	id       string
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -121,4 +122,49 @@ func (req updateChannelReq) validate() error {
 
 type listChannelsReq struct {
 	token string
+}
+
+type createGroupsReq struct {
+	token       string                 `json:"token,omitempty"`
+	ID          string                 `json:"id,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	ParentID    string                 `json:"parent_id,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (req createGroupsReq) validate() error {
+	if req.ID == "" {
+		return ui.ErrUnauthorizedAccess
+	}
+
+	if len(req.Name) > maxNameSize {
+		return ui.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type listGroupsReq struct {
+	token string
+}
+
+type updateGroupReq struct {
+	token    string
+	id       string
+	Name     string                 `json:"name,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (req updateGroupReq) validate() error {
+
+	if req.token == "" {
+		return things.ErrMalformedEntity
+	}
+
+	if len(req.Name) > maxNameSize {
+		return things.ErrMalformedEntity
+	}
+
+	return nil
 }
