@@ -13,7 +13,6 @@ import (
 	"html/template"
 
 	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/auth"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 )
 
@@ -311,7 +310,7 @@ func (gs *uiService) ListGroups(ctx context.Context, token string) ([]byte, erro
 
 	data := struct {
 		NavbarActive string
-		Groups       []auth.Group
+		Groups       []sdk.Group
 	}{
 		"groups",
 		grpsPage.Groups,
