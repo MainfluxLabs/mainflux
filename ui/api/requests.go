@@ -125,7 +125,7 @@ type listChannelsReq struct {
 }
 
 type createGroupsReq struct {
-	token       string                 `json:"token,omitempty"`
+	token       string
 	ID          string                 `json:"id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
 	Description string                 `json:"description,omitempty"`

@@ -26,6 +26,7 @@ import (
 const (
 	contentType = "text/html"
 	staticDir   = "ui/web/static"
+	token       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MzkwODg1MTUsImlhdCI6MTYzOTA1MjUxNSwiaXNzIjoibWFpbmZsdXguYXV0aCIsInN1YiI6ImZscDFAZW1haWwuY29tIiwiaXNzdWVyX2lkIjoiYzkzY2FmYjMtYjNhNy00ZTdmLWE0NzAtMTVjMTRkOGVkMWUwIiwidHlwZSI6MH0.Ck9r2eJc2gieUdGy1Lt1BYLpYmf5rQT-KX1bckmwq28"
 )
 
 var (
@@ -166,7 +167,7 @@ func MakeHandler(svc ui.Service, redirect string, tracer opentracing.Tracer) htt
 
 func decodeIndexRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := indexReq{
-		token: r.Header.Get("Authorization"),
+		token: getAuthorization(r),
 	}
 
 	return req, nil
@@ -179,7 +180,7 @@ func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	req := createThingsReq{
-		token:    r.Header.Get("Authorization"),
+		token:    getAuthorization(r),
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,
 	}
@@ -187,9 +188,14 @@ func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
+func getAuthorization(r *http.Request) string {
+	return token
+	// return r.Header.Get("Authorization")
+}
+
 func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewResourceReq{
-		token: r.Header.Get("Authorization"),
+		token: getAuthorization(r),
 		id:    bone.GetValue(r, "id"),
 	}
 	return req, nil
@@ -202,7 +208,7 @@ func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := updateThingReq{
-		token:    r.Header.Get("Authorization"),
+		token:    getAuthorization(r),
 		id:       bone.GetValue(r, "id"),
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,
@@ -212,7 +218,7 @@ func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 
 func decodeListThingsRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := listThingsReq{
-		token: r.Header.Get("Authorization"),
+		token: getAuthorization(r),
 	}
 
 	return req, nil
@@ -226,7 +232,7 @@ func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, er
 	}
 
 	req := createChannelsReq{
-		token:    r.Header.Get("Authorization"),
+		token:    getAuthorization(r),
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,
 	}
@@ -241,7 +247,7 @@ func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	req := updateChannelReq{
-		token:    r.Header.Get("Authorization"),
+		token:    getAuthorization(r),
 		id:       bone.GetValue(r, "id"),
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,
@@ -251,17 +257,21 @@ func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeListChannelsRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := listChannelsReq{
-		token: r.Header.Get("Authorization"),
+		token: getAuthorization(r),
 	}
 
 	return req, nil
 }
 
 func decodeGroupCreation(_ context.Context, r *http.Request) (interface{}, error) {
-
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
+		return nil, err
+	}
 	req := createGroupsReq{
-		ID:   r.Header.Get("Authorization"),
-		Name: r.PostFormValue("name"),
+		token:    getAuthorization(r),
+		Name:     r.PostFormValue("name"),
+		Metadata: meta,
 	}
 
 	return req, nil
@@ -269,7 +279,7 @@ func decodeGroupCreation(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeListGroupsRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := listGroupsReq{
-		token: r.Header.Get("Authorization"),
+		token: getAuthorization(r),
 	}
 
 	return req, nil
@@ -282,7 +292,7 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := updateGroupReq{
-		token:    r.Header.Get("Authorization"),
+		token:    getAuthorization(r),
 		id:       bone.GetValue(r, "id"),
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,

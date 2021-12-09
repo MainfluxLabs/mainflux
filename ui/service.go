@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 
 	"github.com/mainflux/mainflux"
@@ -28,6 +29,8 @@ var (
 	// ErrMalformedEntity indicates malformed entity specification (e.g.
 	// invalid username or password).
 	ErrMalformedEntity = errors.New("malformed entity specification")
+
+	tmplFiles = []string{"header.html", "footer.html", "navbar.html"}
 )
 
 // Service specifies coap service API.
@@ -65,17 +68,30 @@ func New(things mainflux.ThingsServiceClient, sdk sdk.SDK) Service {
 	}
 }
 
-func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
-	tpl := template.New("index")
+func parseTemplate(name string, tmpls ...string) (tpl *template.Template, err error) {
+	tpl = template.New(name)
 	tpl = tpl.Funcs(template.FuncMap{
 		"toJSON": func(data map[string]interface{}) string {
 			ret, _ := json.Marshal(data)
 			return string(ret)
 		},
 	})
-	var err error
 
-	tpl, err = tpl.ParseGlob(templateDir + "/*")
+	a := append(tmplFiles, tmpls...)
+	for i := range a {
+		a[i] = fmt.Sprintf("%s/%s", templateDir, a[i])
+	}
+
+	tpl, err = tpl.ParseFiles(a...)
+	if err != nil {
+		return nil, err
+	}
+
+	return tpl, nil
+}
+
+func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
+	tpl, err := parseTemplate("index", "index.html")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -95,33 +111,23 @@ func (gs *uiService) Index(ctx context.Context, token string) ([]byte, error) {
 }
 
 func (gs *uiService) CreateThings(ctx context.Context, token string, things ...sdk.Thing) ([]byte, error) {
-
 	for i := range things {
-		_, err := gs.sdk.CreateThing(things[i], "123")
+		_, err := gs.sdk.CreateThing(things[i], token)
 		if err != nil {
 			return []byte{}, err
 		}
 	}
 
-	return gs.ListThings(ctx, "123")
+	return gs.ListThings(ctx, token)
 }
 
 func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, error) {
-	tpl := template.New("things")
-	tpl = tpl.Funcs(template.FuncMap{
-		"toJSON": func(data map[string]interface{}) string {
-			ret, _ := json.Marshal(data)
-			return string(ret)
-		},
-	})
-	var err error
-
-	tpl, err = tpl.ParseGlob(templateDir + "/*")
+	tpl, err := parseTemplate("things", "things.html")
 	if err != nil {
 		return []byte{}, err
 	}
 
-	thsPage, err := gs.sdk.Things("123", 0, 100, "")
+	thsPage, err := gs.sdk.Things(token, 0, 100, "")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -143,19 +149,12 @@ func (gs *uiService) ListThings(ctx context.Context, token string) ([]byte, erro
 }
 
 func (gs *uiService) ViewThing(ctx context.Context, token, id string) ([]byte, error) {
-	tpl := template.New("things")
-	tpl = tpl.Funcs(template.FuncMap{
-		"toJSON": func(data map[string]interface{}) string {
-			ret, _ := json.Marshal(data)
-			return string(ret)
-		},
-	})
-	var err error
-	tpl, err = tpl.ParseGlob(templateDir + "/*")
+	tpl, err := parseTemplate("thing", "thing.html")
 	if err != nil {
 		return []byte{}, err
 	}
-	thing, err := gs.sdk.Thing(id, "123")
+
+	thing, err := gs.sdk.Thing(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -178,14 +177,14 @@ func (gs *uiService) ViewThing(ctx context.Context, token, id string) ([]byte, e
 }
 
 func (gs *uiService) UpdateThing(ctx context.Context, token, id string, thing sdk.Thing) ([]byte, error) {
-	if err := gs.sdk.UpdateThing(thing, "123"); err != nil {
+	if err := gs.sdk.UpdateThing(thing, token); err != nil {
 		return []byte{}, err
 	}
-	return gs.ViewThing(ctx, "123", id)
+	return gs.ViewThing(ctx, token, id)
 }
 
 func (gs *uiService) RemoveThing(ctx context.Context, token, id string) ([]byte, error) {
-	err := gs.sdk.DeleteThing(id, "123")
+	err := gs.sdk.DeleteThing(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -194,28 +193,21 @@ func (gs *uiService) RemoveThing(ctx context.Context, token, id string) ([]byte,
 
 func (gs *uiService) CreateChannels(ctx context.Context, token string, channels ...sdk.Channel) ([]byte, error) {
 	for i := range channels {
-		_, err := gs.sdk.CreateChannel(channels[i], "123")
+		_, err := gs.sdk.CreateChannel(channels[i], token)
 		if err != nil {
 			return []byte{}, err
 		}
 	}
-	return gs.ListChannels(ctx, "123")
+	return gs.ListChannels(ctx, token)
 }
 
 func (gs *uiService) ViewChannel(ctx context.Context, token, id string) ([]byte, error) {
-	tpl := template.New("channels")
-	tpl = tpl.Funcs(template.FuncMap{
-		"toJSON": func(data map[string]interface{}) string {
-			ret, _ := json.Marshal(data)
-			return string(ret)
-		},
-	})
-	var err error
-	tpl, err = tpl.ParseGlob(templateDir + "/*")
+	tpl, err := parseTemplate("channel", "channel.html")
 	if err != nil {
 		return []byte{}, err
 	}
-	channel, err := gs.sdk.Channel(id, "123")
+
+	channel, err := gs.sdk.Channel(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -238,27 +230,19 @@ func (gs *uiService) ViewChannel(ctx context.Context, token, id string) ([]byte,
 }
 
 func (gs *uiService) UpdateChannel(ctx context.Context, token, id string, channel sdk.Channel) ([]byte, error) {
-	if err := gs.sdk.UpdateChannel(channel, "123"); err != nil {
+	if err := gs.sdk.UpdateChannel(channel, token); err != nil {
 		return []byte{}, err
 	}
-	return gs.ViewChannel(ctx, "123", id)
+	return gs.ViewChannel(ctx, token, id)
 }
 
 func (gs *uiService) ListChannels(ctx context.Context, token string) ([]byte, error) {
-	tpl := template.New("channels")
-	tpl = tpl.Funcs(template.FuncMap{
-		"toJSON": func(data map[string]interface{}) string {
-			ret, _ := json.Marshal(data)
-			return string(ret)
-		},
-	})
-	var err error
-
-	tpl, err = tpl.ParseGlob(templateDir + "/*")
+	tpl, err := parseTemplate("channels", "channels.html")
 	if err != nil {
 		return []byte{}, err
 	}
-	chsPage, err := gs.sdk.Channels("123", 0, 100, "")
+
+	chsPage, err := gs.sdk.Channels(token, 0, 100, "")
 	if err != nil {
 		return []byte{}, err
 	}
@@ -280,30 +264,30 @@ func (gs *uiService) ListChannels(ctx context.Context, token string) ([]byte, er
 }
 
 func (gs *uiService) RemoveChannel(ctx context.Context, token, id string) ([]byte, error) {
-	err := gs.sdk.DeleteChannel(id, "123")
+	err := gs.sdk.DeleteChannel(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
-	return gs.ListChannels(ctx, "123")
+	return gs.ListChannels(ctx, token)
 }
 
 func (gs *uiService) CreateGroups(ctx context.Context, token string, groups ...sdk.Group) ([]byte, error) {
 	for i := range groups {
-		_, err := gs.sdk.CreateGroup(groups[i], "123")
+		_, err := gs.sdk.CreateGroup(groups[i], token)
 		if err != nil {
 			return []byte{}, err
 		}
 	}
-	return gs.ListGroups(ctx, "123")
+	return gs.ListGroups(ctx, token)
 }
 
 func (gs *uiService) ListGroups(ctx context.Context, token string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
+	tpl, err := parseTemplate("groups", "groups.html")
 	if err != nil {
 		return []byte{}, err
 	}
 
-	grpsPage, err := gs.sdk.Groups(0, 100, "123")
+	grpPage, err := gs.sdk.Groups(0, 100, token)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -313,7 +297,7 @@ func (gs *uiService) ListGroups(ctx context.Context, token string) ([]byte, erro
 		Groups       []sdk.Group
 	}{
 		"groups",
-		grpsPage.Groups,
+		grpPage.Groups,
 	}
 
 	var btpl bytes.Buffer
@@ -325,32 +309,26 @@ func (gs *uiService) ListGroups(ctx context.Context, token string) ([]byte, erro
 }
 
 func (gs *uiService) ViewGroup(ctx context.Context, token, id string) ([]byte, error) {
-	tpl, err := template.ParseGlob(templateDir + "/*")
-	if err != nil {
-		return []byte{}, err
-	}
-	group, err := gs.sdk.Group(id, "123")
+	tpl, err := parseTemplate("group", "group.html")
 	if err != nil {
 		return []byte{}, err
 	}
 
-	j, err := json.Marshal(group)
+	group, err := gs.sdk.Group(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
-
-	m := make(map[string]interface{})
-	json.Unmarshal(j, &m)
 
 	data := struct {
 		NavbarActive string
 		ID           string
-		JSONGroup    map[string]interface{}
+		Group        sdk.Group
 	}{
 		"groups",
 		id,
-		m,
+		group,
 	}
+
 	var btpl bytes.Buffer
 	if err := tpl.ExecuteTemplate(&btpl, "group", data); err != nil {
 		println(err.Error())
@@ -359,14 +337,14 @@ func (gs *uiService) ViewGroup(ctx context.Context, token, id string) ([]byte, e
 }
 
 func (gs *uiService) UpdateGroup(ctx context.Context, token, id string, group sdk.Group) ([]byte, error) {
-	if err := gs.sdk.UpdateGroup(group, "123"); err != nil {
+	if err := gs.sdk.UpdateGroup(group, token); err != nil {
 		return []byte{}, err
 	}
-	return gs.ViewGroup(ctx, "123", id)
+	return gs.ViewGroup(ctx, token, id)
 }
 
 func (gs *uiService) RemoveGroup(ctx context.Context, token, id string) ([]byte, error) {
-	err := gs.sdk.DeleteGroup(id, "123")
+	err := gs.sdk.DeleteGroup(id, token)
 	if err != nil {
 		return []byte{}, err
 	}
