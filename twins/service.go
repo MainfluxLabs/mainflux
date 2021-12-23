@@ -114,7 +114,7 @@ func (ts *twinsService) AddTwin(ctx context.Context, token string, twin Twin, de
 		return Twin{}, err
 	}
 
-	twin.Owner = res.GetEmail()
+	twin.Owner = res.GetId()
 
 	t := time.Now()
 	twin.Created = t
@@ -234,7 +234,7 @@ func (ts *twinsService) ListTwins(ctx context.Context, token string, offset uint
 		return Page{}, errors.ErrAuthentication
 	}
 
-	return ts.twins.RetrieveAll(ctx, res.GetEmail(), offset, limit, name, metadata)
+	return ts.twins.RetrieveAll(ctx, res.GetId(), offset, limit, name, metadata)
 }
 
 func (ts *twinsService) ListStates(ctx context.Context, token string, offset uint64, limit uint64, twinID string) (StatesPage, error) {

@@ -73,7 +73,7 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 }
 
 func (ur userRepository) Update(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET(email, password, metadata) VALUES (:email, :password, :metadata) WHERE email = :email`
+	q := `UPDATE users SET(email, password, metadata) VALUES (:email, :password, :metadata) WHERE id = :id`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -88,7 +88,7 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 }
 
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET metadata = :metadata WHERE email = :email`
+	q := `UPDATE users SET metadata = :metadata WHERE id = :id`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -213,11 +213,11 @@ func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, 
 	return page, nil
 }
 
-func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {
-	q := `UPDATE users SET password = :password WHERE email = :email`
+func (ur userRepository) UpdatePassword(ctx context.Context, id, password string) error {
+	q := `UPDATE users SET password = :password WHERE id = :id`
 
 	db := dbUser{
-		Email:    email,
+		ID:       id,
 		Password: password,
 	}
 
