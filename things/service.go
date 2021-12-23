@@ -172,7 +172,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 // createThing saves the Thing and adds identity as an owner(Read, Write, Delete policies) of the Thing.
 func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *mainflux.UserIdentity) (Thing, error) {
 
-	thing.Owner = identity.GetEmail()
+	thing.Owner = identity.GetId()
 
 	if thing.ID == "" {
 		id, err := ts.idProvider.ID()
@@ -219,7 +219,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 	}
 
-	thing.Owner = res.GetEmail()
+	thing.Owner = res.GetId()
 
 	return ts.things.Update(ctx, thing)
 }
@@ -267,7 +267,7 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 		}
 	}
 
-	owner := res.GetEmail()
+	owner := res.GetId()
 
 	return ts.things.UpdateKey(ctx, owner, id, key)
 }
@@ -284,7 +284,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		}
 	}
 
-	return ts.things.RetrieveByID(ctx, res.GetEmail(), id)
+	return ts.things.RetrieveByID(ctx, res.GetId(), id)
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error) {
@@ -297,7 +297,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	// If the user is admin, fetch all things from database.
 	if err := ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
 		pm.FetchSharedThings = true
-		page, err := ts.things.RetrieveAll(ctx, res.GetEmail(), pm)
+		page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
 		if err != nil {
 			return Page{}, err
 		}
@@ -322,7 +322,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	}
 
 	// By default, fetch things from Things service.
-	page, err := ts.things.RetrieveAll(ctx, res.GetEmail(), pm)
+	page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
 	if err != nil {
 		return Page{}, err
 	}
@@ -336,7 +336,7 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID st
 		return Page{}, err
 	}
 
-	return ts.things.RetrieveByChannel(ctx, res.GetEmail(), chID, pm)
+	return ts.things.RetrieveByChannel(ctx, res.GetId(), chID, pm)
 }
 
 func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) error {
@@ -354,7 +354,7 @@ func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) erro
 	if err := ts.thingCache.Remove(ctx, id); err != nil {
 		return err
 	}
-	return ts.things.Remove(ctx, res.GetEmail(), id)
+	return ts.things.Remove(ctx, res.GetId(), id)
 }
 
 func (ts *thingsService) CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error) {
@@ -382,7 +382,7 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 		}
 		channel.ID = chID
 	}
-	channel.Owner = identity.GetEmail()
+	channel.Owner = identity.GetId()
 
 	chs, err := ts.channels.Save(ctx, *channel)
 	if err != nil {
@@ -411,7 +411,7 @@ func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channe
 		}
 	}
 
-	channel.Owner = res.GetEmail()
+	channel.Owner = res.GetId()
 	return ts.channels.Update(ctx, channel)
 }
 
@@ -427,7 +427,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		}
 	}
 
-	return ts.channels.RetrieveByID(ctx, res.GetEmail(), id)
+	return ts.channels.RetrieveByID(ctx, res.GetId(), id)
 }
 
 func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
@@ -439,7 +439,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	// If the user is admin, fetch all channels from the database.
 	if err := ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
 		pm.FetchSharedThings = true
-		page, err := ts.channels.RetrieveAll(ctx, res.GetEmail(), pm)
+		page, err := ts.channels.RetrieveAll(ctx, res.GetId(), pm)
 		if err != nil {
 			return ChannelsPage{}, err
 		}
@@ -447,7 +447,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	}
 
 	// By default, fetch channels from database based on the owner field.
-	return ts.channels.RetrieveAll(ctx, res.GetEmail(), pm)
+	return ts.channels.RetrieveAll(ctx, res.GetId(), pm)
 }
 
 func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID string, pm PageMetadata) (ChannelsPage, error) {
@@ -456,7 +456,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, err
 	}
 
-	return ts.channels.RetrieveByThing(ctx, res.GetEmail(), thID, pm)
+	return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 }
 
 func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) error {
@@ -475,7 +475,7 @@ func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) er
 		return err
 	}
 
-	return ts.channels.Remove(ctx, res.GetEmail(), id)
+	return ts.channels.Remove(ctx, res.GetId(), id)
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs []string) error {
@@ -484,7 +484,7 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 		return err
 	}
 
-	return ts.channels.Connect(ctx, res.GetEmail(), chIDs, thIDs)
+	return ts.channels.Connect(ctx, res.GetId(), chIDs, thIDs)
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
@@ -501,7 +501,7 @@ func (ts *thingsService) Disconnect(ctx context.Context, token string, chIDs, th
 		}
 	}
 
-	return ts.channels.Disconnect(ctx, res.GetEmail(), chIDs, thIDs)
+	return ts.channels.Disconnect(ctx, res.GetId(), chIDs, thIDs)
 }
 
 func (ts *thingsService) CanAccessByKey(ctx context.Context, chanID, thingKey string) (string, error) {
