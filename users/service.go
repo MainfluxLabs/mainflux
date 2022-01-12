@@ -170,7 +170,7 @@ func (svc usersService) checkAuthz(ctx context.Context, token string) error {
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
-	dbUser, err := svc.users.RetrieveByID(ctx, user.ID)
+	dbUser, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
