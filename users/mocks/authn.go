@@ -20,7 +20,6 @@ type SubjectSet struct {
 }
 
 type authServiceMock struct {
-	users map[string]string
 	authz map[string][]SubjectSet
 }
 
@@ -29,22 +28,22 @@ func (svc authServiceMock) ListPolicies(ctx context.Context, in *mainflux.ListPo
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(users map[string]string, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
-	return &authServiceMock{users, authzDB}
+func NewAuthService(users map[string]users.User, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
+	return &authServiceMock{authzDB}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
-	if id, ok := svc.users[in.Value]; ok {
-		return &mainflux.UserIdentity{Id: id, Email: id}, nil
+	if u, ok := mockUsers[in.Value]; ok {
+		return &mainflux.UserIdentity{Id: u.ID, Email: u.Email}, nil
 	}
 	return nil, errors.ErrAuthentication
 }
 
 func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opts ...grpc.CallOption) (*mainflux.Token, error) {
-	if id, ok := svc.users[in.GetEmail()]; ok {
+	if u, ok := mockUsers[in.GetEmail()]; ok {
 		switch in.Type {
 		default:
-			return &mainflux.Token{Value: id}, nil
+			return &mainflux.Token{Value: u.Email}, nil
 		}
 	}
 	return nil, errors.ErrAuthentication

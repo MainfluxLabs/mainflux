@@ -110,7 +110,7 @@ const (
 	envAuthURL     = "MF_AUTH_GRPC_URL"
 	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
 
-	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
+	envSenvSelfRegisterelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
 )
 
 type config struct {
