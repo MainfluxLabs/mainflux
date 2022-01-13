@@ -29,10 +29,15 @@ func (svc authServiceMock) ListPolicies(ctx context.Context, in *mainflux.ListPo
 
 // NewAuthService creates mock of users service.
 func NewAuthService(users map[string]users.User, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
+	mockUsers = users
+	for _, u := range users {
+		mockUsersById[u.ID] = u
+	}
 	return &authServiceMock{authzDB}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
+
 	if u, ok := mockUsers[in.Value]; ok {
 		return &mainflux.UserIdentity{Id: u.ID, Email: u.Email}, nil
 	}
