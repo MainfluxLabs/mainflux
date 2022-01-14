@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
+	"github.com/mainflux/mainflux/pkg/messaging"
 	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
 	"github.com/mainflux/mainflux/ui"
 )
@@ -130,6 +131,51 @@ func (mm *metricsMiddleware) RemoveChannel(ctx context.Context, token, id string
 	return mm.svc.RemoveChannel(ctx, token, id)
 }
 
+func (mm *metricsMiddleware) Connect(ctx context.Context, token string, chIDs, thIDs []string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "connect").Add(1)
+		mm.latency.With("method", "connect").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Connect(ctx, token, chIDs, thIDs)
+}
+
+func (mm *metricsMiddleware) ListThingConnections(ctx context.Context, token, id string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "view_connections").Add(1)
+		mm.latency.With("method", "view_connections").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListThingConnections(ctx, token, id)
+}
+
+func (mm *metricsMiddleware) ListChannelConnections(ctx context.Context, token, id string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "view_connections").Add(1)
+		mm.latency.With("method", "view_connections").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListChannelConnections(ctx, token, id)
+}
+
+func (mm *metricsMiddleware) DisconnectThing(ctx context.Context, token string, chIDs, thIDs []string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "disconnect").Add(1)
+		mm.latency.With("method", "disconnect").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DisconnectThing(ctx, token, chIDs, thIDs)
+}
+
+func (mm *metricsMiddleware) DisconnectChannel(ctx context.Context, token string, chIDs, thIDs []string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "disconnect_channel").Add(1)
+		mm.latency.With("method", "disconnect_channel").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DisconnectChannel(ctx, token, chIDs, thIDs)
+}
+
 func (mm *metricsMiddleware) CreateGroups(ctx context.Context, token string, groups ...sdk.Group) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "create_groups").Add(1)
@@ -157,6 +203,24 @@ func (mm *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (b
 	return mm.svc.ViewGroup(ctx, token, id)
 }
 
+func (mm *metricsMiddleware) Assign(ctx context.Context, token, groupID, groupType string, memberIDs ...string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "assign").Add(1)
+		mm.latency.With("method", "assign").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Assign(ctx, token, groupID, groupType, memberIDs...)
+}
+
+func (mm *metricsMiddleware) Unassign(ctx context.Context, token, groupID string, memberIDs ...string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "unassign").Add(1)
+		mm.latency.With("method", "unassign").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Unassign(ctx, token, groupID, memberIDs...)
+}
+
 func (mm *metricsMiddleware) UpdateGroup(ctx context.Context, token, id string, group sdk.Group) (b []byte, err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "update_group").Add(1)
@@ -173,4 +237,22 @@ func (mm *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) 
 	}(time.Now())
 
 	return mm.svc.RemoveGroup(ctx, token, id)
+}
+
+func (mm *metricsMiddleware) Publish(ctx context.Context, thingKey string, msg messaging.Message) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "publish").Add(1)
+		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Publish(ctx, thingKey, msg)
+}
+
+func (mm *metricsMiddleware) SendMessage(ctx context.Context, token string) (b []byte, err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_message").Add(1)
+		mm.latency.With("method", "send_message").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendMessage(ctx, token)
 }

@@ -28,13 +28,34 @@
                     <form method="post">
                       <div class="mb-3">
                         <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" id="name" aria-describedby="nameHelp">
+                        <input type="text" class="form-control" name="name" id="name" aria-describedby="nameHelp" value="{{.Channel.Name}}">
                         <div id="nameHelp" class="form-text">Enter device name.</div>
                       </div>
                       <div class="mb-3">
                         <label for="meatadata" class="form-label">Metadata</label>
-                        <input type="text" class="form-control" name= "metadata" id="metadata">
+                        <input type="text" class="form-control" name= "metadata" id="metadata" value="{{toJSON .Channel.Metadata}}">
                         <div id="metadataHelp" class="form-text">Enter device metadata in JSON format.</div>
+                      </div>
+                      <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <a class="btn btn-primary" href="/channelconn/{{.Channel.ID}}" role="button">Connections</a>
+            <div class="modal fade" id="connectModal" tabindex="-1" role="dialog" aria-labelledby="connectModal" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="connectModal">Connect</h5>
+                  </div>
+                  <div class="modal-body">
+                    <form action="/connect" method="post">
+                      <div class="mb-3">
+                        <label for="name" class="form-label">Channel ID</label>
+                        <input type="text" class="form-control" name="thingID" id="thingID" aria-describedby="chanelIDHelp">
+                        <input type="text" class="invisible" name="chanID" id="chanID" aria-describedby="channelIDHelp" value="{{.Channel.ID}}">
+                        <div id="channelIDHelp" class="form-text">Enter channel ID.</div>
                       </div>
                       <button type="submit" class="btn btn-primary">Submit</button>
                     </form>

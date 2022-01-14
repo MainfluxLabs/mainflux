@@ -9,12 +9,14 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/things"
 	"github.com/mainflux/mainflux/ui"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -26,13 +28,26 @@ import (
 const (
 	contentType = "text/html"
 	staticDir   = "ui/web/static"
-	token       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MzkwODg1MTUsImlhdCI6MTYzOTA1MjUxNSwiaXNzIjoibWFpbmZsdXguYXV0aCIsInN1YiI6ImZscDFAZW1haWwuY29tIiwiaXNzdWVyX2lkIjoiYzkzY2FmYjMtYjNhNy00ZTdmLWE0NzAtMTVjMTRkOGVkMWUwIiwidHlwZSI6MH0.Ck9r2eJc2gieUdGy1Lt1BYLpYmf5rQT-KX1bckmwq28"
+	// TODO -this is a temporary token and it will be removed once auth proxy is in place.
+	token       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NDE1MTkyNjEsImlhdCI6MTY0MTQ4MzI2MSwiaXNzIjoibWFpbmZsdXguYXV0aCIsInN1YiI6ImZscDFAZW1haWwuY29tIiwiaXNzdWVyX2lkIjoiYzkzY2FmYjMtYjNhNy00ZTdmLWE0NzAtMTVjMTRkOGVkMWUwIiwidHlwZSI6MH0.cqDOZdqiH9sXd1yuDwsv6-Mtb6_nVe_4c6cJK-iJ-Ig"
+	offsetKey   = "offset"
+	limitKey    = "limit"
+	nameKey     = "name"
+	orderKey    = "order"
+	dirKey      = "dir"
+	metadataKey = "metadata"
+	disconnKey  = "disconnected"
+	sharedKey   = "shared"
+	defOffset   = 0
+	defLimit    = 10
+	protocol    = "http"
 )
 
 var (
 	errMalformedData     = errors.New("malformed request data")
 	errMalformedSubtopic = errors.New("malformed subtopic")
 	redirectURL          = ""
+	// channelPartRegExp    = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -113,6 +128,48 @@ func MakeHandler(svc ui.Service, redirect string, tracer opentracing.Tracer) htt
 		opts...,
 	))
 
+	r.Post("/connect", kithttp.NewServer(
+		kitot.TraceServer(tracer, "connect_thing")(connectThingEndpoint(svc)),
+		decodeConnect,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/thingconn/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_connection")(listThingConnectionsEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/channelconn/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_connection")(listChannelConnectionsEndpoint(svc)),
+		decodeView,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/disconnect", kithttp.NewServer(
+		kitot.TraceServer(tracer, "disconnect_thing")(disconnectThingEndpoint(svc)),
+		decodeDisconnectThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/disconnect", kithttp.NewServer(
+		kitot.TraceServer(tracer, "disconnect_channel")(disconnectChannelEndpoint(svc)),
+		decodeDisconnectChannel,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/unassign", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
+		decodeUnassignRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/channels/:id/delete", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_channel")(removeChannelEndpoint(svc)),
 		decodeView,
@@ -141,6 +198,13 @@ func MakeHandler(svc ui.Service, redirect string, tracer opentracing.Tracer) htt
 		opts...,
 	))
 
+	r.Post("/groups/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
+		decodeAssignRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
 		decodeGroupUpdate,
@@ -154,6 +218,27 @@ func MakeHandler(svc ui.Service, redirect string, tracer opentracing.Tracer) htt
 		encodeResponse,
 		opts...,
 	))
+
+	r.Get("/messages", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_messages")(sendMessageEndpoint(svc)),
+		decodeSendMessageRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/messages", kithttp.NewServer(
+		kitot.TraceServer(tracer, "publish")(publishMessageEndpoint(svc)),
+		decodePublishRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	// r.Post("/channels/:id/messages/*", kithttp.NewServer(
+	// 	kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+	// 	decodeRequest,
+	// 	encodeResponse,
+	// 	opts...,
+	// ))
 
 	r.GetFunc("/version", mainflux.Version("ui"))
 	r.Handle("/metrics", promhttp.Handler())
@@ -225,7 +310,6 @@ func decodeListThingsRequest(ctx context.Context, r *http.Request) (interface{},
 }
 
 func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, error) {
-
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
 		return nil, err
@@ -263,6 +347,55 @@ func decodeListChannelsRequest(ctx context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
+func decodeConnect(_ context.Context, r *http.Request) (interface{}, error) {
+	r.ParseForm()
+	chanID := r.Form.Get("chanID")
+	thingID := r.Form.Get("thingID")
+	req := connectThingReq{
+		token:   getAuthorization(r),
+		ChanID:  chanID,
+		ThingID: thingID,
+	}
+	return req, nil
+}
+
+func decodeDisconnectThing(_ context.Context, r *http.Request) (interface{}, error) {
+	r.ParseForm()
+	chanID := r.Form.Get("chanID")
+	thingID := r.Form.Get("thingID")
+	req := disconnectThingReq{
+		token:   getAuthorization(r),
+		ChanID:  chanID,
+		ThingID: thingID,
+	}
+	return req, nil
+}
+
+func decodeDisconnectChannel(_ context.Context, r *http.Request) (interface{}, error) {
+	r.ParseForm()
+	chanID := r.Form.Get("chanID")
+	thingID := r.Form.Get("thingID")
+	req := disconnectChannelReq{
+		token:   getAuthorization(r),
+		ThingID: thingID,
+		ChanID:  chanID,
+	}
+	return req, nil
+}
+
+func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	r.ParseForm()
+	req := unassignReq{
+		assignReq{
+			token:   getAuthorization(r),
+			groupID: r.PostFormValue("groupId"),
+			Type:    r.PostFormValue("Type"),
+			Member:  r.PostFormValue("memberId"),
+		},
+	}
+	return req, nil
+}
+
 func decodeGroupCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
@@ -285,6 +418,19 @@ func decodeListGroupsRequest(ctx context.Context, r *http.Request) (interface{},
 	return req, nil
 }
 
+func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	memberid := r.PostFormValue("memberId")
+
+	req := assignReq{
+		token:   getAuthorization(r),
+		groupID: bone.GetValue(r, "id"),
+		Type:    r.PostFormValue("Type"),
+		Member:  memberid,
+	}
+	println(req.Type)
+	return req, nil
+}
+
 func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(r.PostFormValue("metadata")), &meta); err != nil {
@@ -297,6 +443,36 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 		Name:     r.PostFormValue("name"),
 		Metadata: meta,
 	}
+	return req, nil
+}
+
+func decodePublishRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	chanID := r.PostFormValue("chanID")
+	payload := r.PostFormValue("message")
+	thingKey := r.PostFormValue("thingKey")
+
+	msg := messaging.Message{
+		Protocol: protocol,
+		Channel:  chanID,
+		Subtopic: "",
+		Payload:  []byte(payload),
+		Created:  time.Now().UnixNano(),
+	}
+
+	req := publishReq{
+		msg:      msg,
+		thingKey: thingKey,
+		token:    getAuthorization(r),
+	}
+
+	return req, nil
+}
+
+func decodeSendMessageRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	req := sendMessageReq{
+		token: getAuthorization(r),
+	}
+
 	return req, nil
 }
 

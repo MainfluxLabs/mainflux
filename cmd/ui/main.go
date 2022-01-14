@@ -83,6 +83,7 @@ func main() {
 	sdkConf := sdk.Config{
 		ThingsURL:       "http://localhost:8182",
 		AuthURL:         "http://localhost:8189",
+		HTTPAdapterURL:  "http://localhost:8185",
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
 	}

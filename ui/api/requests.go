@@ -4,6 +4,8 @@
 package api
 
 import (
+	"github.com/mainflux/mainflux/auth"
+	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/things"
 	"github.com/mainflux/mainflux/ui"
 )
@@ -167,4 +169,121 @@ func (req updateGroupReq) validate() error {
 	}
 
 	return nil
+}
+
+type connectThingReq struct {
+	token   string
+	ChanID  string `json:"chan_id,omitempty"`
+	ThingID string `json:"thing_id,omitempty"`
+}
+
+func (req connectThingReq) validate() error {
+	// if req.token == "" {
+	// 	return things.ErrUnauthorizedAccess
+	// }
+
+	if req.ChanID == "" || req.ThingID == "" {
+		return things.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type connectChannelReq struct {
+	token   string
+	ThingID string `json:"thing_id,omitempty"`
+	ChanID  string `json:"chan_id,omitempty"`
+}
+
+func (req connectChannelReq) validate() error {
+	// if req.token == "" {
+	// 	return things.ErrUnauthorizedAccess
+	// }
+
+	if req.ChanID == "" || req.ThingID == "" {
+		return things.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type disconnectThingReq struct {
+	token   string
+	ChanID  string `json:"chan_id,omitempty"`
+	ThingID string `json:"thing_id,omitempty"`
+}
+
+func (req disconnectThingReq) validate() error {
+	// if req.token == "" {
+	// 	return things.ErrUnauthorizedAccess
+	// }
+
+	if req.ChanID == "" || req.ThingID == "" {
+		return things.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type disconnectChannelReq struct {
+	token   string
+	ThingID string `json:"thing_id,omitempty"`
+	ChanID  string `json:"chan_id,omitempty"`
+}
+
+func (req disconnectChannelReq) validate() error {
+	// if req.token == "" {
+	// 	return things.ErrUnauthorizedAccess
+	// }
+
+	if req.ChanID == "" || req.ThingID == "" {
+		return things.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type assignReq struct {
+	token   string
+	groupID string
+	Type    string `json:"type,omitempty"`
+	Member  string `json:"member"`
+}
+
+func (req assignReq) validate() error {
+	if req.token == "" {
+		return auth.ErrUnauthorizedAccess
+	}
+
+	if req.Type == "" || req.groupID == "" || req.Member == "" {
+		return auth.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type unassignReq struct {
+	assignReq
+}
+
+func (req unassignReq) validate() error {
+	if req.token == "" {
+		return auth.ErrUnauthorizedAccess
+	}
+
+	if req.groupID == "" || req.Member == "" {
+		return auth.ErrMalformedEntity
+	}
+
+	return nil
+}
+
+type publishReq struct {
+	msg      messaging.Message
+	thingKey string
+	token    string
+}
+
+type sendMessageReq struct {
+	token string
 }

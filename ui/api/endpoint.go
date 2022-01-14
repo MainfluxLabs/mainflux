@@ -224,6 +224,96 @@ func removeChannelEndpoint(svc ui.Service) endpoint.Endpoint {
 	}
 }
 
+func connectThingEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		cr := request.(connectThingReq)
+
+		if err := cr.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.Connect(ctx, cr.token, []string{cr.ChanID}, []string{cr.ThingID})
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func listThingConnectionsEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewResourceReq)
+
+		// if err := req.validate(); err != nil {
+		// 	return nil, err
+		// }
+
+		res, err := svc.ListThingConnections(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func listChannelConnectionsEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewResourceReq)
+
+		// if err := req.validate(); err != nil {
+		// 	return nil, err
+		// }
+
+		res, err := svc.ListChannelConnections(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func disconnectThingEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		dcr := request.(disconnectThingReq)
+
+		if err := dcr.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.DisconnectThing(ctx, dcr.token, []string{dcr.ChanID}, []string{dcr.ThingID})
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func disconnectChannelEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		dcr := request.(disconnectChannelReq)
+
+		if err := dcr.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.DisconnectChannel(ctx, dcr.token, []string{dcr.ThingID}, []string{dcr.ChanID})
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
 func createGroupEndpoint(svc ui.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createGroupsReq)
@@ -284,6 +374,41 @@ func viewGroupEndpoint(svc ui.Service) endpoint.Endpoint {
 	}
 }
 
+func assignEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(assignReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.Assign(ctx, req.token, req.groupID, req.Type, req.Member)
+		if err != nil {
+			return nil, err
+		}
+
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func unassignEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(unassignReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.Unassign(ctx, req.token, req.groupID, req.Member)
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
 func updateGroupEndpoint(svc ui.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateGroupReq)
@@ -324,6 +449,36 @@ func removeGroupEndpoint(svc ui.Service) endpoint.Endpoint {
 			html:    res,
 			headers: map[string]string{"location": redirectURL + "groups"},
 			code:    http.StatusPermanentRedirect,
+		}, err
+	}
+}
+
+func sendMessageEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(sendMessageReq)
+		// if err := req.validate(); err != nil {
+		// 	return nil, err
+		// }
+		res, err := svc.SendMessage(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+		return uiRes{
+			html: res,
+		}, err
+	}
+}
+
+func publishMessageEndpoint(svc ui.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(publishReq)
+		res, err := svc.Publish(ctx, req.thingKey, req.msg)
+		if err != nil {
+			return nil, err
+		}
+
+		return uiRes{
+			html: res,
 		}, err
 	}
 }

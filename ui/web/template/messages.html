@@ -1,0 +1,44 @@
+{{define "messages"}}
+<!doctype html>
+<html lang="en">
+  {{template "header"}}
+
+  <body>
+    <main role="main">
+      <div class="container-fluid">
+        <div class="row">
+
+          {{template "navbar" .}}
+
+          <!-- Partial goes here -->
+          <div class="col-md-4">
+            <form method="post">
+              <div class="mb-3">
+                <label for="chanID" class="form-label">Channel ID</label>
+                <input type="text" class="form-control" name="chanID" id="chanID" aria-describedby="chanIDHelp">
+                <div id="chanIDHelp" class="form-text">Enter channel ID.</div>
+              </div>
+              <div class="mb-3">
+                <label for="thingKey" class="form-label">Thing Key</label>
+                <input type="text" class="form-control" name="thingKey" id="thingKey" aria-describedby="thingIDHelp">
+                <div id="thingIDHelp" class="form-text">Enter thing ID.</div>
+              </div>
+              <div class="mb-3">
+                <label for="message" class="form-label">Message</label>
+                <input type="text" class="form-control" name= "message" id="message" value="">
+                <div id="messageHelp" class="form-text">Enter message content.</div>
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+          <!-- End of partial-->
+
+        </div>
+      </div> <!-- /container -->
+    </main>
+
+    {{template "footer"}}
+
+  </body>
+</html>
+{{end}}

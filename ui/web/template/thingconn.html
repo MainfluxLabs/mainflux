@@ -1,4 +1,4 @@
-{{define "thing"}}
+{{define "thingconn"}}
 <!doctype html>
 <html lang="en">
   {{template "header"}}
@@ -12,37 +12,9 @@
 
           <!-- Partial goes here -->
           <div class="col-md-4">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateThingModal">
-              Update
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#connectModal">
+              Connect
             </button>
-            <td><a type="button" class="btn btn-primary" href= {{printf "%s/delete" .ID}}>
-              Delete
-            </a></td>
-            <div class="modal fade" id="updateThingModal" tabindex="-1" role="dialog" aria-labelledby="updateThingModalLabel" aria-hidden="true">
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="updateThingModalLabel">Update Thing</h5>
-                  </div>
-                  <div class="modal-body">
-                    <form method="post">
-                      <div class="mb-3">
-                        <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" id="name" aria-describedby="nameHelp" value="{{.Thing.Name}}">
-                        <div id="nameHelp" class="form-text">Enter device name.</div>
-                      </div>
-                      <div class="mb-3">
-                        <label for="meatadata" class="form-label">Metadata</label>
-                        <input type="text" class="form-control" name="metadata" id="metadata" value="{{toJSON .Thing.Metadata}}">
-                        <div id="metadataHelp" class="form-text">Enter device metadata in JSON format.</div>
-                      </div>
-                      <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <a class="btn btn-primary" href="/thingconn/{{.Thing.ID}}" role="button">Connections</a>
             <div class="modal fade" id="connectModal" tabindex="-1" role="dialog" aria-labelledby="connectModal" aria-hidden="true">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -88,6 +60,30 @@
                     <pre>{{toJSON .Thing.Metadata}}</pre>
                     </td>
                 </tr>
+              </tbody>
+            </table>
+            {{ $t := .Thing.ID }}
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th colspan="4">CONNECTED CHANNELS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{range $i, $c := .Channels}}
+                  <tr>
+                    <th scope="row">{{$i}}</th>
+                    <td>{{$c.Name}}</td>
+                    <td><a href={{printf "/channels/%s" $c.ID}}>{{$c.ID}}</a></td>
+                    <td>
+                      <form action="/disconnect" method="post">
+                        <input type="hidden" name="thingID" id="thingID" value="{{$t}}">
+                        <input type="hidden" name="chanID" id="chanID" value="{{$c.ID}}">
+                        <button type="submit" class="btn btn-danger btn-sm">Disconnect</button>
+                      </form>
+                    </td>
+                  </tr>
+                {{end}}
               </tbody>
             </table>
           </div>
