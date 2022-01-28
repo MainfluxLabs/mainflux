@@ -154,19 +154,19 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 }
 
 func (svc usersService) checkAuthz(ctx context.Context, token string) error {
+	if token != "" {
+		ir, err := svc.identify(ctx, token)
+		if err != nil {
+			return err
+		}
+
+		return svc.authorize(ctx, ir.id, authoritiesObjKey, memberRelationKey)
+	}
+	// self register allowed, token not used
 	if err := svc.authorize(ctx, "*", "user", "create"); err == nil {
 		return nil
 	}
-	if token == "" {
-		return errors.ErrAuthentication
-	}
-
-	ir, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	return svc.authorize(ctx, ir.id, authoritiesObjKey, memberRelationKey)
+	return errors.ErrUnauthorizedAccess
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
