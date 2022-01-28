@@ -21,12 +21,24 @@ func (req userReq) validate() error {
 	return req.user.Validate()
 }
 
+type registerUserReq struct {
+	user  users.User
+	token string
+}
+
+func (req registerUserReq) validate() error {
+	return req.user.Validate()
+}
+
 type createUserReq struct {
 	user  users.User
 	token string
 }
 
 func (req createUserReq) validate() error {
+	if req.token == "" {
+		return users.ErrUnauthorizedAccess
+	}
 	return req.user.Validate()
 }
 
