@@ -55,6 +55,7 @@ func (urm *userRepositoryMock) Update(ctx context.Context, user users.User) erro
 	}
 
 	mockUsers[user.Email] = user
+	mockUsersById[user.ID] = user
 	return nil
 }
 
@@ -67,6 +68,7 @@ func (urm *userRepositoryMock) UpdateUser(ctx context.Context, user users.User) 
 	}
 
 	mockUsers[user.Email] = user
+	mockUsersById[user.ID] = user
 	return nil
 }
 
