@@ -67,7 +67,7 @@ func TestRegister(t *testing.T) {
 		{
 			desc: "self register existing user",
 			user: selfRegister,
-			err:  users.ErrConflict,
+			err:  errors.ErrConflict,
 		},
 		{
 			desc:  "register new user",
@@ -367,7 +367,7 @@ func TestResetPassword(t *testing.T) {
 
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[user.Email] = append(mockAuthzDB[user.Email], mocks.SubjectSet{Object: "authorities", Relation: "member"})
-	auth := mocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
+	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
