@@ -13,6 +13,25 @@ import (
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(registerUserReq)
+		if err := req.validate(); err != nil {
+			return createUserRes{}, err
+		}
+		uid, err := svc.Register(ctx, req.token, req.user)
+		if err != nil {
+			return createUserRes{}, err
+		}
+		ucr := createUserRes{
+			ID:      uid,
+			created: true,
+		}
+
+		return ucr, nil
+	}
+}
+
+func createUserEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createUserReq)
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err

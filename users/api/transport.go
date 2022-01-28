@@ -41,6 +41,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux := bone.New()
 
 	mux.Post("/users", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_user")(createUserEndpoint(svc)),
+		decodeCreateUserReq,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
 		decodeCreateUserReq,
 		encodeResponse,
