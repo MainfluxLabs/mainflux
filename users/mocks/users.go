@@ -12,24 +12,19 @@ import (
 )
 
 var (
-	_                  users.UserRepository = (*userRepositoryMock)(nil)
-	mockUsers          map[string]users.User
-	mockUsersById      map[string]users.User
-	mockUsersByGroupID map[string]users.User
+	_             users.UserRepository = (*userRepositoryMock)(nil)
+	mockUsers     map[string]users.User
+	mockUsersByID map[string]users.User
 )
 
 type userRepositoryMock struct {
 	mu sync.Mutex
-
-	mockUsersById      map[string]users.User
-	mockUsersByGroupID map[string]users.User
 }
 
 // NewUserRepository creates in-memory user repository
 func NewUserRepository() users.UserRepository {
 	mockUsers = make(map[string]users.User)
-	mockUsersByGroupID = make(map[string]users.User)
-	mockUsersById = make(map[string]users.User)
+	mockUsersByID = make(map[string]users.User)
 	return &userRepositoryMock{}
 }
 
@@ -42,7 +37,7 @@ func (urm *userRepositoryMock) Save(ctx context.Context, user users.User) (strin
 	}
 
 	mockUsers[user.Email] = user
-	mockUsersById[user.ID] = user
+	mockUsersByID[user.ID] = user
 	return user.ID, nil
 }
 
@@ -55,7 +50,7 @@ func (urm *userRepositoryMock) Update(ctx context.Context, user users.User) erro
 	}
 
 	mockUsers[user.Email] = user
-	mockUsersById[user.ID] = user
+	mockUsersByID[user.ID] = user
 	return nil
 }
 
@@ -68,7 +63,7 @@ func (urm *userRepositoryMock) UpdateUser(ctx context.Context, user users.User) 
 	}
 
 	mockUsers[user.Email] = user
-	mockUsersById[user.ID] = user
+	mockUsersByID[user.ID] = user
 	return nil
 }
 
@@ -88,7 +83,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	val, ok := mockUsersById[id]
+	val, ok := mockUsersByID[id]
 	if !ok {
 		return users.User{}, errors.ErrNotFound
 	}

@@ -32,7 +32,7 @@ func (svc authServiceMock) ListPolicies(ctx context.Context, in *mainflux.ListPo
 func NewAuthService(users map[string]users.User, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
 	mockUsers = users
 	for _, u := range users {
-		mockUsersById[u.ID] = u
+		mockUsersByID[u.ID] = u
 	}
 	return &authServiceMock{authzDB}
 }
