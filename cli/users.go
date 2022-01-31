@@ -57,6 +57,32 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
+		Use:   "register",
+		Short: "register <username> <password> ",
+		Long:  `Registers new user`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 || len(args) > 2 {
+				logUsage(cmd.Short)
+				return
+			}
+			if len(args) == 2 {
+				args = append(args, "")
+			}
+
+			user := mfxsdk.User{
+				Email:    args[0],
+				Password: args[1],
+			}
+			id, err := sdk.RegisterUser(user)
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logCreated(id)
+		},
+	},
+	{
 		Use:   "token <username> <password>",
 		Short: "Get token",
 		Long:  `Generate new token`,

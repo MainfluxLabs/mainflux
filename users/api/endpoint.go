@@ -17,7 +17,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.Register(ctx, req.token, req.user)
+		uid, err := svc.Register(ctx, "", req.user)
 		if err != nil {
 			return createUserRes{}, err
 		}
