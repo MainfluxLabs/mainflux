@@ -49,7 +49,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
-		decodeCreateUserReq,
+		decodeRegisterUserReq,
 		encodeResponse,
 		opts...,
 	))
@@ -207,6 +207,19 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	return req, nil
+}
+
+func decodeRegisterUserReq(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return registerUserReq{user: user}, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {

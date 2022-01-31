@@ -22,8 +22,7 @@ func (req userReq) validate() error {
 }
 
 type registerUserReq struct {
-	user  users.User
-	token string
+	user users.User
 }
 
 func (req registerUserReq) validate() error {
