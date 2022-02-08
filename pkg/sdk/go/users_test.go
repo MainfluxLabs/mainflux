@@ -71,12 +71,8 @@ func TestCreateUser(t *testing.T) {
 
 	sdkUser := sdk.User{Email: "new-user@example.com", Password: "password"}
 
-	// mockAuthzDB := map[string][]mocks.SubjectSet{}
-	// mockAuthzDB[user.Email] = append(mockAuthzDB[user.Email], mocks.SubjectSet{Object: "authorities", Relation: "member"})
-	// auth := mocks.NewAuthService(map[string]users.User{userEmail: user}, mockAuthzDB)
-	token, _ := svc.Login(context.Background(), admin)
-	// tkn, _ := auth.Issue(context.Background(), &mainflux.IssueReq{Id: admin.ID, Email: admin.Email, Type: 0})
-	// token := tkn.GetValue()
+	token, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	cases := []struct {
@@ -209,11 +205,13 @@ func TestCreateToken(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	sdkUser := sdk.User{Email: "user@example.com", Password: "password"}
 
-	token, _ := svc.Login(context.Background(), admin)
-	_, err := mainfluxSDK.CreateUser(token, sdkUser)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	token, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error admin login: %s", err))
+	_, err = mainfluxSDK.CreateUser(token, sdkUser)
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating use: %s", err))
 
-	token, _ = svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	token, err = svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	cases := []struct {
 		desc  string
