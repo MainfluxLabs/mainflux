@@ -36,7 +36,7 @@ type createUserReq struct {
 
 func (req createUserReq) validate() error {
 	if req.token == "" {
-		return errors.ErrUnauthorizedAccess
+		return errors.ErrAuthorization
 	}
 	return req.user.Validate()
 }
