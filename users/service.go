@@ -166,7 +166,7 @@ func (svc usersService) checkAuthz(ctx context.Context, token string) error {
 	if err := svc.authorize(ctx, "*", "user", "create"); err == nil {
 		return nil
 	}
-	return errors.ErrUnauthorizedAccess
+	return errors.ErrAuthorization
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
