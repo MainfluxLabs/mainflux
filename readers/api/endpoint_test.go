@@ -19,6 +19,7 @@ import (
 	"github.com/mainflux/mainflux/readers"
 	"github.com/mainflux/mainflux/readers/api"
 	"github.com/mainflux/mainflux/readers/mocks"
+	"github.com/mainflux/mainflux/users"
 	authmocks "github.com/mainflux/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,6 +37,10 @@ const (
 	mqttProt      = "mqtt"
 	httpProt      = "http"
 	msgName       = "temperature"
+	validEmail    = "user@example.com"
+	adminEmail    = "admin@example.com"
+	validPass     = "password"
+	invalidPass   = "wrong"
 )
 
 var (
@@ -46,6 +51,9 @@ var (
 	sum float64 = 42
 
 	idProvider = uuid.New()
+
+	user  = users.User{Email: validEmail, Password: validPass}
+	admin = users.User{Email: adminEmail, Password: validPass}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
@@ -133,7 +141,7 @@ func TestReadAll(t *testing.T) {
 	thSvc := mocks.NewThingsService(map[string]string{email: chanID})
 	mockAuthzDB := map[string][]authmocks.SubjectSet{}
 	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: "authorities", Relation: "member"})
-	usrSvc := authmocks.NewAuthService(map[string]string{userToken: email}, mockAuthzDB)
+	usrSvc := authmocks.NewAuthService(map[string]users.User{admin.Email: admin}, mockAuthzDB)
 
 	repo := mocks.NewMessageRepository(chanID, fromSenml(messages))
 	ts := newServer(repo, thSvc, usrSvc)
