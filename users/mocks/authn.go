@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users"
+	user "github.com/mainflux/mainflux/users"
 	"google.golang.org/grpc"
 )
 
@@ -29,8 +29,11 @@ func (svc authServiceMock) ListPolicies(ctx context.Context, in *mainflux.ListPo
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(users map[string]users.User, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
+func NewAuthService(users map[string]user.User, authzDB map[string][]SubjectSet) mainflux.AuthServiceClient {
 	mockUsers = users
+	if mockUsersByID == nil {
+		mockUsersByID = make(map[string]user.User)
+	}
 	for _, u := range users {
 		mockUsersByID[u.ID] = u
 	}
