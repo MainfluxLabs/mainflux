@@ -18,13 +18,15 @@ volumes:
 
 services:
   influxdb:
-    image: influxdb:2.1.1
+    image: influxdb:2.1
     container_name: mainflux-influxdb
     restart: on-failure
     environment:
       INFLUXDB_DB: ${MF_INFLUXDB_DB}
-      INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
-      INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_USERNAME: ${MF_INFLUXDB_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
       INFLUXDB_HTTP_AUTH_ENABLED: ${MF_INFLUXDB_HTTP_AUTH_ENABLED}
     networks:
       - docker_mainflux-base-net
