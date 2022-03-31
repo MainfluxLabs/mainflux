@@ -15,13 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	"github.com/MainfluxLabs/mainflux/coap/api"
 	logger "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	broker "github.com/nats-io/nats.go"
 	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -77,14 +77,13 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	pubsub, err := nats.NewPubSub(cfg.natsURL, "coap", logger)
+	nc, err := broker.Connect(cfg.natsURL)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+	defer nc.Close()
 
-	defer pubsub.Close()
-
-	svc := coap.New(tc, pubsub)
+	svc := coap.New(tc, nc)
 
 	svc = api.LoggingMiddleware(svc, logger)
 
