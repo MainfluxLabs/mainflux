@@ -10,11 +10,11 @@ import (
 	"math"
 	"time"
 
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 
-	"github.com/mainflux/mainflux"
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/mainflux/senml"
 )
 

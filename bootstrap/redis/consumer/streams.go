@@ -9,8 +9,8 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/bootstrap"
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/logger"
 )
 
 const (

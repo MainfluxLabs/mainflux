@@ -31,14 +31,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`opcua-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/addons/opcua-adapter/docker-compose.yml#L29-L53) service section in 
+The service itself is distributed as Docker container. Check the [`opcua-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/opcua-adapter/docker-compose.yml#L29-L53) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 

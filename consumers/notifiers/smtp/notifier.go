@@ -6,9 +6,9 @@ package smtp
 import (
 	"fmt"
 
-	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
-	"github.com/mainflux/mainflux/internal/email"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 type tokenRes struct {

@@ -3,7 +3,7 @@
 
 package apiutil
 
-import "github.com/mainflux/mainflux/pkg/errors"
+import "github.com/MainfluxLabs/mainflux/pkg/errors"
 
 // Errors defined in this file are used by the LoggingErrorEncoder decorator
 // to distinguish and log API request validation errors and avoid that service

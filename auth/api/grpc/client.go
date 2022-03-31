@@ -11,7 +11,7 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mainflux/mainflux"
+	"github.com/MainfluxLabs/mainflux"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 )

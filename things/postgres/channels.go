@@ -13,8 +13,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/lib/pq"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var _ things.ChannelRepository = (*channelRepository)(nil)

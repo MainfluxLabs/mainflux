@@ -3,7 +3,7 @@
 
 package http
 
-import "github.com/mainflux/mainflux/internal/apiutil"
+import "github.com/MainfluxLabs/mainflux/internal/apiutil"
 
 type identifyReq struct {
 	Token string `json:"token"`

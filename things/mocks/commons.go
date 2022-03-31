@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const uuidLen = 36

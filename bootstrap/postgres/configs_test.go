@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
-	"github.com/mainflux/mainflux/bootstrap"
-	"github.com/mainflux/mainflux/bootstrap/postgres"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/bootstrap/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

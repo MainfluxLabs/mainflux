@@ -1,4 +1,4 @@
-// Copyright 2018-2019 opcua authors. All rights reserved.
+// Copyright 2018-2020 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
@@ -119,7 +119,7 @@ type GUID struct {
 	Data1 uint32
 	Data2 uint16
 	Data3 uint16
-	Data4 uint64
+	Data4 []byte
 }
 
 // NewGUID creates a new GUID.
@@ -131,7 +131,7 @@ func NewGUID(guid string) *GUID {
 	if err != nil {
 		return nil
 	}
-	if len(b) < 16 {
+	if len(b) != 16 {
 		return nil
 	}
 
@@ -139,7 +139,7 @@ func NewGUID(guid string) *GUID {
 		Data1: binary.BigEndian.Uint32(b[:4]),
 		Data2: binary.BigEndian.Uint16(b[4:6]),
 		Data3: binary.BigEndian.Uint16(b[6:8]),
-		Data4: binary.BigEndian.Uint64(b[8:16]),
+		Data4: b[8:16],
 	}
 }
 
@@ -148,7 +148,7 @@ func (g *GUID) Decode(b []byte) (int, error) {
 	g.Data1 = buf.ReadUint32()
 	g.Data2 = buf.ReadUint16()
 	g.Data3 = buf.ReadUint16()
-	g.Data4 = buf.ReadUint64()
+	g.Data4 = buf.ReadN(8)
 	return buf.Pos(), buf.Error()
 }
 
@@ -157,15 +157,12 @@ func (g *GUID) Encode() ([]byte, error) {
 	buf.WriteUint32(g.Data1)
 	buf.WriteUint16(g.Data2)
 	buf.WriteUint16(g.Data3)
-	buf.WriteUint64(g.Data4)
+	buf.Write(g.Data4)
 	return buf.Bytes(), buf.Error()
 }
 
 // String returns GUID in human-readable string.
 func (g *GUID) String() string {
-	d4 := make([]byte, 8)
-	binary.BigEndian.PutUint64(d4, g.Data4)
-
 	return fmt.Sprintf("%0*X-%0*X-%0*X-%0*X-%0*X",
 		8,
 		g.Data1,
@@ -174,9 +171,9 @@ func (g *GUID) String() string {
 		4,
 		g.Data3,
 		4,
-		d4[:2],
+		g.Data4[:2],
 		12,
-		d4[2:],
+		g.Data4[2:],
 	)
 }
 
@@ -190,13 +187,30 @@ const (
 // LocalizedText represents a LocalizedText.
 // A LocalizedText structure contains two fields that could be missing.
 // For that reason, the encoding uses a bit mask to indicate which fields
-// are actually present in the encoded forl.
+// are actually present in the encoded form.
 //
 // Specification: Part 6, 5.2.2.14
 type LocalizedText struct {
 	EncodingMask uint8
 	Locale       string
 	Text         string
+}
+
+// NewLocalizedText creates a new localized text without a locale.
+func NewLocalizedText(text string) *LocalizedText {
+	return NewLocalizedTextWithLocale(text, "")
+}
+
+// NewLocalizedTextWithLocale creates a new localized text with a locale.
+func NewLocalizedTextWithLocale(text, locale string) *LocalizedText {
+	l := &LocalizedText{Text: text, Locale: locale}
+	if text != "" {
+		l.EncodingMask |= LocalizedTextText
+	}
+	if locale != "" {
+		l.EncodingMask |= LocalizedTextLocale
+	}
+	return l
 }
 
 func (l *LocalizedText) Decode(b []byte) (int, error) {

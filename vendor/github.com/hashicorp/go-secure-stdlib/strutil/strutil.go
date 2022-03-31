@@ -230,16 +230,16 @@ func TrimStrings(items []string) []string {
 // strings. This also may convert the items in the slice to lower case and
 // returns a sorted slice.
 func RemoveDuplicates(items []string, lowercase bool) []string {
-	itemsMap := make(map[string]struct{}, len(items))
+	itemsMap := map[string]bool{}
 	for _, item := range items {
 		item = strings.TrimSpace(item)
-		if item == "" {
-			continue
-		}
 		if lowercase {
 			item = strings.ToLower(item)
 		}
-		itemsMap[item] = struct{}{}
+		if item == "" {
+			continue
+		}
+		itemsMap[item] = true
 	}
 	items = make([]string, 0, len(itemsMap))
 	for item := range itemsMap {
@@ -254,21 +254,18 @@ func RemoveDuplicates(items []string, lowercase bool) []string {
 // In all cases, strings are compared after trimming whitespace
 // If caseInsensitive, strings will be compared after ToLower()
 func RemoveDuplicatesStable(items []string, caseInsensitive bool) []string {
-	itemsMap := make(map[string]struct{}, len(items))
+	itemsMap := make(map[string]bool, len(items))
 	deduplicated := make([]string, 0, len(items))
 
 	for _, item := range items {
 		key := strings.TrimSpace(item)
-		if _, ok := itemsMap[key]; ok || key == "" {
-			continue
-		}
 		if caseInsensitive {
 			key = strings.ToLower(key)
 		}
-		if _, ok := itemsMap[key]; ok {
+		if key == "" || itemsMap[key] {
 			continue
 		}
-		itemsMap[key] = struct{}{}
+		itemsMap[key] = true
 		deduplicated = append(deduplicated, item)
 	}
 	return deduplicated
@@ -302,18 +299,17 @@ func EquivalentSlices(a, b []string) bool {
 	}
 
 	// First we'll build maps to ensure unique values
-	mapA := make(map[string]struct{}, len(a))
-	mapB := make(map[string]struct{}, len(b))
+	mapA := map[string]bool{}
+	mapB := map[string]bool{}
 	for _, keyA := range a {
-		mapA[keyA] = struct{}{}
+		mapA[keyA] = true
 	}
 	for _, keyB := range b {
-		mapB[keyB] = struct{}{}
+		mapB[keyB] = true
 	}
 
 	// Now we'll build our checking slices
-	sortedA := make([]string, 0, len(mapA))
-	sortedB := make([]string, 0, len(mapB))
+	var sortedA, sortedB []string
 	for keyA := range mapA {
 		sortedA = append(sortedA, keyA)
 	}
@@ -438,21 +434,23 @@ func Difference(a, b []string, lowercase bool) []string {
 	a = RemoveDuplicates(a, lowercase)
 	b = RemoveDuplicates(b, lowercase)
 
-	itemsMap := map[string]struct{}{}
+	itemsMap := map[string]bool{}
 	for _, aVal := range a {
-		itemsMap[aVal] = struct{}{}
+		itemsMap[aVal] = true
 	}
 
 	// Perform difference calculation
 	for _, bVal := range b {
 		if _, ok := itemsMap[bVal]; ok {
-			delete(itemsMap, bVal)
+			itemsMap[bVal] = false
 		}
 	}
 
 	items := []string{}
-	for item := range itemsMap {
-		items = append(items, item)
+	for item, exists := range itemsMap {
+		if exists {
+			items = append(items, item)
+		}
 	}
 	sort.Strings(items)
 	return items

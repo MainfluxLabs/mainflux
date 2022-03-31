@@ -171,8 +171,8 @@ curl -s  -X POST  http://localhost:8190/certs -H "Authorization: Bearer <users_t
 }
 ```
 
-[mainflux]: https://github.com/mainflux/mainflux
-[bootstrap]: https://github.com/mainflux/mainflux/tree/master/bootstrap
+[mainflux]: https://github.com/MainfluxLabs/mainflux
+[bootstrap]: https://github.com/MainfluxLabs/mainflux/tree/master/bootstrap
 [export]: https://github.com/mainflux/export
 [agent]: https://github.com/mainflux/agent
-[mfxui]: https://github.com/mainflux/mainflux/ui
+[mfxui]: https://github.com/MainfluxLabs/mainflux/ui

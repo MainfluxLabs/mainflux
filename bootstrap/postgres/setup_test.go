@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux/bootstrap/postgres"
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/bootstrap/postgres"
+	"github.com/MainfluxLabs/mainflux/logger"
 	dockertest "github.com/ory/dockertest/v3"
 )
 

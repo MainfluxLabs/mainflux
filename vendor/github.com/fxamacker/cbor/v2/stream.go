@@ -9,22 +9,22 @@ import (
 	"reflect"
 )
 
-// Decoder reads and decodes CBOR values from io.Reader.
+// Decoder reads and decodes CBOR values from an input stream.
 type Decoder struct {
 	r         io.Reader
-	d         decoder
 	buf       []byte
-	off       int // next read offset in buf
+	d         decodeState
+	off       int // start of unread data in buf
 	bytesRead int
 }
 
-// NewDecoder returns a new decoder that reads and decodes from r using
-// the default decoding options.
+// NewDecoder returns a new decoder that reads from r using the default decoding options.
 func NewDecoder(r io.Reader) *Decoder {
 	return defaultDecMode.NewDecoder(r)
 }
 
-// Decode reads CBOR value and decodes it into the value pointed to by v.
+// Decode reads the next CBOR-encoded value from its input and stores it in
+// the value pointed to by v.
 func (dec *Decoder) Decode(v interface{}) error {
 	if len(dec.buf) == dec.off {
 		if n, err := dec.read(); n == 0 {
@@ -55,17 +55,19 @@ func (dec *Decoder) NumBytesRead() int {
 }
 
 func (dec *Decoder) read() (int, error) {
-	// Grow buf if needed.
-	const minRead = 512
-	if cap(dec.buf)-len(dec.buf)+dec.off < minRead {
-		oldUnreadBuf := dec.buf[dec.off:]
-		dec.buf = make([]byte, len(dec.buf)-dec.off, 2*cap(dec.buf)+minRead)
-		dec.overwriteBuf(oldUnreadBuf)
-	}
-
 	// Copy unread data over read data and reset off to 0.
 	if dec.off > 0 {
-		dec.overwriteBuf(dec.buf[dec.off:])
+		n := copy(dec.buf, dec.buf[dec.off:])
+		dec.buf = dec.buf[:n]
+		dec.off = 0
+	}
+
+	// Grow buf if needed.
+	const minRead = 512
+	if cap(dec.buf)-len(dec.buf) < minRead {
+		newBuf := make([]byte, len(dec.buf), 2*cap(dec.buf)+minRead)
+		copy(newBuf, dec.buf)
+		dec.buf = newBuf
 	}
 
 	// Read from reader and reslice buf.
@@ -74,17 +76,11 @@ func (dec *Decoder) read() (int, error) {
 	return n, err
 }
 
-func (dec *Decoder) overwriteBuf(newBuf []byte) {
-	n := copy(dec.buf, newBuf)
-	dec.buf = dec.buf[:n]
-	dec.off = 0
-}
-
-// Encoder writes CBOR values to io.Writer.
+// Encoder writes CBOR values to an output stream.
 type Encoder struct {
 	w          io.Writer
 	em         *encMode
-	e          *encoderBuffer
+	e          *encodeState
 	indefTypes []cborType
 }
 
@@ -93,7 +89,7 @@ func NewEncoder(w io.Writer) *Encoder {
 	return defaultEncMode.NewEncoder(w)
 }
 
-// Encode writes the CBOR encoding of v.
+// Encode writes the CBOR encoding of v to the stream.
 func (enc *Encoder) Encode(v interface{}) error {
 	if len(enc.indefTypes) > 0 && v != nil {
 		indefType := enc.indefTypes[len(enc.indefTypes)-1]
@@ -177,10 +173,12 @@ func (enc *Encoder) startIndefinite(typ cborType) error {
 	return err
 }
 
-// RawMessage is a raw encoded CBOR value.
+// RawMessage is a raw encoded CBOR value. It implements Marshaler and
+// Unmarshaler interfaces and can be used to delay CBOR decoding or
+// precompute a CBOR encoding.
 type RawMessage []byte
 
-// MarshalCBOR returns m or CBOR nil if m is nil.
+// MarshalCBOR returns m as the CBOR encoding of m.
 func (m RawMessage) MarshalCBOR() ([]byte, error) {
 	if len(m) == 0 {
 		return cborNil, nil
@@ -188,12 +186,11 @@ func (m RawMessage) MarshalCBOR() ([]byte, error) {
 	return m, nil
 }
 
-// UnmarshalCBOR creates a copy of data and saves to *m.
+// UnmarshalCBOR sets *m to a copy of data.
 func (m *RawMessage) UnmarshalCBOR(data []byte) error {
 	if m == nil {
 		return errors.New("cbor.RawMessage: UnmarshalCBOR on nil pointer")
 	}
-	*m = make([]byte, len(data))
-	copy(*m, data)
+	*m = append((*m)[0:0], data...)
 	return nil
 }

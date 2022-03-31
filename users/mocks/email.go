@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 type emailerMock struct {

@@ -1,12 +1,13 @@
-// Copyright 2018-2019 opcua authors. All rights reserved.
+// Copyright 2018-2020 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
 package uasc
 
 import (
+	"math"
+
 	"github.com/gopcua/opcua/errors"
-	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 )
 
@@ -91,62 +92,6 @@ type Message struct {
 	Service interface{}
 }
 
-// New creates a OPC UA Secure Conversation message.New
-// MessageType of UASC is determined depending on the type of service given as below.
-//
-// Service type: OpenSecureChannel => Message type: OPN.
-//
-// Service type: CloseSecureChannel => Message type: CLO.
-//
-// Service type: Others => Message type: MSG.
-//
-// todo(fs): this feels wrong and we should move this switching into the secure channel.
-func NewMessage(srv interface{}, typeID uint16, cfg *Config) *Message {
-	switch typeID {
-	case id.OpenSecureChannelRequest_Encoding_DefaultBinary, id.OpenSecureChannelResponse_Encoding_DefaultBinary:
-		// Do not send the thumbprint for security mode None
-		// even if we have a certificate.
-		//
-		// See https://github.com/gopcua/opcua/issues/259
-		thumbprint := cfg.Thumbprint
-		if cfg.SecurityMode == ua.MessageSecurityModeNone {
-			thumbprint = nil
-		}
-
-		return &Message{
-			MessageHeader: &MessageHeader{
-				Header:                   NewHeader(MessageTypeOpenSecureChannel, ChunkTypeFinal, cfg.SecureChannelID),
-				AsymmetricSecurityHeader: NewAsymmetricSecurityHeader(cfg.SecurityPolicyURI, cfg.Certificate, thumbprint),
-				SequenceHeader:           NewSequenceHeader(cfg.SequenceNumber, cfg.RequestID),
-			},
-			TypeID:  ua.NewFourByteExpandedNodeID(0, typeID),
-			Service: srv,
-		}
-
-	case id.CloseSecureChannelRequest_Encoding_DefaultBinary, id.CloseSecureChannelResponse_Encoding_DefaultBinary:
-		return &Message{
-			MessageHeader: &MessageHeader{
-				Header:                  NewHeader(MessageTypeCloseSecureChannel, ChunkTypeFinal, cfg.SecureChannelID),
-				SymmetricSecurityHeader: NewSymmetricSecurityHeader(cfg.SecurityTokenID),
-				SequenceHeader:          NewSequenceHeader(cfg.SequenceNumber, cfg.RequestID),
-			},
-			TypeID:  ua.NewFourByteExpandedNodeID(0, typeID),
-			Service: srv,
-		}
-
-	default:
-		return &Message{
-			MessageHeader: &MessageHeader{
-				Header:                  NewHeader(MessageTypeMessage, ChunkTypeFinal, cfg.SecureChannelID),
-				SymmetricSecurityHeader: NewSymmetricSecurityHeader(cfg.SecurityTokenID),
-				SequenceHeader:          NewSequenceHeader(cfg.SequenceNumber, cfg.RequestID),
-			},
-			TypeID:  ua.NewFourByteExpandedNodeID(0, typeID),
-			Service: srv,
-		}
-	}
-}
-
 func (m *Message) Decode(b []byte) (int, error) {
 	m.MessageHeader = new(MessageHeader)
 	var pos int
@@ -168,25 +113,74 @@ func (m *Message) Decode(b []byte) (int, error) {
 }
 
 func (m *Message) Encode() ([]byte, error) {
-	body := ua.NewBuffer(nil)
+	chunks, err := m.EncodeChunks(math.MaxUint32)
+	if err != nil {
+		return nil, err
+	}
+	return chunks[0], nil
+}
+
+func (m *Message) EncodeChunks(maxBodySize uint32) ([][]byte, error) {
+	dataBody := ua.NewBuffer(nil)
+	dataBody.WriteStruct(m.TypeID)
+	dataBody.WriteStruct(m.Service)
+
+	if dataBody.Error() != nil {
+		return nil, dataBody.Error()
+	}
+
+	nrChunks := uint32(dataBody.Len())/(maxBodySize) + 1
+	chunks := make([][]byte, nrChunks)
+
 	switch m.Header.MessageType {
 	case "OPN":
-		body.WriteStruct(m.AsymmetricSecurityHeader)
+		partialHeader := ua.NewBuffer(nil)
+		partialHeader.WriteStruct(m.AsymmetricSecurityHeader)
+		partialHeader.WriteStruct(m.SequenceHeader)
+
+		if partialHeader.Error() != nil {
+			return nil, partialHeader.Error()
+		}
+
+		m.Header.MessageSize = uint32(12 + partialHeader.Len() + dataBody.Len())
+		buf := ua.NewBuffer(nil)
+		buf.WriteStruct(m.Header)
+		buf.Write(partialHeader.Bytes())
+		buf.Write(dataBody.Bytes())
+
+		return [][]byte{buf.Bytes()}, buf.Error()
+
 	case "CLO", "MSG":
-		body.WriteStruct(m.SymmetricSecurityHeader)
+
+		for i := uint32(0); i < nrChunks-1; i++ {
+			m.Header.MessageSize = maxBodySize + 24
+			m.Header.ChunkType = ChunkTypeIntermediate
+			chunk := ua.NewBuffer(nil)
+			chunk.WriteStruct(m.Header)
+			chunk.WriteStruct(m.SymmetricSecurityHeader)
+			chunk.WriteStruct(m.SequenceHeader)
+			chunk.Write(dataBody.ReadN(int(maxBodySize)))
+			if chunk.Error() != nil {
+				return nil, chunk.Error()
+			}
+
+			chunks[i] = chunk.Bytes()
+		}
+
+		m.Header.ChunkType = ChunkTypeFinal
+		m.Header.MessageSize = uint32(24 + dataBody.Len())
+		chunk := ua.NewBuffer(nil)
+		chunk.WriteStruct(m.Header)
+		chunk.WriteStruct(m.SymmetricSecurityHeader)
+		chunk.WriteStruct(m.SequenceHeader)
+		chunk.Write(dataBody.Bytes())
+		if chunk.Error() != nil {
+			return nil, chunk.Error()
+		}
+
+		chunks[nrChunks-1] = chunk.Bytes()
+		return chunks, nil
 	default:
 		return nil, errors.Errorf("invalid message type %q", m.Header.MessageType)
 	}
-	body.WriteStruct(m.SequenceHeader)
-	body.WriteStruct(m.TypeID)
-	body.WriteStruct(m.Service)
-	if body.Error() != nil {
-		return nil, body.Error()
-	}
-
-	m.Header.MessageSize = uint32(12 + body.Len())
-	buf := ua.NewBuffer(nil)
-	buf.WriteStruct(m.Header)
-	buf.Write(body.Bytes())
-	return buf.Bytes(), buf.Error()
 }

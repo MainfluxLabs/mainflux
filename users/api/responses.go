@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mainflux/mainflux"
+	"github.com/MainfluxLabs/mainflux"
 )
 
 var (

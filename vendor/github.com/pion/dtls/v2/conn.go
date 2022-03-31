@@ -162,7 +162,6 @@ func createConn(ctx context.Context, nextConn net.Conn, config *Config, isClient
 		extendedMasterSecret:        config.ExtendedMasterSecret,
 		localSRTPProtectionProfiles: config.SRTPProtectionProfiles,
 		serverName:                  serverName,
-		supportedProtocols:          config.SupportedProtocols,
 		clientAuth:                  config.ClientAuth,
 		localCertificates:           config.Certificates,
 		insecureSkipVerify:          config.InsecureSkipVerify,
@@ -176,12 +175,6 @@ func createConn(ctx context.Context, nextConn net.Conn, config *Config, isClient
 		keyLogWriter:                config.KeyLogWriter,
 		sessionStore:                config.SessionStore,
 	}
-
-	cert, err := hsCfg.getCertificate(serverName)
-	if err != nil && !errors.Is(err, errNoCertificates) {
-		return nil, err
-	}
-	hsCfg.localCipherSuites = filterCipherSuitesForCertificate(cert, cipherSuites)
 
 	var initialFlight flightVal
 	var initialFSMState handshakeState

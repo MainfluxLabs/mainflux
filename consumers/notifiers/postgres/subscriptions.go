@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
-	"github.com/mainflux/mainflux/pkg/errors"
+	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var _ notifiers.SubscriptionsRepository = (*subscriptionsRepo)(nil)

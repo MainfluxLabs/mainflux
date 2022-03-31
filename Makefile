@@ -1,7 +1,7 @@
 # Copyright (c) Mainflux
 # SPDX-License-Identifier: Apache-2.0
 
-MF_DOCKER_IMAGE_NAME_PREFIX ?= mainflux
+MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap lora influxdb-writer influxdb-reader mongodb-writer \
 	mongodb-reader cassandra-writer cassandra-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
@@ -17,9 +17,9 @@ TIME ?= $(shell date +%F_%T)
 define compile_service
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
 	go build -mod=vendor -ldflags "-s -w \
-	-X 'github.com/mainflux/mainflux.BuildTime=$(TIME)' \
-	-X 'github.com/mainflux/mainflux.Version=$(VERSION)' \
-	-X 'github.com/mainflux/mainflux.Commit=$(COMMIT)'" \
+	-X 'github.com/MainfluxLabs/mainflux.BuildTime=$(TIME)' \
+	-X 'github.com/MainfluxLabs/mainflux.Version=$(VERSION)' \
+	-X 'github.com/MainfluxLabs/mainflux.Commit=$(COMMIT)'" \
 	-o ${BUILD_DIR}/mainflux-$(1) cmd/$(1)/main.go
 endef
 

@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/lora"
+	"github.com/MainfluxLabs/mainflux/lora"
 )
 
 var _ lora.RouteMapRepository = (*routerMap)(nil)

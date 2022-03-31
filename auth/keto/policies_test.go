@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mainflux/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth"
 	acl "github.com/ory/keto/proto/ory/keto/acl/v1alpha1"
 	"github.com/stretchr/testify/assert"
 )

@@ -24,11 +24,6 @@ type ItimerSpec struct {
 	Value    Timespec
 }
 
-type Itimerval struct {
-	Interval Timeval
-	Value    Timeval
-}
-
 const (
 	TIME_OK    = 0x0
 	TIME_INS   = 0x1

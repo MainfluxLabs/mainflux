@@ -13,6 +13,18 @@ type Tag struct {
 	Content interface{}
 }
 
+func (t Tag) contentKind() reflect.Kind {
+	c := t.Content
+	for {
+		t, ok := c.(Tag)
+		if !ok {
+			break
+		}
+		c = t.Content
+	}
+	return reflect.ValueOf(c).Kind()
+}
+
 // RawTag represents CBOR tag data, including tag number and raw tag content.
 // RawTag implements Unmarshaler and Marshaler interfaces.
 type RawTag struct {
@@ -26,17 +38,12 @@ func (t *RawTag) UnmarshalCBOR(data []byte) error {
 		return errors.New("cbor.RawTag: UnmarshalCBOR on nil pointer")
 	}
 
-	// Decoding CBOR null and undefined to cbor.RawTag is no-op.
-	if len(data) == 1 && (data[0] == 0xf6 || data[0] == 0xf7) {
-		return nil
-	}
-
-	d := decoder{data: data, dm: defaultDecMode}
+	d := decodeState{data: data, dm: defaultDecMode}
 
 	// Unmarshal tag number.
 	typ, _, num := d.getHead()
 	if typ != cborTypeTag {
-		return &UnmarshalTypeError{CBORType: typ.String(), GoType: typeRawTag.String()}
+		return &UnmarshalTypeError{Value: typ.String(), Type: typeRawTag}
 	}
 	t.Number = num
 
@@ -49,27 +56,14 @@ func (t *RawTag) UnmarshalCBOR(data []byte) error {
 
 // MarshalCBOR returns CBOR encoding of t.
 func (t RawTag) MarshalCBOR() ([]byte, error) {
-	if t.Number == 0 && len(t.Content) == 0 {
-		// Marshal uninitialized cbor.RawTag
-		b := make([]byte, len(cborNil))
-		copy(b, cborNil)
-		return b, nil
-	}
-
-	e := getEncoderBuffer()
-
+	e := getEncodeState()
 	encodeHead(e, byte(cborTypeTag), t.Number)
 
-	content := t.Content
-	if len(content) == 0 {
-		content = cborNil
-	}
-
-	buf := make([]byte, len(e.Bytes())+len(content))
+	buf := make([]byte, len(e.Bytes())+len(t.Content))
 	n := copy(buf, e.Bytes())
-	copy(buf[n:], content)
+	copy(buf[n:], t.Content)
 
-	putEncoderBuffer(e)
+	putEncodeState(e)
 	return buf, nil
 }
 
@@ -129,8 +123,7 @@ type TagSet interface {
 }
 
 type tagProvider interface {
-	getTagItemFromType(t reflect.Type) *tagItem
-	getTypeFromTagNum(num []uint64) reflect.Type
+	get(t reflect.Type) *tagItem
 }
 
 type tagItem struct {
@@ -138,25 +131,6 @@ type tagItem struct {
 	cborTagNum  []byte
 	contentType reflect.Type
 	opts        TagOptions
-}
-
-func (t *tagItem) equalTagNum(num []uint64) bool {
-	// Fast path to compare 1 tag number
-	if len(t.num) == 1 && len(num) == 1 && t.num[0] == num[0] {
-		return true
-	}
-
-	if len(t.num) != len(num) {
-		return false
-	}
-
-	for i := 0; i < len(t.num); i++ {
-		if t.num[i] != num[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 type (
@@ -168,17 +142,8 @@ type (
 	}
 )
 
-func (t tagSet) getTagItemFromType(typ reflect.Type) *tagItem {
+func (t tagSet) get(typ reflect.Type) *tagItem {
 	return t[typ]
-}
-
-func (t tagSet) getTypeFromTagNum(num []uint64) reflect.Type {
-	for typ, tag := range t {
-		if tag.equalTagNum(num) {
-			return typ
-		}
-	}
-	return nil
 }
 
 // NewTagSet returns TagSet (safe for concurrency).
@@ -200,13 +165,8 @@ func (t *syncTagSet) Add(opts TagOptions, contentType reflect.Type, num uint64, 
 	}
 	t.Lock()
 	defer t.Unlock()
-	for typ, ti := range t.t {
-		if typ == contentType {
-			return errors.New("cbor: content type " + contentType.String() + " already exists in TagSet")
-		}
-		if ti.equalTagNum(tag.num) {
-			return fmt.Errorf("cbor: tag number %v already exists in TagSet", tag.num)
-		}
+	if _, ok := t.t[contentType]; ok {
+		return errors.New("cbor: content type " + contentType.String() + " already exists in TagSet")
 	}
 	t.t[contentType] = tag
 	return nil
@@ -222,18 +182,11 @@ func (t *syncTagSet) Remove(contentType reflect.Type) {
 	t.Unlock()
 }
 
-func (t *syncTagSet) getTagItemFromType(typ reflect.Type) *tagItem {
+func (t *syncTagSet) get(typ reflect.Type) *tagItem {
 	t.RLock()
 	ti := t.t[typ]
 	t.RUnlock()
 	return ti
-}
-
-func (t *syncTagSet) getTypeFromTagNum(num []uint64) reflect.Type {
-	t.RLock()
-	rt := t.t.getTypeFromTagNum(num)
-	t.RUnlock()
-	return rt
 }
 
 func newTagItem(opts TagOptions, contentType reflect.Type, num uint64, nestedNum ...uint64) (*tagItem, error) {
@@ -246,9 +199,6 @@ func newTagItem(opts TagOptions, contentType reflect.Type, num uint64, nestedNum
 	if contentType == typeTime {
 		return nil, errors.New("cbor: cannot add time.Time to TagSet, use EncOptions.TimeTag and DecOptions.TimeTag instead")
 	}
-	if contentType == typeBigInt {
-		return nil, errors.New("cbor: cannot add big.Int to TagSet, it's built-in and supported automatically")
-	}
 	if contentType == typeTag {
 		return nil, errors.New("cbor: cannot add cbor.Tag to TagSet")
 	}
@@ -258,24 +208,24 @@ func newTagItem(opts TagOptions, contentType reflect.Type, num uint64, nestedNum
 	if num == 0 || num == 1 {
 		return nil, errors.New("cbor: cannot add tag number 0 or 1 to TagSet, use EncOptions.TimeTag and DecOptions.TimeTag instead")
 	}
-	if num == 2 || num == 3 {
-		return nil, errors.New("cbor: cannot add tag number 2 or 3 to TagSet, it's built-in and supported automatically")
+	if reflect.PtrTo(contentType).Implements(typeMarshaler) && opts.EncTag != EncTagNone {
+		return nil, errors.New("cbor: cannot add cbor.Marshaler to TagSet with EncTag != EncTagNone")
 	}
-	if num == selfDescribedCBORTagNum {
-		return nil, errors.New("cbor: cannot add tag number 55799 to TagSet, it's built-in and ignored automatically")
+	if reflect.PtrTo(contentType).Implements(typeUnmarshaler) && opts.DecTag != DecTagIgnored {
+		return nil, errors.New("cbor: cannot add cbor.Unmarshaler to TagSet with DecTag != DecTagIgnored")
 	}
 
 	te := tagItem{num: []uint64{num}, opts: opts, contentType: contentType}
 	te.num = append(te.num, nestedNum...)
 
 	// Cache encoded tag numbers
-	e := getEncoderBuffer()
+	e := getEncodeState()
 	for _, n := range te.num {
 		encodeHead(e, byte(cborTypeTag), n)
 	}
 	te.cborTagNum = make([]byte, e.Len())
 	copy(te.cborTagNum, e.Bytes())
-	putEncoderBuffer(e)
+	putEncodeState(e)
 
 	return &te, nil
 }

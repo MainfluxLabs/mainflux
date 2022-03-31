@@ -4,11 +4,11 @@
 # Drasko DRASKOVIC in the role of BDFL.
 
 [bdfl]
-	
-	[[drasko]]
-	Name	= "Drasko DRASKOVIC"
-	Email	= "drasko@mainflux.com"
-	GitHub	= "drasko"
+
+	[[manuel]]
+	Name	= "Manuel IMPERIALE"
+	Email	= "manuel@mainflux.com"
+	GitHub	= "manuio"
 
 # However, this role serves only in dead-lock events, or in a special and very rare cases
 # when BDFL completely disagrees with the decisions made.
@@ -24,23 +24,12 @@
 
 [maintainers]
 
-	[[aleksandar]]
-	Name	= "Aleksandar NOVAKOVIC"
-	Email	= "aleksandar@mainflux.com"
-	GitHub	= "anovakovic01"
- 
- 	[[dusan]]
-	Name	= "Dusan BOROVCANIN"
-	Email	= "dusan@mainflux.com"
-	GitHub	= "dusanb94"
-
 	[[manuel]]
 	Name	= "Manuel IMPERIALE"
-	Email	= "manuel@mainflux.com"
-	GitHub	= "manuIO"
+	Email	= "manuel.imperiale@gmail.com"
+	GitHub	= "manuio"
 
-	[[nikola]]
-	Name	= "Nikola MARCETIC"
-	Email	= "nikola@mainflux.com"
-	GitHub	= "nmarcetic"
-
+	[[mirko]]
+	Name	= "Mirko TEODOROVIC"
+	Email	= "mirko.teodorovic@gmail.com"
+	GitHub	= "mteodor"

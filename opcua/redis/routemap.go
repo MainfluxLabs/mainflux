@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/opcua"
+	"github.com/MainfluxLabs/mainflux/opcua"
 )
 
 var _ opcua.RouteMapRepository = (*routerMap)(nil)
