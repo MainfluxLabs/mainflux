@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
 )
 
 func addEndpoint(svc bootstrap.Service) endpoint.Endpoint {

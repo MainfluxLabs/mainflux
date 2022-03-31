@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mainflux/mainflux/certs/pki"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var (

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/provision"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/provision"
 )
 
 var _ provision.Service = (*loggingMiddleware)(nil)

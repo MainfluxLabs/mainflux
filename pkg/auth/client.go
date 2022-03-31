@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
+	"github.com/MainfluxLabs/mainflux"
 )
 
 // Client represents Auth cache.

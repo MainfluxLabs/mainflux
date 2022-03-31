@@ -5,8 +5,8 @@ package emailer
 import (
 	"fmt"
 
-	"github.com/mainflux/mainflux/internal/email"
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 var _ users.Emailer = (*emailer)(nil)

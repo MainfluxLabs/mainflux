@@ -20,13 +20,13 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`mongodb-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/mongodb-writer/docker-compose.yml#L36-L55) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`mongodb-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/mongodb-writer/docker-compose.yml#L36-L55) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 

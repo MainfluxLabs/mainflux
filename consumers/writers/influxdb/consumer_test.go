@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
 	"github.com/gofrs/uuid"
 	influxdata "github.com/influxdata/influxdb/client/v2"
-	writer "github.com/mainflux/mainflux/consumers/writers/influxdb"
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/transformers/json"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
+	writer "github.com/MainfluxLabs/mainflux/consumers/writers/influxdb"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

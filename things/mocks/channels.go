@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Connection represents connection between channel and thing that is used for

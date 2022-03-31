@@ -1,7 +1,7 @@
 👉  [Comparisons](https://github.com/fxamacker/cbor#comparisons) • [Status](https://github.com/fxamacker/cbor#current-status) • [Design Goals](https://github.com/fxamacker/cbor#design-goals) • [Features](https://github.com/fxamacker/cbor#features) • [Standards](https://github.com/fxamacker/cbor#standards) • [Fuzzing](https://github.com/fxamacker/cbor#fuzzing-and-code-coverage) • [Usage](https://github.com/fxamacker/cbor#usage) • [Security Policy](https://github.com/fxamacker/cbor#security-policy) • [License](https://github.com/fxamacker/cbor#license)
 
 # CBOR
-[CBOR](https://en.wikipedia.org/wiki/CBOR) is a data format designed to allow small code size and small message size. CBOR is defined in [RFC 8949 Concise Binary Object Representation](https://tools.ietf.org/html/rfc8949) (previously [RFC 7049](https://tools.ietf.org/html/rfc7049)), an [IETF](http://ietf.org/) Internet Standards Document.
+[CBOR](https://en.wikipedia.org/wiki/CBOR) is a data format designed to allow small code size and small message size. CBOR is defined in [RFC 7049 Concise Binary Object Representation](https://tools.ietf.org/html/rfc7049), an [IETF](http://ietf.org/) Internet Standards Document.
 
 CBOR is also designed to be stable for decades, be extensible without need for version negotiation, and not require a schema.
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
-	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
+	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 )
 
 var _ notifiers.Service = (*metricsMiddleware)(nil)

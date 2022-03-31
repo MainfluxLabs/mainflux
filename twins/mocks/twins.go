@@ -10,9 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/twins"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/twins"
 )
 
 var _ twins.TwinRepository = (*twinRepositoryMock)(nil)

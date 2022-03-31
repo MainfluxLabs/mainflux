@@ -5,8 +5,8 @@ package http
 
 import (
 	"github.com/gofrs/uuid"
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (

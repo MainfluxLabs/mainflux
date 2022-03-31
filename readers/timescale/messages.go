@@ -9,9 +9,9 @@ import (
 
 	"github.com/jmoiron/sqlx" // required for DB access
 	"github.com/lib/pq"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
-	"github.com/mainflux/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 const (

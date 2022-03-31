@@ -1,4 +1,4 @@
-// Copyright 2018-2019 opcua authors. All rights reserved.
+// Copyright 2018-2020 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
@@ -6,10 +6,11 @@ package uacp
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
+	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/gopcua/opcua/debug"
 	"github.com/gopcua/opcua/errors"
@@ -26,6 +27,26 @@ const (
 	DefaultMaxMessageSize = 2 * MB
 )
 
+var (
+	// DefaultClientACK is the ACK handshake message sent to the server
+	// for client connections.
+	DefaultClientACK = &Acknowledge{
+		ReceiveBufSize: DefaultReceiveBufSize,
+		SendBufSize:    DefaultSendBufSize,
+		MaxChunkCount:  0, // use what the server wants
+		MaxMessageSize: 0, // use what the server wants
+	}
+
+	// DefaultServerACK is the ACK handshake message sent to the client
+	// for server connections.
+	DefaultServerACK = &Acknowledge{
+		ReceiveBufSize: DefaultReceiveBufSize,
+		SendBufSize:    DefaultSendBufSize,
+		MaxChunkCount:  DefaultMaxChunkCount,
+		MaxMessageSize: DefaultMaxMessageSize,
+	}
+)
+
 // connid stores the current connection id. updated with atomic.AddUint32
 var connid uint32
 
@@ -34,40 +55,57 @@ func nextid() uint32 {
 	return atomic.AddUint32(&connid, 1)
 }
 
-func Dial(ctx context.Context, endpoint string) (*Conn, error) {
-	debug.Printf("Connect to %s", endpoint)
-	network, raddr, err := ResolveEndpoint(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	c, err := net.DialTCP(network, nil, raddr)
+// Dialer establishes a connection to an endpoint.
+type Dialer struct {
+	// Dialer establishes the TCP connection. Defaults to net.Dialer.
+	Dialer *net.Dialer
+
+	// ClientACK defines the connection parameters requested by the client.
+	// Defaults to DefaultClientACK.
+	ClientACK *Acknowledge
+}
+
+func (d *Dialer) Dial(ctx context.Context, endpoint string) (*Conn, error) {
+	debug.Printf("uacp: connecting to %s", endpoint)
+	_, raddr, err := ResolveEndpoint(endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	conn := &Conn{
-		id: nextid(),
-		c:  c,
-		ack: &Acknowledge{
-			ReceiveBufSize: DefaultReceiveBufSize,
-			SendBufSize:    DefaultSendBufSize,
-			MaxChunkCount:  0, // use what the server wants
-			MaxMessageSize: 0, // use what the server wants
-		},
+	dl := d.Dialer
+	if dl == nil {
+		dl = &net.Dialer{}
 	}
 
-	debug.Printf("conn %d: start HEL/ACK handshake", conn.id)
-	if err := conn.handshake(endpoint); err != nil {
-		debug.Printf("conn %d: HEL/ACK handshake failed: %s", conn.id, err)
+	c, err := dl.DialContext(ctx, "tcp", raddr.String())
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := NewConn(c.(*net.TCPConn), d.ClientACK)
+	if err != nil {
+		c.Close()
+		return nil, err
+	}
+
+	debug.Printf("uacp %d: start HEL/ACK handshake", conn.id)
+	if err := conn.Handshake(endpoint); err != nil {
+		debug.Printf("uacp %d: HEL/ACK handshake failed: %s", conn.id, err)
 		conn.Close()
 		return nil, err
 	}
 	return conn, nil
 }
 
+// Dial uses the default dialer to establish a connection to the endpoint
+func Dial(ctx context.Context, endpoint string) (*Conn, error) {
+	d := &Dialer{}
+	return d.Dial(ctx, endpoint)
+}
+
 // Listener is a OPC UA Connection Protocol network listener.
 type Listener struct {
-	l        net.Listener
+	l        *net.TCPListener
 	ack      *Acknowledge
 	endpoint string
 }
@@ -81,19 +119,13 @@ type Listener struct {
 // If the Port field of laddr is 0, a port number is automatically chosen.
 func Listen(endpoint string, ack *Acknowledge) (*Listener, error) {
 	if ack == nil {
-		ack = &Acknowledge{
-			ReceiveBufSize: DefaultReceiveBufSize,
-			SendBufSize:    DefaultSendBufSize,
-			MaxChunkCount:  DefaultMaxChunkCount,
-			MaxMessageSize: DefaultMaxMessageSize,
-		}
+		ack = DefaultServerACK
 	}
-
 	network, laddr, err := ResolveEndpoint(endpoint)
 	if err != nil {
 		return nil, err
 	}
-	l, err := net.Listen(network, laddr.String())
+	l, err := net.ListenTCP(network, laddr)
 	if err != nil {
 		return nil, err
 	}
@@ -109,11 +141,11 @@ func Listen(endpoint string, ack *Acknowledge) (*Listener, error) {
 // The first param ctx is to be passed to monitor(), which monitors and handles
 // incoming messages automatically in another goroutine.
 func (l *Listener) Accept(ctx context.Context) (*Conn, error) {
-	c, err := l.l.Accept()
+	c, err := l.l.AcceptTCP()
 	if err != nil {
 		return nil, err
 	}
-	conn := &Conn{nextid(), c, l.ack}
+	conn := &Conn{TCPConn: c, id: nextid(), ack: l.ack}
 	if err := conn.srvhandshake(l.endpoint); err != nil {
 		c.Close()
 		return nil, err
@@ -137,9 +169,21 @@ func (l *Listener) Endpoint() string {
 }
 
 type Conn struct {
+	*net.TCPConn
 	id  uint32
-	c   net.Conn
 	ack *Acknowledge
+
+	closeOnce sync.Once
+}
+
+func NewConn(c *net.TCPConn, ack *Acknowledge) (*Conn, error) {
+	if c == nil {
+		return nil, fmt.Errorf("no connection")
+	}
+	if ack == nil {
+		ack = DefaultClientACK
+	}
+	return &Conn{TCPConn: c, id: nextid(), ack: ack}, nil
 }
 
 func (c *Conn) ID() uint32 {
@@ -162,40 +206,18 @@ func (c *Conn) MaxChunkCount() uint32 {
 	return c.ack.MaxChunkCount
 }
 
-func (c *Conn) Close() error {
-	debug.Printf("conn %d: close", c.id)
-	return c.c.Close()
+func (c *Conn) Close() (err error) {
+	err = io.EOF
+	c.closeOnce.Do(func() { err = c.close() })
+	return err
 }
 
-func (c *Conn) Read(b []byte) (int, error) {
-	return c.c.Read(b)
+func (c *Conn) close() error {
+	debug.Printf("uacp %d: close", c.id)
+	return c.TCPConn.Close()
 }
 
-func (c *Conn) Write(b []byte) (int, error) {
-	return c.c.Write(b)
-}
-
-func (c *Conn) SetDeadline(t time.Time) error {
-	return c.c.SetDeadline(t)
-}
-
-func (c *Conn) SetReadDeadline(t time.Time) error {
-	return c.c.SetReadDeadline(t)
-}
-
-func (c *Conn) SetWriteDeadline(t time.Time) error {
-	return c.c.SetWriteDeadline(t)
-}
-
-func (c *Conn) LocalAddr() net.Addr {
-	return c.c.LocalAddr()
-}
-
-func (c *Conn) RemoteAddr() net.Addr {
-	return c.c.RemoteAddr()
-}
-
-func (c *Conn) handshake(endpoint string) error {
+func (c *Conn) Handshake(endpoint string) error {
 	hel := &Hello{
 		Version:        c.ack.Version,
 		ReceiveBufSize: c.ack.ReceiveBufSize,
@@ -226,14 +248,14 @@ func (c *Conn) handshake(endpoint string) error {
 		}
 		if ack.MaxChunkCount == 0 {
 			ack.MaxChunkCount = DefaultMaxChunkCount
-			debug.Printf("conn %d: server has no chunk limit. Using %d", c.id, ack.MaxChunkCount)
+			debug.Printf("uacp %d: server has no chunk limit. Using %d", c.id, ack.MaxChunkCount)
 		}
 		if ack.MaxMessageSize == 0 {
 			ack.MaxMessageSize = DefaultMaxMessageSize
-			debug.Printf("conn %d: server has no message size limit. Using %d", c.id, ack.MaxMessageSize)
+			debug.Printf("uacp %d: server has no message size limit. Using %d", c.id, ack.MaxMessageSize)
 		}
 		c.ack = ack
-		debug.Printf("conn %d: recv %#v", c.id, ack)
+		debug.Printf("uacp %d: recv %#v", c.id, ack)
 		return nil
 
 	case "ERRF":
@@ -241,7 +263,7 @@ func (c *Conn) handshake(endpoint string) error {
 		if _, err := errf.Decode(b[hdrlen:]); err != nil {
 			return errors.Errorf("uacp: decode ERR failed: %s", err)
 		}
-		debug.Printf("conn %d: recv %#v", c.id, errf)
+		debug.Printf("uacp %d: recv %#v", c.id, errf)
 		return errf
 
 	default:
@@ -275,7 +297,7 @@ func (c *Conn) srvhandshake(endpoint string) error {
 			c.SendError(ua.StatusBadTCPInternalError)
 			return err
 		}
-		debug.Printf("conn %d: recv %#v", c.id, hel)
+		debug.Printf("uacp %d: recv %#v", c.id, hel)
 		return nil
 
 	case "RHEF":
@@ -288,14 +310,15 @@ func (c *Conn) srvhandshake(endpoint string) error {
 			c.SendError(ua.StatusBadTCPEndpointURLInvalid)
 			return errors.Errorf("uacp: invalid endpoint url %s", rhe.EndpointURL)
 		}
-		debug.Printf("conn %d: connecting to %s", c.id, rhe.ServerURI)
-		c.c.Close()
-		c, err := Dial(context.Background(), rhe.ServerURI)
+		debug.Printf("uacp %d: connecting to %s", c.id, rhe.ServerURI)
+		c.Close()
+		var dialer net.Dialer
+		c2, err := dialer.DialContext(context.Background(), "tcp", rhe.ServerURI)
 		if err != nil {
 			return err
 		}
-		c.c = c
-		debug.Printf("conn %d: recv %#v", c.id, rhe)
+		c.TCPConn = c2.(*net.TCPConn)
+		debug.Printf("uacp %d: recv %#v", c.id, rhe)
 		return nil
 
 	case "ERRF":
@@ -303,7 +326,7 @@ func (c *Conn) srvhandshake(endpoint string) error {
 		if _, err := errf.Decode(b[hdrlen:]); err != nil {
 			return errors.Errorf("uacp: decode ERR failed: %s", err)
 		}
-		debug.Printf("conn %d: recv %#v", c.id, errf)
+		debug.Printf("uacp %d: recv %#v", c.id, errf)
 		return errf
 
 	default:
@@ -319,9 +342,11 @@ const hdrlen = 8
 // The size of b must be at least ReceiveBufSize. Otherwise,
 // the function returns an error.
 func (c *Conn) Receive() ([]byte, error) {
+	// TODO(kung-foo): allow user-specified buffer
+	// TODO(kung-foo): sync.Pool
 	b := make([]byte, c.ack.ReceiveBufSize)
 
-	if _, err := io.ReadFull(c.c, b[:hdrlen]); err != nil {
+	if _, err := io.ReadFull(c, b[:hdrlen]); err != nil {
 		// todo(fs): do not wrap this error since it hides io.EOF
 		// todo(fs): use golang.org/x/xerrors
 		return nil, err
@@ -336,13 +361,13 @@ func (c *Conn) Receive() ([]byte, error) {
 		return nil, errors.Errorf("uacp: message too large: %d > %d bytes", h.MessageSize, c.ack.ReceiveBufSize)
 	}
 
-	if _, err := io.ReadFull(c.c, b[hdrlen:h.MessageSize]); err != nil {
+	if _, err := io.ReadFull(c, b[hdrlen:h.MessageSize]); err != nil {
 		// todo(fs): do not wrap this error since it hides io.EOF
 		// todo(fs): use golang.org/x/xerrors
 		return nil, err
 	}
 
-	debug.Printf("conn %d: recv %s%c with %d bytes", c.id, h.MessageType, h.ChunkType, h.MessageSize)
+	debug.Printf("uacp %d: recv %s%c with %d bytes", c.id, h.MessageType, h.ChunkType, h.MessageSize)
 
 	if h.MessageType == "ERR" {
 		errf := new(Error)
@@ -380,10 +405,10 @@ func (c *Conn) Send(typ string, msg interface{}) error {
 	}
 
 	b := append(hdr, body...)
-	if _, err := c.c.Write(b); err != nil {
+	if _, err := c.Write(b); err != nil {
 		return errors.Errorf("write failed: %s", err)
 	}
-	debug.Printf("conn %d: sent %s with %d bytes", c.id, typ, len(b))
+	debug.Printf("uacp %d: sent %s with %d bytes", c.id, typ, len(b))
 
 	return nil
 }

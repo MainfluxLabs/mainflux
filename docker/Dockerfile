@@ -6,7 +6,7 @@ ARG VERSION
 ARG COMMIT
 ARG TIME
 
-WORKDIR /go/src/github.com/mainflux/mainflux
+WORKDIR /go/src/github.com/MainfluxLabs/mainflux
 COPY . .
 RUN apk update \
     && apk add make\

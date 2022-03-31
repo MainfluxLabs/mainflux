@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
 )
 
 const (

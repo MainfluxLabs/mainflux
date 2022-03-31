@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mainflux/mainflux/cli"
-	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux/cli"
+	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
 

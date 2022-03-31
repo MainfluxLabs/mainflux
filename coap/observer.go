@@ -4,7 +4,7 @@
 package coap
 
 import (
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	broker "github.com/nats-io/nats.go"
 )
 

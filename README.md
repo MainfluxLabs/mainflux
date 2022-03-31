@@ -123,7 +123,7 @@ If you need this kind of support, best is to reach out to [@drasko][drasko] dire
 
 Thank you for your interest in Mainflux and the desire to contribute!
 
-1. Take a look at our [open issues](https://github.com/mainflux/mainflux/issues). The [good-first-issue](https://github.com/mainflux/mainflux/labels/good-first-issue) label is specifically for issues that are great for getting started.
+1. Take a look at our [open issues](https://github.com/MainfluxLabs/mainflux/issues). The [good-first-issue](https://github.com/MainfluxLabs/mainflux/labels/good-first-issue) label is specifically for issues that are great for getting started.
 2. Checkout the [contribution guide](CONTRIBUTING.md) to learn more about our style and conventions.
 3. Make your changes compatible to our workflow.
 
@@ -153,8 +153,8 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [forum]: https://groups.google.com/forum/#!forum/mainflux
 [gitter]: https://gitter.im/mainflux/mainflux?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [gitter-badge]: https://badges.gitter.im/Join%20Chat.svg
-[grc-badge]: https://goreportcard.com/badge/github.com/mainflux/mainflux
-[grc-url]: https://goreportcard.com/report/github.com/mainflux/mainflux
+[grc-badge]: https://goreportcard.com/badge/github.com/MainfluxLabs/mainflux
+[grc-url]: https://goreportcard.com/report/github.com/MainfluxLabs/mainflux
 [cov-badge]: https://codecov.io/gh/mainflux/mainflux/branch/master/graph/badge.svg
 [cov-url]: https://codecov.io/gh/mainflux/mainflux
 [license]: https://img.shields.io/badge/license-Apache%20v2.0-blue.svg
@@ -164,7 +164,7 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [agent]: https://github.com/mainflux/agent
 [export]: https://github.com/mainflux/export
 [kubernetes]: https://kubernetes.io/
-[rel]: https://github.com/mainflux/mainflux/releases
+[rel]: https://github.com/MainfluxLabs/mainflux/releases
 [careers]: https://www.mainflux.com/careers.html
 [lf]: https://www.linuxfoundation.org/
 [edgex]: https://www.edgexfoundry.org/

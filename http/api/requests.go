@@ -4,8 +4,8 @@
 package api
 
 import (
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 type publishReq struct {

@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/readers/timescale"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/readers/timescale"
 	dockertest "github.com/ory/dockertest/v3"
 )
 

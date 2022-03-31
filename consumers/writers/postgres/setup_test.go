@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mainflux/mainflux/consumers/writers/postgres"
+	"github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
 	dockertest "github.com/ory/dockertest/v3"
 )
 

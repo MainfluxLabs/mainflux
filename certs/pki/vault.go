@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/vault/api"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/mitchellh/mapstructure"
 )
 

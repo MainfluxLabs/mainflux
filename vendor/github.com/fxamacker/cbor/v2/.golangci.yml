@@ -47,17 +47,19 @@ linters:
     - gocyclo
     - gofmt
     - goimports
+    - golint
     - gosec
     - govet
     - ineffassign
+    - maligned
     - misspell
-    - revive
     - staticcheck
     - structcheck
     - typecheck
     - unconvert
     - unused
     - varcheck
+
 
 issues:
   # max-issues-per-linter default is 50.  Set to 0 to disable limit.
@@ -77,3 +79,8 @@ issues:
         - goimports
         - gomnd
         - lll
+
+# golangci.com configuration
+# https://github.com/golangci/golangci/wiki/Configuration
+service:
+  golangci-lint-version: 1.23.x # use the fixed version to not introduce new linters unexpectedly

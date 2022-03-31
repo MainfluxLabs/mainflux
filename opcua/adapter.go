@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/opcua/db"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/opcua/db"
 )
 
 const protocol = "opcua"

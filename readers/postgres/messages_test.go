@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	pwriter "github.com/mainflux/mainflux/consumers/writers/postgres"
-	"github.com/mainflux/mainflux/pkg/transformers/json"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/readers"
-	preader "github.com/mainflux/mainflux/readers/postgres"
+	pwriter "github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/readers"
+	preader "github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

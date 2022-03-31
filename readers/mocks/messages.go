@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
-	"github.com/mainflux/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 var _ readers.MessageRepository = (*messageRepositoryMock)(nil)

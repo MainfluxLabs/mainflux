@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 const (

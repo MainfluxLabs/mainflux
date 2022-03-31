@@ -6,7 +6,7 @@ package tracing
 import (
 	"context"
 
-	"github.com/mainflux/mainflux/twins"
+	"github.com/MainfluxLabs/mainflux/twins"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

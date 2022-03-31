@@ -7,12 +7,12 @@ import (
 	"time"
 
 	influxdata "github.com/influxdata/influxdb/client/v2"
-	iwriter "github.com/mainflux/mainflux/consumers/writers/influxdb"
-	"github.com/mainflux/mainflux/pkg/transformers/json"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/readers"
-	ireader "github.com/mainflux/mainflux/readers/influxdb"
+	iwriter "github.com/MainfluxLabs/mainflux/consumers/writers/influxdb"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/readers"
+	ireader "github.com/MainfluxLabs/mainflux/readers/influxdb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
