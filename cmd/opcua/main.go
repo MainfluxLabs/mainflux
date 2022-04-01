@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"syscall"
 
-	r "github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/opcua"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/opcua/gopcua"
 	"github.com/MainfluxLabs/mainflux/opcua/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
+	r "github.com/go-redis/redis/v8"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"

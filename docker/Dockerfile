@@ -1,5 +1,6 @@
 FROM golang:1.17-alpine AS builder
 ARG SVC
+ARG GOOS
 ARG GOARCH
 ARG GOARM
 ARG VERSION

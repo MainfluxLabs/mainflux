@@ -29,6 +29,7 @@ define make_docker
 	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
+		--build-arg GOOS=$(GOOS) \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg GOARM=$(GOARM) \
 		--build-arg VERSION=$(VERSION) \

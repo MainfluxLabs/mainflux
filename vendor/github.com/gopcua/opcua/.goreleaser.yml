@@ -15,7 +15,8 @@
 # no binaries to build
 builds:
   -
-    skip: true
+    goos:
+      - none
 checksum:
 changelog:
   sort: asc

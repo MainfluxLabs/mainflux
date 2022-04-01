@@ -1,11 +1,10 @@
-// Copyright 2018-2020 opcua authors. All rights reserved.
+// Copyright 2018-2019 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
 package ua
 
 import (
-	"fmt"
 	"reflect"
 	"time"
 
@@ -25,12 +24,9 @@ const (
 	VariantArrayValues = 0x80
 )
 
-// ByteArray encodes a byte array as an OPC/UA array of Byte.
-type ByteArray []byte
-
 // Variant is a union of the built-in types.
 //
-// Specification: Part 6, 5.1.2 Table 1
+// Specification: Part 6, 5.2.2.16
 type Variant struct {
 	// mask contains the type and the array flags
 	// bits 0:5: built-in type id 1-25
@@ -48,7 +44,7 @@ type Variant struct {
 	// field.
 	arrayLength int32
 
-	// arrayDimensionsLength is the number of dimensions.
+	// arrayDimensionsLength is the numer of dimensions.
 	// This field is only present if the 'array dimensions' flag
 	// is set.
 	arrayDimensionsLength int32
@@ -63,9 +59,6 @@ type Variant struct {
 
 func NewVariant(v interface{}) (*Variant, error) {
 	va := &Variant{}
-	if !isBuiltinType(v) {
-		return nil, fmt.Errorf("trying to create a variant from a type that it is not suppoted: %s", reflect.ValueOf(v).Type().Name())
-	}
 	if err := va.set(v); err != nil {
 		return nil, err
 	}
@@ -119,11 +112,6 @@ func (m *Variant) Decode(b []byte) (int, error) {
 	buf := NewBuffer(b)
 	m.mask = buf.ReadByte()
 
-	// a null value specifies that no other fields are encoded
-	if m.Type() == TypeIDNull {
-		return buf.Pos(), buf.Error()
-	}
-
 	// check the type
 	typ, ok := variantTypeIDToType[m.Type()]
 	if !ok {
@@ -141,17 +129,13 @@ func (m *Variant) Decode(b []byte) (int, error) {
 
 	// read flattened array elements
 	n := int(m.arrayLength)
-	if n < 0 || n > MaxVariantArrayLength {
+
+	if n > MaxVariantArrayLength {
 		return buf.Pos(), StatusBadEncodingLimitsExceeded
 	}
 
-	var vals reflect.Value
-	switch m.Type() {
-	case TypeIDByte:
-		vals = reflect.MakeSlice(reflect.TypeOf(ByteArray{}), n, n)
-	default:
-		vals = reflect.MakeSlice(reflect.SliceOf(typ), n, n)
-	}
+	// note: if n is negative (since we read a _signed_ int32) MakeSlice will panic
+	vals := reflect.MakeSlice(reflect.SliceOf(typ), n, n)
 	for i := 0; i < n; i++ {
 		vals.Index(i).Set(reflect.ValueOf(m.decodeValue(buf)))
 	}
@@ -159,15 +143,9 @@ func (m *Variant) Decode(b []byte) (int, error) {
 	// check for dimensions of multi-dimensional array
 	if m.Has(VariantArrayDimensions) {
 		m.arrayDimensionsLength = buf.ReadInt32()
-		if m.arrayDimensionsLength < 0 {
-			return buf.Pos(), StatusBadEncodingLimitsExceeded
-		}
 		m.arrayDimensions = make([]int32, m.arrayDimensionsLength)
 		for i := 0; i < int(m.arrayDimensionsLength); i++ {
 			m.arrayDimensions[i] = buf.ReadInt32()
-			if m.arrayDimensions[i] < 1 {
-				return buf.Pos(), StatusBadEncodingLimitsExceeded
-			}
 		}
 	}
 
@@ -320,12 +298,8 @@ func (m *Variant) decodeValue(buf *Buffer) interface{} {
 // Encode implements the codec interface.
 func (m *Variant) Encode() ([]byte, error) {
 	buf := NewBuffer(nil)
-	buf.WriteByte(m.mask)
 
-	// a null value specifies that no other fields are encoded
-	if m.Type() == TypeIDNull {
-		return buf.Bytes(), buf.Error()
-	}
+	buf.WriteByte(m.mask)
 
 	if m.Has(VariantArrayValues) {
 		buf.WriteInt32(m.arrayLength)
@@ -417,20 +391,8 @@ var errUnbalancedSlice = errors.New("unbalanced multi-dimensional array")
 // sliceDim determines the element type, dimensions and the total length
 // of a one or multi-dimensional slice.
 func sliceDim(v reflect.Value) (typ reflect.Type, dim []int32, count int32, err error) {
-	// null type
-	if v.Kind() == reflect.Invalid {
-		return nil, nil, 0, nil
-	}
-
-	// https://reference.opcfoundation.org/v104/Core/docs/Part6/5.1.4/
-	//
-	// We default to treating a []byte as a ByteString which is sent as a length
-	// encoded value. However, this makes it impossible to send a []byte as an
-	// array of Byte. The ByteArray type alias supports sending a []byte as an
-	// array of Byte.
-	//
-	// https://github.com/gopcua/opcua/issues/463
-	if v.Type() == reflect.TypeOf([]byte{}) && v.Type() != reflect.TypeOf(ByteArray{}) {
+	// ByteString is its own type
+	if v.Type() == reflect.TypeOf([]byte{}) {
 		return v.Type(), nil, 1, nil
 	}
 
@@ -482,40 +444,40 @@ func (m *Variant) set(v interface{}) error {
 
 	typeid, ok := variantTypeToTypeID[et]
 	if !ok {
-		typeid = TypeIDVariant
+		return errors.Errorf("cannot set variant to %T", v)
 	}
 	m.setType(typeid)
 	m.value = v
 	return nil
 }
 
+func (m *Variant) NodeID() *NodeID {
+	switch m.Type() {
+	case TypeIDNodeID:
+		return m.value.(*NodeID)
+	default:
+		return nil
+	}
+}
+
 // todo(fs): this should probably be StringValue or we need to handle all types
 // todo(fs): and recursion
 func (m *Variant) String() string {
-	if m.ArrayLength() > 0 {
-		return ""
-	}
-
 	switch m.Type() {
 	case TypeIDString:
 		return m.value.(string)
-	case TypeIDXMLElement:
-		return string(m.XMLElement())
 	case TypeIDLocalizedText:
 		return m.value.(*LocalizedText).Text
 	case TypeIDQualifiedName:
 		return m.value.(*QualifiedName).Name
 	default:
 		return ""
+		//return fmt.Sprintf("%v", m.value)
 	}
 }
 
 // Bool returns the boolean value if the type is Boolean.
 func (m *Variant) Bool() bool {
-	if m.ArrayLength() > 0 {
-		return false
-	}
-
 	switch m.Type() {
 	case TypeIDBoolean:
 		return m.value.(bool)
@@ -526,10 +488,6 @@ func (m *Variant) Bool() bool {
 
 // Float returns the float value if the type is one of the float types.
 func (m *Variant) Float() float64 {
-	if m.ArrayLength() > 0 {
-		return 0
-	}
-
 	switch m.Type() {
 	case TypeIDFloat:
 		return float64(m.value.(float32))
@@ -542,10 +500,6 @@ func (m *Variant) Float() float64 {
 
 // Int returns the int value if the type is one of the int types.
 func (m *Variant) Int() int64 {
-	if m.ArrayLength() > 0 {
-		return 0
-	}
-
 	switch m.Type() {
 	case TypeIDSByte:
 		return int64(m.value.(int8))
@@ -562,10 +516,6 @@ func (m *Variant) Int() int64 {
 
 // Uint returns the uint value if the type is one of the uint types.
 func (m *Variant) Uint() uint64 {
-	if m.ArrayLength() > 0 {
-		return 0
-	}
-
 	switch m.Type() {
 	case TypeIDByte:
 		return uint64(m.value.(byte))
@@ -580,239 +530,13 @@ func (m *Variant) Uint() uint64 {
 	}
 }
 
-func (m *Variant) ByteArray() ByteArray {
-	if m.ArrayLength() == 0 {
-		return nil
-	}
-	if len(m.ArrayDimensions()) > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDByte:
-		return m.value.(ByteArray)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) ByteString() []byte {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDByteString:
-		return m.value.([]byte)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) DataValue() *DataValue {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDDataValue:
-		return m.value.(*DataValue)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) DiagnosticInfo() *DiagnosticInfo {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDDiagnosticInfo:
-		return m.value.(*DiagnosticInfo)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) ExpandedNodeID() *ExpandedNodeID {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDExpandedNodeID:
-		return m.value.(*ExpandedNodeID)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) ExtensionObject() *ExtensionObject {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDExtensionObject:
-		return m.value.(*ExtensionObject)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) GUID() *GUID {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDGUID:
-		return m.value.(*GUID)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) LocalizedText() *LocalizedText {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDLocalizedText:
-		return m.value.(*LocalizedText)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) NodeID() *NodeID {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDNodeID:
-		return m.value.(*NodeID)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) QualifiedName() *QualifiedName {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-
-	switch m.Type() {
-	case TypeIDQualifiedName:
-		return m.value.(*QualifiedName)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) StatusCode() StatusCode {
-	if m.ArrayLength() > 0 {
-		return StatusBadTypeMismatch
-	}
-
-	switch m.Type() {
-	case TypeIDStatusCode:
-		return m.value.(StatusCode)
-	default:
-		return StatusBadTypeMismatch
-	}
-}
-
 // Time returns the time value if the type is DateTime.
 func (m *Variant) Time() time.Time {
-	if m.ArrayLength() > 0 {
-		return time.Time{}
-	}
-
 	switch m.Type() {
 	case TypeIDDateTime:
 		return m.value.(time.Time)
 	default:
 		return time.Time{}
-	}
-}
-
-func (m *Variant) Variant() *Variant {
-	if m.ArrayLength() > 0 {
-		return nil
-	}
-	switch m.Type() {
-	case TypeIDVariant:
-		return m.value.(*Variant)
-	default:
-		return nil
-	}
-}
-
-func (m *Variant) XMLElement() XMLElement {
-	if m.ArrayLength() > 0 {
-		return ""
-	}
-
-	switch m.Type() {
-	case TypeIDXMLElement:
-		return m.value.(XMLElement)
-	default:
-		return ""
-	}
-}
-
-func isBuiltinType(v interface{}) bool {
-	if v == nil {
-		return true
-	}
-
-	switch v.(type) {
-
-	// builtin types
-	case
-		bool,
-		int8,
-		int16,
-		int32,
-		int64,
-		uint8,
-		uint16,
-		uint32,
-		uint64,
-		float32,
-		float64,
-		string,
-		[]byte,
-		*DataValue,
-		*DiagnosticInfo,
-		*ExpandedNodeID,
-		*ExtensionObject,
-		*GUID,
-		*LocalizedText,
-		*NodeID,
-		*QualifiedName,
-		*Variant,
-		StatusCode,
-		time.Time,
-		XMLElement:
-		return true
-
-	// slice or array of a builtin type
-	default:
-		v := reflect.ValueOf(v)
-		switch v.Type().Kind() {
-		case reflect.Array, reflect.Slice:
-			innerType := v.Type().Elem()
-			zeroValue := reflect.New(innerType).Elem().Interface()
-			return isBuiltinType(zeroValue)
-
-		default:
-			return false
-		}
 	}
 }
 

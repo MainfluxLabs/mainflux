@@ -1,4 +1,4 @@
-// Copyright 2018-2020 opcua authors. All rights reserved.
+// Copyright 2018-2019 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
@@ -137,8 +137,6 @@ type PublishedDataSetDataType struct {
 	DataSetSource   *ExtensionObject
 }
 
-type PublishedDataSetSourceDataType struct{}
-
 type PublishedVariableDataType struct {
 	PublishedVariable    *NodeID
 	AttributeID          AttributeID
@@ -172,10 +170,6 @@ type DataSetWriterDataType struct {
 	MessageSettings         *ExtensionObject
 }
 
-type DataSetWriterTransportDataType struct{}
-
-type DataSetWriterMessageDataType struct{}
-
 type PubSubGroupDataType struct {
 	Name                  string
 	Enabled               bool
@@ -205,10 +199,6 @@ type WriterGroupDataType struct {
 	DataSetWriters        []*DataSetWriterDataType
 }
 
-type WriterGroupTransportDataType struct{}
-
-type WriterGroupMessageDataType struct{}
-
 type PubSubConnectionDataType struct {
 	Name                 string
 	Enabled              bool
@@ -220,8 +210,6 @@ type PubSubConnectionDataType struct {
 	WriterGroups         []*WriterGroupDataType
 	ReaderGroups         []*ReaderGroupDataType
 }
-
-type ConnectionTransportDataType struct{}
 
 type NetworkAddressDataType struct {
 	NetworkInterface string
@@ -245,10 +233,6 @@ type ReaderGroupDataType struct {
 	DataSetReaders        []*DataSetReaderDataType
 }
 
-type ReaderGroupTransportDataType struct{}
-
-type ReaderGroupMessageDataType struct{}
-
 type DataSetReaderDataType struct {
 	Name                    string
 	Enabled                 bool
@@ -268,12 +252,6 @@ type DataSetReaderDataType struct {
 	MessageSettings         *ExtensionObject
 	SubscribedDataSet       *ExtensionObject
 }
-
-type DataSetReaderTransportDataType struct{}
-
-type DataSetReaderMessageDataType struct{}
-
-type SubscribedDataSetDataType struct{}
 
 type TargetVariablesDataType struct {
 	TargetVariables []*FieldTargetDataType
@@ -615,8 +593,6 @@ type OptionSet struct {
 	ValidBits []byte
 }
 
-type Union struct{}
-
 type TimeZoneDataType struct {
 	Offset                 int16
 	DaylightSavingInOffset bool
@@ -823,8 +799,6 @@ func (t *RegisterServerResponse) Header() *ResponseHeader {
 func (t *RegisterServerResponse) SetHeader(h *ResponseHeader) {
 	t.ResponseHeader = h
 }
-
-type DiscoveryConfiguration struct{}
 
 type MdnsDiscoveryConfiguration struct {
 	MdnsServerName     string
@@ -1574,8 +1548,6 @@ type ContentFilter struct {
 	Elements []*ContentFilterElement
 }
 
-type FilterOperand struct{}
-
 type ElementOperand struct {
 	Index uint32
 }
@@ -1726,8 +1698,6 @@ type HistoryReadResult struct {
 	ContinuationPoint []byte
 	HistoryData       *ExtensionObject
 }
-
-type HistoryReadDetails struct{}
 
 type ReadEventDetails struct {
 	NumValuesPerNode uint32
@@ -1953,8 +1923,6 @@ func (t *CallResponse) SetHeader(h *ResponseHeader) {
 	t.ResponseHeader = h
 }
 
-type MonitoringFilter struct{}
-
 type DataChangeFilter struct {
 	Trigger       DataChangeTrigger
 	DeadbandType  uint32
@@ -1980,8 +1948,6 @@ type AggregateFilter struct {
 	ProcessingInterval     float64
 	AggregateConfiguration *AggregateConfiguration
 }
-
-type MonitoringFilterResult struct{}
 
 type EventFilterResult struct {
 	SelectClauseResults         []StatusCode
@@ -2276,8 +2242,6 @@ type NotificationMessage struct {
 	PublishTime      time.Time
 	NotificationData []*ExtensionObject
 }
-
-type NotificationData struct{}
 
 type DataChangeNotification struct {
 	MonitoredItems  []*MonitoredItemNotification
