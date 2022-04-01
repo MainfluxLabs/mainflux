@@ -1,16 +1,19 @@
 package influxdb
 
 import (
+	"strconv"
+
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 type fields map[string]interface{}
 
 func senmlFields(msg senml.Message) fields {
+	updateTime := strconv.FormatFloat(msg.UpdateTime, 'f', -1, 64)
 	ret := fields{
 		"protocol":   msg.Protocol,
 		"unit":       msg.Unit,
-		"updateTime": msg.UpdateTime,
+		"updateTime": updateTime,
 	}
 
 	switch {
