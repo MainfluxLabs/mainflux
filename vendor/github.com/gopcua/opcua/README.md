@@ -1,34 +1,29 @@
 <p align="center">
-   <img width="25%" src="https://raw.githubusercontent.com/gopcua/opcua/master/gopher.png">
+   <img width="50%" src="https://raw.githubusercontent.com/gopcua/opcua/master/gopher.png">
 </p>
 
 <p align="center">
-  Artwork by <a href="https://twitter.com/ashleymcnamara">Ashley McNamara</a><br/>
-  Inspired by <a href="http://reneefrench.blogspot.co.uk/">Renee French</a><br/>
+  Artwork by <a href="https://twitter.com/ashleymcnamara">Ashley McNamara</a> -
+  Inspired by <a href="http://reneefrench.blogspot.co.uk/">Renee French</a> -
   Taken from <a href="https://gopherize.me">https://gopherize.me</a> by <a href="https://twitter.com/matryer">Mat Ryer</a>
 </p>
 
-<h1 align="center">OPC/UA</h1>
+<h1 align="center">OPCUA</h1>
 
 A native Go implementation of the OPC/UA Binary Protocol.
 
-You need go1.13 or higher. We test with the current and previous Go version. 
-See below for a list of [Tested Platforms](#tested-platforms) and [Supported Features](#supported-features).
+You need go1.11 or higher. We test with the current and previous Go version.
 
-[![GitHub](https://github.com/gopcua/opcua/workflows/gopuca/badge.svg)](https://github.com/gopcua/opcua/actions)
-[![Go Reference](https://pkg.go.dev/badge/github.com/gopcua/opcua.svg)](https://pkg.go.dev/github.com/gopcua/opcua)
+[![CircleCI](https://circleci.com/gh/gopcua/opcua.svg?style=shield)](https://circleci.com/gh/gopcua/opcua)
+[![GoDoc](https://godoc.org/github.com/gopcua/opcua?status.svg)](https://godoc.org/github.com/gopcua/opcua)
+[![GolangCI](https://golangci.com/badges/github.com/gopcua/opcua.svg)](https://golangci.com/r/github.com/gopcua/opcua)
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/gopcua/opcua/blob/master/LICENSE)
 [![Version](https://img.shields.io/github/tag/gopcua/opcua.svg?color=blue&label=version)](https://github.com/gopcua/opcua/releases)
-
-## Note
-
-`v0.2.4` and `v0.2.5` are broken and should not be used. Please upgrade to `v0.2.6` or later. 
-See [#538](https://github.com/gopcua/opcua/issues/538) for details.
 
 ## Quickstart
 
 ```sh
-# make sure you have go1.13 or higher
+# make sure you have go1.11 or higher
 
 # install library
 go get -u github.com/gopcua/opcua
@@ -44,39 +39,6 @@ go run examples/crypto/*.go -endpoint opc.tcp://localhost:4840 -cert path/to/cer
 
 # checkout examples/ for more examples...
 ```
-
-## Sponsors
-
-The `gopcua` project is sponsored by the following organizations by supporting the active committers to the project:
-
-<table border="0">
-   <tr valign="middle">
-      <td width="33%">
-        <a href="https://northvolt.com/">
-          <img alt="Northvolt" src="https://raw.githubusercontent.com/gopcua/opcua/main/logo/northvolt.png">
-        </a>
-      </td>
-      <td width="34%">
-        <a href="https://www.evosoft.com/">
-          <img alt="evosoft" src="https://raw.githubusercontent.com/gopcua/opcua/main/logo/evosoft.png">
-        </a>
-      </td>
-      <td width="33%">
-        <a href="https://www.intelecy.com/">
-          <img alt="Intelecy AS" src="https://raw.githubusercontent.com/gopcua/opcua/main/logo/intelecy.png">
-        </a>
-      </td>
-   </tr>
-</table>
-
-### Users
-
-We would also like to list organizations which use `gopcua` in production. Please open a PR to include your logo below.
-<p align="left">
-   <a href="https://strateos.com">
-      <img alt="strtaeos" width="10%" src="https://avatars1.githubusercontent.com/u/50255519?s=400&u=3c18028de0bd1a28b604d34d6b239d7a593a7e49&v=4">
-   </a>
-</p>
 
 ## Disclaimer
 
@@ -102,44 +64,34 @@ If you are looking for ways to contribute you can
 
 Also, if the library is already useful please spread the word as a motivation.
 
-## Tested Platforms
+## Authors
 
-`gopcua` is run in production by several companies and with different equipment. 
-The table below is an incomplete list of where and how `gopcua` is used to provide
-some guidance on the level of testing.
+The [Gopcua Team](https://github.com/gopcua/opcua/graphs/contributors).
 
-We would be happy if you can add your equipment to the list. Just open a PR :)
-
-| Device                      | gopcua version    | Environment | By           |
-|-----------------------------|-------------------|-------------|--------------|
-| Siemens S7-1500             | v0.1.x, v0.2.x    | production  | Northvolt    |
-| Beckhoff C6015-0010,C6030-0060 on OPC/UA server 4.3.x | v0.1.x, v0.2.x    | production  | Northvolt    |
-| Kepware 6.x                 | v0.1.x, v0.2.x    | production  | Northvolt    |
-| Kepware 6.x                 | v0.1.x            | production  | Intelecy     |
-| Cogent DataHub 9.x          | v0.1.x            | production  | Intelecy     |
-| InfluxDB plugin             | v0.2.x            | ?           | Community    |
+If you need to get in touch with us directly you may find us on [Keybase.io](https://keybase.io)
+but try to create an issue first.
 
 ## Supported Features
 
 The current focus is on the OPC UA Binary protocol over TCP. No other protocols are supported at this point.
 
-| Categories     | Features                         | Supported | Notes       |
-|----------------|----------------------------------|-----------|-------------|
-| Encoding       | OPC UA Binary                    | Yes       |             |
+| Categories     | Features                         | Supported | Notes |
+|----------------|----------------------------------|-----------|-------|
+| Encoding       | OPC UA Binary                    | Yes       |       |
 |                | OPC UA JSON                      |           | not planned |
 |                | OPC UA XML                       |           | not planned |
-| Transport      | UA-TCP UA-SC UA Binary           | Yes       |             |
+| Transport      | UA-TCP UA-SC UA Binary           | Yes       |       |
 |                | OPC UA HTTPS                     |           | not planned |
 |                | SOAP-HTTP WS-SC UA Binary        |           | not planned |
 |                | SOAP-HTTP WS-SC UA XML           |           | not planned |
 |                | SOAP-HTTP WS-SC UA XML-UA Binary |           | not planned |
-| Encryption     | None                             | Yes       |             |
-|                | Basic128Rsa15                    | Yes       |             |
-|                | Basic256                         | Yes       |             |
-|                | Basic256Sha256                   | Yes       |             |
-| Authentication | Anonymous                        | Yes       |             |
-|                | User Name Password               | Yes       |             |
-|                | X509 Certificate                 | Yes       |             |
+| Encryption     | None                             | Yes       |       |
+|                | Basic128Rsa15                    | Yes       |       |
+|                | Basic256                         | Yes       |       |
+|                | Basic256Sha256                   | Yes       |       |
+| Authentication | Anonymous                        | Yes       |       |
+|                | User Name Password               | Yes       |       |
+|                | X509 Certificate                 | Yes       |       |
 
 ### Services
 
@@ -162,11 +114,11 @@ The current set of supported services is only for the high-level client.
 |                             | AddReferences                 |           |              |
 |                             | DeleteNodes                   |           |              |
 |                             | DeleteReferences              |           |              |
-| View Service Set            | Browse                        | Yes       |              |
-|                             | BrowseNext                    | Yes       |              |
+| View Service Set            | Browse                        | Started   |              |
+|                             | BrowseNext                    | Started   |              |
 |                             | TranslateBrowsePathsToNodeIds |           |              |
-|                             | RegisterNodes                 | Yes       |              |
-|                             | UnregisterNodes               | Yes       |              |
+|                             | RegisterNodes                 |           |              |
+|                             | UnregisterNodes               |           |              |
 | Query Service Set           | QueryFirst                    |           |              |
 |                             | QueryNext                     |           |              |
 | Attribute Service Set       | Read                          | Yes       |              |
@@ -186,13 +138,6 @@ The current set of supported services is only for the high-level client.
 |                             | Republish                     |           |              |
 |                             | DeleteSubscriptions           | Yes       |              |
 |                             | TransferSubscriptions         |           |              |
-
-## Authors
-
-The [Gopcua Team](https://github.com/gopcua/opcua/graphs/contributors).
-
-If you need to get in touch with us directly you may find us on [Keybase.io](https://keybase.io)
-but try to create an issue first.
 
 ## License
 

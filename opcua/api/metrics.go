@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
 	"github.com/MainfluxLabs/mainflux/opcua"
+	"github.com/go-kit/kit/metrics"
 )
 
 var _ opcua.Service = (*metricsMiddleware)(nil)

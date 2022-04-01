@@ -1,4 +1,4 @@
-// Copyright 2018-2020 opcua authors. All rights reserved.
+// Copyright 2018-2019 opcua authors. All rights reserved.
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
@@ -11,13 +11,11 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"strings"
 	"time"
 
 	"github.com/gopcua/opcua/errors"
 	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uacp"
 	"github.com/gopcua/opcua/uapolicy"
 	"github.com/gopcua/opcua/uasc"
 )
@@ -30,8 +28,6 @@ func DefaultClientConfig() *uasc.Config {
 		SecurityMode:      ua.MessageSecurityModeNone,
 		Lifetime:          uint32(time.Hour / time.Millisecond),
 		RequestTimeout:    10 * time.Second,
-		AutoReconnect:     true,
-		ReconnectInterval: 5 * time.Second,
 	}
 }
 
@@ -43,7 +39,7 @@ func DefaultSessionConfig() *uasc.SessionConfig {
 		ClientDescription: &ua.ApplicationDescription{
 			ApplicationURI:  "urn:gopcua:client",
 			ProductURI:      "urn:gopcua",
-			ApplicationName: ua.NewLocalizedText("gopcua - OPC UA implementation in Go"),
+			ApplicationName: &ua.LocalizedText{Text: "gopcua - OPC UA implementation in Go"},
 			ApplicationType: ua.ApplicationTypeClient,
 		},
 		LocaleIDs:          []string{"en-us"},
@@ -51,170 +47,121 @@ func DefaultSessionConfig() *uasc.SessionConfig {
 	}
 }
 
-// Config contains all config options.
-type Config struct {
-	dialer  *uacp.Dialer
-	sechan  *uasc.Config
-	session *uasc.SessionConfig
-}
-
-// NewDialer creates a uacp.Dialer from the config options
-func NewDialer(cfg *Config) *uacp.Dialer {
-	if cfg.dialer == nil {
-		return &uacp.Dialer{}
-	}
-	return cfg.dialer
-}
-
 // ApplyConfig applies the config options to the default configuration.
 // todo(fs): Can we find a better name?
-func ApplyConfig(opts ...Option) *Config {
-	cfg := &Config{
-		sechan:  DefaultClientConfig(),
-		session: DefaultSessionConfig(),
-	}
+func ApplyConfig(opts ...Option) (*uasc.Config, *uasc.SessionConfig) {
+	c := DefaultClientConfig()
+	sc := DefaultSessionConfig()
 	for _, opt := range opts {
-		opt(cfg)
+		opt(c, sc)
 	}
-	return cfg
+	return c, sc
 }
 
 // Option is an option function type to modify the configuration.
-type Option func(*Config)
+type Option func(*uasc.Config, *uasc.SessionConfig)
 
 // ApplicationName sets the application name in the session configuration.
 func ApplicationName(s string) Option {
-	return func(cfg *Config) {
-		cfg.session.ClientDescription.ApplicationName = ua.NewLocalizedText(s)
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		sc.ClientDescription.ApplicationName = &ua.LocalizedText{Text: s}
 	}
 }
 
 // ApplicationURI sets the application uri in the session configuration.
 func ApplicationURI(s string) Option {
-	return func(cfg *Config) {
-		cfg.session.ClientDescription.ApplicationURI = s
-	}
-}
-
-// AutoReconnect sets the auto reconnect state of the secure channel.
-func AutoReconnect(b bool) Option {
-	return func(cfg *Config) {
-		cfg.sechan.AutoReconnect = b
-	}
-}
-
-// ReconnectInterval is interval duration between each reconnection attempt.
-func ReconnectInterval(d time.Duration) Option {
-	return func(cfg *Config) {
-		cfg.sechan.ReconnectInterval = d
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		sc.ClientDescription.ApplicationURI = s
 	}
 }
 
 // Lifetime sets the lifetime of the secure channel in milliseconds.
 func Lifetime(d time.Duration) Option {
-	return func(cfg *Config) {
-		cfg.sechan.Lifetime = uint32(d / time.Millisecond)
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.Lifetime = uint32(d / time.Millisecond)
 	}
 }
 
 // Locales sets the locales in the session configuration.
 func Locales(locale ...string) Option {
-	return func(cfg *Config) {
-		cfg.session.LocaleIDs = locale
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		sc.LocaleIDs = locale
 	}
 }
 
 // ProductURI sets the product uri in the session configuration.
 func ProductURI(s string) Option {
-	return func(cfg *Config) {
-		cfg.session.ClientDescription.ProductURI = s
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		sc.ClientDescription.ProductURI = s
 	}
 }
 
-// stubbed out for testing
-var randomRequestID func() uint32 = nil
-
 // RandomRequestID assigns a random initial request id.
-//
-// The request id is generated using the 'rand' package and it
-// is the caller's responsibility to initialize the random number
-// generator properly.
 func RandomRequestID() Option {
-	return func(cfg *Config) {
-		if randomRequestID != nil {
-			cfg.sechan.RequestIDSeed = randomRequestID()
-		} else {
-			cfg.sechan.RequestIDSeed = uint32(rand.Int31())
-		}
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.RequestID = uint32(rand.Int31())
 	}
 }
 
 // RemoteCertificate sets the server certificate.
 func RemoteCertificate(cert []byte) Option {
-	return func(cfg *Config) {
-		cfg.sechan.RemoteCertificate = cert
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.RemoteCertificate = cert
 	}
 }
 
 // RemoteCertificateFile sets the server certificate from the file
 // in PEM or DER encoding.
 func RemoteCertificateFile(filename string) Option {
-	return func(cfg *Config) {
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
 		cert, err := loadCertificate(filename)
 		if err != nil {
 			log.Fatal(err)
 		}
-		cfg.sechan.RemoteCertificate = cert
+		c.RemoteCertificate = cert
 	}
 }
 
 // SecurityMode sets the security mode for the secure channel.
 func SecurityMode(m ua.MessageSecurityMode) Option {
-	return func(cfg *Config) {
-		cfg.sechan.SecurityMode = m
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.SecurityMode = m
 	}
 }
 
 // SecurityModeString sets the security mode for the secure channel.
 // Valid values are "None", "Sign", and "SignAndEncrypt".
 func SecurityModeString(s string) Option {
-	return func(cfg *Config) {
-		cfg.sechan.SecurityMode = ua.MessageSecurityModeFromString(s)
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.SecurityMode = ua.MessageSecurityModeFromString(s)
 	}
 }
 
 // SecurityPolicy sets the security policy uri for the secure channel.
 func SecurityPolicy(s string) Option {
-	return func(cfg *Config) {
-		cfg.sechan.SecurityPolicyURI = ua.FormatSecurityPolicyURI(s)
-	}
-}
-
-// SessionName sets the name in the session configuration.
-func SessionName(s string) Option {
-	return func(cfg *Config) {
-		cfg.session.SessionName = s
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.SecurityPolicyURI = ua.FormatSecurityPolicyURI(s)
 	}
 }
 
 // SessionTimeout sets the timeout in the session configuration.
 func SessionTimeout(d time.Duration) Option {
-	return func(cfg *Config) {
-		cfg.session.SessionTimeout = d
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		sc.SessionTimeout = d
 	}
 }
 
 // PrivateKey sets the RSA private key in the secure channel configuration.
 func PrivateKey(key *rsa.PrivateKey) Option {
-	return func(cfg *Config) {
-		cfg.sechan.LocalKey = key
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.LocalKey = key
 	}
 }
 
 // PrivateKeyFile sets the RSA private key in the secure channel configuration
 // from a PEM or DER encoded file.
 func PrivateKeyFile(filename string) Option {
-	return func(cfg *Config) {
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
 		if filename == "" {
 			return
 		}
@@ -222,7 +169,7 @@ func PrivateKeyFile(filename string) Option {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cfg.sechan.LocalKey = key
+		c.LocalKey = key
 	}
 }
 
@@ -251,8 +198,8 @@ func loadPrivateKey(filename string) (*rsa.PrivateKey, error) {
 // Certificate sets the client X509 certificate in the secure channel configuration.
 // It also detects and sets the ApplicationURI from the URI within the certificate.
 func Certificate(cert []byte) Option {
-	return func(cfg *Config) {
-		setCertificate(cert, cfg)
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		setCertificate(cert, c, sc)
 	}
 }
 
@@ -260,7 +207,7 @@ func Certificate(cert []byte) Option {
 // from the PEM or DER encoded file. It also detects and sets the ApplicationURI
 // from the URI within the certificate.
 func CertificateFile(filename string) Option {
-	return func(cfg *Config) {
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
 		if filename == "" {
 			return
 		}
@@ -269,7 +216,7 @@ func CertificateFile(filename string) Option {
 		if err != nil {
 			log.Fatal(err)
 		}
-		setCertificate(cert, cfg)
+		setCertificate(cert, c, sc)
 	}
 }
 
@@ -290,8 +237,8 @@ func loadCertificate(filename string) ([]byte, error) {
 	return block.Bytes, nil
 }
 
-func setCertificate(cert []byte, cfg *Config) {
-	cfg.sechan.Certificate = cert
+func setCertificate(cert []byte, c *uasc.Config, sc *uasc.SessionConfig) {
+	c.Certificate = cert
 
 	// Extract the application URI from the certificate.
 	x509cert, err := x509.ParseCertificate(cert)
@@ -306,44 +253,44 @@ func setCertificate(cert []byte, cfg *Config) {
 	if appURI == "" {
 		return
 	}
-	cfg.session.ClientDescription.ApplicationURI = appURI
+	sc.ClientDescription.ApplicationURI = appURI
 }
 
 // SecurityFromEndpoint sets the server-related security parameters from
 // a chosen endpoint (received from GetEndpoints())
 func SecurityFromEndpoint(ep *ua.EndpointDescription, authType ua.UserTokenType) Option {
-	return func(cfg *Config) {
-		cfg.sechan.SecurityPolicyURI = ep.SecurityPolicyURI
-		cfg.sechan.SecurityMode = ep.SecurityMode
-		cfg.sechan.RemoteCertificate = ep.ServerCertificate
-		cfg.sechan.Thumbprint = uapolicy.Thumbprint(ep.ServerCertificate)
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.SecurityPolicyURI = ep.SecurityPolicyURI
+		c.SecurityMode = ep.SecurityMode
+		c.RemoteCertificate = ep.ServerCertificate
+		c.Thumbprint = uapolicy.Thumbprint(ep.ServerCertificate)
 
 		for _, t := range ep.UserIdentityTokens {
 			if t.TokenType != authType {
 				continue
 			}
 
-			if cfg.session.UserIdentityToken == nil {
+			if sc.UserIdentityToken == nil {
 				switch authType {
 				case ua.UserTokenTypeAnonymous:
-					cfg.session.UserIdentityToken = &ua.AnonymousIdentityToken{}
+					sc.UserIdentityToken = &ua.AnonymousIdentityToken{}
 				case ua.UserTokenTypeUserName:
-					cfg.session.UserIdentityToken = &ua.UserNameIdentityToken{}
+					sc.UserIdentityToken = &ua.UserNameIdentityToken{}
 				case ua.UserTokenTypeCertificate:
-					cfg.session.UserIdentityToken = &ua.X509IdentityToken{}
+					sc.UserIdentityToken = &ua.X509IdentityToken{}
 				case ua.UserTokenTypeIssuedToken:
-					cfg.session.UserIdentityToken = &ua.IssuedIdentityToken{}
+					sc.UserIdentityToken = &ua.IssuedIdentityToken{}
 				}
 			}
 
-			setPolicyID(cfg.session.UserIdentityToken, t.PolicyID)
-			cfg.session.AuthPolicyURI = t.SecurityPolicyURI
+			setPolicyID(sc.UserIdentityToken, t.PolicyID)
+			sc.AuthPolicyURI = t.SecurityPolicyURI
 			return
 		}
 
-		if cfg.session.UserIdentityToken == nil {
-			cfg.session.UserIdentityToken = &ua.AnonymousIdentityToken{PolicyID: defaultAnonymousPolicyID}
-			cfg.session.AuthPolicyURI = ua.SecurityPolicyURINone
+		if sc.UserIdentityToken == nil {
+			sc.UserIdentityToken = &ua.AnonymousIdentityToken{PolicyID: defaultAnonymousPolicyID}
+			sc.AuthPolicyURI = ua.SecurityPolicyURINone
 		}
 	}
 }
@@ -368,12 +315,12 @@ func setPolicyID(t interface{}, policy string) {
 // todo(fs): AuthXXX methods since this approach requires context
 // todo(fs): and ordering?
 func AuthPolicyID(policy string) Option {
-	return func(cfg *Config) {
-		if cfg.session.UserIdentityToken == nil {
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		if sc.UserIdentityToken == nil {
 			log.Printf("policy ID needs to be set after the policy type is chosen, no changes made.  Call SecurityFromEndpoint() or an AuthXXX() option first")
 			return
 		}
-		setPolicyID(cfg.session.UserIdentityToken, policy)
+		setPolicyID(sc.UserIdentityToken, policy)
 	}
 }
 
@@ -381,12 +328,12 @@ func AuthPolicyID(policy string) Option {
 // Note: PolicyID still needs to be set outside of this method, typically through
 // the SecurityFromEndpoint() Option
 func AuthAnonymous() Option {
-	return func(cfg *Config) {
-		if cfg.session.UserIdentityToken == nil {
-			cfg.session.UserIdentityToken = &ua.AnonymousIdentityToken{}
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		if sc.UserIdentityToken == nil {
+			sc.UserIdentityToken = &ua.AnonymousIdentityToken{}
 		}
 
-		_, ok := cfg.session.UserIdentityToken.(*ua.AnonymousIdentityToken)
+		_, ok := sc.UserIdentityToken.(*ua.AnonymousIdentityToken)
 		if !ok {
 			// todo(fs): should we Fatal here?
 			log.Printf("non-anonymous authentication already configured, ignoring")
@@ -399,12 +346,12 @@ func AuthAnonymous() Option {
 // Note: PolicyID still needs to be set outside of this method, typically through
 // the SecurityFromEndpoint() Option
 func AuthUsername(user, pass string) Option {
-	return func(cfg *Config) {
-		if cfg.session.UserIdentityToken == nil {
-			cfg.session.UserIdentityToken = &ua.UserNameIdentityToken{}
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		if sc.UserIdentityToken == nil {
+			sc.UserIdentityToken = &ua.UserNameIdentityToken{}
 		}
 
-		t, ok := cfg.session.UserIdentityToken.(*ua.UserNameIdentityToken)
+		t, ok := sc.UserIdentityToken.(*ua.UserNameIdentityToken)
 		if !ok {
 			// todo(fs): should we Fatal here?
 			log.Printf("non-username authentication already configured, ignoring")
@@ -412,7 +359,7 @@ func AuthUsername(user, pass string) Option {
 		}
 
 		t.UserName = user
-		cfg.session.AuthPassword = pass
+		sc.AuthPassword = pass
 	}
 }
 
@@ -420,12 +367,12 @@ func AuthUsername(user, pass string) Option {
 // Note: PolicyID still needs to be set outside of this method, typically through
 // the SecurityFromEndpoint() Option
 func AuthCertificate(cert []byte) Option {
-	return func(cfg *Config) {
-		if cfg.session.UserIdentityToken == nil {
-			cfg.session.UserIdentityToken = &ua.X509IdentityToken{}
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		if sc.UserIdentityToken == nil {
+			sc.UserIdentityToken = &ua.X509IdentityToken{}
 		}
 
-		t, ok := cfg.session.UserIdentityToken.(*ua.X509IdentityToken)
+		t, ok := sc.UserIdentityToken.(*ua.X509IdentityToken)
 		if !ok {
 			// todo(fs): should we Fatal here?
 			log.Printf("non-certificate authentication already configured, ignoring")
@@ -440,12 +387,12 @@ func AuthCertificate(cert []byte) Option {
 // Note: PolicyID still needs to be set outside of this method, typically through
 // the SecurityFromEndpoint() Option
 func AuthIssuedToken(tokenData []byte) Option {
-	return func(cfg *Config) {
-		if cfg.session.UserIdentityToken == nil {
-			cfg.session.UserIdentityToken = &ua.IssuedIdentityToken{}
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		if sc.UserIdentityToken == nil {
+			sc.UserIdentityToken = &ua.IssuedIdentityToken{}
 		}
 
-		t, ok := cfg.session.UserIdentityToken.(*ua.IssuedIdentityToken)
+		t, ok := sc.UserIdentityToken.(*ua.IssuedIdentityToken)
 		if !ok {
 			log.Printf("non-issued token authentication already configured, ignoring")
 			return
@@ -458,68 +405,7 @@ func AuthIssuedToken(tokenData []byte) Option {
 
 // RequestTimeout sets the timeout for all requests over SecureChannel
 func RequestTimeout(t time.Duration) Option {
-	return func(cfg *Config) {
-		cfg.sechan.RequestTimeout = t
-	}
-}
-
-// Dialer sets the uacp.Dialer to establish the connection to the server.
-func Dialer(d *uacp.Dialer) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer = d
-	}
-}
-
-// DialTimeout sets the timeout for establishing the UACP connection.
-// Defaults to DefaultDialTimeout. Set to zero for no timeout.
-func DialTimeout(d time.Duration) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer.Dialer.Timeout = d
-	}
-}
-
-// MaxMessageSize sets the maximum message size for the UACP handshake.
-func MaxMessageSize(n uint32) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer.ClientACK.MaxMessageSize = n
-	}
-}
-
-// MaxChunkCount sets the maximum chunk count for the UACP handshake.
-func MaxChunkCount(n uint32) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer.ClientACK.MaxChunkCount = n
-	}
-}
-
-// ReceiveBufferSize sets the receive buffer size for the UACP handshake.
-func ReceiveBufferSize(n uint32) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer.ClientACK.ReceiveBufSize = n
-	}
-}
-
-// SendBufferSize sets the send buffer size for the UACP handshake.
-func SendBufferSize(n uint32) Option {
-	return func(cfg *Config) {
-		initDialer(cfg)
-		cfg.dialer.ClientACK.SendBufSize = n
-	}
-}
-
-func initDialer(cfg *Config) {
-	if cfg.dialer == nil {
-		cfg.dialer = &uacp.Dialer{}
-	}
-	if cfg.dialer.Dialer == nil {
-		cfg.dialer.Dialer = &net.Dialer{}
-	}
-	if cfg.dialer.ClientACK == nil {
-		cfg.dialer.ClientACK = uacp.DefaultClientACK
+	return func(c *uasc.Config, sc *uasc.SessionConfig) {
+		c.RequestTimeout = t
 	}
 }

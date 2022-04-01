@@ -6,8 +6,8 @@ package api
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/opcua"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func browseEndpoint(svc opcua.Service) endpoint.Endpoint {
