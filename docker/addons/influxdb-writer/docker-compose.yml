@@ -22,12 +22,11 @@ services:
     container_name: mainflux-influxdb
     restart: on-failure
     environment:
-      INFLUXDB_DB: ${MF_INFLUXDB_DB}
       DOCKER_INFLUXDB_INIT_USERNAME: ${MF_INFLUXDB_ADMIN_USER}
       DOCKER_INFLUXDB_INIT_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
       DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
       DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
-      INFLUXDB_HTTP_AUTH_ENABLED: ${MF_INFLUXDB_HTTP_AUTH_ENABLED}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
     networks:
       - docker_mainflux-base-net
     ports:

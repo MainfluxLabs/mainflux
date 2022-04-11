@@ -4,14 +4,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	//influxdata "github.com/influxdata/influxdb/client/v2"
-	influxdatav2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/consumers/writers/api"
 	"github.com/mainflux/mainflux/logger"
@@ -46,6 +50,11 @@ const (
 	envDBUser     = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass     = "MF_INFLUXDB_ADMIN_PASSWORD"
 	envConfigPath = "MF_INFLUX_WRITER_CONFIG_PATH"
+
+	envDBBucket = "MF_INFLUXDB_BUCKET"
+	envDBOrg    = "MF_INFLUXDB_ORG"
+	envDBToken  = "MF_INFLUXDB_TOKEN"
+	envDBUrl    = "http://localhost:8086"
 )
 
 type config struct {
@@ -58,11 +67,16 @@ type config struct {
 	dbUser     string
 	dbPass     string
 	configPath string
+	dbBucket   string
+	dbOrg      string
+	dbToken    string
+	dbUrl      string
 }
 
 func main() {
 	cfg /*, clientCfg*/ := loadConfigs()
 
+	println("Hello from influxdb Writer")
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -75,38 +89,43 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	client := influxdatav2.NewClient(defDBUrl, defDBToken)
-	//client, err := influxdata.NewHTTPClient(clientCfg)
-	/*
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
-			os.Exit(1)
-		}*/
+	client, err := connectToInfluxdb(cfg)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
+		os.Exit(1)
+	}
+	println("Connected to INFLUXDB2!")
 	defer client.Close()
-	/*
-		repo := influxdb.New(client, cfg.dbName)
 
-		counter, latency := makeMetrics()
-		repo = api.LoggingMiddleware(repo, logger)
-		repo = api.MetricsMiddleware(repo, counter, latency)
+	//counter, latency := makeMetrics()
+	// repo = api.LoggingMiddleware(repo, logger)
+	//repo = api.MetricsMiddleware(repo, counter, latency)
 
-		if err := consumers.Start(pubSub, repo, cfg.configPath, logger); err != nil {
-			logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))
-			os.Exit(1)
-		}
+	//if err := consumers.Start(pubSub, repo, cfg.configPath, logger); err != nil {
+	//	logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))
+	//	os.Exit(1)
+	//}
 
-		errs := make(chan error, 2)
-		go func() {
-			c := make(chan os.Signal)
-			signal.Notify(c, syscall.SIGINT)
-			errs <- fmt.Errorf("%s", <-c)
-		}()
+	errs := make(chan error, 2)
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGINT)
+		errs <- fmt.Errorf("%s", <-c)
+	}()
 
-		go startHTTPService(cfg.port, logger, errs)
+	go startHTTPService(cfg.port, logger, errs)
 
-		err = <-errs
-		logger.Error(fmt.Sprintf("InfluxDB writer service terminated: %s", err))
-	*/
+	err = <-errs
+	logger.Error(fmt.Sprintf("InfluxDB writer service terminated: %s", err))
+
+}
+
+func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
+	// token = Q8uRqtnzr2O-RZlgavoB86GR1-yLBjA0K762HZU1jU9fG__Scu7A7eb8YOIjzdvplCWZRcs5wIVI5FgtAl-0fg==
+	// I can see this token when I open the UI. but I cannot get health as Expected.
+	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
+	_, err := client.Health(context.Background())
+	return client, err
 }
 
 func loadConfigs() config /*influxdata.HTTPConfig*/ {
@@ -120,6 +139,10 @@ func loadConfigs() config /*influxdata.HTTPConfig*/ {
 		dbUser:     mainflux.Env(envDBUser, defDBUser),
 		dbPass:     mainflux.Env(envDBPass, defDBPass),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
+		dbBucket:   mainflux.Env(envDBBucket, defDBBucket),
+		dbOrg:      mainflux.Env(envDBOrg, defDBOrg),
+		dbToken:    mainflux.Env(envDBToken, defDBToken),
+		dbUrl:      mainflux.Env(envDBUrl, defDBUrl),
 	}
 	/*
 		clientCfg := influxdata.HTTPConfig{
