@@ -56,7 +56,6 @@ type config struct {
 	natsURL    string
 	logLevel   string
 	port       string
-	dbName     string
 	dbHost     string
 	dbPort     string
 	dbUser     string
