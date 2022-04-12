@@ -50,11 +50,10 @@ const (
 	envDBUser     = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass     = "MF_INFLUXDB_ADMIN_PASSWORD"
 	envConfigPath = "MF_INFLUX_WRITER_CONFIG_PATH"
-
-	envDBBucket = "MF_INFLUXDB_BUCKET"
-	envDBOrg    = "MF_INFLUXDB_ORG"
-	envDBToken  = "MF_INFLUXDB_TOKEN"
-	envDBUrl    = "http://localhost:8086"
+	envDBBucket   = "MF_INFLUXDB_BUCKET"
+	envDBOrg      = "MF_INFLUXDB_ORG"
+	envDBToken    = "MF_INFLUXDB_TOKEN"
+	envDBUrl      = "http://localhost:8086"
 )
 
 type config struct {
@@ -123,7 +122,9 @@ func main() {
 func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
 	// token = Q8uRqtnzr2O-RZlgavoB86GR1-yLBjA0K762HZU1jU9fG__Scu7A7eb8YOIjzdvplCWZRcs5wIVI5FgtAl-0fg==
 	// I can see this token when I open the UI. but I cannot get health as Expected.
+
 	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
+	println("client instance created")
 	_, err := client.Health(context.Background())
 	return client, err
 }
