@@ -52,9 +52,9 @@ func (repo *influxRepo) Consume(message interface{}) error {
 	var pts []write.Point
 	switch m := message.(type) {
 	case json.Messages:
-		pts, err = repo.jsonPoint(m)
+		pts, err = repo.jsonPoints(m)
 	default:
-		pts, err = repo.senmlPoint(m)
+		pts, err = repo.senmlPoints(m)
 	}
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (repo *influxRepo) Consume(message interface{}) error {
 	return nil
 }
 
-func (repo *influxRepo) senmlPoint(messages interface{}) ([]write.Point, error) {
+func (repo *influxRepo) senmlPoints(messages interface{}) ([]write.Point, error) {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
 		return nil, errSaveMessage
@@ -88,7 +88,7 @@ func (repo *influxRepo) senmlPoint(messages interface{}) ([]write.Point, error) 
 	return pts, nil
 }
 
-func (repo *influxRepo) jsonPoint(msgs json.Messages) ([]write.Point, error) {
+func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]write.Point, error) {
 	var pts []write.Point
 	for i, m := range msgs.Data {
 		t := time.Unix(0, m.Created+int64(i))
