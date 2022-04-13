@@ -17,7 +17,9 @@ import (
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	//influxdata "github.com/influxdata/influxdb/client/v2"
 	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/consumers"
 	"github.com/mainflux/mainflux/consumers/writers/api"
+	"github.com/mainflux/mainflux/consumers/writers/influxdb"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -91,14 +93,15 @@ func main() {
 	println("Connected to INFLUXDB2!")
 	defer client.Close()
 
+	repo := influxdb.New(client, cfg.dbOrg, cfg.dbBucket)
 	//counter, latency := makeMetrics()
-	// repo = api.LoggingMiddleware(repo, logger)
+	//repo = api.LoggingMiddleware(repo, logger)
 	//repo = api.MetricsMiddleware(repo, counter, latency)
 
-	//if err := consumers.Start(pubSub, repo, cfg.configPath, logger); err != nil {
-	//	logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))
-	//	os.Exit(1)
-	//}
+	if err := consumers.Start(pubSub, repo, cfg.configPath, logger); err != nil {
+		logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))
+		os.Exit(1)
+	}
 
 	errs := make(chan error, 2)
 	go func() {
