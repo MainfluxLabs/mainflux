@@ -127,7 +127,7 @@ type Key struct {
 
 // SDK contains Mainflux API.
 type SDK interface {
-	// CreateUser registers mainflux user.
+	// CreateUser creates mainflux user.
 	CreateUser(token string, user User) (string, error)
 
 	// User returns user object.
@@ -135,6 +135,9 @@ type SDK interface {
 
 	// CreateToken receives credentials and returns user token.
 	CreateToken(user User) (string, error)
+
+	// RegisterUser registers mainflux user.
+	RegisterUser(user User) (string, error)
 
 	// UpdateUser updates existing user.
 	UpdateUser(user User, token string) error
