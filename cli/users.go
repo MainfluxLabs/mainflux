@@ -61,12 +61,9 @@ var cmdUsers = []cobra.Command{
 		Short: "register <username> <password> ",
 		Long:  `Registers new user`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 || len(args) > 2 {
+			if len(args) != 2 {
 				logUsage(cmd.Short)
 				return
-			}
-			if len(args) == 2 {
-				args = append(args, "")
 			}
 
 			user := mfxsdk.User{
