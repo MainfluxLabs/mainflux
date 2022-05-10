@@ -94,9 +94,9 @@ func main() {
 	defer client.Close()
 
 	repo := influxdb.New(client, cfg.dbOrg, cfg.dbBucket)
-	//counter, latency := makeMetrics()
-	//repo = api.LoggingMiddleware(repo, logger)
-	//repo = api.MetricsMiddleware(repo, counter, latency)
+	counter, latency := makeMetrics()
+	repo = api.LoggingMiddleware(repo, logger)
+	repo = api.MetricsMiddleware(repo, counter, latency)
 
 	if err := consumers.Start(pubSub, repo, cfg.configPath, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))

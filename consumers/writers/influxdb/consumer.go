@@ -44,10 +44,6 @@ func New(client influxdb2.Client, orgName string, bucketName string) consumers.C
 
 func (repo *influxRepo) Consume(message interface{}) error {
 
-	//pts, err := influxdb2.NewBatchPoints(repo.cfg)
-	//if err != nil {
-	//	return errors.Wrap(errSaveMessage, err)
-	//}
 	var err error
 	var pts []write.Point
 	switch m := message.(type) {

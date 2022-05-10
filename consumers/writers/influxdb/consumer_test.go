@@ -4,6 +4,7 @@
 package influxdb_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -12,13 +13,14 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 
 	"github.com/gofrs/uuid"
-	influxdata "github.com/influxdata/influxdb/client/v2"
 	writer "github.com/mainflux/mainflux/consumers/writers/influxdb"
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/transformers/json"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 const valueFields = 5
@@ -26,17 +28,35 @@ const valueFields = 5
 var (
 	port        string
 	testLog, _  = log.New(os.Stdout, log.Info.String())
-	testDB      = "test"
+	testOrg     = "test"
+	testBucket  = "test"
 	streamsSize = 250
 	selectMsgs  = "SELECT * FROM test..messages"
 	dropMsgs    = "DROP SERIES FROM messages"
-	client      influxdata.Client
-	clientCfg   = influxdata.HTTPConfig{
-		Username: "test",
-		Password: "test",
-	}
-	subtopic = "topic"
+	client      influxdb2.Client
+	clientToken = "test"
+	subtopic    = "topic"
 )
+
+/*
+This is influxdb CLI command to add
+the bucket to database retention policy.
+
+This is needed to be run at the end of 
+the initialization of the container in
+the container shell if we want to use
+basic InfluxQL code we have.
+
+BUT If we want a complete change to FLUX,
+no need for this ->
+
+influx v1 dbrp create \
+  --db mainflux \
+  --rp mainflux-rp \
+  --bucket-id 8929ab2a1f6a2fac \
+  --default \
+-o mainflux \
+*/
 
 var (
 	v       float64 = 5
@@ -48,27 +68,33 @@ var (
 
 // This is utility function to query the database.
 func queryDB(cmd string) ([][]interface{}, error) {
-	q := influxdata.Query{
-		Command:  cmd,
-		Database: testDB,
-	}
-	response, err := client.Query(q)
+	queryAPI := client.QueryAPI("mainflux")
+
+	// get QueryTableResult
+	response, err := queryAPI.Query(context.Background(), cmd)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	if response.Error() != nil {
-		return nil, response.Error()
+	// check for an error
+	if response.Err() != nil {
+		fmt.Printf("query parsing error: %\n", response.Err().Error())
 	}
-	if len(response.Results[0].Series) == 0 {
-		return nil, nil
+	
+	// Iterate over query response
+	for response.Next() {
+		// Notice when group key has changed
+		if response.TableChanged() {
+		fmt.Printf("table: %s\n", response.TableMetadata().String())
+		}
+		// Access data
+		fmt.Printf("value: %v\n", response.Record().Value())
 	}
-	// There is only one query, so only one result and
-	// all data are stored in the same series.
-	return response.Results[0].Series[0].Values, nil
+	// ask This part to Manuel.
+	return , nil
 }
 
 func TestSaveSenml(t *testing.T) {
-	repo := writer.New(client, testDB)
+	repo := writer.New(client, testOrg, testBucket)
 
 	cases := []struct {
 		desc         string
@@ -136,7 +162,7 @@ func TestSaveSenml(t *testing.T) {
 }
 
 func TestSaveJSON(t *testing.T) {
-	repo := writer.New(client, testDB)
+	repo := writer.New(client, testOrg, testBucket)
 
 	chid, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
