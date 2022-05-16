@@ -72,8 +72,8 @@ type config struct {
 }
 
 func main() {
-	cfg /*, clientCfg*/ := loadConfigs()
-	print(cfg.dbUrl)
+	cfg, repoCfg := loadConfigs()
+	//print(cfg.dbUrl)
 	println("Hello from influxdb Writer")
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
@@ -95,10 +95,10 @@ func main() {
 		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
 		os.Exit(1)
 	}
-	println("Connected to INFLUXDB2!")
+	println("Connected to InfluxDB")
 	defer client.Close()
 
-	repo := influxdb.New(client, cfg.dbOrg, cfg.dbBucket)
+	repo := influxdb.New(client, repoCfg)
 	counter, latency := makeMetrics()
 	repo = api.LoggingMiddleware(repo, logger)
 	repo = api.MetricsMiddleware(repo, counter, latency)
@@ -135,7 +135,7 @@ func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
 	return client, err
 }
 
-func loadConfigs() config /*influxdata.HTTPConfig*/ {
+func loadConfigs() (config, influxdb.RepoConfig) {
 	cfg := config{
 		natsURL:    mainflux.Env(envNatsURL, defNatsURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
@@ -150,7 +150,12 @@ func loadConfigs() config /*influxdata.HTTPConfig*/ {
 		dbToken:    mainflux.Env(envDBToken, defDBToken),
 	}
 	cfg.dbUrl = fmt.Sprintf("http://%s:%s", cfg.dbHost, cfg.dbPort)
-	return cfg //, clientCfg
+
+	repoCfg := influxdb.RepoConfig{
+		Bucket: cfg.dbBucket,
+		Org:    cfg.dbOrg,
+	}
+	return cfg, repoCfg
 }
 
 func makeMetrics() (*kitprometheus.Counter, *kitprometheus.Summary) {
