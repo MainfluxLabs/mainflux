@@ -40,19 +40,17 @@ var _ Service = (*adapterService)(nil)
 
 // Observers is a map of maps,
 type adapterService struct {
-	auth      mainflux.ThingsServiceClient
-	pubsub    nats.PubSub
-	observers map[string]observers
-	obsLock   sync.Mutex
+	auth    mainflux.ThingsServiceClient
+	pubsub  nats.PubSub
+	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
 func New(auth mainflux.ThingsServiceClient, pubsub nats.PubSub) Service {
 	as := &adapterService{
-		auth:      auth,
-		pubsub:    pubsub,
-		observers: make(map[string]observers),
-		obsLock:   sync.Mutex{},
+		auth:    auth,
+		pubsub:  pubsub,
+		obsLock: sync.Mutex{},
 	}
 
 	return as
@@ -80,23 +78,11 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 	if _, err := svc.auth.CanAccessByKey(ctx, ar); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
-
-	go func() {
-		<-c.Done()
-		svc.remove(subject, c.Token())
-	}()
-
-	obs, err := NewObserver(subject, c, svc.pubsub)
-	if err != nil {
-		c.Cancel()
-		return err
-	}
-	return svc.put(subject, c.Token(), obs)
+	return svc.pubsub.Subscribe(c.Token(), subject, c)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {
@@ -111,48 +97,5 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopi
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
-
-	return svc.remove(subject, token)
-}
-
-func (svc *adapterService) put(topic, token string, o Observer) error {
-	svc.obsLock.Lock()
-	defer svc.obsLock.Unlock()
-
-	obs, ok := svc.observers[topic]
-	// If there are no observers, create map and assign it to the topic.
-	if !ok {
-		obs = observers{token: o}
-		svc.observers[topic] = obs
-		return nil
-	}
-	// If observer exists, cancel subscription and replace it.
-	if sub, ok := obs[token]; ok {
-		if err := sub.Cancel(topic); err != nil {
-			return errors.Wrap(ErrUnsubscribe, err)
-		}
-	}
-	obs[token] = o
-	return nil
-}
-
-func (svc *adapterService) remove(topic, token string) error {
-	svc.obsLock.Lock()
-	defer svc.obsLock.Unlock()
-
-	obs, ok := svc.observers[topic]
-	if !ok {
-		return nil
-	}
-	if current, ok := obs[token]; ok {
-		if err := current.Cancel(topic); err != nil {
-			return errors.Wrap(ErrUnsubscribe, err)
-		}
-	}
-	delete(obs, token)
-	// If there are no observers left for the endpint, remove the map.
-	if len(obs) == 0 {
-		delete(svc.observers, topic)
-	}
-	return nil
+	return svc.pubsub.Unsubscribe(token, subject)
 }

@@ -4,15 +4,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -20,6 +19,7 @@ import (
 	"github.com/mainflux/mainflux"
 	authapi "github.com/mainflux/mainflux/auth/api/grpc"
 	"github.com/mainflux/mainflux/logger"
+	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
 	"github.com/mainflux/mainflux/pkg/uuid"
@@ -34,13 +34,15 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 const (
-	queue = "twins"
-
+	svcName            = "twins"
+	queue              = "twins"
+	stopWaitTime       = 5 * time.Second
 	defLogLevel        = "error"
 	defHTTPPort        = "8180"
 	defJaegerURL       = ""
@@ -105,6 +107,8 @@ type config struct {
 
 func main() {
 	cfg := loadConfig()
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
@@ -134,21 +138,26 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	svc := newService(pubSub, cfg.channelID, auth, dbTracer, db, cacheTracer, cacheClient, logger)
+	svc := newService(svcName, pubSub, cfg.channelID, auth, dbTracer, db, cacheTracer, cacheClient, logger)
 
 	tracer, closer := initJaeger("twins", cfg.jaegerURL, logger)
 	defer closer.Close()
-	errs := make(chan error, 2)
-	go startHTTPServer(twapi.MakeHandler(tracer, svc, logger), cfg.httpPort, cfg, logger, errs)
 
-	go func() {
-		c := make(chan os.Signal)
-		signal.Notify(c, syscall.SIGINT)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
+	g.Go(func() error {
+		return startHTTPServer(ctx, twapi.MakeHandler(tracer, svc, logger), cfg.httpPort, cfg, logger)
+	})
 
-	err = <-errs
-	logger.Error(fmt.Sprintf("Twins service terminated: %s", err))
+	g.Go(func() error {
+		if sig := errors.SignalHandler(ctx); sig != nil {
+			cancel()
+			logger.Info(fmt.Sprintf("Twins service shutdown by signal: %s", sig))
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		logger.Error(fmt.Sprintf("Twins service terminated: %s", err))
+	}
 }
 
 func loadConfig() config {
@@ -261,7 +270,7 @@ func connectToRedis(cacheURL, cachePass, cacheDB string, logger logger.Logger) *
 	})
 }
 
-func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger logger.Logger) twins.Service {
+func newService(id string, ps messaging.PubSub, chanID string, users mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *mongo.Database, cacheTracer opentracing.Tracer, cacheClient *redis.Client, logger logger.Logger) twins.Service {
 	twinRepo := twmongodb.NewTwinRepository(db)
 	twinRepo = tracing.TwinRepositoryMiddleware(dbTracer, twinRepo)
 
@@ -289,8 +298,17 @@ func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceCl
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
+	err := ps.Subscribe(id, nats.SubjectAllChannels, handle(logger, chanID, svc))
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
-	err := ps.Subscribe(nats.SubjectAllChannels, func(msg messaging.Message) error {
+	return svc
+}
+
+func handle(logger logger.Logger, chanID string, svc twins.Service) handlerFunc {
+	return func(msg messaging.Message) error {
 		if msg.Channel == chanID {
 			return nil
 		}
@@ -301,23 +319,49 @@ func newService(ps messaging.PubSub, chanID string, users mainflux.AuthServiceCl
 		}
 
 		return nil
-	})
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
 	}
-
-	return svc
 }
 
-func startHTTPServer(handler http.Handler, port string, cfg config, logger logger.Logger, errs chan error) {
+func startHTTPServer(ctx context.Context, handler http.Handler, port string, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
-	if cfg.serverCert != "" || cfg.serverKey != "" {
+	errCh := make(chan error)
+	server := &http.Server{Addr: p, Handler: handler}
+
+	switch {
+	case cfg.serverCert != "" || cfg.serverKey != "":
 		logger.Info(fmt.Sprintf("Twins service started using https on port %s with cert %s key %s",
 			port, cfg.serverCert, cfg.serverKey))
-		errs <- http.ListenAndServeTLS(p, cfg.serverCert, cfg.serverKey, handler)
-		return
+		go func() {
+			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
+		}()
+	default:
+		logger.Info(fmt.Sprintf("Twins service started using http on port %s", cfg.httpPort))
+		go func() {
+			errCh <- server.ListenAndServe()
+		}()
 	}
-	logger.Info(fmt.Sprintf("Twins service started using http on port %s", cfg.httpPort))
-	errs <- http.ListenAndServe(p, handler)
+
+	select {
+	case <-ctx.Done():
+		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
+		defer cancelShutdown()
+		if err := server.Shutdown(ctxShutdown); err != nil {
+			logger.Error(fmt.Sprintf("Twins service error occurred during shutdown at %s: %s", p, err))
+			return fmt.Errorf("twins service occurred during shutdown at %s: %w", p, err)
+		}
+		logger.Info(fmt.Sprintf("Twins service shutdown of http at %s", p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
+}
+
+type handlerFunc func(msg messaging.Message) error
+
+func (h handlerFunc) Handle(msg messaging.Message) error {
+	return h(msg)
+}
+
+func (h handlerFunc) Cancel() error {
+	return nil
 }

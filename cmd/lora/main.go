@@ -5,24 +5,23 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
+	mqttPaho "github.com/eclipse/paho.mqtt.golang"
 	r "github.com/go-redis/redis/v8"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/lora"
 	"github.com/mainflux/mainflux/lora/api"
-	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mainflux/pkg/messaging/mqtt"
+	"github.com/mainflux/mainflux/lora/mqtt"
+	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"golang.org/x/sync/errgroup"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/mainflux/mainflux/lora/redis"
@@ -30,10 +29,15 @@ import (
 )
 
 const (
+	stopWaitTime = 5 * time.Second
+
 	defLogLevel       = "error"
 	defHTTPPort       = "8180"
 	defLoraMsgURL     = "tcp://localhost:1883"
-	defSubTimeout     = "30s" // 30 seconds
+	defLoraMsgTopic   = "application/+/device/+/event/up"
+	defLoraMsgUser    = ""
+	defLoraMsgPass    = ""
+	defLoraMsgTimeout = "30s"
 	defNatsURL        = "nats://localhost:4222"
 	defESURL          = "localhost:6379"
 	defESPass         = ""
@@ -45,7 +49,10 @@ const (
 
 	envHTTPPort       = "MF_LORA_ADAPTER_HTTP_PORT"
 	envLoraMsgURL     = "MF_LORA_ADAPTER_MESSAGES_URL"
-	envSubTimeout     = "MF_LORA_ADAPTER_SUBSCRIBER_TIMEOUT"
+	envLoraMsgTopic   = "MF_LORA_ADAPTER_MESSAGES_TOPIC"
+	envLoraMsgUser    = "MF_LORA_ADAPTER_MESSAGES_USER"
+	envLoraMsgPass    = "MF_LORA_ADAPTER_MESSAGES_PASS"
+	envLoraMsgTimeout = "MF_LORA_ADAPTER_MESSAGES_TIMEOUT"
 	envNatsURL        = "MF_NATS_URL"
 	envLogLevel       = "MF_LORA_ADAPTER_LOG_LEVEL"
 	envESURL          = "MF_THINGS_ES_URL"
@@ -56,8 +63,6 @@ const (
 	envRouteMapPass   = "MF_LORA_ADAPTER_ROUTE_MAP_PASS"
 	envRouteMapDB     = "MF_LORA_ADAPTER_ROUTE_MAP_DB"
 
-	loraServerTopic = "application/+/device/+/rx"
-
 	thingsRMPrefix   = "thing"
 	channelsRMPrefix = "channel"
 	connsRMPrefix    = "connection"
@@ -66,8 +71,11 @@ const (
 type config struct {
 	httpPort       string
 	loraMsgURL     string
+	loraMsgUser    string
+	loraMsgPass    string
+	loraMsgTopic   string
+	loraMsgTimeout time.Duration
 	natsURL        string
-	subTimeout     time.Duration
 	logLevel       string
 	esURL          string
 	esPass         string
@@ -80,6 +88,8 @@ type config struct {
 
 func main() {
 	cfg := loadConfig()
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
@@ -121,39 +131,42 @@ func main() {
 		}, []string{"method"}),
 	)
 
-	msub, err := mqtt.NewSubscriber(cfg.loraMsgURL, cfg.subTimeout, logger)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to create MQTT subscriber: %s", err))
-		os.Exit(1)
-	}
+	mqttConn := connectToMQTTBroker(cfg.loraMsgURL, cfg.loraMsgUser, cfg.loraMsgPass, cfg.loraMsgTimeout, logger)
 
-	go subscribeToLoRaBroker(svc, msub, logger)
-
+	go subscribeToLoRaBroker(svc, mqttConn, cfg.loraMsgTimeout, cfg.loraMsgTopic, logger)
 	go subscribeToThingsES(svc, esConn, cfg.esConsumerName, logger)
 
-	errs := make(chan error, 2)
+	g.Go(func() error {
+		return startHTTPServer(ctx, cfg, logger)
+	})
 
-	go startHTTPServer(cfg, logger, errs)
+	g.Go(func() error {
+		if sig := errors.SignalHandler(ctx); sig != nil {
+			cancel()
+			logger.Info(fmt.Sprintf("LoRa adapter shutdown by signal: %s", sig))
+		}
+		return nil
+	})
 
-	go func() {
-		c := make(chan os.Signal)
-		signal.Notify(c, syscall.SIGINT)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
+	if err := g.Wait(); err != nil {
+		logger.Error(fmt.Sprintf("LoRa adapter terminated: %s", err))
+	}
 
-	err = <-errs
-	logger.Error(fmt.Sprintf("LoRa adapter terminated: %s", err))
 }
 
 func loadConfig() config {
-	mqttTimeout, err := time.ParseDuration(mainflux.Env(envSubTimeout, defSubTimeout))
+	mqttTimeout, err := time.ParseDuration(mainflux.Env(envLoraMsgTimeout, defLoraMsgTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envSubTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envLoraMsgTimeout, err.Error())
 	}
+
 	return config{
 		httpPort:       mainflux.Env(envHTTPPort, defHTTPPort),
 		loraMsgURL:     mainflux.Env(envLoraMsgURL, defLoraMsgURL),
-		subTimeout:     mqttTimeout,
+		loraMsgTopic:   mainflux.Env(envLoraMsgTopic, defLoraMsgTopic),
+		loraMsgUser:    mainflux.Env(envLoraMsgUser, defLoraMsgUser),
+		loraMsgPass:    mainflux.Env(envLoraMsgPass, defLoraMsgPass),
+		loraMsgTimeout: mqttTimeout,
 		natsURL:        mainflux.Env(envNatsURL, defNatsURL),
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		esURL:          mainflux.Env(envESURL, defESURL),
@@ -164,6 +177,29 @@ func loadConfig() config {
 		routeMapPass:   mainflux.Env(envRouteMapPass, defRouteMapPass),
 		routeMapDB:     mainflux.Env(envRouteMapDB, defRouteMapDB),
 	}
+}
+
+func connectToMQTTBroker(url, user, password string, timeout time.Duration, logger logger.Logger) mqttPaho.Client {
+	opts := mqttPaho.NewClientOptions()
+	opts.AddBroker(url)
+	opts.SetUsername(user)
+	opts.SetPassword(password)
+	opts.SetOnConnectHandler(func(c mqttPaho.Client) {
+		logger.Info("Connected to Lora MQTT broker")
+	})
+	opts.SetConnectionLostHandler(func(c mqttPaho.Client, err error) {
+		logger.Error(fmt.Sprintf("MQTT connection lost: %s", err.Error()))
+		os.Exit(1)
+	})
+
+	client := mqttPaho.NewClient(opts)
+
+	if token := client.Connect(); token.WaitTimeout(timeout) && token.Error() != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to Lora MQTT broker: %s", token.Error()))
+		os.Exit(1)
+	}
+
+	return client
 }
 
 func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *r.Client {
@@ -180,30 +216,20 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *
 	})
 }
 
-func subscribeToLoRaBroker(svc lora.Service, msub messaging.Subscriber, logger logger.Logger) {
-	err := msub.Subscribe(loraServerTopic, func(msg messaging.Message) error {
-		var m lora.Message
-		if err := json.Unmarshal(msg.Payload, &m); err != nil {
-			logger.Warn(fmt.Sprintf("Failed to Unmarshal message: %s", err.Error()))
-			return err
-		}
-		if err := svc.Publish(context.Background(), m); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to subscribe to LoRa MQTT broker: %s", err))
+func subscribeToLoRaBroker(svc lora.Service, mc mqttPaho.Client, timeout time.Duration, topic string, logger logger.Logger) {
+	mqtt := mqtt.NewBroker(svc, mc, timeout, logger)
+	logger.Info("Subscribed to Lora MQTT broker")
+	if err := mqtt.Subscribe(topic); err != nil {
+		logger.Error(fmt.Sprintf("Failed to subscribe to Lora MQTT broker: %s", err))
 		os.Exit(1)
 	}
-	logger.Info("Subscribed to LoRa MQTT broker")
 }
 
 func subscribeToThingsES(svc lora.Service, client *r.Client, consumer string, logger logger.Logger) {
 	eventStore := redis.NewEventStore(svc, client, consumer, logger)
 	logger.Info("Subscribed to Redis Event Store")
 	if err := eventStore.Subscribe(context.Background(), "mainflux.things"); err != nil {
-		logger.Warn(fmt.Sprintf("LoRa-adapter service failed to subscribe to Redis event source: %s", err))
+		logger.Warn(fmt.Sprintf("Lora-adapter service failed to subscribe to Redis event source: %s", err))
 	}
 }
 
@@ -212,8 +238,29 @@ func newRouteMapRepository(client *r.Client, prefix string, logger logger.Logger
 	return redis.NewRouteMapRepository(client, prefix)
 }
 
-func startHTTPServer(cfg config, logger logger.Logger, errs chan error) {
+func startHTTPServer(ctx context.Context, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.httpPort)
+	errCh := make(chan error)
+	server := &http.Server{Addr: p, Handler: api.MakeHandler()}
+
 	logger.Info(fmt.Sprintf("LoRa-adapter service started, exposed port %s", cfg.httpPort))
-	errs <- http.ListenAndServe(p, api.MakeHandler())
+
+	go func() {
+		errCh <- http.ListenAndServe(p, api.MakeHandler())
+	}()
+
+	select {
+	case <-ctx.Done():
+		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
+		defer cancelShutdown()
+		if err := server.Shutdown(ctxShutdown); err != nil {
+			logger.Error(fmt.Sprintf("LoRa-adapter service error occurred during shutdown at %s: %s", p, err))
+			return fmt.Errorf("LoRa-adapter service error occurred during shutdown at %s: %w", p, err)
+		}
+		logger.Info(fmt.Sprintf("LoRa-adapter service shutdown of http at %s", p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
+
 }

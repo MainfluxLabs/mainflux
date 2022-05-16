@@ -1,15 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -29,11 +28,13 @@ import (
 	ws "github.com/mainflux/mproxy/pkg/websocket"
 	opentracing "github.com/opentracing/opentracing-go"
 	jconfig "github.com/uber/jaeger-client-go/config"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 const (
+	svcName = "mqtt"
 	// Logging
 	defLogLevel = "error"
 	envLogLevel = "MF_MQTT_ADAPTER_LOG_LEVEL"
@@ -121,6 +122,8 @@ type config struct {
 
 func main() {
 	cfg := loadConfig()
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 
 	logger, err := mflog.New(os.Stdout, cfg.logLevel)
 	if err != nil {
@@ -159,7 +162,7 @@ func main() {
 	}
 
 	fwd := mqtt.NewForwarder(nats.SubjectAllChannels, logger)
-	if err := fwd.Forward(nps, mpub); err != nil {
+	if err := fwd.Forward(svcName, nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward NATS messages: %s", err))
 		os.Exit(1)
 	}
@@ -185,22 +188,27 @@ func main() {
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient)
 
-	errs := make(chan error, 2)
-
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.mqttPort))
-	go proxyMQTT(cfg, logger, h, errs)
+	g.Go(func() error {
+		return proxyMQTT(ctx, cfg, logger, h)
+	})
 
 	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpPort))
-	go proxyWS(cfg, logger, h, errs)
+	g.Go(func() error {
+		return proxyWS(ctx, cfg, logger, h)
+	})
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
+	g.Go(func() error {
+		if sig := errors.SignalHandler(ctx); sig != nil {
+			cancel()
+			logger.Info(fmt.Sprintf("mProxy shutdown by signal: %s", sig))
+		}
+		return nil
+	})
 
-	err = <-errs
-	logger.Error(fmt.Sprintf("mProxy terminated: %s", err))
+	if err := g.Wait(); err != nil {
+		logger.Error(fmt.Sprintf("mProxy terminated: %s", err))
+	}
 }
 
 func loadConfig() config {
@@ -309,19 +317,43 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *r
 	})
 }
 
-func proxyMQTT(cfg config, logger mflog.Logger, handler session.Handler, errs chan error) {
+func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
 	address := fmt.Sprintf(":%s", cfg.mqttPort)
 	target := fmt.Sprintf("%s:%s", cfg.mqttTargetHost, cfg.mqttTargetPort)
 	mp := mp.New(address, target, handler, logger)
 
-	errs <- mp.Listen()
+	errCh := make(chan error)
+	go func() {
+		errCh <- mp.Listen()
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Info(fmt.Sprintf("proxy MQTT shutdown at %s", target))
+		return nil
+	case err := <-errCh:
+		return err
+	}
+
 }
-func proxyWS(cfg config, logger mflog.Logger, handler session.Handler, errs chan error) {
+func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
 	target := fmt.Sprintf("%s:%s", cfg.httpTargetHost, cfg.httpTargetPort)
 	wp := ws.New(target, cfg.httpTargetPath, "ws", handler, logger)
 	http.Handle("/mqtt", wp.Handler())
 
-	errs <- wp.Listen(cfg.httpPort)
+	errCh := make(chan error)
+
+	go func() {
+		errCh <- wp.Listen(cfg.httpPort)
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Info(fmt.Sprintf("proxy MQTT WS shutdown at %s", target))
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
 func healthcheck(cfg config) func() error {
