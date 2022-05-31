@@ -22,23 +22,20 @@ var errSaveMessage = errors.New("failed to save message to influxdb database")
 
 var _ consumers.Consumer = (*influxRepo)(nil)
 
-type repoConfig struct {
-	bucket string
-	org    string
+type RepoConfig struct {
+	Bucket string
+	Org    string
 }
 type influxRepo struct {
 	client influxdb2.Client
-	cfg    repoConfig
+	cfg    RepoConfig
 }
 
 // New returns new InfluxDB writer.
-func New(client influxdb2.Client, orgName string, bucketName string) consumers.Consumer {
+func New(client influxdb2.Client, config RepoConfig) consumers.Consumer {
 	return &influxRepo{
 		client: client,
-		cfg: repoConfig{
-			org:    orgName,
-			bucket: bucketName,
-		},
+		cfg:    config,
 	}
 }
 
@@ -56,7 +53,7 @@ func (repo *influxRepo) Consume(message interface{}) error {
 		return err
 	}
 
-	writeAPI := repo.client.WriteAPI(repo.cfg.org, repo.cfg.bucket)
+	writeAPI := repo.client.WriteAPI(repo.cfg.Org, repo.cfg.Bucket)
 	for _, point := range pts {
 		writeAPI.WritePoint(&point)
 	}

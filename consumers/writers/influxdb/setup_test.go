@@ -4,13 +4,24 @@
 package influxdb_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
-	influxdb "github.com/influxdata/influxdb/client/v2"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	dockertest "github.com/ory/dockertest/v3"
+)
+
+const (
+	dbHost        = "localhost"
+	dbToken       = "test-token"
+	dbOrg         = "test"
+	dbAdmin       = "test"
+	dbPass        = "test-password"
+	dbBucket      = "test-bucket"
+	dbInitMode    = "setup"
+	dbFluxEnabled = "true"
 )
 
 func TestMain(m *testing.M) {
@@ -20,21 +31,25 @@ func TestMain(m *testing.M) {
 	}
 
 	cfg := []string{
-		"INFLUXDB_USER=test",
-		"INFLUXDB_USER_PASSWORD=test",
-		"INFLUXDB_DB=test",
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_MODE=%s", dbInitMode),
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_USERNAME=%s", dbAdmin),
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_PASSWORD=%s", dbPass),
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_ORG=%s", dbOrg),
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_BUCKET=%s", dbBucket),
+		fmt.Sprintf("DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=%s", dbToken),
+		fmt.Sprintf("INFLUXDB_HTTP_FLUX_ENABLED=%s", dbFluxEnabled),
 	}
-	container, err := pool.Run("influxdb", "1.8.5", cfg)
+	container, err := pool.Run("influxdb", "2.2-alpine", cfg)
 	if err != nil {
 		testLog.Error(fmt.Sprintf("Could not start container: %s", err))
 	}
 
 	port = container.GetPort("8086/tcp")
-	clientCfg.Addr = fmt.Sprintf("http://localhost:%s", port)
+	dbUrl := fmt.Sprintf("http://localhost:%s", port)
 
 	if err := pool.Retry(func() error {
-		client, err = influxdb.NewHTTPClient(clientCfg)
-		_, _, err = client.Ping(5 * time.Millisecond)
+		client = influxdb2.NewClient(dbUrl, dbToken)
+		_, err = client.Ping(context.Background())
 		return err
 	}); err != nil {
 		testLog.Error(fmt.Sprintf("Could not connect to docker: %s", err))

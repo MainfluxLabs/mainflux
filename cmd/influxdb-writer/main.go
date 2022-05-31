@@ -14,7 +14,6 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	//influxdata "github.com/influxdata/influxdb/client/v2"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/consumers"
 	"github.com/mainflux/mainflux/consumers/writers/api"
@@ -126,11 +125,7 @@ func main() {
 }
 
 func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
-	// token = Q8uRqtnzr2O-RZlgavoB86GR1-yLBjA0K762HZU1jU9fG__Scu7A7eb8YOIjzdvplCWZRcs5wIVI5FgtAl-0fg==
-	// I can see this token when I open the UI. but I cannot get health as Expected.
-
 	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
-	println("client instance created")
 	_, err := client.Health(context.Background())
 	return client, err
 }
