@@ -126,7 +126,7 @@ func main() {
 
 func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
 	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
-	_, err := client.Health(context.Background())
+	_, err := client.Ping(context.Background())
 	return client, err
 }
 
