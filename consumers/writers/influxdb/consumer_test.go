@@ -29,9 +29,12 @@ var (
 	port        string
 	testLog, _  = log.New(os.Stdout, log.Info.String())
 	streamsSize = 250
-	selectMsgs  = fmt.Sprintf(`from(bucket: "%s")
-    |> range(start: -1h)
-    |> filter(fn: (r) => r["_measurement"] == "messages")`, repoCfg.Bucket)
+
+	selectMsgs = fmt.Sprintf(`from(bucket: "%s")
+	|> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+	|> filter(fn: (r) => r["_measurement"] == "messages")
+	|> sort()
+	|> yield(name: "sort")`, repoCfg.Bucket)
 	client   influxdb2.Client
 	subtopic = "topic"
 
@@ -85,15 +88,15 @@ func resetBucket() error {
 	return nil
 }
 
-func queryDB(fluxQuery string) error {
+func queryDB(fluxQuery string) (error, int) {
 	queryAPI := client.QueryAPI(repoCfg.Org)
-
+	rowCount := 0
 	// get QueryTableResult
 	result, err := queryAPI.Query(context.Background(), fluxQuery)
 	if err != nil {
-		return err
+		return err, rowCount
 	}
-	rowCount := 0
+
 	// Iterate over query response
 	for result.Next() {
 		// Notice when group key has changed
@@ -106,9 +109,9 @@ func queryDB(fluxQuery string) error {
 	}
 	// check for an error
 	if result.Err() != nil {
-		fmt.Printf("query parsing error: %s\n", result.Err().Error())
+		return result.Err(), 0
 	}
-	return nil
+	return nil, rowCount
 }
 
 func TestSaveSenml(t *testing.T) {
@@ -172,13 +175,10 @@ func TestSaveSenml(t *testing.T) {
 		err = repo.Consume(msgs)
 		assert.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
 
-		err = queryDB(selectMsgs)
+		err, count := queryDB(selectMsgs)
 
 		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
-
-		// TODO: check if row numbers match
-		//count := len(row)
-		//assert.Equal(t, tc.expectedSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", tc.expectedSize, count))
+		assert.Equal(t, tc.expectedSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", tc.expectedSize, count))
 	}
 }
 
@@ -276,10 +276,8 @@ func TestSaveJSON(t *testing.T) {
 		err = repo.Consume(tc.msgs)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 
-		err := queryDB(selectMsgs)
+		err, count := queryDB(selectMsgs)
 		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
-
-		//count := len(row)
-		//assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
+		assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
 	}
 }
