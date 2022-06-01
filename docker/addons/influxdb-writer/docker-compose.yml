@@ -28,7 +28,7 @@ services:
       DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
       DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
-      INFLUXDB_HTTP_FLUX_ENABLED: true
+      INFLUXDB_HTTP_FLUX_ENABLED: "true"
     networks:
       - docker_mainflux-base-net
     ports:
