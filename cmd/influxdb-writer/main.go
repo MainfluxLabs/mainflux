@@ -11,9 +11,8 @@ import (
 	"os"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/consumers"
 	"github.com/mainflux/mainflux/consumers/writers/api"
@@ -26,9 +25,8 @@ import (
 )
 
 const (
-	svcName      = "influxdb-writer"
-	stopWaitTime = 5 * time.Second
-
+	svcName       = "influxdb-writer"
+	stopWaitTime  = 5 * time.Second
 	defNatsURL    = "nats://localhost:4222"
 	defLogLevel   = "error"
 	defPort       = "8180"
@@ -72,8 +70,6 @@ type config struct {
 
 func main() {
 	cfg, repoCfg := loadConfigs()
-	//print(cfg.dbUrl)
-	println("Hello from influxdb Writer")
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -94,7 +90,6 @@ func main() {
 		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
 		os.Exit(1)
 	}
-	println("Connected to InfluxDB")
 	defer client.Close()
 
 	repo := influxdb.New(client, repoCfg)
