@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		testLog.Error(fmt.Sprintf("Could not start container: %s", err))
 	}
 
-	port = container.GetPort("8086/tcp")
+	port := container.GetPort("8086/tcp")
 	dbUrl := fmt.Sprintf("http://localhost:%s", port)
 
 	if err := pool.Retry(func() error {

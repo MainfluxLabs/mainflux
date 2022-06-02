@@ -4,6 +4,7 @@
 package influxdb
 
 import (
+	"context"
 	"math"
 	"time"
 
@@ -42,7 +43,7 @@ func New(client influxdb2.Client, config RepoConfig) consumers.Consumer {
 func (repo *influxRepo) Consume(message interface{}) error {
 
 	var err error
-	var pts []write.Point
+	var pts []*write.Point
 	switch m := message.(type) {
 	case json.Messages:
 		pts, err = repo.jsonPoints(m)
@@ -53,21 +54,17 @@ func (repo *influxRepo) Consume(message interface{}) error {
 		return err
 	}
 
-	writeAPI := repo.client.WriteAPI(repo.cfg.Org, repo.cfg.Bucket)
-	for _, point := range pts {
-		writeAPI.WritePoint(&point)
-	}
-
-	writeAPI.Flush()
-	return nil
+	writeAPI := repo.client.WriteAPIBlocking(repo.cfg.Org, repo.cfg.Bucket)
+	err = writeAPI.WritePoint(context.Background(), pts...)
+	return err
 }
 
-func (repo *influxRepo) senmlPoints(messages interface{}) ([]write.Point, error) {
+func (repo *influxRepo) senmlPoints(messages interface{}) ([]*write.Point, error) {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
 		return nil, errSaveMessage
 	}
-	var pts []write.Point
+	var pts []*write.Point
 	for _, msg := range msgs {
 		tgs, flds := senmlTags(msg), senmlFields(msg)
 
@@ -75,14 +72,14 @@ func (repo *influxRepo) senmlPoints(messages interface{}) ([]write.Point, error)
 		t := time.Unix(int64(sec), int64(dec*(1e9)))
 
 		pt := influxdb2.NewPoint(senmlPoints, tgs, flds, t)
-		pts = append(pts, *pt)
+		pts = append(pts, pt)
 	}
 
 	return pts, nil
 }
 
-func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]write.Point, error) {
-	var pts []write.Point
+func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*write.Point, error) {
+	var pts []*write.Point
 	for i, m := range msgs.Data {
 		t := time.Unix(0, m.Created+int64(i))
 
@@ -100,7 +97,7 @@ func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]write.Point, error) {
 		// At least one known field need to exist so that COUNT can be performed.
 		fields["protocol"] = m.Protocol
 		pt := influxdb2.NewPoint(msgs.Format, jsonTags(m), fields, t)
-		pts = append(pts, *pt)
+		pts = append(pts, pt)
 	}
 
 	return pts, nil
