@@ -10,7 +10,7 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 	"github.com/mainflux/mainflux/readers"
 
-	influxdata "github.com/influxdata/influxdb/client/v2"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	jsont "github.com/mainflux/mainflux/pkg/transformers/json"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
 )
@@ -30,11 +30,11 @@ var (
 
 type influxRepository struct {
 	database string
-	client   influxdata.Client
+	client   influxdb2.Client
 }
 
 // New returns new InfluxDB reader.
-func New(client influxdata.Client, database string) readers.MessageRepository {
+func New(client influxdb2.Client, database string) readers.MessageRepository {
 	return &influxRepository{
 		database,
 		client,
@@ -42,20 +42,23 @@ func New(client influxdata.Client, database string) readers.MessageRepository {
 }
 
 func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	// TODO: adapt readall to Flux
 	format := defMeasurement
 	if rpm.Format != "" {
 		format = rpm.Format
 	}
 
-	condition := fmtCondition(chanID, rpm)
+	queryAPI := client.QueryAPI(repoCfg.Org)
+	/* 	condition := fmtCondition(chanID, rpm)
 
-	cmd := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY time DESC LIMIT %d OFFSET %d`, format, condition, rpm.Limit, rpm.Offset)
-	q := influxdata.Query{
-		Command:  cmd,
-		Database: repo.database,
-	}
+	   	cmd := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY time DESC LIMIT %d OFFSET %d`, format, condition, rpm.Limit, rpm.Offset)
+	   	q := influxdata.Query{
+	   		Command:  cmd,
+	   		Database: repo.database,
+	   	}
 
-	resp, err := repo.client.Query(q)
+	   	resp, err := repo.client.Query(q) */
+
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -92,6 +95,7 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 }
 
 func (repo *influxRepository) count(measurement, condition string) (uint64, error) {
+	// TODO: Adapt Count to flux
 	cmd := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s`, measurement, condition)
 	q := influxdata.Query{
 		Command:  cmd,
@@ -133,6 +137,7 @@ func (repo *influxRepository) count(measurement, condition string) (uint64, erro
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {
+	// TODO: adapt filters to flux
 	condition := fmt.Sprintf(`channel='%s'`, chanID)
 
 	var query map[string]interface{}
