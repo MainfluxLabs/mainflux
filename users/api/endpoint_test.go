@@ -42,6 +42,7 @@ const (
 
 var (
 	user               = users.User{Email: validEmail, Password: validPass}
+	admin              = users.User{Email: adminEmail, Password: validPass}
 	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
 	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	malformedRes       = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
