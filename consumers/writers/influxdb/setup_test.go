@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/log"
 	dockertest "github.com/ory/dockertest/v3"
 )
 
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 	dbUrl := fmt.Sprintf("http://localhost:%s", port)
 
 	if err := pool.Retry(func() error {
-		client = influxdb2.NewClient(dbUrl, dbToken)
+		client = influxdb2.NewClientWithOptions(dbUrl, dbToken, influxdb2.DefaultOptions().SetLogLevel(log.DebugLevel))
 		_, err = client.Ping(context.Background())
 		return err
 	}); err != nil {

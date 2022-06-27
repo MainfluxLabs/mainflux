@@ -26,13 +26,20 @@ import (
 const valueFields = 5
 
 var (
-	testLog, _  = log.New(os.Stdout, log.Info.String())
-	streamsSize = 10
-	rowCount    = fmt.Sprintf(`from(bucket: "%s") 
-	|> range(start: -1h) 
+	testLog, _    = log.New(os.Stdout, log.Info.String())
+	streamsSize   = 250
+	rowCountSenml = fmt.Sprintf(`from(bucket: "%s") 
+	|> range(start: -1h, stop: 1h) 
 	|> filter(fn: (r) => r["_measurement"] == "messages")
 	|> filter(fn: (r) => r["_field"] == "dataValue" or r["_field"] == "stringValue" or r["_field"] == "value" or r["_field"] == "boolValue" or r["_field"] == "sum" )
 	|> group(columns: ["_measurement"])
+	|> count()
+	|> yield(name: "count")`, repoCfg.Bucket)
+
+	rowCountJson = fmt.Sprintf(`from(bucket: "%s")
+	|> range(start: -1h, stop: 1h)
+	|> filter(fn: (r) => r["_measurement"] == "some_json")
+	|> filter(fn: (r) => r["_field"] == "field_1" or r["_field"] == "field_2" or r["_field"] == "field_3" or r["_field"] == "field_4" or r["_field"] == "field_5/field_1" or r["_field"] == "field_5/field_2")
 	|> count()
 	|> yield(name: "count")`, repoCfg.Bucket)
 	subtopic = "topic"
@@ -164,8 +171,8 @@ func TestSaveSenml(t *testing.T) {
 
 		err = repo.Consume(msgs)
 		assert.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
-		time.Sleep(10 * time.Second)
-		count, err := queryDB(rowCount)
+		//time.Sleep(10 * time.Second)
+		count, err := queryDB(rowCountSenml)
 		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
 		assert.Equal(t, tc.expectedSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", tc.expectedSize, count))
 	}
@@ -182,7 +189,7 @@ func TestSaveJSON(t *testing.T) {
 	msg := json.Message{
 		Channel:   chid.String(),
 		Publisher: pubid.String(),
-		Created:   time.Now().Unix(),
+		Created:   time.Now().UnixNano(),
 		Subtopic:  "subtopic/format/some_json",
 		Protocol:  "mqtt",
 		Payload: map[string]interface{}{
@@ -222,7 +229,7 @@ func TestSaveJSON(t *testing.T) {
 		"publisher": "value",
 	}
 
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 	msgs := json.Messages{
 		Format: "some_json",
 	}
@@ -262,11 +269,17 @@ func TestSaveJSON(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
+
+		err := resetBucket()
+		require.Nil(t, err, fmt.Sprintf("Cleaning data from InfluxDB expected to succeed: %s.\n", err))
+
 		err = repo.Consume(tc.msgs)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
-		//time.Sleep(10 * time.Second)
-		count, err := queryDB(rowCount)
-		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
-		assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
+
+		if err == nil {
+			count, err := queryDB(rowCountJson)
+			assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
+			assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
+		}
 	}
 }
