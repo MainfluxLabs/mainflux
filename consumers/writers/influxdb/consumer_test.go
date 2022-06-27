@@ -171,7 +171,6 @@ func TestSaveSenml(t *testing.T) {
 
 		err = repo.Consume(msgs)
 		assert.Nil(t, err, fmt.Sprintf("Save operation expected to succeed: %s.\n", err))
-		//time.Sleep(10 * time.Second)
 		count, err := queryDB(rowCountSenml)
 		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
 		assert.Equal(t, tc.expectedSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", tc.expectedSize, count))
@@ -269,17 +268,15 @@ func TestSaveJSON(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-
 		err := resetBucket()
 		require.Nil(t, err, fmt.Sprintf("Cleaning data from InfluxDB expected to succeed: %s.\n", err))
 
-		err = repo.Consume(tc.msgs)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
-
-		if err == nil {
+		if err = repo.Consume(tc.msgs); err == nil {
 			count, err := queryDB(rowCountJson)
 			assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
 			assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
+		} else {
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 		}
 	}
 }
