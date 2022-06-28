@@ -101,11 +101,11 @@ func queryDB(fluxQuery string) (int, error) {
 		return rowCount, err
 	}
 	if result.Next() {
-		if value, ok := result.Record().Value().(int64); !ok {
+		value, ok := result.Record().Value().(int64)
+		if !ok {
 			return rowCount, errUnexpectedType
-		} else {
-			rowCount = int(value)
 		}
+		rowCount = int(value)
 	}
 	if result.Err() != nil {
 		return rowCount, result.Err()
@@ -273,7 +273,6 @@ func TestSaveJSON(t *testing.T) {
 		if err = repo.Consume(tc.msgs); err != nil {
 			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 			return
-
 		}
 		count, err := queryDB(rowCountJson)
 		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
