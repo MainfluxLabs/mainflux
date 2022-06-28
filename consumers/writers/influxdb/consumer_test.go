@@ -13,14 +13,13 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 
 	"github.com/gofrs/uuid"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	writer "github.com/mainflux/mainflux/consumers/writers/influxdb"
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/transformers/json"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 const valueFields = 5
