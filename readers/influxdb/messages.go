@@ -1,9 +1,9 @@
 package influxdb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 	"unicode"
 
@@ -28,112 +28,115 @@ var (
 	errResultTime = errors.New("invalid result time")
 )
 
+type RepoConfig struct {
+	Bucket string
+	Org    string
+}
 type influxRepository struct {
-	database string
-	client   influxdb2.Client
+	cfg    RepoConfig
+	client influxdb2.Client
 }
 
 // New returns new InfluxDB reader.
-func New(client influxdb2.Client, database string) readers.MessageRepository {
+func New(client influxdb2.Client, repoCfg RepoConfig) readers.MessageRepository {
 	return &influxRepository{
-		database,
+		repoCfg,
 		client,
 	}
 }
 
 func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	// TODO: adapt readall to Flux
+
 	format := defMeasurement
 	if rpm.Format != "" {
 		format = rpm.Format
 	}
 
-	queryAPI := client.QueryAPI(repoCfg.Org)
-	/* 	condition := fmtCondition(chanID, rpm)
+	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
 
-	   	cmd := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY time DESC LIMIT %d OFFSET %d`, format, condition, rpm.Limit, rpm.Offset)
-	   	q := influxdata.Query{
-	   		Command:  cmd,
-	   		Database: repo.database,
-	   	}
-
-	   	resp, err := repo.client.Query(q) */
-
+	//TODO: correct contition queries as flux queries
+	condition := fmtCondition(chanID, rpm)
+	//TODO: correct this base query as flux query
+	cmd := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY time DESC LIMIT %d OFFSET %d`, format, condition, rpm.Limit, rpm.Offset)
+	//TODO: parse response values into messages.
+	_, err := queryAPI.Query(context.Background(), cmd)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
-	if resp.Error() != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Error())
-	}
+	//if resp.Error() != nil {
+	//	return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Error())
+	//}
 
-	if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
-		return readers.MessagesPage{}, nil
-	}
+	//if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+	//	return readers.MessagesPage{}, nil
+	//}
 
-	var messages []readers.Message
-	result := resp.Results[0].Series[0]
-	for _, v := range result.Values {
-		msg, err := parseMessage(format, result.Columns, v)
-		if err != nil {
-			return readers.MessagesPage{}, err
+	//var messages []readers.Message
+	//result := resp.Results[0].Series[0]
+	/*
+		for _, v := range result.Values {
+			msg, err := parseMessage(format, result.Columns, v)
+			if err != nil {
+				return readers.MessagesPage{}, err
+			}
+			messages = append(messages, msg)
 		}
-		messages = append(messages, msg)
-	}
 
-	total, err := repo.count(format, condition)
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
+		total, err := repo.count(format, condition)
+		if err != nil {
+			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
 
-	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Total:        total,
-		Messages:     messages,
-	}
+		page := readers.MessagesPage{
+			PageMetadata: rpm,
+			Total:        total,
+			Messages:     messages,
+		}
 
-	return page, nil
+		return page, nil
+	*/
+	return readers.MessagesPage{}, nil
 }
 
 func (repo *influxRepository) count(measurement, condition string) (uint64, error) {
-	// TODO: Adapt Count to flux
+	// TODO: Adapt this base query to flux
 	cmd := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s`, measurement, condition)
-	q := influxdata.Query{
-		Command:  cmd,
-		Database: repo.database,
-	}
+	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
+	_, err := queryAPI.Query(context.Background(), cmd)
 
-	resp, err := repo.client.Query(q)
 	if err != nil {
 		return 0, err
 	}
-	if resp.Error() != nil {
-		return 0, resp.Error()
-	}
+	//TODO: Adapt response of influxdb2 and get rowcount
+	// if resp.Error() != nil {
+	// 	return 0, resp.Error()
+	// }
 
-	if len(resp.Results) == 0 ||
-		len(resp.Results[0].Series) == 0 ||
-		len(resp.Results[0].Series[0].Values) == 0 {
-		return 0, nil
-	}
+	// if len(resp.Results) == 0 ||
+	// 	len(resp.Results[0].Series) == 0 ||
+	// 	len(resp.Results[0].Series[0].Values) == 0 {
+	// 	return 0, nil
+	// }
 
-	countIndex := 0
-	for i, col := range resp.Results[0].Series[0].Columns {
-		if col == countCol {
-			countIndex = i
-			break
-		}
-	}
+	// countIndex := 0
+	// for i, col := range resp.Results[0].Series[0].Columns {
+	// 	if col == countCol {
+	// 		countIndex = i
+	// 		break
+	// 	}
+	// }
 
-	result := resp.Results[0].Series[0].Values[0]
-	if len(result) < countIndex+1 {
-		return 0, nil
-	}
+	// result := resp.Results[0].Series[0].Values[0]
+	// if len(result) < countIndex+1 {
+	// 	return 0, nil
+	// }
 
-	count, ok := result[countIndex].(json.Number)
-	if !ok {
-		return 0, nil
-	}
-	return strconv.ParseUint(count.String(), 10, 64)
+	// count, ok := result[countIndex].(json.Number)
+	// if !ok {
+	// 	return 0, nil
+	// }
+	// return strconv.ParseUint(count.String(), 10, 64)
+	return 10, nil
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {

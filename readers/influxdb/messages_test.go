@@ -41,12 +41,19 @@ var (
 	vd          = "dataValue"
 	sum float64 = 42
 
-	client     influxdb2.Client
+	client  influxdb2.Client
+	repoCfg = struct {
+		Bucket string
+		Org    string
+	}{
+		Bucket: dbBucket,
+		Org:    dbOrg,
+	}
 	idProvider = uuid.New()
 )
 
 func TestReadAll(t *testing.T) {
-	writer := iwriter.New(client, testDB)
+	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -110,7 +117,7 @@ func TestReadAll(t *testing.T) {
 	err = writer.Consume(messages)
 	require.Nil(t, err, fmt.Sprintf("failed to store message to InfluxDB: %s", err))
 
-	reader := ireader.New(client, testDB)
+	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
 		chanID   string
@@ -382,7 +389,7 @@ func TestReadAll(t *testing.T) {
 }
 
 func TestReadJSON(t *testing.T) {
-	writer := iwriter.New(client, testDB)
+	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -442,7 +449,7 @@ func TestReadJSON(t *testing.T) {
 	for i := 0; i < msgsNum; i += 2 {
 		httpMsgs = append(httpMsgs, msgs2[i])
 	}
-	reader := ireader.New(client, testDB)
+	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
 		chanID   string
