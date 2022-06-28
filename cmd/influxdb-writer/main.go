@@ -19,15 +19,16 @@ import (
 	"github.com/mainflux/mainflux/consumers/writers/influxdb"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	svcName       = "influxdb-writer"
-	stopWaitTime  = 5 * time.Second
-	defNatsURL    = "nats://localhost:4222"
+	svcName      = "influxdb-writer"
+	stopWaitTime = 5 * time.Second
+
+	defBrokerURL  = "nats://localhost:4222"
 	defLogLevel   = "error"
 	defPort       = "8180"
 	defDBHost     = "localhost"
@@ -41,6 +42,7 @@ const (
 	defDBToken  = "mainflux-token"
 
 	envNatsURL    = "MF_NATS_URL"
+	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
 	envPort       = "MF_INFLUX_WRITER_PORT"
 	envDBHost     = "MF_INFLUXDB_HOST"
@@ -54,7 +56,7 @@ const (
 )
 
 type config struct {
-	natsURL    string
+	brokerURL  string
 	logLevel   string
 	port       string
 	dbHost     string
@@ -78,9 +80,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -127,7 +129,7 @@ func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
 
 func loadConfigs() (config, influxdb.RepoConfig) {
 	cfg := config{
-		natsURL:    mainflux.Env(envNatsURL, defNatsURL),
+		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		port:       mainflux.Env(envPort, defPort),
 		dbHost:     mainflux.Env(envDBHost, defDBHost),

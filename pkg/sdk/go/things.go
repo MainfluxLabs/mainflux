@@ -14,8 +14,19 @@ import (
 	"github.com/mainflux/mainflux/pkg/errors"
 )
 
-const thingsEndpoint = "things"
-const connectEndpoint = "connect"
+const (
+	thingsEndpoint   = "things"
+	connectEndpoint  = "connect"
+	identifyEndpoint = "identify"
+)
+
+type identifyThingReq struct {
+	Token string `json:"token,omitempty"`
+}
+
+type identifyThingResp struct {
+	ID string `json:"id,omitempty"`
+}
 
 func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
 	data, err := json.Marshal(t)
@@ -80,9 +91,11 @@ func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
 	return ctr.Things, nil
 }
 
-func (sdk mfSDK) Things(token string, offset, limit uint64, name string) (ThingsPage, error) {
-	endpoint := fmt.Sprintf("%s?offset=%d&limit=%d&name=%s", thingsEndpoint, offset, limit, name)
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, endpoint)
+func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
+	url, err := sdk.withQueryParams(sdk.thingsURL, thingsEndpoint, pm)
+	if err != nil {
+		return ThingsPage{}, err
+	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -216,6 +229,42 @@ func (sdk mfSDK) DeleteThing(id, token string) error {
 	}
 
 	return nil
+}
+
+func (sdk mfSDK) IdentifyThing(key string) (string, error) {
+	idReq := identifyThingReq{Token: key}
+	data, err := json.Marshal(idReq)
+	if err != nil {
+		return "", err
+	}
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, identifyEndpoint)
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := sdk.sendRequest(req, "", string(CTJSON))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var i identifyThingResp
+	if err := json.Unmarshal(body, &i); err != nil {
+		return "", err
+	}
+
+	return i.ID, err
 }
 
 func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {

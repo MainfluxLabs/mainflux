@@ -34,6 +34,9 @@ var (
 	ErrFailedBootstrap          = errors.New("failed to create bootstrap config")
 	ErrFailedBootstrapValidate  = errors.New("failed to validate bootstrap config creation")
 	ErrGatewayUpdate            = errors.New("failed to updated gateway metadata")
+
+	limit  uint = 10
+	offset uint = 0
 )
 
 var _ Service = (*provisionService)(nil)
@@ -89,7 +92,14 @@ func New(cfg Config, sdk SDK.SDK, logger logger.Logger) Service {
 
 // Mapping retrieves current configuration
 func (ps *provisionService) Mapping(token string) (map[string]interface{}, error) {
-	if _, err := ps.sdk.User(token); err != nil {
+	userFilter := SDK.PageMetadata{
+		Email:    "",
+		Offset:   uint64(offset),
+		Limit:    uint64(limit),
+		Metadata: make(map[string]interface{}),
+	}
+
+	if _, err := ps.sdk.Users(token, userFilter); err != nil {
 		return map[string]interface{}{}, errors.Wrap(ErrUnauthorized, err)
 	}
 	return ps.conf.Bootstrap.Content, nil
@@ -353,7 +363,7 @@ func (ps *provisionService) recover(e *error, ths *[]SDK.Thing, chs *[]SDK.Chann
 	if errors.Contains(err, ErrFailedBootstrapValidate) || errors.Contains(err, ErrFailedCertCreation) {
 		clean(ps, things, channels, token)
 		for _, th := range things {
-			if needsBootstrap(th) == true {
+			if needsBootstrap(th) {
 				ps.errLog(ps.sdk.RemoveBootstrap(token, th.ID))
 			}
 
@@ -364,7 +374,7 @@ func (ps *provisionService) recover(e *error, ths *[]SDK.Thing, chs *[]SDK.Chann
 	if errors.Contains(err, ErrFailedBootstrapValidate) || errors.Contains(err, ErrFailedCertCreation) {
 		clean(ps, things, channels, token)
 		for _, th := range things {
-			if needsBootstrap(th) == true {
+			if needsBootstrap(th) {
 				bs, err := ps.sdk.ViewBootstrap(token, th.ID)
 				ps.errLog(errors.Wrap(ErrFailedBootstrapRetrieval, err))
 				ps.errLog(ps.sdk.RemoveBootstrap(token, bs.MFThing))
@@ -378,7 +388,7 @@ func (ps *provisionService) recover(e *error, ths *[]SDK.Thing, chs *[]SDK.Chann
 			if ps.conf.Bootstrap.X509Provision && needsBootstrap(th) {
 				ps.errLog(ps.sdk.RemoveCert(th.ID, token))
 			}
-			if needsBootstrap(th) == true {
+			if needsBootstrap(th) {
 				bs, err := ps.sdk.ViewBootstrap(token, th.ID)
 				ps.errLog(errors.Wrap(ErrFailedBootstrapRetrieval, err))
 				ps.errLog(ps.sdk.RemoveBootstrap(token, bs.MFThing))
