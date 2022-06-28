@@ -62,10 +62,11 @@ func deleteBucket() error {
 	if err != nil {
 		return err
 	}
-	err = bucketsAPI.DeleteBucket(context.Background(), bucket)
-	if err != nil {
+
+	if err = bucketsAPI.DeleteBucket(context.Background(), bucket); err != nil {
 		return err
 	}
+
 	return nil
 }
 func createBucket() error {
@@ -75,10 +76,10 @@ func createBucket() error {
 		return err
 	}
 	bucketsAPI := client.BucketsAPI()
-	_, err = bucketsAPI.CreateBucketWithName(context.Background(), org, repoCfg.Bucket)
-	if err != nil {
+	if _, err = bucketsAPI.CreateBucketWithName(context.Background(), org, repoCfg.Bucket); err != nil {
 		return err
 	}
+
 	return nil
 }
 func resetBucket() error {
@@ -88,6 +89,7 @@ func resetBucket() error {
 	if err := createBucket(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -110,6 +112,7 @@ func queryDB(fluxQuery string) (int, error) {
 	if result.Err() != nil {
 		return rowCount, result.Err()
 	}
+
 	return rowCount, nil
 }
 
