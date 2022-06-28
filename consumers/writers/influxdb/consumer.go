@@ -14,7 +14,8 @@ import (
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	write "github.com/influxdata/influxdb-client-go/v2/api/write"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	influxdb2write "github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
 const senmlPoints = "messages"
@@ -43,7 +44,7 @@ func New(client influxdb2.Client, config RepoConfig) consumers.Consumer {
 func (repo *influxRepo) Consume(message interface{}) error {
 
 	var err error
-	var pts []*write.Point
+	var pts []*influxdb2write.Point
 	switch m := message.(type) {
 	case json.Messages:
 		pts, err = repo.jsonPoints(m)
@@ -59,7 +60,7 @@ func (repo *influxRepo) Consume(message interface{}) error {
 	return err
 }
 
-func (repo *influxRepo) senmlPoints(messages interface{}) ([]*write.Point, error) {
+func (repo *influxRepo) senmlPoints(messages interface{}) ([]*influxdb2write.Point, error) {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
 		return nil, errSaveMessage
@@ -78,7 +79,7 @@ func (repo *influxRepo) senmlPoints(messages interface{}) ([]*write.Point, error
 	return pts, nil
 }
 
-func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*write.Point, error) {
+func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*influxdb2write.Point, error) {
 	var pts []*write.Point
 	for i, m := range msgs.Data {
 		t := time.Unix(0, m.Created+int64(i))
