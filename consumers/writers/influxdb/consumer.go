@@ -42,7 +42,6 @@ func New(client influxdb2.Client, config RepoConfig) consumers.Consumer {
 }
 
 func (repo *influxRepo) Consume(message interface{}) error {
-
 	var err error
 	var pts []*influxdb2write.Point
 	switch m := message.(type) {
@@ -54,7 +53,6 @@ func (repo *influxRepo) Consume(message interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	writeAPI := repo.client.WriteAPIBlocking(repo.cfg.Org, repo.cfg.Bucket)
 	err = writeAPI.WritePoint(context.Background(), pts...)
 	return err

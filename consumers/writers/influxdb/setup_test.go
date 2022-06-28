@@ -16,8 +16,8 @@ import (
 const (
 	dbHost        = "localhost"
 	dbToken       = "test-token"
-	dbOrg         = "test"
-	dbAdmin       = "test"
+	dbOrg         = "test-org"
+	dbAdmin       = "test-admin"
 	dbPass        = "test-password"
 	dbBucket      = "test-bucket"
 	dbInitMode    = "setup"
