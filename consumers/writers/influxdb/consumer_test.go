@@ -273,12 +273,13 @@ func TestSaveJSON(t *testing.T) {
 		err := resetBucket()
 		require.Nil(t, err, fmt.Sprintf("Cleaning data from InfluxDB expected to succeed: %s.\n", err))
 
-		if err = repo.Consume(tc.msgs); err != nil {
+		switch err = repo.Consume(tc.msgs); err {
+		case nil:
+			count, err := queryDB(rowCountJson)
+			assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
+			assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
+		default:
 			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
-			return
 		}
-		count, err := queryDB(rowCountJson)
-		assert.Nil(t, err, fmt.Sprintf("Querying InfluxDB to retrieve data expected to succeed: %s.\n", err))
-		assert.Equal(t, streamsSize, count, fmt.Sprintf("Expected to have %d messages saved, found %d instead.\n", streamsSize, count))
 	}
 }
