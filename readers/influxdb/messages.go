@@ -185,12 +185,14 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
 		case "from":
 			from := int64(value.(float64) * 1e9)
-			if value, ok := query["to"]; ok {
+
+			switch value, ok := query["to"]; ok {
+			case true:
 				to := int64(value.(float64) * 1e9)
 				timeRange = fmt.Sprintf(`|> range(start: time(v:%d), stop: time(v:%d)`, from, to)
+			default:
+				timeRange = fmt.Sprintf(`|> range(start: time(v:%d)`, from)
 			}
-
-			timeRange = fmt.Sprintf(`|> range(start: time(v:%d)`, from)
 		}
 	}
 	return sb.String(), timeRange
