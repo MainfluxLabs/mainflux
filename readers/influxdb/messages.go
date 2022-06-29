@@ -66,21 +66,30 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
 	sb.WriteString(`|> yield(name: "sort")`)
+	query := sb.String()
 	//TODO: parse response values into messages.
-	_, err := queryAPI.Query(context.Background(), sb.String())
+	resp, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
-	//if resp.Error() != nil {
-	//	return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Error())
-	//}
-
-	//if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
-	//	return readers.MessagesPage{}, nil
-	//}
-
-	//var messages []readers.Message
+	/*
+		if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+			return readers.MessagesPage{}, nil
+		}
+	*/
+	var messages []readers.Message
 	//result := resp.Results[0].Series[0]
+	for resp.Next() {
+		// Notice when group key has changed
+		if resp.TableChanged() {
+			fmt.Printf("table: %s\n", resp.TableMetadata().Columns())
+		}
+		// Access data
+		fmt.Printf("value: %v\n", resp.Record().Value())
+	}
+	if resp.Err() != nil {
+		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Err())
+	}
 	/*
 		for _, v := range result.Values {
 			msg, err := parseMessage(format, result.Columns, v)
@@ -89,21 +98,23 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 			}
 			messages = append(messages, msg)
 		}
+	*/
 
+	/*
 		total, err := repo.count(format, condition)
 		if err != nil {
 			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 		}
-
-		page := readers.MessagesPage{
-			PageMetadata: rpm,
-			Total:        total,
-			Messages:     messages,
-		}
-
-		return page, nil
 	*/
-	return readers.MessagesPage{}, nil
+
+	page := readers.MessagesPage{
+		PageMetadata: rpm,
+		Total:        12, //total,
+		Messages:     messages,
+	}
+
+	return page, nil
+
 }
 
 func (repo *influxRepository) count(measurement, condition string) (uint64, error) {
@@ -164,6 +175,23 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 		return sb.String(), timeRange
 	}
 
+	//range(start:...) is a must for FluxQL syntax
+	from := `start: time(v:0)`
+	if value, ok := query["from"]; ok {
+		fromValue := int64(value.(float64) * 1e9)
+		from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
+	}
+	//range(...,stop:) is an option for FluxQL syntax
+	to := ""
+	if value, ok := query["to"]; ok {
+		toValue := int64(value.(float64) * 1e9)
+		to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
+	}
+	// timeRange returned seperately because
+	// in FluxQL time range must be at the
+	// beginning of the query.
+	timeRange = fmt.Sprintf(`|> range(%s %s)`, from, to)
+
 	for name, value := range query {
 		switch name {
 		case
@@ -188,22 +216,6 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 		}
 	}
 
-	//range(...,stop:) is an option for FluxQL syntax
-	to := ""
-	if value, ok := query["to"]; ok {
-		toValue := int64(value.(float64) * 1e9)
-		to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
-	}
-	//range(start:...) is a must for FluxQL syntax
-	from := `start: time(v:0)`
-	if value, ok := query["from"]; ok {
-		fromValue := int64(value.(float64) * 1e9)
-		from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
-	}
-	// timeRange returned seperately because
-	// in FluxQL time range must be at the
-	// beginning of the query.
-	timeRange = fmt.Sprintf(`|> range(%s %s)`, from, to)
 	return sb.String(), timeRange
 }
 
