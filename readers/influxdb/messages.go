@@ -55,7 +55,7 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 
 	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
 	var sb strings.Builder
-	//TODO: correct contition queries as flux queries
+
 	condition, timeRange := fmtCondition(chanID, rpm)
 
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
@@ -186,22 +186,23 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
 
 		}
-		//range(start: ... ) is a must for FluxQL syntax
-		timeRangeTo := ""
+
+		//range(...,stop:) is an option for FluxQL syntax
+		to := ""
 		if value, ok := query["to"]; ok {
-			to := int64(value.(float64) * 1e9)
-			timeRangeTo = fmt.Sprintf(`, stop: time(v:%d)`, to)
+			toValue := int64(value.(float64) * 1e9)
+			to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
 		}
-
-		switch value, ok := query["from"]; ok {
-		case true:
-			from := int64(value.(float64) * 1e9)
-			timeRange = fmt.Sprintf(`|> range(start: time(v:%d) %s)`, from, timeRangeTo)
-		default:
-			from := 0
-			timeRange = fmt.Sprintf(`|> range(start: time(v:%d) %s)`, from, timeRangeTo)
+		//range(start:...) is a must for FluxQL syntax
+		from := `start: time(v:0)`
+		if value, ok := query["from"]; ok {
+			fromValue := int64(value.(float64) * 1e9)
+			from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
 		}
-
+		// timeRange returned seperately because
+		// in FluxQL time range must be at the
+		// beginning of the query.
+		timeRange = fmt.Sprintf(`|> range(%s %s)`, from, to)
 	}
 	return sb.String(), timeRange
 }
