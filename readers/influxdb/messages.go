@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 	"unicode"
 
@@ -53,13 +54,19 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	}
 
 	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
-
+	var sb strings.Builder
 	//TODO: correct contition queries as flux queries
-	condition := fmtCondition(chanID, rpm)
-	//TODO: correct this base query as flux query
-	cmd := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY time DESC LIMIT %d OFFSET %d`, format, condition, rpm.Limit, rpm.Offset)
+	condition, timeRange := fmtCondition(chanID, rpm)
+
+	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
+	sb.WriteString(timeRange)
+	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
+	sb.WriteString(condition)
+	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
+	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
+	sb.WriteString(`|> yield(name: "sort")`)
 	//TODO: parse response values into messages.
-	_, err := queryAPI.Query(context.Background(), cmd)
+	_, err := queryAPI.Query(context.Background(), sb.String())
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -139,18 +146,21 @@ func (repo *influxRepository) count(measurement, condition string) (uint64, erro
 	return 10, nil
 }
 
-func fmtCondition(chanID string, rpm readers.PageMetadata) string {
+func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	// TODO: adapt filters to flux
-	condition := fmt.Sprintf(`channel='%s'`, chanID)
+	var timeRange string
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s")`, chanID))
 
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
-		return condition
+		return sb.String(), timeRange
 	}
 
 	if err := json.Unmarshal(meta, &query); err != nil {
-		return condition
+		return sb.String(), timeRange
 	}
 
 	for name, value := range query {
@@ -159,27 +169,31 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) string {
 			"channel",
 			"subtopic",
 			"publisher",
-			"name",
-			"protocol":
-			condition = fmt.Sprintf(`%s AND "%s"='%s'`, condition, name, value)
+			"name":
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["%s"] == "%s"`, name, value))
+		case "protocol":
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "protocol" and r._value == "%s")`, value))
 		case "v":
-			comparator := readers.ParseValueComparator(query)
-			condition = fmt.Sprintf(`%s AND value %s %f`, condition, comparator, value)
+			//comparator := readers.ParseValueComparator(query)
+			//TODO: adapt comparator. flux comparators are different
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "value" and r._value == "%s")`, value))
 		case "vb":
-			condition = fmt.Sprintf(`%s AND boolValue = %t`, condition, value)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "boolValue" and r._value == "%s")`, value))
 		case "vs":
-			condition = fmt.Sprintf(`%s AND stringValue = '%s'`, condition, value)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "stringValue" and r._value == "%s")`, value))
 		case "vd":
-			condition = fmt.Sprintf(`%s AND dataValue = '%s'`, condition, value)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
 		case "from":
-			iVal := int64(value.(float64) * 1e9)
-			condition = fmt.Sprintf(`%s AND time >= %d`, condition, iVal)
-		case "to":
-			iVal := int64(value.(float64) * 1e9)
-			condition = fmt.Sprintf(`%s AND time < %d`, condition, iVal)
+			from := int64(value.(float64) * 1e9)
+			if value, ok := query["to"]; ok {
+				to := int64(value.(float64) * 1e9)
+				timeRange = fmt.Sprintf(`|> range(start: time(v:%d), stop: time(v:%d)`, from, to)
+			}
+
+			timeRange = fmt.Sprintf(`|> range(start: time(v:%d)`, from)
 		}
 	}
-	return condition
+	return sb.String(), timeRange
 }
 
 func parseMessage(measurement string, names []string, fields []interface{}) (interface{}, error) {
