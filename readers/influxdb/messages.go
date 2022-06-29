@@ -186,24 +186,24 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
 
 		}
-
-		//range(...,stop:) is an option for FluxQL syntax
-		to := ""
-		if value, ok := query["to"]; ok {
-			toValue := int64(value.(float64) * 1e9)
-			to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
-		}
-		//range(start:...) is a must for FluxQL syntax
-		from := `start: time(v:0)`
-		if value, ok := query["from"]; ok {
-			fromValue := int64(value.(float64) * 1e9)
-			from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
-		}
-		// timeRange returned seperately because
-		// in FluxQL time range must be at the
-		// beginning of the query.
-		timeRange = fmt.Sprintf(`|> range(%s %s)`, from, to)
 	}
+
+	//range(...,stop:) is an option for FluxQL syntax
+	to := ""
+	if value, ok := query["to"]; ok {
+		toValue := int64(value.(float64) * 1e9)
+		to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
+	}
+	//range(start:...) is a must for FluxQL syntax
+	from := `start: time(v:0)`
+	if value, ok := query["from"]; ok {
+		fromValue := int64(value.(float64) * 1e9)
+		from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
+	}
+	// timeRange returned seperately because
+	// in FluxQL time range must be at the
+	// beginning of the query.
+	timeRange = fmt.Sprintf(`|> range(%s %s)`, from, to)
 	return sb.String(), timeRange
 }
 
