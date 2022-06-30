@@ -212,7 +212,6 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "stringValue" and r._value == "%s")`, value))
 		case "vd":
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
-
 		}
 	}
 
