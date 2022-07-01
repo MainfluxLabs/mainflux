@@ -69,7 +69,6 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
 	sb.WriteString(`|> yield(name: "sort")`)
 	query := sb.String()
-	//TODO: parse response values into messages.
 	resp, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
@@ -93,15 +92,6 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	if resp.Err() != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Err())
 	}
-	/*
-		for _, v := range result.Values {
-			msg, err := parseMessage(format, result.Columns, v)
-			if err != nil {
-				return readers.MessagesPage{}, err
-			}
-			messages = append(messages, msg)
-		}
-	*/
 
 	/*
 		total, err := repo.count(format, condition)
