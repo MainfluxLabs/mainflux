@@ -13,6 +13,7 @@ import (
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	debug "github.com/influxdata/influxdb-client-go/v2/log"
 	"github.com/mainflux/mainflux"
 	authapi "github.com/mainflux/mainflux/auth/api/grpc"
 	"github.com/mainflux/mainflux/logger"
@@ -39,6 +40,9 @@ const (
 	defDBPort            = "8086"
 	defDBUser            = "mainflux"
 	defDBPass            = "mainflux"
+	defDBBucket          = "mainflux-bucket"
+	defDBOrg             = "mainflux"
+	defDBToken           = "mainflux-token"
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defServerCert        = ""
@@ -56,6 +60,9 @@ const (
 	envDBPort            = "MF_INFLUXDB_PORT"
 	envDBUser            = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass            = "MF_INFLUXDB_ADMIN_PASSWORD"
+	envDBBucket          = "MF_INFLUXDB_BUCKET"
+	envDBOrg             = "MF_INFLUXDB_ORG"
+	envDBToken           = "MF_INFLUXDB_TOKEN"
 	envClientTLS         = "MF_INFLUX_READER_CLIENT_TLS"
 	envCACerts           = "MF_INFLUX_READER_CA_CERTS"
 	envServerCert        = "MF_INFLUX_READER_SERVER_CERT"
@@ -168,7 +175,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 }
 
 func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
-	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
+	client := influxdb2.NewClientWithOptions(cfg.dbUrl, cfg.dbToken, influxdb2.DefaultOptions().SetLogLevel(debug.DebugLevel))
 	_, err := client.Ping(context.Background())
 	return client, err
 }
@@ -197,6 +204,9 @@ func loadConfigs() (config, influxdb.RepoConfig) {
 		dbPort:            mainflux.Env(envDBPort, defDBPort),
 		dbUser:            mainflux.Env(envDBUser, defDBUser),
 		dbPass:            mainflux.Env(envDBPass, defDBPass),
+		dbBucket:          mainflux.Env(envDBBucket, defDBBucket),
+		dbOrg:             mainflux.Env(envDBOrg, defDBOrg),
+		dbToken:           mainflux.Env(envDBToken, defDBToken),
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		serverCert:        mainflux.Env(envServerCert, defServerCert),

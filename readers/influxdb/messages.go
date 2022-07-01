@@ -57,13 +57,15 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	var sb strings.Builder
 
 	condition, timeRange := fmtCondition(chanID, rpm)
-
+	sb.WriteString(`import "influxdata/influxdb/v1"`)
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
-	// FluxQL syntax requires timeRange filter in this position.
+	// FluxQL syntax requires timeRange filter in this position, do not change.
 	sb.WriteString(timeRange)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
 	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
+	// This is required to get messsage structure. Otherwise query returns fields in seperate rows.
+	sb.WriteString(`|> v1.fieldsAsCols()`)
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
 	sb.WriteString(`|> yield(name: "sort")`)
 	query := sb.String()
@@ -78,14 +80,15 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 		}
 	*/
 	var messages []readers.Message
-	//result := resp.Results[0].Series[0]
+
+	var valueMap map[string]interface{}
 	for resp.Next() {
-		// Notice when group key has changed
-		if resp.TableChanged() {
-			fmt.Printf("table: %s\n", resp.TableMetadata().Columns())
+		valueMap = resp.Record().Values()
+		msg, err := parseMessage(format, valueMap)
+		if err != nil {
+			return readers.MessagesPage{}, err
 		}
-		// Access data
-		fmt.Printf("value: %v\n", resp.Record().Value())
+		messages = append(messages, msg)
 	}
 	if resp.Err() != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Err())
@@ -218,41 +221,38 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	return sb.String(), timeRange
 }
 
-func parseMessage(measurement string, names []string, fields []interface{}) (interface{}, error) {
+func parseMessage(measurement string, valueMap map[string]interface{}) (interface{}, error) {
 	switch measurement {
 	case defMeasurement:
-		return parseSenml(names, fields)
+		return parseSenml(valueMap)
 	default:
-		return parseJSON(names, fields)
+		return parseJSON(valueMap)
 	}
 }
 
-func underscore(names []string) {
-	for i, name := range names {
-		var buff []rune
-		idx := 0
-		for i, c := range name {
-			if unicode.IsUpper(c) {
-				buff = append(buff, []rune(name[idx:i])...)
-				buff = append(buff, []rune{'_', unicode.ToLower(c)}...)
-				idx = i + 1
-				continue
-			}
+func underscore(name string) string {
+
+	var buff []rune
+	idx := 0
+	for i, c := range name {
+		if unicode.IsUpper(c) {
+			buff = append(buff, []rune(name[idx:i])...)
+			buff = append(buff, []rune{'_', unicode.ToLower(c)}...)
+			idx = i + 1
+			continue
 		}
-		buff = append(buff, []rune(name[idx:])...)
-		names[i] = string(buff)
 	}
+	buff = append(buff, []rune(name[idx:])...)
+	return string(buff)
 }
 
-func parseSenml(names []string, fields []interface{}) (interface{}, error) {
+func parseSenml(valueMap map[string]interface{}) (interface{}, error) {
 	m := make(map[string]interface{})
-	if len(names) > len(fields) {
-		return nil, errResultSet
-	}
-	underscore(names)
-	for i, name := range names {
+	//underscore(names)
+	for name, field := range valueMap {
+		name = underscore(name)
 		if name == "time" {
-			val, ok := fields[i].(string)
+			val, ok := field.(string)
 			if !ok {
 				return nil, errResultTime
 			}
@@ -264,7 +264,7 @@ func parseSenml(names []string, fields []interface{}) (interface{}, error) {
 			m[name] = v
 			continue
 		}
-		m[name] = fields[i]
+		m[name] = field
 	}
 	data, err := json.Marshal(m)
 	if err != nil {
@@ -277,15 +277,15 @@ func parseSenml(names []string, fields []interface{}) (interface{}, error) {
 	return msg, nil
 }
 
-func parseJSON(names []string, fields []interface{}) (interface{}, error) {
+func parseJSON(valueMap map[string]interface{}) (interface{}, error) {
 	ret := make(map[string]interface{})
 	pld := make(map[string]interface{})
-	for i, n := range names {
-		switch n {
+	for name, field := range valueMap {
+		switch name {
 		case "channel", "created", "subtopic", "publisher", "protocol", "time":
-			ret[n] = fields[i]
+			ret[name] = field
 		default:
-			v := fields[i]
+			v := field
 			if val, ok := v.(json.Number); ok {
 				var err error
 				v, err = val.Float64()
@@ -293,7 +293,7 @@ func parseJSON(names []string, fields []interface{}) (interface{}, error) {
 					return nil, err
 				}
 			}
-			pld[n] = v
+			pld[name] = v
 		}
 	}
 	ret["payload"] = jsont.ParseFlat(pld)

@@ -36,10 +36,9 @@ const (
 	defDBUser     = "mainflux"
 	defDBPass     = "mainflux"
 	defConfigPath = "/config.toml"
-
-	defDBBucket = "mainflux-bucket"
-	defDBOrg    = "mainflux"
-	defDBToken  = "mainflux-token"
+	defDBBucket   = "mainflux-bucket"
+	defDBOrg      = "mainflux"
+	defDBToken    = "mainflux-token"
 
 	envNatsURL    = "MF_NATS_URL"
 	envBrokerURL  = "MF_BROKER_URL"
