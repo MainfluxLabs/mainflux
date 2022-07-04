@@ -61,11 +61,11 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
 	// FluxQL syntax requires timeRange filter in this position, do not change.
 	sb.WriteString(timeRange)
+	// This is required to get messsage structure. Otherwise query returns fields in seperate rows.
+	sb.WriteString(`|> v1.fieldsAsCols()`)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
 	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
-	// This is required to get messsage structure. Otherwise query returns fields in seperate rows.
-	sb.WriteString(`|> v1.fieldsAsCols()`)
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
 	sb.WriteString(`|> yield(name: "sort")`)
 	query := sb.String()
@@ -93,16 +93,18 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, resp.Err())
 	}
 
+	fmt.Println("Query: ", query)
 	/*
 		total, err := repo.count(format, condition)
 		if err != nil {
 			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 		}
 	*/
+	total := uint64(len(messages))
 
 	page := readers.MessagesPage{
 		PageMetadata: rpm,
-		Total:        12, //total,
+		Total:        total, //total,
 		Messages:     messages,
 	}
 
@@ -156,7 +158,7 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	var timeRange string
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s")`, chanID))
+	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s" )`, chanID))
 
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
@@ -172,13 +174,13 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	from := `start: time(v:0)`
 	if value, ok := query["from"]; ok {
 		fromValue := int64(value.(float64) * 1e9)
-		from = fmt.Sprintf(`start: time(v:%d)`, fromValue)
+		from = fmt.Sprintf(`start: time(v: %d )`, fromValue)
 	}
 	//range(...,stop:) is an option for FluxQL syntax
 	to := ""
 	if value, ok := query["to"]; ok {
 		toValue := int64(value.(float64) * 1e9)
-		to = fmt.Sprintf(`, stop: time(v:%d)`, toValue)
+		to = fmt.Sprintf(`, stop: time(v: %d )`, toValue)
 	}
 	// timeRange returned seperately because
 	// in FluxQL time range must be at the
@@ -191,20 +193,26 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			"channel",
 			"subtopic",
 			"publisher",
-			"name":
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["%s"] == "%s"`, name, value))
-		case "protocol":
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "protocol" and r._value == "%s")`, value))
+			"name",
+			"protocol":
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.%s == "%s" )`, name, value))
 		case "v":
-			//comparator := readers.ParseValueComparator(query)
-			//TODO: adapt comparator. flux comparators are different
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "value" and r._value == "%s")`, value))
+			comparator := readers.ParseValueComparator(query)
+			//flux eq comparator is different
+			if comparator == "=" {
+				comparator = "=="
+			}
+			sb.WriteString(`|> filter(fn: (r) => exists r.value)`)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.value %s %s)`, comparator, value))
 		case "vb":
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "boolValue" and r._value == "%s")`, value))
+			sb.WriteString(`|> filter(fn: (r) => exists r.boolValue)`)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.boolValue == "%s")`, value))
 		case "vs":
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "stringValue" and r._value == "%s")`, value))
+			sb.WriteString(`|> filter(fn: (r) => exists r.stringValue)`)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.stringValue == "%s")`, value))
 		case "vd":
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._field == "dataValue" and r._value == "%s")`, value))
+			sb.WriteString(`|> filter(fn: (r) => exists r.dataValue)`)
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.dataValue == "%s")`, value))
 		}
 	}
 
@@ -238,17 +246,14 @@ func underscore(name string) string {
 
 func parseSenml(valueMap map[string]interface{}) (interface{}, error) {
 	m := make(map[string]interface{})
-	//underscore(names)
+
 	for name, field := range valueMap {
 		name = underscore(name)
-		if name == "time" {
-			val, ok := field.(string)
+		if name == "_time" {
+			name = "time"
+			t, ok := field.(time.Time)
 			if !ok {
 				return nil, errResultTime
-			}
-			t, err := time.Parse(time.RFC3339Nano, val)
-			if err != nil {
-				return nil, err
 			}
 			v := float64(t.UnixNano()) / 1e9
 			m[name] = v
