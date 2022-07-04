@@ -203,7 +203,7 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 				comparator = "=="
 			}
 			sb.WriteString(`|> filter(fn: (r) => exists r.value)`)
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.value %s %s)`, comparator, value))
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.value %s %v)`, comparator, value))
 		case "vb":
 			sb.WriteString(`|> filter(fn: (r) => exists r.boolValue)`)
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.boolValue == "%s")`, value))
@@ -229,7 +229,6 @@ func parseMessage(measurement string, valueMap map[string]interface{}) (interfac
 }
 
 func underscore(name string) string {
-
 	var buff []rune
 	idx := 0
 	for i, c := range name {
@@ -245,31 +244,31 @@ func underscore(name string) string {
 }
 
 func parseSenml(valueMap map[string]interface{}) (interface{}, error) {
-	m := make(map[string]interface{})
+	msg := make(map[string]interface{})
 
-	for name, field := range valueMap {
-		name = underscore(name)
-		if name == "_time" {
-			name = "time"
-			t, ok := field.(time.Time)
+	for k, v := range valueMap {
+		k = underscore(k)
+		if k == "_time" {
+			k = "time"
+			t, ok := v.(time.Time)
 			if !ok {
 				return nil, errResultTime
 			}
 			v := float64(t.UnixNano()) / 1e9
-			m[name] = v
+			msg[k] = v
 			continue
 		}
-		m[name] = field
+		msg[k] = v
 	}
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
-	msg := senml.Message{}
-	if err := json.Unmarshal(data, &msg); err != nil {
+	senmlMsg := senml.Message{}
+	if err := json.Unmarshal(data, &senmlMsg); err != nil {
 		return nil, err
 	}
-	return msg, nil
+	return senmlMsg, nil
 }
 
 func parseJSON(valueMap map[string]interface{}) (interface{}, error) {
