@@ -12,12 +12,12 @@ import (
 
 	"github.com/mainflux/mainflux/pkg/errors"
 
-	"github.com/gofrs/uuid"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	writer "github.com/mainflux/mainflux/consumers/writers/influxdb"
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/transformers/json"
 	"github.com/mainflux/mainflux/pkg/transformers/senml"
+	"github.com/mainflux/mainflux/pkg/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,6 +54,8 @@ var (
 		Org:    dbOrg,
 	}
 	errUnexpectedType = errors.New("Unexpected response type")
+
+	idProvider = uuid.New()
 )
 
 func deleteBucket() error {
@@ -142,10 +144,14 @@ func TestSaveSenml(t *testing.T) {
 		now := time.Now().UnixNano()
 		var msgs []senml.Message
 
+		chanID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		pubID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		for i := 0; i < tc.msgsNum; i++ {
 			msg := senml.Message{
-				Channel:    "45",
-				Publisher:  "2580",
+				Channel:    chanID,
+				Publisher:  pubID,
 				Protocol:   "http",
 				Name:       "test name",
 				Unit:       "km",
@@ -182,14 +188,14 @@ func TestSaveSenml(t *testing.T) {
 func TestSaveJSON(t *testing.T) {
 	repo := writer.New(client, repoCfg)
 
-	chid, err := uuid.NewV4()
+	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pubid, err := uuid.NewV4()
+	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	msg := json.Message{
-		Channel:   chid.String(),
-		Publisher: pubid.String(),
+		Channel:   chanID,
+		Publisher: pubID,
 		Created:   time.Now().UnixNano(),
 		Subtopic:  "subtopic/format/some_json",
 		Protocol:  "mqtt",
