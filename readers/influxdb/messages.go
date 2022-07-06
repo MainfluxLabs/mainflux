@@ -308,8 +308,19 @@ func parseJSON(valueMap map[string]interface{}) (interface{}, error) {
 	pld := make(map[string]interface{})
 	for name, field := range valueMap {
 		switch name {
-		case "channel", "created", "subtopic", "publisher", "protocol", "time":
+		case "channel", "created", "subtopic", "publisher", "protocol":
 			ret[name] = field
+		case "_time":
+			name = "time"
+			t, ok := field.(time.Time)
+			if !ok {
+				return nil, errResultTime
+			}
+			v := float64(t.UnixNano()) / 1e9
+			ret[name] = v
+			continue
+		case "table", "_start", "_stop", "result", "_measurement":
+			break
 		default:
 			v := field
 			if val, ok := v.(json.Number); ok {
