@@ -2,7 +2,6 @@ package influxdb_test
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -79,14 +78,12 @@ func TestReadAll(t *testing.T) {
 	stringMsgs := []senml.Message{}
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
-	rand.Seed(time.Now().UnixNano())
-	to := msgsNum
-	now := float64(rand.Intn(to) + offset)
+	now := time.Now().UnixNano()
 
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = now - float64(i)
+		msg.Time = float64(now)/float64(1e9) - float64(i)
 
 		count := i % valueFields
 		switch count {

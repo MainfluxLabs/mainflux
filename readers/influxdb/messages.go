@@ -63,6 +63,7 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(timeRange)
 	// This is required to get messsage structure. Otherwise query returns fields in seperate rows.
 	sb.WriteString(`|> v1.fieldsAsCols()`)
+	sb.WriteString(`|> group()`)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
