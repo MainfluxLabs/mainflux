@@ -65,8 +65,8 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(`|> v1.fieldsAsCols()`)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
-	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
+	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
 	sb.WriteString(`|> yield(name: "sort")`)
 	query := sb.String()
 	resp, err := queryAPI.Query(context.Background(), query)
@@ -94,13 +94,11 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	}
 
 	fmt.Println("Query: ", query)
-	/*
-		total, err := repo.count(format, condition)
-		if err != nil {
-			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-		}
-	*/
-	total := uint64(len(messages))
+
+	total, err := repo.count(format, condition, timeRange)
+	if err != nil {
+		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
 
 	page := readers.MessagesPage{
 		PageMetadata: rpm,
@@ -112,14 +110,47 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 
 }
 
-func (repo *influxRepository) count(measurement, condition string) (uint64, error) {
-	// TODO: Adapt this base query to flux
-	cmd := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s`, measurement, condition)
+func (repo *influxRepository) count(measurement, condition string, timeRange string) (uint64, error) {
+
+	var sb strings.Builder
+	sb.WriteString(`import "influxdata/influxdb/v1"`)
+	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
+	sb.WriteString(timeRange)
+	sb.WriteString(`|> v1.fieldsAsCols()`)
+	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, measurement))
+	sb.WriteString(condition)
+	sb.WriteString(`|> group()`)
+	sb.WriteString(`|> count(column:"_measurement")`)
+	sb.WriteString(`|> yield(name: "count")`)
+
+	cmd := sb.String()
 	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
-	_, err := queryAPI.Query(context.Background(), cmd)
+	resp, err := queryAPI.Query(context.Background(), cmd)
 
 	if err != nil {
 		return 0, err
+	}
+
+	switch resp.Next() {
+	case true:
+		valueMap := resp.Record().Values()
+		var val interface{}
+		var ok bool
+		var result int64
+		// if no rows, count 0
+		if val, ok = valueMap["_measurement"]; !ok {
+			return 0, nil
+		}
+
+		if result, ok = val.(int64); ok {
+			count := uint64(result)
+			return count, nil
+		}
+
+		return 0, errors.ErrViewEntity
+	default:
+		// same as no rows.
+		return 0, nil
 	}
 	//TODO: Adapt response of influxdb2 and get rowcount
 	// if resp.Error() != nil {
@@ -206,7 +237,7 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.value %s %v)`, comparator, value))
 		case "vb":
 			sb.WriteString(`|> filter(fn: (r) => exists r.boolValue)`)
-			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.boolValue == "%s")`, value))
+			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.boolValue == %v)`, value))
 		case "vs":
 			sb.WriteString(`|> filter(fn: (r) => exists r.stringValue)`)
 			sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r.stringValue == "%s")`, value))
