@@ -372,7 +372,7 @@ func TestReadAll(t *testing.T) {
 			},
 			page: readers.MessagesPage{
 				Total:    5,
-				Messages: fromSenml(messages[1:6]),
+				Messages: fromSenml(messages[0:5]),
 			},
 		},
 	}
