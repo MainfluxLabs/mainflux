@@ -167,7 +167,7 @@ func TestSaveSenml(t *testing.T) {
 				msg.Sum = &sum
 			}
 
-			msg.Time = float64(now)/float64(1e9) + float64(i)
+			msg.Time = float64(now)/float64(1e9) - float64(i)
 			msgs = append(msgs, msg)
 		}
 
@@ -242,7 +242,7 @@ func TestSaveJSON(t *testing.T) {
 	}
 
 	for i := 0; i < streamsSize; i++ {
-		msg.Created = now + int64(i)
+		msg.Created = now
 		msgs.Data = append(msgs.Data, msg)
 		invalidKeySepMsgs.Data = append(invalidKeySepMsgs.Data, invalidKeySepMsg)
 		invalidKeyNameMsgs.Data = append(invalidKeyNameMsgs.Data, invalidKeyNameMsg)
