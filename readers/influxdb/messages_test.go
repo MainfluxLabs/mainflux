@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	testDB      = "test"
 	subtopic    = "topic"
 	msgsNum     = 100
 	limit       = 10

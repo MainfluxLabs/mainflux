@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	dbHost        = "localhost"
 	dbToken       = "test-token"
 	dbOrg         = "test-org"
 	dbAdmin       = "test-admin"

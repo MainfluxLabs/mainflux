@@ -40,7 +40,6 @@ const (
 	defDBOrg      = "mainflux"
 	defDBToken    = "mainflux-token"
 
-	envNatsURL    = "MF_NATS_URL"
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
 	envPort       = "MF_INFLUX_WRITER_PORT"

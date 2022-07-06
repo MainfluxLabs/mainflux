@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	countCol = "count_protocol"
 	// Measurement for SenML messages
 	defMeasurement = "messages"
 )
@@ -25,7 +24,7 @@ const (
 var _ readers.MessageRepository = (*influxRepository)(nil)
 
 var (
-	errResultSet  = errors.New("invalid result set")
+	errCountValue = errors.New("error while getting row count")
 	errResultTime = errors.New("invalid result time")
 )
 
@@ -148,41 +147,12 @@ func (repo *influxRepository) count(measurement, condition string, timeRange str
 			return count, nil
 		}
 
-		return 0, errors.ErrViewEntity
+		return 0, errCountValue
 	default:
 		// same as no rows.
 		return 0, nil
 	}
-	//TODO: Adapt response of influxdb2 and get rowcount
-	// if resp.Error() != nil {
-	// 	return 0, resp.Error()
-	// }
 
-	// if len(resp.Results) == 0 ||
-	// 	len(resp.Results[0].Series) == 0 ||
-	// 	len(resp.Results[0].Series[0].Values) == 0 {
-	// 	return 0, nil
-	// }
-
-	// countIndex := 0
-	// for i, col := range resp.Results[0].Series[0].Columns {
-	// 	if col == countCol {
-	// 		countIndex = i
-	// 		break
-	// 	}
-	// }
-
-	// result := resp.Results[0].Series[0].Values[0]
-	// if len(result) < countIndex+1 {
-	// 	return 0, nil
-	// }
-
-	// count, ok := result[countIndex].(json.Number)
-	// if !ok {
-	// 	return 0, nil
-	// }
-	// return strconv.ParseUint(count.String(), 10, 64)
-	return 10, nil
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
