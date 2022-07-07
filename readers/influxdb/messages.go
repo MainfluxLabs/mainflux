@@ -24,7 +24,6 @@ const (
 var _ readers.MessageRepository = (*influxRepository)(nil)
 
 var (
-	errCountValue = errors.New("error while getting row count")
 	errResultTime = errors.New("invalid result time")
 )
 
@@ -134,20 +133,13 @@ func (repo *influxRepository) count(measurement, condition string, timeRange str
 	switch resp.Next() {
 	case true:
 		valueMap := resp.Record().Values()
-		var val interface{}
-		var ok bool
-		var result int64
-		// if no rows, count 0
-		if val, ok = valueMap["_measurement"]; !ok {
+
+		val, ok := valueMap["_measurement"].(uint64)
+		if !ok {
 			return 0, nil
 		}
+		return val, nil
 
-		if result, ok = val.(int64); ok {
-			count := uint64(result)
-			return count, nil
-		}
-
-		return 0, errCountValue
 	default:
 		// same as no rows.
 		return 0, nil
