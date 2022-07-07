@@ -175,13 +175,13 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	//range(start:...) is a must for FluxQL syntax
 	from := `start: time(v:0)`
 	if value, ok := query["from"]; ok {
-		fromValue := int64(value.(float64) * 1e9)
+		fromValue := int64(value.(float64)*1e9) - 1
 		from = fmt.Sprintf(`start: time(v: %d )`, fromValue)
 	}
 	//range(...,stop:) is an option for FluxQL syntax
 	to := ""
 	if value, ok := query["to"]; ok {
-		toValue := int64(value.(float64) * 1e9)
+		toValue := int64(value.(float64)*1e9) + 1
 		to = fmt.Sprintf(`, stop: time(v: %d )`, toValue)
 	}
 	// timeRange returned seperately because
