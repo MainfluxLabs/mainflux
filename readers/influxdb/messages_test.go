@@ -106,7 +106,8 @@ func TestReadAll(t *testing.T) {
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
-
+		print("Message Time: ")
+		println(msg.Time)
 		messages = append(messages, msg)
 	}
 
@@ -341,20 +342,20 @@ func TestReadAll(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  uint64(len(messages[0:offset])),
+				Limit:  uint64(len(messages[0 : offset+1])),
 				From:   messages[offset].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(len(messages[0:offset])),
-				Messages: fromSenml(messages[0:offset]),
+				Total:    uint64(len(messages[0 : offset+1])),
+				Messages: fromSenml(messages[0 : offset+1]),
 			},
 		},
 		"read message with to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  uint64(len(messages[offset:])),
-				To:     messages[offset].Time,
+				Limit:  uint64(len(messages[offset-1:])),
+				To:     messages[offset-1].Time,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(messages[offset:])),
@@ -371,7 +372,7 @@ func TestReadAll(t *testing.T) {
 			},
 			page: readers.MessagesPage{
 				Total:    5,
-				Messages: fromSenml(messages[0:5]),
+				Messages: fromSenml(messages[0+1 : 5+1]),
 			},
 		},
 	}
