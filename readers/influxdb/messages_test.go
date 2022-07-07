@@ -59,7 +59,7 @@ func TestReadAll(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	//wrongID, err := idProvider.ID()
+	wrongID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
@@ -106,8 +106,6 @@ func TestReadAll(t *testing.T) {
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
-		print("Message Time: ")
-		println(msg.Time)
 		messages = append(messages, msg)
 	}
 
