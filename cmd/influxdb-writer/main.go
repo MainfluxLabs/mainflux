@@ -85,7 +85,7 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	client, err := connectToInfluxdb(cfg)
+	client, err := connectToInfluxDB(cfg)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
 		os.Exit(1)
@@ -119,7 +119,7 @@ func main() {
 	}
 }
 
-func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
+func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
 	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
 	_, err := client.Ping(context.Background())
 	return client, err
