@@ -122,7 +122,7 @@ func main() {
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.usersAuthTimeout)
 
-	client, err := connectToInfluxdb(cfg)
+	client, err := connectToInfluxDB(cfg)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
 		os.Exit(1)
@@ -174,7 +174,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func connectToInfluxdb(cfg config) (influxdb2.Client, error) {
+func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
 	client := influxdb2.NewClientWithOptions(cfg.dbUrl, cfg.dbToken, influxdb2.DefaultOptions().SetLogLevel(debug.DebugLevel))
 	_, err := client.Ping(context.Background())
 	return client, err
