@@ -80,7 +80,7 @@ func (repo *influxRepo) senmlPoints(messages interface{}) ([]*influxdb2write.Poi
 func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*influxdb2write.Point, error) {
 	var pts []*write.Point
 	for i, m := range msgs.Data {
-		t := time.Unix(0, m.Created-int64(i))
+		t := time.Unix(0, m.Created+int64(i))
 
 		flat, err := json.Flatten(m.Payload)
 		if err != nil {
