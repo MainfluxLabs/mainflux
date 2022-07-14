@@ -24,7 +24,6 @@ const (
 var _ readers.MessageRepository = (*influxRepository)(nil)
 
 var (
-	errCountValue = errors.New("error while getting row count")
 	errResultTime = errors.New("invalid result time")
 )
 
