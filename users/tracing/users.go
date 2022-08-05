@@ -8,7 +8,7 @@ package tracing
 import (
 	"context"
 
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

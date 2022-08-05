@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/go-zoo/bone"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/auth"
-	"github.com/mainflux/mainflux/auth/api/http/groups"
-	"github.com/mainflux/mainflux/auth/api/http/keys"
-	"github.com/mainflux/mainflux/auth/api/http/policies"
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/groups"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/keys"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/policies"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

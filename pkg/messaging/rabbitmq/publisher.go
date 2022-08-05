@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -59,7 +59,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "application/octet-stream",
-			AppId:       "mainflux-publisher",
+			AppId:       "mainfluxlabs-publisher",
 			Body:        data,
 		})
 

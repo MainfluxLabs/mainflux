@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
-	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 )
 
 const (

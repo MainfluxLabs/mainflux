@@ -15,13 +15,13 @@ networks:
     external: true
 
 volumes:
-  mainflux-mongodb-db-volume:
-  mainflux-mongodb-configdb-volume:
+  mainfluxlabs-mongodb-db-volume:
+  mainfluxlabs-mongodb-configdb-volume:
 
 services:
   mongodb:
     image: mongo:4.4.6
-    container_name: mainflux-mongodb
+    container_name: mainfluxlabs-mongodb
     restart: on-failure
     environment:
       MONGO_INITDB_DATABASE: ${MF_MONGO_WRITER_DB}
@@ -30,12 +30,12 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-mongodb-db-volume:/data/db
-      - mainflux-mongodb-configdb-volume:/data/configdb
+      - mainfluxlabs-mongodb-db-volume:/data/db
+      - mainfluxlabs-mongodb-configdb-volume:/data/configdb
 
   mongodb-writer:
-    image: mainflux/mongodb-writer:${MF_RELEASE_TAG}
-    container_name: mainflux-mongodb-writer
+    image: mainfluxlabs/mongodb-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-mongodb-writer
     depends_on:
       - mongodb
     restart: on-failure

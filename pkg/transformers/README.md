@@ -6,5 +6,5 @@ Mainflux [SenML transformer](transformer) is an example of Transformer service f
 
 Mainflux [writers](writers) are using a standalone SenML transformer to preprocess messages before storing them.
 
-[transformers]: https://github.com/mainflux/mainflux/tree/master/transformers/senml
-[writers]: https://github.com/mainflux/mainflux/tree/master/writers
+[transformers]: https://github.com/MainfluxLabs/mainflux/tree/master/transformers/senml
+[writers]: https://github.com/MainfluxLabs/mainflux/tree/master/writers

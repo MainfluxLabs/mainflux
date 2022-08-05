@@ -13,7 +13,7 @@ readDotEnv() {
 }
 
 vault() {
-    docker exec -it mainflux-vault vault "$@"
+    docker exec -it mainfluxlabs-vault vault "$@"
 }
 
 vaultEnablePKI() {
@@ -58,7 +58,7 @@ vaultGenerateIntermediateCSR() {
 
 vaultSignIntermediateCSR() {
     echo "Sign intermediate CSR"
-    docker cp data/${MF_VAULT_CA_NAME}_int.csr mainflux-vault:/vault/${MF_VAULT_CA_NAME}_int.csr
+    docker cp data/${MF_VAULT_CA_NAME}_int.csr mainfluxlabs-vault:/vault/${MF_VAULT_CA_NAME}_int.csr
     vault write -format=json ${MF_VAULT_PKI_PATH}/root/sign-intermediate \
         csr=@/vault/${MF_VAULT_CA_NAME}_int.csr \
         | tee >(jq -r .data.certificate >data/${MF_VAULT_CA_NAME}_int.crt) \
@@ -67,7 +67,7 @@ vaultSignIntermediateCSR() {
 
 vaultInjectIntermediateCertificate() {
     echo "Inject Intermediate Certificate"
-    docker cp data/${MF_VAULT_CA_NAME}_int.crt mainflux-vault:/vault/${MF_VAULT_CA_NAME}_int.crt
+    docker cp data/${MF_VAULT_CA_NAME}_int.crt mainfluxlabs-vault:/vault/${MF_VAULT_CA_NAME}_int.crt
     vault write ${MF_VAULT_PKI_INT_PATH}/intermediate/set-signed certificate=@/vault/${MF_VAULT_CA_NAME}_int.crt
 }
 
@@ -102,7 +102,7 @@ vaultGenerateServerCertificate() {
 }
 
 vaultCleanupFiles() {
-    docker exec mainflux-vault sh -c 'rm -rf /vault/*.{crt,csr}'
+    docker exec mainfluxlabs-vault sh -c 'rm -rf /vault/*.{crt,csr}'
 }
 
 if ! command -v jq &> /dev/null
@@ -132,8 +132,8 @@ vaultCleanupFiles
 
 echo "Copying certificate files"
 
-cp -v data/${MF_VAULT_CA_CN}.crt     ${MAINFLUX_DIR}/docker/ssl/certs/mainflux-server.crt
-cp -v data/${MF_VAULT_CA_CN}.key     ${MAINFLUX_DIR}/docker/ssl/certs/mainflux-server.key
+cp -v data/${MF_VAULT_CA_CN}.crt     ${MAINFLUX_DIR}/docker/ssl/certs/mainfluxlabs-server.crt
+cp -v data/${MF_VAULT_CA_CN}.key     ${MAINFLUX_DIR}/docker/ssl/certs/mainfluxlabs-server.key
 cp -v data/${MF_VAULT_CA_NAME}_int.key        ${MAINFLUX_DIR}/docker/ssl/certs/ca.key
 cp -v data/${MF_VAULT_CA_NAME}_int.crt        ${MAINFLUX_DIR}/docker/ssl/certs/ca.crt
 cp -v data/${MF_VAULT_CA_NAME}_int_bundle.crt ${MAINFLUX_DIR}/docker/ssl/bundle.pem

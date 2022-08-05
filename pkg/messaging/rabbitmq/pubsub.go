@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -18,7 +18,7 @@ const (
 	chansPrefix = "channels"
 	// SubjectAllChannels represents subject to subscribe for all the channels.
 	SubjectAllChannels = "channels.>"
-	exchangeName       = "mainflux-exchange"
+	exchangeName       = "mainfluxlabs-exchange"
 )
 
 var (

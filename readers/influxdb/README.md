@@ -29,13 +29,13 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`influxdb-reader`](https://github.com/mainflux/mainflux/blob/master/docker/addons/influxdb-reader/docker-compose.yml#L17-L40) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`influxdb-reader`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/influxdb-reader/docker-compose.yml#L17-L40) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -59,7 +59,7 @@ MF_INFLUX_READER_SERVER_KEY=[Path to server pem key file] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AURH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-influxdb
+$GOBIN/mainfluxlabs-influxdb
 
 ```
 

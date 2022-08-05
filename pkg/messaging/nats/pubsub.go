@@ -10,8 +10,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	broker "github.com/nats-io/nats.go"
 )
 

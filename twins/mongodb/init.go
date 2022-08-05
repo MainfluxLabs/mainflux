@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

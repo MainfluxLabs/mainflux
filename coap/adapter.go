@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 const chansPrefix = "channels"

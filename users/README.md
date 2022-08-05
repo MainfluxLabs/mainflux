@@ -45,14 +45,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`users`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in 
+The service itself is distributed as Docker container. Check the [`users`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -85,7 +85,7 @@ MF_EMAIL_FROM_ADDRESS=[Email from address] \
 MF_EMAIL_FROM_NAME=[Email from name] \
 MF_EMAIL_TEMPLATE=[Email template file] \
 MF_TOKEN_RESET_ENDPOINT=[Password reset token endpoint] \
-$GOBIN/mainflux-users
+$GOBIN/mainfluxlabs-users
 ```
 
 If `MF_EMAIL_TEMPLATE` doesn't point to any file service will function but password reset functionality will not work.

@@ -13,12 +13,12 @@ networks:
     external: true
 
 volumes:
-  mainflux-smtp-notifier-volume:
+  mainfluxlabs-smtp-notifier-volume:
 
 services:
   smtp-notifier-db:
     image: postgres:10.2-alpine
-    container_name: mainflux-smtp-notifier-db
+    container_name: mainfluxlabs-smtp-notifier-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_SMTP_NOTIFIER_DB_USER}
@@ -27,11 +27,11 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-smtp-notifier-volume:/var/lib/postgresql/datab
+      - mainfluxlabs-smtp-notifier-volume:/var/lib/postgresql/datab
 
   smtp-notifier:
-    image: mainflux/smtp-notifier:latest
-    container_name: mainflux-smtp-notifier
+    image: mainfluxlabs/smtp-notifier:latest
+    container_name: mainfluxlabs-smtp-notifier
     depends_on:
       - smtp-notifier-db
     restart: on-failure

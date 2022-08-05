@@ -10,12 +10,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mainflux/mainflux/twins"
-	"github.com/mainflux/senml"
+	"github.com/MainfluxLabs/mainflux/twins"
+	"github.com/MainfluxLabs/senml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mainflux/mainflux/twins/mocks"
+	"github.com/MainfluxLabs/mainflux/twins/mocks"
 )
 
 const numRecs = 100

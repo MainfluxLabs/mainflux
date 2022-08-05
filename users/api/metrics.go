@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 var _ users.Service = (*metricsMiddleware)(nil)

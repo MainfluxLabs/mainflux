@@ -510,7 +510,7 @@ git log --pretty=oneline --abbrev-commit
 
 
 ### Summary
-https://github.com/mainflux/mainflux/milestone/10?closed=1
+https://github.com/MainfluxLabs/mainflux/milestone/10?closed=1
 
 ## 0.8.0 - 20. MAR 2019.
 ### Features
@@ -576,7 +576,7 @@ https://github.com/mainflux/mainflux/milestone/10?closed=1
 - NOISSUE - Fix normalizer exposed port in docker-compose (#548)
 
 ### Summary
-https://github.com/mainflux/mainflux/milestone/9?closed=1
+https://github.com/MainfluxLabs/mainflux/milestone/9?closed=1
 
 
 ## 0.7.0 - 08. DEC 2018.
@@ -613,7 +613,7 @@ https://github.com/mainflux/mainflux/milestone/9?closed=1
 - MF-407 - Values of zero are being omitted  (#434)
 
 ### Summary
-https://github.com/mainflux/mainflux/milestone/8?closed=1
+https://github.com/MainfluxLabs/mainflux/milestone/8?closed=1
 
 
 ## 0.6.0 - 26. OCT 2018.
@@ -653,7 +653,7 @@ https://github.com/mainflux/mainflux/milestone/8?closed=1
 - Vendor correct gRPC version (#340)
 
 ### Summary
-https://github.com/mainflux/mainflux/milestone/6?closed=1
+https://github.com/MainfluxLabs/mainflux/milestone/6?closed=1
 
 
 ## 0.4.0 - 01. JUN 2018.

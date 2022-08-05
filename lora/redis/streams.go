@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/lora"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/lora"
 )
 
 const (

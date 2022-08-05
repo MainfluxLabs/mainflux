@@ -21,14 +21,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`http-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L245-L262) service section in 
+The service itself is distributed as Docker container. Check the [`http-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L245-L262) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -46,7 +46,7 @@ MF_HTTP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-http
+$GOBIN/mainfluxlabs-http
 ```
 
 Setting `MF_HTTP_ADAPTER_CA_CERTS` expects a file in PEM format of trusted CAs. This will enable TLS against the Things gRPC endpoint trusting only those CAs that are provided.

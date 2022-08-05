@@ -14,17 +14,17 @@ import (
 
 	mqttPaho "github.com/eclipse/paho.mqtt.golang"
 	r "github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/lora"
-	"github.com/mainflux/mainflux/lora/api"
-	"github.com/mainflux/mainflux/lora/mqtt"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/lora"
+	"github.com/MainfluxLabs/mainflux/lora/api"
+	"github.com/MainfluxLabs/mainflux/lora/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"golang.org/x/sync/errgroup"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/mainflux/mainflux/lora/redis"
+	"github.com/MainfluxLabs/mainflux/lora/redis"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 

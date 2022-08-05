@@ -4,8 +4,8 @@
 package api
 
 import (
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 const (

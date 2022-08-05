@@ -12,8 +12,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/lib/pq" // required for DB access
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (

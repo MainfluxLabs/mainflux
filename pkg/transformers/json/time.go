@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var errUnsupportedFormat = errors.New("unsupported time format")

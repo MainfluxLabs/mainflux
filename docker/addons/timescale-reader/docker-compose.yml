@@ -15,8 +15,8 @@ networks:
 
 services:
   timescale-reader:
-    image: mainflux/timescale-reader:${MF_RELEASE_TAG}
-    container_name: mainflux-timescale-reader
+    image: mainfluxlabs/timescale-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-reader
     restart: on-failure
     environment:
       MF_TIMESCALE_READER_LOG_LEVEL: ${MF_TIMESCALE_READER_LOG_LEVEL}

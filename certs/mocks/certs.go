@@ -7,8 +7,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/mainflux/mainflux/certs"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var _ certs.Repository = (*certsRepoMock)(nil)

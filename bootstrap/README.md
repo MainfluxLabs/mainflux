@@ -68,14 +68,14 @@ The service is configured using the environment variables presented in the follo
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`boostrap`](https://github.com/mainflux/mainflux/blob/master/docker/addons/bootstrap/docker-compose.yml#L32-L56) service section in 
+The service itself is distributed as Docker container. Check the [`boostrap`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/bootstrap/docker-compose.yml#L32-L56) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -107,7 +107,7 @@ MF_SDK_THINGS_PREFIX=[SDK prefix for Things service] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_AUTH_GRPC_URL=[Auth service gRPC URL] \
 MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds] \
-$GOBIN/mainflux-bootstrap
+$GOBIN/mainfluxlabs-bootstrap
 ```
 
 Setting `MF_BOOTSTRAP_CA_CERTS` expects a file in PEM format of trusted CAs. This will enable TLS against the Users gRPC endpoint trusting only those CAs that are provided.

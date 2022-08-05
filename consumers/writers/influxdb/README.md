@@ -22,13 +22,13 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`influxdb-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/influxdb-writer/docker-compose.yml#L35-L58) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`influxdb-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/influxdb-writer/docker-compose.yml#L35-L58) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -48,7 +48,7 @@ MF_INFLUXDB_PORT=[InfluxDB database port] \
 MF_INFLUXDB_ADMIN_USER=[InfluxDB admin user] \
 MF_INFLUXDB_ADMIN_PASSWORD=[InfluxDB admin password] \
 MF_INFLUX_WRITER_CONFIG_PATH=[Config file path with Message broker subjects list, payload type and content-type] \
-$GOBIN/mainflux-influxdb
+$GOBIN/mainfluxlabs-influxdb
 ```
 
 ### Using docker-compose

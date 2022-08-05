@@ -13,22 +13,22 @@ networks:
     external: true
 
 volumes:
-  mainflux-opcua-adapter-volume:
-  mainflux-opcua-redis-volume:
+  mainfluxlabs-opcua-adapter-volume:
+  mainfluxlabs-opcua-redis-volume:
 
 services:
   opcua-redis:
     image: redis:5.0-alpine
-    container_name: mainflux-opcua-redis
+    container_name: mainfluxlabs-opcua-redis
     restart: on-failure
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-opcua-redis-volume:/data
+      - mainfluxlabs-opcua-redis-volume:/data
 
   opcua-adapter:
-    image: mainflux/opcua:${MF_RELEASE_TAG}
-    container_name: mainflux-opcua
+    image: mainfluxlabs/opcua:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-opcua
     restart: on-failure
     environment:
       MF_OPCUA_ADAPTER_HTTP_PORT: ${MF_OPCUA_ADAPTER_HTTP_PORT}
@@ -50,4 +50,4 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-opcua-adapter-volume:/store
+      - mainfluxlabs-opcua-adapter-volume:/store

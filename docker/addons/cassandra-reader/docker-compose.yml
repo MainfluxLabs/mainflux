@@ -14,8 +14,8 @@ networks:
 
 services:
   cassandra-reader:
-    image: mainflux/cassandra-reader:${MF_RELEASE_TAG}
-    container_name: mainflux-cassandra-reader
+    image: mainfluxlabs/cassandra-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-cassandra-reader
     restart: on-failure
     environment:
       MF_CASSANDRA_READER_LOG_LEVEL: ${MF_CASSANDRA_READER_LOG_LEVEL}

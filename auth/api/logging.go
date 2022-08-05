@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mainflux/mainflux/auth"
-	log "github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/auth"
+	log "github.com/MainfluxLabs/mainflux/logger"
 )
 
 var _ auth.Service = (*loggingMiddleware)(nil)
