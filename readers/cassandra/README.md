@@ -29,14 +29,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`cassandra-reader`](https://github.com/mainflux/mainflux/blob/master/docker/addons/cassandra-reader/docker-compose.yml#L15-L35) service section in 
+The service itself is distributed as Docker container. Check the [`cassandra-reader`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/cassandra-reader/docker-compose.yml#L15-L35) service section in 
 docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -60,7 +60,7 @@ MF_CASSANDRA_READER_SERVER_KEY=[Path to server pem key file] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-cassandra-reader
+$GOBIN/mainfluxlabs-cassandra-reader
 
 ```
 

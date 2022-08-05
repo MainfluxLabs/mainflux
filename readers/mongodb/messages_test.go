@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	mwriter "github.com/mainflux/mainflux/consumers/writers/mongodb"
-	"github.com/mainflux/mainflux/pkg/transformers/json"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/readers"
-	mreader "github.com/mainflux/mainflux/readers/mongodb"
+	mwriter "github.com/MainfluxLabs/mainflux/consumers/writers/mongodb"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/readers"
+	mreader "github.com/MainfluxLabs/mainflux/readers/mongodb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

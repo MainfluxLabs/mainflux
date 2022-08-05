@@ -37,7 +37,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`twins`](https://github.com/mainflux/mainflux/blob/master/docker/addons/twins/docker-compose.yml#L35-L58) service section in 
+The service itself is distributed as Docker container. Check the [`twins`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/twins/docker-compose.yml#L35-L58) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell
@@ -45,9 +45,9 @@ script:
 
 ```bash
 # download the latest version of the service
-go get github.com/mainflux/mainflux
+go get github.com/MainfluxLabs/mainflux
 
-cd $GOPATH/src/github.com/mainflux/mainflux
+cd $GOPATH/src/github.com/MainfluxLabs/mainflux
 
 # compile the twins
 make twins
@@ -71,7 +71,7 @@ MF_TWINS_CHANNEL_ID: [Message broker notifications channel ID] \
 MF_BROKER_URL: [Mainflux Message broker URL] \
 MF_AUTH_GRPC_URL: [Auth service gRPC URL] \
 MF_AUTH_GRPC_TIMEOUT: [Auth service gRPC request timeout in seconds] \
-$GOBIN/mainflux-twins
+$GOBIN/mainfluxlabs-twins
 ```
 
 ## Usage

@@ -51,14 +51,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`things `](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L167-L194) service section in 
+The service itself is distributed as Docker container. Check the [`things `](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L167-L194) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -96,7 +96,7 @@ MF_THINGS_STANDALONE_TOKEN=[User token for standalone mode that should be passed
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_AUTH_GRPC_URL=[Auth service gRPC URL] \
 MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds] \
-$GOBIN/mainflux-things
+$GOBIN/mainfluxlabs-things
 ```
 
 Setting `MF_THINGS_CA_CERTS` expects a file in PEM format of trusted CAs. This will enable TLS against the Users gRPC endpoint trusting only those CAs that are provided.

@@ -12,14 +12,14 @@ networks:
   docker_mainflux-base-net:
     external: true
 
-  
+
 volumes:
-  mainflux-certs-db-volume:
+  mainfluxlabs-certs-db-volume:
 
 services:
   certs-db:
     image: postgres:13.3-alpine
-    container_name: mainflux-certs-db
+    container_name: mainfluxlabs-certs-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_CERTS_DB_USER}
@@ -28,11 +28,11 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-certs-db-volume:/var/lib/postgresql/data
-      
+      - mainfluxlabs-certs-db-volume:/var/lib/postgresql/data
+
   certs:
-    image: mainflux/certs:${MF_RELEASE_TAG}
-    container_name: mainflux-certs
+    image: mainfluxlabs/certs:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-certs
     depends_on:
       - certs-db
     restart: on-failure
@@ -74,4 +74,3 @@ services:
     volumes:
       - ../../ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ../../ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
-      

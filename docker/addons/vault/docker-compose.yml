@@ -15,19 +15,19 @@ networks:
     external: true
 
 volumes:
-  mainflux-vault-volume:
+  mainfluxlabs-vault-volume:
 
 services:
   vault:
     image: vault:1.6.2
-    container_name: mainflux-vault
+    container_name: mainfluxlabs-vault
     ports:
       - ${MF_VAULT_PORT}:8200
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-vault-volume:/vault/file
-      - mainflux-vault-volume:/vault/logs
+      - mainfluxlabs-vault-volume:/vault/file
+      - mainfluxlabs-vault-volume:/vault/logs
       - ./config.hcl:/vault/config/config.hcl
       - ./entrypoint.sh:/entrypoint.sh
     environment:

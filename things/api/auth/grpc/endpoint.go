@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 func canAccessEndpoint(svc things.Service) endpoint.Endpoint {

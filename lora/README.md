@@ -31,14 +31,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`lora-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/addons/lora-adapter/docker-compose.yml#L23-L37) service section in
+The service itself is distributed as Docker container. Check the [`lora-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/lora-adapter/docker-compose.yml#L23-L37) service section in
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -63,7 +63,7 @@ MF_THINGS_ES_URL=[Things service event source URL] \
 MF_THINGS_ES_PASS=[Things service event source password] \
 MF_THINGS_ES_DB=[Things service event source password] \
 MF_OPCUA_ADAPTER_EVENT_CONSUMER=[LoRa adapter instance name] \
-$GOBIN/mainflux-lora
+$GOBIN/mainfluxlabs-lora
 ```
 
 ### Using docker-compose

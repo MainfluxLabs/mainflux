@@ -8,8 +8,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 var _ users.UserRepository = (*userRepositoryMock)(nil)

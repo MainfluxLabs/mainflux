@@ -13,13 +13,13 @@ networks:
     external: true
 
 volumes:
-  mainflux-influxdb-volume:
-  mainflux-grafana-volume:
+  mainfluxlabs-influxdb-volume:
+  mainfluxlabs-grafana-volume:
 
 services:
   influxdb:
     image: influxdb:1.8.5
-    container_name: mainflux-influxdb
+    container_name: mainfluxlabs-influxdb
     restart: on-failure
     environment:
       INFLUXDB_DB: ${MF_INFLUXDB_DB}
@@ -31,11 +31,11 @@ services:
     ports:
       - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
     volumes:
-      - mainflux-influxdb-volume:/var/lib/influxdb
+      - mainfluxlabs-influxdb-volume:/var/lib/influxdb
 
   influxdb-writer:
-    image: mainflux/influxdb-writer:${MF_RELEASE_TAG}
-    container_name: mainflux-influxdb-writer
+    image: mainfluxlabs/influxdb-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-influxdb-writer
     depends_on:
       - influxdb
     restart: on-failure
@@ -46,7 +46,7 @@ services:
       MF_INFLUX_WRITER_BATCH_SIZE: ${MF_INFLUX_WRITER_BATCH_SIZE}
       MF_INFLUX_WRITER_BATCH_TIMEOUT: ${MF_INFLUX_WRITER_BATCH_TIMEOUT}
       MF_INFLUXDB_DB: ${MF_INFLUXDB_DB}
-      MF_INFLUXDB_HOST: mainflux-influxdb
+      MF_INFLUXDB_HOST: mainfluxlabs-influxdb
       MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
       MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
       MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
@@ -59,7 +59,7 @@ services:
 
   grafana:
     image: grafana/grafana:7.3.7
-    container_name: mainflux-grafana
+    container_name: mainfluxlabs-grafana
     depends_on:
       - influxdb
     restart: on-failure
@@ -68,4 +68,4 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-grafana-volume:/var/lib/grafana
+      - mainfluxlabs-grafana-volume:/var/lib/grafana

@@ -74,14 +74,14 @@ default values.
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth           |
 | MF_AUTH_LOGIN_TOKEN_DURATION  | The login token expiration period                                        | 10h            |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831 |
-| MF_KETO_READ_REMOTE_HOST      | Keto Read Host                                                           | mainflux-keto  |
-| MF_KETO_WRITE_REMOTE_HOST     | Keto Write Host                                                          | mainflux-keto  |
+| MF_KETO_READ_REMOTE_HOST      | Keto Read Host                                                           | mainfluxlabs-keto  |
+| MF_KETO_WRITE_REMOTE_HOST     | Keto Write Host                                                          | mainfluxlabs-keto  |
 | MF_KETO_READ_REMOTE_PORT      | Keto Read Port                                                           | 4466           |
 | MF_KETO_WRITE_REMOTE_PORT     | Keto Write Port                                                          | 4467           |
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`auth`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L71-L94) service section in 
+The service itself is distributed as Docker container. Check the [`auth`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L71-L94) service section in 
 docker-compose to see how service is deployed.
 
 
@@ -89,9 +89,9 @@ To start the service outside of the container, execute the following shell scrip
 
 ```bash
 # download the latest version of the service
-go get github.com/mainflux/mainflux
+go get github.com/MainfluxLabs/mainflux
 
-cd $GOPATH/src/github.com/mainflux/mainflux
+cd $GOPATH/src/github.com/MainfluxLabs/mainflux
 
 # compile the service
 make auth
@@ -100,7 +100,7 @@ make auth
 make install
 
 # set the environment variables and run the service
-MF_AUTH_LOG_LEVEL=[Service log level] MF_AUTH_DB_HOST=[Database host address] MF_AUTH_DB_PORT=[Database host port] MF_AUTH_DB_USER=[Database user] MF_AUTH_DB_PASS=[Database password] MF_AUTH_DB=[Name of the database used by the service] MF_AUTH_DB_SSL_MODE=[SSL mode to connect to the database with] MF_AUTH_DB_SSL_CERT=[Path to the PEM encoded certificate file] MF_AUTH_DB_SSL_KEY=[Path to the PEM encoded key file] MF_AUTH_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] MF_AUTH_HTTP_PORT=[Service HTTP port] MF_AUTH_GRPC_PORT=[Service gRPC port] MF_AUTH_SECRET=[String used for signing tokens] MF_AUTH_SERVER_CERT=[Path to server certificate] MF_AUTH_SERVER_KEY=[Path to server key] MF_JAEGER_URL=[Jaeger server URL] MF_AUTH_LOGIN_TOKEN_DURATION=[The login token expiration period] $GOBIN/mainflux-auth
+MF_AUTH_LOG_LEVEL=[Service log level] MF_AUTH_DB_HOST=[Database host address] MF_AUTH_DB_PORT=[Database host port] MF_AUTH_DB_USER=[Database user] MF_AUTH_DB_PASS=[Database password] MF_AUTH_DB=[Name of the database used by the service] MF_AUTH_DB_SSL_MODE=[SSL mode to connect to the database with] MF_AUTH_DB_SSL_CERT=[Path to the PEM encoded certificate file] MF_AUTH_DB_SSL_KEY=[Path to the PEM encoded key file] MF_AUTH_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] MF_AUTH_HTTP_PORT=[Service HTTP port] MF_AUTH_GRPC_PORT=[Service gRPC port] MF_AUTH_SECRET=[String used for signing tokens] MF_AUTH_SERVER_CERT=[Path to server certificate] MF_AUTH_SERVER_KEY=[Path to server key] MF_JAEGER_URL=[Jaeger server URL] MF_AUTH_LOGIN_TOKEN_DURATION=[The login token expiration period] $GOBIN/mainfluxlabs-auth
 ```
 
 If `MF_EMAIL_TEMPLATE` doesn't point to any file service will function but password reset functionality will not work.

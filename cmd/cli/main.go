@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mainflux/mainflux/cli"
-	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux/cli"
+	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func main() {
 
 	// Root
 	var rootCmd = &cobra.Command{
-		Use: "mainflux-cli",
+		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cli.ParseConfig()
 

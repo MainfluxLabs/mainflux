@@ -26,13 +26,13 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`postgres-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/postgres-writer/docker-compose.yml#L34-L59) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`postgres-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/postgres-writer/docker-compose.yml#L34-L59) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -56,7 +56,7 @@ MF_POSTGRES_WRITER_DB_SSL_CERT=[Postgres SSL cert] \
 MF_POSTGRES_WRITER_DB_SSL_KEY=[Postgres SSL key] \
 MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT=[Postgres SSL Root cert] \
 MF_POSTGRES_WRITER_CONFIG_PATH=[Config file path with Message broker subjects list, payload type and content-type] \
-$GOBIN/mainflux-postgres-writer
+$GOBIN/mainfluxlabs-postgres-writer
 ```
 
 ## Usage

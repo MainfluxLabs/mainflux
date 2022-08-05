@@ -5,10 +5,10 @@ Go SDK, a Go driver for Mainflux HTTP API.
 Does both system administration (provisioning) and messaging.
 
 ## Installation
-Import `"github.com/mainflux/mainflux/sdk/go"` in your Go package.
+Import `"github.com/MainfluxLabs/mainflux/sdk/go"` in your Go package.
 
 ```
-import "github.com/mainflux/mainflux/pkg/sdk/go"```
+import "github.com/MainfluxLabs/mainflux/pkg/sdk/go"```
 
 Then call SDK Go functions to interact with the system.
 

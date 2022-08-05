@@ -8,7 +8,7 @@ COPY . .
 RUN apk update \
     && apk add make\
     && make $SVC \
-    && mv build/mainflux-license-$SVC /exe
+    && mv build/mainfluxlabs-license-$SVC /exe
 
 FROM scratch
 # Certificates are needed so that mailing util can work.

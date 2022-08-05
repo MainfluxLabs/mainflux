@@ -26,13 +26,13 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`timescale-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/timescale-writer/docker-compose.yml#L34-L59) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`timescale-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/timescale-writer/docker-compose.yml#L34-L59) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -57,7 +57,7 @@ MF_TIMESCALE_WRITER_DB_SSL_KEY=[Timescale SSL key] \
 MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT=[Timescale SSL Root cert] \
 MF_TIMESCALE_WRITER_CONFIG_PATH=[Configuration file path with Message broker subjects list] \
 MF_TIMESCALE_WRITER_TRANSFORMER=[Message transformer type] \
-$GOBIN/mainflux-timescale-writer
+$GOBIN/mainfluxlabs-timescale-writer
 ```
 
 ## Usage

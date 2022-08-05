@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/opcua"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/opcua"
 )
 
 var _ opcua.Service = (*loggingMiddleware)(nil)

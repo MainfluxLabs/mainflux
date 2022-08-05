@@ -15,8 +15,8 @@ networks:
 
 services:
   mongodb-reader:
-    image: mainflux/mongodb-reader:${MF_RELEASE_TAG}
-    container_name: mainflux-mongodb-reader
+    image: mainfluxlabs/mongodb-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-mongodb-reader
     restart: on-failure
     environment:
       MF_MONGO_READER_LOG_LEVEL: ${MF_MONGO_READER_LOG_LEVEL}

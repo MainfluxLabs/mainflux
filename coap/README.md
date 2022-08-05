@@ -23,7 +23,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in 
+The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in 
 docker-compose to see how service is deployed.
 
 Running this service outside of container requires working instance of the message broker service.
@@ -31,7 +31,7 @@ To start the service outside of the container, execute the following shell scrip
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -51,7 +51,7 @@ MF_COAP_ADAPTER_PING_PERIOD: [Hours between 1 and 24 to ping client with ACK mes
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-coap
+$GOBIN/mainfluxlabs-coap
 ```
 
 ## Usage

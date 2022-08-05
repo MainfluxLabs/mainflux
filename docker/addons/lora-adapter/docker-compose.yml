@@ -15,14 +15,14 @@ networks:
 services:
   lora-redis:
     image: redis:5.0-alpine
-    container_name: mainflux-lora-redis
+    container_name: mainfluxlabs-lora-redis
     restart: on-failure
     networks:
       - docker_mainflux-base-net
 
   lora-adapter:
-    image: mainflux/lora:${MF_RELEASE_TAG}
-    container_name: mainflux-lora
+    image: mainfluxlabs/lora:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-lora
     restart: on-failure
     environment:
       MF_LORA_ADAPTER_LOG_LEVEL: ${MF_LORA_ADAPTER_LOG_LEVEL}

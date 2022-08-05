@@ -8,7 +8,7 @@ package tracing
 import (
 	"context"
 
-	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
+	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

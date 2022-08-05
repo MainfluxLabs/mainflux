@@ -16,14 +16,14 @@ networks:
 
 services:
   influxdb-reader:
-    image: mainflux/influxdb-reader:${MF_RELEASE_TAG}
-    container_name: mainflux-influxdb-reader
+    image: mainfluxlabs/influxdb-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-influxdb-reader
     restart: on-failure
     environment:
       MF_INFLUX_READER_LOG_LEVEL: debug
       MF_INFLUX_READER_PORT: ${MF_INFLUX_READER_PORT}
       MF_INFLUXDB_DB: ${MF_INFLUXDB_DB}
-      MF_INFLUXDB_HOST: mainflux-influxdb
+      MF_INFLUXDB_HOST: mainfluxlabs-influxdb
       MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
       MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
       MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}

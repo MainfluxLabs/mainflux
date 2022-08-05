@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine AS builder
+FROM golang:1.18-alpine AS builder
 ARG SVC
 ARG GOARCH
 ARG GOARM
@@ -6,12 +6,12 @@ ARG VERSION
 ARG COMMIT
 ARG TIME
 
-WORKDIR /go/src/github.com/mainflux/mainflux
+WORKDIR /go/src/github.com/MainfluxLabs/mainflux
 COPY . .
 RUN apk update \
     && apk add make\
     && make $SVC \
-    && mv build/mainflux-$SVC /exe
+    && mv build/mainfluxlabs-$SVC /exe
 
 FROM scratch
 # Certificates are needed so that mailing util can work.

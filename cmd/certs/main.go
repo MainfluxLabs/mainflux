@@ -17,13 +17,13 @@ import (
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux"
-	authapi "github.com/mainflux/mainflux/auth/api/grpc"
-	"github.com/mainflux/mainflux/certs"
-	"github.com/mainflux/mainflux/certs/api"
-	vault "github.com/mainflux/mainflux/certs/pki"
-	"github.com/mainflux/mainflux/certs/postgres"
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/certs/api"
+	vault "github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/certs/postgres"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
@@ -31,9 +31,9 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/jmoiron/sqlx"
-	mflog "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	mflog "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	jconfig "github.com/uber/jaeger-client-go/config"
 )
 

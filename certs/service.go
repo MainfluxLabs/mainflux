@@ -9,10 +9,10 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/certs/pki"
-	"github.com/mainflux/mainflux/pkg/errors"
-	mfsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 )
 
 var (

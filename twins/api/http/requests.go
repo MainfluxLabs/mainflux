@@ -4,8 +4,8 @@
 package http
 
 import (
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/twins"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/twins"
 )
 
 const (

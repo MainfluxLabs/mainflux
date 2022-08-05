@@ -31,14 +31,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`opcua-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/addons/opcua-adapter/docker-compose.yml#L29-L53) service section in 
+The service itself is distributed as Docker container. Check the [`opcua-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/opcua-adapter/docker-compose.yml#L29-L53) service section in 
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -64,7 +64,7 @@ MF_THINGS_ES_URL=[Things service event source URL] \
 MF_THINGS_ES_PASS=[Things service event source password] \
 MF_THINGS_ES_DB=[Things service event source password] \
 MF_OPCUA_ADAPTER_EVENT_CONSUMER=[OPC-UA adapter instance name] \
-$GOBIN/mainflux-opcua
+$GOBIN/mainfluxlabs-opcua
 ```
 
 ### Using docker-compose

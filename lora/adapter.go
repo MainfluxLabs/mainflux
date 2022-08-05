@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 const protocol = "lora"

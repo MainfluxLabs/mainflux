@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
-	"github.com/mainflux/mainflux/lora"
+	"github.com/MainfluxLabs/mainflux/lora"
 )
 
 var _ lora.Service = (*metricsMiddleware)(nil)

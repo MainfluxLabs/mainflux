@@ -21,13 +21,13 @@ default values.
 | MF_CASSANDRA_WRITER_CONFIG_PATH  | Config file path with NATS subjects list, payload type and content-type | /config.toml          |
 
 ## Deployment
-The service itself is distributed as Docker container. Check the [`cassandra-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/cassandra-writer/docker-compose.yml#L30-L49) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`cassandra-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/cassandra-writer/docker-compose.yml#L30-L49) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -47,7 +47,7 @@ MF_CASSANDRA_READER_DB_USER=[Cassandra DB username] \
 MF_CASSANDRA_READER_DB_PASS=[Cassandra DB password] \
 MF_CASSANDRA_READER_DB_PORT=[Cassandra DB port] \
 MF_CASSANDRA_WRITER_CONFIG_PATH=[Config file path with NATS subjects list, payload type and content-type] \
-$GOBIN/mainflux-cassandra-writer
+$GOBIN/mainfluxlabs-cassandra-writer
 ```
 
 ### Using docker-compose

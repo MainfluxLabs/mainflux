@@ -5,8 +5,8 @@
 package bcrypt
 
 import (
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/users"
 	"golang.org/x/crypto/bcrypt"
 )
 

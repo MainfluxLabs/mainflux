@@ -84,7 +84,7 @@ It can also be built and used from the project's root directory:
 
 ```bash
 make cli
-./build/mainflux-cli version
+./build/mainfluxlabs-cli version
 ```
 
 Additional details on using the CLI can be found in the [CLI documentation](https://docs.mainflux.io/cli).
@@ -123,7 +123,7 @@ If you need this kind of support, best is to reach out to [@drasko][drasko] dire
 
 Thank you for your interest in Mainflux and the desire to contribute!
 
-1. Take a look at our [open issues](https://github.com/mainflux/mainflux/issues). The [good-first-issue](https://github.com/mainflux/mainflux/labels/good-first-issue) label is specifically for issues that are great for getting started.
+1. Take a look at our [open issues](https://github.com/MainfluxLabs/mainflux/issues). The [good-first-issue](https://github.com/MainfluxLabs/mainflux/labels/good-first-issue) label is specifically for issues that are great for getting started.
 2. Checkout the [contribution guide](CONTRIBUTING.md) to learn more about our style and conventions.
 3. Make your changes compatible to our workflow.
 
@@ -146,17 +146,17 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux?ref=badge_large)
 
 [banner]: https://github.com/mainflux/docs/blob/master/docs/img/gopherBanner.jpg
-[ci-badge]: https://semaphoreci.com/api/v1/mainflux/mainflux/branches/master/badge.svg
-[ci-url]: https://semaphoreci.com/mainflux/mainflux
+[ci-badge]: https://semaphoreci.com/api/v1/MainfluxLabs/mainflux/branches/master/badge.svg
+[ci-url]: https://semaphoreci.com/MainfluxLabs/mainflux
 [docs]: https://docs.mainflux.io
 [docker]: https://www.docker.com
 [forum]: https://groups.google.com/forum/#!forum/mainflux
-[gitter]: https://gitter.im/mainflux/mainflux?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[gitter]: https://gitter.im/MainfluxLabs/mainflux?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [gitter-badge]: https://badges.gitter.im/Join%20Chat.svg
-[grc-badge]: https://goreportcard.com/badge/github.com/mainflux/mainflux
-[grc-url]: https://goreportcard.com/report/github.com/mainflux/mainflux
-[cov-badge]: https://codecov.io/gh/mainflux/mainflux/branch/master/graph/badge.svg
-[cov-url]: https://codecov.io/gh/mainflux/mainflux
+[grc-badge]: https://goreportcard.com/badge/github.com/MainfluxLabs/mainflux
+[grc-url]: https://goreportcard.com/report/github.com/MainfluxLabs/mainflux
+[cov-badge]: https://codecov.io/gh/MainfluxLabs/mainflux/branch/master/graph/badge.svg
+[cov-url]: https://codecov.io/gh/MainfluxLabs/mainflux
 [license]: https://img.shields.io/badge/license-Apache%20v2.0-blue.svg
 [twitter]: https://twitter.com/mainflux
 [lora]: https://lora-alliance.org/
@@ -164,12 +164,12 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [agent]: https://github.com/mainflux/agent
 [export]: https://github.com/mainflux/export
 [kubernetes]: https://kubernetes.io/
-[rel]: https://github.com/mainflux/mainflux/releases
+[rel]: https://github.com/MainfluxLabs/mainflux/releases
 [careers]: https://www.mainflux.com/careers.html
 [lf]: https://www.linuxfoundation.org/
 [edgex]: https://www.edgexfoundry.org/
 [company]: https://www.mainflux.com/
-[blog]: https://medium.com/mainflux-iot-platform
+[blog]: https://medium.com/mainfluxlabs-iot-platform
 [drasko]: https://github.com/drasko
 [nikola]: https://github.com/nmarcetic
 [dejan]: https://github.com/mijicd
