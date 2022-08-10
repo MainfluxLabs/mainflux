@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	r "github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/opcua"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/opcua/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	r "github.com/go-redis/redis/v8"
 	"golang.org/x/sync/errgroup"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"

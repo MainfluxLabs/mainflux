@@ -532,7 +532,7 @@ func (nc *Conn) processHeaderMsgArgs(arg []byte) error {
 	return nil
 }
 
-// ASCII numbers 0-9
+// Ascii numbers 0-9
 const (
 	ascii_0 = 48
 	ascii_9 = 57

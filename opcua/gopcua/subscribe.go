@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"time"
 
-	opcuaGopcua "github.com/gopcua/opcua"
-	uaGopcua "github.com/gopcua/opcua/ua"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/opcua"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	opcuaGopcua "github.com/gopcua/opcua"
+	uaGopcua "github.com/gopcua/opcua/ua"
 )
 
 const protocol = "opcua"
