@@ -1,15 +1,20 @@
 /*
- * Copyright (c) 2013 IBM Corp.
+ * Copyright (c) 2021 IBM Corp and others.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * are made available under the terms of the Eclipse Public License v2.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ *
+ * The Eclipse Public License is available at
+ *    https://www.eclipse.org/legal/epl-2.0/
+ * and the Eclipse Distribution License is available at
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Seth Hoenig
  *    Allan Stockdill-Mander
  *    Mike Robertson
+ *    Matt Brittan
  */
 
 // Portions copyright © 2018 TIBCO Software Inc.
@@ -19,6 +24,7 @@ package mqtt
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -26,6 +32,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/eclipse/paho.mqtt.golang/packets"
 )
@@ -274,7 +282,7 @@ func (c *client) Connect() Token {
 		conn, rc, t.sessionPresent, err = c.attemptConnection()
 		if err != nil {
 			if c.options.ConnectRetry {
-				DEBUG.Println(CLI, "Connect failed, sleeping for", int(c.options.ConnectRetryInterval.Seconds()), "seconds and will then retry")
+				DEBUG.Println(CLI, "Connect failed, sleeping for", int(c.options.ConnectRetryInterval.Seconds()), "seconds and will then retry, error:", err.Error())
 				time.Sleep(c.options.ConnectRetryInterval)
 
 				if atomic.LoadUint32(&c.status) == connecting {
@@ -384,8 +392,17 @@ func (c *client) attemptConnection() (net.Conn, byte, bool, error) {
 			DEBUG.Println(CLI, "using custom onConnectAttempt handler...")
 			tlsCfg = c.options.OnConnectAttempt(broker, c.options.TLSConfig)
 		}
+		dialer := c.options.Dialer
+		if dialer == nil { //
+			WARN.Println(CLI, "dialer was nil, using default")
+			dialer = &net.Dialer{Timeout: 30 * time.Second}
+		}
 		// Start by opening the network connection (tcp, tls, ws) etc
-		conn, err = openConnection(broker, tlsCfg, c.options.ConnectTimeout, c.options.HTTPHeaders, c.options.WebsocketOptions)
+		if c.options.CustomOpenConnectionFn != nil {
+			conn, err = c.options.CustomOpenConnectionFn(broker, c.options)
+		} else {
+			conn, err = openConnection(broker, tlsCfg, c.options.ConnectTimeout, c.options.HTTPHeaders, c.options.WebsocketOptions, dialer)
+		}
 		if err != nil {
 			ERROR.Println(CLI, err.Error())
 			WARN.Println(CLI, "failed to connect to broker, trying next")
@@ -431,36 +448,36 @@ func (c *client) attemptConnection() (net.Conn, byte, bool, error) {
 // Disconnect will end the connection with the server, but not before waiting
 // the specified number of milliseconds to wait for existing work to be
 // completed.
+// WARNING: `Disconnect` may return before all activities (goroutines) have completed. This means that
+// reusing the `client` may lead to panics. If you want to reconnect when the connection drops then use
+// `SetAutoReconnect` and/or `SetConnectRetry`options instead of implementing this yourself.
 func (c *client) Disconnect(quiesce uint) {
+	defer c.disconnect()
+
 	status := atomic.LoadUint32(&c.status)
-	if status == connected {
-		DEBUG.Println(CLI, "disconnecting")
-		c.setConnected(disconnected)
+	c.setConnected(disconnected)
 
-		dm := packets.NewControlPacket(packets.Disconnect).(*packets.DisconnectPacket)
-		dt := newToken(packets.Disconnect)
-		disconnectSent := false
-		select {
-		case c.oboundP <- &PacketAndToken{p: dm, t: dt}:
-			disconnectSent = true
-		case <-c.commsStopped:
-			WARN.Println("Disconnect packet could not be sent because comms stopped")
-		case <-time.After(time.Duration(quiesce) * time.Millisecond):
-			WARN.Println("Disconnect packet not sent due to timeout")
-		}
-
-		// wait for work to finish, or quiesce time consumed
-		if disconnectSent {
-			DEBUG.Println(CLI, "calling WaitTimeout")
-			dt.WaitTimeout(time.Duration(quiesce) * time.Millisecond)
-			DEBUG.Println(CLI, "WaitTimeout done")
-		}
-	} else {
+	if status != connected {
 		WARN.Println(CLI, "Disconnect() called but not connected (disconnected/reconnecting)")
-		c.setConnected(disconnected)
+		return
 	}
 
-	c.disconnect()
+	DEBUG.Println(CLI, "disconnecting")
+	dm := packets.NewControlPacket(packets.Disconnect).(*packets.DisconnectPacket)
+	dt := newToken(packets.Disconnect)
+	select {
+	case c.oboundP <- &PacketAndToken{p: dm, t: dt}:
+		// wait for work to finish, or quiesce time consumed
+		DEBUG.Println(CLI, "calling WaitTimeout")
+		dt.WaitTimeout(time.Duration(quiesce) * time.Millisecond)
+		DEBUG.Println(CLI, "WaitTimeout done")
+	// Let's comment this chunk of code until we are able to safely read this variable
+	// without data races.
+	// case <-c.commsStopped:
+	//           WARN.Println("Disconnect packet could not be sent because comms stopped")
+	case <-time.After(time.Duration(quiesce) * time.Millisecond):
+		WARN.Println("Disconnect packet not sent due to timeout")
+	}
 }
 
 // forceDisconnect will end the connection with the mqtt broker immediately (used for tests only)
@@ -503,7 +520,9 @@ func (c *client) internalConnLost(err error) {
 			reconnect := c.options.AutoReconnect && c.connectionStatus() > connecting
 
 			if c.options.CleanSession && !reconnect {
-				c.messageIds.cleanUp()
+				c.messageIds.cleanUp() // completes PUB/SUB/UNSUB tokens
+			} else if !c.options.ResumeSubs {
+				c.messageIds.cleanUpSubscribe() // completes SUB/UNSUB tokens
 			}
 			if reconnect {
 				c.setConnected(reconnecting)
@@ -800,7 +819,9 @@ func (c *client) Subscribe(topic string, qos byte, callback MessageHandler) Toke
 	}
 	DEBUG.Println(CLI, sub.String())
 
-	persistOutbound(c.persist, sub)
+	if c.options.ResumeSubs { // Only persist if we need this to resume subs after a disconnection
+		persistOutbound(c.persist, sub)
+	}
 	switch c.connectionStatus() {
 	case connecting:
 		DEBUG.Println(CLI, "storing subscribe message (connecting), topic:", topic)
@@ -872,7 +893,9 @@ func (c *client) SubscribeMultiple(filters map[string]byte, callback MessageHand
 		sub.MessageID = mID
 		token.messageID = mID
 	}
-	persistOutbound(c.persist, sub)
+	if c.options.ResumeSubs { // Only persist if we need this to resume subs after a disconnection
+		persistOutbound(c.persist, sub)
+	}
 	switch c.connectionStatus() {
 	case connecting:
 		DEBUG.Println(CLI, "storing subscribe message (connecting), topics:", sub.Topics)
@@ -919,9 +942,41 @@ func (c *client) reserveStoredPublishIDs() {
 // Load all stored messages and resend them
 // Call this to ensure QOS > 1,2 even after an application crash
 // Note: This function will exit if c.stop is closed (this allows the shutdown to proceed avoiding a potential deadlock)
-//
+// other than that it does not return until all messages in the store have been sent (connect() does not complete its
+// token before this completes)
 func (c *client) resume(subscription bool, ibound chan packets.ControlPacket) {
 	DEBUG.Println(STR, "enter Resume")
+
+	// Prior to sending a message getSemaphore will be called and once sent releaseSemaphore will be called
+	// with the token (so semaphore can be released when ACK received if applicable).
+	// Using a weighted semaphore rather than channels because this retains ordering
+	getSemaphore := func() {}                    // Default = do nothing
+	releaseSemaphore := func(_ *PublishToken) {} // Default = do nothing
+	var sem *semaphore.Weighted
+	if c.options.MaxResumePubInFlight > 0 {
+		sem = semaphore.NewWeighted(int64(c.options.MaxResumePubInFlight))
+		ctx, cancel := context.WithCancel(context.Background()) // Context needed for semaphore
+		defer cancel()                                          // ensure context gets cancelled
+
+		go func() {
+			select {
+			case <-c.stop: // Request to stop (due to comm error etc)
+				cancel()
+			case <-ctx.Done(): // resume completed normally
+			}
+		}()
+
+		getSemaphore = func() { sem.Acquire(ctx, 1) }
+		releaseSemaphore = func(token *PublishToken) { // Note: If token never completes then resume() may stall (will still exit on ctx.Done())
+			go func() {
+				select {
+				case <-token.Done():
+				case <-ctx.Done():
+				}
+				sem.Release(1)
+			}()
+		}
+	}
 
 	storedKeys := c.persist.All()
 	for _, key := range storedKeys {
@@ -986,12 +1041,14 @@ func (c *client) resume(subscription bool, ibound chan packets.ControlPacket) {
 				c.claimID(token, details.MessageID)
 				DEBUG.Println(STR, fmt.Sprintf("loaded pending publish (%d)", details.MessageID))
 				DEBUG.Println(STR, details)
+				getSemaphore()
 				select {
 				case c.obound <- &PacketAndToken{p: p, t: token}:
 				case <-c.stop:
 					DEBUG.Println(STR, "resume exiting due to stop")
 					return
 				}
+				releaseSemaphore(token) // If limiting simultaneous messages then we need to know when message is acknowledged
 			default:
 				ERROR.Println(STR, "invalid message type in store (discarded)")
 				c.persist.Del(key)
@@ -1051,7 +1108,9 @@ func (c *client) Unsubscribe(topics ...string) Token {
 		token.messageID = mID
 	}
 
-	persistOutbound(c.persist, unsub)
+	if c.options.ResumeSubs { // Only persist if we need this to resume subs after a disconnection
+		persistOutbound(c.persist, unsub)
+	}
 
 	switch c.connectionStatus() {
 	case connecting:

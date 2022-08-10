@@ -24,7 +24,6 @@ type encoderOptions struct {
 	allLitEntropy   bool
 	customWindow    bool
 	customALEntropy bool
-	customBlockSize bool
 	lowMem          bool
 	dict            *dict
 }
@@ -34,7 +33,7 @@ func (o *encoderOptions) setDefault() {
 		concurrent:    runtime.GOMAXPROCS(0),
 		crc:           true,
 		single:        nil,
-		blockSize:     maxCompressedBlockSize,
+		blockSize:     1 << 16,
 		windowSize:    8 << 20,
 		level:         SpeedDefault,
 		allLitEntropy: true,
@@ -107,7 +106,6 @@ func WithWindowSize(n int) EOption {
 		o.customWindow = true
 		if o.blockSize > o.windowSize {
 			o.blockSize = o.windowSize
-			o.customBlockSize = true
 		}
 		return nil
 	}
@@ -190,9 +188,10 @@ func EncoderLevelFromZstd(level int) EncoderLevel {
 		return SpeedDefault
 	case level >= 6 && level < 10:
 		return SpeedBetterCompression
-	default:
+	case level >= 10:
 		return SpeedBestCompression
 	}
+	return SpeedDefault
 }
 
 // String provides a string representation of the compression level.
@@ -223,9 +222,6 @@ func WithEncoderLevel(l EncoderLevel) EOption {
 			switch o.level {
 			case SpeedFastest:
 				o.windowSize = 4 << 20
-				if !o.customBlockSize {
-					o.blockSize = 1 << 16
-				}
 			case SpeedDefault:
 				o.windowSize = 8 << 20
 			case SpeedBetterCompression:

@@ -1,15 +1,20 @@
 /*
- * Copyright (c) 2013 IBM Corp.
+ * Copyright (c) 2013 IBM Corp and others.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * are made available under the terms of the Eclipse Public License v2.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ *
+ * The Eclipse Public License is available at
+ *    https://www.eclipse.org/legal/epl-2.0/
+ * and the Eclipse Distribution License is available at
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Seth Hoenig
  *    Allan Stockdill-Mander
  *    Mike Robertson
+ *    Matt Brittan
  */
 
 package mqtt
@@ -37,6 +42,7 @@ const (
 	midMax uint16 = 65535
 )
 
+// cleanup clears the message ID map; completes all token types and sets error on PUB, SUB and UNSUB tokens.
 func (mids *messageIds) cleanUp() {
 	mids.Lock()
 	for _, token := range mids.index {
@@ -47,7 +53,7 @@ func (mids *messageIds) cleanUp() {
 			token.setError(fmt.Errorf("connection lost before Subscribe completed"))
 		case *UnsubscribeToken:
 			token.setError(fmt.Errorf("connection lost before Unsubscribe completed"))
-		case nil:
+		case nil: // should not be any nil entries
 			continue
 		}
 		token.flowComplete()
@@ -55,6 +61,24 @@ func (mids *messageIds) cleanUp() {
 	mids.index = make(map[uint16]tokenCompletor)
 	mids.Unlock()
 	DEBUG.Println(MID, "cleaned up")
+}
+
+// cleanUpSubscribe removes all SUBSCRIBE and UNSUBSCRIBE tokens (setting error)
+// This may be called when the connection is lost, and we will not be resending SUB/UNSUB packets
+func (mids *messageIds) cleanUpSubscribe() {
+	mids.Lock()
+	for mid, token := range mids.index {
+		switch token.(type) {
+		case *SubscribeToken:
+			token.setError(fmt.Errorf("connection lost before Subscribe completed"))
+			delete(mids.index, mid)
+		case *UnsubscribeToken:
+			token.setError(fmt.Errorf("connection lost before Unsubscribe completed"))
+			delete(mids.index, mid)
+		}
+	}
+	mids.Unlock()
+	DEBUG.Println(MID, "cleaned up subs")
 }
 
 func (mids *messageIds) freeID(id uint16) {
