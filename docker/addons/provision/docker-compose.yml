@@ -14,8 +14,8 @@ networks:
 
 services:
   provision:
-    image: mainflux/provision:${MF_RELEASE_TAG}
-    container_name: mainflux-provision
+    image: mainfluxlabs/provision:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-provision
     restart: on-failure
     networks:
       - docker_mainflux-base-net

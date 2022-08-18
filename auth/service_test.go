@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux/auth"
-	"github.com/mainflux/mainflux/auth/jwt"
-	"github.com/mainflux/mainflux/auth/mocks"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth/jwt"
+	"github.com/MainfluxLabs/mainflux/auth/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

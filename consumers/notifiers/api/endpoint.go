@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	notifiers "github.com/mainflux/mainflux/consumers/notifiers"
+	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 )
 
 func createSubscriptionEndpoint(svc notifiers.Service) endpoint.Endpoint {

@@ -1,7 +1,7 @@
 # Copyright (c) Mainflux
 # SPDX-License-Identifier: Apache-2.0
 
-MF_DOCKER_IMAGE_NAME_PREFIX ?= mainflux
+MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap lora influxdb-writer influxdb-reader mongodb-writer \
 	mongodb-reader cassandra-writer cassandra-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
@@ -14,19 +14,25 @@ VERSION ?= $(shell git describe --abbrev=0 --tags)
 COMMIT ?= $(shell git rev-parse HEAD)
 TIME ?= $(shell date +%F_%T)
 
+ifneq ($(MF_BROKER_TYPE),)
+    MF_BROKER_TYPE := $(MF_BROKER_TYPE)
+else
+    MF_BROKER_TYPE=nats
+endif
+
 define compile_service
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
-	go build -mod=vendor -ldflags "-s -w \
-	-X 'github.com/mainflux/mainflux.BuildTime=$(TIME)' \
-	-X 'github.com/mainflux/mainflux.Version=$(VERSION)' \
-	-X 'github.com/mainflux/mainflux.Commit=$(COMMIT)'" \
-	-o ${BUILD_DIR}/mainflux-$(1) cmd/$(1)/main.go
+	go build -mod=vendor -tags $(MF_BROKER_TYPE) -ldflags "-s -w \
+	-X 'github.com/MainfluxLabs/mainflux.BuildTime=$(TIME)' \
+	-X 'github.com/MainfluxLabs/mainflux.Version=$(VERSION)' \
+	-X 'github.com/MainfluxLabs/mainflux.Commit=$(COMMIT)'" \
+	-o ${BUILD_DIR}/mainfluxlabs-$(1) cmd/$(1)/main.go
 endef
 
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker build \
+	docker buildx build --platform=linux/amd64,linux/arm64 \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -35,7 +41,7 @@ define make_docker
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
 		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
-		-f docker/Dockerfile .
+		-f docker/Dockerfile . --push
 endef
 
 define make_docker_dev
@@ -105,10 +111,18 @@ release:
 	for svc in $(SERVICES); do \
 		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(version); \
 	done
-	$(call docker_push,$(version))
 
 rundev:
 	cd scripts && ./run.sh
 
 run:
+ifeq ("$(MF_BROKER_TYPE)", "rabbitmq")
+	sed -i "s,file: brokers/.*.yml,file: brokers/rabbitmq.yml," docker/docker-compose.yml
+	sed -i "s,MF_BROKER_URL: .*,MF_BROKER_URL: $$\{MF_RABBITMQ_URL\}," docker/docker-compose.yml
+else ifeq ("$(MF_BROKER_TYPE)", "nats")
+	sed -i "s,file: brokers/.*.yml,file: brokers/nats.yml," docker/docker-compose.yml
+	sed -i "s,MF_BROKER_URL: .*,MF_BROKER_URL: $$\{MF_NATS_URL\}," docker/docker-compose.yml
+else
+	echo "Invalid broker type"; exit 1
+endif
 	docker-compose -f docker/docker-compose.yml up

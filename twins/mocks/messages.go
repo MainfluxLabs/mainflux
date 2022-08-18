@@ -4,8 +4,8 @@
 package mocks
 
 import (
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 var _ messaging.Publisher = (*mockBroker)(nil)
@@ -25,5 +25,9 @@ func (mb mockBroker) Publish(topic string, msg messaging.Message) error {
 	if len(msg.Payload) == 0 {
 		return errors.New("failed to publish")
 	}
+	return nil
+}
+
+func (mb mockBroker) Close() error {
 	return nil
 }

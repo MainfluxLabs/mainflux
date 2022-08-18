@@ -6,7 +6,7 @@ package cli
 import (
 	"encoding/json"
 
-	mfxsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
 
@@ -39,15 +39,27 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "get [all | <thing_id>] <user_auth_token>",
 		Short: "Get things",
-		Long:  `Get a list of things or thing by id`,
+		Long: `Get all things or get thing by id. Things can be filtered by name or metadata
+		all - lists all things
+		<thing_id> - shows thing with provided <thing_id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-
+			metadata, err := convertMetadata(Metadata)
+			if err != nil {
+				logError(err)
+				return
+			}
+			pageMetadata := mfxsdk.PageMetadata{
+				Name:     "",
+				Offset:   uint64(Offset),
+				Limit:    uint64(Limit),
+				Metadata: metadata,
+			}
 			if args[0] == "all" {
-				l, err := sdk.Things(args[1], uint64(Offset), uint64(Limit), Name)
+				l, err := sdk.Things(args[1], pageMetadata)
 				if err != nil {
 					logError(err)
 					return
@@ -55,7 +67,6 @@ var cmdThings = []cobra.Command{
 				logJSON(l)
 				return
 			}
-
 			t, err := sdk.Thing(args[0], args[1])
 			if err != nil {
 				logError(err)
@@ -81,6 +92,25 @@ var cmdThings = []cobra.Command{
 			}
 
 			logOK()
+		},
+	},
+	{
+		Use:   "identify <thing_key>",
+		Short: "Identify thing",
+		Long:  "Validates thing's key and returns its ID",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 1 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			i, err := sdk.IdentifyThing(args[0])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(i)
 		},
 	},
 	{
@@ -190,9 +220,9 @@ var cmdThings = []cobra.Command{
 // NewThingsCmd returns things command.
 func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "things [create | get | update | delete | connect | disconnect | connections | not-connected]",
+		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections | not-connected]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update or delete Thing, connect or disconnect Thing from Channel and get the list of Channels connected or disconnected from a Thing`,
+		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Channel and get the list of Channels connected or disconnected from a Thing`,
 	}
 
 	for i := range cmdThings {

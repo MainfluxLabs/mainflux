@@ -7,9 +7,9 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/auth"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
@@ -81,7 +81,7 @@ type PageMetadata struct {
 	Total  uint64
 	Offset uint64
 	Limit  uint64
-	Name   string
+	Email  string
 }
 
 // GroupPage contains a page of groups.

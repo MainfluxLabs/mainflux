@@ -31,14 +31,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`postgres-reader`](https://github.com/mainflux/mainflux/blob/master/docker/addons/postgres-reader/docker-compose.yml#L17-L41) service section in 
+The service itself is distributed as Docker container. Check the [`postgres-reader`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/postgres-reader/docker-compose.yml#L17-L41) service section in 
 docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -65,7 +65,7 @@ MF_POSTGRES_READER_DB_SSL_ROOT_CERT=[Postgres SSL Root cert] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth GRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-postgres-reader
+$GOBIN/mainfluxlabs-postgres-reader
 ```
 
 ## Usage

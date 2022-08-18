@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+)
+
+var (
+	limit  uint64 = 5
+	offset uint64 = 0
+	total  uint64 = 200
 )
 
 func createError(e error, statusCode int) error {

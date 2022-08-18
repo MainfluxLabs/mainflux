@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/twins"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/twins"
 )
 
 var (

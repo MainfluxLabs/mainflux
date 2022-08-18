@@ -15,12 +15,12 @@ networks:
     external: true
 
 volumes:
-  mainflux-postgres-writer-volume:
+  mainfluxlabs-postgres-writer-volume:
 
 services:
   postgres:
     image: postgres:13.3-alpine
-    container_name: mainflux-postgres
+    container_name: mainfluxlabs-postgres
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_POSTGRES_WRITER_DB_USER}
@@ -29,16 +29,16 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-postgres-writer-volume:/var/lib/postgresql/data
+      - mainfluxlabs-postgres-writer-volume:/var/lib/postgresql/data
 
   postgres-writer:
-    image: mainflux/postgres-writer:${MF_RELEASE_TAG}
-    container_name: mainflux-postgres-writer
+    image: mainfluxlabs/postgres-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-postgres-writer
     depends_on:
       - postgres
     restart: on-failure
     environment:
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_POSTGRES_WRITER_LOG_LEVEL: ${MF_POSTGRES_WRITER_LOG_LEVEL}
       MF_POSTGRES_WRITER_PORT: ${MF_POSTGRES_WRITER_PORT}
       MF_POSTGRES_WRITER_DB_HOST: postgres

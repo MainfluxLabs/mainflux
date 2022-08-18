@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (

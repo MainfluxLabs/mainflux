@@ -13,14 +13,14 @@ networks:
     external: true
 
 volumes:
-  mainflux-twins-db-volume:
-  mainflux-twins-db-configdb-volume:
+  mainfluxlabs-twins-db-volume:
+  mainfluxlabs-twins-db-configdb-volume:
 
 services:
   twins-db:
     image: mongo:bionic
     command: mongod --port ${MF_TWINS_DB_PORT}
-    container_name: mainflux-twins-db
+    container_name: mainfluxlabs-twins-db
     restart: on-failure
     environment:
       MONGO_INITDB_DATABASE: ${MF_TWINS_DB}
@@ -29,12 +29,12 @@ services:
     networks:
       docker_mainflux-base-net:
     volumes:
-      - mainflux-twins-db-volume:/data/db
-      - mainflux-twins-db-configdb-volume:/data/configdb
+      - mainfluxlabs-twins-db-volume:/data/db
+      - mainfluxlabs-twins-db-configdb-volume:/data/configdb
 
   twins:
-    image: mainflux/twins:${MF_RELEASE_TAG}
-    container_name: mainflux-twins
+    image: mainfluxlabs/twins:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-twins
     restart: on-failure
     environment:
       MF_TWINS_LOG_LEVEL: ${MF_TWINS_LOG_LEVEL}
@@ -43,7 +43,7 @@ services:
       MF_TWINS_DB_HOST: ${MF_TWINS_DB_HOST}
       MF_TWINS_DB_PORT: ${MF_TWINS_DB_PORT}
       MF_TWINS_CHANNEL_ID: ${MF_TWINS_CHANNEL_ID}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_TWINS_CACHE_URL: ${MF_TWINS_CACHE_URL}

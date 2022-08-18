@@ -15,7 +15,7 @@ default values.
 |----------------------------------|---------------------------------------|---------------------------------|
 | MF_LORA_ADAPTER_HTTP_PORT        | Service HTTP port                     | 8180                            |
 | MF_LORA_ADAPTER_LOG_LEVEL        | Service Log level                     | error                           |
-| MF_NATS_URL                      | NATS instance URL                     | nats://localhost:4222           |
+| MF_BROKER_URL                    | Message broker instance URL           | nats://localhost:4222           |
 | MF_LORA_ADAPTER_MESSAGES_URL     | LoRa adapter MQTT broker URL          | tcp://localhost:1883            |
 | MF_LORA_ADAPTER_MESSAGES_TOPIC   | LoRa adapter MQTT subscriber Topic    | application/+/device/+/event/up |
 | MF_LORA_ADAPTER_MESSAGES_USER    | LoRa adapter MQTT subscriber Username |                                 |
@@ -31,14 +31,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`lora-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/addons/lora-adapter/docker-compose.yml#L23-L37) service section in
+The service itself is distributed as Docker container. Check the [`lora-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/lora-adapter/docker-compose.yml#L23-L37) service section in
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -50,7 +50,7 @@ make install
 
 # set the environment variables and run the service
 MF_LORA_ADAPTER_LOG_LEVEL=[Lora Adapter Log Level] \
-MF_NATS_URL=[NATS instance URL] \
+MF_BROKER_URL=[Message broker instance URL] \
 MF_LORA_ADAPTER_MESSAGES_URL=[LoRa adapter MQTT broker URL] \
 MF_LORA_ADAPTER_MESSAGES_TOPIC=[LoRa adapter MQTT subscriber Topic] \
 MF_LORA_ADAPTER_MESSAGES_USER=[LoRa adapter MQTT subscriber Username] \
@@ -63,7 +63,7 @@ MF_THINGS_ES_URL=[Things service event source URL] \
 MF_THINGS_ES_PASS=[Things service event source password] \
 MF_THINGS_ES_DB=[Things service event source password] \
 MF_OPCUA_ADAPTER_EVENT_CONSUMER=[LoRa adapter instance name] \
-$GOBIN/mainflux-lora
+$GOBIN/mainfluxlabs-lora
 ```
 
 ### Using docker-compose

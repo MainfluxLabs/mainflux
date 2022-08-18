@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/http"
+	"github.com/MainfluxLabs/mainflux/http"
 )
 
 func sendMessageEndpoint(svc http.Service) endpoint.Endpoint {

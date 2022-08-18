@@ -10,10 +10,10 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq" // required for DB access
-	"github.com/mainflux/mainflux/consumers"
-	"github.com/mainflux/mainflux/pkg/errors"
-	mfjson "github.com/mainflux/mainflux/pkg/transformers/json"
-	"github.com/mainflux/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (

@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
@@ -72,7 +72,7 @@ func (sdk mfSDK) RegisterUser(u User) (string, error) {
 	return id, nil
 }
 
-func (sdk mfSDK) User(token string) (User, error) {
+func (sdk mfSDK) User(userID, token string) (User, error) {
 	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -100,6 +100,38 @@ func (sdk mfSDK) User(token string) (User, error) {
 	}
 
 	return u, nil
+}
+
+func (sdk mfSDK) Users(token string, pm PageMetadata) (UsersPage, error) {
+	url, err := sdk.withQueryParams(sdk.usersURL, usersEndpoint, pm)
+	if err != nil {
+		return UsersPage{}, err
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return UsersPage{}, err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return UsersPage{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return UsersPage{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return UsersPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+	var up UsersPage
+	if err := json.Unmarshal(body, &up); err != nil {
+		return UsersPage{}, err
+	}
+
+	return up, nil
 }
 
 func (sdk mfSDK) CreateToken(user User) (string, error) {

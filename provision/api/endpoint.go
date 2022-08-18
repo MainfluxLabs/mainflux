@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/provision"
+	"github.com/MainfluxLabs/mainflux/provision"
 )
 
 func doProvision(svc provision.Service) endpoint.Endpoint {

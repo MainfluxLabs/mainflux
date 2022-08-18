@@ -10,7 +10,7 @@ default values.
 
 | Variable                         | Description                                                             | Default               |
 | -------------------------------- | ----------------------------------------------------------------------- | --------------------- |
-| MF_NATS_URL                      | NATS instance URL                                                       | nats://localhost:4222 |
+| MF_BROKER_URL                    | Message broker instance URL                                             | nats://localhost:4222 |
 | MF_CASSANDRA_WRITER_LOG_LEVEL    | Log level for Cassandra writer (debug, info, warn, error)               | error                 |
 | MF_CASSANDRA_WRITER_PORT         | Service HTTP port                                                       | 8180                  |
 | MF_CASSANDRA_WRITER_DB_CLUSTER   | Cassandra cluster comma separated addresses                             | 127.0.0.1             |
@@ -21,13 +21,13 @@ default values.
 | MF_CASSANDRA_WRITER_CONFIG_PATH  | Config file path with NATS subjects list, payload type and content-type | /config.toml          |
 
 ## Deployment
-The service itself is distributed as Docker container. Check the [`cassandra-writer`](https://github.com/mainflux/mainflux/blob/master/docker/addons/cassandra-writer/docker-compose.yml#L30-L49) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`cassandra-writer`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/cassandra-writer/docker-compose.yml#L30-L49) service section in docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -38,7 +38,7 @@ make cassandra-writer
 make install
 
 # Set the environment variables and run the service
-MF_NATS_URL=[NATS instance URL] \
+MF_BROKER_URL=[NATS instance URL] \
 MF_CASSANDRA_WRITER_LOG_LEVEL=[Cassandra writer log level] \
 MF_CASSANDRA_WRITER_PORT=[Service HTTP port] \
 MF_CASSANDRA_WRITER_DB_CLUSTER=[Cassandra cluster comma separated addresses] \
@@ -47,7 +47,7 @@ MF_CASSANDRA_READER_DB_USER=[Cassandra DB username] \
 MF_CASSANDRA_READER_DB_PASS=[Cassandra DB password] \
 MF_CASSANDRA_READER_DB_PORT=[Cassandra DB port] \
 MF_CASSANDRA_WRITER_CONFIG_PATH=[Config file path with NATS subjects list, payload type and content-type] \
-$GOBIN/mainflux-cassandra-writer
+$GOBIN/mainfluxlabs-cassandra-writer
 ```
 
 ### Using docker-compose

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/mqtt/redis"
-	"github.com/mainflux/mainflux/pkg/auth"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging"
-	"github.com/mainflux/mproxy/pkg/session"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/mqtt/redis"
+	"github.com/MainfluxLabs/mainflux/pkg/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
 var _ session.Handler = (*handler)(nil)

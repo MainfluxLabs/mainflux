@@ -4,8 +4,8 @@
 package api
 
 import (
-	"github.com/mainflux/mainflux/bootstrap"
-	"github.com/mainflux/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
 const maxLimitSize = 100

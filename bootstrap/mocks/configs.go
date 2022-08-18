@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mainflux/mainflux/bootstrap"
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const emptyState = -1

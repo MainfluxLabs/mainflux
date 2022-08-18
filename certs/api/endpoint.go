@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/mainflux/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/certs"
 )
 
 func issueCert(svc certs.Service) endpoint.Endpoint {

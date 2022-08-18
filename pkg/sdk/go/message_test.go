@@ -9,12 +9,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mainflux/mainflux"
-	adapter "github.com/mainflux/mainflux/http"
-	"github.com/mainflux/mainflux/http/api"
-	"github.com/mainflux/mainflux/http/mocks"
-	"github.com/mainflux/mainflux/logger"
-	sdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux"
+	adapter "github.com/MainfluxLabs/mainflux/http"
+	"github.com/MainfluxLabs/mainflux/http/api"
+	"github.com/MainfluxLabs/mainflux/http/mocks"
+	"github.com/MainfluxLabs/mainflux/logger"
+	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 )

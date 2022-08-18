@@ -6,6 +6,7 @@
 package amqp091
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -184,7 +185,9 @@ type Blocking struct {
 // allows users to directly correlate a publishing to a confirmation. These are
 // returned from PublishWithDeferredConfirm on Channels.
 type DeferredConfirmation struct {
-	wg           sync.WaitGroup
+	m            sync.Mutex
+	ctx          context.Context
+	cancel       context.CancelFunc
 	DeliveryTag  uint64
 	confirmation Confirmation
 }
@@ -265,19 +268,6 @@ func (t Table) Validate() error {
 	return validateField(t)
 }
 
-// Heap interface for maintaining delivery tags
-type tagSet []uint64
-
-func (set tagSet) Len() int              { return len(set) }
-func (set tagSet) Less(i, j int) bool    { return (set)[i] < (set)[j] }
-func (set tagSet) Swap(i, j int)         { (set)[i], (set)[j] = (set)[j], (set)[i] }
-func (set *tagSet) Push(tag interface{}) { *set = append(*set, tag.(uint64)) }
-func (set *tagSet) Pop() interface{} {
-	val := (*set)[len(*set)-1]
-	*set = (*set)[:len(*set)-1]
-	return val
-}
-
 type message interface {
 	id() (uint16, uint16)
 	wait() bool
@@ -319,6 +309,18 @@ system calls to read a frame.
 type frame interface {
 	write(io.Writer) error
 	channel() uint16
+}
+
+/*
+Perform any updates on the channel immediately after the frame is decoded while the
+connection mutex is held.
+*/
+func updateChannel(f frame, channel *Channel) {
+	if mf, isMethodFrame := f.(*methodFrame); isMethodFrame {
+		if _, isChannelClose := mf.Method.(*channelClose); isChannelClose {
+			channel.setClosed()
+		}
+	}
 }
 
 type reader struct {

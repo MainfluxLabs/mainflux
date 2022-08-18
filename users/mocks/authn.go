@@ -6,10 +6,10 @@ package mocks
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	user "github.com/MainfluxLabs/mainflux/users"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/pkg/errors"
-	user "github.com/mainflux/mainflux/users"
 	"google.golang.org/grpc"
 )
 

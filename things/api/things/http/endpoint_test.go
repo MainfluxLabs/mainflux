@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/things"
-	httpapi "github.com/mainflux/mainflux/things/api/things/http"
-	"github.com/mainflux/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
+	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
+	"github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,6 @@ var (
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
 	notFoundRes    = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
-	unauthzRes     = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthorization.Error()})
 	unauthRes      = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	missingTokRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	searchThingReq = things.PageMetadata{
@@ -621,7 +620,7 @@ func TestUpdateKey(t *testing.T) {
 			id:          strconv.FormatUint(wrongID, 10),
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid id",
@@ -629,7 +628,7 @@ func TestUpdateKey(t *testing.T) {
 			id:          "invalid",
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid user token",
@@ -722,8 +721,8 @@ func TestViewThing(t *testing.T) {
 			desc:   "view non-existent thing",
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
-			status: http.StatusForbidden,
-			res:    unauthzRes,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
 		},
 		{
 			desc:   "view thing by passing invalid token",
@@ -743,8 +742,8 @@ func TestViewThing(t *testing.T) {
 			desc:   "view thing by passing invalid id",
 			id:     "invalid",
 			auth:   token,
-			status: http.StatusForbidden,
-			res:    unauthzRes,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
 		},
 	}
 
@@ -1377,7 +1376,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:   "delete non-existent thing",
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
-			status: http.StatusForbidden,
+			status: http.StatusNotFound,
 		},
 		{
 			desc:   "delete thing with invalid token",

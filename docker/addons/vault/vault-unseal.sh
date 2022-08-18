@@ -11,7 +11,7 @@ readDotEnv() {
 }
 
 vault() {
-    docker exec -it mainflux-vault vault "$@"
+    docker exec -it mainfluxlabs-vault vault "$@"
 }
 
 readDotEnv

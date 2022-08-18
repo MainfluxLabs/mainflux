@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	mfSDK "github.com/mainflux/mainflux/pkg/sdk/go"
-	"github.com/mainflux/mainflux/provision"
-	"github.com/mainflux/mainflux/provision/api"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfSDK "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux/provision"
+	"github.com/MainfluxLabs/mainflux/provision/api"
+	"github.com/MainfluxLabs/mainflux/things"
 	"golang.org/x/sync/errgroup"
 )
 

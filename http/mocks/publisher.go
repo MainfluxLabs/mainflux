@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 type mockPublisher struct{}
@@ -15,5 +15,9 @@ func NewPublisher() messaging.Publisher {
 }
 
 func (pub mockPublisher) Publish(topic string, msg messaging.Message) error {
+	return nil
+}
+
+func (pub mockPublisher) Close() error {
 	return nil
 }

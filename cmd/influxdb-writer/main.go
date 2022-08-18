@@ -13,13 +13,13 @@ import (
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	influxdata "github.com/influxdata/influxdb/client/v2"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/consumers"
-	"github.com/mainflux/mainflux/consumers/writers/api"
-	"github.com/mainflux/mainflux/consumers/writers/influxdb"
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/consumers/writers/api"
+	"github.com/MainfluxLabs/mainflux/consumers/writers/influxdb"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -28,7 +28,7 @@ const (
 	svcName      = "influxdb-writer"
 	stopWaitTime = 5 * time.Second
 
-	defNatsURL    = "nats://localhost:4222"
+	defBrokerURL  = "nats://localhost:4222"
 	defLogLevel   = "error"
 	defPort       = "8180"
 	defDB         = "mainflux"
@@ -38,7 +38,7 @@ const (
 	defDBPass     = "mainflux"
 	defConfigPath = "/config.toml"
 
-	envNatsURL    = "MF_NATS_URL"
+	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
 	envPort       = "MF_INFLUX_WRITER_PORT"
 	envDB         = "MF_INFLUXDB_DB"
@@ -50,7 +50,7 @@ const (
 )
 
 type config struct {
-	natsURL    string
+	brokerURL  string
 	logLevel   string
 	port       string
 	dbName     string
@@ -71,9 +71,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	pubSub, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
 	defer pubSub.Close()
@@ -115,7 +115,7 @@ func main() {
 
 func loadConfigs() (config, influxdata.HTTPConfig) {
 	cfg := config{
-		natsURL:    mainflux.Env(envNatsURL, defNatsURL),
+		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		port:       mainflux.Env(envPort, defPort),
 		dbName:     mainflux.Env(envDB, defDB),

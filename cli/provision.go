@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
-	mfxsdk "github.com/mainflux/mainflux/pkg/sdk/go"
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
 

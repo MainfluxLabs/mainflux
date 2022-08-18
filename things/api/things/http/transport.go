@@ -12,12 +12,12 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/internal/apiutil"
-	log "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
-	"github.com/mainflux/mainflux/things"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -501,6 +501,9 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
+	// ErrNotFound can be masked by ErrAuthentication, but it has priority.
+	case errors.Contains(err, errors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrAuthentication),
 		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
@@ -516,12 +519,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMalformedPolicy,
 		err == apiutil.ErrBearerKey,
 		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrInvalidOrder,
 		err == apiutil.ErrInvalidDirection,
 		err == apiutil.ErrInvalidIDFormat:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrScanMetadata):

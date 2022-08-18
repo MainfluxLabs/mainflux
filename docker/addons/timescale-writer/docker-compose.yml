@@ -15,12 +15,12 @@ networks:
     external: true
 
 volumes:
-  mainflux-timescale-writer-volume:
+  mainfluxlabs-timescale-writer-volume:
 
 services:
   timescale:
     image: timescale/timescaledb:2.4.0-pg12
-    container_name: mainflux-timescale
+    container_name: mainfluxlabs-timescale
     restart: on-failure
     environment:
       POSTGRES_PASSWORD: ${MF_TIMESCALE_WRITER_DB_PASS}
@@ -29,16 +29,16 @@ services:
     networks:
       - docker_mainflux-base-net
     volumes:
-      - mainflux-timescale-writer-volume:/var/lib/timescalesql/data
+      - mainfluxlabs-timescale-writer-volume:/var/lib/timescalesql/data
 
   timescale-writer:
-    image: mainflux/timescale-writer:${MF_RELEASE_TAG}
-    container_name: mainflux-timescale-writer
+    image: mainfluxlabs/timescale-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-writer
     depends_on:
       - timescale
     restart: on-failure
     environment:
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
       MF_TIMESCALE_WRITER_PORT: ${MF_TIMESCALE_WRITER_PORT}
       MF_TIMESCALE_WRITER_DB_HOST: timescale

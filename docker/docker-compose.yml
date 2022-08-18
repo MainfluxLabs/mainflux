@@ -4,22 +4,22 @@
 version: "3.7"
 
 networks:
-  mainflux-base-net:
+  mainfluxlabs-base-net:
     driver: bridge
 
 volumes:
-  mainflux-auth-db-volume:
-  mainflux-users-db-volume:
-  mainflux-things-db-volume:
-  mainflux-keto-db-volume:
-  mainflux-auth-redis-volume:
-  mainflux-es-redis-volume:
-  mainflux-mqtt-broker-volume:
+  mainfluxlabs-auth-db-volume:
+  mainfluxlabs-users-db-volume:
+  mainfluxlabs-things-db-volume:
+  mainfluxlabs-keto-db-volume:
+  mainfluxlabs-auth-redis-volume:
+  mainfluxlabs-es-redis-volume:
+  mainfluxlabs-mqtt-broker-volume:
 
 services:
   keto:
     image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto
+    container_name: mainfluxlabs-keto
     ports:
       - ${MF_KETO_READ_REMOTE_PORT}:${MF_KETO_READ_REMOTE_PORT}
       - ${MF_KETO_WRITE_REMOTE_PORT}:${MF_KETO_WRITE_REMOTE_PORT}
@@ -32,13 +32,13 @@ services:
         source: ./keto
         target: /home/ory
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     depends_on:
       - keto-db
 
   keto-migrate:
     image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainflux-keto-migrate
+    container_name: mainfluxlabs-keto-migrate
     environment:
       - KETO_WRITE_REMOTE=keto:${MF_KETO_WRITE_REMOTE_PORT}
       - KETO_READ_REMOTE=keto:${MF_KETO_READ_REMOTE_PORT}
@@ -50,35 +50,35 @@ services:
     command: migrate up --all-namespaces -c /home/ory/keto.yml --yes
     restart: on-failure
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     depends_on:
       - keto-db
 
   keto-db:
     image: postgres:13.3-alpine
-    container_name: mainflux-keto-db
+    container_name: mainfluxlabs-keto-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_KETO_DB_USER}
       POSTGRES_PASSWORD: ${MF_KETO_DB_PASS}
       POSTGRES_DB: ${MF_KETO_DB}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-keto-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-keto-db-volume:/var/lib/postgresql/data
 
   nginx:
     image: nginx:1.20.0-alpine
-    container_name: mainflux-nginx
+    container_name: mainfluxlabs-nginx
     restart: on-failure
     volumes:
       - ./nginx/nginx-${AUTH-key}.conf:/etc/nginx/nginx.conf.template
       - ./nginx/entrypoint.sh:/docker-entrypoint.d/entrypoint.sh
       - ./nginx/snippets:/etc/nginx/snippets
       - ./ssl/authorization.js:/etc/nginx/authorization.js
-      - ./ssl/certs/mainflux-server.crt:/etc/ssl/certs/mainflux-server.crt
+      - ./ssl/certs/mainfluxlabs-server.crt:/etc/ssl/certs/mainfluxlabs-server.crt
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
-      - ./ssl/certs/mainflux-server.key:/etc/ssl/private/mainflux-server.key
+      - ./ssl/certs/mainfluxlabs-server.key:/etc/ssl/private/mainfluxlabs-server.key
       - ./ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
     ports:
       - ${MF_NGINX_HTTP_PORT}:${MF_NGINX_HTTP_PORT}
@@ -86,7 +86,7 @@ services:
       - ${MF_NGINX_MQTT_PORT}:${MF_NGINX_MQTT_PORT}
       - ${MF_NGINX_MQTTS_PORT}:${MF_NGINX_MQTTS_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     env_file:
       - .env
     depends_on:
@@ -95,34 +95,33 @@ services:
       - mqtt-adapter
       - http-adapter
 
-  nats:
-    image: nats:2.2.4-alpine
-    container_name: mainflux-nats
-    command: "-c /etc/nats/nats.conf"
+  broker:
+    extends:
+      file: brokers/nats.yml
+      service: broker
+    container_name: mainfluxlabs-broker
     restart: on-failure
-    volumes:
-      - ./nats/:/etc/nats
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     ports:
     - 4222:4222
 
   auth-db:
     image: postgres:13.3-alpine
-    container_name: mainflux-auth-db
+    container_name: mainfluxlabs-auth-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_AUTH_DB_USER}
       POSTGRES_PASSWORD: ${MF_AUTH_DB_PASS}
       POSTGRES_DB: ${MF_AUTH_DB}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-auth-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-auth-db-volume:/var/lib/postgresql/data
 
   auth:
-    image: mainflux/auth:${MF_RELEASE_TAG}
-    container_name: mainflux-auth
+    image: mainfluxlabs/auth:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-auth
     depends_on:
       - auth-db
       - keto
@@ -149,24 +148,24 @@ services:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   users-db:
     image: postgres:13.3-alpine
-    container_name: mainflux-users-db
+    container_name: mainfluxlabs-users-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_USERS_DB_USER}
       POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
       POSTGRES_DB: ${MF_USERS_DB}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-users-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-users-db-volume:/var/lib/postgresql/data
 
   users:
-    image: mainflux/users:${MF_RELEASE_TAG}
-    container_name: mainflux-users
+    image: mainfluxlabs/users:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-users
     volumes:
       - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
     depends_on:
@@ -198,33 +197,33 @@ services:
     ports:
       - ${MF_USERS_HTTP_PORT}:${MF_USERS_HTTP_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   things-db:
     image: postgres:13.3-alpine
-    container_name: mainflux-things-db
+    container_name: mainfluxlabs-things-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_THINGS_DB_USER}
       POSTGRES_PASSWORD: ${MF_THINGS_DB_PASS}
       POSTGRES_DB: ${MF_THINGS_DB}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-things-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-things-db-volume:/var/lib/postgresql/data
 
   auth-redis:
     image: redis:6.2.2-alpine
-    container_name: mainflux-auth-redis
+    container_name: mainfluxlabs-auth-redis
     restart: on-failure
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-auth-redis-volume:/data
+      - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: mainflux/things:${MF_RELEASE_TAG}
-    container_name: mainflux-things
+    image: mainfluxlabs/things:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-things
     depends_on:
       - things-db
       - auth
@@ -249,45 +248,45 @@ services:
       - ${MF_THINGS_AUTH_HTTP_PORT}:${MF_THINGS_AUTH_HTTP_PORT}
       - ${MF_THINGS_AUTH_GRPC_PORT}:${MF_THINGS_AUTH_GRPC_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   jaeger:
     image: jaegertracing/all-in-one:1.20
-    container_name: mainflux-jaeger
+    container_name: mainfluxlabs-jaeger
     ports:
       - ${MF_JAEGER_PORT}:${MF_JAEGER_PORT}/udp
       - ${MF_JAEGER_FRONTEND}:${MF_JAEGER_FRONTEND}
       - ${MF_JAEGER_COLLECTOR}:${MF_JAEGER_COLLECTOR}
       - ${MF_JAEGER_CONFIGS}:${MF_JAEGER_CONFIGS}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   vernemq:
-    image: mainflux/vernemq:${MF_RELEASE_TAG}
-    container_name: mainflux-vernemq
+    image: mainfluxlabs/vernemq:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
       DOCKER_VERNEMQ_ALLOW_ANONYMOUS: ${MF_DOCKER_VERNEMQ_ALLOW_ANONYMOUS}
       DOCKER_VERNEMQ_LOG__CONSOLE__LEVEL: ${MF_DOCKER_VERNEMQ_LOG__CONSOLE__LEVEL}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-mqtt-broker-volume:/var/lib/vernemq
+      - mainfluxlabs-mqtt-broker-volume:/var/lib/vernemq
 
   mqtt-adapter:
-    image: mainflux/mqtt:${MF_RELEASE_TAG}
-    container_name: mainflux-mqtt
+    image: mainfluxlabs/mqtt:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-mqtt
     depends_on:
       - vernemq
       - things
-      - nats
+      - broker
     restart: on-failure
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
       MF_MQTT_ADAPTER_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_MQTT_ADAPTER_MQTT_TARGET_HOST: vernemq
       MF_MQTT_ADAPTER_MQTT_TARGET_PORT: ${MF_MQTT_BROKER_PORT}
       MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: http://vernemq:8888/health
@@ -298,47 +297,47 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   http-adapter:
-    image: mainflux/http:${MF_RELEASE_TAG}
-    container_name: mainflux-http
+    image: mainfluxlabs/http:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-http
     depends_on:
       - things
-      - nats
+      - broker
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
 
   es-redis:
     image: redis:6.2.2-alpine
-    container_name: mainflux-es-redis
+    container_name: mainfluxlabs-es-redis
     restart: on-failure
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net
     volumes:
-      - mainflux-es-redis-volume:/data
+      - mainfluxlabs-es-redis-volume:/data
 
   coap-adapter:
-    image: mainflux/coap:${MF_RELEASE_TAG}
-    container_name: mainflux-coap
+    image: mainfluxlabs/coap:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-coap
     depends_on:
       - things
-      - nats
+      - broker
     restart: on-failure
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
       MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
-      MF_NATS_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
@@ -346,4 +345,4 @@ services:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
     networks:
-      - mainflux-base-net
+      - mainfluxlabs-base-net

@@ -27,14 +27,14 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`mongodb-reader`](https://github.com/mainflux/mainflux/blob/master/docker/addons/mongodb-reader/docker-compose.yml#L16-L37) service section in 
+The service itself is distributed as Docker container. Check the [`mongodb-reader`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/addons/mongodb-reader/docker-compose.yml#L16-L37) service section in 
 docker-compose to see how service is deployed.
 
 To start the service, execute the following shell script:
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
@@ -56,7 +56,7 @@ MF_MONGO_READER_SERVER_CERT=[Path to server pem certificate file] \
 MF_MONGO_READER_SERVER_KEY=[Path to server pem key file] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
-$GOBIN/mainflux-mongodb-reader
+$GOBIN/mainfluxlabs-mongodb-reader
 
 ```
 

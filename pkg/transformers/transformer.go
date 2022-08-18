@@ -3,7 +3,7 @@
 
 package transformers
 
-import "github.com/mainflux/mainflux/pkg/messaging"
+import "github.com/MainfluxLabs/mainflux/pkg/messaging"
 
 // Transformer specifies API form Message transformer.
 type Transformer interface {

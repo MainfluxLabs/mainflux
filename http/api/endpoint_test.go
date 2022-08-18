@@ -13,12 +13,12 @@ import (
 
 	"github.com/opentracing/opentracing-go/mocktracer"
 
-	"github.com/mainflux/mainflux"
-	adapter "github.com/mainflux/mainflux/http"
-	"github.com/mainflux/mainflux/http/api"
-	"github.com/mainflux/mainflux/http/mocks"
-	"github.com/mainflux/mainflux/internal/apiutil"
-	"github.com/mainflux/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux"
+	adapter "github.com/MainfluxLabs/mainflux/http"
+	"github.com/MainfluxLabs/mainflux/http/api"
+	"github.com/MainfluxLabs/mainflux/http/mocks"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/stretchr/testify/assert"
 )
 

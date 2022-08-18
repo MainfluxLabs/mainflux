@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mainflux/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 type keyReq struct {

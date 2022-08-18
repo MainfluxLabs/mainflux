@@ -15,13 +15,13 @@ import (
 	"time"
 
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/coap"
-	"github.com/mainflux/mainflux/coap/api"
-	logger "github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/messaging/nats"
-	"github.com/mainflux/mainflux/pkg/errors"
-	thingsapi "github.com/mainflux/mainflux/things/api/auth/grpc"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/coap"
+	"github.com/MainfluxLabs/mainflux/coap/api"
+	logger "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -35,7 +35,7 @@ const (
 	stopWaitTime = 5 * time.Second
 
 	defPort              = "5683"
-	defNatsURL           = "nats://localhost:4222"
+	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
 	defClientTLS         = "false"
 	defCACerts           = ""
@@ -44,7 +44,7 @@ const (
 	defThingsAuthTimeout = "1s"
 
 	envPort              = "MF_COAP_ADAPTER_PORT"
-	envNatsURL           = "MF_NATS_URL"
+	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_COAP_ADAPTER_LOG_LEVEL"
 	envClientTLS         = "MF_COAP_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_COAP_ADAPTER_CA_CERTS"
@@ -55,7 +55,7 @@ const (
 
 type config struct {
 	port              string
-	natsURL           string
+	brokerURL         string
 	logLevel          string
 	clientTLS         bool
 	caCerts           string
@@ -82,9 +82,9 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
-	nps, err := nats.NewPubSub(cfg.natsURL, "", logger)
+	nps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
 	defer nps.Close()
@@ -142,7 +142,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		natsURL:           mainflux.Env(envNatsURL, defNatsURL),
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		port:              mainflux.Env(envPort, defPort),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:         tls,

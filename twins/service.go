@@ -10,12 +10,12 @@ import (
 	"math"
 	"time"
 
-	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/senml"
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/senml"
 )
 
 const publisher = "twins"
@@ -422,6 +422,6 @@ func (ts *twinsService) publish(twinID *string, err *error, succOp, failOp strin
 	}
 
 	if err := ts.publisher.Publish(msg.Channel, msg); err != nil {
-		ts.logger.Warn(fmt.Sprintf("Failed to publish notification on NATS: %s", err))
+		ts.logger.Warn(fmt.Sprintf("Failed to publish notification on Message Broker: %s", err))
 	}
 }
