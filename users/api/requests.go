@@ -5,6 +5,7 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -21,12 +22,23 @@ func (req userReq) validate() error {
 	return req.user.Validate()
 }
 
+type registerUserReq struct {
+	user users.User
+}
+
+func (req registerUserReq) validate() error {
+	return req.user.Validate()
+}
+
 type createUserReq struct {
 	user  users.User
 	token string
 }
 
 func (req createUserReq) validate() error {
+	if req.token == "" {
+		return errors.ErrAuthorization
+	}
 	return req.user.Validate()
 }
 

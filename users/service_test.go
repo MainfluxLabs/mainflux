@@ -22,14 +22,15 @@ import (
 const wrong string = "wrong-value"
 
 var (
+	userAdmin       = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
+	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
+	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	user            = users.User{Email: "user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	host            = "example.com"
 
 	idProvider = uuid.New()
 	passRegex  = regexp.MustCompile("^.{8,}$")
-
-	unauthzToken = "unauthorizedtoken"
 )
 
 func newService() users.Service {
@@ -37,9 +38,11 @@ func newService() users.Service {
 	hasher := mocks.NewHasher()
 
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
-	mockAuthzDB[user.Email] = append(mockAuthzDB[user.Email], mocks.SubjectSet{Object: "authorities", Relation: "member"})
-	mockAuthzDB[unauthzToken] = append(mockAuthzDB[unauthzToken], mocks.SubjectSet{Object: "nothing", Relation: "do"})
-	mockUsers := map[string]string{user.Email: user.Email, unauthzToken: unauthzToken}
+
+	mockAuthzDB[userAdmin.ID] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
+	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
+
+	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
 
 	authSvc := mocks.NewAuthService(mockUsers, mockAuthzDB)
 	e := mocks.NewEmailer()
@@ -57,15 +60,25 @@ func TestRegister(t *testing.T) {
 		err   error
 	}{
 		{
+			desc: "self register new user",
+			user: selfRegister,
+			err:  nil,
+		},
+		{
+			desc: "self register existing user",
+			user: selfRegister,
+			err:  errors.ErrConflict,
+		},
+		{
 			desc:  "register new user",
 			user:  user,
-			token: user.Email,
+			token: userAdmin.Email,
 			err:   nil,
 		},
 		{
 			desc:  "register existing user",
 			user:  user,
-			token: user.Email,
+			token: userAdmin.Email,
 			err:   errors.ErrConflict,
 		},
 		{
@@ -74,14 +87,14 @@ func TestRegister(t *testing.T) {
 				Email:    user.Email,
 				Password: "weak",
 			},
-			token: user.Email,
+			token: userAdmin.Email,
 			err:   users.ErrPasswordFormat,
 		},
 		{
 			desc:  "register a new user with unauthorized access",
 			user:  users.User{Email: "newuser@example.com", Password: "12345678"},
 			err:   errors.ErrAuthorization,
-			token: unauthzToken,
+			token: unauthUser.Email,
 		},
 	}
 
@@ -93,7 +106,7 @@ func TestRegister(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	noAuthUser := users.User{
@@ -137,7 +150,7 @@ func TestLogin(t *testing.T) {
 
 func TestViewUser(t *testing.T) {
 	svc := newService()
-	id, err := svc.Register(context.Background(), user.Email, user)
+	id, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -180,7 +193,7 @@ func TestViewUser(t *testing.T) {
 
 func TestViewProfile(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -215,15 +228,17 @@ func TestViewProfile(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.Register(context.Background(), user.Email, user)
+	token, err := svc.Login(context.Background(), userAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	token, err := svc.Login(context.Background(), user)
+	page, err := svc.ListUsers(context.Background(), token, 0, 0, "", nil)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	totUser := page.Total
 
 	var nUsers = uint64(10)
 
-	for i := uint64(1); i < nUsers; i++ {
+	for i := uint64(1); i <= nUsers; i++ {
 		email := fmt.Sprintf("TestListUsers%d@example.com", i)
 		user := users.User{
 			Email:    email,
@@ -232,6 +247,7 @@ func TestListUsers(t *testing.T) {
 		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
+	totUser = totUser + nUsers
 
 	cases := map[string]struct {
 		token  string
@@ -254,8 +270,8 @@ func TestListUsers(t *testing.T) {
 		"list users with offset and limit": {
 			token:  token,
 			offset: 6,
-			limit:  nUsers,
-			size:   nUsers - 6,
+			limit:  totUser,
+			size:   totUser - 6,
 		},
 	}
 
@@ -270,7 +286,7 @@ func TestListUsers(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -303,7 +319,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestGenerateResetToken(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -322,7 +338,7 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 
@@ -346,12 +362,12 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[user.Email] = append(mockAuthzDB[user.Email], mocks.SubjectSet{Object: "authorities", Relation: "member"})
-	authSvc := mocks.NewAuthService(map[string]string{user.Email: user.Email}, mockAuthzDB)
+	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
@@ -372,7 +388,7 @@ func TestResetPassword(t *testing.T) {
 
 func TestSendPasswordReset(t *testing.T) {
 	svc := newService()
-	_, err := svc.Register(context.Background(), user.Email, user)
+	_, err := svc.Register(context.Background(), "", user)
 	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 

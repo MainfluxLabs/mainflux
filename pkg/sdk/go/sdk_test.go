@@ -10,6 +10,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+var (
+	limit  uint64 = 5
+	offset uint64 = 0
+	total  uint64 = 200
+)
+
 func createError(e error, statusCode int) error {
 	httpStatus := fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode))
 	return errors.Wrap(e, errors.New(httpStatus))

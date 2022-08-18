@@ -4,6 +4,7 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	authmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +29,6 @@ import (
 const (
 	svcName       = "test-service"
 	thingToken    = "1"
-	userToken     = "token"
 	email         = "user@example.com"
 	invalid       = "invalid"
 	numOfMessages = 100
@@ -36,6 +37,8 @@ const (
 	mqttProt      = "mqtt"
 	httpProt      = "http"
 	msgName       = "temperature"
+	validEmail    = "user@example.com"
+	validPass     = "password"
 )
 
 var (
@@ -46,6 +49,8 @@ var (
 	sum float64 = 42
 
 	idProvider = uuid.New()
+
+	user = users.User{Email: validEmail, Password: validPass}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
@@ -76,7 +81,12 @@ func (tr testRequest) make() (*http.Response, error) {
 
 	return tr.client.Do(req)
 }
+func newAuthService() mainflux.AuthServiceClient {
+	mockAuthzDB := map[string][]authmocks.SubjectSet{}
+	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: "authorities", Relation: "member"})
 
+	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
+}
 func TestReadAll(t *testing.T) {
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -131,12 +141,14 @@ func TestReadAll(t *testing.T) {
 	}
 
 	thSvc := mocks.NewThingsService(map[string]string{email: chanID})
-	mockAuthzDB := map[string][]authmocks.SubjectSet{}
-	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: "authorities", Relation: "member"})
-	usrSvc := authmocks.NewAuthService(map[string]string{userToken: email}, mockAuthzDB)
+	authSvc := newAuthService()
+
+	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	userToken := tok.GetValue()
 
 	repo := mocks.NewMessageRepository(chanID, fromSenml(messages))
-	ts := newServer(repo, thSvc, usrSvc)
+	ts := newServer(repo, thSvc, authSvc)
 	defer ts.Close()
 
 	cases := []struct {
