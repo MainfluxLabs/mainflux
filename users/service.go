@@ -163,10 +163,11 @@ func (svc usersService) checkAuthz(ctx context.Context, token string) error {
 		return svc.authorize(ctx, ir.id, authoritiesObjKey, memberRelationKey)
 	}
 	// self register allowed, token not used
-	if err := svc.authorize(ctx, "*", "user", "create"); err == nil {
-		return nil
+	if err := svc.authorize(ctx, "*", "user", "create"); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	return errors.ErrAuthorization
+
+	return nil
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
@@ -230,12 +231,13 @@ func (svc usersService) ListUsers(ctx context.Context, token string, offset, lim
 }
 
 func (svc usersService) UpdateUser(ctx context.Context, token string, u User) error {
-	ir, err := svc.identify(ctx, token)
+	idn, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 	user := User{
-		Email:    ir.email,
+		ID:       idn.id,
+		Email:    u.Email,
 		Metadata: u.Metadata,
 	}
 	return svc.users.UpdateUser(ctx, user)
