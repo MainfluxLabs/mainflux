@@ -6,9 +6,9 @@ package api
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
