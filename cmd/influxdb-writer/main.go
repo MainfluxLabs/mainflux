@@ -11,8 +11,6 @@ import (
 	"os"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	influxdata "github.com/influxdata/influxdb/client/v2"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/writers/api"
@@ -20,6 +18,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -31,38 +31,45 @@ const (
 	defBrokerURL  = "nats://localhost:4222"
 	defLogLevel   = "error"
 	defPort       = "8180"
-	defDB         = "mainflux"
 	defDBHost     = "localhost"
 	defDBPort     = "8086"
 	defDBUser     = "mainflux"
 	defDBPass     = "mainflux"
 	defConfigPath = "/config.toml"
+	defDBBucket   = "mainflux-bucket"
+	defDBOrg      = "mainflux"
+	defDBToken    = "mainflux-token"
 
 	envBrokerURL  = "MF_BROKER_URL"
 	envLogLevel   = "MF_INFLUX_WRITER_LOG_LEVEL"
 	envPort       = "MF_INFLUX_WRITER_PORT"
-	envDB         = "MF_INFLUXDB_DB"
 	envDBHost     = "MF_INFLUXDB_HOST"
 	envDBPort     = "MF_INFLUXDB_PORT"
 	envDBUser     = "MF_INFLUXDB_ADMIN_USER"
 	envDBPass     = "MF_INFLUXDB_ADMIN_PASSWORD"
 	envConfigPath = "MF_INFLUX_WRITER_CONFIG_PATH"
+	envDBBucket   = "MF_INFLUXDB_BUCKET"
+	envDBOrg      = "MF_INFLUXDB_ORG"
+	envDBToken    = "MF_INFLUXDB_TOKEN"
 )
 
 type config struct {
 	brokerURL  string
 	logLevel   string
 	port       string
-	dbName     string
 	dbHost     string
 	dbPort     string
 	dbUser     string
 	dbPass     string
 	configPath string
+	dbBucket   string
+	dbOrg      string
+	dbToken    string
+	dbUrl      string
 }
 
 func main() {
-	cfg, clientCfg := loadConfigs()
+	cfg, repoCfg := loadConfigs()
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -78,15 +85,14 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	client, err := influxdata.NewHTTPClient(clientCfg)
+	client, err := connectToInfluxDB(cfg)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create InfluxDB client: %s", err))
 		os.Exit(1)
 	}
 	defer client.Close()
 
-	repo := influxdb.New(client, cfg.dbName)
-
+	repo := influxdb.New(client, repoCfg)
 	counter, latency := makeMetrics()
 	repo = api.LoggingMiddleware(repo, logger)
 	repo = api.MetricsMiddleware(repo, counter, latency)
@@ -113,26 +119,33 @@ func main() {
 	}
 }
 
-func loadConfigs() (config, influxdata.HTTPConfig) {
+func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
+	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
+	_, err := client.Ping(context.Background())
+	return client, err
+}
+
+func loadConfigs() (config, influxdb.RepoConfig) {
 	cfg := config{
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		port:       mainflux.Env(envPort, defPort),
-		dbName:     mainflux.Env(envDB, defDB),
 		dbHost:     mainflux.Env(envDBHost, defDBHost),
 		dbPort:     mainflux.Env(envDBPort, defDBPort),
 		dbUser:     mainflux.Env(envDBUser, defDBUser),
 		dbPass:     mainflux.Env(envDBPass, defDBPass),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
+		dbBucket:   mainflux.Env(envDBBucket, defDBBucket),
+		dbOrg:      mainflux.Env(envDBOrg, defDBOrg),
+		dbToken:    mainflux.Env(envDBToken, defDBToken),
 	}
+	cfg.dbUrl = fmt.Sprintf("http://%s:%s", cfg.dbHost, cfg.dbPort)
 
-	clientCfg := influxdata.HTTPConfig{
-		Addr:     fmt.Sprintf("http://%s:%s", cfg.dbHost, cfg.dbPort),
-		Username: cfg.dbUser,
-		Password: cfg.dbPass,
+	repoCfg := influxdb.RepoConfig{
+		Bucket: cfg.dbBucket,
+		Org:    cfg.dbOrg,
 	}
-
-	return cfg, clientCfg
+	return cfg, repoCfg
 }
 
 func makeMetrics() (*kitprometheus.Counter, *kitprometheus.Summary) {
