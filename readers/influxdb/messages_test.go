@@ -2,24 +2,21 @@ package influxdb_test
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
-	influxdata "github.com/influxdata/influxdb/client/v2"
 	iwriter "github.com/MainfluxLabs/mainflux/consumers/writers/influxdb"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
 	ireader "github.com/MainfluxLabs/mainflux/readers/influxdb"
-
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	testDB      = "test"
 	subtopic    = "topic"
 	msgsNum     = 100
 	limit       = 10
@@ -41,12 +38,19 @@ var (
 	vd          = "dataValue"
 	sum float64 = 42
 
-	client     influxdata.Client
+	client  influxdb2.Client
+	repoCfg = struct {
+		Bucket string
+		Org    string
+	}{
+		Bucket: dbBucket,
+		Org:    dbOrg,
+	}
 	idProvider = uuid.New()
 )
 
 func TestReadAll(t *testing.T) {
-	writer := iwriter.New(client, testDB)
+	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -72,14 +76,12 @@ func TestReadAll(t *testing.T) {
 	stringMsgs := []senml.Message{}
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
-	rand.Seed(time.Now().UnixNano())
-	to := msgsNum
-	now := float64(rand.Intn(to) + offset)
+	now := time.Now().UnixNano()
 
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = now - float64(i)
+		msg.Time = float64(now)/float64(1e9) - 10*float64(i)
 
 		count := i % valueFields
 		switch count {
@@ -103,14 +105,13 @@ func TestReadAll(t *testing.T) {
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
-
 		messages = append(messages, msg)
 	}
 
 	err = writer.Consume(messages)
 	require.Nil(t, err, fmt.Sprintf("failed to store message to InfluxDB: %s", err))
 
-	reader := ireader.New(client, testDB)
+	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
 		chanID   string
@@ -338,19 +339,19 @@ func TestReadAll(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  uint64(len(messages[0:offset])),
-				From:   messages[offset-1].Time,
+				Limit:  uint64(len(messages[0 : offset+1])),
+				From:   messages[offset].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(len(messages[0:offset])),
-				Messages: fromSenml(messages[0:offset]),
+				Total:    uint64(len(messages[0 : offset+1])),
+				Messages: fromSenml(messages[0 : offset+1]),
 			},
 		},
 		"read message with to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  uint64(len(messages[offset:])),
+				Limit:  uint64(len(messages[offset-1:])),
 				To:     messages[offset-1].Time,
 			},
 			page: readers.MessagesPage{
@@ -368,7 +369,7 @@ func TestReadAll(t *testing.T) {
 			},
 			page: readers.MessagesPage{
 				Total:    5,
-				Messages: fromSenml(messages[1:6]),
+				Messages: fromSenml(messages[0+1 : 5+1]),
 			},
 		},
 	}
@@ -382,7 +383,7 @@ func TestReadAll(t *testing.T) {
 }
 
 func TestReadJSON(t *testing.T) {
-	writer := iwriter.New(client, testDB)
+	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -442,7 +443,7 @@ func TestReadJSON(t *testing.T) {
 	for i := 0; i < msgsNum; i += 2 {
 		httpMsgs = append(httpMsgs, msgs2[i])
 	}
-	reader := ireader.New(client, testDB)
+	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
 		chanID   string
