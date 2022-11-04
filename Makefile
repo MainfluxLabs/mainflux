@@ -94,15 +94,14 @@ dockers_dev: $(DOCKERS_DEV)
 
 define docker_push
 	for svc in $(SERVICES); do \
-		docker push $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(1); \
+		docker push $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc; \
 	done
 endef
 
 changelog:
 	git log $(shell git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s"
 
-latest: dockers
-	$(call docker_push,latest)
+latest: dockers docker_push
 
 release:
 	$(eval version = $(shell git describe --abbrev=0 --tags))
