@@ -32,7 +32,7 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker buildx build --platform=linux/amd64,linux/arm64 \
+	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -40,8 +40,8 @@ define make_docker
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
-		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
-		-f docker/Dockerfile . --push
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		-f docker/Dockerfile .
 endef
 
 define make_docker_dev
