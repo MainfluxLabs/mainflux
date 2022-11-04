@@ -32,7 +32,7 @@ endef
 define make_docker
 	$(eval svc=$(subst docker_,,$(1)))
 
-	docker buildx build --platform=linux/amd64,linux/arm64 \
+	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
 		--build-arg GOARCH=$(GOARCH) \
@@ -40,8 +40,8 @@ define make_docker
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
-		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
-		-f docker/Dockerfile . --push
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		-f docker/Dockerfile .
 endef
 
 define make_docker_dev
@@ -94,14 +94,15 @@ dockers_dev: $(DOCKERS_DEV)
 
 define docker_push
 	for svc in $(SERVICES); do \
-		docker push $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc; \
+		docker push $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(1); \
 	done
 endef
 
 changelog:
 	git log $(shell git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s"
 
-latest: dockers docker_push
+latest: dockers
+	$(call docker_push,latest)
 
 release:
 	$(eval version = $(shell git describe --abbrev=0 --tags))
