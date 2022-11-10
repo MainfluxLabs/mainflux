@@ -10,22 +10,22 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-var _ mainflux.Response = (*pageRes)(nil)
+var _ mainflux.Response = (*listChannelMessagesPageRes)(nil)
 
-type pageRes struct {
+type listChannelMessagesPageRes struct {
 	readers.PageMetadata
 	Total    uint64            `json:"total"`
 	Messages []readers.Message `json:"messages,omitempty"`
 }
 
-func (res pageRes) Headers() map[string]string {
+func (res listChannelMessagesPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res pageRes) Code() int {
+func (res listChannelMessagesPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res pageRes) Empty() bool {
+func (res listChannelMessagesPageRes) Empty() bool {
 	return false
 }

@@ -7,16 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jmoiron/sqlx" // required for DB access
-	"github.com/lib/pq"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jmoiron/sqlx" // required for DB access
+	"github.com/lib/pq"
 )
 
 const (
 	// Table for SenML messages
 	defTable = "messages"
+	// noLimit is used to indicate that no limit is set
+	noLimit = -1
 
 	// Error code for Undefined table error.
 	undefinedTableCode = "42P01"
@@ -35,7 +37,7 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable
 
@@ -47,6 +49,9 @@ func (tr postgresRepository) ReadAll(chanID string, rpm readers.PageMetadata) (r
 	q := fmt.Sprintf(`SELECT * FROM %s
     WHERE %s ORDER BY %s DESC
 	LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
+
+	qNoLimit := fmt.Sprintf(`SELECT * FROM %s
+	WHERE %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
 
 	params := map[string]interface{}{
 		"channel":      chanID,
@@ -64,7 +69,15 @@ func (tr postgresRepository) ReadAll(chanID string, rpm readers.PageMetadata) (r
 		"to":           rpm.To,
 	}
 
-	rows, err := tr.db.NamedQuery(q, params)
+	var query string
+	switch rpm.Limit {
+	case noLimit:
+		query = qNoLimit
+	default:
+		query = q
+	}
+
+	rows, err := tr.db.NamedQuery(query, params)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == undefinedTableCode {

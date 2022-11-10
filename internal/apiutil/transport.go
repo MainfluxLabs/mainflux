@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"strconv"
 
-	kithttp "github.com/go-kit/kit/transport/http"
-	"github.com/go-zoo/bone"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	kithttp "github.com/go-kit/kit/transport/http"
+	"github.com/go-zoo/bone"
 )
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -67,6 +67,26 @@ func ReadUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
 
 	strval := vals[0]
 	val, err := strconv.ParseUint(strval, 10, 64)
+	if err != nil {
+		return 0, errors.ErrInvalidQueryParams
+	}
+
+	return val, nil
+}
+
+// ReadIntQuery reads the value of int64 http query parameters for a given key
+func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
+	vals := bone.GetQuery(r, key)
+	if len(vals) > 1 {
+		return 0, errors.ErrInvalidQueryParams
+	}
+
+	if len(vals) == 0 {
+		return def, nil
+	}
+
+	strval := vals[0]
+	val, err := strconv.ParseInt(strval, 10, 64)
 	if err != nil {
 		return 0, errors.ErrInvalidQueryParams
 	}

@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jmoiron/sqlx" // required for DB access
-	"github.com/lib/pq"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jmoiron/sqlx" // required for DB access
+	"github.com/lib/pq"
 )
 
 const (
@@ -35,7 +35,7 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr timescaleRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable
 

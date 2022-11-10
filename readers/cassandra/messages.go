@@ -7,16 +7,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gocql/gocql"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/gocql/gocql"
 )
 
 const (
 	// Table for SenML messages
 	defTable = "messages"
-
 	// Error code for Undefined table error.
 	undefinedTableCode = 8704
 )
@@ -34,7 +33,7 @@ func New(session *gocql.Session) readers.MessageRepository {
 	}
 }
 
-func (cr cassandraRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (cr cassandraRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defTable
 	if rpm.Format != "" {
 		format = rpm.Format
@@ -161,7 +160,7 @@ func buildQuery(chanID string, rpm readers.PageMetadata) (string, []interface{})
 			condCQL = fmt.Sprintf(`%s AND time < ?`, condCQL)
 		}
 	}
-	vals = append(vals, rpm.Offset+rpm.Limit)
+	vals = append(vals, rpm.Offset+uint64(rpm.Limit))
 
 	return condCQL, vals
 }

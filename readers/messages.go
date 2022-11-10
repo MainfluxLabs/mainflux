@@ -23,9 +23,9 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
-	// ReadAll skips given number of messages for given channel and returns next
+	// ListChannelMessages skips given number of messages for given channel and returns next
 	// limited number of messages.
-	ReadAll(chanID string, pm PageMetadata) (MessagesPage, error)
+	ListChannelMessages(chanID string, pm PageMetadata) (MessagesPage, error)
 }
 
 // Message represents any message format.
@@ -42,7 +42,7 @@ type MessagesPage struct {
 // PageMetadata represents the parameters used to create database queries
 type PageMetadata struct {
 	Offset      uint64  `json:"offset"`
-	Limit       uint64  `json:"limit"`
+	Limit       int64   `json:"limit"`
 	Subtopic    string  `json:"subtopic,omitempty"`
 	Publisher   string  `json:"publisher,omitempty"`
 	Protocol    string  `json:"protocol,omitempty"`

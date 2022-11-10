@@ -44,8 +44,7 @@ func New(client influxdb2.Client, repoCfg RepoConfig) readers.MessageRepository 
 	}
 }
 
-func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-
+func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defMeasurement
 	if rpm.Format != "" {
 		format = rpm.Format
@@ -65,7 +64,9 @@ func (repo *influxRepository) ReadAll(chanID string, rpm readers.PageMetadata) (
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
-	sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
+	if rpm.Limit != -1 {
+		sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
+	}
 	sb.WriteString(`|> yield(name: "sort")`)
 	query := sb.String()
 	resp, err := queryAPI.Query(context.Background(), query)

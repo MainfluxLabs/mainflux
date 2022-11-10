@@ -8,16 +8,19 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-const maxLimitSize = 1000
+const (
+	maxLimitSize = 1000
+	noLimit      = -1
+)
 
-type listMessagesReq struct {
+type listChannelMessagesReq struct {
 	chanID   string
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listMessagesReq) validate() error {
+func (req listChannelMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -26,8 +29,10 @@ func (req listMessagesReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.pageMeta.Limit < 1 || req.pageMeta.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
+	if req.pageMeta.Limit != noLimit {
+		if req.pageMeta.Limit < 1 || req.pageMeta.Limit > maxLimitSize {
+			return apiutil.ErrLimitSize
+		}
 	}
 
 	if req.pageMeta.Offset < 0 {

@@ -6,28 +6,28 @@ package api
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/go-kit/kit/endpoint"
 )
 
-func listMessagesEndpoint(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) endpoint.Endpoint {
+func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMessagesReq)
-
+		req := request.(listChannelMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		if err := authorize(ctx, req, tc, ac); err != nil {
+
+		if err := authorize(ctx, req.token, req.key, req.chanID); err != nil {
 			return nil, errors.Wrap(errors.ErrAuthorization, err)
 		}
-		page, err := svc.ReadAll(req.chanID, req.pageMeta)
+
+		page, err := svc.ListChannelMessages(req.chanID, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return pageRes{
+		return listChannelMessagesPageRes{
 			PageMetadata: page.PageMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,

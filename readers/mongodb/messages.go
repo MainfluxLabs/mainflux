@@ -16,7 +16,10 @@ import (
 )
 
 // Collection for SenML messages
-const defCollection = "messages"
+const (
+	defCollection = "messages"
+	noLimit       = -1
+)
 
 var _ readers.MessageRepository = (*mongoRepository)(nil)
 
@@ -31,7 +34,7 @@ func New(db *mongo.Database) readers.MessageRepository {
 	}
 }
 
-func (repo mongoRepository) ReadAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"
 	if rpm.Format != "" && rpm.Format != defCollection {
@@ -46,9 +49,17 @@ func (repo mongoRepository) ReadAll(chanID string, rpm readers.PageMetadata) (re
 	}
 	// Remove format filter and format the rest properly.
 	filter := fmtCondition(chanID, rpm)
-	cursor, err := col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset)))
+	var cursor *mongo.Cursor
+	var err error
+	switch rpm.Limit {
+	case noLimit:
+		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap))
+	default:
+		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset)))
+	}
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+
 	}
 	defer cursor.Close(context.Background())
 
