@@ -54,15 +54,12 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	switch rpm.Limit {
 	case noLimit:
 		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap))
-		if err != nil {
-			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-		}
 	default:
 		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset)))
-		if err != nil {
-			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	if err != nil {
+		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 
-		}
 	}
 	defer cursor.Close(context.Background())
 
