@@ -45,7 +45,6 @@ func New(client influxdb2.Client, repoCfg RepoConfig) readers.MessageRepository 
 }
 
 func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-
 	format := defMeasurement
 	if rpm.Format != "" {
 		format = rpm.Format

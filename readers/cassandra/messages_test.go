@@ -23,7 +23,6 @@ const (
 	subtopic    = "subtopic"
 	msgsNum     = 100
 	limit       = 10
-	noLimit     = -1
 	valueFields = 5
 	mqttProt    = "mqtt"
 	httpProt    = "http"

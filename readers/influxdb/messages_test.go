@@ -20,7 +20,7 @@ const (
 	subtopic    = "topic"
 	msgsNum     = 1001
 	limit       = 10
-	oneMsgLimit = 1
+	oneLimit    = 1
 	noLimit     = -1
 	zeroOffset  = 0
 	valueFields = 5
@@ -457,11 +457,11 @@ func TestReadJSON(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Offset: zeroOffset,
-				Limit:  oneMsgLimit,
+				Limit:  oneLimit,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
-				Messages: fromJSON(msgs1[:oneMsgLimit]),
+				Messages: fromJSON(msgs1[:oneLimit]),
 			},
 		},
 		"read all messages for existing channel": {

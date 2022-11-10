@@ -47,16 +47,22 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	sortMap := map[string]interface{}{
 		order: -1,
 	}
-
-	limit := rpm.Limit
-	if rpm.Limit == noLimit {
-		limit = 0
-	}
 	// Remove format filter and format the rest properly.
 	filter := fmtCondition(chanID, rpm)
-	cursor, err := col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(limit).SetSkip(int64(rpm.Offset)))
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	var cursor *mongo.Cursor
+	var err error
+	switch rpm.Limit {
+	case noLimit:
+		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap))
+		if err != nil {
+			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+	default:
+		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset)))
+		if err != nil {
+			return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+
+		}
 	}
 	defer cursor.Close(context.Background())
 

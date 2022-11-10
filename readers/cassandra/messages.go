@@ -17,7 +17,6 @@ const (
 	// Table for SenML messages
 	defTable = "messages"
 	// noLimit is used to indicate that there is no limit for the query
-	noLimit = -1
 
 	// Error code for Undefined table error.
 	undefinedTableCode = 8704

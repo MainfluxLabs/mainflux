@@ -36,7 +36,6 @@ const (
 	comparatorKey  = "comparator"
 	fromKey        = "from"
 	toKey          = "to"
-	ownerIDKey     = "ownerID"
 	defLimit       = 10
 	defOffset      = 0
 	defFormat      = "messages"

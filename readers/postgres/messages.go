@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	format = "format"
 	// Table for SenML messages
 	defTable = "messages"
 	// noLimit is used to indicate that no limit is set

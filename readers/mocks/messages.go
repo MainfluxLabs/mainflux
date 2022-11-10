@@ -11,9 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-const (
-	noLimit = -1
-)
+const noLimit = -1
 
 var _ readers.MessageRepository = (*messageRepositoryMock)(nil)
 
@@ -149,10 +147,8 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 	if rpm.Offset >= numOfMessages {
 		return readers.MessagesPage{}, nil
 	}
-	if rpm.Limit != noLimit {
-		if rpm.Limit < 1 {
-			return readers.MessagesPage{}, nil
-		}
+	if rpm.Limit < 1 && rpm.Limit != noLimit {
+		return readers.MessagesPage{}, nil
 	}
 
 	end := rpm.Offset + uint64(rpm.Limit)
