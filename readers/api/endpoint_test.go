@@ -31,7 +31,7 @@ const (
 	thingToken    = "1"
 	email         = "user@example.com"
 	invalid       = "invalid"
-	numOfMessages = 100
+	numOfMessages = 1001
 	valueFields   = 5
 	subtopic      = "topic"
 	mqttProt      = "mqtt"
