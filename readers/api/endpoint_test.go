@@ -87,7 +87,7 @@ func newAuthService() mainflux.AuthServiceClient {
 
 	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
 }
-func TestReadAll(t *testing.T) {
+func TestListChannelMessages(t *testing.T) {
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID, err := idProvider.ID()
@@ -168,6 +168,16 @@ func TestReadAll(t *testing.T) {
 			res: pageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read all messages with no limit",
+			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=-1", ts.URL, chanID),
+			key:    thingToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:],
 			},
 		},
 		{

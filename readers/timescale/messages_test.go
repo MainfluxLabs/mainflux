@@ -20,9 +20,10 @@ import (
 
 const (
 	subtopic    = "subtopic"
-	msgsNum     = 100
+	msgsNum     = 1001
 	limit       = 10
 	valueFields = 5
+	zeroOffset  = 0
 	mqttProt    = "mqtt"
 	httpProt    = "http"
 	msgName     = "temperature"
@@ -114,7 +115,7 @@ func TestReadSenml(t *testing.T) {
 		"read message page for existing channel": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
+				Offset: zeroOffset,
 				Limit:  msgsNum,
 			},
 			page: readers.MessagesPage{
@@ -125,7 +126,7 @@ func TestReadSenml(t *testing.T) {
 		"read message page for non-existent channel": {
 			chanID: wrongID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
+				Offset: zeroOffset,
 				Limit:  msgsNum,
 			},
 			page: readers.MessagesPage{
@@ -146,7 +147,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with non-existent subtopic": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:   0,
+				Offset:   zeroOffset,
 				Limit:    msgsNum,
 				Subtopic: "not-present",
 			},
@@ -157,8 +158,8 @@ func TestReadSenml(t *testing.T) {
 		"read message with subtopic": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:   0,
-				Limit:    uint64(len(queryMsgs)),
+				Offset:   zeroOffset,
+				Limit:    int64(len(queryMsgs)),
 				Subtopic: subtopic,
 			},
 			page: readers.MessagesPage{
@@ -169,8 +170,8 @@ func TestReadSenml(t *testing.T) {
 		"read message with publisher": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:    0,
-				Limit:     uint64(len(queryMsgs)),
+				Offset:    zeroOffset,
+				Limit:     int64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -182,8 +183,8 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
-				Offset:    0,
-				Limit:     uint64(len(queryMsgs)),
+				Offset:    zeroOffset,
+				Limit:     int64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -194,8 +195,8 @@ func TestReadSenml(t *testing.T) {
 		"read message with protocol": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:   0,
-				Limit:    uint64(len(queryMsgs)),
+				Offset:   zeroOffset,
+				Limit:    int64(len(queryMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -206,7 +207,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with name": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
+				Offset: zeroOffset,
 				Limit:  limit,
 				Name:   msgName,
 			},
@@ -218,7 +219,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
+				Offset: zeroOffset,
 				Limit:  limit,
 				Value:  v,
 			},
@@ -230,7 +231,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value and equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:     0,
+				Offset:     zeroOffset,
 				Limit:      limit,
 				Value:      v,
 				Comparator: readers.EqualKey,
@@ -243,7 +244,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value and lower-than comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:     0,
+				Offset:     zeroOffset,
 				Limit:      limit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
@@ -256,7 +257,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value and lower-than-or-equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:     0,
+				Offset:     zeroOffset,
 				Limit:      limit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
@@ -269,7 +270,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value and greater-than comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:     0,
+				Offset:     zeroOffset,
 				Limit:      limit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
@@ -282,7 +283,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with value and greater-than-or-equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:     0,
+				Offset:     zeroOffset,
 				Limit:      limit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
@@ -295,7 +296,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with boolean value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:    0,
+				Offset:    zeroOffset,
 				Limit:     limit,
 				BoolValue: vb,
 			},
@@ -307,7 +308,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with string value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:      0,
+				Offset:      zeroOffset,
 				Limit:       limit,
 				StringValue: vs,
 			},
@@ -319,7 +320,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with data value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset:    0,
+				Offset:    zeroOffset,
 				Limit:     limit,
 				DataValue: vd,
 			},
@@ -331,8 +332,8 @@ func TestReadSenml(t *testing.T) {
 		"read message with from": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(len(messages[0:21])),
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[0:21])),
 				From:   messages[20].Time,
 			},
 			page: readers.MessagesPage{
@@ -343,8 +344,8 @@ func TestReadSenml(t *testing.T) {
 		"read message with to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(len(messages[21:])),
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[21:])),
 				To:     messages[20].Time,
 			},
 			page: readers.MessagesPage{
@@ -355,7 +356,7 @@ func TestReadSenml(t *testing.T) {
 		"read message with from/to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
-				Offset: 0,
+				Offset: zeroOffset,
 				Limit:  limit,
 				From:   messages[5].Time,
 				To:     messages[0].Time,
@@ -368,7 +369,7 @@ func TestReadSenml(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ReadAll(tc.chanID, tc.pageMeta)
+		result, err := reader.ListChannelMessages(tc.chanID, tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -419,6 +420,7 @@ func TestReadJSON(t *testing.T) {
 		Format: format2,
 	}
 	msgs2 := []map[string]interface{}{}
+	httpMsgs := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
 		m := json.Message{
 			Channel:   id2,
@@ -436,18 +438,14 @@ func TestReadJSON(t *testing.T) {
 		msg := m
 		if i%2 == 0 {
 			msg.Protocol = httpProt
+			httpMsgs = append(httpMsgs, toMap(msg))
 		}
+
 		messages2.Data = append(messages2.Data, msg)
-		mapped := toMap(msg)
-		msgs2 = append(msgs2, mapped)
+		msgs2 = append(msgs2, toMap(msg))
 	}
 	err = writer.Consume(messages2)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
-
-	httpMsgs := []map[string]interface{}{}
-	for i := 0; i < msgsNum; i += 2 {
-		httpMsgs = append(httpMsgs, msgs2[i])
-	}
 
 	reader := treader.New(db)
 
@@ -460,11 +458,11 @@ func TestReadJSON(t *testing.T) {
 			chanID: id1,
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
-				Offset: 0,
-				Limit:  10,
+				Offset: zeroOffset,
+				Limit:  limit,
 			},
 			page: readers.MessagesPage{
-				Total:    100,
+				Total:    msgsNum,
 				Messages: fromJSON(msgs1[:10]),
 			},
 		},
@@ -472,8 +470,8 @@ func TestReadJSON(t *testing.T) {
 			chanID: wrongID,
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
-				Offset: 0,
-				Limit:  10,
+				Offset: zeroOffset,
+				Limit:  limit,
 			},
 			page: readers.MessagesPage{
 				Messages: []readers.Message{},
@@ -495,19 +493,19 @@ func TestReadJSON(t *testing.T) {
 			chanID: id2,
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
-				Offset:   0,
-				Limit:    uint64(msgsNum / 2),
+				Offset:   zeroOffset,
+				Limit:    int64(len(httpMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(msgsNum / 2),
+				Total:    uint64(len(httpMsgs)),
 				Messages: fromJSON(httpMsgs),
 			},
 		},
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ReadAll(tc.chanID, tc.pageMeta)
+		result, err := reader.ListChannelMessages(tc.chanID, tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
