@@ -44,6 +44,36 @@ func New(client influxdb2.Client, repoCfg RepoConfig) readers.MessageRepository 
 	}
 }
 
+func (repo *influxRepository) ListAllMessages() ([]readers.Message, error) {
+	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
+	var sb strings.Builder
+	sb.WriteString(`import "influxdata/influxdb/v1"`)
+	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
+	sb.WriteString(`|> v1.fieldsAsCols()`)
+	sb.WriteString(`|> group()`)
+	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
+	sb.WriteString(`|> yield(name: "sort")`)
+	query := sb.String()
+	resp, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	var messages []readers.Message
+	var valueMap map[string]interface{}
+	for resp.Next() {
+		valueMap = resp.Record().Values()
+		msg, err := parseMessage(defMeasurement, valueMap)
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, msg)
+	}
+	if resp.Err() != nil {
+		return nil, errors.Wrap(readers.ErrReadMessages, resp.Err())
+	}
+	return messages, nil
+}
+
 func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defMeasurement
 	if rpm.Format != "" {

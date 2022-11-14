@@ -26,6 +26,8 @@ type MessageRepository interface {
 	// ListChannelMessages skips given number of messages for given channel and returns next
 	// limited number of messages.
 	ListChannelMessages(chanID string, pm PageMetadata) (MessagesPage, error)
+	// ListAllMessages retrieves all messages from database.
+	ListAllMessages() ([]Message, error)
 }
 
 // Message represents any message format.

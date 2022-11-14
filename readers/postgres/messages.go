@@ -37,6 +37,28 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
+func (tr postgresRepository) ListAllMessages() ([]readers.Message, error) {
+	q := fmt.Sprintf(`SELECT * FROM %s ORDER BY time DESC;`, defTable)
+
+	rows, err := tr.db.Queryx(q)
+	if err != nil {
+		return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	messages := []readers.Message{}
+	for rows.Next() {
+		msg := senmlMessage{Message: senml.Message{}}
+		if err := rows.StructScan(&msg); err != nil {
+			return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+
+		messages = append(messages, msg.Message)
+	}
+
+	return messages, nil
+}
+
 func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable

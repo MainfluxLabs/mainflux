@@ -162,3 +162,8 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 		Messages:     msgs[rpm.Offset:end],
 	}, nil
 }
+
+func (repo *messageRepositoryMock) ListAllMessages() ([]readers.Message, error) {
+	// TODO: Implement this method.
+	return nil, nil
+}

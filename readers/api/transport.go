@@ -64,6 +64,12 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
+	mux.Get("/messages", kithttp.NewServer(
+		listAllMessagesEndpoint(svc),
+		decodeListAllMessages,
+		encodeResponse,
+		opts...,
+	))
 
 	mux.GetFunc("/health", mainflux.Health(svcName))
 	mux.Handle("/metrics", promhttp.Handler())
@@ -166,6 +172,14 @@ func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{
 		req.pageMeta.BoolValue = vb
 	}
 
+	return req, nil
+}
+
+func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
+	req := listAllMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		key:   apiutil.ExtractThingKey(r),
+	}
 	return req, nil
 }
 
