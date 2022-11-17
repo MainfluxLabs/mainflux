@@ -34,29 +34,15 @@ func New(db *mongo.Database) readers.MessageRepository {
 	}
 }
 
-func (repo mongoRepository) ListAllMessages() ([]readers.Message, error) {
-	coll := repo.db.Collection(defCollection)
-
-	cur, err := coll.Find(context.Background(), bson.D{})
-	if err != nil {
-		return nil, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer cur.Close(context.Background())
-
-	messages := []readers.Message{}
-	for cur.Next(context.Background()) {
-		var msg senml.Message
-		if err := cur.Decode(&msg); err != nil {
-			return nil, errors.Wrap(readers.ErrReadMessages, err)
-		}
-
-		messages = append(messages, msg)
-	}
-
-	return messages, nil
+func (repo mongoRepository) ListAllMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
 }
 
 func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
+}
+
+func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"
 	if rpm.Format != "" && rpm.Format != defCollection {
@@ -122,11 +108,10 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) bson.D {
-	filter := bson.D{
-		bson.E{
-			Key:   "channel",
-			Value: chanID,
-		},
+	filter := bson.D{}
+
+	if chanID != "" {
+		filter = append(filter, bson.E{Key: "channel", Value: chanID})
 	}
 
 	var query map[string]interface{}

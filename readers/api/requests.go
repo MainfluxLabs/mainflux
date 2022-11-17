@@ -13,14 +13,14 @@ const (
 	noLimit      = -1
 )
 
-type listChannelMessagesReq struct {
+type listMessagesReq struct {
 	chanID   string
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listChannelMessagesReq) validate() error {
+func (req listMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -51,15 +51,16 @@ func (req listChannelMessagesReq) validate() error {
 	return nil
 }
 
-type listAllMessagesReq struct {
-	token string
-	key   string
-}
-
-func (req listAllMessagesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	return nil
-}
+//type listAllMessagesReq struct {
+//	token string
+//	key   string
+//	pageMeta readers.PageMetadata
+//}
+//
+//func (req listAllMessagesReq) validate() error {
+//	if req.token == "" {
+//		return apiutil.ErrBearerToken
+//	}
+//
+//	return nil
+//}

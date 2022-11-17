@@ -38,11 +38,11 @@ func (mm *metricsMiddleware) ListChannelMessages(chanID string, rpm readers.Page
 	return mm.svc.ListChannelMessages(chanID, rpm)
 }
 
-func (mm *metricsMiddleware) ListAllMessages() ([]readers.Message, error) {
+func (mm *metricsMiddleware) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_all_messages").Add(1)
 		mm.latency.With("method", "list_all_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.ListAllMessages()
+	return mm.svc.ListAllMessages(rpm)
 }

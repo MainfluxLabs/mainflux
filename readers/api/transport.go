@@ -60,13 +60,13 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	mux := bone.New()
 	mux.Get("/channels/:chanID/messages", kithttp.NewServer(
 		ListChannelMessagesEndpoint(svc),
-		decodeListChannelMessages,
+		decodeListMessages,
 		encodeResponse,
 		opts...,
 	))
 	mux.Get("/messages", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
-		decodeListAllMessages,
+		decodeListMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -77,7 +77,7 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	return mux
 }
 
-func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, error) {
 	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{
 		return nil, err
 	}
 
-	req := listChannelMessagesReq{
+	req := listMessagesReq{
 		chanID: bone.GetValue(r, "chanID"),
 		token:  apiutil.ExtractBearerToken(r),
 		key:    apiutil.ExtractThingKey(r),
@@ -175,13 +175,13 @@ func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
-func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
-	req := listAllMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
-	}
-	return req, nil
-}
+//func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
+//	req := listAllMessagesReq{
+//		token: apiutil.ExtractBearerToken(r),
+//		key:   apiutil.ExtractThingKey(r),
+//	}
+//	return req, nil
+//}
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)

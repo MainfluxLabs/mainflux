@@ -41,7 +41,7 @@ func (lm *loggingMiddleware) ListChannelMessages(chanID string, rpm readers.Page
 	return lm.svc.ListChannelMessages(chanID, rpm)
 }
 
-func (lm *loggingMiddleware) ListAllMessages() (msgs []readers.Message, err error) {
+func (lm *loggingMiddleware) ListAllMessages(rpm readers.PageMetadata) (page readers.MessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_all_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -51,5 +51,5 @@ func (lm *loggingMiddleware) ListAllMessages() (msgs []readers.Message, err erro
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListAllMessages()
+	return lm.svc.ListAllMessages(rpm)
 }

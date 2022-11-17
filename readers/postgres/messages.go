@@ -37,29 +37,15 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ListAllMessages() ([]readers.Message, error) {
-	q := fmt.Sprintf(`SELECT * FROM %s ORDER BY time DESC;`, defTable)
-
-	rows, err := tr.db.Queryx(q)
-	if err != nil {
-		return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	messages := []readers.Message{}
-	for rows.Next() {
-		msg := senmlMessage{Message: senml.Message{}}
-		if err := rows.StructScan(&msg); err != nil {
-			return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
-		}
-
-		messages = append(messages, msg.Message)
-	}
-
-	return messages, nil
+func (tr postgresRepository) ListAllMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(chanID, rpm)
 }
 
 func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(chanID, rpm)
+}
+
+func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable
 
@@ -75,6 +61,9 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	qNoLimit := fmt.Sprintf(`SELECT * FROM %s
 	WHERE %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
 
+	if chanID == "" {
+		qNoLimit = `SELECT * FROM messages ORDER BY time DESC;`
+	}
 	params := map[string]interface{}{
 		"channel":      chanID,
 		"limit":        rpm.Limit,
@@ -158,8 +147,21 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {
-	condition := `channel = :channel`
-
+	//var condition string
+	//switch chanID {
+	//case "":
+	//	condition = `channel IS NOT NULL`
+	//default:
+	//	condition = `channel = :channel`
+	//}
+	//condition := `channel = :channel`
+	//if chanID == "" {
+	//	condition = `channel != ''`
+	//}
+	condition := ""
+	if chanID != "" {
+		condition = `channel = :channel`
+	}
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {

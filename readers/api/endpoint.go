@@ -14,7 +14,7 @@ import (
 
 func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listChannelMessagesReq)
+		req := request.(listMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -28,7 +28,7 @@ func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		return listChannelMessagesPageRes{
+		return listMessagesPageRes{
 			PageMetadata: page.PageMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,
@@ -38,7 +38,7 @@ func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 
 func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listAllMessagesReq)
+		req := request.(listMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -52,13 +52,15 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.Wrap(errors.ErrAuthentication, err)
 		}
 
-		msgs, err := svc.ListAllMessages()
+		page, err := svc.ListAllMessages(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return listAllMessagesRes{
-			Messages: msgs,
+		return listMessagesPageRes{
+			PageMetadata: page.PageMetadata,
+			Total:        page.Total,
+			Messages:     page.Messages,
 		}, nil
 	}
 }

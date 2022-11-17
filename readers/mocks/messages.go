@@ -163,7 +163,7 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 	}, nil
 }
 
-func (repo *messageRepositoryMock) ListAllMessages() ([]readers.Message, error) {
+func (repo *messageRepositoryMock) ListAllMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	// TODO: Implement this method.
-	return nil, nil
+	return readers.MessagesPage{}, nil
 }
