@@ -50,17 +50,3 @@ func (req listMessagesReq) validate() error {
 
 	return nil
 }
-
-//type listAllMessagesReq struct {
-//	token string
-//	key   string
-//	pageMeta readers.PageMetadata
-//}
-//
-//func (req listAllMessagesReq) validate() error {
-//	if req.token == "" {
-//		return apiutil.ErrBearerToken
-//	}
-//
-//	return nil
-//}

@@ -863,7 +863,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.chanID, tc.pageMeta)
+		result, err := reader.ListAllMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -988,7 +988,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListChannelMessages(tc.chanID, tc.pageMeta)
+		result, err := reader.ListAllMessages(tc.pageMeta)
 
 		for i := 0; i < len(result.Messages); i++ {
 			m := result.Messages[i]

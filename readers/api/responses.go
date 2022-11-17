@@ -29,19 +29,3 @@ func (res listMessagesPageRes) Code() int {
 func (res listMessagesPageRes) Empty() bool {
 	return false
 }
-
-//type listAllMessagesRes struct {
-//	Messages []readers.Message `json:"messages,omitempty"`
-//}
-//
-//func (res listAllMessagesRes) Headers() map[string]string {
-//	return map[string]string{}
-//}
-//
-//func (res listAllMessagesRes) Code() int {
-//	return http.StatusOK
-//}
-//
-//func (res listAllMessagesRes) Empty() bool {
-//	return false
-//}

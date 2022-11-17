@@ -27,7 +27,7 @@ type MessageRepository interface {
 	// limited number of messages.
 	ListChannelMessages(chanID string, pm PageMetadata) (MessagesPage, error)
 	// ListAllMessages retrieves all messages from database.
-	ListAllMessages(chanID string, rpm PageMetadata) (MessagesPage, error)
+	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
 }
 
 // Message represents any message format.

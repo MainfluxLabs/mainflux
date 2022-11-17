@@ -34,8 +34,8 @@ func New(db *mongo.Database) readers.MessageRepository {
 	}
 }
 
-func (repo mongoRepository) ListAllMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll(chanID, rpm)
+func (repo mongoRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
 }
 
 func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {

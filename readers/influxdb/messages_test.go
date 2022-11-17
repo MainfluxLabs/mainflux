@@ -788,47 +788,47 @@ func TestListAllMessages(t *testing.T) {
 				Messages: fromSenml(dataMsgs[0:limit]),
 			},
 		},
-		//"read message with from": {
-		//	chanID: chanID,
-		//	pageMeta: readers.PageMetadata{
-		//		Offset: zeroOffset,
-		//		Limit:  int64(len(messages[0 : offset+1])),
-		//		From:   messages[offset].Time,
-		//	},
-		//	page: readers.MessagesPage{
-		//		Total:    uint64(len(messages[0 : offset+1])),
-		//		Messages: fromSenml(messages[0 : offset+1]),
-		//	},
-		//},
-		//"read message with to": {
-		//	chanID: chanID,
-		//	pageMeta: readers.PageMetadata{
-		//		Offset: zeroOffset,
-		//		Limit:  int64(len(messages[offset-1:])),
-		//		To:     messages[offset-1].Time,
-		//	},
-		//	page: readers.MessagesPage{
-		//		Total:    uint64(len(messages[offset:])),
-		//		Messages: fromSenml(messages[offset:]),
-		//	},
-		//},
-		//"read message with from/to": {
-		//	chanID: chanID,
-		//	pageMeta: readers.PageMetadata{
-		//		Offset: zeroOffset,
-		//		Limit:  limit,
-		//		From:   messages[5].Time,
-		//		To:     messages[0].Time,
-		//	},
-		//	page: readers.MessagesPage{
-		//		Total:    5,
-		//		Messages: fromSenml(messages[0+1 : 5+1]),
-		//	},
-		//},
+		"read message with from": {
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[0 : offset+1])),
+				From:   messages[offset].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[0 : offset+1])),
+				Messages: fromSenml(messages[0 : offset+1]),
+			},
+		},
+		"read message with to": {
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[offset-1:])),
+				To:     messages[offset-1].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[offset:])),
+				Messages: fromSenml(messages[offset:]),
+			},
+		},
+		"read message with from/to": {
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  limit,
+				From:   messages[5].Time,
+				To:     messages[0].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    5,
+				Messages: fromSenml(messages[0+1 : 5+1]),
+			},
+		},
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.chanID, tc.pageMeta)
+		result, err := reader.ListAllMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected: %v, got: %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %d got %d", desc, tc.page.Total, result.Total))
@@ -938,7 +938,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.chanID, tc.pageMeta)
+		result, err := reader.ListAllMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {

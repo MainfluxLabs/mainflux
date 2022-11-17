@@ -37,8 +37,8 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ListAllMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(chanID, rpm)
+func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll("", rpm)
 }
 
 func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
@@ -58,12 +58,8 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
     WHERE %s ORDER BY %s DESC
 	LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
 
-	qNoLimit := fmt.Sprintf(`SELECT * FROM %s
-	WHERE %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
+	qNoLimit := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
 
-	if chanID == "" {
-		qNoLimit = `SELECT * FROM messages ORDER BY time DESC;`
-	}
 	params := map[string]interface{}{
 		"channel":      chanID,
 		"limit":        rpm.Limit,
@@ -147,20 +143,9 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {
-	//var condition string
-	//switch chanID {
-	//case "":
-	//	condition = `channel IS NOT NULL`
-	//default:
-	//	condition = `channel = :channel`
-	//}
-	//condition := `channel = :channel`
-	//if chanID == "" {
-	//	condition = `channel != ''`
-	//}
 	condition := ""
 	if chanID != "" {
-		condition = `channel = :channel`
+		condition = `WHERE channel = :channel`
 	}
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
