@@ -20,7 +20,7 @@ import (
 
 const (
 	subtopic    = "subtopic"
-	msgsNum     = 30
+	msgsNum     = 1001
 	limit       = 10
 	noLimit     = -1
 	valueFields = 5
@@ -31,6 +31,7 @@ const (
 	format1     = "format1"
 	format2     = "format2"
 	wrongID     = "0"
+	wrongFormat = "wrong"
 )
 
 var (
@@ -548,8 +549,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	//wrongID, err := idProvider.ID()
-	//require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
 		Channel:   chanID,
@@ -608,14 +607,227 @@ func TestListAllMessagesSenml(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read message page for existing channel": {
+		"read all messages page": {
 			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  noLimit,
+				Limit: noLimit,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
 				Messages: fromSenml(messages),
+			},
+		},
+		"read message last page": {
+			pageMeta: readers.PageMetadata{
+				Offset: msgsNum - 20,
+				Limit:  msgsNum,
+			},
+			page: readers.MessagesPage{
+				Total:    msgsNum,
+				Messages: fromSenml(messages[msgsNum-20 : msgsNum]),
+			},
+		},
+		"read message with non-existent subtopic": {
+			pageMeta: readers.PageMetadata{
+				Offset:   zeroOffset,
+				Limit:    msgsNum,
+				Subtopic: "not-present",
+			},
+			page: readers.MessagesPage{
+				Messages: []readers.Message{},
+			},
+		},
+		"read message with subtopic": {
+			pageMeta: readers.PageMetadata{
+				Offset:   zeroOffset,
+				Limit:    int64(len(queryMsgs)),
+				Subtopic: subtopic,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"read message with publisher": {
+			pageMeta: readers.PageMetadata{
+				Offset:    zeroOffset,
+				Limit:     int64(len(queryMsgs)),
+				Publisher: pubID2,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"read message with wrong format": {
+			pageMeta: readers.PageMetadata{
+				Format:    wrongFormat,
+				Offset:    zeroOffset,
+				Limit:     int64(len(queryMsgs)),
+				Publisher: pubID2,
+			},
+			page: readers.MessagesPage{
+				Total:    0,
+				Messages: []readers.Message{},
+			},
+		},
+		"read message with protocol": {
+			pageMeta: readers.PageMetadata{
+				Offset:   zeroOffset,
+				Limit:    int64(len(queryMsgs)),
+				Protocol: httpProt,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"read message with name": {
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  limit,
+				Name:   msgName,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs[0:limit]),
+			},
+		},
+		"read message with value": {
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  limit,
+				Value:  v,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with value and equal comparator": {
+			pageMeta: readers.PageMetadata{
+				Offset:     zeroOffset,
+				Limit:      limit,
+				Value:      v,
+				Comparator: readers.EqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with value and lower-than comparator": {
+			pageMeta: readers.PageMetadata{
+				Offset:     zeroOffset,
+				Limit:      limit,
+				Value:      v + 1,
+				Comparator: readers.LowerThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with value and lower-than-or-equal comparator": {
+			pageMeta: readers.PageMetadata{
+				Offset:     zeroOffset,
+				Limit:      limit,
+				Value:      v + 1,
+				Comparator: readers.LowerThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with value and greater-than comparator": {
+			pageMeta: readers.PageMetadata{
+				Offset:     zeroOffset,
+				Limit:      limit,
+				Value:      v - 1,
+				Comparator: readers.GreaterThanKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with value and greater-than-or-equal comparator": {
+			pageMeta: readers.PageMetadata{
+				Offset:     zeroOffset,
+				Limit:      limit,
+				Value:      v - 1,
+				Comparator: readers.GreaterThanEqualKey,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(valueMsgs)),
+				Messages: fromSenml(valueMsgs[0:limit]),
+			},
+		},
+		"read message with boolean value": {
+			pageMeta: readers.PageMetadata{
+				Offset:    zeroOffset,
+				Limit:     limit,
+				BoolValue: vb,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(boolMsgs)),
+				Messages: fromSenml(boolMsgs[0:limit]),
+			},
+		},
+		"read message with string value": {
+			pageMeta: readers.PageMetadata{
+				Offset:      zeroOffset,
+				Limit:       limit,
+				StringValue: vs,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(stringMsgs)),
+				Messages: fromSenml(stringMsgs[0:limit]),
+			},
+		},
+		"read message with data value": {
+			pageMeta: readers.PageMetadata{
+				Offset:    zeroOffset,
+				Limit:     limit,
+				DataValue: vd,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(dataMsgs)),
+				Messages: fromSenml(dataMsgs[0:limit]),
+			},
+		},
+		"read message with from": {
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[0:21])),
+				From:   messages[20].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[0:21])),
+				Messages: fromSenml(messages[0:21]),
+			},
+		},
+		"read message with to": {
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  int64(len(messages[21:])),
+				To:     messages[20].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(messages[21:])),
+				Messages: fromSenml(messages[21:]),
+			},
+		},
+		"read message with from/to": {
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  limit,
+				From:   messages[5].Time,
+				To:     messages[0].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    5,
+				Messages: fromSenml(messages[1:6]),
 			},
 		},
 	}
@@ -628,7 +840,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 	}
 }
 
-func TestListAllMessagesJSON(t *testing.T) {
+func testListAllMessagesJSON(t *testing.T) {
 	writer := pwriter.New(db)
 
 	id1, err := idProvider.ID()
@@ -703,7 +915,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read all messages page from database ": {
+		"read all messages page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Offset: zeroOffset,
@@ -714,7 +926,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1),
 			},
 		},
-		"read message page from database": {
+		"read message page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Offset: zeroOffset,

@@ -54,9 +54,7 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 		format = rpm.Format
 	}
 
-	q := fmt.Sprintf(`SELECT * FROM %s
-    WHERE %s ORDER BY %s DESC
-	LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
 
 	qNoLimit := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
 
@@ -124,7 +122,7 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 
 	}
 
-	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s;`, format, fmtCondition(chanID, rpm))
+	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(chanID, rpm))
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
@@ -143,40 +141,70 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {
-	condition := ""
-	if chanID != "" {
-		condition = `WHERE channel = :channel`
-	}
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
-		return condition
+		return "ERRRROR"
 	}
 	json.Unmarshal(meta, &query)
 
-	for name := range query {
-		switch name {
-		case
-			"subtopic",
-			"publisher",
-			"name",
-			"protocol":
-			condition = fmt.Sprintf(`%s AND %s = :%s`, condition, name, name)
-		case "v":
-			comparator := readers.ParseValueComparator(query)
-			condition = fmt.Sprintf(`%s AND value %s :value`, condition, comparator)
-		case "vb":
-			condition = fmt.Sprintf(`%s AND bool_value = :bool_value`, condition)
-		case "vs":
-			condition = fmt.Sprintf(`%s AND string_value = :string_value`, condition)
-		case "vd":
-			condition = fmt.Sprintf(`%s AND data_value = :data_value`, condition)
-		case "from":
-			condition = fmt.Sprintf(`%s AND time >= :from`, condition)
-		case "to":
-			condition = fmt.Sprintf(`%s AND time < :to`, condition)
-		}
+	condition := ""
+	op := "WHERE"
+	if chanID != "" {
+		condition = fmt.Sprintf(`%s channel = :channel`, op)
+		op = "AND"
 	}
+
+	if _, ok := query["subtopic"]; ok {
+		condition = fmt.Sprintf(`%s %s subtopic = :subtopic`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["publisher"]; ok {
+		condition = fmt.Sprintf(`%s %s publisher = :publisher`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["name"]; ok {
+		condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["protocol"]; ok {
+		condition = fmt.Sprintf(`%s %s protocol = :protocol`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["v"]; ok {
+		comparator := readers.ParseValueComparator(query)
+		condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
+		op = "AND"
+	}
+
+	if _, ok := query["vb"]; ok {
+		condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["vs"]; ok {
+		condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["vd"]; ok {
+		condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["from"]; ok {
+		condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
+		op = "AND"
+	}
+
+	if _, ok := query["to"]; ok {
+		condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
+	}
+
 	return condition
 }
 

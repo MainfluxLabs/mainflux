@@ -11,8 +11,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/MainfluxLabs/mainflux/readers/postgres"
+	"github.com/jmoiron/sqlx"
 	dockertest "github.com/ory/dockertest/v3"
 )
 
