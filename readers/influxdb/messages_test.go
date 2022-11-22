@@ -362,19 +362,19 @@ func TestListChannelMessages(t *testing.T) {
 				Messages: fromSenml(messages[offset:]),
 			},
 		},
-		//"read message with from/to": {
-		//	chanID: chanID,
-		//	pageMeta: readers.PageMetadata{
-		//		Offset: zeroOffset,
-		//		Limit:  limit,
-		//		From:   messages[5].Time,
-		//		To:     messages[0].Time,
-		//	},
-		//	page: readers.MessagesPage{
-		//		Total:    5,
-		//		Messages: fromSenml(messages[0+1 : 5+1]),
-		//	},
-		//},
+		"read message with from/to": {
+			chanID: chanID,
+			pageMeta: readers.PageMetadata{
+				Offset: zeroOffset,
+				Limit:  limit,
+				From:   messages[5].Time,
+				To:     messages[0].Time,
+			},
+			page: readers.MessagesPage{
+				Total:    5,
+				Messages: fromSenml(messages[0+1 : 5+1]),
+			},
+		},
 	}
 
 	for desc, tc := range cases {
@@ -530,7 +530,7 @@ func TestReadJSON(t *testing.T) {
 	}
 }
 
-func TestListAllMessages(t *testing.T) {
+func TestListAllMessagesSenml(t *testing.T) {
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -539,8 +539,6 @@ func TestListAllMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	//wrongID, err := idProvider.ID()
-	//require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
 		Channel:    chanID,
@@ -595,11 +593,10 @@ func TestListAllMessages(t *testing.T) {
 	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
-		chanID   string
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read messages page ": {
+		"read all messages page": {
 			pageMeta: readers.PageMetadata{
 				Limit: noLimit,
 			},
@@ -789,7 +786,6 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		"read message with from": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  int64(len(messages[0 : offset+1])),
@@ -801,7 +797,6 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		"read message with to": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  int64(len(messages[offset-1:])),
@@ -813,7 +808,6 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		"read message with from/to": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -898,7 +892,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
-		chanID   string
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{

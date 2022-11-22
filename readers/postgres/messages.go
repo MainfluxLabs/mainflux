@@ -17,7 +17,7 @@ import (
 const (
 	// Table for SenML messages
 	defTable = "messages"
-	// noLimit is used to indicate that no limit is set
+	// noLimit is used to indicate that there is no limit for the number of results.
 	noLimit = -1
 
 	// Error code for Undefined table error.
@@ -155,56 +155,36 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) string {
 		op = "AND"
 	}
 
-	if _, ok := query["subtopic"]; ok {
-		condition = fmt.Sprintf(`%s %s subtopic = :subtopic`, condition, op)
-		op = "AND"
+	for name := range query {
+		switch name {
+		case
+			"subtopic",
+			"publisher",
+			"name",
+			"protocol":
+			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
+			op = "AND"
+		case "v":
+			comparator := readers.ParseValueComparator(query)
+			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
+			op = "AND"
+		case "vb":
+			condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
+			op = "AND"
+		case "vs":
+			condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
+			op = "AND"
+		case "vd":
+			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
+			op = "AND"
+		case "from":
+			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
+			op = "AND"
+		case "to":
+			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
+			op = "AND"
+		}
 	}
-
-	if _, ok := query["publisher"]; ok {
-		condition = fmt.Sprintf(`%s %s publisher = :publisher`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["name"]; ok {
-		condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["protocol"]; ok {
-		condition = fmt.Sprintf(`%s %s protocol = :protocol`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["v"]; ok {
-		comparator := readers.ParseValueComparator(query)
-		condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
-		op = "AND"
-	}
-
-	if _, ok := query["vb"]; ok {
-		condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["vs"]; ok {
-		condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["vd"]; ok {
-		condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["from"]; ok {
-		condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
-		op = "AND"
-	}
-
-	if _, ok := query["to"]; ok {
-		condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
-	}
-
 	return condition
 }
 

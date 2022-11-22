@@ -19,7 +19,8 @@ import (
 const (
 	// Measurement for SenML messages
 	defMeasurement = "messages"
-	noLimit        = -1
+	// noLimit is used to indicate that there is no limit for the number of results.
+	noLimit = -1
 )
 
 var _ readers.MessageRepository = (*influxRepository)(nil)
@@ -51,7 +52,6 @@ func (repo *influxRepository) ListAllMessages(rpm readers.PageMetadata) (readers
 
 func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll(chanID, rpm)
-
 }
 
 func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {

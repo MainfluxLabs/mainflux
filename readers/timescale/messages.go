@@ -17,6 +17,8 @@ import (
 const (
 	// Table for SenML messages
 	defTable = "messages"
+	// noLimit is used to indicate that there is no limit for the number of results.
+	noLimit = -1
 
 	// Error code for Undefined table error.
 	undefinedTableCode = "42P01"
@@ -34,7 +36,6 @@ func New(db *sqlx.DB) readers.MessageRepository {
 		db: db,
 	}
 }
-
 func (tr timescaleRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return tr.readAll("", rpm)
 }
@@ -52,7 +53,8 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 		format = rpm.Format
 	}
 
-	q := fmt.Sprintf(`SELECT * FROM %s WHERE %s ORDER BY %s DESC LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
+	qNoLimit := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
 
 	params := map[string]interface{}{
 		"channel":      chanID,
@@ -70,7 +72,15 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 		"to":           rpm.To,
 	}
 
-	rows, err := tr.db.NamedQuery(q, params)
+	var query string
+	switch rpm.Limit {
+	case noLimit:
+		query = qNoLimit
+	default:
+		query = q
+	}
+
+	rows, err := tr.db.NamedQuery(query, params)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == undefinedTableCode {
@@ -110,7 +120,7 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 
 	}
 
-	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s;`, format, fmtCondition(chanID, rpm))
+	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(chanID, rpm))
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
@@ -129,14 +139,19 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) string {
-	condition := `channel = :channel`
-
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
-		return condition
+		return "ERRRROR"
 	}
 	json.Unmarshal(meta, &query)
+
+	condition := ""
+	op := "WHERE"
+	if chanID != "" {
+		condition = fmt.Sprintf(`%s channel = :channel`, op)
+		op = "AND"
+	}
 
 	for name := range query {
 		switch name {
@@ -145,20 +160,26 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) string {
 			"publisher",
 			"name",
 			"protocol":
-			condition = fmt.Sprintf(`%s AND %s = :%s`, condition, name, name)
+			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
+			op = "AND"
 		case "v":
 			comparator := readers.ParseValueComparator(query)
-			condition = fmt.Sprintf(`%s AND value %s :value`, condition, comparator)
+			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
+			op = "AND"
 		case "vb":
-			condition = fmt.Sprintf(`%s AND bool_value = :bool_value`, condition)
+			condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
+			op = "AND"
 		case "vs":
-			condition = fmt.Sprintf(`%s AND string_value = :string_value`, condition)
+			condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
+			op = "AND"
 		case "vd":
-			condition = fmt.Sprintf(`%s AND data_value = :data_value`, condition)
+			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
+			op = "AND"
 		case "from":
-			condition = fmt.Sprintf(`%s AND time >= :from`, condition)
+			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
+			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s AND time < :to`, condition)
+			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
 		}
 	}
 	return condition

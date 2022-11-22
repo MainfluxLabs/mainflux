@@ -840,7 +840,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 	}
 }
 
-func testListAllMessagesJSON(t *testing.T) {
+func TestListAllMessagesJSON(t *testing.T) {
 	writer := pwriter.New(db)
 
 	id1, err := idProvider.ID()
@@ -911,14 +911,12 @@ func testListAllMessagesJSON(t *testing.T) {
 	reader := preader.New(db)
 
 	cases := map[string]struct {
-		chanID   string
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
 		"read all messages page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
-				Offset: zeroOffset,
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{

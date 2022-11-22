@@ -18,7 +18,8 @@ import (
 // Collection for SenML messages
 const (
 	defCollection = "messages"
-	noLimit       = -1
+	// noLimit is used to indicate that there is no limit for the number of results.
+	noLimit = -1
 )
 
 var _ readers.MessageRepository = (*mongoRepository)(nil)

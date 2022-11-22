@@ -564,8 +564,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	//wrongID, err := idProvider.ID()
-	//require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
 		Channel:   chanID,
@@ -615,7 +613,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 	reader := mreader.New(db)
 
 	cases := map[string]struct {
-		chanID   string
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
@@ -629,7 +626,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message last page": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: msgsNum - 20,
 				Limit:  msgsNum,
@@ -640,7 +636,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with non-existent subtopic": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    msgsNum,
@@ -651,7 +646,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with subtopic": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    int64(len(queryMsgs)),
@@ -663,7 +657,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with publisher": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     int64(len(queryMsgs)),
@@ -675,7 +668,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with invalid format": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Format: "messagess",
 				Offset: zeroOffset,
@@ -687,7 +679,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with protocol": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    int64(len(queryMsgs)),
@@ -699,7 +690,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with name": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -711,7 +701,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -723,7 +712,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value and equal comparator": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -736,7 +724,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value and lower-than comparator": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -749,7 +736,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value and lower-than-or-equal comparator": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -762,7 +748,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value and greater-than comparator": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -775,7 +760,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with value and greater-than-or-equal comparator": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -788,7 +772,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with boolean value": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     limit,
@@ -800,7 +783,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with string value": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:      zeroOffset,
 				Limit:       limit,
@@ -812,7 +794,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with data value": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     limit,
@@ -824,7 +805,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with from": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  int64(len(messages[0:21])),
@@ -836,7 +816,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with to": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  int64(len(messages[21:])),
@@ -848,7 +827,6 @@ func TestListAllMessagesSenml(t *testing.T) {
 			},
 		},
 		"read message with from/to": {
-			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -946,12 +924,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 	reader := mreader.New(db)
 
 	cases := map[string]struct {
-		chanID   string
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
 		"read all messages page": {
-			chanID: id1,
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Offset: zeroOffset,
