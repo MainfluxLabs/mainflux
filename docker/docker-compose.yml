@@ -15,8 +15,27 @@ volumes:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
+  mainfluxlabs-influxdb-volume:
+  mainfluxlabs-filestore-db-volume:
+  mainfluxlabs-filestore-volume:
 
 services:
+  ui:
+    image: ${MF_RELEASE_PREFIX}/ui:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-ui
+    restart: on-failure
+    ports:
+      - ${MF_UI_PORT}:${MF_UI_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    environment:
+      MF_UI_PORT: ${MF_UI_PORT}
+      MF_UI_MQTT_WS_URL: ${MF_UI_MQTT_WS_URL}
+      MF_PROXY_AUTH: ${MF_PROXY_AUTH}
+      MF_PROXY_LOGOUT_URL: ${MF_PROXY_LOGOUT_URL}
+      MF_UI_APP_PREFIX: ${MF_UI_APP_PREFIX}
+    command: /entrypoint.sh
+
   keto:
     image: oryd/keto:v0.6.0-alpha.3
     container_name: mainfluxlabs-keto
@@ -106,6 +125,7 @@ services:
     ports:
     - 4222:4222
 
+  ## AUTH SERVICE
   auth-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-auth-db
@@ -262,7 +282,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainfluxlabs/vernemq:${MF_RELEASE_TAG}
+    image: mainfluxlabs/vernemq:0.13.2
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
@@ -346,3 +366,116 @@ services:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
     networks:
       - mainfluxlabs-base-net
+
+  ## INFLUX DB
+  influxdb:
+    image: influxdb:2.2-alpine
+    container_name: mainfluxlabs-influxdb
+    restart: on-failure
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: ${MF_INFLUXDB_INIT_MODE}
+      DOCKER_INFLUXDB_INIT_USERNAME: ${MF_INFLUXDB_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
+      INFLUXDB_HTTP_FLUX_ENABLED: ${MF_INFLUXDB_HTTP_ENABLED}
+    networks:
+      - mainfluxlabs-base-net
+    ports:
+      - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
+    volumes:
+      - mainfluxlabs-influxdb-volume:/var/lib/influxdb
+
+  influxdb-writer:
+    image: ${MF_RELEASE_PREFIX}/influxdb-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-influxdb-writer
+    depends_on:
+      - influxdb
+    restart: on-failure
+    environment:
+      MF_INFLUX_WRITER_LOG_LEVEL: debug
+      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_INFLUX_WRITER_PORT: ${MF_INFLUX_WRITER_PORT}
+      MF_INFLUX_WRITER_BATCH_SIZE: ${MF_INFLUX_WRITER_BATCH_SIZE}
+      MF_INFLUX_WRITER_BATCH_TIMEOUT: ${MF_INFLUX_WRITER_BATCH_TIMEOUT}
+      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
+      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
+      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
+      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+    ports:
+      - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - ./config.toml:/config.toml
+
+  influxdb-reader:
+    image: ${MF_RELEASE_PREFIX}/influxdb-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-influxdb-reader
+    restart: on-failure
+    environment:
+      MF_INFLUX_READER_LOG_LEVEL: debug
+      MF_INFLUX_READER_PORT: ${MF_INFLUX_READER_PORT}
+      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
+      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
+      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
+      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      MF_INFLUX_READER_SERVER_CERT: ${MF_INFLUX_READER_SERVER_CERT}
+      MF_INFLUX_READER_SERVER_KEY: ${MF_INFLUX_READER_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT : ${MF_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_INFLUX_READER_PORT}:${MF_INFLUX_READER_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - ../../ssl/certs:/etc/ssl/certs
+
+  filestore-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-filestore-db
+    restart: on-failure
+    environment:
+        - POSTGRES_USER=${MF_FILESTORE_DB_USER}
+        - POSTGRES_PASSWORD=${MF_FILESTORE_DB_PASS}
+        - POSTGRES_DB=${MF_FILESTORE_DB}
+    networks:
+        - mainfluxlabs-base-net
+    volumes:
+        - mainfluxlabs-filestore-db-volume:/var/lib/postgresql/data
+
+  filestore:
+    image: ${MF_RELEASE_PREFIX}/filestore:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-filestore
+    depends_on:
+        - filestore-db
+    restart: on-failure
+    environment:
+      MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
+      MF_FILESTORE_DB_HOST: ${MF_FILESTORE_DB_HOST}
+      MF_FILESTORE_DB_PORT: ${MF_FILESTORE_DB_PORT}
+      MF_FILESTORE_DB_USER: ${MF_FILESTORE_DB_USER}
+      MF_FILESTORE_DB_PASS: ${MF_FILESTORE_DB_PASS}
+      MF_FILESTORE_DB: ${MF_FILESTORE_DB}
+      MF_FILESTORE_DB_SSL_MODE: ${MF_FILESTORE_DB_SSL_MODE}
+      MF_FILESTORE_DB_SSL_CERT: ${MF_FILESTORE_DB_SSL_CERT}
+      MF_FILESTORE_TLS: ${MF_FILESTORE_TLS}
+      MF_FILESTORE_HTTP_PORT: ${MF_FILESTORE_HTTP_PORT}
+      MF_FILESTORE_SERVER_CERT: ${MF_FILESTORE_SERVER_CERT}
+      MF_FILESTORE_SERVER_KEY: ${MF_FILESTORE_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_FILESTORE_SECRET: ${MF_FILESTORE_SECRET}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_FILESTORE_HTTP_PORT}:${MF_FILESTORE_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-filestore-volume:/files
