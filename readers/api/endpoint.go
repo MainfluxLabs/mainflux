@@ -15,7 +15,7 @@ import (
 func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMessagesReq)
-		if err := req.validate(); err != nil {
+		if err := req.validateWithChannel(); err != nil {
 			return nil, err
 		}
 
@@ -39,7 +39,7 @@ func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMessagesReq)
-		if err := req.validate(); err != nil {
+		if err := req.validateWithNoChanel(); err != nil {
 			return nil, err
 		}
 

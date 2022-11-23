@@ -175,14 +175,6 @@ func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-//func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
-//	req := listAllMessagesReq{
-//		token: apiutil.ExtractBearerToken(r),
-//		key:   apiutil.ExtractThingKey(r),
-//	}
-//	return req, nil
-//}
-
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 

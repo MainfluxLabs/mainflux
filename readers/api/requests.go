@@ -20,13 +20,21 @@ type listMessagesReq struct {
 	pageMeta readers.PageMetadata
 }
 
+func (req listMessagesReq) validateWithChannel() error {
+	if req.chanID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return req.validate()
+}
+
+func (req listMessagesReq) validateWithNoChanel() error {
+	return req.validate()
+}
+
 func (req listMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
 	}
 
 	if req.pageMeta.Limit != noLimit {
