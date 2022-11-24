@@ -82,7 +82,6 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() mainflux.AuthServiceClient {
-	idProvider := uuid.New()
 	id, _ := idProvider.ID()
 	user.ID = id
 	mockAuthzDB := map[string][]authmocks.SubjectSet{}
