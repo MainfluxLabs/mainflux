@@ -82,7 +82,11 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() mainflux.AuthServiceClient {
+	idProvider := uuid.New()
+	id, _ := idProvider.ID()
+	user.ID = id
 	mockAuthzDB := map[string][]authmocks.SubjectSet{}
+	mockAuthzDB[user.ID] = []authmocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: "authorities", Relation: "member"})
 
 	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
@@ -816,7 +820,6 @@ func TestListAllMessages(t *testing.T) {
 	}
 
 	thSvc := mocks.NewThingsService(map[string]string{email: ""})
-	usrSvc := mocks.NewAuthServiceClient(map[string]string{email: ""})
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
@@ -824,7 +827,7 @@ func TestListAllMessages(t *testing.T) {
 	userToken := tok.GetValue()
 
 	repo := mocks.NewMessageRepository("", fromSenml(messages))
-	ts := newServer(repo, thSvc, usrSvc)
+	ts := newServer(repo, thSvc, authSvc)
 	defer ts.Close()
 
 	cases := []struct {
@@ -839,7 +842,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read all messages page",
 			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
-			key:    userToken,
+			token:  userToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
