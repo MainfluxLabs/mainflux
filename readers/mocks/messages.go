@@ -31,8 +31,15 @@ func NewMessageRepository(chanID string, messages []readers.Message) readers.Mes
 		messages: repo,
 	}
 }
-
 func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
+}
+
+func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -161,9 +168,4 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 		Total:        uint64(len(msgs)),
 		Messages:     msgs[rpm.Offset:end],
 	}, nil
-}
-
-func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	// TODO: Implement this method.
-	return readers.MessagesPage{}, nil
 }

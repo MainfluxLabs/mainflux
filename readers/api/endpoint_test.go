@@ -87,6 +87,7 @@ func newAuthService() mainflux.AuthServiceClient {
 
 	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
 }
+
 func TestListChannelMessages(t *testing.T) {
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -462,7 +463,7 @@ func TestListChannelMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read page with valid offset and limit as user",
+			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID),
 			token:  userToken,
 			status: http.StatusOK,
@@ -725,7 +726,6 @@ func TestListChannelMessages(t *testing.T) {
 			token:  userToken,
 			status: http.StatusBadRequest,
 		},
-
 		{
 			desc:   "read page with non-float to as user",
 			url:    fmt.Sprintf("%s/channels/%s/messages?to=ABCD", ts.URL, chanID),
@@ -752,6 +752,402 @@ func TestListChannelMessages(t *testing.T) {
 			token:  tc.token,
 			key:    tc.key,
 		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var page pageRes
+		json.NewDecoder(res.Body).Decode(&page)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res.Total, page.Total, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.res.Total, page.Total))
+		assert.ElementsMatch(t, tc.res.Messages, page.Messages, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Messages, page.Messages))
+	}
+}
+
+func TestListAllMessages(t *testing.T) {
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	pubID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	now := time.Now().Unix()
+
+	var messages []senml.Message
+	var queryMsgs []senml.Message
+	var valueMsgs []senml.Message
+	var boolMsgs []senml.Message
+	var stringMsgs []senml.Message
+	var dataMsgs []senml.Message
+
+	for i := 0; i < numOfMessages; i++ {
+		// Mix possible values as well as value sum.
+		msg := senml.Message{
+			Channel:   "",
+			Publisher: pubID,
+			Protocol:  mqttProt,
+			Time:      float64(now - int64(i)),
+			Name:      "name",
+		}
+
+		count := i % valueFields
+		switch count {
+		case 0:
+			msg.Value = &v
+			valueMsgs = append(valueMsgs, msg)
+		case 1:
+			msg.BoolValue = &vb
+			boolMsgs = append(boolMsgs, msg)
+		case 2:
+			msg.StringValue = &vs
+			stringMsgs = append(stringMsgs, msg)
+		case 3:
+			msg.DataValue = &vd
+			dataMsgs = append(dataMsgs, msg)
+		case 4:
+			msg.Sum = &sum
+			msg.Subtopic = subtopic
+			msg.Protocol = httpProt
+			msg.Publisher = pubID2
+			msg.Name = msgName
+			queryMsgs = append(queryMsgs, msg)
+		}
+
+		messages = append(messages, msg)
+	}
+
+	thSvc := mocks.NewThingsService(map[string]string{email: ""})
+	usrSvc := mocks.NewAuthServiceClient(map[string]string{email: ""})
+	authSvc := newAuthService()
+
+	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	userToken := tok.GetValue()
+
+	repo := mocks.NewMessageRepository("", fromSenml(messages))
+	ts := newServer(repo, thSvc, usrSvc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc   string
+		req    string
+		url    string
+		token  string
+		key    string
+		status int
+		res    pageRes
+	}{
+		{
+			desc:   "read all messages page",
+			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
+			key:    userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages,
+			},
+		},
+		{
+			desc:   "read page with valid offset and limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read page with valid offset and limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read page with negative offset",
+			url:    fmt.Sprintf("%s/messages?offset=-1&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with negative limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=-10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with zero limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=0", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with non-integer offset",
+			url:    fmt.Sprintf("%s/messages?offset=abc&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with non-integer limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=abc", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with invalid channel id",
+			url:    fmt.Sprintf("%s/channels//messages?offset=0&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with invalid token",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			token:  invalid,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read page with multiple offset",
+			url:    fmt.Sprintf("%s/messages?offset=0&offset=1&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with multiple limit",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=20&limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with empty token",
+			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			token:  "",
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read page with default offset",
+			url:    fmt.Sprintf("%s/messages?limit=10", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read page with default limit",
+			url:    fmt.Sprintf("%s/messages?offset=0", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read page with senml format",
+			url:    fmt.Sprintf("%s/messages?format=messages", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read page with subtopic",
+			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with subtopic and protocol",
+			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with publisher",
+			url:    fmt.Sprintf("%s/messages?publisher=%s", ts.URL, pubID2),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with protocol",
+			url:    fmt.Sprintf("%s/messages?protocol=http", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with name",
+			url:    fmt.Sprintf("%s/messages?name=%s", ts.URL, msgName),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value",
+			url:    fmt.Sprintf("%s/messages?v=%f", ts.URL, v),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and equal comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and lower-than comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and lower-than-or-equal comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and greater-than comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and greater-than-or-equal comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with non-float value",
+			url:    fmt.Sprintf("%s/messages?v=ab01", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with value and wrong comparator",
+			url:    fmt.Sprintf("%s/messages?v=%f&comparator=wrong", ts.URL, v-1),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with boolean value",
+			url:    fmt.Sprintf("%s/messages?vb=true", ts.URL),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(boolMsgs)),
+				Messages: boolMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with non-boolean value",
+			url:    fmt.Sprintf("%s/messages?vb=yes", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with string value",
+			url:    fmt.Sprintf("%s/messages?vs=%s", ts.URL, vs),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(stringMsgs)),
+				Messages: stringMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with data value",
+			url:    fmt.Sprintf("%s/messages?vd=%s", ts.URL, vd),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(dataMsgs)),
+				Messages: dataMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with non-float from",
+			url:    fmt.Sprintf("%s/messages?from=ABCD", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+
+		{
+			desc:   "read page with non-float",
+			url:    fmt.Sprintf("%s/messages?to=ABCD", ts.URL),
+			token:  userToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read page with from/to ",
+			url:    fmt.Sprintf("%s/messages?from=%f&to=%f", ts.URL, messages[19].Time, messages[4].Time),
+			token:  userToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages[5:20])),
+				Messages: messages[5:15],
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+			key:    tc.key,
+		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 
