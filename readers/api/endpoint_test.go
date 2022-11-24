@@ -463,7 +463,7 @@ func TestListChannelMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read page with valid offset and limit",
+			desc:   "read page with valid offset and limit as user",
 			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID),
 			token:  userToken,
 			status: http.StatusOK,
