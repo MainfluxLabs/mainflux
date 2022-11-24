@@ -27,18 +27,19 @@ import (
 )
 
 const (
-	svcName       = "test-service"
-	thingToken    = "1"
-	email         = "user@example.com"
-	invalid       = "invalid"
-	numOfMessages = 1001
-	valueFields   = 5
-	subtopic      = "topic"
-	mqttProt      = "mqtt"
-	httpProt      = "http"
-	msgName       = "temperature"
-	validEmail    = "user@example.com"
-	validPass     = "password"
+	svcName           = "test-service"
+	thingToken        = "1"
+	email             = "user@example.com"
+	invalid           = "invalid"
+	numOfMessages     = 1001
+	valueFields       = 5
+	subtopic          = "topic"
+	mqttProt          = "mqtt"
+	httpProt          = "http"
+	msgName           = "temperature"
+	validPass         = "password"
+	memberRelationKey = "member"
+	authoritiesObjKey = "authorities"
 )
 
 var (
@@ -50,7 +51,7 @@ var (
 
 	idProvider = uuid.New()
 
-	user = users.User{Email: validEmail, Password: validPass}
+	user = users.User{Email: email, Password: validPass}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
@@ -85,8 +86,8 @@ func newAuthService() mainflux.AuthServiceClient {
 	id, _ := idProvider.ID()
 	user.ID = id
 	mockAuthzDB := map[string][]authmocks.SubjectSet{}
-	mockAuthzDB[user.ID] = []authmocks.SubjectSet{{Object: "authorities", Relation: "member"}}
-	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: "authorities", Relation: "member"})
+	mockAuthzDB[user.ID] = []authmocks.SubjectSet{{Object: authoritiesObjKey, Relation: memberRelationKey}}
+	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: authoritiesObjKey, Relation: memberRelationKey})
 
 	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
 }
