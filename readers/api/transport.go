@@ -248,18 +248,14 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
-func identify(ctx context.Context, token string) (userIdentity, error) {
+func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 	identity, err := usersAuth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return userIdentity{identity.Id, identity.Email}, nil
-}
-
-func authorizeAdmin(ctx context.Context, subject, object, relation string) error {
 	req := &mainflux.AuthorizeReq{
-		Sub: subject,
+		Sub: identity.Id,
 		Obj: object,
 		Act: relation,
 	}
@@ -268,6 +264,7 @@ func authorizeAdmin(ctx context.Context, subject, object, relation string) error
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
+
 	if !res.GetAuthorized() {
 		return errors.ErrAuthorization
 	}
