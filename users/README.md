@@ -95,4 +95,4 @@ If `MF_EMAIL_TEMPLATE` doesn't point to any file service will function but passw
 For more information about service capabilities and its usage, please check out
 the [API documentation](https://api.mainflux.io/?urls.primaryName=users-openapi.yml).
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

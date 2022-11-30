@@ -19,7 +19,7 @@ The tool supports multiple concurrent clients, publishers and subscribers config
 ```
 ./mqtt-bench --help
 Tool for extensive load and benchmarking of MQTT brokers used within Mainflux platform.
-Complete documentation is available at https://docs.mainflux.io
+Complete documentation is available at https://mainfluxlabs.github.io/docs
 
 Usage:
   mqtt-bench [flags]

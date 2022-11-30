@@ -68,4 +68,4 @@ _Please note that you need to start core services before the additional ones._
 
 Starting service will start consuming normalized messages in SenML format.
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

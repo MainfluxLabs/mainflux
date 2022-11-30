@@ -74,7 +74,7 @@ Check that `.env` file contains:
 MF_RELEASE_TAG=<release_number>
 ```
 
->`docker-compose` should be used for development and testing deployments. For production we suggest using [Kubernetes](https://docs.mainflux.io/kubernetes).
+>`docker-compose` should be used for development and testing deployments. For production we suggest using [Kubernetes](https://mainfluxlabs.github.io/docs/kubernetes).
 
 ## Usage
 
@@ -87,7 +87,7 @@ make cli
 ./build/mainfluxlabs-cli version
 ```
 
-Additional details on using the CLI can be found in the [CLI documentation](https://docs.mainflux.io/cli).
+Additional details on using the CLI can be found in the [CLI documentation](https://mainfluxlabs.github.io/docs/cli).
 
 ## Documentation
 
@@ -148,7 +148,7 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [banner]: https://github.com/mainflux/docs/blob/master/docs/img/gopherBanner.jpg
 [ci-badge]: https://semaphoreci.com/api/v1/MainfluxLabs/mainflux/branches/master/badge.svg
 [ci-url]: https://semaphoreci.com/MainfluxLabs/mainflux
-[docs]: https://docs.mainflux.io
+[docs]: https://mainfluxlabs.github.io/docs
 [docker]: https://www.docker.com
 [forum]: https://groups.google.com/forum/#!forum/mainflux
 [gitter]: https://gitter.im/MainfluxLabs/mainflux?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
