@@ -9,7 +9,7 @@ that can be used by Mainflux MQTT benchmarking tool (`mqtt-bench`).
 ```
 ./provision --help
 Tool for provisioning series of Mainflux channels and things and connecting them together.
-Complete documentation is available at https://docs.mainflux.io
+Complete documentation is available at https://mainfluxlabs.github.io/docs
 
 Usage:
   provision [flags]

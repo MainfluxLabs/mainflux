@@ -17,7 +17,7 @@ func main() {
 		Use:   "provision",
 		Short: "provision is provisioning tool for Mainflux",
 		Long: `Tool for provisioning series of Mainflux channels and things and connecting them together.
-Complete documentation is available at https://docs.mainflux.io`,
+Complete documentation is available at https://mainfluxlabs.github.io/docs`,
 		Run: func(cmd *cobra.Command, args []string) {
 			provision.Provision(pconf)
 		},

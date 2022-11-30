@@ -12,5 +12,5 @@ the [Docker Compose][compose] file.
 For an in-depth explanation of the usage of `writers`, as well as thorough
 understanding of Mainflux, please check out the [official documentation][doc].
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs
 [compose]: ../docker/docker-compose.yml

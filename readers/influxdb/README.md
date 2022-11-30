@@ -79,4 +79,4 @@ docker-compose -f docker/addons/influxdb-reader/docker-compose.yml up -d
 
 Service exposes [HTTP API](https://api.mainflux.io/?urls.primaryName=readers-openapi.yml) for fetching messages.
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

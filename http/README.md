@@ -58,4 +58,4 @@ or a Thing key encoded as a password for Basic Authentication. In case the Basic
 For more information about service capabilities and its usage, please check out
 the [API documentation](https://api.mainflux.io/?urls.primaryName=http.yml).
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

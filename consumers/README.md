@@ -15,4 +15,4 @@ understanding of Mainflux, please check out the [official documentation][doc].
 For more information about service capabilities and its usage, please check out
 the [API documentation](https://api.mainflux.io/?urls.primaryName=consumers-notifiers-openapi.yml).
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

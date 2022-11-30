@@ -100,4 +100,4 @@ environment.
 For more information about service capabilities and its usage, please check out
 the [API documentation](https://api.mainflux.io/?urls.primaryName=twins-openapi.yml).
 
-[doc]: https://docs.mainflux.io
+[doc]: https://mainfluxlabs.github.io/docs

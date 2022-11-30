@@ -174,7 +174,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 }
 
 func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
-	client := influxdb2.NewClient(cfg.dbUrl, cfg.dbToken)
+	client := influxdb2.NewClientWithOptions(cfg.dbUrl, cfg.dbToken, influxdb2.DefaultOptions().SetHTTPRequestTimeout(90))
 	_, err := client.Ping(context.Background())
 	return client, err
 }
