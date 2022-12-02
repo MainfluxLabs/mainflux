@@ -10,7 +10,6 @@ import (
 
 const (
 	maxLimitSize = 1000
-	noLimit      = -1
 )
 
 type listMessagesReq struct {
@@ -37,12 +36,10 @@ func (req listMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMeta.Limit != noLimit {
-		if req.pageMeta.Limit < 1 || req.pageMeta.Limit > maxLimitSize {
-			return apiutil.ErrLimitSize
-		}
+	if req.pageMeta.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
 	}
-
+	
 	if req.pageMeta.Offset < 0 {
 		return apiutil.ErrOffsetSize
 	}

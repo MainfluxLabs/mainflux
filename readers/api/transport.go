@@ -83,7 +83,7 @@ func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, erro
 		return nil, err
 	}
 
-	limit, err := apiutil.ReadIntQuery(r, limitKey, defLimit)
+	limit, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
 	if err != nil {
 		return nil, err
 	}

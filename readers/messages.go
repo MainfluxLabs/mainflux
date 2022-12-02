@@ -44,7 +44,7 @@ type MessagesPage struct {
 // PageMetadata represents the parameters used to create database queries
 type PageMetadata struct {
 	Offset      uint64  `json:"offset"`
-	Limit       int64   `json:"limit"`
+	Limit       uint64  `json:"limit"`
 	Subtopic    string  `json:"subtopic,omitempty"`
 	Publisher   string  `json:"publisher,omitempty"`
 	Protocol    string  `json:"protocol,omitempty"`

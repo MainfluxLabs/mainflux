@@ -18,7 +18,7 @@ const (
 	// Table for SenML messages
 	defTable = "messages"
 	// noLimit is used to indicate that there is no limit for the number of results.
-	noLimit = -1
+	noLimit = 0
 
 	// Error code for Undefined table error.
 	undefinedTableCode = "42P01"
@@ -74,15 +74,11 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 		"to":           rpm.To,
 	}
 
-	var query string
-	switch rpm.Limit {
-	case noLimit:
-		query = qNoLimit
-	default:
-		query = q
+	if rpm.Limit == noLimit {
+		q = qNoLimit
 	}
 
-	rows, err := tr.db.NamedQuery(query, params)
+	rows, err := tr.db.NamedQuery(q, params)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == undefinedTableCode {

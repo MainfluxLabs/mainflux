@@ -167,7 +167,7 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   0,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Subtopic: subtopic,
 			},
 			page: readers.MessagesPage{
@@ -179,7 +179,7 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    0,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -192,7 +192,7 @@ func TestReadSenml(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
 				Offset:    0,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -204,7 +204,7 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   0,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -341,7 +341,7 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  int64(len(messages[0:21])),
+				Limit:  uint64(len(messages[0:21])),
 				From:   messages[20].Time,
 			},
 			page: readers.MessagesPage{
@@ -353,7 +353,7 @@ func TestReadSenml(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: 0,
-				Limit:  int64(len(messages[21:])),
+				Limit:  uint64(len(messages[21:])),
 				To:     messages[20].Time,
 			},
 			page: readers.MessagesPage{
@@ -506,7 +506,7 @@ func TestReadJSON(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
 				Offset:   0,
-				Limit:    int64(msgsNum / 2),
+				Limit:    uint64(msgsNum / 2),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{

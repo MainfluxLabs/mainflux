@@ -177,12 +177,12 @@ func TestListChannelMessages(t *testing.T) {
 		},
 		{
 			desc:   "read all messages with no limit",
-			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=-1", ts.URL, chanID),
+			url:    fmt.Sprintf("%s/channels/%s/messages?limit=-1", ts.URL, chanID),
 			key:    thingToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
-				Messages: messages[0:],
+				Messages: messages,
 			},
 		},
 		{

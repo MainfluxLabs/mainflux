@@ -21,7 +21,7 @@ const (
 	msgsNum     = 1001
 	limit       = 10
 	oneLimit    = 1
-	noLimit     = -1
+	noLimit     = 0
 	zeroOffset  = 0
 	valueFields = 5
 	mqttProt    = "mqtt"
@@ -168,7 +168,7 @@ func TestListChannelMessages(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Subtopic: subtopic,
 			},
 			page: readers.MessagesPage{
@@ -180,7 +180,7 @@ func TestListChannelMessages(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -193,7 +193,7 @@ func TestListChannelMessages(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
 				Offset:    zeroOffset,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -205,7 +205,7 @@ func TestListChannelMessages(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -342,7 +342,7 @@ func TestListChannelMessages(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
-				Limit:  int64(len(messages[0 : offset+1])),
+				Limit:  uint64(len(messages[0 : offset+1])),
 				From:   messages[offset].Time,
 			},
 			page: readers.MessagesPage{
@@ -354,7 +354,7 @@ func TestListChannelMessages(t *testing.T) {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
-				Limit:  int64(len(messages[offset-1:])),
+				Limit:  uint64(len(messages[offset-1:])),
 				To:     messages[offset-1].Time,
 			},
 			page: readers.MessagesPage{
@@ -504,7 +504,7 @@ func TestReadJSON(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
 				Offset:   zeroOffset,
-				Limit:    int64(len(httpMsgs)),
+				Limit:    uint64(len(httpMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -628,7 +628,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		"read message with subtopic": {
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Subtopic: subtopic,
 			},
 			page: readers.MessagesPage{
@@ -639,7 +639,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		"read message with publisher": {
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -651,7 +651,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
 				Offset:    zeroOffset,
-				Limit:     int64(len(queryMsgs)),
+				Limit:     uint64(len(queryMsgs)),
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -662,7 +662,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		"read message with protocol": {
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
-				Limit:    int64(len(queryMsgs)),
+				Limit:    uint64(len(queryMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -788,7 +788,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		"read message with from": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
-				Limit:  int64(len(messages[0 : offset+1])),
+				Limit:  uint64(len(messages[0 : offset+1])),
 				From:   messages[offset].Time,
 			},
 			page: readers.MessagesPage{
@@ -799,7 +799,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		"read message with to": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
-				Limit:  int64(len(messages[offset-1:])),
+				Limit:  uint64(len(messages[offset-1:])),
 				To:     messages[offset-1].Time,
 			},
 			page: readers.MessagesPage{
@@ -920,7 +920,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
 				Offset:   zeroOffset,
-				Limit:    int64(len(httpMsgs)),
+				Limit:    uint64(len(httpMsgs)),
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{

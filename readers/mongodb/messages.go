@@ -19,7 +19,7 @@ import (
 const (
 	defCollection = "messages"
 	// noLimit is used to indicate that there is no limit for the number of results.
-	noLimit = -1
+	noLimit = 0
 )
 
 var _ readers.MessageRepository = (*mongoRepository)(nil)
