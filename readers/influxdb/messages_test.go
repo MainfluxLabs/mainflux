@@ -52,7 +52,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func TestListChannelMessages(t *testing.T) {
+func TestListChannelMessagesSenml(t *testing.T) {
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -385,7 +385,7 @@ func TestListChannelMessages(t *testing.T) {
 	}
 }
 
-func TestReadJSON(t *testing.T) {
+func TestListChannelMessagesJSON(t *testing.T) {
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
