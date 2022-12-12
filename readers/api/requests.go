@@ -8,9 +8,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-const (
-	maxLimitSize = 1000
-)
+const maxLimitSize = 1000
 
 type listChannelMessagesReq struct {
 	chanID   string
@@ -19,7 +17,7 @@ type listChannelMessagesReq struct {
 	pageMeta readers.PageMetadata
 }
 
-func (req listChannelMessagesReq) validateWithChannel() error {
+func (req listChannelMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -54,7 +52,7 @@ type listAllMessagesReq struct {
 	pageMeta readers.PageMetadata
 }
 
-func (req listAllMessagesReq) validateWithNoChanel() error {
+func (req listAllMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
