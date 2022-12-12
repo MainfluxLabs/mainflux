@@ -13,7 +13,7 @@ import (
 
 func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMessagesReq)
+		req := request.(listChannelMessagesReq)
 		if err := req.validateWithChannel(); err != nil {
 			return nil, err
 		}

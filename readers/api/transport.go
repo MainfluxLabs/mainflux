@@ -60,7 +60,7 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	mux := bone.New()
 	mux.Get("/channels/:chanID/messages", kithttp.NewServer(
 		ListChannelMessagesEndpoint(svc),
-		decodeListMessages,
+		decodeListChannelMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -75,6 +75,104 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
+}
+
+func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{}, error) {
+	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	format, err := apiutil.ReadStringQuery(r, formatKey, defFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, nameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listChannelMessagesReq{
+		chanID: bone.GetValue(r, "chanID"),
+		token:  apiutil.ExtractBearerToken(r),
+		key:    apiutil.ExtractThingKey(r),
+		pageMeta: readers.PageMetadata{
+			Offset:      offset,
+			Limit:       limit,
+			Format:      format,
+			Subtopic:    subtopic,
+			Publisher:   publisher,
+			Protocol:    protocol,
+			Name:        name,
+			Value:       v,
+			Comparator:  comparator,
+			StringValue: vs,
+			DataValue:   vd,
+			From:        from,
+			To:          to,
+		},
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	if err != nil && err != errors.ErrNotFoundParam {
+		return nil, err
+	}
+	if err == nil {
+		req.pageMeta.BoolValue = vb
+	}
+
+	return req, nil
 }
 
 func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -144,9 +242,8 @@ func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, erro
 	}
 
 	req := listMessagesReq{
-		chanID: bone.GetValue(r, "chanID"),
-		token:  apiutil.ExtractBearerToken(r),
-		key:    apiutil.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
+		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
 			Offset:      offset,
 			Limit:       limit,

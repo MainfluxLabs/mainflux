@@ -12,44 +12,50 @@ const (
 	maxLimitSize = 1000
 )
 
-type listMessagesReq struct {
+type listChannelMessagesReq struct {
 	chanID   string
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listMessagesReq) validateWithChannel() error {
+func (req listChannelMessagesReq) validateWithChannel() error {
 	if req.chanID == "" {
 		return apiutil.ErrMissingID
 	}
 
-	return req.validate()
+	return validate(req.chanID, req.token, req.key, req.pageMeta)
+}
+
+type listMessagesReq struct {
+	token    string
+	key      string
+	pageMeta readers.PageMetadata
 }
 
 func (req listMessagesReq) validateWithNoChanel() error {
-	return req.validate()
+	return validate("", req.token, req.key, req.pageMeta)
 }
 
-func (req listMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
+func validate(chanID, token, key string, pageMeta readers.PageMetadata) error {
+	if token == "" && key == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMeta.Limit > maxLimitSize {
+	if pageMeta.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
-	
-	if req.pageMeta.Offset < 0 {
+
+	if pageMeta.Offset < 0 {
 		return apiutil.ErrOffsetSize
 	}
 
-	if req.pageMeta.Comparator != "" &&
-		req.pageMeta.Comparator != readers.EqualKey &&
-		req.pageMeta.Comparator != readers.LowerThanKey &&
-		req.pageMeta.Comparator != readers.LowerThanEqualKey &&
-		req.pageMeta.Comparator != readers.GreaterThanKey &&
-		req.pageMeta.Comparator != readers.GreaterThanEqualKey {
+	if pageMeta.Comparator != "" &&
+		pageMeta.Comparator != readers.EqualKey &&
+		pageMeta.Comparator != readers.LowerThanKey &&
+		pageMeta.Comparator != readers.LowerThanEqualKey &&
+		pageMeta.Comparator != readers.GreaterThanKey &&
+		pageMeta.Comparator != readers.GreaterThanEqualKey {
 		return apiutil.ErrInvalidComparator
 	}
 
