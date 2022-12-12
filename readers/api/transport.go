@@ -241,7 +241,7 @@ func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, erro
 		return nil, err
 	}
 
-	req := listMessagesReq{
+	req := listAllMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{

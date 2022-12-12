@@ -20,42 +20,59 @@ type listChannelMessagesReq struct {
 }
 
 func (req listChannelMessagesReq) validateWithChannel() error {
+	if req.token == "" && req.key == "" {
+		return apiutil.ErrBearerToken
+	}
+
 	if req.chanID == "" {
 		return apiutil.ErrMissingID
 	}
 
-	return validate(req.chanID, req.token, req.key, req.pageMeta)
+	if req.pageMeta.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMeta.Offset < 0 {
+		return apiutil.ErrOffsetSize
+	}
+
+	if req.pageMeta.Comparator != "" &&
+		req.pageMeta.Comparator != readers.EqualKey &&
+		req.pageMeta.Comparator != readers.LowerThanKey &&
+		req.pageMeta.Comparator != readers.LowerThanEqualKey &&
+		req.pageMeta.Comparator != readers.GreaterThanKey &&
+		req.pageMeta.Comparator != readers.GreaterThanEqualKey {
+		return apiutil.ErrInvalidComparator
+	}
+
+	return nil
 }
 
-type listMessagesReq struct {
+type listAllMessagesReq struct {
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listMessagesReq) validateWithNoChanel() error {
-	return validate("", req.token, req.key, req.pageMeta)
-}
-
-func validate(chanID, token, key string, pageMeta readers.PageMetadata) error {
-	if token == "" && key == "" {
+func (req listAllMessagesReq) validateWithNoChanel() error {
+	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if pageMeta.Limit > maxLimitSize {
+	if req.pageMeta.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 
-	if pageMeta.Offset < 0 {
+	if req.pageMeta.Offset < 0 {
 		return apiutil.ErrOffsetSize
 	}
 
-	if pageMeta.Comparator != "" &&
-		pageMeta.Comparator != readers.EqualKey &&
-		pageMeta.Comparator != readers.LowerThanKey &&
-		pageMeta.Comparator != readers.LowerThanEqualKey &&
-		pageMeta.Comparator != readers.GreaterThanKey &&
-		pageMeta.Comparator != readers.GreaterThanEqualKey {
+	if req.pageMeta.Comparator != "" &&
+		req.pageMeta.Comparator != readers.EqualKey &&
+		req.pageMeta.Comparator != readers.LowerThanKey &&
+		req.pageMeta.Comparator != readers.LowerThanEqualKey &&
+		req.pageMeta.Comparator != readers.GreaterThanKey &&
+		req.pageMeta.Comparator != readers.GreaterThanEqualKey {
 		return apiutil.ErrInvalidComparator
 	}
 
