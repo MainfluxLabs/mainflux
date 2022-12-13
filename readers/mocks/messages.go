@@ -11,7 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-const noLimit = -1
+const noLimit = 0
 
 var _ readers.MessageRepository = (*messageRepositoryMock)(nil)
 
@@ -31,8 +31,15 @@ func NewMessageRepository(chanID string, messages []readers.Message) readers.Mes
 		messages: repo,
 	}
 }
-
 func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
+}
+
+func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -147,12 +154,12 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 	if rpm.Offset >= numOfMessages {
 		return readers.MessagesPage{}, nil
 	}
-	if rpm.Limit < 1 && rpm.Limit != noLimit {
+	if rpm.Limit < 0 {
 		return readers.MessagesPage{}, nil
 	}
 
-	end := rpm.Offset + uint64(rpm.Limit)
-	if rpm.Offset+uint64(rpm.Limit) > numOfMessages {
+	end := rpm.Offset + rpm.Limit
+	if end > numOfMessages || rpm.Limit == noLimit {
 		end = numOfMessages
 	}
 

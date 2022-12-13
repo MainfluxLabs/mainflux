@@ -27,7 +27,32 @@ func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		return listChannelMessagesPageRes{
+		return listMessagesRes{
+			PageMetadata: page.PageMetadata,
+			Total:        page.Total,
+			Messages:     page.Messages,
+		}, nil
+	}
+}
+
+func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listAllMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		// Check if user is authorized to read all messages
+		if err := authorizeAdmin(ctx, "authorities", "member", req.token); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListAllMessages(req.pageMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		return listMessagesRes{
 			PageMetadata: page.PageMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,

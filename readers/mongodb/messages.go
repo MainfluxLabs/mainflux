@@ -18,7 +18,8 @@ import (
 // Collection for SenML messages
 const (
 	defCollection = "messages"
-	noLimit       = -1
+	// noLimit is used to indicate that there is no limit for the number of results.
+	noLimit = 0
 )
 
 var _ readers.MessageRepository = (*mongoRepository)(nil)
@@ -34,7 +35,15 @@ func New(db *mongo.Database) readers.MessageRepository {
 	}
 }
 
+func (repo mongoRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
 func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
+}
+
+func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"
 	if rpm.Format != "" && rpm.Format != defCollection {
@@ -100,11 +109,10 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 }
 
 func fmtCondition(chanID string, rpm readers.PageMetadata) bson.D {
-	filter := bson.D{
-		bson.E{
-			Key:   "channel",
-			Value: chanID,
-		},
+	filter := bson.D{}
+
+	if chanID != "" {
+		filter = append(filter, bson.E{Key: "channel", Value: chanID})
 	}
 
 	var query map[string]interface{}

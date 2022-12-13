@@ -43,7 +43,7 @@ var (
 	sum     float64 = 42
 )
 
-func TestSaveSenml(t *testing.T) {
+func TestSaveSenML(t *testing.T) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(addr))
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
