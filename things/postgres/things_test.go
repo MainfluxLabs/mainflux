@@ -448,16 +448,16 @@ func TestMultiThingRetrieval(t *testing.T) {
 		"retrieve subset of things with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: 50,
+				Offset: offset,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n - 50,
+			size: n - offset,
 		},
 		"retrieve things with existing name": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: 1,
+				Offset: offset,
 				Limit:  n,
 				Name:   name,
 				Total:  nameNum + nameMetaNum,
