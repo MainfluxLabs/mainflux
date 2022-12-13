@@ -18,6 +18,7 @@ import (
 
 const (
 	offset      = uint64(1)
+	fiveOffset  = uint64(5)
 	nameNum     = uint64(3)
 	metaNum     = uint64(3)
 	nameMetaNum = uint64(2)
@@ -271,11 +272,11 @@ func TestMultiChannelRetrieval(t *testing.T) {
 		"retrieve subset of channels with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: 5,
+				Offset: fiveOffset,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n - 5,
+			size: n - fiveOffset,
 		},
 		"retrieve channels with non-existing owner": {
 			owner: wrongValue,
