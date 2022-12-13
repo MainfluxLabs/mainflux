@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
-	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -35,9 +35,12 @@ const (
 	adminEmail        = "admin@example.com"
 	invalidEmail      = "userexample.com"
 	validPass         = "password"
+	invalidToken      = "invalid"
 	invalidPass       = "wrong"
 	memberRelationKey = "member"
 	authoritiesObjKey = "authorities"
+	prefix            = "fe6b4e92-cc98-425e-b0aa-"
+	userNum           = 101
 )
 
 var (
@@ -52,7 +55,9 @@ var (
 	missingEmailRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
 	missingPassRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
 	invalidRestPassRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
+	idProvider         = uuid.New()
 	passRegex          = regexp.MustCompile("^.{8,}$")
+	userAdmin          = users.User{Email: adminEmail, ID: admin.ID, Password: validPass, Metadata: map[string]interface{}{"role": "user"}}
 )
 
 type testRequest struct {
@@ -82,11 +87,7 @@ func (tr testRequest) make() (*http.Response, error) {
 
 func newService() users.Service {
 	usersRepo := mocks.NewUserRepository()
-	hasher := bcrypt.New()
-
-	idProvider := uuid.New()
-	id, _ := idProvider.ID()
-	admin.ID = id
+	hasher := mocks.NewHasher()
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[admin.ID] = []mocks.SubjectSet{{Object: authoritiesObjKey, Relation: memberRelationKey}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
@@ -104,6 +105,12 @@ func newServer(svc users.Service) *httptest.Server {
 func toJSON(data interface{}) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
+}
+
+func TestInit(t *testing.T) {
+	id, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	admin.ID = id
 }
 
 func TestRegister(t *testing.T) {
@@ -155,7 +162,6 @@ func TestUserCreate(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-
 	data := toJSON(user)
 	invalidData := toJSON(users.User{Email: invalidEmail, Password: validPass})
 	invalidPasswordData := toJSON(users.User{Email: validEmail, Password: invalidPass})
@@ -315,6 +321,166 @@ func TestUser(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, "", fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
 	}
+}
+
+func TestListUsers(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	token, err := svc.Login(context.Background(), userAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var data []viewUserRes
+	data = append(data, viewUserRes{admin.ID, userAdmin.Email})
+	for i := 0; i < userNum; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i)
+		email := fmt.Sprintf("users%d@example.com", i)
+		user := users.User{
+			ID:       id,
+			Email:    email,
+			Password: "password",
+		}
+		usr, err := svc.Register(context.Background(), token, user)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		data = append(data, viewUserRes{usr, email})
+	}
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Email < data[j].Email
+	})
+
+	cases := []struct {
+		desc   string
+		url    string
+		token  string
+		status int
+		res    []viewUserRes
+	}{
+		{
+			desc:   "get list of users",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 5),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:5],
+		},
+		{
+			desc:   "get list of all users with no limit",
+			url:    fmt.Sprintf("%s/users?limit=%d", ts.URL, -1),
+			token:  token,
+			status: http.StatusOK,
+			res:    data,
+		},
+		{
+			desc:   "get list of users ordered by name descendent",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=name&dir=desc", ts.URL, 0, 5),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:5],
+		},
+		{
+			desc:   "get list of users with invalid token",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=wrong", ts.URL, 0, 5),
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with empty token",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 1),
+			token:  "",
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with negative offset",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, -1, 5),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with negative limit",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 1, -5),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with zero limit",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 1, 0),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users without offset",
+			url:    fmt.Sprintf("%s/users?limit=%d", ts.URL, 5),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:5],
+		},
+		{
+			desc:   "get list of users with redundant query params",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&value=something", ts.URL, 0, 5),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:5],
+		},
+		{
+			desc:   "get list of users with limit greater than max",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&value=something", ts.URL, 0, 101),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with default URL",
+			url:    fmt.Sprintf("%s/users%s", ts.URL, ""),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:10],
+		},
+		{
+			desc:   "get list of users with invalid number of params",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&limit=%d&offset=%d", ts.URL, 4, 4, 5, 5),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with invalid offset",
+			url:    fmt.Sprintf("%s/users?offset=%s&limit=%d", ts.URL, "s", 5),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "get list of users with invalid limit",
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%s", ts.URL, 0, "s"),
+			token:  token,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data userRes
+		err = json.NewDecoder(res.Body).Decode(&data)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, data.Users, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Users))
+	}
+
 }
 
 func TestPasswordResetRequest(t *testing.T) {
@@ -524,6 +690,18 @@ func TestPasswordChange(t *testing.T) {
 	}
 }
 
-type errorRes struct {
-	Err string `json:"error"`
+type viewUserRes struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+}
+
+type pageRes struct {
+	Total  uint64 `json:"total"`
+	Offset uint64 `json:"offset"`
+	Limit  uint64 `json:"limit"`
+}
+
+type userRes struct {
+	pageRes
+	Users []viewUserRes `json:"users"`
 }

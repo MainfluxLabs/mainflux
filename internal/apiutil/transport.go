@@ -94,6 +94,33 @@ func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
 	return val, nil
 }
 
+func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
+	vals := bone.GetQuery(r, key)
+	if len(vals) > 1 {
+		return 0, errors.ErrInvalidQueryParams
+	}
+
+	if len(vals) == 0 {
+		return def, nil
+	}
+
+	strval := vals[0]
+	val, err := strconv.ParseInt(strval, 10, 64)
+	if err != nil {
+		return 0, errors.ErrInvalidQueryParams
+	}
+
+	if val < -1 || val == 0 {
+		return 0, errors.ErrInvalidQueryParams
+	}
+
+	if val == -1 {
+		val = 0
+	}
+
+	return uint64(val), nil
+}
+
 // ReadStringQuery reads the value of string http query parameters for a given key
 func ReadStringQuery(r *http.Request, key string, def string) (string, error) {
 	vals := bone.GetQuery(r, key)

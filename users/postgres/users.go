@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lib/pq"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/lib/pq"
 )
 
 const (
@@ -165,11 +165,16 @@ func (ur userRepository) RetrieveAll(ctx context.Context, offset, limit uint64, 
 	}
 
 	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY email LIMIT :limit OFFSET :offset;`, emq)
+	qnoLimit := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY email;`, emq)
 	params := map[string]interface{}{
 		"limit":    limit,
 		"offset":   offset,
 		"email":    ep,
 		"metadata": mp,
+	}
+
+	if limit == 0 {
+		q = qnoLimit
 	}
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, params)
