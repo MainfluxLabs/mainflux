@@ -131,11 +131,18 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, owner string, pm 
 	prefix := fmt.Sprintf("%s-", owner)
 	for k, v := range trm.things {
 		id := parseID(v.ID)
-		if strings.HasPrefix(k, prefix) && id >= first && id < last {
-			ths = append(ths, v)
+
+		switch pm.Limit {
+		case 0:
+			if strings.HasPrefix(k, prefix) && id >= first {
+				ths = append(ths, v)
+			}
+		default:
+			if strings.HasPrefix(k, prefix) && id >= first && id < last {
+				ths = append(ths, v)
+			}
 		}
 	}
-
 	// Sort Things list
 	ths = sortThings(pm, ths)
 

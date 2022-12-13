@@ -16,6 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	offset      = uint64(1)
+	nameNum     = uint64(3)
+	metaNum     = uint64(3)
+	nameMetaNum = uint64(2)
+)
+
 func TestChannelsSave(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
@@ -212,12 +219,7 @@ func TestMultiChannelRetrieval(t *testing.T) {
 		"wrong": "wrong",
 	}
 
-	offset := uint64(1)
-	nameNum := uint64(3)
-	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
-	n := uint64(10)
+	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		chID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -258,14 +260,22 @@ func TestMultiChannelRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
+		"retrieve all channels with no limit for existing owner": {
+			owner: email,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+				Total: n,
+			},
+			size: n,
+		},
 		"retrieve subset of channels with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
+				Offset: 5,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n / 2,
+			size: n - 5,
 		},
 		"retrieve channels with non-existing owner": {
 			owner: wrongValue,

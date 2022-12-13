@@ -393,7 +393,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	metaNum := uint64(3)
 	nameMetaNum := uint64(2)
 
-	n := uint64(10)
+	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		id, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -437,14 +437,22 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
+		"retrieve all things with no limit": {
+			owner: email,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+				Total: n,
+			},
+			size: n,
+		},
 		"retrieve subset of things with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
+				Offset: 50,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n / 2,
+			size: n - 50,
 		},
 		"retrieve things with existing name": {
 			owner: email,

@@ -83,9 +83,6 @@ func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, p
 	if pm.Limit < 0 {
 		return things.ChannelsPage{}, nil
 	}
-	if pm.Limit == 0 {
-		pm.Limit = 10
-	}
 
 	first := int(pm.Offset)
 	last := first + int(pm.Limit)
@@ -104,7 +101,7 @@ func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, p
 	// Sort Channels list
 	chs = sortChannels(pm, chs)
 
-	if last > len(chs) {
+	if last > len(chs) || last == 0 {
 		last = len(chs)
 	}
 

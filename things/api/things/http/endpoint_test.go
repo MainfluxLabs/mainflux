@@ -40,6 +40,9 @@ const (
 	ascKey      = "asc"
 	descKey     = "desc"
 	prefix      = "fe6b4e92-cc98-425e-b0aa-"
+	thingNum    = 101
+	chanNum     = 101
+	noLimit     = -1
 )
 
 var (
@@ -770,7 +773,7 @@ func TestListThings(t *testing.T) {
 	defer ts.Close()
 
 	data := []thingRes{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i <= thingNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
@@ -799,6 +802,13 @@ func TestListThings(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 5),
 			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of things with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s?limit=%d", thingURL, noLimit),
+			res:    data,
 		},
 		{
 			desc:   "get a list of things ordered by name descendent",
@@ -990,6 +1000,9 @@ func TestSearchThings(t *testing.T) {
 	th.Order = "wrong"
 	invalidOrderData := toJSON(th)
 
+	th.Limit = 0
+	zeroLimitData := toJSON(th)
+
 	th = searchThingReq
 	th.Dir = "wrong"
 	invalidDirData := toJSON(th)
@@ -997,9 +1010,6 @@ func TestSearchThings(t *testing.T) {
 	th = searchThingReq
 	th.Limit = 110
 	limitMaxData := toJSON(th)
-
-	th.Limit = 0
-	zeroLimitData := toJSON(th)
 
 	th = searchThingReq
 	th.Name = invalidName
@@ -1178,7 +1188,7 @@ func TestListThingsByChannel(t *testing.T) {
 	ch := chs[0]
 
 	data := []thingRes{}
-	for i := 0; i < 101; i++ {
+	for i := 0; i < thingNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
@@ -1814,7 +1824,7 @@ func TestListChannels(t *testing.T) {
 	defer ts.Close()
 
 	channels := []channelRes{}
-	for i := 0; i < 101; i++ {
+	for i := 0; i < chanNum; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		chs, err := svc.CreateChannels(context.Background(), token,
 			things.Channel{
@@ -1849,6 +1859,13 @@ func TestListChannels(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, 0, 6),
 			res:    channels[0:6],
+		},
+		{
+			desc:   "get a list of all channels with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s?limit=%d", channelURL, -1),
+			res:    channels,
 		},
 		{
 			desc:   "get a list of channels ordered by id descendent",
@@ -2032,7 +2049,7 @@ func TestListChannelsByThing(t *testing.T) {
 	th := ths[0]
 
 	channels := []channelRes{}
-	for i := 0; i < 101; i++ {
+	for i := 0; i < chanNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		channel1 := channel
 		channel1.ID = id

@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofrs/uuid"
-	"github.com/lib/pq" // required for DB access
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
+	"github.com/lib/pq" // required for DB access
 )
 
 const (
@@ -274,14 +274,18 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm thin
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, key, metadata FROM things
-	      %s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
+	q := fmt.Sprintf(`SELECT id, name, key, metadata FROM things %s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
+	qNoLimit := fmt.Sprintf(`SELECT id, name, key, metadata FROM things  %s ORDER BY %s %s;`, whereClause, oq, dq)
 	params := map[string]interface{}{
 		"owner":    owner,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
 		"metadata": m,
+	}
+
+	if pm.Limit == 0 {
+		q = qNoLimit
 	}
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)

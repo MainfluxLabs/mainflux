@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofrs/uuid"
-	"github.com/lib/pq"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
+	"github.com/lib/pq"
 )
 
 var _ things.ChannelRepository = (*channelRepository)(nil)
@@ -145,9 +145,8 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels
-		%s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
-
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
+	qNoLimit := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s;`, whereClause, oq, dq)
 	params := map[string]interface{}{
 		"owner":    owner,
 		"limit":    pm.Limit,
@@ -155,6 +154,11 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		"name":     name,
 		"metadata": meta,
 	}
+
+	if pm.Limit == 0 {
+		q = qNoLimit
+	}
+
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)

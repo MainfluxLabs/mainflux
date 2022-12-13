@@ -304,6 +304,14 @@ func TestListThings(t *testing.T) {
 			size: n,
 			err:  nil,
 		},
+		"list all things with no limit": {
+			token: token,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n,
+			err:  nil,
+		},
 		"list half": {
 			token: token,
 			pageMetadata: things.PageMetadata{
@@ -327,15 +335,6 @@ func TestListThings(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
-			},
-			size: 0,
-			err:  nil,
-		},
-		"list with zero limit": {
-			token: token,
-			pageMetadata: things.PageMetadata{
-				Offset: 1,
-				Limit:  0,
 			},
 			size: 0,
 			err:  nil,
@@ -770,6 +769,14 @@ func TestListChannels(t *testing.T) {
 			size: n,
 			err:  nil,
 		},
+		"list all channels with no limit": {
+			token: token,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n,
+			err:  nil,
+		},
 		"list half": {
 			token: token,
 			pageMetadata: things.PageMetadata{
@@ -795,15 +802,6 @@ func TestListChannels(t *testing.T) {
 				Limit:  n,
 			},
 			size: 0,
-			err:  nil,
-		},
-		"list with zero limit and offset 1": {
-			token: token,
-			pageMetadata: things.PageMetadata{
-				Offset: 1,
-				Limit:  0,
-			},
-			size: n - 1,
 			err:  nil,
 		},
 		"list with wrong credentials": {
