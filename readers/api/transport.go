@@ -66,7 +66,7 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	))
 	mux.Get("/messages", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
-		decodeListMessages,
+		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -175,7 +175,7 @@ func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
-func decodeListMessages(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
 	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err

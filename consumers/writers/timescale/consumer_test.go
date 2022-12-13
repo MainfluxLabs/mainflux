@@ -31,7 +31,7 @@ var (
 	sum     float64 = 42
 )
 
-func TestSaveSenml(t *testing.T) {
+func TestSaveSenML(t *testing.T) {
 	repo := timescale.New(db)
 
 	chid, err := uuid.NewV4()

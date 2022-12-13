@@ -44,7 +44,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func TestListChannelMessagesSenml(t *testing.T) {
+func TestListChannelMessagesSenML(t *testing.T) {
 	writer := pwriter.New(db)
 
 	chanID, err := idProvider.ID()
@@ -114,7 +114,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read message page for existing channel": {
+		"read messages for existing channel": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -125,7 +125,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages),
 			},
 		},
-		"read all messages page for existing channel": {
+		"read all messages for existing channel": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -136,7 +136,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages),
 			},
 		},
-		"read message page for non-existent channel": {
+		"read messages page for non-existent channel": {
 			chanID: wrongID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -146,7 +146,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message last page": {
+		"read messages last page": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: msgsNum - 20,
@@ -157,7 +157,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[msgsNum-20 : msgsNum]),
 			},
 		},
-		"read message with non-existent subtopic": {
+		"read messages with non-existent subtopic": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
@@ -168,7 +168,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message with subtopic": {
+		"read messages with subtopic": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
@@ -180,7 +180,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with publisher": {
+		"read messages with publisher": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
@@ -192,7 +192,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with wrong format": {
+		"read messages with wrong format": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
@@ -205,7 +205,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message with protocol": {
+		"read messages with protocol": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
@@ -217,7 +217,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with name": {
+		"read messages with name": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -229,7 +229,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs[0:limit]),
 			},
 		},
-		"read message with value": {
+		"read messages with value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -241,7 +241,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and equal comparator": {
+		"read messages with value and equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
@@ -254,7 +254,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and lower-than comparator": {
+		"read messages with value and lower-than comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
@@ -267,7 +267,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and lower-than-or-equal comparator": {
+		"read messages with value and lower-than-or-equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
@@ -280,7 +280,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and greater-than comparator": {
+		"read messages with value and greater-than comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
@@ -293,7 +293,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and greater-than-or-equal comparator": {
+		"read messages with value and greater-than-or-equal comparator": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
@@ -306,7 +306,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with boolean value": {
+		"read messages with boolean value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
@@ -318,7 +318,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(boolMsgs[0:limit]),
 			},
 		},
-		"read message with string value": {
+		"read messages with string value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:      zeroOffset,
@@ -330,7 +330,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(stringMsgs[0:limit]),
 			},
 		},
-		"read message with data value": {
+		"read messages with data value": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
@@ -342,7 +342,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(dataMsgs[0:limit]),
 			},
 		},
-		"read message with from": {
+		"read messages with from": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -354,7 +354,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[0:21]),
 			},
 		},
-		"read message with to": {
+		"read messages with to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -366,7 +366,7 @@ func TestListChannelMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[21:]),
 			},
 		},
-		"read message with from/to": {
+		"read messages with from/to": {
 			chanID: chanID,
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
@@ -464,7 +464,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read message page for existing channel": {
+		"read messages page for existing channel": {
 			chanID: id1,
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
@@ -488,7 +488,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1),
 			},
 		},
-		"read message page for non-existent channel": {
+		"read messages page for non-existent channel": {
 			chanID: wrongID,
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
@@ -499,7 +499,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message last page": {
+		"read messages last page": {
 			chanID: id2,
 			pageMeta: readers.PageMetadata{
 				Format: messages2.Format,
@@ -511,7 +511,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs2[msgsNum-20 : msgsNum]),
 			},
 		},
-		"read message with protocol": {
+		"read messages with protocol": {
 			chanID: id2,
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
@@ -540,7 +540,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 	}
 }
 
-func TestListAllMessagesSenml(t *testing.T) {
+func TestListAllMessagesSenML(t *testing.T) {
 	writer := pwriter.New(db)
 
 	chanID, err := idProvider.ID()
@@ -607,7 +607,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read all messages page": {
+		"read all messages": {
 			pageMeta: readers.PageMetadata{
 				Limit: noLimit,
 			},
@@ -616,7 +616,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages),
 			},
 		},
-		"read message last page": {
+		"read messages last page": {
 			pageMeta: readers.PageMetadata{
 				Offset: msgsNum - 20,
 				Limit:  msgsNum,
@@ -626,7 +626,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[msgsNum-20 : msgsNum]),
 			},
 		},
-		"read message with non-existent subtopic": {
+		"read messages with non-existent subtopic": {
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    msgsNum,
@@ -636,7 +636,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message with subtopic": {
+		"read messages with subtopic": {
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    uint64(len(queryMsgs)),
@@ -647,7 +647,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with publisher": {
+		"read messages with publisher": {
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     uint64(len(queryMsgs)),
@@ -658,7 +658,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with wrong format": {
+		"read messages with wrong format": {
 			pageMeta: readers.PageMetadata{
 				Format:    wrongFormat,
 				Offset:    zeroOffset,
@@ -670,7 +670,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: []readers.Message{},
 			},
 		},
-		"read message with protocol": {
+		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
 				Offset:   zeroOffset,
 				Limit:    uint64(len(queryMsgs)),
@@ -681,7 +681,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read message with name": {
+		"read messages with name": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -692,7 +692,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(queryMsgs[0:limit]),
 			},
 		},
-		"read message with value": {
+		"read messages with value": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -703,7 +703,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and equal comparator": {
+		"read messages with value and equal comparator": {
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -715,7 +715,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and lower-than comparator": {
+		"read messages with value and lower-than comparator": {
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -727,7 +727,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and lower-than-or-equal comparator": {
+		"read messages with value and lower-than-or-equal comparator": {
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -739,7 +739,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and greater-than comparator": {
+		"read messages with value and greater-than comparator": {
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -751,7 +751,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with value and greater-than-or-equal comparator": {
+		"read messages with value and greater-than-or-equal comparator": {
 			pageMeta: readers.PageMetadata{
 				Offset:     zeroOffset,
 				Limit:      limit,
@@ -763,7 +763,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(valueMsgs[0:limit]),
 			},
 		},
-		"read message with boolean value": {
+		"read messages with boolean value": {
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     limit,
@@ -774,7 +774,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(boolMsgs[0:limit]),
 			},
 		},
-		"read message with string value": {
+		"read messages with string value": {
 			pageMeta: readers.PageMetadata{
 				Offset:      zeroOffset,
 				Limit:       limit,
@@ -785,7 +785,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(stringMsgs[0:limit]),
 			},
 		},
-		"read message with data value": {
+		"read messages with data value": {
 			pageMeta: readers.PageMetadata{
 				Offset:    zeroOffset,
 				Limit:     limit,
@@ -796,7 +796,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(dataMsgs[0:limit]),
 			},
 		},
-		"read message with from": {
+		"read messages with from": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  uint64(len(messages[0:21])),
@@ -807,7 +807,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[0:21]),
 			},
 		},
-		"read message with to": {
+		"read messages with to": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  uint64(len(messages[21:])),
@@ -818,7 +818,7 @@ func TestListAllMessagesSenml(t *testing.T) {
 				Messages: fromSenml(messages[21:]),
 			},
 		},
-		"read message with from/to": {
+		"read messages with from/to": {
 			pageMeta: readers.PageMetadata{
 				Offset: zeroOffset,
 				Limit:  limit,
@@ -914,7 +914,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 		pageMeta readers.PageMetadata
 		page     readers.MessagesPage
 	}{
-		"read all messages page": {
+		"read all messages": {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Limit:  noLimit,
@@ -924,7 +924,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1),
 			},
 		},
-		"read message page": {
+		"read messages page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages1.Format,
 				Offset: zeroOffset,
@@ -935,7 +935,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1[:10]),
 			},
 		},
-		"read message last page": {
+		"read messages last page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages2.Format,
 				Offset: msgsNum - 20,
@@ -946,7 +946,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs2[msgsNum-20 : msgsNum]),
 			},
 		},
-		"read message with protocol": {
+		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
 				Offset:   zeroOffset,
