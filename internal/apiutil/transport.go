@@ -94,6 +94,7 @@ func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
 	return val, nil
 }
 
+// ReadLimitQuery reads the value of limit http query parameters
 func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
 	vals := bone.GetQuery(r, key)
 	if len(vals) > 1 {

@@ -33,7 +33,7 @@ var (
 	sum     float64 = 42
 )
 
-func TestSaveSenml(t *testing.T) {
+func TestSaveSenML(t *testing.T) {
 	session, err := cassandra.Connect(cassandra.DBConfig{
 		Hosts:    []string{addr},
 		Keyspace: keyspace,

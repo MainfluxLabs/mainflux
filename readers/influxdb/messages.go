@@ -19,6 +19,8 @@ import (
 const (
 	// Measurement for SenML messages
 	defMeasurement = "messages"
+	// noLimit is used to indicate that there is no limit for the number of results.
+	noLimit = 0
 )
 
 var _ readers.MessageRepository = (*influxRepository)(nil)
@@ -44,7 +46,15 @@ func New(client influxdb2.Client, repoCfg RepoConfig) readers.MessageRepository 
 	}
 }
 
+func (repo *influxRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
 func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(chanID, rpm)
+}
+
+func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defMeasurement
 	if rpm.Format != "" {
 		format = rpm.Format
@@ -64,7 +74,7 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
 	sb.WriteString(`|> sort(columns: ["_time"], desc: true)`)
-	if rpm.Limit != -1 {
+	if rpm.Limit != noLimit {
 		sb.WriteString(fmt.Sprintf(`|> limit(n:%d,offset:%d)`, rpm.Limit, rpm.Offset))
 	}
 	sb.WriteString(`|> yield(name: "sort")`)
@@ -105,7 +115,6 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	}
 
 	return page, nil
-
 }
 
 func (repo *influxRepository) count(measurement, condition string, timeRange string) (uint64, error) {
@@ -151,7 +160,9 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
 	var timeRange string
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s" )`, chanID))
+	if chanID != "" {
+		sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s" )`, chanID))
+	}
 
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)

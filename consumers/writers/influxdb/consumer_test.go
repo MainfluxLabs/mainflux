@@ -118,7 +118,7 @@ func queryDB(fluxQuery string) (int, error) {
 	return rowCount, nil
 }
 
-func TestSaveSenml(t *testing.T) {
+func TestSaveSenML(t *testing.T) {
 	repo := writer.New(client, repoCfg)
 	cases := []struct {
 		desc         string

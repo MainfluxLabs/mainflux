@@ -33,6 +33,10 @@ func New(session *gocql.Session) readers.MessageRepository {
 	}
 }
 
+func (cr cassandraRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	// TODO: Implement this method.
+	return readers.MessagesPage{}, nil
+}
 func (cr cassandraRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defTable
 	if rpm.Format != "" {

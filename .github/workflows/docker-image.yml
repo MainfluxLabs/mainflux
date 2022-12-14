@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: build status
 
 on:
   push:
@@ -14,5 +14,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
+    - name: Build Docker images
       run: make dockers
