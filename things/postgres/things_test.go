@@ -558,7 +558,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	n := uint64(10)
+	n := uint64(102)
 	thsDisconNum := uint64(1)
 
 	chID, err := idProvider.ID()
@@ -610,6 +610,14 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+			},
+			size: n - thsDisconNum,
+		},
+		"retrieve all things by channel without limit for existing owner": {
+			owner: email,
+			chID:  chID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
 			},
 			size: n - thsDisconNum,
 		},

@@ -387,7 +387,7 @@ func TestRetrieveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thID = ths[0].ID
 
-	n := uint64(10)
+	n := uint64(102)
 	chsDisconNum := uint64(1)
 
 	for i := uint64(0); i < n; i++ {
@@ -426,6 +426,14 @@ func TestRetrieveByThing(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+			},
+			size: n - chsDisconNum,
+		},
+		"retrieve all channels by thing with existing owner with no limit": {
+			owner: email,
+			thID:  thID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
 			},
 			size: n - chsDisconNum,
 		},

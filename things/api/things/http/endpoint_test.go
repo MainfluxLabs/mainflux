@@ -1225,6 +1225,13 @@ func TestListThingsByChannel(t *testing.T) {
 			res:    data[0:5],
 		},
 		{
+			desc:   "get a list of things by channel with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, ch.ID, -1),
+			res:    data,
+		},
+		{
 			desc:   "get a list of things by channel with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
@@ -1242,7 +1249,7 @@ func TestListThingsByChannel(t *testing.T) {
 			desc:   "get a list of things by channel with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, ch.ID, -1, 5),
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, ch.ID, -2, 5),
 			res:    nil,
 		},
 		{
@@ -2082,6 +2089,13 @@ func TestListChannelsByThing(t *testing.T) {
 			res:    channels[0:6],
 		},
 		{
+			desc:   "get a list of channels by thing with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/channels?limit=%d", channelURL, th.ID, -1),
+			res:    channels,
+		},
+		{
 			desc:   "get a list of channels by thing with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
@@ -2099,14 +2113,14 @@ func TestListChannelsByThing(t *testing.T) {
 			desc:   "get a list of channels by thing with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, -1, 5),
+			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, -2, 5),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of channels by thing with negative limit",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, -1, 5),
+			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, -2, 5),
 			res:    nil,
 		},
 		{

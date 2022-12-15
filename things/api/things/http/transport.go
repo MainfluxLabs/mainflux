@@ -395,7 +395,7 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
 	if err != nil {
 		return nil, err
 	}

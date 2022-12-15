@@ -296,7 +296,7 @@ func (req listByConnectionReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize || req.pageMetadata.Limit < 1 {
+	if req.pageMetadata.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 

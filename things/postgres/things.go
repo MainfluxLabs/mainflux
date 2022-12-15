@@ -339,6 +339,22 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		return things.Page{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	qDiscNoLimmit := fmt.Sprintf(`SELECT id, name, key, metadata
+	FROM things th
+	WHERE th.owner = :owner AND th.id NOT IN
+	(SELECT id FROM things th
+		INNER JOIN connections conn
+		ON th.id = conn.thing_id
+		WHERE th.owner = :owner AND conn.channel_id = :channel)
+	ORDER BY %s %s;`, oq, dq)
+
+	qConnNoLimit := fmt.Sprintf(`SELECT id, name, key, metadata
+	FROM things th
+	INNER JOIN connections conn
+	ON th.id = conn.thing_id
+	WHERE th.owner = :owner AND conn.channel_id = :channel
+	ORDER BY %s %s;`, oq, dq)
+
 	var q, qc string
 	switch pm.Disconnected {
 	case true:
@@ -352,6 +368,10 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		        ORDER BY %s %s
 		        LIMIT :limit
 		        OFFSET :offset;`, oq, dq)
+
+		if pm.Limit == 0 {
+			q = qDiscNoLimmit
+		}
 
 		qc = `SELECT COUNT(*)
 		        FROM things th
@@ -369,6 +389,10 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		        ORDER BY %s %s
 		        LIMIT :limit
 		        OFFSET :offset;`, oq, dq)
+
+		if pm.Limit == 0 {
+			q = qConnNoLimit
+		}
 
 		qc = `SELECT COUNT(*)
 		        FROM things th

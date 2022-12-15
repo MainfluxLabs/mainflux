@@ -25,7 +25,7 @@ const (
 	email2     = "user2@example.com"
 	token      = "token"
 	token2     = "token2"
-	n          = uint64(10)
+	n          = uint64(102)
 	prefix     = "fe6b4e92-cc98-425e-b0aa-"
 )
 
@@ -440,6 +440,15 @@ func TestListThingsByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 			err:  nil,
 		},
+		"list all things by existing channel with no limit": {
+			token: token,
+			chID:  ch.ID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n - thsDisconNum,
+			err:  nil,
+		},
 		"list half of things by existing channel": {
 			token: token,
 			chID:  ch.ID,
@@ -466,16 +475,6 @@ func TestListThingsByChannel(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
-			},
-			size: 0,
-			err:  nil,
-		},
-		"list things by existing channel with zero limit": {
-			token: token,
-			chID:  ch.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 1,
-				Limit:  0,
 			},
 			size: 0,
 			err:  nil,
@@ -926,6 +925,15 @@ func TestListChannelsByThing(t *testing.T) {
 			size: n - chsDisconNum,
 			err:  nil,
 		},
+		"list all channels by existing thing with no limit": {
+			token: token,
+			thID:  th.ID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n - chsDisconNum,
+			err:  nil,
+		},
 		"list half of channels by existing thing": {
 			token: token,
 			thID:  th.ID,
@@ -952,16 +960,6 @@ func TestListChannelsByThing(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
-			},
-			size: 0,
-			err:  nil,
-		},
-		"list channels by existing thing with zero limit": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 1,
-				Limit:  0,
 			},
 			size: 0,
 			err:  nil,
