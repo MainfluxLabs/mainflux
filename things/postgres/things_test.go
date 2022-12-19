@@ -613,7 +613,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve all things by channel without limit for existing owner": {
+		"retrieve all things by channel without limit": {
 			owner: email,
 			chID:  chID,
 			pageMetadata: things.PageMetadata{
@@ -664,6 +664,15 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
+				Disconnected: true,
+			},
+			size: thsDisconNum,
+		},
+		"retrieve all non connected things by channel without limit": {
+			owner: email,
+			chID:  chID,
+			pageMetadata: things.PageMetadata{
+				Limit:        0,
 				Disconnected: true,
 			},
 			size: thsDisconNum,

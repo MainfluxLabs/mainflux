@@ -995,6 +995,16 @@ func TestListChannelsByThing(t *testing.T) {
 			size: chsDisconNum,
 			err:  nil,
 		},
+		"list all non-connected channels by existing thing with no limit": {
+			token: token,
+			thID:  th.ID,
+			pageMetadata: things.PageMetadata{
+				Limit:        0,
+				Disconnected: true,
+			},
+			size: chsDisconNum,
+			err:  nil,
+		},
 		"list all channels by thing sorted by name ascendent": {
 			token: token,
 			thID:  th.ID,

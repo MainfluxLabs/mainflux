@@ -206,21 +206,6 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	qDiscNoLimit := fmt.Sprintf(`SELECT id, name, metadata
-	FROM channels ch
-	WHERE ch.owner = :owner AND ch.id NOT IN
-	(SELECT id FROM channels ch
-		INNER JOIN connections conn
-		ON ch.id = conn.channel_id
-		WHERE ch.owner = :owner AND conn.thing_id = :thing)
-	ORDER BY %s %s`, oq, dq)
-
-	qConNoLimit := fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
-	INNER JOIN connections conn
-	ON ch.id = conn.channel_id
-	WHERE ch.owner = :owner AND conn.thing_id = :thing
-	ORDER BY %s %s;`, oq, dq)
-
 	var q, qc string
 	switch pm.Disconnected {
 	case true:
@@ -236,7 +221,14 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		        OFFSET :offset;`, oq, dq)
 
 		if pm.Limit == 0 {
-			q = qDiscNoLimit
+			q = fmt.Sprintf(`SELECT id, name, metadata
+			FROM channels ch
+			WHERE ch.owner = :owner AND ch.id NOT IN
+			(SELECT id FROM channels ch
+				INNER JOIN connections conn
+				ON ch.id = conn.channel_id
+				WHERE ch.owner = :owner AND conn.thing_id = :thing)
+			ORDER BY %s %s`, oq, dq)
 		}
 
 		qc = `SELECT COUNT(*)
@@ -254,9 +246,14 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		        ORDER BY %s %s
 		        LIMIT :limit
 		        OFFSET :offset;`, oq, dq)
-						
+
 		if pm.Limit == 0 {
-			q = qConNoLimit
+			q = fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
+			INNER JOIN connections conn
+			ON ch.id = conn.channel_id
+			WHERE ch.owner = :owner AND conn.thing_id = :thing
+			ORDER BY %s %s;`, oq, dq)
+
 		}
 
 		qc = `SELECT COUNT(*)

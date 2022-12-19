@@ -484,6 +484,15 @@ func TestRetrieveByThing(t *testing.T) {
 			},
 			size: chsDisconNum,
 		},
+		"retrieve all non connected channels by thing without limit": {
+			owner: email,
+			thID:  thID,
+			pageMetadata: things.PageMetadata{
+				Limit:        0,
+				Disconnected: true,
+			},
+			size: chsDisconNum,
+		},
 		"retrieve all channels by thing sorted by name ascendent": {
 			owner: email,
 			thID:  thID,
