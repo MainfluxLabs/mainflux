@@ -361,10 +361,10 @@ func TestListUsers(t *testing.T) {
 	}{
 		{
 			desc:   "get list of users",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 5),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 10),
 			token:  token,
 			status: http.StatusOK,
-			res:    data[0:5],
+			res:    data[0:10],
 		},
 		{
 			desc:   "get list of all users with no limit",
@@ -374,7 +374,7 @@ func TestListUsers(t *testing.T) {
 			res:    data,
 		},
 		{
-			desc:   "get list of users ordered by name descendent",
+			desc:   "get list of users with limit ordered by name descendent",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=name&dir=desc", ts.URL, 0, 5),
 			token:  token,
 			status: http.StatusOK,
@@ -395,14 +395,14 @@ func TestListUsers(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get list of users with negative offset",
+			desc:   "get list of users with invalid offset",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, -1, 5),
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "get list of users with negative limit",
+			desc:   "get list of users with invalid limit",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 1, -5),
 			token:  token,
 			status: http.StatusBadRequest,
@@ -431,7 +431,7 @@ func TestListUsers(t *testing.T) {
 		},
 		{
 			desc:   "get list of users with limit greater than max",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&value=something", ts.URL, 0, 101),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 101),
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
