@@ -19,7 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const wrong string = "wrong-value"
+const (
+	wrong   = "wrong-value"
+	userNum = 101
+)
 
 var (
 	userAdmin       = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
@@ -231,12 +234,15 @@ func TestListUsers(t *testing.T) {
 	token, err := svc.Login(context.Background(), userAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	page, err := svc.ListUsers(context.Background(), token, 0, 0, "", nil)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	totUser := page.Total
 
-	var nUsers = uint64(10)
+	var nUsers = uint64(userNum)
 
 	for i := uint64(1); i <= nUsers; i++ {
 		email := fmt.Sprintf("TestListUsers%d@example.com", i)
@@ -259,19 +265,51 @@ func TestListUsers(t *testing.T) {
 	}{
 		"list users with authorized token": {
 			token: token,
-			size:  0,
+			size:  totUser,
 			err:   nil,
 		},
-		"list user with emtpy token": {
+		"list users with invalid token": {
+			token: wrong,
+			size:  0,
+			err:   errors.ErrAuthentication,
+		},
+		"list users with empty token": {
 			token: "",
+			size:  0,
+			err:   errors.ErrAuthentication,
+		},
+		"list users without permission": {
+			token: unauthUserToken,
 			size:  0,
 			err:   errors.ErrAuthentication,
 		},
 		"list users with offset and limit": {
 			token:  token,
-			offset: 6,
+			offset: 1,
 			limit:  totUser,
-			size:   totUser - 6,
+			size:   totUser - 1,
+			err:    nil,
+		},
+		"list last user": {
+			token:  token,
+			offset: totUser - 1,
+			limit:  totUser,
+			size:   1,
+			err:    nil,
+		},
+		"list empty set": {
+			token:  token,
+			offset: totUser + 1,
+			limit:  totUser,
+			size:   0,
+			err:    nil,
+		},
+
+		"list users with no limit": {
+			token: token,
+			limit: 0,
+			size:  totUser,
+			err:   nil,
 		},
 	}
 

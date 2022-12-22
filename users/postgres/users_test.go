@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const usersNum = 101
+
 var idProvider = uuid.New()
 
 func TestUserSave(t *testing.T) {
@@ -94,7 +96,7 @@ func TestRetrieveAll(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 	metaNum := uint64(2)
-	var nUsers = uint64(10)
+	var nUsers = uint64(usersNum)
 
 	meta := users.Metadata{
 		"admin": "true",
@@ -146,6 +148,13 @@ func TestRetrieveAll(t *testing.T) {
 			size:   5,
 			total:  nUsers,
 			ids:    ids,
+		},
+		"retrieve all users by email without limit": {
+			email: "All",
+			limit: 0,
+			size:  nUsers,
+			total: nUsers,
+			ids:   ids,
 		},
 		"retrieve all users by metadata": {
 			email:    "All",

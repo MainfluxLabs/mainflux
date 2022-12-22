@@ -67,7 +67,7 @@ func (req listUsersReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.limit > maxLimitSize || req.limit < 1 {
+	if req.limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 

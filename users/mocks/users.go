@@ -111,8 +111,9 @@ func (urm *userRepositoryMock) RetrieveAll(ctx context.Context, offset, limit ui
 		return up, nil
 	}
 
-	for _, u := range sortUsers(mockUsers) {
-		if i >= offset && i < (limit+offset) {
+	sortedUsers := sortUsers(mockUsers)
+	for _, u := range sortedUsers {
+		if i >= offset && i < offset+limit || limit == 0 {
 			up.Users = append(up.Users, u)
 		}
 		i++
