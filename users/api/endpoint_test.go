@@ -360,7 +360,7 @@ func TestListUsers(t *testing.T) {
 		res    []viewUserRes
 	}{
 		{
-			desc:   "get list of users ",
+			desc:   "get list of users",
 			url:    fmt.Sprintf("%s/users%s", ts.URL, ""),
 			token:  token,
 			status: http.StatusOK,
