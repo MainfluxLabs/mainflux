@@ -360,6 +360,13 @@ func TestListUsers(t *testing.T) {
 		res    []viewUserRes
 	}{
 		{
+			desc:   "get list of users ",
+			url:    fmt.Sprintf("%s/users%s", ts.URL, ""),
+			token:  token,
+			status: http.StatusOK,
+			res:    data[0:10],
+		},
+		{
 			desc:   "get list of users with limit",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 10),
 			token:  token,
@@ -435,13 +442,6 @@ func TestListUsers(t *testing.T) {
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
-		},
-		{
-			desc:   "get list of users ",
-			url:    fmt.Sprintf("%s/users%s", ts.URL, ""),
-			token:  token,
-			status: http.StatusOK,
-			res:    data[0:10],
 		},
 		{
 			desc:   "get list of users with invalid number of params",
