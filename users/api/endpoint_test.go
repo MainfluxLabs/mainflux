@@ -334,7 +334,7 @@ func TestListUsers(t *testing.T) {
 
 	var data []viewUserRes
 	data = append(data, viewUserRes{admin.ID, userAdmin.Email})
-	for i := 0; i < userNum; i++ {
+	for i := 1; i < userNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i)
 		email := fmt.Sprintf("users%d@example.com", i)
 		user := users.User{
@@ -360,7 +360,7 @@ func TestListUsers(t *testing.T) {
 		res    []viewUserRes
 	}{
 		{
-			desc:   "get list of users",
+			desc:   "get list of users with limit",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 10),
 			token:  token,
 			status: http.StatusOK,
@@ -431,13 +431,13 @@ func TestListUsers(t *testing.T) {
 		},
 		{
 			desc:   "get list of users with limit greater than max",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 101),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 110),
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "get list of users with default URL",
+			desc:   "get list of users ",
 			url:    fmt.Sprintf("%s/users%s", ts.URL, ""),
 			token:  token,
 			status: http.StatusOK,
