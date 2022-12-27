@@ -11,11 +11,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	api2 "github.com/MainfluxLabs/mainflux/mqtt/api"
+	mqapi "github.com/MainfluxLabs/mainflux/mqtt/api/http"
+	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -23,10 +25,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	"github.com/MainfluxLabs/mproxy/logger"
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	ws "github.com/MainfluxLabs/mproxy/pkg/websocket"
+	"github.com/cenkalti/backoff/v4"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -34,7 +42,10 @@ import (
 )
 
 const (
-	svcName = "mqtt"
+	svcName       = "mqtt"
+	httpProtocol  = "http"
+	httpsProtocol = "https"
+	stopWaitTime  = 5 * time.Second
 
 	defLogLevel              = "error"
 	defMQTTPort              = "1883"
@@ -59,6 +70,19 @@ const (
 	defAuthcacheURL          = "localhost:6379"
 	defAuthCachePass         = ""
 	defAuthCacheDB           = "0"
+	defDBHost                = "localhost"
+	defUsersAuthURL          = "localhost:8181"
+	defDBPort                = "5432"
+	defDBUser                = "mainflux"
+	defDBPass                = "mainflux"
+	defDB                    = "subscriptions"
+	defDBSSLMode             = "disable"
+	defDBSSLCert             = ""
+	defDBSSLKey              = ""
+	defDBSSLRootCert         = ""
+	defServerKey             = ""
+	defServerCert            = ""
+	defUsersAuthTimeout      = "1s"
 
 	envLogLevel              = "MF_MQTT_ADAPTER_LOG_LEVEL"
 	envMQTTPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
@@ -83,6 +107,19 @@ const (
 	envAuthCacheURL          = "MF_AUTH_CACHE_URL"
 	envAuthCachePass         = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB           = "MF_AUTH_CACHE_DB"
+	envServerCert            = "MF_SUBSCRIPTIONS_SERVER_CERT"
+	envServerKey             = "MF_SUBSCRIPTIONS_SERVER_KEY"
+	envDBHost                = "MF_SUBSCRIPTIONS_DB_HOST"
+	envDBPort                = "MF_SUBSCRIPTIONS_DB_PORT"
+	envDBUser                = "MF_SUBSCRIPTIONS_DB_USER"
+	envDBPass                = "MF_SUBSCRIPTIONS_DB_PASS"
+	envDB                    = "MF_SUBSCRIPTIONS_DB"
+	envDBSSLMode             = "MF_SUBSCRIPTIONS_DB_SSL_MODE"
+	envDBSSLCert             = "MF_SUBSCRIPTIONS_DB_SSL_CERT"
+	envDBSSLKey              = "MF_SUBSCRIPTIONS_DB_SSL_KEY"
+	envDBSSLRootCert         = "MF_SUBSCRIPTIONS_DB_SSL_ROOT_CERT"
+	envUsersAuthURL          = "MF_AUTH_GRPC_URL"
+	envUsersAuthTimeout      = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -101,6 +138,7 @@ type config struct {
 	thingsAuthURL         string
 	thingsAuthTimeout     time.Duration
 	brokerURL             string
+	usersAuthURL          string
 	clientTLS             bool
 	caCerts               string
 	instance              string
@@ -110,6 +148,10 @@ type config struct {
 	authURL               string
 	authPass              string
 	authDB                string
+	serverCert            string
+	serverKey             string
+	usersAuthTimeout      time.Duration
+	dbConfig              postgres.Config
 }
 
 func main() {
@@ -121,6 +163,9 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
+	db := connectToDB(cfg.dbConfig, logger)
+	defer db.Close()
 
 	if cfg.mqttTargetHealthCheck != "" {
 		notify := func(e error, next time.Duration) {
@@ -173,9 +218,22 @@ func main() {
 
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
+
+	subscriptionsTracer, subscriptionsCloser := initJaeger("subscriptions", cfg.jaegerURL, logger)
+	defer subscriptionsCloser.Close()
+
+	usersAuthTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	usersAuthConn := connectToAuth(cfg, logger)
+	defer usersAuthConn.Close()
+
+	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.usersAuthTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
 
 	authClient := auth.New(ac, tc)
+
+	svc := newService(usersAuth, db, logger)
 
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient)
@@ -188,6 +246,11 @@ func main() {
 	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpPort))
 	g.Go(func() error {
 		return proxyWS(ctx, cfg, logger, h)
+	})
+
+	errs := make(chan error, 2)
+	g.Go(func() error {
+		return startHTTPServer(ctx, svc, subscriptionsTracer, cfg, logger, errs)
 	})
 
 	g.Go(func() error {
@@ -219,6 +282,23 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envMQTTForwarderTimeout, err.Error())
 	}
 
+	usersAuthTimeout, err := time.ParseDuration(mainflux.Env(envUsersAuthTimeout, defUsersAuthTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envUsersAuthTimeout, err.Error())
+	}
+
+	dbConfig := postgres.Config{
+		Host:        mainflux.Env(envDBHost, defDBHost),
+		Port:        mainflux.Env(envDBPort, defDBPort),
+		User:        mainflux.Env(envDBUser, defDBUser),
+		Pass:        mainflux.Env(envDBPass, defDBPass),
+		Name:        mainflux.Env(envDB, defDB),
+		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
+		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
+		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
+		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
+	}
+
 	return config{
 		mqttPort:              mainflux.Env(envMQTTPort, defMQTTPort),
 		mqttTargetHost:        mainflux.Env(envMQTTTargetHost, defMQTTTargetHost),
@@ -234,6 +314,7 @@ func loadConfig() config {
 		thingsAuthTimeout:     authTimeout,
 		thingsURL:             mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		brokerURL:             mainflux.Env(envBrokerURL, defBrokerURL),
+		usersAuthURL:          mainflux.Env(envUsersAuthURL, defUsersAuthURL),
 		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:             tls,
 		caCerts:               mainflux.Env(envCACerts, defCACerts),
@@ -244,6 +325,10 @@ func loadConfig() config {
 		authURL:               mainflux.Env(envAuthCacheURL, defAuthcacheURL),
 		authPass:              mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authDB:                mainflux.Env(envAuthCacheDB, defAuthCacheDB),
+		serverCert:            mainflux.Env(envServerCert, defServerCert),
+		serverKey:             mainflux.Env(envServerKey, defServerKey),
+		usersAuthTimeout:      usersAuthTimeout,
+		dbConfig:              dbConfig,
 	}
 }
 
@@ -364,4 +449,99 @@ func healthcheck(cfg config) func() error {
 		}
 		return nil
 	}
+}
+
+func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
+	db, err := postgres.Connect(dbConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
+		os.Exit(1)
+	}
+	return db
+}
+
+func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+	fsRepo := postgres.NewRepository(db, logger)
+	svc := mqtt.NewMqttService(usersAuth, fsRepo)
+
+	svc = api2.LoggingMiddleware(svc, logger)
+	svc = api2.MetricsMiddleware(
+		svc,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "subscriptions",
+			Subsystem: "api",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "subscriptions",
+			Subsystem: "api",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
+	return svc
+}
+
+func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger, errs chan error) error {
+	p := fmt.Sprintf(":%s", cfg.httpPort)
+	errCh := make(chan error)
+	protocol := httpProtocol
+	server := &http.Server{Addr: p, Handler: mqapi.MakeHandler(tracer, svc, logger)}
+
+	switch {
+	case cfg.serverCert != "" || cfg.serverKey != "":
+		logger.Info(fmt.Sprintf("Subscriptions service started using https on port %s with cert %s key %s",
+			cfg.httpPort, cfg.serverCert, cfg.serverKey))
+		go func() {
+			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
+		}()
+		protocol = httpsProtocol
+
+	default:
+		logger.Info(fmt.Sprintf("Subscriptions service started using http on port %s", cfg.httpPort))
+		go func() {
+			errCh <- server.ListenAndServe()
+		}()
+	}
+
+	select {
+	case <-ctx.Done():
+		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
+		defer cancelShutdown()
+		if err := server.Shutdown(ctxShutdown); err != nil {
+			logger.Error(fmt.Sprintf("Subscriptions %s service error occurred during shutdown at %s: %s", protocol, p, err))
+			return fmt.Errorf("subscriptions %s service error occurred during shutdown at %s: %w", protocol, p, err)
+		}
+		logger.Info(fmt.Sprintf("subscriptions %s service shutdown of http at %s", protocol, p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
+}
+
+func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.clientTLS {
+		if cfg.caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+		logger.Info("gRPC communication is not encrypted")
+	}
+
+	conn, err := grpc.Dial(cfg.usersAuthURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
+		os.Exit(1)
+	}
+
+	return conn
 }
