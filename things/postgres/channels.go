@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofrs/uuid"
-	"github.com/lib/pq"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
+	"github.com/lib/pq"
 )
 
 var _ things.ChannelRepository = (*channelRepository)(nil)
@@ -145,8 +145,12 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels
-		%s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
+	olq := "LIMIT :limit OFFSET :offset;"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"owner":    owner,
@@ -155,6 +159,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		"name":     name,
 		"metadata": meta,
 	}
+
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -202,6 +207,11 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	var q, qc string
 	switch pm.Disconnected {
 	case true:
@@ -212,9 +222,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		          INNER JOIN connections conn
 		          ON ch.id = conn.channel_id
 		          WHERE ch.owner = :owner AND conn.thing_id = :thing)
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM channels ch
@@ -228,9 +236,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE ch.owner = :owner AND conn.thing_id = :thing
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM channels ch
