@@ -1228,7 +1228,7 @@ func TestListThingsByChannel(t *testing.T) {
 			desc:   "get a list of things by channel with no limit",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, ch.ID, -1),
+			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, ch.ID, noLimit),
 			res:    data,
 		},
 		{
@@ -1871,7 +1871,7 @@ func TestListChannels(t *testing.T) {
 			desc:   "get a list of all channels with no limit",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?limit=%d", channelURL, -1),
+			url:    fmt.Sprintf("%s?limit=%d", channelURL, noLimit),
 			res:    channels,
 		},
 		{
@@ -1927,7 +1927,7 @@ func TestListChannels(t *testing.T) {
 			desc:   "get a list of channels with negative limit",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, -1, 5),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, 0, -2),
 			res:    nil,
 		},
 		{
@@ -2092,7 +2092,7 @@ func TestListChannelsByThing(t *testing.T) {
 			desc:   "get a list of channels by thing with no limit",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d", channelURL, th.ID, -1),
+			url:    fmt.Sprintf("%s/%s/channels?limit=%d", channelURL, th.ID, noLimit),
 			res:    channels,
 		},
 		{
