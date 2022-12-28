@@ -145,18 +145,19 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
-	qNoLimit := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s;`, whereClause, oq, dq)
+	olq := "LIMIT :limit OFFSET :offset;"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+
 	params := map[string]interface{}{
 		"owner":    owner,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
 		"metadata": meta,
-	}
-
-	if pm.Limit == 0 {
-		q = qNoLimit
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -206,6 +207,11 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	var q, qc string
 	switch pm.Disconnected {
 	case true:
@@ -216,20 +222,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		          INNER JOIN connections conn
 		          ON ch.id = conn.channel_id
 		          WHERE ch.owner = :owner AND conn.thing_id = :thing)
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
-
-		if pm.Limit == 0 {
-			q = fmt.Sprintf(`SELECT id, name, metadata
-			FROM channels ch
-			WHERE ch.owner = :owner AND ch.id NOT IN
-			(SELECT id FROM channels ch
-				INNER JOIN connections conn
-				ON ch.id = conn.channel_id
-				WHERE ch.owner = :owner AND conn.thing_id = :thing)
-			ORDER BY %s %s`, oq, dq)
-		}
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM channels ch
@@ -243,18 +236,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE ch.owner = :owner AND conn.thing_id = :thing
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
-
-		if pm.Limit == 0 {
-			q = fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
-			INNER JOIN connections conn
-			ON ch.id = conn.channel_id
-			WHERE ch.owner = :owner AND conn.thing_id = :thing
-			ORDER BY %s %s;`, oq, dq)
-
-		}
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM channels ch
