@@ -580,7 +580,7 @@ func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string,
 		return Page{}, err
 	}
 
-	res, err := ts.members(ctx, token, groupID, "things", pm.Offset, pm.Limit)
+	res, err := ts.members(ctx, token, groupID, "things", pm.Limit, pm.Offset)
 	if err != nil {
 		return Page{}, nil
 	}

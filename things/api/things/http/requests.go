@@ -4,9 +4,9 @@
 package http
 
 import (
-	"github.com/gofrs/uuid"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
 )
 
 const (
@@ -260,7 +260,7 @@ func (req *listResourcesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize || req.pageMetadata.Limit < 1 {
+	if req.pageMetadata.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 
@@ -296,7 +296,7 @@ func (req listByConnectionReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize || req.pageMetadata.Limit < 1 {
+	if req.pageMetadata.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 

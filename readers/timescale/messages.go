@@ -53,8 +53,12 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 		format = rpm.Format
 	}
 
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC LIMIT :limit OFFSET :offset;`, format, fmtCondition(chanID, rpm), order)
-	qNoLimit := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC;`, format, fmtCondition(chanID, rpm), order)
+	olq := "LIMIT :limit OFFSET :offset"
+	if rpm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(chanID, rpm), order, olq)
 
 	params := map[string]interface{}{
 		"channel":      chanID,
@@ -70,10 +74,6 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 		"data_value":   rpm.DataValue,
 		"from":         rpm.From,
 		"to":           rpm.To,
-	}
-
-	if rpm.Limit == noLimit {
-		q = qNoLimit
 	}
 
 	rows, err := tr.db.NamedQuery(q, params)

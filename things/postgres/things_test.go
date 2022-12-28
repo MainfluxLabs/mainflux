@@ -393,7 +393,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	metaNum := uint64(3)
 	nameMetaNum := uint64(2)
 
-	n := uint64(10)
+	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		id, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -437,19 +437,27 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
+		"retrieve all things with no limit": {
+			owner: email,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+				Total: n,
+			},
+			size: n,
+		},
 		"retrieve subset of things with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
+				Offset: offset,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n / 2,
+			size: n - offset,
 		},
 		"retrieve things with existing name": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: 1,
+				Offset: offset,
 				Limit:  n,
 				Name:   name,
 				Total:  nameNum + nameMetaNum,
@@ -550,7 +558,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	n := uint64(10)
+	n := uint64(102)
 	thsDisconNum := uint64(1)
 
 	chID, err := idProvider.ID()
@@ -605,6 +613,14 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
+		"retrieve all things by channel without limit": {
+			owner: email,
+			chID:  chID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n - thsDisconNum,
+		},
 		"retrieve subset of things by channel with existing owner": {
 			owner: email,
 			chID:  chID,
@@ -648,6 +664,15 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
+				Disconnected: true,
+			},
+			size: thsDisconNum,
+		},
+		"retrieve all non connected things by channel without limit": {
+			owner: email,
+			chID:  chID,
+			pageMetadata: things.PageMetadata{
+				Limit:        0,
 				Disconnected: true,
 			},
 			size: thsDisconNum,

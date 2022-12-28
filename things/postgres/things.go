@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofrs/uuid"
-	"github.com/lib/pq" // required for DB access
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
+	"github.com/lib/pq" // required for DB access
 )
 
 const (
@@ -274,8 +274,13 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm thin
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, key, metadata FROM things
-	      %s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, whereClause, oq, dq)
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+
 	params := map[string]interface{}{
 		"owner":    owner,
 		"limit":    pm.Limit,
@@ -335,6 +340,11 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		return things.Page{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	var q, qc string
 	switch pm.Disconnected {
 	case true:
@@ -345,9 +355,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		          INNER JOIN connections conn
 		          ON th.id = conn.thing_id
 		          WHERE th.owner = :owner AND conn.channel_id = :channel)
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM things th
@@ -362,9 +370,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
 		        WHERE th.owner = :owner AND conn.channel_id = :channel
-		        ORDER BY %s %s
-		        LIMIT :limit
-		        OFFSET :offset;`, oq, dq)
+		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 		qc = `SELECT COUNT(*)
 		        FROM things th

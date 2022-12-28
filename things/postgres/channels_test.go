@@ -16,6 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	offset      = uint64(5)
+	nameNum     = uint64(3)
+	metaNum     = uint64(3)
+	nameMetaNum = uint64(2)
+)
+
 func TestChannelsSave(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
@@ -212,12 +219,7 @@ func TestMultiChannelRetrieval(t *testing.T) {
 		"wrong": "wrong",
 	}
 
-	offset := uint64(1)
-	nameNum := uint64(3)
-	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
-	n := uint64(10)
+	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		chID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -258,14 +260,22 @@ func TestMultiChannelRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
+		"retrieve all channels with no limit for existing owner": {
+			owner: email,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+				Total: n,
+			},
+			size: n,
+		},
 		"retrieve subset of channels with existing owner": {
 			owner: email,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
+				Offset: offset,
 				Limit:  n,
 				Total:  n,
 			},
-			size: n / 2,
+			size: n - offset,
 		},
 		"retrieve channels with non-existing owner": {
 			owner: wrongValue,
@@ -377,7 +387,7 @@ func TestRetrieveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thID = ths[0].ID
 
-	n := uint64(10)
+	n := uint64(102)
 	chsDisconNum := uint64(1)
 
 	for i := uint64(0); i < n; i++ {
@@ -416,6 +426,14 @@ func TestRetrieveByThing(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+			},
+			size: n - chsDisconNum,
+		},
+		"retrieve all channels by thing with existing owner with no limit": {
+			owner: email,
+			thID:  thID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
 			},
 			size: n - chsDisconNum,
 		},
@@ -462,6 +480,15 @@ func TestRetrieveByThing(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
+				Disconnected: true,
+			},
+			size: chsDisconNum,
+		},
+		"retrieve all non connected channels by thing without limit": {
+			owner: email,
+			thID:  thID,
+			pageMetadata: things.PageMetadata{
+				Limit:        0,
 				Disconnected: true,
 			},
 			size: chsDisconNum,

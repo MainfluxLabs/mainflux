@@ -131,11 +131,15 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, owner string, pm 
 	prefix := fmt.Sprintf("%s-", owner)
 	for k, v := range trm.things {
 		id := parseID(v.ID)
+
+		if strings.HasPrefix(k, prefix) && id >= first && pm.Limit == 0 {
+			ths = append(ths, v)
+		}
+
 		if strings.HasPrefix(k, prefix) && id >= first && id < last {
 			ths = append(ths, v)
 		}
 	}
-
 	// Sort Things list
 	ths = sortThings(pm, ths)
 
@@ -194,7 +198,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	if pm.Limit <= 0 {
+	if pm.Limit < 0 {
 		return things.Page{}, nil
 	}
 
@@ -208,7 +212,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 	case false:
 		for _, co := range trm.tconns[chID] {
 			id := parseID(co.ID)
-			if id >= first && id < last {
+			if id >= first && id < last || pm.Limit == 0 {
 				ths = append(ths, co)
 			}
 		}
@@ -216,7 +220,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 		for _, th := range trm.things {
 			conn := false
 			id := parseID(th.ID)
-			if id >= first && id < last {
+			if id >= first && id < last || pm.Limit == 0 {
 				for _, co := range trm.tconns[chID] {
 					if th.ID == co.ID {
 						conn = true

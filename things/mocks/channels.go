@@ -83,9 +83,6 @@ func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, p
 	if pm.Limit < 0 {
 		return things.ChannelsPage{}, nil
 	}
-	if pm.Limit == 0 {
-		pm.Limit = 10
-	}
 
 	first := int(pm.Offset)
 	last := first + int(pm.Limit)
@@ -104,7 +101,7 @@ func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, p
 	// Sort Channels list
 	chs = sortChannels(pm, chs)
 
-	if last > len(chs) {
+	if last > len(chs) || last == 0 {
 		last = len(chs)
 	}
 
@@ -125,7 +122,7 @@ func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, p
 }
 
 func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	if pm.Limit <= 0 {
+	if pm.Limit < 0 {
 		return things.ChannelsPage{}, nil
 	}
 
@@ -139,7 +136,7 @@ func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID
 	case false:
 		for _, co := range crm.cconns[thID] {
 			id := parseID(co.ID)
-			if id >= first && id < last {
+			if id >= first && id < last || pm.Limit == 0 {
 				chs = append(chs, co)
 			}
 		}
@@ -147,7 +144,7 @@ func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID
 		for _, ch := range crm.channels {
 			conn := false
 			id := parseID(ch.ID)
-			if id >= first && id < last {
+			if id >= first && id < last || pm.Limit == 0 {
 				for _, co := range crm.cconns[thID] {
 					if ch.ID == co.ID {
 						conn = true
