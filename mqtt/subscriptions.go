@@ -5,6 +5,7 @@ import "context"
 // Subscription represents a user Subscription.
 type Subscription struct {
 	ID       string
+	OwnerID  string
 	Subtopic string
 	ThingID  string
 	ChanID   string
@@ -27,4 +28,8 @@ type PageMetadata struct {
 type Repository interface {
 	// RetrieveAll retrieves all subscriptions.
 	RetrieveAll(ctx context.Context, pm PageMetadata) (Page, error)
+	// Save will save the subscription.
+	Save(ctx context.Context, sub Subscription) (string, error)
+	// Remove will remove the subscription.
+	Remove(ctx context.Context, id string) error
 }

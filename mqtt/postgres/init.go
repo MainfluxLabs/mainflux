@@ -46,9 +46,11 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "mqtt_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS subscriptions (
-							subtopic   VARCHAR(1024),
+						    id          VARCHAR(254) PRIMARY KEY,
+                            owner_id    VARCHAR(254) NOT NULL,
+							subtopic    VARCHAR(1024),
 							channel_id  UUID,
-							thing_id   UUID,
+							thing_id    UUID,
 							time  	    FLOAT,
 							PRIMARY KEY (subtopic, channel_id, thing_id)
 					)`,

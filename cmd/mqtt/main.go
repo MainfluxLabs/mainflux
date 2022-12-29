@@ -16,7 +16,7 @@ import (
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	api2 "github.com/MainfluxLabs/mainflux/mqtt/api"
-	mqapi "github.com/MainfluxLabs/mainflux/mqtt/api/http"
+	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
@@ -24,6 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
@@ -107,17 +108,17 @@ const (
 	envAuthCacheURL          = "MF_AUTH_CACHE_URL"
 	envAuthCachePass         = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB           = "MF_AUTH_CACHE_DB"
-	envServerCert            = "MF_SUBSCRIPTIONS_SERVER_CERT"
-	envServerKey             = "MF_SUBSCRIPTIONS_SERVER_KEY"
-	envDBHost                = "MF_SUBSCRIPTIONS_DB_HOST"
-	envDBPort                = "MF_SUBSCRIPTIONS_DB_PORT"
-	envDBUser                = "MF_SUBSCRIPTIONS_DB_USER"
-	envDBPass                = "MF_SUBSCRIPTIONS_DB_PASS"
-	envDB                    = "MF_SUBSCRIPTIONS_DB"
-	envDBSSLMode             = "MF_SUBSCRIPTIONS_DB_SSL_MODE"
-	envDBSSLCert             = "MF_SUBSCRIPTIONS_DB_SSL_CERT"
-	envDBSSLKey              = "MF_SUBSCRIPTIONS_DB_SSL_KEY"
-	envDBSSLRootCert         = "MF_SUBSCRIPTIONS_DB_SSL_ROOT_CERT"
+	envServerCert            = "MF_MQTT_ADAPTER_SERVER_CERT"
+	envServerKey             = "MF_MQTT_ADAPTER_SERVER_KEY"
+	envDBHost                = "MF_MQTT_ADAPTER_DB_HOST"
+	envDBPort                = "MF_MQTT_ADAPTER_DB_PORT"
+	envDBUser                = "MF_MQTT_ADAPTER_DB_USER"
+	envDBPass                = "MF_MQTT_ADAPTER_DB_PASS"
+	envDB                    = "MF_MQTT_ADAPTER_DB"
+	envDBSSLMode             = "MF_MQTT_ADAPTER_DB_SSL_MODE"
+	envDBSSLCert             = "MF_MQTT_ADAPTER_DB_SSL_CERT"
+	envDBSSLKey              = "MF_MQTT_ADAPTER_DB_SSL_KEY"
+	envDBSSLRootCert         = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
 	envUsersAuthURL          = "MF_AUTH_GRPC_URL"
 	envUsersAuthTimeout      = "MF_AUTH_GRPC_TIMEOUT"
 )
@@ -236,7 +237,7 @@ func main() {
 	svc := newService(usersAuth, db, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient)
+	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, svc)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.mqttPort))
 	g.Go(func() error {
@@ -461,8 +462,9 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
-	fsRepo := postgres.NewRepository(db, logger)
-	svc := mqtt.NewMqttService(usersAuth, fsRepo)
+	subscriptionsRepo := postgres.NewRepository(db, logger)
+	idp := ulid.New()
+	svc := mqtt.NewMqttService(usersAuth, subscriptionsRepo, idp)
 
 	svc = api2.LoggingMiddleware(svc, logger)
 	svc = api2.MetricsMiddleware(
@@ -488,7 +490,7 @@ func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.T
 	p := fmt.Sprintf(":%s", cfg.httpPort)
 	errCh := make(chan error)
 	protocol := httpProtocol
-	server := &http.Server{Addr: p, Handler: mqapi.MakeHandler(tracer, svc, logger)}
+	server := &http.Server{Addr: p, Handler: mqttapihttp.MakeHandler(tracer, svc, logger)}
 
 	switch {
 	case cfg.serverCert != "" || cfg.serverKey != "":

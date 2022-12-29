@@ -29,6 +29,24 @@ func NewRepository(db *sqlx.DB, log logger.Logger) mqtt.Repository {
 	return &mqttRepository{db: db, log: log}
 }
 
+func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) (string, error) {
+	q := fmt.Sprintf(`INSERT INTO %s (id, owner_id, subtopic, thing_id, chan_id) VALUES (:id, :owner_id, :subtopic, :thing_id, :chan_id)`, format)
+	if _, err := mr.db.NamedExecContext(ctx, q, sub); err != nil {
+		return "", errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	return sub.ID, nil
+}
+
+func (mr *mqttRepository) Remove(ctx context.Context, id string) error {
+	q := fmt.Sprintf(`DELETE FROM %s WHERE id = :id`, format)
+	if _, err := mr.db.NamedExecContext(ctx, q, id); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (mr *mqttRepository) RetrieveAll(ctx context.Context, pm mqtt.PageMetadata) (mqtt.Page, error) {
 	q := fmt.Sprintf(`SELECT * FROM %s ORDER BY %s DESC LIMIT %d OFFSET %d`, format, pm.Order, pm.Limit, pm.Offset)
 	qnoLimit := fmt.Sprintf(`SELECT * FROM %s ORDER BY %s DESC`, format, pm.Order)

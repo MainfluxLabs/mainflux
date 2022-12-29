@@ -35,20 +35,22 @@ var (
 
 // Event implements events.Event interface
 type handler struct {
-	publishers []messaging.Publisher
-	auth       auth.Client
-	logger     logger.Logger
-	es         redis.EventStore
+	publishers       []messaging.Publisher
+	auth             auth.Client
+	logger           logger.Logger
+	es               redis.EventStore
+	subscriptionsSvc Service
 }
 
 // NewHandler creates new Handler entity
 func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, auth auth.Client) session.Handler {
+	logger logger.Logger, auth auth.Client, subscriptionsSvc Service) session.Handler {
 	return &handler{
-		es:         es,
-		logger:     logger,
-		publishers: publishers,
-		auth:       auth,
+		es:               es,
+		logger:           logger,
+		publishers:       publishers,
+		auth:             auth,
+		subscriptionsSvc: subscriptionsSvc,
 	}
 }
 
@@ -71,7 +73,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 	if err := h.es.Connect(c.Username); err != nil {
 		h.logger.Warn("Failed to publish connect event: " + err.Error())
 	}
-
+	
 	return nil
 }
 
