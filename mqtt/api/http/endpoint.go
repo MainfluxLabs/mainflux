@@ -24,16 +24,18 @@ func listAllSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 
 		res := listAllSubscriptionsRes{
 			pageRes: pageRes{
-				Total:  subs.Total,
-				Offset: subs.Offset,
-				Limit:  subs.Limit,
-				Order:  subs.Order,
+				Total:     subs.Total,
+				Offset:    subs.Offset,
+				Limit:     subs.Limit,
+				Order:     subs.Order,
+				Direction: subs.Direction,
 			},
 			Subscriptions: []viewSubRes{},
 		}
 		for _, sub := range subs.Subscriptions {
 			view := viewSubRes{
 				ID:       sub.ID,
+				OwnerID:  sub.OwnerID,
 				Subtopic: sub.Subtopic,
 				ThingID:  sub.ThingID,
 				ChanID:   sub.ChanID,

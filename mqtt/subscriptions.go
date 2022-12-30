@@ -19,10 +19,11 @@ type Page struct {
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Offset uint64
-	Total  uint64
-	Limit  uint64
-	Order  string
+	Offset    uint64
+	Total     uint64
+	Limit     uint64
+	Order     string
+	Direction string
 }
 
 type Repository interface {

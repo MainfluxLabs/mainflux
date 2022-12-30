@@ -21,12 +21,15 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	orderKey    = "order"
-	defOffset   = 0
-	defLimit    = 10
+	contentType       = "application/json"
+	offsetKey         = "offset"
+	limitKey          = "limit"
+	orderKey          = "order"
+	orderDirectionKey = "direction"
+	defDirection      = "desc"
+	defOrder          = "time"
+	defOffset         = 0
+	defLimit          = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -61,7 +64,12 @@ func decodeListAllSubscriptions(ctx context.Context, r *http.Request) (interface
 		return nil, err
 	}
 
-	or, err := apiutil.ReadStringQuery(r, orderKey, "")
+	or, err := apiutil.ReadStringQuery(r, orderKey, defOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	od, err := apiutil.ReadStringQuery(r, orderDirectionKey, defDirection)
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +77,10 @@ func decodeListAllSubscriptions(ctx context.Context, r *http.Request) (interface
 	return listAllSubscriptionsReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: mqtt.PageMetadata{
-			Offset: o,
-			Limit:  l,
-			Order:  or,
+			Offset:    o,
+			Limit:     l,
+			Order:     or,
+			Direction: od,
 		},
 	}, nil
 }

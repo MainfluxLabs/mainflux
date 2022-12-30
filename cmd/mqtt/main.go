@@ -494,7 +494,7 @@ func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.T
 
 	switch {
 	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("Subscriptions service started using https on port %s with cert %s key %s",
+		logger.Info(fmt.Sprintf("mqtt-adapter service started using https on port %s with cert %s key %s",
 			cfg.httpPort, cfg.serverCert, cfg.serverKey))
 		go func() {
 			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
@@ -502,7 +502,7 @@ func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.T
 		protocol = httpsProtocol
 
 	default:
-		logger.Info(fmt.Sprintf("Subscriptions service started using http on port %s", cfg.httpPort))
+		logger.Info(fmt.Sprintf("mqtt-adapter service started using http on port %s", cfg.httpPort))
 		go func() {
 			errCh <- server.ListenAndServe()
 		}()
@@ -513,10 +513,10 @@ func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.T
 		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
 		defer cancelShutdown()
 		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Subscriptions %s service error occurred during shutdown at %s: %s", protocol, p, err))
-			return fmt.Errorf("subscriptions %s service error occurred during shutdown at %s: %w", protocol, p, err)
+			logger.Error(fmt.Sprintf("mqtt-adapter %s service error occurred during shutdown at %s: %s", protocol, p, err))
+			return fmt.Errorf("mqtt-adapter %s service error occurred during shutdown at %s: %w", protocol, p, err)
 		}
-		logger.Info(fmt.Sprintf("subscriptions %s service shutdown of http at %s", protocol, p))
+		logger.Info(fmt.Sprintf("mqtt-adapter %s service shutdown of http at %s", protocol, p))
 		return nil
 	case err := <-errCh:
 		return err

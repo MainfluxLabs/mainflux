@@ -48,16 +48,22 @@ func (mr *mqttRepository) Remove(ctx context.Context, id string) error {
 }
 
 func (mr *mqttRepository) RetrieveAll(ctx context.Context, pm mqtt.PageMetadata) (mqtt.Page, error) {
-	q := fmt.Sprintf(`SELECT * FROM %s ORDER BY %s DESC LIMIT %d OFFSET %d`, format, pm.Order, pm.Limit, pm.Offset)
-	qnoLimit := fmt.Sprintf(`SELECT * FROM %s ORDER BY %s DESC`, format, pm.Order)
-
-	if pm.Limit == noLimit {
-		q = qnoLimit
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
 	}
 
-	rows, err := mr.db.QueryxContext(ctx, q)
+	q := fmt.Sprintf(`SELECT id, owner_id, subtopic, channel_id, thing_id, time FROM %s ORDER BY :order :direction %s`, format, olq)
+	params := map[string]interface{}{
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+		"order":     pm.Order,
+		"direction": pm.Direction,
+	}
+
+	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return mqtt.Page{}, err
+		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
 	defer rows.Close()
 
@@ -79,10 +85,11 @@ func (mr *mqttRepository) RetrieveAll(ctx context.Context, pm mqtt.PageMetadata)
 
 	page := mqtt.Page{
 		PageMetadata: mqtt.PageMetadata{
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Total:  total,
-			Order:  pm.Order,
+			Offset:    pm.Offset,
+			Limit:     pm.Limit,
+			Total:     total,
+			Order:     pm.Order,
+			Direction: pm.Direction,
 		},
 		Subscriptions: items,
 	}
