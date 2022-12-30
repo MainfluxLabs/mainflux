@@ -24,17 +24,14 @@ func (res listAllSubscriptionsRes) Empty() bool {
 }
 
 type viewSubRes struct {
-	ID       string `json:"id"`
-	OwnerID  string `json:"owner_id"`
-	Subtopic string `json:"subtopic"`
-	ThingID  string `json:"thing_id"`
-	ChanID   string `json:"chan_id"`
+	OwnerID   string `json:"owner_id"`
+	Subtopic  string `json:"subtopic"`
+	ThingID   string `json:"thing_id"`
+	ChannelID string `json:"channel_id"`
 }
 
 type pageRes struct {
-	Total     uint64 `json:"total"`
-	Offset    uint64 `json:"offset"`
-	Limit     uint64 `json:"limit"`
-	Order     string `json:"order"`
-	Direction string `json:"direction"`
+	Total  uint64 `json:"total"`
+	Offset uint64 `json:"offset"`
+	Limit  uint64 `json:"limit"`
 }

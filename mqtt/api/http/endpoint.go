@@ -17,28 +17,25 @@ func listAllSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		subs, err := svc.ListAllSubscriptions(ctx, req.token, req.pageMetadata)
+		subs, err := svc.ListSubscriptions(ctx, req.token, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
 		res := listAllSubscriptionsRes{
 			pageRes: pageRes{
-				Total:     subs.Total,
-				Offset:    subs.Offset,
-				Limit:     subs.Limit,
-				Order:     subs.Order,
-				Direction: subs.Direction,
+				Total:  subs.Total,
+				Offset: subs.Offset,
+				Limit:  subs.Limit,
 			},
 			Subscriptions: []viewSubRes{},
 		}
 		for _, sub := range subs.Subscriptions {
 			view := viewSubRes{
-				ID:       sub.ID,
-				OwnerID:  sub.OwnerID,
-				Subtopic: sub.Subtopic,
-				ThingID:  sub.ThingID,
-				ChanID:   sub.ChanID,
+                OwnerID:   sub.OwnerID,
+				Subtopic:  sub.Subtopic,
+				ThingID:   sub.ThingID,
+				ChannelID: sub.ChanID,
 			}
 			res.Subscriptions = append(res.Subscriptions, view)
 		}

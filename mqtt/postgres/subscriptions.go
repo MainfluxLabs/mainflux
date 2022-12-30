@@ -12,8 +12,8 @@ import (
 
 const (
 	format = "subscriptions"
-	// noLimit is used to indicate that no limit is set.
-	noLimit = 0
+	order  = "time"
+	sort   = "desc"
 )
 
 var _ mqtt.Repository = (*mqttRepository)(nil)
@@ -29,36 +29,35 @@ func NewRepository(db *sqlx.DB, log logger.Logger) mqtt.Repository {
 	return &mqttRepository{db: db, log: log}
 }
 
-func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) (string, error) {
-	q := fmt.Sprintf(`INSERT INTO %s (id, owner_id, subtopic, thing_id, chan_id) VALUES (:id, :owner_id, :subtopic, :thing_id, :chan_id)`, format)
+func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
+	q := fmt.Sprintf(`INSERT INTO %s (owner_id, subtopic, thing_id, chan_id) VALUES (:owner_id, :subtopic, :thing_id, :chan_id)`, format)
 	if _, err := mr.db.NamedExecContext(ctx, q, sub); err != nil {
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	return sub.ID, nil
+	return nil
 }
 
-func (mr *mqttRepository) Remove(ctx context.Context, id string) error {
-	q := fmt.Sprintf(`DELETE FROM %s WHERE id = :id`, format)
-	if _, err := mr.db.NamedExecContext(ctx, q, id); err != nil {
+func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
+	q := fmt.Sprintf(`DELETE FROM %s WHERE subtopic =$1 AND thing_id=$2 AND chan_id=$3`, format)
+	if _, err := mr.db.ExecContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
 }
 
-func (mr *mqttRepository) RetrieveAll(ctx context.Context, pm mqtt.PageMetadata) (mqtt.Page, error) {
+func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMetadata, ownerID string) (mqtt.Page, error) {
 	olq := "LIMIT :limit OFFSET :offset"
 	if pm.Limit == 0 {
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, subtopic, channel_id, thing_id, time FROM %s ORDER BY :order :direction %s`, format, olq)
+	q := fmt.Sprintf(`SELECT subtopic, chan_id, thing_id, time FROM %s WHERE owner_id= :ownerID %s ORDER BY %s %s`, format, olq, order, sort)
 	params := map[string]interface{}{
-		"limit":     pm.Limit,
-		"offset":    pm.Offset,
-		"order":     pm.Order,
-		"direction": pm.Direction,
+		"ownerID": ownerID,
+		"limit":   pm.Limit,
+		"offset":  pm.Offset,
 	}
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
@@ -76,23 +75,35 @@ func (mr *mqttRepository) RetrieveAll(ctx context.Context, pm mqtt.PageMetadata)
 		items = append(items, item)
 	}
 
-	q = "SELECT COUNT(*) FROM subscriptions"
+	q = fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE owner_id=$1", format)
 
-	var total uint64
-	if err := mr.db.QueryRowxContext(ctx, q).Scan(&total); err != nil {
+	total, err := mr.total(ctx, q, ownerID)
+	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
 
-	page := mqtt.Page{
+	return mqtt.Page{
 		PageMetadata: mqtt.PageMetadata{
-			Offset:    pm.Offset,
-			Limit:     pm.Limit,
-			Total:     total,
-			Order:     pm.Order,
-			Direction: pm.Direction,
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
 		Subscriptions: items,
-	}
+	}, nil
 
-	return page, nil
+}
+
+func (mr *mqttRepository) total(ctx context.Context, query string, params interface{}) (uint64, error) {
+	rows, err := mr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	total := uint64(0)
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+	return total, nil
 }

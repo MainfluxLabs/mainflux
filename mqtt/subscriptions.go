@@ -4,11 +4,10 @@ import "context"
 
 // Subscription represents a user Subscription.
 type Subscription struct {
-	ID       string
 	OwnerID  string
 	Subtopic string
 	ThingID  string
-	ChanID   string
+	ChanID   string   
 }
 
 // Page represents page metadata with content.
@@ -19,18 +18,16 @@ type Page struct {
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Offset    uint64
-	Total     uint64
-	Limit     uint64
-	Order     string
-	Direction string
+	Offset uint64
+	Total  uint64
+	Limit  uint64
 }
 
 type Repository interface {
-	// RetrieveAll retrieves all subscriptions.
-	RetrieveAll(ctx context.Context, pm PageMetadata) (Page, error)
+	// RetrieveByOwnerID retrieves all subscriptions that belong to the specified owner.
+	RetrieveByOwnerID(ctx context.Context, pm PageMetadata, ownerID string) (Page, error)
 	// Save will save the subscription.
-	Save(ctx context.Context, sub Subscription) (string, error)
+	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.
-	Remove(ctx context.Context, id string) error
+	Remove(ctx context.Context, sub Subscription) error
 }

@@ -462,21 +462,21 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
-	subscriptionsRepo := postgres.NewRepository(db, logger)
+	subscriptions := postgres.NewRepository(db, logger)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(usersAuth, subscriptionsRepo, idp)
+	svc := mqtt.NewMqttService(usersAuth, subscriptions, idp)
 
 	svc = api2.LoggingMiddleware(svc, logger)
 	svc = api2.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "subscriptions",
+			Namespace: "mqtt-adapter",
 			Subsystem: "api",
 			Name:      "request_count",
 			Help:      "Number of requests received.",
 		}, []string{"method"}),
 		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "subscriptions",
+			Namespace: "mqtt-adapter",
 			Subsystem: "api",
 			Name:      "request_latency_microseconds",
 			Help:      "Total duration of requests in microseconds.",
