@@ -6,6 +6,7 @@ package postgres
 import (
 	"fmt"
 
+	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
 )
@@ -28,7 +29,7 @@ type Config struct {
 func Connect(cfg Config) (*sqlx.DB, error) {
 	url := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s", cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Pass, cfg.SSLMode, cfg.SSLCert, cfg.SSLKey, cfg.SSLRootCert)
 
-	db, err := sqlx.Open("postgres", url)
+	db, err := sqlx.Open("pgx", url)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +56,9 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (id, issuer_id)
 					)`,
 					`CREATE EXTENSION IF NOT EXISTS LTREE`,
-					`CREATE TABLE IF NOT EXISTS groups ( 
+					`CREATE TABLE IF NOT EXISTS groups (
 						id          VARCHAR(254) UNIQUE NOT NULL,
-						parent_id   VARCHAR(254), 
+						parent_id   VARCHAR(254),
 						owner_id    VARCHAR(254),
 						name        VARCHAR(254) NOT NULL,
 						description VARCHAR(1024),
@@ -79,7 +80,7 @@ func migrateDB(db *sqlx.DB) error {
 				   )`,
 					`CREATE INDEX path_gist_idx ON groups USING GIST (path);`,
 					`CREATE OR REPLACE FUNCTION inherit_group()
-					 RETURNS trigger 
+					 RETURNS trigger
 					 LANGUAGE PLPGSQL
 					 AS
 					 $$

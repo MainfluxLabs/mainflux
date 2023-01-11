@@ -23,8 +23,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in 
-docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in docker-compose to see how service is deployed.
 
 Running this service outside of container requires working instance of the message broker service.
 To start the service outside of the container, execute the following shell script:

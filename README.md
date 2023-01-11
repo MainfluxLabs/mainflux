@@ -91,7 +91,7 @@ Additional details on using the CLI can be found in the [CLI documentation](http
 
 ## Documentation
 
-Official documentation is hosted at [Mainflux official docs page][docs]. Documentation is auto-generated, checkout the instructions on [official docs repository](https://github.com/mainflux/docs):
+Official documentation is hosted at [Mainflux official docs page][docs]. Documentation is auto-generated, checkout the instructions on [official docs repository](https://github.com/MainfluxLabs/docs):
 
 If you spot an error or a need for corrections, please let us know - or even better: send us a PR.
 
@@ -145,7 +145,7 @@ You like Mainflux and you would like to make it your day job? We're always looki
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux?ref=badge_large)
 
-[banner]: https://github.com/mainflux/docs/blob/master/docs/img/gopherBanner.jpg
+[banner]: https://github.com/MainfluxLabs/docs/blob/master/docs/img/gopherBanner.jpg
 [ci-badge]: https://github.com/MainfluxLabs/mainflux/actions/workflows/docker-image.yml/badge.svg?branch=master
 [ci-url]: https://github.com/MainfluxLabs/mainflux
 [docs]: https://mainfluxlabs.github.io/docs
@@ -161,8 +161,8 @@ You like Mainflux and you would like to make it your day job? We're always looki
 [twitter]: https://twitter.com/mainflux
 [lora]: https://lora-alliance.org/
 [opcua]: https://opcfoundation.org/about/opc-technologies/opc-ua/
-[agent]: https://github.com/mainflux/agent
-[export]: https://github.com/mainflux/export
+[agent]: https://github.com/MainfluxLabs/agent
+[export]: https://github.com/MainfluxLabs/export
 [kubernetes]: https://kubernetes.io/
 [rel]: https://github.com/MainfluxLabs/mainflux/releases
 [careers]: https://www.mainflux.com/careers.html

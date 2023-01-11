@@ -10,8 +10,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
-	"github.com/lib/pq"
 )
 
 const (
@@ -78,8 +79,8 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 
 	rows, err := tr.db.NamedQuery(q, params)
 	if err != nil {
-		if e, ok := err.(*pq.Error); ok {
-			if e.Code == undefinedTableCode {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
 				return readers.MessagesPage{}, nil
 			}
 		}

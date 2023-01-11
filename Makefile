@@ -3,7 +3,7 @@
 
 MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
-SERVICES = users things http coap lora influxdb-writer influxdb-reader mongodb-writer \
+SERVICES = users things http coap ws lora influxdb-writer influxdb-reader mongodb-writer \
 	mongodb-reader cassandra-writer cassandra-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
 	bootstrap opcua auth twins mqtt provision certs smtp-notifier smpp-notifier
 DOCKERS = $(addprefix docker_,$(SERVICES))
@@ -110,6 +110,20 @@ release:
 	$(MAKE) dockers
 	for svc in $(SERVICES); do \
 		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(version); \
+	done
+
+release-labs:
+	for svc in $(SERVICES); do \
+		docker buildx build --platform=linux/amd64,linux/arm64 \
+			--no-cache \
+			--build-arg SVC=$$svc \
+			--build-arg GOARCH=$(GOARCH) \
+			--build-arg GOARM=$(GOARM) \
+			--build-arg VERSION=$(VERSION) \
+			--build-arg COMMIT=$(COMMIT) \
+			--build-arg TIME=$(TIME) \
+			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) \
+			-f docker/Dockerfile . --push; \
 	done
 
 rundev:

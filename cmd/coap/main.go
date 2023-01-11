@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	"github.com/MainfluxLabs/mainflux/coap/api"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"

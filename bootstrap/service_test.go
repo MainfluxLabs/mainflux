@@ -17,7 +17,6 @@ import (
 
 	"github.com/opentracing/opentracing-go/mocktracer"
 
-	"github.com/gofrs/uuid"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
 	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
@@ -26,6 +25,7 @@ import (
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
+	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

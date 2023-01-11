@@ -3,7 +3,7 @@ ARG SVC
 ARG GOARCH
 ARG GOARM
 
-WORKDIR /go/src/github.com/mainflux/license
+WORKDIR /go/src/github.com/MainfluxLabs/license
 COPY . .
 RUN apk update \
     && apk add make\

@@ -41,7 +41,6 @@ func NewAuthService(users map[string]user.User, authzDB map[string][]SubjectSet)
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
-
 	if u, ok := mockUsers[in.Value]; ok {
 		return &mainflux.UserIdentity{Id: u.ID, Email: u.Email}, nil
 	}

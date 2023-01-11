@@ -26,13 +26,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/jmoiron/sqlx"
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/users/api"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
@@ -400,7 +400,7 @@ func createAdmin(svc users.Service, userRepo users.UserRepository, c config, aut
 	}
 
 	// Create an admin
-	uid, err := svc.Register(context.Background(), "", user)
+	uid, err := svc.SelfRegister(context.Background(), user)
 	if err != nil {
 		return err
 	}
