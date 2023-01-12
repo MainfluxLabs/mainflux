@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -27,7 +27,7 @@ services:
     ports:
       - ${MF_TWINS_DB_PORT}:${MF_TWINS_DB_PORT}
     networks:
-      docker_mainflux-base-net:
+      docker_mainfluxlabs-base-net:
     volumes:
       - mainfluxlabs-twins-db-volume:/data/db
       - mainfluxlabs-twins-db-configdb-volume:/data/configdb
@@ -53,6 +53,6 @@ services:
     ports:
       - ${MF_TWINS_HTTP_PORT}:${MF_TWINS_HTTP_PORT}
     networks:
-       docker_mainflux-base-net:
+       docker_mainfluxlabs-base-net:
     depends_on:
       - twins-db

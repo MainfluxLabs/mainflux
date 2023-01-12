@@ -40,8 +40,7 @@ const (
 	ascKey      = "asc"
 	descKey     = "desc"
 	prefix      = "fe6b4e92-cc98-425e-b0aa-"
-	thingNum    = 101
-	chanNum     = 101
+	n           = 101
 	noLimit     = -1
 )
 
@@ -773,7 +772,7 @@ func TestListThings(t *testing.T) {
 	defer ts.Close()
 
 	data := []thingRes{}
-	for i := 0; i <= thingNum; i++ {
+	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
@@ -1188,7 +1187,7 @@ func TestListThingsByChannel(t *testing.T) {
 	ch := chs[0]
 
 	data := []thingRes{}
-	for i := 0; i < thingNum; i++ {
+	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
@@ -1831,7 +1830,7 @@ func TestListChannels(t *testing.T) {
 	defer ts.Close()
 
 	channels := []channelRes{}
-	for i := 0; i < chanNum; i++ {
+	for i := 0; i < n; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		chs, err := svc.CreateChannels(context.Background(), token,
 			things.Channel{
@@ -1927,7 +1926,7 @@ func TestListChannels(t *testing.T) {
 			desc:   "get a list of channels with negative limit",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, 0, -2),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, 5, -2),
 			res:    nil,
 		},
 		{
@@ -2056,7 +2055,7 @@ func TestListChannelsByThing(t *testing.T) {
 	th := ths[0]
 
 	channels := []channelRes{}
-	for i := 0; i < chanNum; i++ {
+	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		channel1 := channel
 		channel1.ID = id

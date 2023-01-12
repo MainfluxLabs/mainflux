@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -30,6 +28,8 @@ import (
 	twmongodb "github.com/MainfluxLabs/mainflux/twins/mongodb"
 	rediscache "github.com/MainfluxLabs/mainflux/twins/redis"
 	"github.com/MainfluxLabs/mainflux/twins/tracing"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-redis/redis/v8"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"

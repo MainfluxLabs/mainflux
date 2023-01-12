@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
@@ -26,6 +24,8 @@ import (
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	ws "github.com/MainfluxLabs/mproxy/pkg/websocket"
+	"github.com/cenkalti/backoff/v4"
+	"github.com/go-redis/redis/v8"
 	opentracing "github.com/opentracing/opentracing-go"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"

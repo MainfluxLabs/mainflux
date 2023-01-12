@@ -22,9 +22,6 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/sync/errgroup"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	r "github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
 	api "github.com/MainfluxLabs/mainflux/bootstrap/api"
@@ -32,6 +29,9 @@ import (
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	r "github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"google.golang.org/grpc"
@@ -59,8 +59,7 @@ const (
 	defPort           = "8180"
 	defServerCert     = ""
 	defServerKey      = ""
-	defBaseURL        = "http://localhost"
-	defThingsPrefix   = ""
+	defThingsURL      = "http://localhost"
 	defThingsESURL    = "localhost:6379"
 	defThingsESPass   = ""
 	defThingsESDB     = "0"
@@ -88,8 +87,7 @@ const (
 	envPort           = "MF_BOOTSTRAP_PORT"
 	envServerCert     = "MF_BOOTSTRAP_SERVER_CERT"
 	envServerKey      = "MF_BOOTSTRAP_SERVER_KEY"
-	envBaseURL        = "MF_SDK_BASE_URL"
-	envThingsPrefix   = "MF_SDK_THINGS_PREFIX"
+	envThingsURL      = "MF_THINGS_URL"
 	envThingsESURL    = "MF_THINGS_ES_URL"
 	envThingsESPass   = "MF_THINGS_ES_PASS"
 	envThingsESDB     = "MF_THINGS_ES_DB"
@@ -111,8 +109,7 @@ type config struct {
 	httpPort       string
 	serverCert     string
 	serverKey      string
-	baseURL        string
-	thingsPrefix   string
+	thingsURL      string
 	esThingsURL    string
 	esThingsPass   string
 	esThingsDB     string
@@ -214,8 +211,7 @@ func loadConfig() config {
 		httpPort:       mainflux.Env(envPort, defPort),
 		serverCert:     mainflux.Env(envServerCert, defServerCert),
 		serverKey:      mainflux.Env(envServerKey, defServerKey),
-		baseURL:        mainflux.Env(envBaseURL, defBaseURL),
-		thingsPrefix:   mainflux.Env(envThingsPrefix, defThingsPrefix),
+		thingsURL:      mainflux.Env(envThingsURL, defThingsURL),
 		esThingsURL:    mainflux.Env(envThingsESURL, defThingsESURL),
 		esThingsPass:   mainflux.Env(envThingsESPass, defThingsESPass),
 		esThingsDB:     mainflux.Env(envThingsESDB, defThingsESDB),
@@ -280,7 +276,7 @@ func newService(auth mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 	thingsRepo := postgres.NewConfigRepository(db, logger)
 
 	config := mfsdk.Config{
-		ThingsURL: cfg.baseURL,
+		ThingsURL: cfg.thingsURL,
 	}
 
 	sdk := mfsdk.NewSDK(config)

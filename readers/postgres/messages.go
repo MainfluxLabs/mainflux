@@ -10,8 +10,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
-	"github.com/lib/pq"
 )
 
 const (
@@ -54,7 +55,6 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 		format = rpm.Format
 	}
 
-	
 	olq := "LIMIT :limit OFFSET :offset"
 	if rpm.Limit == 0 {
 		olq = ""
@@ -80,8 +80,8 @@ func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (r
 
 	rows, err := tr.db.NamedQuery(q, params)
 	if err != nil {
-		if e, ok := err.(*pq.Error); ok {
-			if e.Code == undefinedTableCode {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
 				return readers.MessagesPage{}, nil
 			}
 		}

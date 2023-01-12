@@ -175,7 +175,7 @@ func main() {
 		"email",
 		"e",
 		"",
-		"Email query parameter",
+		"User email query parameter",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(

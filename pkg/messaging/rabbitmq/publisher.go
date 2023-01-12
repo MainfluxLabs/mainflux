@@ -4,7 +4,9 @@
 package rabbitmq
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -29,7 +31,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
+	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeTopic, true, false, false, false, nil); err != nil {
 		return nil, err
 	}
 	ret := &publisher{
@@ -51,7 +53,10 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
-	err = pub.ch.Publish(
+	subject = formatTopic(subject)
+
+	err = pub.ch.PublishWithContext(
+		context.Background(),
 		exchangeName,
 		subject,
 		false,
@@ -59,7 +64,7 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		amqp.Publishing{
 			Headers:     amqp.Table{},
 			ContentType: "application/octet-stream",
-			AppId:       "mainfluxlabs-publisher",
+			AppId:       "mainflux-publisher",
 			Body:        data,
 		})
 
@@ -71,5 +76,12 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 }
 
 func (pub *publisher) Close() error {
+	if err := pub.ch.Close(); err != nil {
+		return err
+	}
 	return pub.conn.Close()
+}
+
+func formatTopic(topic string) string {
+	return strings.Replace(topic, ">", "#", -1)
 }

@@ -26,6 +26,20 @@ func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
+func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User) (uid string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method self_register for user %s took %s to complete", user.Email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+
+	}(time.Now())
+
+	return lm.svc.SelfRegister(ctx, user)
+}
+
 func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (uid string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method register for user %s took %s to complete", user.Email, time.Since(begin))
@@ -79,7 +93,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u u
 	return lm.svc.ViewProfile(ctx, token)
 }
 
-func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, offset, limit uint64, email string, um users.Metadata) (e users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (e users.UserPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_users for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
@@ -89,7 +103,7 @@ func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, offset
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListUsers(ctx, token, offset, limit, email, um)
+	return lm.svc.ListUsers(ctx, token, pm)
 }
 
 func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
@@ -157,7 +171,7 @@ func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email,
 	return lm.svc.SendPasswordReset(ctx, host, email, token)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, offset, limit uint64, m users.Metadata) (mp users.UserPage, err error) {
+func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm users.PageMetadata) (mp users.UserPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_members for group %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -167,5 +181,31 @@ func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListMembers(ctx, token, groupID, offset, limit, m)
+	return lm.svc.ListMembers(ctx, token, groupID, pm)
+}
+
+func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method enable_user for user %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.EnableUser(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method disable_user for user %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DisableUser(ctx, token, id)
 }

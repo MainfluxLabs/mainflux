@@ -282,7 +282,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainfluxlabs/vernemq:0.13.2
+    image: mainfluxlabs/vernemq:0.13.2-arm64
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
@@ -306,7 +306,7 @@ services:
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
       MF_MQTT_ADAPTER_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
-      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_BROKER_URL: ${MF_BROKER_URL}
       MF_MQTT_ADAPTER_MQTT_TARGET_HOST: vernemq
       MF_MQTT_ADAPTER_MQTT_TARGET_PORT: ${MF_MQTT_BROKER_PORT}
       MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: http://vernemq:8888/health
@@ -364,6 +364,25 @@ services:
     ports:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
+    networks:
+      - mainfluxlabs-base-net
+
+  ws-adapter:
+    image: mainfluxlabs/ws:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-ws
+    depends_on:
+      - things
+      - broker
+    restart: on-failure
+    environment:
+      MF_WS_ADAPTER_LOG_LEVEL: ${MF_WS_ADAPTER_LOG_LEVEL}
+      MF_WS_ADAPTER_PORT: ${MF_WS_ADAPTER_PORT}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_WS_ADAPTER_PORT}:${MF_WS_ADAPTER_PORT}
     networks:
       - mainfluxlabs-base-net
 

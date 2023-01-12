@@ -11,7 +11,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: ${MF_POSTGRES_WRITER_DB_PASS}
       POSTGRES_DB: ${MF_POSTGRES_WRITER_DB}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-postgres-writer-volume:/var/lib/postgresql/data
 
@@ -53,6 +53,6 @@ services:
     ports:
       - ${MF_POSTGRES_WRITER_PORT}:${MF_POSTGRES_WRITER_PORT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - ./config.toml:/config.toml

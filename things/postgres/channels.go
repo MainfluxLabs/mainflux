@@ -14,7 +14,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
-	"github.com/lib/pq"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var _ things.ChannelRepository = (*channelRepository)(nil)
@@ -52,13 +53,15 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 		_, err = tx.NamedExecContext(ctx, q, dbch)
 		if err != nil {
 			tx.Rollback()
-			pqErr, ok := err.(*pq.Error)
+			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
-				switch pqErr.Code.Name() {
-				case errInvalid, errTruncation:
-					return []things.Channel{}, errors.ErrMalformedEntity
-				case errDuplicate:
-					return []things.Channel{}, errors.ErrConflict
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return []things.Channel{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return []things.Channel{}, errors.Wrap(errors.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return []things.Channel{}, errors.Wrap(errors.ErrMalformedEntity, err)
 				}
 			}
 			return []things.Channel{}, errors.Wrap(errors.ErrCreateEntity, err)
@@ -79,11 +82,13 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 
 	res, err := cr.db.NamedExecContext(ctx, q, dbch)
 	if err != nil {
-		pqErr, ok := err.(*pq.Error)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code.Name() {
-			case errInvalid, errTruncation:
-				return errors.ErrMalformedEntity
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
 			}
 		}
 
@@ -108,9 +113,11 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, owner, id string) 
 	dbch := dbChannel{
 		ID: id,
 	}
+
 	if err := cr.db.QueryRowxContext(ctx, q, id).StructScan(&dbch); err != nil {
-		pqErr, ok := err.(*pq.Error)
-		if err == sql.ErrNoRows || ok && errInvalid == pqErr.Code.Name() {
+		pgErr, ok := err.(*pgconn.PgError)
+		//  If there is no result or ID is in an invalid format, return ErrNotFound.
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return things.Channel{}, errors.ErrNotFound
 		}
 		return things.Channel{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -145,12 +152,12 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	olq := "LIMIT :limit OFFSET :offset;"
+	olq := "LIMIT :limit OFFSET :offset"
 	if pm.Limit == 0 {
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"owner":    owner,
@@ -159,7 +166,6 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 		"name":     name,
 		"metadata": meta,
 	}
-
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -314,12 +320,12 @@ func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, th
 			_, err := tx.NamedExecContext(ctx, q, dbco)
 			if err != nil {
 				tx.Rollback()
-				pqErr, ok := err.(*pq.Error)
+				pgErr, ok := err.(*pgconn.PgError)
 				if ok {
-					switch pqErr.Code.Name() {
-					case errFK:
+					switch pgErr.Code {
+					case pgerrcode.ForeignKeyViolation:
 						return errors.ErrNotFound
-					case errDuplicate:
+					case pgerrcode.UniqueViolation:
 						return errors.ErrConflict
 					}
 				}
@@ -357,12 +363,12 @@ func (cr channelRepository) Disconnect(ctx context.Context, owner string, chIDs,
 			res, err := tx.NamedExecContext(ctx, q, dbco)
 			if err != nil {
 				tx.Rollback()
-				pqErr, ok := err.(*pq.Error)
+				pgErr, ok := err.(*pgconn.PgError)
 				if ok {
-					switch pqErr.Code.Name() {
-					case errFK:
+					switch pgErr.Code {
+					case pgerrcode.ForeignKeyViolation:
 						return errors.ErrNotFound
-					case errDuplicate:
+					case pgerrcode.UniqueViolation:
 						return errors.ErrConflict
 					}
 				}

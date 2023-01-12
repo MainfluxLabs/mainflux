@@ -22,20 +22,20 @@ func (req userReq) validate() error {
 	return req.user.Validate()
 }
 
-type registerUserReq struct {
+type selfRegisterUserReq struct {
 	user users.User
 }
 
-func (req registerUserReq) validate() error {
+func (req selfRegisterUserReq) validate() error {
 	return req.user.Validate()
 }
 
-type createUserReq struct {
+type registerUserReq struct {
 	user  users.User
 	token string
 }
 
-func (req createUserReq) validate() error {
+func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
@@ -43,8 +43,8 @@ func (req createUserReq) validate() error {
 }
 
 type viewUserReq struct {
-	token  string
-	userID string
+	token string
+	id    string
 }
 
 func (req viewUserReq) validate() error {
@@ -56,6 +56,7 @@ func (req viewUserReq) validate() error {
 
 type listUsersReq struct {
 	token    string
+	status   string
 	offset   uint64
 	limit    uint64
 	email    string
@@ -73,6 +74,11 @@ func (req listUsersReq) validate() error {
 
 	if len(req.email) > maxEmailSize {
 		return apiutil.ErrEmailSize
+	}
+	if req.status != users.AllStatusKey &&
+		req.status != users.EnabledStatusKey &&
+		req.status != users.DisabledStatusKey {
+		return apiutil.ErrInvalidStatus
 	}
 
 	return nil
@@ -151,10 +157,11 @@ func (req passwChangeReq) validate() error {
 
 type listMemberGroupReq struct {
 	token    string
+	status   string
 	offset   uint64
 	limit    uint64
 	metadata users.Metadata
-	groupID  string
+	id       string
 }
 
 func (req listMemberGroupReq) validate() error {
@@ -162,9 +169,28 @@ func (req listMemberGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingID
 	}
+	if req.status != users.AllStatusKey &&
+		req.status != users.EnabledStatusKey &&
+		req.status != users.DisabledStatusKey {
+		return apiutil.ErrInvalidStatus
+	}
+	return nil
+}
 
+type changeUserStatusReq struct {
+	token string
+	id    string
+}
+
+func (req changeUserStatusReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
 	return nil
 }

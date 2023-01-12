@@ -59,8 +59,13 @@ func Provision(conf Config) {
 
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
+		AuthURL:         conf.Host,
 		ThingsURL:       conf.Host,
+		UsersURL:        conf.Host,
 		ReaderURL:       defReaderURL,
+		HTTPAdapterURL:  fmt.Sprintf("%s/http", conf.Host),
+		BootstrapURL:    conf.Host,
+		CertsURL:        conf.Host,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
 	}
@@ -83,6 +88,8 @@ func Provision(conf Config) {
 		return
 
 	}
+
+	var err error
 
 	// Login user
 	token, err := s.CreateToken(user)
@@ -114,7 +121,6 @@ func Provision(conf Config) {
 		if err != nil {
 			log.Fatalf("Failed to decode certificate - %s", err.Error())
 		}
-
 	}
 
 	//  Create things and channels
@@ -154,7 +160,7 @@ func Provision(conf Config) {
 
 		if conf.SSL {
 			var priv interface{}
-			priv, err = rsa.GenerateKey(rand.Reader, rsaBits)
+			priv, _ = rsa.GenerateKey(rand.Reader, rsaBits)
 
 			notBefore := time.Now()
 			validFor, err := time.ParseDuration(ttl)

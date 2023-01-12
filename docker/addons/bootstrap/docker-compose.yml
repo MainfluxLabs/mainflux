@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${MF_BOOTSTRAP_DB_PASS}
       POSTGRES_DB: ${MF_BOOTSTRAP_DB}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-bootstrap-db-volume:/var/lib/postgresql/data
 
@@ -46,11 +46,11 @@ services:
       MF_BOOTSTRAP_DB: ${MF_BOOTSTRAP_DB}
       MF_BOOTSTRAP_DB_SSL_MODE: ${MF_BOOTSTRAP_DB_SSL_MODE}
       MF_BOOTSTRAP_PORT: ${MF_BOOTSTRAP_PORT}
-      MF_SDK_BASE_URL: http://mainfluxlabs-things:${MF_THINGS_HTTP_PORT}
+      MF_THINGS_URL: ${MF_THINGS_URL}
       MF_THINGS_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_BOOTSTRAP_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net

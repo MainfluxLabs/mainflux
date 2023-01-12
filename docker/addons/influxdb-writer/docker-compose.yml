@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -30,7 +30,7 @@ services:
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
       INFLUXDB_HTTP_FLUX_ENABLED: ${MF_INFLUXDB_HTTP_ENABLED}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     ports:
       - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
     volumes:
@@ -55,7 +55,7 @@ services:
     ports:
       - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - ./config.toml:/config.toml
 
@@ -68,6 +68,6 @@ services:
     ports:
       - ${MF_INFLUX_WRITER_GRAFANA_PORT}:${MF_GRAFANA_PORT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-grafana-volume:/var/lib/grafana

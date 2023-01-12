@@ -12,8 +12,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
+	"github.com/jmoiron/sqlx"
 	dockertest "github.com/ory/dockertest/v3"
 )
 
@@ -39,7 +40,7 @@ func TestMain(m *testing.M) {
 
 	if err := pool.Retry(func() error {
 		url := fmt.Sprintf("host=localhost port=%s user=test dbname=test password=test sslmode=disable", port)
-		db, err := sql.Open("postgres", url)
+		db, err := sql.Open("pgx", url)
 		if err != nil {
 			return err
 		}
