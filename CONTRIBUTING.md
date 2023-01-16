@@ -1,7 +1,7 @@
 # Contributing to Mainflux
 
 The following is a set of guidelines to contribute to Mainflux and its libraries, which are
-hosted on the [Mainflux Organization](https://github.com/mainflux) on GitHub.
+hosted on the [Mainflux Organization](https://github.com/MainfluxLabs) on GitHub.
 
 This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
 By participating, you are expected to uphold this code. Please report unacceptable behavior to

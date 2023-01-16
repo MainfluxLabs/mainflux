@@ -16,7 +16,6 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
@@ -24,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"

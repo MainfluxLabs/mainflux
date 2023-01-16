@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
@@ -24,16 +22,18 @@ import (
 	vault "github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-redis/redis/v8"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/jmoiron/sqlx"
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/jmoiron/sqlx"
 	jconfig "github.com/uber/jaeger-client-go/config"
 )
 

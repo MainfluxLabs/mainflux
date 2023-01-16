@@ -28,6 +28,7 @@ const (
 	limitKey    = "limit"
 	emailKey    = "email"
 	metadataKey = "metadata"
+	statusKey   = "status"
 	defOffset   = 0
 	defLimit    = 10
 )
@@ -41,15 +42,15 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux := bone.New()
 
 	mux.Post("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_user")(createUserEndpoint(svc)),
+		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
 		decodeCreateUserReq,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/register", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
-		decodeRegisterUserReq,
+		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
+		decodeSelfRegisterUserReq,
 		encodeResponse,
 		opts...,
 	))
@@ -61,7 +62,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Get("/users/:userID", kithttp.NewServer(
+	mux.Get("/users/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_user")(viewUserEndpoint(svc)),
 		decodeViewUser,
 		encodeResponse,
@@ -103,7 +104,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Get("/groups/:groupId", kithttp.NewServer(
+	mux.Get("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
 		encodeResponse,
@@ -117,6 +118,20 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
+	mux.Post("/users/:id/enable", kithttp.NewServer(
+		kitot.TraceServer(tracer, "enable_user")(enableUserEndpoint(svc)),
+		decodeChangeUserStatus,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/users/:id/disable", kithttp.NewServer(
+		kitot.TraceServer(tracer, "disable_user")(disableUserEndpoint(svc)),
+		decodeChangeUserStatus,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.GetFunc("/health", mainflux.Health("users"))
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -125,8 +140,8 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 
 func decodeViewUser(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewUserReq{
-		token:  apiutil.ExtractBearerToken(r),
-		userID: bone.GetValue(r, "userID"),
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
 	}
 
 	return req, nil
@@ -159,8 +174,13 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
+	if err != nil {
+		return nil, err
+	}
 	req := listUsersReq{
 		token:    apiutil.ExtractBearerToken(r),
+		status:   s,
 		offset:   o,
 		limit:    l,
 		email:    e,
@@ -187,7 +207,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
-
+	user.Email = strings.TrimSpace(user.Email)
 	return userReq{user}, nil
 }
 
@@ -201,7 +221,8 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	req := createUserReq{
+	user.Email = strings.TrimSpace(user.Email)
+	req := registerUserReq{
 		user:  user,
 		token: apiutil.ExtractBearerToken(r),
 	}
@@ -209,7 +230,7 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeRegisterUserReq(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSelfRegisterUserReq(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, errors.ErrUnsupportedContentType
 	}
@@ -219,7 +240,7 @@ func decodeRegisterUserReq(_ context.Context, r *http.Request) (interface{}, err
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	return registerUserReq{user: user}, nil
+	return selfRegisterUserReq{user: user}, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -278,14 +299,28 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
+	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
+	if err != nil {
+		return nil, err
+	}
 
 	req := listMemberGroupReq{
 		token:    apiutil.ExtractBearerToken(r),
-		groupID:  bone.GetValue(r, "groupId"),
+		status:   s,
+		id:       bone.GetValue(r, "id"),
 		offset:   o,
 		limit:    l,
 		metadata: m,
 	}
+	return req, nil
+}
+
+func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, error) {
+	req := changeUserStatusReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
 	return req, nil
 }
 

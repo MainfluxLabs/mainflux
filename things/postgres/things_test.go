@@ -558,7 +558,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	n := uint64(102)
+	n := uint64(101)
 	thsDisconNum := uint64(1)
 
 	chID, err := idProvider.ID()
@@ -766,6 +766,10 @@ func TestThingRemoval(t *testing.T) {
 }
 
 func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
+	if len(ths) < 1 {
+		return
+	}
+
 	switch pm.Order {
 	case "name":
 		current := ths[0]

@@ -83,11 +83,7 @@ func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
-	/*
-		if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
-			return readers.MessagesPage{}, nil
-		}
-	*/
+
 	var messages []readers.Message
 
 	var valueMap map[string]interface{}

@@ -44,8 +44,8 @@ const (
 )
 
 var (
-	user               = users.User{Email: validEmail, Password: validPass}
-	admin              = users.User{Email: adminEmail, Password: validPass}
+	user               = users.User{Email: validEmail, Password: validPass, Status: "enabled"}
+	admin              = users.User{Email: adminEmail, Password: validPass, Status: "enabled"}
 	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
 	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	malformedRes       = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
@@ -113,7 +113,7 @@ func TestInit(t *testing.T) {
 	admin.ID = id
 }
 
-func TestRegister(t *testing.T) {
+func TestSelfRegister(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -157,7 +157,7 @@ func TestRegister(t *testing.T) {
 	}
 }
 
-func TestUserCreate(t *testing.T) {
+func TestRegister(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -166,7 +166,6 @@ func TestUserCreate(t *testing.T) {
 	invalidData := toJSON(users.User{Email: invalidEmail, Password: validPass})
 	invalidPasswordData := toJSON(users.User{Email: validEmail, Password: invalidPass})
 	invalidFieldData := fmt.Sprintf(`{"email": "%s", "pass": "%s"}`, user.Email, user.Password)
-	unauthzEmail := "unauthz@example.com"
 
 	cases := []struct {
 		desc        string
@@ -180,8 +179,8 @@ func TestUserCreate(t *testing.T) {
 		{"create existing user", data, contentType, http.StatusConflict, admin.Email},
 		{"create user with invalid email address", invalidData, contentType, http.StatusBadRequest, admin.Email},
 		{"create user with weak password", invalidPasswordData, contentType, http.StatusBadRequest, admin.Email},
-		{"create new user with unauthorized access", data, contentType, http.StatusUnauthorized, unauthzEmail},
-		{"create existing user with unauthorized access", data, contentType, http.StatusUnauthorized, unauthzEmail},
+		{"create new user with unauthorized access", data, contentType, http.StatusUnauthorized, "wrong"},
+		{"create existing user with unauthorized access", data, contentType, http.StatusUnauthorized, "wrong"},
 		{"create user with invalid request format", "{", contentType, http.StatusBadRequest, admin.Email},
 		{"create user with empty JSON request", "{}", contentType, http.StatusBadRequest, admin.Email},
 		{"create user with empty request", "", contentType, http.StatusBadRequest, admin.Email},
@@ -228,7 +227,7 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	id, err := svc.Register(context.Background(), "", user)
+	id, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
 	_, err = auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{
 		Sub: id,
@@ -288,7 +287,7 @@ func TestUser(t *testing.T) {
 
 	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
 
-	userID, err := svc.Register(context.Background(), "", user)
+	userID, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
@@ -341,6 +340,7 @@ func TestListUsers(t *testing.T) {
 			ID:       id,
 			Email:    email,
 			Password: "password",
+			Status:   "enabled",
 		}
 		usr, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -501,7 +501,7 @@ func TestPasswordResetRequest(t *testing.T) {
 		api.MailSent,
 	})
 
-	_, err := svc.Register(context.Background(), "", user)
+	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
 
 	cases := []struct {
@@ -553,7 +553,7 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
 
-	id, err := svc.Register(context.Background(), "", user)
+	id, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: id, Email: user.Email, Type: 0})
@@ -631,7 +631,7 @@ func TestPasswordChange(t *testing.T) {
 		OldPassw string `json:"old_password,omitempty"`
 	}{}
 
-	id, err := svc.Register(context.Background(), "", user)
+	id, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: id, Email: user.Email, Type: 0})

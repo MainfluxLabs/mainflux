@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 
@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: ${MF_CERTS_DB_PASS}
       POSTGRES_DB: ${MF_CERTS_DB}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-certs-db-volume:/var/lib/postgresql/data
 
@@ -37,7 +37,7 @@ services:
       - certs-db
     restart: on-failure
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     ports:
       - ${MF_CERTS_HTTP_PORT}:${MF_CERTS_HTTP_PORT}
     environment:
@@ -65,7 +65,7 @@ services:
       MF_VAULT_CA_NAME: ${MF_VAULT_CA_NAME}
       MF_VAULT_CA_ROLE_NAME: ${MF_VAULT_CA_ROLE_NAME}
       MF_VAULT_PKI_PATH: ${MF_VAULT_PKI_PATH}
-      MF_SDK_BASE_URL: ${MF_SDK_BASE_URL}
+      MF_THINGS_URL: ${MF_THINGS_URL}
       MF_SDK_THINGS_PREFIX: ${MF_SDK_THINGS_PREFIX}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}

@@ -14,14 +14,14 @@ import (
 	"strconv"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/jmoiron/sqlx"
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/sync/errgroup"
 
 	mfsmpp "github.com/MainfluxLabs/mainflux/consumers/notifiers/smpp"

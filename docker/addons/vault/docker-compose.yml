@@ -11,7 +11,7 @@
 version: '3.7'
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -24,7 +24,7 @@ services:
     ports:
       - ${MF_VAULT_PORT}:8200
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-vault-volume:/vault/file
       - mainfluxlabs-vault-volume:/vault/logs

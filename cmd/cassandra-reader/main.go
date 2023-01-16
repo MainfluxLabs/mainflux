@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/gocql/gocql"
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -25,6 +23,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/cassandra"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/gocql/gocql"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"

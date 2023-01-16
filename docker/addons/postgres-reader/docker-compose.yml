@@ -10,7 +10,7 @@
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 services:
@@ -40,4 +40,4 @@ services:
     ports:
       - ${MF_POSTGRES_READER_PORT}:${MF_POSTGRES_READER_PORT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainfluxlabs-base-net

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/readers/postgres"
+	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	dockertest "github.com/ory/dockertest/v3"
 )
@@ -37,7 +38,7 @@ func TestMain(m *testing.M) {
 
 	if err = pool.Retry(func() error {
 		url := fmt.Sprintf("host=localhost port=%s user=test dbname=test password=test sslmode=disable", port)
-		db, err = sqlx.Open("postgres", url)
+		db, err = sqlx.Open("pgx", url)
 		if err != nil {
 			return err
 		}
