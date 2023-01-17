@@ -4,42 +4,54 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
 
 const (
 	format = "subscriptions"
 	order  = "time"
-	sort   = "desc"
 )
 
 var _ mqtt.Repository = (*mqttRepository)(nil)
 
 type mqttRepository struct {
-	db  *sqlx.DB
-	log logger.Logger
+	db *sqlx.DB
 }
 
 // NewRepository instantiates a PostgreSQL implementation of mqtt
 // repository.
-func NewRepository(db *sqlx.DB, log logger.Logger) mqtt.Repository {
-	return &mqttRepository{db: db, log: log}
+func NewRepository(db *sqlx.DB) mqtt.Repository {
+	return &mqttRepository{db: db}
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`INSERT INTO %s (owner_id, subtopic, thing_id, chan_id) VALUES (:owner_id, :subtopic, :thing_id, :chan_id)`, format)
-	if _, err := mr.db.NamedExecContext(ctx, q, sub); err != nil {
+	q := fmt.Sprintf(`INSERT INTO %s (owner_id, subtopic, thing_id, channel_id) VALUES (:owner_id, :subtopic, :thing_id, :channel_id)`, format)
+
+	dbSub := dbSubscription{
+		OwnerID:  sub.OwnerID,
+		Subtopic: sub.Subtopic,
+		ThingID:  sub.ThingID,
+		ChanID:   sub.ChanID,
+	}
+
+	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
+	if err != nil {
+		if pqErr, ok := err.(*pgconn.PgError); ok && pqErr.Code == pgerrcode.UniqueViolation {
+			return errors.Wrap(errors.ErrConflict, err)
+		}
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
+	defer row.Close()
 
 	return nil
 }
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`DELETE FROM %s WHERE subtopic =$1 AND thing_id=$2 AND chan_id=$3`, format)
+	q := fmt.Sprintf(`DELETE FROM %s WHERE subtopic =$1 AND thing_id=$2 AND channel_id=$3`, format)
 	if _, err := mr.db.ExecContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
@@ -53,7 +65,8 @@ func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMet
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT subtopic, chan_id, thing_id, time FROM %s WHERE owner_id= :ownerID %s ORDER BY %s %s`, format, olq, order, sort)
+	q := fmt.Sprintf(`SELECT owner_id, subtopic, channel_id, thing_id FROM %s WHERE owner_id= :ownerID ORDER BY %s %s;`, format, order, olq)
+	fmt.Println(q)
 	params := map[string]interface{}{
 		"ownerID": ownerID,
 		"limit":   pm.Limit,
@@ -68,16 +81,19 @@ func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMet
 
 	var items []mqtt.Subscription
 	for rows.Next() {
-		var item mqtt.Subscription
+		item := dbSubscription{}
 		if err := rows.StructScan(&item); err != nil {
 			return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
 		}
-		items = append(items, item)
+		items = append(items, fromDBSub(item))
 	}
 
-	q = fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE owner_id=$1", format)
+	if len(items) == 0 {
+		return mqtt.Page{}, errors.ErrNotFound
+	}
 
-	total, err := mr.total(ctx, q, ownerID)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE owner_id= :ownerID;`, format)
+	total, err := mr.total(ctx, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -106,4 +122,20 @@ func (mr *mqttRepository) total(ctx context.Context, query string, params interf
 		}
 	}
 	return total, nil
+}
+
+type dbSubscription struct {
+	OwnerID  string `db:"owner_id"`
+	Subtopic string `db:"subtopic"`
+	ThingID  string `db:"thing_id"`
+	ChanID   string `db:"channel_id"`
+}
+
+func fromDBSub(sub dbSubscription) mqtt.Subscription {
+	return mqtt.Subscription{
+		OwnerID:  sub.OwnerID,
+		Subtopic: sub.Subtopic,
+		ThingID:  sub.ThingID,
+		ChanID:   sub.ChanID,
+	}
 }

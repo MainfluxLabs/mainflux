@@ -462,7 +462,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
-	subscriptions := postgres.NewRepository(db, logger)
+	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
 	svc := mqtt.NewMqttService(usersAuth, subscriptions, idp)
 

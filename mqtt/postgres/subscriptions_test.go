@@ -1,0 +1,223 @@
+package postgres_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const (
+	numSubs   = 100
+	subtopic  = "subtopic"
+	invalidID = "invalid"
+)
+
+func TestSave(t *testing.T) {
+	repo := postgres.NewRepository(db)
+
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	chanID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	thingID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	sub := mqtt.Subscription{
+		OwnerID:  ownerID,
+		Subtopic: subtopic,
+		ThingID:  thingID,
+		ChanID:   chanID,
+	}
+	// subExisting := mqtt.Subscription{
+	// 	OwnerID:  ownerID,
+	// 	Subtopic: subtopic,
+	// 	ThingID:  "123e4567-e89b-12d3-a456-000000000009",
+	// 	ChanID:   "123e4567-e89b-12d3-a456-000000000019",
+	// }
+
+	cases := []struct {
+		desc string
+		sub  mqtt.Subscription
+		err  error
+	}{
+
+		{
+			desc: "save successfully",
+			sub:  sub,
+			err:  nil,
+		},
+		// {
+		// 	desc: "save existing subscription",
+		// 	sub:  subExisting,
+		// 	err:  errors.ErrConflict,
+		// },
+	}
+
+	for _, tc := range cases {
+		err := repo.Save(context.Background(), tc.sub)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemove(t *testing.T) {
+	repo := postgres.NewRepository(db)
+
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	chanID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	thingID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	invalidID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	sub := mqtt.Subscription{
+		OwnerID:  ownerID,
+		Subtopic: subtopic,
+		ThingID:  thingID,
+		ChanID:   chanID,
+	}
+
+	nonExistingSub := sub
+	nonExistingSub.ThingID = invalidID
+
+	err = repo.Save(context.Background(), sub)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc string
+		sub  mqtt.Subscription
+		err  error
+	}{
+		{
+			desc: "remove successfully",
+			sub:  sub,
+			err:  nil,
+		},
+		{
+			desc: "remove non-existing subscription",
+			sub:  nonExistingSub,
+			err:  nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := repo.Remove(context.Background(), tc.sub)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrieveByID(t *testing.T) {
+	_, err := db.Exec("DELETE FROM subscriptions")
+	require.Nil(t, err, fmt.Sprintf("cleanup must not fail: %s", err))
+
+	repo := postgres.NewRepository(db)
+
+	var subs []mqtt.Subscription
+
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := 0; i < numSubs; i++ {
+		thID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		chanID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		sub := mqtt.Subscription{
+			Subtopic: subtopic,
+			OwnerID:  ownerID,
+			ThingID:  thID,
+			ChanID:   chanID,
+		}
+
+		err = repo.Save(context.Background(), sub)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		subs = append(subs, sub)
+	}
+
+	cases := []struct {
+		desc     string
+		size     int
+		ownerID  string
+		pageMeta mqtt.PageMetadata
+		page     mqtt.Page
+		err      error
+	}{
+		{
+			desc:    "retrieve all subscriptions for existing owner",
+			size:    10,
+			ownerID: ownerID,
+			pageMeta: mqtt.PageMetadata{
+				Total:  numSubs,
+				Offset: 0,
+				Limit:  10,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total:  numSubs,
+					Offset: 0,
+					Limit:  10,
+				},
+				Subscriptions: subs[0:10],
+			},
+			err: nil,
+		},
+		{
+			desc:    "retrieve all subscriptions for existing owner with no limit",
+			size:    numSubs,
+			ownerID: ownerID,
+			pageMeta: mqtt.PageMetadata{
+				Total: numSubs,
+				Limit: 0,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total: numSubs,
+					Limit: 0,
+				},
+				Subscriptions: subs,
+			},
+			err: nil,
+		},
+		{
+			desc:    "retrieve subscriptions with non-existing owner",
+			size:    0,
+			ownerID: invalidID,
+			pageMeta: mqtt.PageMetadata{
+				Total:  0,
+				Offset: 0,
+				Limit:  0,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total:  0,
+					Offset: 0,
+					Limit:  0,
+				},
+				Subscriptions: nil,
+			},
+			err: errors.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := repo.RetrieveByOwnerID(context.Background(), tc.pageMeta, tc.ownerID)
+		size := len(page.Subscriptions)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.pageMeta.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", tc.desc, tc.pageMeta.Total, page.Total))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.size, size))
+	}
+}
