@@ -8,7 +8,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -19,12 +18,11 @@ const (
 var _ mqtt.Repository = (*mqttRepository)(nil)
 
 type mqttRepository struct {
-	db *sqlx.DB
+	db Database
 }
 
-// NewRepository instantiates a PostgreSQL implementation of mqtt
-// repository.
-func NewRepository(db *sqlx.DB) mqtt.Repository {
+// NewRepository instantiates a PostgreSQL implementation of mqt repository.
+func NewRepository(db Database) mqtt.Repository {
 	return &mqttRepository{db: db}
 }
 
@@ -52,8 +50,9 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
 	q := fmt.Sprintf(`DELETE FROM %s WHERE subtopic =$1 AND thing_id=$2 AND channel_id=$3`, format)
-	if _, err := mr.db.ExecContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+
+	if r := mr.db.QueryRowxContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); r.Err() != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, r.Err())
 	}
 
 	return nil
@@ -93,7 +92,7 @@ func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMet
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE owner_id= :ownerID;`, format)
-	total, err := mr.total(ctx, cq, params)
+	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -109,7 +108,7 @@ func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMet
 
 }
 
-func (mr *mqttRepository) total(ctx context.Context, query string, params interface{}) (uint64, error) {
+func (mr *mqttRepository) total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := mr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

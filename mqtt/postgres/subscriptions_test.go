@@ -16,10 +16,12 @@ const (
 	numSubs   = 100
 	subtopic  = "subtopic"
 	invalidID = "invalid"
+	noLimit   = 0
 )
 
 func TestSave(t *testing.T) {
-	repo := postgres.NewRepository(db)
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewRepository(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -36,12 +38,9 @@ func TestSave(t *testing.T) {
 		ThingID:  thingID,
 		ChanID:   chanID,
 	}
-	// subExisting := mqtt.Subscription{
-	// 	OwnerID:  ownerID,
-	// 	Subtopic: subtopic,
-	// 	ThingID:  "123e4567-e89b-12d3-a456-000000000009",
-	// 	ChanID:   "123e4567-e89b-12d3-a456-000000000019",
-	// }
+
+	invalidSub := sub
+	invalidSub.ThingID = invalidID
 
 	cases := []struct {
 		desc string
@@ -50,15 +49,20 @@ func TestSave(t *testing.T) {
 	}{
 
 		{
-			desc: "save successfully",
+			desc: "save subscription successfully",
 			sub:  sub,
 			err:  nil,
 		},
-		// {
-		// 	desc: "save existing subscription",
-		// 	sub:  subExisting,
-		// 	err:  errors.ErrConflict,
-		// },
+		{
+			desc: "save existing subscription",
+			sub:  sub,
+			err:  errors.ErrConflict,
+		},
+		{
+			desc: "save invalid subscription",
+			sub:  invalidSub,
+			err:  errors.ErrCreateEntity,
+		},
 	}
 
 	for _, tc := range cases {
@@ -68,7 +72,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	repo := postgres.NewRepository(db)
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewRepository(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -122,7 +127,8 @@ func TestRetrieveByID(t *testing.T) {
 	_, err := db.Exec("DELETE FROM subscriptions")
 	require.Nil(t, err, fmt.Sprintf("cleanup must not fail: %s", err))
 
-	repo := postgres.NewRepository(db)
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewRepository(dbMiddleware)
 
 	var subs []mqtt.Subscription
 
@@ -186,7 +192,7 @@ func TestRetrieveByID(t *testing.T) {
 			page: mqtt.Page{
 				PageMetadata: mqtt.PageMetadata{
 					Total: numSubs,
-					Limit: 0,
+					Limit: noLimit,
 				},
 				Subscriptions: subs,
 			},
@@ -199,13 +205,13 @@ func TestRetrieveByID(t *testing.T) {
 			pageMeta: mqtt.PageMetadata{
 				Total:  0,
 				Offset: 0,
-				Limit:  0,
+				Limit:  noLimit,
 			},
 			page: mqtt.Page{
 				PageMetadata: mqtt.PageMetadata{
 					Total:  0,
 					Offset: 0,
-					Limit:  0,
+					Limit:  noLimit,
 				},
 				Subscriptions: nil,
 			},
