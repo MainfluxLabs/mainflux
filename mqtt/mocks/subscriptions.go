@@ -12,10 +12,10 @@ var _ mqtt.Repository = (*subRepoMock)(nil)
 
 type subRepoMock struct {
 	mu   sync.Mutex
-	subs map[string]mqtt.Subscription
+	subs map[string][]mqtt.Subscription
 }
 
-func NewRepo(subs map[string]mqtt.Subscription) mqtt.Repository {
+func NewRepo(subs map[string][]mqtt.Subscription) mqtt.Repository {
 	return &subRepoMock{
 		subs: subs,
 	}
@@ -25,10 +25,17 @@ func (srm *subRepoMock) RetrieveByOwnerID(_ context.Context, pm mqtt.PageMetadat
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
+	i := uint64(0)
+	
 	var subs []mqtt.Subscription
 	for _, s := range srm.subs {
-		if s.OwnerID == ownerID {
-			subs = append(subs, s)
+		for _, m := range s {
+			if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
+				if m.OwnerID == ownerID {
+					subs = append(subs, m)
+				}
+			}
+			i++
 		}
 	}
 
@@ -40,7 +47,6 @@ func (srm *subRepoMock) RetrieveByOwnerID(_ context.Context, pm mqtt.PageMetadat
 		PageMetadata:  pm,
 		Subscriptions: subs,
 	}, nil
-
 }
 
 func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
@@ -48,14 +54,14 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 	defer srm.mu.Unlock()
 
 	for _, s := range srm.subs {
-		if s.Subtopic == sub.Subtopic && s.ThingID == sub.ThingID && s.ChanID == sub.ChanID {
-			return errors.ErrConflict
+		for _, m := range s {
+			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.ChanID == sub.ChanID {
+				return errors.ErrConflict
+			}
 		}
-
 	}
 
-	srm.subs[sub.OwnerID] = sub
-
+	srm.subs[sub.OwnerID] = append(srm.subs[sub.OwnerID], sub)
 	return nil
 }
 
@@ -64,10 +70,12 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	defer srm.mu.Unlock()
 
 	for _, s := range srm.subs {
-		if s.Subtopic == sub.Subtopic && s.ThingID == sub.ThingID && s.ChanID == sub.ChanID {
-			delete(srm.subs, s.OwnerID)
+		for _, m := range s {
+			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.ChanID == sub.ChanID {
+				delete(srm.subs, m.OwnerID)
+				return nil
+			}
 		}
-		return nil
 	}
 
 	return errors.ErrNotFound

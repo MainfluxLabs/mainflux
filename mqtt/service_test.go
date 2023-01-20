@@ -19,23 +19,22 @@ const (
 	exampleUser1 = "email1@example.com"
 	adminUser    = "admin@example.com"
 	invalidUser  = "invalid@example.com"
+	ownerID      = "123e4567-e89b-12d3-a456-000000000002"
 )
 
 var idProvider = uuid.NewMock()
 
 func newService() mqtt.Service {
-	repo := mocks.NewRepo(make(map[string]mqtt.Subscription))
+	repo := mocks.NewRepo(make(map[string][]mqtt.Subscription))
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	auth := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
+	auth := mocks.NewAuth(map[string]string{exampleUser1: ownerID, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(auth, repo, idProvider)
 }
 
 func TestCreateSubscription(t *testing.T) {
 	svc := newService()
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -90,8 +89,6 @@ func TestCreateSubscription(t *testing.T) {
 
 func TestRemoveSubscription(t *testing.T) {
 	svc := newService()
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -150,8 +147,6 @@ func TestRemoveSubscription(t *testing.T) {
 func TestRetrieveByOwnerID(t *testing.T) {
 	svc := newService()
 	var subs []mqtt.Subscription
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	for i := 0; i < total; i++ {
 		thID, err := idProvider.ID()
@@ -180,70 +175,70 @@ func TestRetrieveByOwnerID(t *testing.T) {
 		page     mqtt.Page
 		err      error
 	}{
-		// {
-		// 	desc:  "retrieve subscriptions by owner",
-		// 	token: exampleUser1,
-		// 	pageMeta: mqtt.PageMetadata{
-		// 		Total:  total,
-		// 		Offset: 0,
-		// 		Limit:  1,
-		// 	},
-		// 	page: mqtt.Page{
-		// 		PageMetadata: mqtt.PageMetadata{
-		// 			Total:  total,
-		// 			Offset: 0,
-		// 			Limit:  1,
-		// 		},
-		// 		Subscriptions: subs[:1],
-		// 	},
-		// 	err: nil,
-		// },
-		// {
-		// 	desc:  "retrieve subscriptions by owner with no limit",
-		// 	token: exampleUser1,
-		// 	pageMeta: mqtt.PageMetadata{
-		// 		Total:  total,
-		// 		Offset: 0,
-		// 		Limit:  noLimit,
-		// 	},
-		// 	page: mqtt.Page{
-		// 		PageMetadata: mqtt.PageMetadata{
-		// 			Total:  total,
-		// 			Offset: 0,
-		// 			Limit:  noLimit,
-		// 		},
-		// 		Subscriptions: subs,
-		// 	},
-		// 	err: nil,
-		// },
-		// {
-		// 	desc:  "retrieve subscriptions with invalid user",
-		// 	token: invalidUser,
-		// 	pageMeta: mqtt.PageMetadata{
-		// 		Total: 0,
-		// 	},
-		// 	page: mqtt.Page{
-		// 		PageMetadata: mqtt.PageMetadata{
-		// 			Total: 0,
-		// 		},
-		// 		Subscriptions: nil,
-		// 	},
-		// 	err: errors.ErrAuthentication,
-		// },
-		// {
-		// 	desc:  "retrieve subscriptions with empty token",
-		// 	token: "",
-		// 	pageMeta: mqtt.PageMetadata{
-		// 		Total: 0,
-		// 	},
-		// 	page: mqtt.Page{
-		// 		PageMetadata: mqtt.PageMetadata{
-		// 			Total: 0,
-		// 		},
-		// 		Subscriptions: nil,
-		// 	},
-		// 	err: errors.ErrAuthentication,
-		// },
+		{
+			desc:  "retrieve subscriptions by owner",
+			token: exampleUser1,
+			pageMeta: mqtt.PageMetadata{
+				Total:  total,
+				Offset: 0,
+				Limit:  10,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total:  total,
+					Offset: 0,
+					Limit:  10,
+				},
+				Subscriptions: subs[:10],
+			},
+			err: nil,
+		},
+		{
+			desc:  "retrieve subscriptions by owner with no limit",
+			token: exampleUser1,
+			pageMeta: mqtt.PageMetadata{
+				Total:  total,
+				Offset: 0,
+				Limit:  noLimit,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total:  total,
+					Offset: 0,
+					Limit:  noLimit,
+				},
+				Subscriptions: subs,
+			},
+			err: nil,
+		},
+		{
+			desc:  "retrieve subscriptions with invalid user",
+			token: invalidUser,
+			pageMeta: mqtt.PageMetadata{
+				Total: 0,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total: 0,
+				},
+				Subscriptions: nil,
+			},
+			err: errors.ErrAuthentication,
+		},
+		{
+			desc:  "retrieve subscriptions with empty token",
+			token: "",
+			pageMeta: mqtt.PageMetadata{
+				Total: 0,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total: 0,
+				},
+				Subscriptions: nil,
+			},
+			err: errors.ErrAuthentication,
+		},
 	}
 	for _, tc := range cases {
 		page, err := svc.ListSubscriptions(context.Background(), tc.token, tc.pageMeta)
