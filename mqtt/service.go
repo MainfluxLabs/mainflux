@@ -45,10 +45,6 @@ func (ms *mqttService) CreateSubscription(ctx context.Context, token string, sub
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if err := ms.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	sub.OwnerID = res.GetId()
 	if err != nil {
 		return err
@@ -59,12 +55,8 @@ func (ms *mqttService) CreateSubscription(ctx context.Context, token string, sub
 }
 
 func (ms *mqttService) RemoveSubscription(ctx context.Context, token string, sub Subscription) error {
-	res, err := ms.auth.Identify(ctx, &mainflux.Token{Value: token})
+	_, err := ms.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	if err := ms.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
