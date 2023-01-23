@@ -470,13 +470,13 @@ func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger
 	svc = api2.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "mqtt-adapter",
+			Namespace: "mqtt_adapter",
 			Subsystem: "api",
 			Name:      "request_count",
 			Help:      "Number of requests received.",
 		}, []string{"method"}),
 		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "mqtt-adapter",
+			Namespace: "mqtt_adapter",
 			Subsystem: "api",
 			Name:      "request_latency_microseconds",
 			Help:      "Total duration of requests in microseconds.",

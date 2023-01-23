@@ -15,6 +15,7 @@ volumes:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
+  mainfluxlabs-mqtt-db-volume:
   mainfluxlabs-influxdb-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
@@ -282,7 +283,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainfluxlabs/vernemq:0.13.2-arm64
+    image: mainflux/vernemq:0.13.0
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
@@ -293,13 +294,27 @@ services:
     volumes:
       - mainfluxlabs-mqtt-broker-volume:/var/lib/vernemq
 
+  mqtt-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-mqtt-db
+    restart: on-failure
+    environment:
+      - POSTGRES_USER=${MF_MQTT_ADAPTER_DB_USER}
+      - POSTGRES_PASSWORD=${MF_MQTT_ADAPTER_DB_PASS}
+      - POSTGRES_DB=${MF_MQTT_ADAPTER_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
+
   mqtt-adapter:
-    image: mainfluxlabs/mqtt:${MF_RELEASE_TAG}
+    image: mainfluxlabs/mqtt:latest
     container_name: mainfluxlabs-mqtt
     depends_on:
       - vernemq
       - things
       - broker
+      - mqtt-db
     restart: on-failure
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
@@ -316,6 +331,14 @@ services:
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
+      MF_MQTT_ADAPTER_DB_PORT: ${MF_MQTT_ADAPTER_DB_PORT}
+      MF_MQTT_ADAPTER_DB_USER: ${MF_MQTT_ADAPTER_DB_USER}
+      MF_MQTT_ADAPTER_DB_PASS: ${MF_MQTT_ADAPTER_DB_PASS}
+      MF_MQTT_ADAPTER_DB: ${MF_MQTT_ADAPTER_DB}
+      MF_MQTT_ADAPTER_DB_HOST: ${MF_MQTT_ADAPTER_DB_HOST}
+      MF_MQTT_ADAPTER_DB_SSL_MODE: ${MF_MQTT_ADAPTER_DB_SSL_MODE}
+      MF_MQTT_ADAPTER_DB_SSL_CERT: ${MF_MQTT_ADAPTER_DB_SSL_CERT}
+
     networks:
       - mainfluxlabs-base-net
 

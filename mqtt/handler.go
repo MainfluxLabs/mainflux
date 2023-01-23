@@ -79,10 +79,6 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrClientNotInitialized
 	}
 
-	if c.ID == "" {
-		return ErrMissingClientID
-	}
-
 	thid, err := h.auth.Identify(context.Background(), string(c.Password))
 	if err != nil {
 		return err
