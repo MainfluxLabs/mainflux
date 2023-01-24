@@ -58,6 +58,7 @@ const (
 	defHTTPTargetHost        = "localhost"
 	defHTTPTargetPort        = "8080"
 	defHTTPTargetPath        = "/mqtt"
+	defWSPort                = "8285"
 	defThingsAuthURL         = "localhost:8183"
 	defThingsAuthTimeout     = "1s"
 	defBrokerURL             = "nats://localhost:4222"
@@ -91,10 +92,11 @@ const (
 	envMQTTTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
 	envMQTTTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
 	envMQTTForwarderTimeout  = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
-	envHTTPPort              = "MF_MQTT_ADAPTER_WS_PORT"
+	envHTTPPort              = "MF_MQTT_ADAPTER_HTTP_PORT"
 	envHTTPTargetHost        = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
 	envHTTPTargetPort        = "MF_MQTT_ADAPTER_WS_TARGET_PORT"
 	envHTTPTargetPath        = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
+	envWSPort                = "MF_MQTT_ADAPTER_WS_PORT"
 	envThingsAuthURL         = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout     = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envBrokerURL             = "MF_BROKER_URL"
@@ -130,6 +132,7 @@ type config struct {
 	mqttForwarderTimeout  time.Duration
 	mqttTargetHealthCheck string
 	httpPort              string
+	wsPort                string
 	httpTargetHost        string
 	httpTargetPort        string
 	httpTargetPath        string
@@ -307,6 +310,7 @@ func loadConfig() config {
 		mqttForwarderTimeout:  mqttTimeout,
 		mqttTargetHealthCheck: mainflux.Env(envMQTTTargetHealthCheck, defMQTTTargetHealthCheck),
 		httpPort:              mainflux.Env(envHTTPPort, defHTTPPort),
+		wsPort:                mainflux.Env(envWSPort, defWSPort),
 		httpTargetHost:        mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
 		httpTargetPort:        mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
 		httpTargetPath:        mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
@@ -422,7 +426,7 @@ func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler sessi
 	errCh := make(chan error)
 
 	go func() {
-		errCh <- wp.Listen(cfg.httpPort)
+		errCh <- wp.Listen(cfg.wsPort)
 	}()
 
 	select {
