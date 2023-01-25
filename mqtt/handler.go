@@ -289,6 +289,7 @@ func (h *handler) getSubcription(c *session.Client, topics *[]string) (Subscript
 		Subtopic: subtopic,
 		ChanID:   chanID,
 		ThingID:  c.Username,
+		Time:     float64(time.Now().UnixNano()) / float64(1e9),
 	}, nil
 
 }

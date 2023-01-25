@@ -7,7 +7,7 @@ type Subscription struct {
 	Subtopic string
 	ThingID  string
 	ChanID   string
-	
+	Time     float64
 }
 
 // Page represents page metadata with content.

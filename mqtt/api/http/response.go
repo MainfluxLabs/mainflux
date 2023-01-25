@@ -24,9 +24,10 @@ func (res listAllSubscriptionsRes) Empty() bool {
 }
 
 type viewSubRes struct {
-	Subtopic  string `json:"subtopic"`
-	ThingID   string `json:"thing_id"`
-	ChannelID string `json:"channel_id"`
+	Subtopic  string  `json:"subtopic"`
+	ThingID   string  `json:"thing_id"`
+	ChannelID string  `json:"channel_id"`
+	Time      float64 `json:"time"`
 }
 
 type pageRes struct {
