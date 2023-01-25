@@ -21,17 +21,17 @@ func NewRepo(subs map[string][]mqtt.Subscription) mqtt.Repository {
 	}
 }
 
-func (srm *subRepoMock) RetrieveByOwnerID(_ context.Context, pm mqtt.PageMetadata, ownerID string) (mqtt.Page, error) {
+func (srm *subRepoMock) RetrieveByChannelID(_ context.Context, pm mqtt.PageMetadata, chanID string) (mqtt.Page, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
 	i := uint64(0)
-	
+
 	var subs []mqtt.Subscription
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
-				if m.OwnerID == ownerID {
+				if m.ChanID == chanID {
 					subs = append(subs, m)
 				}
 			}
@@ -61,7 +61,7 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 		}
 	}
 
-	srm.subs[sub.OwnerID] = append(srm.subs[sub.OwnerID], sub)
+	srm.subs[sub.ChanID] = append(srm.subs[sub.ChanID], sub)
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.ChanID == sub.ChanID {
-				delete(srm.subs, m.OwnerID)
+				delete(srm.subs, m.ChanID)
 				return nil
 			}
 		}

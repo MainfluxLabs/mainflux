@@ -32,29 +32,29 @@ func MetricsMiddleware(svc mqtt.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (ms *metricsMiddleware) ListSubscriptions(ctx context.Context, token string, pm mqtt.PageMetadata) (mqtt.Page, error) {
+func (ms *metricsMiddleware) ListSubscriptions(ctx context.Context, chanID, token string, pm mqtt.PageMetadata) (mqtt.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_subscriptions").Add(1)
 		ms.latency.With("method", "list_subscriptions").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListSubscriptions(ctx, token, pm)
+	return ms.svc.ListSubscriptions(ctx, chanID, token, pm)
 }
 
-func (ms *metricsMiddleware) CreateSubscription(ctx context.Context, token string, sub mqtt.Subscription) error {
+func (ms *metricsMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_subscription").Add(1)
 		ms.latency.With("method", "create_subscription").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateSubscription(ctx, token, sub)
+	return ms.svc.CreateSubscription(ctx, sub)
 }
 
-func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, token string, sub mqtt.Subscription) error {
+func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Subscription) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_subscription").Add(1)
 		ms.latency.With("method", "remove_subscription").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveSubscription(ctx, token, sub)
+	return ms.svc.RemoveSubscription(ctx, sub)
 }

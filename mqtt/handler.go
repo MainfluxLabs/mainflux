@@ -180,6 +180,13 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 // Subscribe - after client successfully subscribed
 func (h *handler) Subscribe(c *session.Client, topics *[]string) {
+	sub, err := h.getSubcription(c, topics)
+	if err != nil {
+		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		return
+	}
+
+	h.service.CreateSubscription(context.Background(), sub)
 	if c == nil {
 		h.logger.Error(LogErrFailedSubscribe + (ErrClientNotInitialized).Error())
 		return
@@ -189,6 +196,13 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 
 // Unsubscribe - after client unsubscribed
 func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
+	sub, err := h.getSubcription(c, topics)
+	if err != nil {
+		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		return
+	}
+
+	h.service.RemoveSubscription(context.Background(), sub)
 	if c == nil {
 		h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
 		return
@@ -251,4 +265,30 @@ func parseSubtopic(subtopic string) (string, error) {
 
 	subtopic = strings.Join(filteredElems, ".")
 	return subtopic, nil
+}
+
+func (h *handler) getSubcription(c *session.Client, topics *[]string) (Subscription, error) {
+	var channelParts []string
+	for _, v := range *topics {
+		channelPart := channelRegExp.FindStringSubmatch(v)
+		channelParts = append(channelParts, channelPart...)
+	}
+	if len(channelParts) < 2 {
+		return Subscription{}, ErrMalformedTopic
+	}
+
+	chanID := channelParts[1]
+	subtopic := channelParts[2]
+
+	subtopic, err := parseSubtopic(subtopic)
+	if err != nil {
+		return Subscription{}, err
+	}
+
+	return Subscription{
+		Subtopic: subtopic,
+		ChanID:   chanID,
+		ThingID:  c.Username,
+	}, nil
+
 }

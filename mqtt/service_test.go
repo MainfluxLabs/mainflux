@@ -19,7 +19,6 @@ const (
 	exampleUser1 = "email1@example.com"
 	adminUser    = "admin@example.com"
 	invalidUser  = "invalid@example.com"
-	ownerID      = "123e4567-e89b-12d3-a456-000000000002"
 )
 
 var idProvider = uuid.NewMock()
@@ -29,7 +28,7 @@ func newService() mqtt.Service {
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	auth := mocks.NewAuth(map[string]string{exampleUser1: ownerID, adminUser: adminUser}, mockAuthzDB)
+	auth := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(auth, repo, idProvider)
 }
 
@@ -44,45 +43,29 @@ func TestCreateSubscription(t *testing.T) {
 
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
-		OwnerID:  ownerID,
 		ChanID:   chanID,
 		ThingID:  thingID,
 	}
 
 	cases := []struct {
-		desc  string
-		token string
-		sub   mqtt.Subscription
-		err   error
+		desc string
+		sub  mqtt.Subscription
+		err  error
 	}{
 		{
-			desc:  "create new subscription",
-			token: exampleUser1,
-			sub:   sub,
-			err:   nil,
+			desc: "create new subscription",
+			sub:  sub,
+			err:  nil,
 		},
 		{
-			desc:  "create with existing subscription",
-			token: exampleUser1,
-			sub:   sub,
-			err:   errors.ErrConflict,
-		},
-		{
-			desc:  "create new subscription with invalid user",
-			token: invalidUser,
-			sub:   sub,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "create new subscription with empty token",
-			token: "",
-			sub:   sub,
-			err:   errors.ErrAuthentication,
+			desc: "create with existing subscription",
+			sub:  sub,
+			err:  errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.CreateSubscription(context.Background(), tc.token, tc.sub)
+		err := svc.CreateSubscription(context.Background(), tc.sub)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -98,86 +81,71 @@ func TestRemoveSubscription(t *testing.T) {
 
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
-		OwnerID:  ownerID,
 		ChanID:   chanID,
 		ThingID:  thingID,
 	}
 
-	err = svc.CreateSubscription(context.Background(), exampleUser1, sub)
+	err = svc.CreateSubscription(context.Background(), sub)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc  string
-		token string
-		sub   mqtt.Subscription
-		err   error
+		desc string
+		sub  mqtt.Subscription
+		err  error
 	}{
 		{
-			desc:  "remove subscription successfully",
-			token: exampleUser1,
-			sub:   sub,
-			err:   nil,
+			desc: "remove subscription successfully",
+			sub:  sub,
+			err:  nil,
 		},
 		{
-			desc:  "subscription does not exist",
-			token: exampleUser1,
-			sub:   mqtt.Subscription{},
-			err:   errors.ErrNotFound,
-		},
-		{
-			desc:  "remove subscription with invalid user",
-			token: invalidUser,
-			sub:   sub,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "remove subscription with empty token",
-			token: "",
-			sub:   sub,
-			err:   errors.ErrAuthentication,
+			desc: "subscription does not exist",
+			sub:  mqtt.Subscription{},
+			err:  errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveSubscription(context.Background(), tc.token, tc.sub)
+		err := svc.RemoveSubscription(context.Background(), tc.sub)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrieveByOwnerID(t *testing.T) {
+func TestRetrieveByChannelID(t *testing.T) {
 	svc := newService()
-	var subs []mqtt.Subscription
 
+	chanID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	var subs []mqtt.Subscription
 	for i := 0; i < total; i++ {
 		thID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		chanID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 		sub := mqtt.Subscription{
 			Subtopic: subtopic,
-			OwnerID:  ownerID,
 			ThingID:  thID,
 			ChanID:   chanID,
 		}
 
-		err = svc.CreateSubscription(context.Background(), exampleUser1, sub)
+		err = svc.CreateSubscription(context.Background(), sub)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		subs = append(subs, sub)
 	}
 
 	cases := []struct {
-		desc     string
-		token    string
-		pageMeta mqtt.PageMetadata
-		page     mqtt.Page
-		err      error
+		desc      string
+		channelID string
+		token     string
+		pageMeta  mqtt.PageMetadata
+		page      mqtt.Page
+		err       error
 	}{
 		{
-			desc:  "retrieve subscriptions by owner",
-			token: exampleUser1,
+			desc:      "retrieve subscriptions by channel",
+			channelID: chanID,
+			token:     exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -194,8 +162,9 @@ func TestRetrieveByOwnerID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:  "retrieve subscriptions by owner with no limit",
-			token: exampleUser1,
+			desc:      "retrieve subscriptions by channel with no limit",
+			channelID: chanID,
+			token:     exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -212,8 +181,9 @@ func TestRetrieveByOwnerID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:  "retrieve subscriptions with invalid user",
-			token: invalidUser,
+			desc:      "retrieve subscriptions with invalid user",
+			channelID: chanID,
+			token:     invalidUser,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -226,8 +196,9 @@ func TestRetrieveByOwnerID(t *testing.T) {
 			err: errors.ErrAuthentication,
 		},
 		{
-			desc:  "retrieve subscriptions with empty token",
-			token: "",
+			desc:      "retrieve subscriptions with empty token",
+			channelID: chanID,
+			token:     "",
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -241,7 +212,7 @@ func TestRetrieveByOwnerID(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := svc.ListSubscriptions(context.Background(), tc.token, tc.pageMeta)
+		page, err := svc.ListSubscriptions(context.Background(), tc.channelID, tc.token, tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.page, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.page, page))
 	}

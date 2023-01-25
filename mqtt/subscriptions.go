@@ -4,10 +4,10 @@ import "context"
 
 // Subscription represents a user Subscription.
 type Subscription struct {
-	OwnerID  string
 	Subtopic string
 	ThingID  string
-	ChanID   string   
+	ChanID   string
+	
 }
 
 // Page represents page metadata with content.
@@ -24,8 +24,8 @@ type PageMetadata struct {
 }
 
 type Repository interface {
-	// RetrieveByOwnerID retrieves all subscriptions that belong to the specified owner.
-	RetrieveByOwnerID(ctx context.Context, pm PageMetadata, ownerID string) (Page, error)
+	// RetrieveByChannelID retrieves all subscriptions that belong to the specified channel.
+	RetrieveByChannelID(ctx context.Context, pm PageMetadata, chanID string) (Page, error)
 	// Save will save the subscription.
 	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.

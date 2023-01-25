@@ -23,9 +23,6 @@ func TestSave(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewRepository(dbMiddleware)
 
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
@@ -33,7 +30,6 @@ func TestSave(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		OwnerID:  ownerID,
 		Subtopic: subtopic,
 		ThingID:  thingID,
 		ChanID:   chanID,
@@ -75,9 +71,6 @@ func TestRemove(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewRepository(dbMiddleware)
 
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
@@ -88,7 +81,6 @@ func TestRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		OwnerID:  ownerID,
 		Subtopic: subtopic,
 		ThingID:  thingID,
 		ChanID:   chanID,
@@ -132,18 +124,18 @@ func TestRetrieveByID(t *testing.T) {
 
 	var subs []mqtt.Subscription
 
-	ownerID, err := idProvider.ID()
+	chanID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	nonExistingChanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	for i := 0; i < numSubs; i++ {
 		thID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		chanID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		sub := mqtt.Subscription{
 			Subtopic: subtopic,
-			OwnerID:  ownerID,
 			ThingID:  thID,
 			ChanID:   chanID,
 		}
@@ -155,17 +147,17 @@ func TestRetrieveByID(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc     string
-		size     int
-		ownerID  string
-		pageMeta mqtt.PageMetadata
-		page     mqtt.Page
-		err      error
+		desc      string
+		size      int
+		channelID string
+		pageMeta  mqtt.PageMetadata
+		page      mqtt.Page
+		err       error
 	}{
 		{
-			desc:    "retrieve all subscriptions for existing owner",
-			size:    10,
-			ownerID: ownerID,
+			desc:      "retrieve all subscriptions for existing channel",
+			size:      10,
+			channelID: chanID,
 			pageMeta: mqtt.PageMetadata{
 				Total:  numSubs,
 				Offset: 0,
@@ -182,9 +174,9 @@ func TestRetrieveByID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:    "retrieve all subscriptions for existing owner with no limit",
-			size:    numSubs,
-			ownerID: ownerID,
+			desc:      "retrieve all subscriptions for existing channel with no limit",
+			size:      numSubs,
+			channelID: chanID,
 			pageMeta: mqtt.PageMetadata{
 				Total: numSubs,
 				Limit: 0,
@@ -199,9 +191,9 @@ func TestRetrieveByID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:    "retrieve subscriptions with non-existing owner",
-			size:    0,
-			ownerID: invalidID,
+			desc:      "retrieve subscriptions with non-existing channel",
+			size:      0,
+			channelID: nonExistingChanID,
 			pageMeta: mqtt.PageMetadata{
 				Total:  0,
 				Offset: 0,
@@ -217,10 +209,25 @@ func TestRetrieveByID(t *testing.T) {
 			},
 			err: errors.ErrNotFound,
 		},
+		{
+			desc:      "retrieve subscriptions with invalid channel",
+			size:      0,
+			channelID: invalidID,
+			pageMeta:  mqtt.PageMetadata{},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total:  0,
+					Offset: 0,
+					Limit:  noLimit,
+				},
+				Subscriptions: nil,
+			},
+			err: errors.ErrViewEntity,
+		},
 	}
 
 	for _, tc := range cases {
-		page, err := repo.RetrieveByOwnerID(context.Background(), tc.pageMeta, tc.ownerID)
+		page, err := repo.RetrieveByChannelID(context.Background(), tc.pageMeta, tc.channelID)
 		size := len(page.Subscriptions)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.pageMeta.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", tc.desc, tc.pageMeta.Total, page.Total))

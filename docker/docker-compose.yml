@@ -316,7 +316,7 @@ services:
       - broker
       - mqtt-db
     restart: on-failure
-    environment:
+    environment:   
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
@@ -339,6 +339,9 @@ services:
       MF_MQTT_ADAPTER_DB_HOST: ${MF_MQTT_ADAPTER_DB_HOST}
       MF_MQTT_ADAPTER_DB_SSL_MODE: ${MF_MQTT_ADAPTER_DB_SSL_MODE}
       MF_MQTT_ADAPTER_DB_SSL_CERT: ${MF_MQTT_ADAPTER_DB_SSL_CERT}
+      MF_AUTH_GRPC_URL:  ${MF_AUTH_GRPC_URL}
+    ports:
+      - ${MF_MQTT_ADAPTER_HTTP_PORT}:${MF_MQTT_ADAPTER_HTTP_PORT}
 
     networks:
       - mainfluxlabs-base-net

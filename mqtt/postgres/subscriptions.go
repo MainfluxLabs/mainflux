@@ -27,10 +27,8 @@ func NewRepository(db Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`INSERT INTO %s (owner_id, subtopic, thing_id, channel_id) VALUES (:owner_id, :subtopic, :thing_id, :channel_id)`, format)
-
+	q := fmt.Sprintf(`INSERT INTO %s (subtopic, thing_id, channel_id) VALUES (:subtopic, :thing_id, :channel_id)`, format)
 	dbSub := dbSubscription{
-		OwnerID:  sub.OwnerID,
 		Subtopic: sub.Subtopic,
 		ThingID:  sub.ThingID,
 		ChanID:   sub.ChanID,
@@ -58,18 +56,16 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	return nil
 }
 
-func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMetadata, ownerID string) (mqtt.Page, error) {
+func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageMetadata, chanID string) (mqtt.Page, error) {
 	olq := "LIMIT :limit OFFSET :offset"
 	if pm.Limit == 0 {
 		olq = ""
 	}
-
-	q := fmt.Sprintf(`SELECT owner_id, subtopic, channel_id, thing_id FROM %s WHERE owner_id= :ownerID ORDER BY %s %s;`, format, order, olq)
-	fmt.Println(q)
+	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id FROM %s WHERE channel_id= :chanID ORDER BY %s %s;`, format, order, olq)
 	params := map[string]interface{}{
-		"ownerID": ownerID,
-		"limit":   pm.Limit,
-		"offset":  pm.Offset,
+		"chanID": chanID,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
 	}
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
@@ -91,7 +87,7 @@ func (mr *mqttRepository) RetrieveByOwnerID(ctx context.Context, pm mqtt.PageMet
 		return mqtt.Page{}, errors.ErrNotFound
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE owner_id= :ownerID;`, format)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE channel_id= :chanID;`, format)
 	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -124,7 +120,6 @@ func (mr *mqttRepository) total(ctx context.Context, db Database, query string, 
 }
 
 type dbSubscription struct {
-	OwnerID  string `db:"owner_id"`
 	Subtopic string `db:"subtopic"`
 	ThingID  string `db:"thing_id"`
 	ChanID   string `db:"channel_id"`
@@ -132,7 +127,6 @@ type dbSubscription struct {
 
 func fromDBSub(sub dbSubscription) mqtt.Subscription {
 	return mqtt.Subscription{
-		OwnerID:  sub.OwnerID,
 		Subtopic: sub.Subtopic,
 		ThingID:  sub.ThingID,
 		ChanID:   sub.ChanID,

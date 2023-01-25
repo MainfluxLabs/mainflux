@@ -138,7 +138,6 @@ type config struct {
 	httpTargetPath        string
 	jaegerURL             string
 	logLevel              string
-	thingsURL             string
 	thingsAuthURL         string
 	thingsAuthTimeout     time.Duration
 	brokerURL             string
@@ -317,7 +316,6 @@ func loadConfig() config {
 		jaegerURL:             mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsAuthURL:         mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		thingsAuthTimeout:     authTimeout,
-		thingsURL:             mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		brokerURL:             mainflux.Env(envBrokerURL, defBrokerURL),
 		usersAuthURL:          mainflux.Env(envUsersAuthURL, defUsersAuthURL),
 		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
