@@ -4,10 +4,10 @@ import "context"
 
 // Subscription represents a user Subscription.
 type Subscription struct {
-	Subtopic string
-	ThingID  string
-	ChanID   string
-	Time     float64
+	Subtopic  string
+	ThingID   string
+	ChanID    string
+	CreatedAt float64
 }
 
 // Page represents page metadata with content.

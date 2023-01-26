@@ -29,7 +29,7 @@ func LoggingMiddleware(svc mqtt.Service, logger log.Logger) mqtt.Service {
 
 func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, chanID, token string, pm mqtt.PageMetadata) (page mqtt.Page, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_all_subscriptions took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method list_subscriptions took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

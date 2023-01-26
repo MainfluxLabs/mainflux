@@ -37,8 +37,8 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 	r := bone.New()
 
 	r.Get("/channels/:id/subscriptions", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_all_subscriptions")(listAllSubscriptions(svc)),
-		decodeListAllSubscriptions,
+		kitot.TraceServer(tracer, "list_subscriptions")(listSubscriptions(svc)),
+		decodeListSubscriptions,
 		encodeResponse,
 		opts...,
 	))
@@ -49,7 +49,7 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 	return r
 }
 
-func decodeListAllSubscriptions(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeListSubscriptions(ctx context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func decodeListAllSubscriptions(ctx context.Context, r *http.Request) (interface
 		return nil, err
 	}
 
-	return listAllSubscriptionsReq{
+	return listSubscriptionsReq{
 		chanID: bone.GetValue(r, "id"),
 		token:  apiutil.ExtractBearerToken(r),
 		pageMetadata: mqtt.PageMetadata{

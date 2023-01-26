@@ -12,7 +12,7 @@ import (
 
 const (
 	format = "subscriptions"
-	order  = "time"
+	order  = "created_at"
 )
 
 var _ mqtt.Repository = (*mqttRepository)(nil)
@@ -27,12 +27,12 @@ func NewRepository(db Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`INSERT INTO %s (subtopic, thing_id, channel_id, time) VALUES (:subtopic, :thing_id, :channel_id, :time)`, format)
+	q := fmt.Sprintf(`INSERT INTO %s (subtopic, thing_id, channel_id, created_at) VALUES (:subtopic, :thing_id, :channel_id, :created_at)`, format)
 	dbSub := dbSubscription{
-		Subtopic: sub.Subtopic,
-		ThingID:  sub.ThingID,
-		ChanID:   sub.ChanID,
-		Time:     sub.Time,
+		Subtopic:  sub.Subtopic,
+		ThingID:   sub.ThingID,
+		ChanID:    sub.ChanID,
+		CreatedAt: sub.CreatedAt,
 	}
 
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
@@ -62,7 +62,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 	if pm.Limit == 0 {
 		olq = ""
 	}
-	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id, time FROM %s WHERE channel_id= :chanID ORDER BY %s %s;`, format, order, olq)
+	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id, created_at FROM %s WHERE channel_id= :chanID ORDER BY %s %s;`, format, order, olq)
 	params := map[string]interface{}{
 		"chanID": chanID,
 		"limit":  pm.Limit,
@@ -121,17 +121,17 @@ func (mr *mqttRepository) total(ctx context.Context, db Database, query string, 
 }
 
 type dbSubscription struct {
-	Subtopic string  `db:"subtopic"`
-	ThingID  string  `db:"thing_id"`
-	ChanID   string  `db:"channel_id"`
-	Time     float64 `db:"time"`
+	Subtopic  string  `db:"subtopic"`
+	ThingID   string  `db:"thing_id"`
+	ChanID    string  `db:"channel_id"`
+	CreatedAt float64 `db:"created_at"`
 }
 
 func fromDBSub(sub dbSubscription) mqtt.Subscription {
 	return mqtt.Subscription{
-		Subtopic: sub.Subtopic,
-		ThingID:  sub.ThingID,
-		ChanID:   sub.ChanID,
-		Time:     sub.Time,
+		Subtopic:  sub.Subtopic,
+		ThingID:   sub.ThingID,
+		ChanID:    sub.ChanID,
+		CreatedAt: sub.CreatedAt,
 	}
 }

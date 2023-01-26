@@ -49,7 +49,7 @@ func migrateDB(db *sqlx.DB) error {
 					    subtopic    VARCHAR(1024),
 					    channel_id  UUID,
 					    thing_id    UUID,
-					    time        FLOAT,
+					    created_at  FLOAT,
 					    PRIMARY KEY (subtopic, channel_id, thing_id)
 					)`,
 				},

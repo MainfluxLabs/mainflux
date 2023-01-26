@@ -308,7 +308,7 @@ services:
       - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
 
   mqtt-adapter:
-    image: mainfluxlabs/mqtt:latest
+    image: mainfluxlabs/mqtt:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-mqtt
     depends_on:
       - vernemq
@@ -316,7 +316,7 @@ services:
       - broker
       - mqtt-db
     restart: on-failure
-    environment:   
+    environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}

@@ -4,22 +4,22 @@ package http
 
 import "github.com/MainfluxLabs/mainflux"
 
-var _ mainflux.Response = (*listAllSubscriptionsRes)(nil)
+var _ mainflux.Response = (*listSubscriptionsRes)(nil)
 
-type listAllSubscriptionsRes struct {
+type listSubscriptionsRes struct {
 	pageRes
 	Subscriptions []viewSubRes `json:"subscriptions,omitempty"`
 }
 
-func (res listAllSubscriptionsRes) Code() int {
+func (res listSubscriptionsRes) Code() int {
 	return 200
 }
 
-func (res listAllSubscriptionsRes) Headers() map[string]string {
+func (res listSubscriptionsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listAllSubscriptionsRes) Empty() bool {
+func (res listSubscriptionsRes) Empty() bool {
 	return false
 }
 
@@ -27,7 +27,7 @@ type viewSubRes struct {
 	Subtopic  string  `json:"subtopic"`
 	ThingID   string  `json:"thing_id"`
 	ChannelID string  `json:"channel_id"`
-	Time      float64 `json:"time"`
+	CreatedAt float64 `json:"created_at"`
 }
 
 type pageRes struct {

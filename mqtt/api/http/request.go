@@ -14,13 +14,13 @@ type apiReq interface {
 	validate() error
 }
 
-type listAllSubscriptionsReq struct {
+type listSubscriptionsReq struct {
 	chanID       string
 	token        string
 	pageMetadata mqtt.PageMetadata
 }
 
-func (req listAllSubscriptionsReq) validate() error {
+func (req listSubscriptionsReq) validate() error {
 	if req.chanID == "" {
 		return apiutil.ErrMissingID
 	}

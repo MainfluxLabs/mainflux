@@ -10,9 +10,9 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listAllSubscriptions(svc mqtt.Service) endpoint.Endpoint {
+func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listAllSubscriptionsReq)
+		req := request.(listSubscriptionsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -22,7 +22,7 @@ func listAllSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := listAllSubscriptionsRes{
+		res := listSubscriptionsRes{
 			pageRes: pageRes{
 				Total:  subs.Total,
 				Offset: subs.Offset,
@@ -36,7 +36,7 @@ func listAllSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 				Subtopic:  sub.Subtopic,
 				ThingID:   sub.ThingID,
 				ChannelID: sub.ChanID,
-				Time:      sub.Time,
+				CreatedAt:      sub.CreatedAt,
 			}
 			res.Subscriptions = append(res.Subscriptions, view)
 		}

@@ -222,8 +222,9 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	subscriptionsTracer, subscriptionsCloser := initJaeger("subscriptions", cfg.jaegerURL, logger)
-	defer subscriptionsCloser.Close()
+	tracer, closer := initJaeger("mqtt_adapter", cfg.jaegerURL, logger)
+
+	defer closer.Close()
 
 	usersAuthTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
@@ -253,7 +254,7 @@ func main() {
 
 	errs := make(chan error, 2)
 	g.Go(func() error {
-		return startHTTPServer(ctx, svc, subscriptionsTracer, cfg, logger, errs)
+		return startHTTPServer(ctx, svc, tracer, cfg, logger, errs)
 	})
 
 	g.Go(func() error {

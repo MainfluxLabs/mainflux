@@ -41,14 +41,15 @@ const (
 )
 
 var (
-	channelRegExp           = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
-	ErrMalformedSubtopic    = errors.New("malformed subtopic")
-	ErrClientNotInitialized = errors.New("client is not initialized")
-	ErrMalformedTopic       = errors.New("malformed topic")
-	ErrMissingClientID      = errors.New("client_id not found")
-	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
-	ErrAuthentication       = errors.New("failed to perform authentication over the entity")
+	channelRegExp                = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
+	ErrMalformedSubtopic         = errors.New("malformed subtopic")
+	ErrClientNotInitialized      = errors.New("client is not initialized")
+	ErrMalformedTopic            = errors.New("malformed topic")
+	ErrMissingClientID           = errors.New("client_id not found")
+	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
+	ErrAuthentication            = errors.New("failed to perform authentication over the entity")
+	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
 )
 
 // Event implements events.Event interface
@@ -186,10 +187,11 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	h.service.CreateSubscription(context.Background(), sub)
-	if c == nil {
-		h.logger.Error(LogErrFailedSubscribe + (ErrClientNotInitialized).Error())
-		return
+	for _, s := range sub {
+		err = h.service.CreateSubscription(context.Background(), s)
+		if err != nil {
+			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
+		}
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
 }
@@ -202,11 +204,14 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	h.service.RemoveSubscription(context.Background(), sub)
-	if c == nil {
-		h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
-		return
+	for _, s := range sub {
+		h.service.RemoveSubscription(context.Background(), s)
+		if c == nil {
+			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
+			return
+		}
 	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoUnsubscribed, c.ID, strings.Join(*topics, ",")))
 }
 
@@ -267,29 +272,30 @@ func parseSubtopic(subtopic string) (string, error) {
 	return subtopic, nil
 }
 
-func (h *handler) getSubcription(c *session.Client, topics *[]string) (Subscription, error) {
-	var channelParts []string
-	for _, v := range *topics {
-		channelPart := channelRegExp.FindStringSubmatch(v)
-		channelParts = append(channelParts, channelPart...)
+func (h *handler) getSubcription(c *session.Client, topics *[]string) ([]Subscription, error) {
+	var subs []Subscription
+	for _, t := range *topics {
+		channelAndSubtopic := channelRegExp.FindStringSubmatch(t)
+		if len(channelAndSubtopic) < 2 {
+			return nil, ErrMalformedTopic
+		}
+
+		chanID := channelAndSubtopic[1]
+		subtopic := channelAndSubtopic[2]
+
+		subtopic, err := parseSubtopic(subtopic)
+		if err != nil {
+			return nil, err
+		}
+
+		sub := Subscription{
+			Subtopic:  subtopic,
+			ChanID:    chanID,
+			ThingID:   c.Username,
+			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
+		}
+		subs = append(subs, sub)
 	}
-	if len(channelParts) < 2 {
-		return Subscription{}, ErrMalformedTopic
-	}
 
-	chanID := channelParts[1]
-	subtopic := channelParts[2]
-
-	subtopic, err := parseSubtopic(subtopic)
-	if err != nil {
-		return Subscription{}, err
-	}
-
-	return Subscription{
-		Subtopic: subtopic,
-		ChanID:   chanID,
-		ThingID:  c.Username,
-		Time:     float64(time.Now().UnixNano()) / float64(1e9),
-	}, nil
-
+	return subs, nil
 }
