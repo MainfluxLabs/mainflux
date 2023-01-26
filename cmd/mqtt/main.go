@@ -15,7 +15,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
-	api2 "github.com/MainfluxLabs/mainflux/mqtt/api"
+	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
@@ -469,8 +469,8 @@ func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger
 	idp := ulid.New()
 	svc := mqtt.NewMqttService(usersAuth, subscriptions, idp)
 
-	svc = api2.LoggingMiddleware(svc, logger)
-	svc = api2.MetricsMiddleware(
+	svc = mqttapi.LoggingMiddleware(svc, logger)
+	svc = mqttapi.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "mqtt_adapter",
