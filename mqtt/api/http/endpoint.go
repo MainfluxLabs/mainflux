@@ -36,7 +36,7 @@ func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 				Subtopic:  sub.Subtopic,
 				ThingID:   sub.ThingID,
 				ChannelID: sub.ChanID,
-				CreatedAt:      sub.CreatedAt,
+				CreatedAt: sub.CreatedAt,
 			}
 			res.Subscriptions = append(res.Subscriptions, view)
 		}

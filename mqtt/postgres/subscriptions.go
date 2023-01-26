@@ -10,11 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const (
-	format = "subscriptions"
-	order  = "created_at"
-)
-
 var _ mqtt.Repository = (*mqttRepository)(nil)
 
 type mqttRepository struct {
@@ -27,7 +22,7 @@ func NewRepository(db Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`INSERT INTO %s (subtopic, thing_id, channel_id, created_at) VALUES (:subtopic, :thing_id, :channel_id, :created_at)`, format)
+	q := `INSERT INTO subscriptions (subtopic, thing_id, channel_id, created_at) VALUES (:subtopic, :thing_id, :channel_id, :created_at)`
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
@@ -48,7 +43,7 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 }
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := fmt.Sprintf(`DELETE FROM %s WHERE subtopic =$1 AND thing_id=$2 AND channel_id=$3`, format)
+	q := `DELETE FROM subscriptions WHERE subtopic =$1 AND thing_id=$2 AND channel_id=$3`
 
 	if r := mr.db.QueryRowxContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); r.Err() != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, r.Err())
@@ -62,7 +57,8 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 	if pm.Limit == 0 {
 		olq = ""
 	}
-	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id, created_at FROM %s WHERE channel_id= :chanID ORDER BY %s %s;`, format, order, olq)
+
+	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id, created_at FROM subscriptions WHERE channel_id= :chanID ORDER BY created_at %s;`, olq)
 	params := map[string]interface{}{
 		"chanID": chanID,
 		"limit":  pm.Limit,
@@ -88,7 +84,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 		return mqtt.Page{}, errors.ErrNotFound
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE channel_id= :chanID;`, format)
+	cq := `SELECT COUNT(*) FROM subscriptions WHERE channel_id= :chanID;`
 	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
