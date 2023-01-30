@@ -106,6 +106,9 @@ type Service interface {
 
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
+
+	// BackupAdmin backups all things, channels and connections.
+	BackupAdmin(ctx context.Context, token string) (Backup, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -119,6 +122,12 @@ type PageMetadata struct {
 	Metadata          map[string]interface{} `json:"metadata,omitempty"`
 	Disconnected      bool                   // Used for connected or disconnected lists
 	FetchSharedThings bool                   // Used for identifying fetching either all or shared things.
+}
+
+type Backup struct {
+	Things      []Thing
+	Channels    []Channel
+	Connections []Connections
 }
 
 var _ Service = (*thingsService)(nil)
@@ -144,6 +153,35 @@ func New(auth mainflux.AuthServiceClient, things ThingRepository, channels Chann
 		idProvider:   idp,
 		ulidProvider: ulid.New(),
 	}
+}
+
+func (ts *thingsService) BackupAdmin(ctx context.Context, token string) (Backup, error) {
+	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Backup{}, err
+	}
+	//TODO check is admin
+
+	things, err := ts.things.BackupAdmin(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	channels, err := ts.channels.BackupAdmin(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	connections, err := ts.channels.Connections(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	return Backup{
+		Things:      things,
+		Channels:    channels,
+		Connections: connections,
+	}, nil
 }
 
 func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {

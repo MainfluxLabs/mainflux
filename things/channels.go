@@ -23,6 +23,13 @@ type ChannelsPage struct {
 	Channels []Channel
 }
 
+// Connections represents a connection between a channel and a thing.
+type Connections struct {
+	ChannelID string
+	ThingID   string
+	Owner     string
+}
+
 // ChannelRepository specifies a channel persistence API.
 type ChannelRepository interface {
 	// Save persists multiple channels. Channels are saved using a transaction. If one channel
@@ -65,6 +72,12 @@ type ChannelRepository interface {
 	// "connected" to the specified channel. If that's the case, then
 	// returned error will be nil.
 	HasThingByID(ctx context.Context, chanID, thingID string) error
+
+	// BackupAdmin create backup of all channels.
+	BackupAdmin(ctx context.Context) ([]Channel, error)
+
+	// Connections retrieves all connections between channels and things.
+	Connections(ctx context.Context) ([]Connections, error)
 }
 
 // ChannelCache contains channel-thing connection caching interface.

@@ -425,6 +425,50 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	return nil
 }
 
+func (cr channelRepository) BackupAdmin(ctx context.Context) ([]things.Channel, error) {
+	q := `SELECT id, owner, name, metadata FROM channels`
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, nil)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrViewEntity, err)
+	}
+	defer rows.Close()
+
+	channels := make([]things.Channel, 0)
+	for rows.Next() {
+		dbch := dbChannel{}
+		if err := rows.StructScan(&dbch); err != nil {
+			return nil, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		channels = append(channels, toChannel(dbch))
+	}
+
+	return channels, nil
+}
+
+func (cr channelRepository) Connections(ctx context.Context) ([]things.Connections, error) {
+	q := `SELECT channel_id, thing_id, thing_owner FROM connections`
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, nil)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrViewEntity, err)
+	}
+	defer rows.Close()
+
+	connections := make([]things.Connections, 0)
+	for rows.Next() {
+		dbco := dbConnection{}
+		if err := rows.StructScan(&dbco); err != nil {
+			return nil, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		connections = append(connections, toConnection(dbco))
+	}
+
+	return connections, nil
+}
+
 // dbMetadata type for handling metadata properly in database/sql.
 type dbMetadata map[string]interface{}
 
@@ -485,6 +529,14 @@ func toChannel(ch dbChannel) things.Channel {
 		Owner:    ch.Owner,
 		Name:     ch.Name,
 		Metadata: ch.Metadata,
+	}
+}
+
+func toConnection(co dbConnection) things.Connections {
+	return things.Connections{
+		ChannelID: co.Channel,
+		ThingID:   co.Thing,
+		Owner:     co.Owner,
 	}
 }
 

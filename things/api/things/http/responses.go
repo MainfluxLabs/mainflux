@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var (
@@ -23,6 +24,7 @@ var (
 	_ mainflux.Response = (*disconnectThingRes)(nil)
 	_ mainflux.Response = (*disconnectRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
+	_ mainflux.Response = (*backupAdminRes)(nil)
 )
 
 type removeRes struct{}
@@ -285,6 +287,24 @@ func (res disconnectThingRes) Headers() map[string]string {
 }
 
 func (res disconnectThingRes) Empty() bool {
+	return true
+}
+
+type backupAdminRes struct {
+	Things      []things.Thing       `json:"things"`
+	Channels    []things.Channel     `json:"channels"`
+	Connections []things.Connections `json:"connections"`
+}
+
+func (res backupAdminRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res backupAdminRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupAdminRes) Empty() bool {
 	return true
 }
 

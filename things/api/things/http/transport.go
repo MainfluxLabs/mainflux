@@ -198,6 +198,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_admin")(backupAdminEndpoint(svc)),
+		decodeBackupAdmin,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -478,6 +485,16 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 			Metadata: m,
 		},
 	}
+	return req, nil
+}
+
+func decodeBackupAdmin(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := backupAdminReq{token: apiutil.ExtractBearerToken(r)}
+
 	return req, nil
 }
 

@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/metrics"
 )
 
 var _ things.Service = (*metricsMiddleware)(nil)
@@ -217,4 +217,13 @@ func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID str
 	}(time.Now())
 
 	return ms.svc.ListMembers(ctx, token, groupID, pm)
+}
+
+func (ms *metricsMiddleware) BackupAdmin(ctx context.Context, token string) (bk things.Backup, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup_admin").Add(1)
+		ms.latency.With("method", "backup_admin").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.BackupAdmin(ctx, token)
 }

@@ -396,3 +396,15 @@ func (req listThingsGroupReq) validate() error {
 	return nil
 
 }
+
+type backupAdminReq struct {
+	token string
+}
+
+func (req backupAdminReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}

@@ -255,3 +255,4 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 func (es eventStore) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.Page, error) {
 	return es.svc.ListMembers(ctx, token, groupID, pm)
 }
+
