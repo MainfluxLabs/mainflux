@@ -425,7 +425,7 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	return nil
 }
 
-func (cr channelRepository) BackupAdmin(ctx context.Context) ([]things.Channel, error) {
+func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
 	q := `SELECT id, owner, name, metadata FROM channels`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, nil)
@@ -447,7 +447,7 @@ func (cr channelRepository) BackupAdmin(ctx context.Context) ([]things.Channel, 
 	return channels, nil
 }
 
-func (cr channelRepository) Connections(ctx context.Context) ([]things.Connections, error) {
+func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connections, error) {
 	q := `SELECT channel_id, thing_id, thing_owner FROM connections`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, nil)

@@ -107,7 +107,7 @@ type Service interface {
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
 
-	// BackupAdmin backups all things, channels and connections.
+	// BackupAdmin backups all things, channels and connections for the admin identified by the provided key.
 	BackupAdmin(ctx context.Context, token string) (Backup, error)
 }
 
@@ -153,35 +153,6 @@ func New(auth mainflux.AuthServiceClient, things ThingRepository, channels Chann
 		idProvider:   idp,
 		ulidProvider: ulid.New(),
 	}
-}
-
-func (ts *thingsService) BackupAdmin(ctx context.Context, token string) (Backup, error) {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Backup{}, err
-	}
-	//TODO check is admin
-
-	things, err := ts.things.BackupAdmin(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	channels, err := ts.channels.BackupAdmin(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	connections, err := ts.channels.Connections(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	return Backup{
-		Things:      things,
-		Channels:    channels,
-		Connections: connections,
-	}, nil
 }
 
 func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {
@@ -624,6 +595,39 @@ func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string,
 	}
 
 	return ts.things.RetrieveByIDs(ctx, res, pm)
+}
+
+func (ts *thingsService) BackupAdmin(ctx context.Context, token string) (Backup, error) {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Backup{}, err
+	}
+
+	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	things, err := ts.things.BackupThings(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	channels, err := ts.channels.BackupChannels(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	connections, err := ts.channels.BackupConnections(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	return Backup{
+		Things:      things,
+		Channels:    channels,
+		Connections: connections,
+	}, nil
 }
 
 func (ts *thingsService) members(ctx context.Context, token, groupID, groupType string, limit, offset uint64) ([]string, error) {

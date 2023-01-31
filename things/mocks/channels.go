@@ -269,6 +269,14 @@ func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingI
 	return nil
 }
 
+func (crm *channelRepositoryMock) BackupChannels(ctx context.Context) ([]things.Channel, error) {
+	return nil, nil
+}
+
+func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connections, error) {
+	return nil, nil
+}
+
 type channelCacheMock struct {
 	mu       sync.Mutex
 	channels map[string]string

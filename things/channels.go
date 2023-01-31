@@ -73,11 +73,11 @@ type ChannelRepository interface {
 	// returned error will be nil.
 	HasThingByID(ctx context.Context, chanID, thingID string) error
 
-	// BackupAdmin create backup of all channels.
-	BackupAdmin(ctx context.Context) ([]Channel, error)
+	// BackupChannels cretrieves all channels
+	BackupChannels(ctx context.Context) ([]Channel, error)
 
-	// Connections retrieves all connections between channels and things.
-	Connections(ctx context.Context) ([]Connections, error)
+	// BackupConnections retrieves all connections between channels and things.
+	BackupConnections(ctx context.Context) ([]Connections, error)
 }
 
 // ChannelCache contains channel-thing connection caching interface.

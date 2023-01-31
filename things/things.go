@@ -77,8 +77,8 @@ type ThingRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, owner, id string) error
 
-	// BackupAdmin create backup of all things.
-	BackupAdmin(ctx context.Context) ([]Thing, error)
+	// BackupThings retrieves all things.
+	BackupThings(ctx context.Context) ([]Thing, error)
 }
 
 // ThingCache contains thing caching interface.
