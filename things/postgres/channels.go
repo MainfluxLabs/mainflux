@@ -428,7 +428,8 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
 	q := `SELECT id, owner, name, metadata FROM channels`
 
-	rows, err := cr.db.NamedQueryContext(ctx, q, nil)
+	params := map[string]interface{}{}
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -450,7 +451,8 @@ func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channe
 func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connections, error) {
 	q := `SELECT channel_id, thing_id, thing_owner FROM connections`
 
-	rows, err := cr.db.NamedQueryContext(ctx, q, nil)
+	params := map[string]interface{}{}
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -458,7 +460,7 @@ func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Con
 
 	connections := make([]things.Connections, 0)
 	for rows.Next() {
-		dbco := dbConnection{}
+		dbco := dbConn{}
 		if err := rows.StructScan(&dbco); err != nil {
 			return nil, errors.Wrap(errors.ErrViewEntity, err)
 		}
@@ -532,7 +534,13 @@ func toChannel(ch dbChannel) things.Channel {
 	}
 }
 
-func toConnection(co dbConnection) things.Connections {
+type dbConn struct {
+	Channel string `db:"channel_id"`
+	Thing   string `db:"thing_id"`
+	Owner   string `db:"thing_owner"`
+}
+
+func toConnection(co dbConn) things.Connections {
 	return things.Connections{
 		ChannelID: co.Channel,
 		ThingID:   co.Thing,
