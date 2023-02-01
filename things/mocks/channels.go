@@ -282,7 +282,15 @@ func (crm *channelRepositoryMock) BackupChannels(ctx context.Context) ([]things.
 }
 
 func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connections, error) {
-	return nil, nil
+	panic("not implemented")
+}
+
+func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, things []things.Connections) error {
+	panic("not implemented")
+}
+
+func (crm *channelRepositoryMock) RestoreChannels(ctx context.Context, things []things.Channel) error {
+	panic("not implemented")
 }
 
 type channelCacheMock struct {

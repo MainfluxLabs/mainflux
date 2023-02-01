@@ -79,6 +79,9 @@ type ThingRepository interface {
 
 	// BackupThings retrieves all things.
 	BackupThings(ctx context.Context) ([]Thing, error)
+
+	// RestoreThings insert all things.
+	RestoreThings(ctx context.Context, things []Thing) error 
 }
 
 // ThingCache contains thing caching interface.

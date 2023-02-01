@@ -464,6 +464,41 @@ func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, err
 	return items, nil
 }
 
+func (tr thingRepository) RestoreThings(ctx context.Context, things []things.Thing) error {
+	tx, err := tr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	q := `INSERT INTO things (id, owner, name, key, metadata) VALUES (:id, :owner, :name, :key, :metadata);`
+	for _, thing := range things {
+		dbth, err := toDBThing(thing)
+		if err != nil {
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
 type dbThing struct {
 	ID       string `db:"id"`
 	Owner    string `db:"owner"`

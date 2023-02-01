@@ -308,6 +308,10 @@ type thingCacheMock struct {
 	things map[string]string
 }
 
+func (trm *thingRepositoryMock) RestoreThings(_ context.Context, things []things.Thing) error {
+	panic("not implemented")
+}
+
 // NewThingCache returns mock cache instance.
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{

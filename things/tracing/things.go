@@ -22,6 +22,7 @@ const (
 	removeThingOp             = "remove_thing"
 	retrieveThingIDByKeyOp    = "retrieve_id_by_key"
 	backupThingsOp            = "backup_things"
+	restoreThingsOp           = "restore_things"
 )
 
 var (
@@ -121,6 +122,14 @@ func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return trm.repo.BackupThings(ctx)
+}
+
+func (trm thingRepositoryMiddleware) RestoreThings(ctx context.Context, things []things.Thing) error {
+	span := createSpan(ctx, trm.tracer, restoreThingsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.RestoreThings(ctx, things)
 }
 
 type thingCacheMiddleware struct {

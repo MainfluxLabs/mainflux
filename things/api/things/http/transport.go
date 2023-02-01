@@ -205,6 +205,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Post("/restore", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
+		decodeRestore,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -489,7 +496,20 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 }
 
 func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupAdminReq{token: apiutil.ExtractBearerToken(r)}
+	req := backupReq{token: apiutil.ExtractBearerToken(r)}
+
+	return req, nil
+}
+
+func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
 
 	return req, nil
 }

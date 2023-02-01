@@ -397,13 +397,32 @@ func (req listThingsGroupReq) validate() error {
 
 }
 
-type backupAdminReq struct {
+type backupReq struct {
 	token string
 }
 
-func (req backupAdminReq) validate() error {
+func (req backupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
+type restoreReq struct {
+	token       string
+	Things      []things.Thing       `json:"things"`
+	Channels    []things.Channel     `json:"channels"`
+	Connections []things.Connections `json:"connections"`
+}
+
+func (req restoreReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Things) == 0 || len(req.Channels) == 0 || len(req.Connections) == 0 {
+		return apiutil.ErrEmptyList
 	}
 
 	return nil

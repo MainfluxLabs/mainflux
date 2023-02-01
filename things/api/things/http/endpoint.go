@@ -546,7 +546,7 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 
 func backupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupAdminReq)
+		req := request.(backupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -556,11 +556,32 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return backupAdminRes{
+		return backupRes{
 			Things:      backup.Things,
 			Channels:    backup.Channels,
 			Connections: backup.Connections,
 		}, nil
+	}
+}
+
+func restoreEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup := things.Backup{
+			Things:      req.Things,
+			Channels:    req.Channels,
+			Connections: req.Connections,
+		}
+
+		if err := svc.Restore(ctx, req.token, backup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 

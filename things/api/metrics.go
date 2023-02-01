@@ -227,3 +227,12 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk thing
 
 	return ms.svc.Backup(ctx, token)
 }
+
+func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup things.Backup) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "restore").Add(1)
+		ms.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Restore(ctx, token, backup)
+}

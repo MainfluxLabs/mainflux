@@ -102,6 +102,10 @@ func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, e
 	return es.svc.Backup(ctx, token)
 }
 
+func (es eventStore) Restore(ctx context.Context, token string, backup things.Backup) error {
+	return es.svc.Restore(ctx, token, backup)
+}
+
 func (es eventStore) RemoveThing(ctx context.Context, token, id string) error {
 	if err := es.svc.RemoveThing(ctx, token, id); err != nil {
 		return err

@@ -22,7 +22,9 @@ const (
 	hasThingOp                = "has_thing"
 	hasThingByIDOp            = "has_thing_by_id"
 	backupChannelsOp          = "backup_channels"
-	BackupConnectionsOp       = "backup_connections"
+	backupConnectionsOp       = "backup_connections"
+	restoreChannelsOp         = "restore_channels"
+	restoreConnectionsOp      = "restore_connections"
 )
 
 var (
@@ -133,11 +135,27 @@ func (crm channelRepositoryMiddleware) BackupChannels(ctx context.Context) ([]th
 }
 
 func (crm channelRepositoryMiddleware) BackupConnections(ctx context.Context) ([]things.Connections, error) {
-	span := createSpan(ctx, crm.tracer, BackupConnectionsOp)
+	span := createSpan(ctx, crm.tracer, backupConnectionsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.BackupConnections(ctx)
+}
+
+func (crm channelRepositoryMiddleware) RestoreChannels(ctx context.Context, channels []things.Channel) error {
+	span := createSpan(ctx, crm.tracer, restoreChannelsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RestoreChannels(ctx, channels)
+}
+
+func (crm channelRepositoryMiddleware) RestoreConnections(ctx context.Context, connections []things.Connections) error {
+	span := createSpan(ctx, crm.tracer, restoreConnectionsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RestoreConnections(ctx, connections)
 }
 
 type channelCacheMiddleware struct {

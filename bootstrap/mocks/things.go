@@ -181,7 +181,11 @@ func (svc *mainfluxThings) ListThingsByChannel(context.Context, string, string, 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) BackupAdmin(context.Context, string) (things.Backup, error) {
+func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error {
 	panic("not implemented")
 }
 

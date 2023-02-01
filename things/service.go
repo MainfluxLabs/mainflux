@@ -109,6 +109,9 @@ type Service interface {
 
 	// Backup backups all things, channels and connections for the admin identified by the provided key.
 	Backup(ctx context.Context, token string) (Backup, error)
+
+	// Restore restores all things, channels and connections for the admin identified by the provided key.
+	Restore(ctx context.Context, token string, backup Backup) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -628,6 +631,35 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		Channels:    channels,
 		Connections: connections,
 	}, nil
+}
+
+func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	if err != nil {
+		return err
+	}
+
+	err = ts.things.RestoreThings(ctx, backup.Things)
+	if err != nil {
+		return err
+	}
+
+	err = ts.channels.RestoreChannels(ctx, backup.Channels)
+	if err != nil {
+		return err
+	}
+
+	err = ts.channels.RestoreConnections(ctx, backup.Connections)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) members(ctx context.Context, token, groupID, groupType string, limit, offset uint64) ([]string, error) {
