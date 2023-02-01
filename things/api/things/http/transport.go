@@ -489,10 +489,6 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 }
 
 func decodeBackupAdmin(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
 	req := backupAdminReq{token: apiutil.ExtractBearerToken(r)}
 
 	return req, nil

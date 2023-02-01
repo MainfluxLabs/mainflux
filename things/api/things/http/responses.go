@@ -297,7 +297,7 @@ type backupAdminRes struct {
 }
 
 func (res backupAdminRes) Code() int {
-	return http.StatusNoContent
+	return http.StatusOK
 }
 
 func (res backupAdminRes) Headers() map[string]string {
@@ -305,7 +305,7 @@ func (res backupAdminRes) Headers() map[string]string {
 }
 
 func (res backupAdminRes) Empty() bool {
-	return true
+	return false
 }
 
 type pageRes struct {
