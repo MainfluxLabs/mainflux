@@ -544,14 +544,14 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func backupAdminEndpoint(svc things.Service) endpoint.Endpoint {
+func backupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupAdminReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		backup, err := svc.BackupAdmin(ctx, req.token)
+		backup, err := svc.Backup(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}

@@ -426,7 +426,7 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 }
 
 func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
-	q := `SELECT id, owner, name, metadata FROM channels`
+	q := `SELECT id, owner, name, metadata FROM channels;`
 
 	params := map[string]interface{}{}
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -449,7 +449,7 @@ func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channe
 }
 
 func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connections, error) {
-	q := `SELECT channel_id, thing_id, thing_owner FROM connections`
+	q := `SELECT channel_id, thing_id, thing_owner FROM connections;`
 
 	params := map[string]interface{}{}
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -535,16 +535,16 @@ func toChannel(ch dbChannel) things.Channel {
 }
 
 type dbConn struct {
-	Channel string `db:"channel_id"`
-	Thing   string `db:"thing_id"`
-	Owner   string `db:"thing_owner"`
+	ChannelID  string `db:"channel_id"`
+	ThingID    string `db:"thing_id"`
+	ThingOwner string `db:"thing_owner"`
 }
 
 func toConnection(co dbConn) things.Connections {
 	return things.Connections{
-		ChannelID: co.Channel,
-		ThingID:   co.Thing,
-		Owner:     co.Owner,
+		ChannelID: co.ChannelID,
+		ThingID:   co.ThingID,
+		Owner:     co.ThingOwner,
 	}
 }
 

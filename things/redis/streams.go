@@ -98,8 +98,8 @@ func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string
 	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
 }
 
-func (es eventStore) BackupAdmin(ctx context.Context, token string) (things.Backup, error) {
-	return es.svc.BackupAdmin(ctx, token)
+func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, error) {
+	return es.svc.Backup(ctx, token)
 }
 
 func (es eventStore) RemoveThing(ctx context.Context, token, id string) error {

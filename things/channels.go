@@ -73,7 +73,7 @@ type ChannelRepository interface {
 	// returned error will be nil.
 	HasThingByID(ctx context.Context, chanID, thingID string) error
 
-	// BackupChannels cretrieves all channels
+	// BackupChannels retrieves all channels
 	BackupChannels(ctx context.Context) ([]Channel, error)
 
 	// BackupConnections retrieves all connections between channels and things.

@@ -292,7 +292,15 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 }
 
 func (trm *thingRepositoryMock) BackupThings(_ context.Context) ([]things.Thing, error) {
-	return nil, nil
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+	var ths []things.Thing
+
+	for _, v := range trm.things {
+		ths = append(ths, v)
+	}
+
+	return ths, nil
 }
 
 type thingCacheMock struct {

@@ -270,7 +270,15 @@ func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingI
 }
 
 func (crm *channelRepositoryMock) BackupChannels(ctx context.Context) ([]things.Channel, error) {
-	return nil, nil
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+	var chs []things.Channel
+
+	for _, v := range crm.channels {
+		chs = append(chs, v)
+	}
+
+	return chs, nil
 }
 
 func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connections, error) {

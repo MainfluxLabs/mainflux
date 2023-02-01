@@ -199,8 +199,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_admin")(backupAdminEndpoint(svc)),
-		decodeBackupAdmin,
+		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
+		decodeBackup,
 		encodeResponse,
 		opts...,
 	))
@@ -488,7 +488,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeBackupAdmin(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 	req := backupAdminReq{token: apiutil.ExtractBearerToken(r)}
 
 	return req, nil

@@ -219,11 +219,11 @@ func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID str
 	return ms.svc.ListMembers(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) BackupAdmin(ctx context.Context, token string) (bk things.Backup, err error) {
+func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_admin").Add(1)
-		ms.latency.With("method", "backup_admin").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "backup").Add(1)
+		ms.latency.With("method", "backup").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.BackupAdmin(ctx, token)
+	return ms.svc.Backup(ctx, token)
 }

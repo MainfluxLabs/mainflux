@@ -107,8 +107,8 @@ type Service interface {
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
 
-	// BackupAdmin backups all things, channels and connections for the admin identified by the provided key.
-	BackupAdmin(ctx context.Context, token string) (Backup, error)
+	// Backup backups all things, channels and connections for the admin identified by the provided key.
+	Backup(ctx context.Context, token string) (Backup, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -597,7 +597,7 @@ func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string,
 	return ts.things.RetrieveByIDs(ctx, res, pm)
 }
 
-func (ts *thingsService) BackupAdmin(ctx context.Context, token string) (Backup, error) {
+func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Backup{}, err
