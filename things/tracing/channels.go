@@ -134,7 +134,7 @@ func (crm channelRepositoryMiddleware) BackupChannels(ctx context.Context) ([]th
 	return crm.repo.BackupChannels(ctx)
 }
 
-func (crm channelRepositoryMiddleware) BackupConnections(ctx context.Context) ([]things.Connections, error) {
+func (crm channelRepositoryMiddleware) BackupConnections(ctx context.Context) ([]things.Connection, error) {
 	span := createSpan(ctx, crm.tracer, backupConnectionsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -150,7 +150,7 @@ func (crm channelRepositoryMiddleware) RestoreChannels(ctx context.Context, chan
 	return crm.repo.RestoreChannels(ctx, channels)
 }
 
-func (crm channelRepositoryMiddleware) RestoreConnections(ctx context.Context, connections []things.Connections) error {
+func (crm channelRepositoryMiddleware) RestoreConnections(ctx context.Context, connections []things.Connection) error {
 	span := createSpan(ctx, crm.tracer, restoreConnectionsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

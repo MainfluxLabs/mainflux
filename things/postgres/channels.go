@@ -428,8 +428,7 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
 	q := `SELECT id, owner, name, metadata FROM channels;`
 
-	params := map[string]interface{}{}
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -448,17 +447,16 @@ func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channe
 	return channels, nil
 }
 
-func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connections, error) {
+func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connection, error) {
 	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
 
-	params := map[string]interface{}{}
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrViewEntity, err)
 	}
 	defer rows.Close()
 
-	connections := make([]things.Connections, 0)
+	connections := make([]things.Connection, 0)
 	for rows.Next() {
 		dbco := dbConn{}
 		if err := rows.StructScan(&dbco); err != nil {
@@ -495,7 +493,7 @@ func (cr channelRepository) RestoreChannels(ctx context.Context, channels []thin
 	return nil
 }
 
-func (cr channelRepository) RestoreConnections(ctx context.Context, connections []things.Connections) error {
+func (cr channelRepository) RestoreConnections(ctx context.Context, connections []things.Connection) error {
 	q := `INSERT INTO connections (channel_id, channel_owner, thing_id, thing_owner) VALUES (:channel_id, :channel_owner, :thing_id, :thing_owner);`
 
 	tx, err := cr.db.BeginTxx(ctx, nil)
@@ -589,8 +587,8 @@ type dbConn struct {
 	ThingOwner   string `db:"thing_owner"`
 }
 
-func toConnection(co dbConn) things.Connections {
-	return things.Connections{
+func toConnection(co dbConn) things.Connection {
+	return things.Connection{
 		ChannelID:    co.ChannelID,
 		ChannelOwner: co.ChannelOwner,
 		ThingID:      co.ThingID,
@@ -598,7 +596,7 @@ func toConnection(co dbConn) things.Connections {
 	}
 }
 
-func toDBConnection(co things.Connections) dbConn {
+func toDBConnection(co things.Connection) dbConn {
 	return dbConn{
 		ChannelID:    co.ChannelID,
 		ChannelOwner: co.ChannelOwner,

@@ -23,8 +23,8 @@ type ChannelsPage struct {
 	Channels []Channel
 }
 
-// Connections represents a connection between a channel and a thing.
-type Connections struct {
+// Connection represents a connection between a channel and a thing.
+type Connection struct {
 	ChannelID    string
 	ChannelOwner string
 	ThingID      string
@@ -78,13 +78,13 @@ type ChannelRepository interface {
 	BackupChannels(ctx context.Context) ([]Channel, error)
 
 	// BackupConnections retrieves all connections between channels and things.
-	BackupConnections(ctx context.Context) ([]Connections, error)
+	BackupConnections(ctx context.Context) ([]Connection, error)
 
 	// RestoreChannels insert all channels.
 	RestoreChannels(ctx context.Context, channels []Channel) error
 
 	// RestoreConnections insert all connections between channels and things.
-	RestoreConnections(ctx context.Context, connections []Connections) error
+	RestoreConnections(ctx context.Context, connections []Connection) error
 }
 
 // ChannelCache contains channel-thing connection caching interface.

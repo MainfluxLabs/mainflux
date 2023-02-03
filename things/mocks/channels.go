@@ -281,11 +281,11 @@ func (crm *channelRepositoryMock) BackupChannels(ctx context.Context) ([]things.
 	return chs, nil
 }
 
-func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connections, error) {
+func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connection, error) {
 	panic("not implemented")
 }
 
-func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, things []things.Connections) error {
+func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, things []things.Connection) error {
 	panic("not implemented")
 }
 

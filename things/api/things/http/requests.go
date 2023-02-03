@@ -411,9 +411,9 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token       string
-	Things      []things.Thing       `json:"things"`
-	Channels    []things.Channel     `json:"channels"`
-	Connections []things.Connections `json:"connections"`
+	Things      []things.Thing      `json:"things"`
+	Channels    []things.Channel    `json:"channels"`
+	Connections []things.Connection `json:"connections"`
 }
 
 func (req restoreReq) validate() error {

@@ -438,8 +438,7 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 
 func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, error) {
 	q := `SELECT id, owner, name, key, metadata FROM things;`
-	params := map[string]interface{}{}
-	rows, err := tr.db.NamedQueryContext(ctx, q, params)
+	rows, err := tr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
 	}
@@ -447,7 +446,6 @@ func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, err
 
 	var items []things.Thing
 	for rows.Next() {
-
 		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
 			return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -476,6 +474,7 @@ func (tr thingRepository) RestoreThings(ctx context.Context, things []things.Thi
 		if err != nil {
 			return errors.Wrap(errors.ErrCreateEntity, err)
 		}
+
 		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)

@@ -107,10 +107,10 @@ type Service interface {
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
 
-	// Backup backups all things, channels and connections for the admin identified by the provided key.
+	// Backup retrives data for all things, channels and connections for the admin identified by the provided key.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore restores all things, channels and connections for the admin identified by the provided key.
+	// Restore insert all things, channels and connections for the admin identified by the provided key.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -130,7 +130,7 @@ type PageMetadata struct {
 type Backup struct {
 	Things      []Thing
 	Channels    []Channel
-	Connections []Connections
+	Connections []Connection
 }
 
 var _ Service = (*thingsService)(nil)
