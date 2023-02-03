@@ -282,15 +282,42 @@ func (crm *channelRepositoryMock) BackupChannels(ctx context.Context) ([]things.
 }
 
 func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connection, error) {
-	panic("not implemented")
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+	var conns []things.Connection
+
+	for _, con := range crm.cconns {
+		for _, v := range con {
+			con := things.Connection{
+				ChannelID:    v.ID,
+				ChannelOwner: v.Owner,
+			}
+			conns = append(conns, con)
+		}
+
+	}
+
+	return conns, nil
+
 }
 
-func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, things []things.Connection) error {
-	panic("not implemented")
+func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, connections []things.Connection) error {
+	return nil
 }
 
-func (crm *channelRepositoryMock) RestoreChannels(ctx context.Context, things []things.Channel) error {
-	panic("not implemented")
+func (crm *channelRepositoryMock) RestoreChannels(ctx context.Context, channels []things.Channel) error {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	for i := range channels {
+		crm.counter++
+		if channels[i].ID == "" {
+			channels[i].ID = fmt.Sprintf("%03d", crm.counter)
+		}
+		crm.channels[key(channels[i].Owner, channels[i].ID)] = channels[i]
+	}
+
+	return nil
 }
 
 type channelCacheMock struct {
