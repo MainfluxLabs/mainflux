@@ -603,12 +603,12 @@ func TestBackupThings(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		size   uint64
-		err    error
+		size uint64
+		err  error
 	}{
 		"retrieve all things": {
-			size:   n,
-			err:    nil,
+			size: n,
+			err:  nil,
 		},
 	}
 
@@ -618,6 +618,81 @@ func TestBackupThings(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestRestoreThings(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+
+	email := "thing-save@example.com"
+
+	nonexistentThingKey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	ths := []things.Thing{}
+	for i := 1; i <= 5; i++ {
+		thID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thkey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		thing := things.Thing{
+			ID:    thID,
+			Owner: email,
+			Key:   thkey,
+		}
+		ths = append(ths, thing)
+	}
+	thkey := ths[0].Key
+	thID := ths[0].ID
+
+	cases := []struct {
+		desc   string
+		things []things.Thing
+		err    error
+	}{
+		{
+			desc:   "Restore all things",
+			things: ths,
+			err:    nil,
+		},
+		{
+			desc:   "Restore things that already exist",
+			things: ths,
+			err:    errors.ErrConflict,
+		},
+		{
+			desc: "Restore things with invalid ID",
+			things: []things.Thing{
+				{ID: "invalid", Owner: email, Key: thkey},
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		{
+			desc: "Restore things with invalid name",
+			things: []things.Thing{
+				{ID: thID, Owner: email, Key: thkey, Name: invalidName},
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		{
+			desc: "Restore things with invalid Key",
+			things: []things.Thing{
+				{ID: thID, Owner: email, Key: nonexistentThingKey},
+			},
+			err: errors.ErrConflict,
+		},
+		{
+			desc:   "Restore things with conflicting keys",
+			things: ths,
+			err:    errors.ErrConflict,
+		},
+	}
+
+	for _, tc := range cases {
+		err := thingRepo.RestoreThings(context.Background(), tc.things)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 

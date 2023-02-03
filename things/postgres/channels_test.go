@@ -370,120 +370,6 @@ func TestMultiChannelRetrieval(t *testing.T) {
 	}
 }
 
-func TestBackupChannel(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	chanRepo := postgres.NewChannelRepository(dbMiddleware)
-
-	email := "channel-multi-retrieval@example.com"
-	name := "channel_name"
-	metadata := things.Metadata{
-		"field": "value",
-	}
-	nameNum := uint64(3)
-	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
-	n := uint64(101)
-	for i := uint64(0); i < n; i++ {
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		ch := things.Channel{
-			ID:    chID,
-			Owner: email,
-		}
-
-		// Create Channels with name.
-		if i < nameNum {
-			ch.Name = fmt.Sprintf("%s-%d", name, i)
-		}
-		// Create Channels with metadata.
-		if i >= nameNum && i < nameNum+metaNum {
-			ch.Metadata = metadata
-		}
-		// Create Channels with name and metadata.
-		if i >= n-nameMetaNum {
-			ch.Metadata = metadata
-			ch.Name = name
-		}
-
-		chanRepo.Save(context.Background(), ch)
-	}
-
-	cases := map[string]struct {
-		size uint64
-		err  error
-	}{
-		"retrieve all channels without limit": {
-			size: n,
-			err:  nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		channels, err := chanRepo.BackupChannels(context.Background())
-		size := uint64(len(channels))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
-func TestBackupConnections(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	chanRepo := postgres.NewChannelRepository(dbMiddleware)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-	email := "Channel-connect@example.com"
-
-	n := uint64(101)
-	for i := uint64(0); i < n; i++ {
-		thID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		thkey, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		th := things.Thing{
-			ID:       thID,
-			Owner:    email,
-			Key:      thkey,
-			Metadata: things.Metadata{},
-		}
-		ths, err := thingRepo.Save(context.Background(), th)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		thID = ths[0].ID
-
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		chs, err := chanRepo.Save(context.Background(), things.Channel{
-			ID:    chID,
-			Owner: email,
-		})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		chID = chs[0].ID
-
-		err = chanRepo.Connect(context.Background(), email, []string{chID}, []string{thID})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	cases := map[string]struct {
-		size uint64
-		err  error
-	}{
-		"retrieve all channels": {
-			size: n,
-			err:  nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		connections, err := chanRepo.BackupConnections(context.Background())
-		size := uint64(len(connections))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
 func TestRetrieveByThing(t *testing.T) {
 	email := "channel-multi-retrieval-by-thing@example.com"
 	dbMiddleware := postgres.NewDatabase(db)
@@ -1002,6 +888,243 @@ func TestHasThingByID(t *testing.T) {
 		err := chanRepo.HasThingByID(context.Background(), tc.chID, tc.thID)
 		hasAccess := err == nil
 		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("%s: expected %t got %t\n", desc, tc.hasAccess, hasAccess))
+	}
+}
+
+func TestBackupChannel(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	chanRepo := postgres.NewChannelRepository(dbMiddleware)
+
+	email := "channel-multi-retrieval@example.com"
+	name := "channel_name"
+	metadata := things.Metadata{
+		"field": "value",
+	}
+	nameNum := uint64(3)
+	metaNum := uint64(3)
+	nameMetaNum := uint64(2)
+
+	n := uint64(101)
+	for i := uint64(0); i < n; i++ {
+		chID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		ch := things.Channel{
+			ID:    chID,
+			Owner: email,
+		}
+
+		// Create Channels with name.
+		if i < nameNum {
+			ch.Name = fmt.Sprintf("%s-%d", name, i)
+		}
+		// Create Channels with metadata.
+		if i >= nameNum && i < nameNum+metaNum {
+			ch.Metadata = metadata
+		}
+		// Create Channels with name and metadata.
+		if i >= n-nameMetaNum {
+			ch.Metadata = metadata
+			ch.Name = name
+		}
+
+		chanRepo.Save(context.Background(), ch)
+	}
+
+	cases := map[string]struct {
+		size uint64
+		err  error
+	}{
+		"retrieve all channels without limit": {
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		channels, err := chanRepo.BackupChannels(context.Background())
+		size := uint64(len(channels))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestBackupConnections(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	chanRepo := postgres.NewChannelRepository(dbMiddleware)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	email := "Channel-connect@example.com"
+
+	n := uint64(101)
+	for i := uint64(0); i < n; i++ {
+		thID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thkey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		th := things.Thing{
+			ID:       thID,
+			Owner:    email,
+			Key:      thkey,
+			Metadata: things.Metadata{},
+		}
+		ths, err := thingRepo.Save(context.Background(), th)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		thID = ths[0].ID
+
+		chID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		chs, err := chanRepo.Save(context.Background(), things.Channel{
+			ID:    chID,
+			Owner: email,
+		})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		chID = chs[0].ID
+
+		err = chanRepo.Connect(context.Background(), email, []string{chID}, []string{thID})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	cases := map[string]struct {
+		size uint64
+		err  error
+	}{
+		"retrieve all channels": {
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		connections, err := chanRepo.BackupConnections(context.Background())
+		size := uint64(len(connections))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestRestoreChannels(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	channelRepo := postgres.NewChannelRepository(dbMiddleware)
+	email := "channel-save@example.com"
+
+	chs := []things.Channel{}
+	for i := 1; i <= 5; i++ {
+		id, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		ch := things.Channel{
+			ID:    id,
+			Owner: email,
+		}
+		chs = append(chs, ch)
+	}
+	id := chs[0].ID
+
+	cases := []struct {
+		desc     string
+		channels []things.Channel
+		err      error
+	}{
+		{
+			desc:     "Restore all channels",
+			channels: chs,
+			err:      nil,
+		},
+		{
+			desc:     "Restore channels that already exist",
+			channels: chs,
+			err:      errors.ErrCreateEntity,
+		},
+		{
+			desc: "Restore channels with invalid ID",
+			channels: []things.Channel{
+				{ID: "invalid", Owner: email},
+			},
+			err: errors.ErrCreateEntity,
+		},
+		{
+			desc: "Restore channels with invalid name",
+			channels: []things.Channel{
+				{ID: id, Owner: email, Name: invalidName},
+			},
+			err: errors.ErrCreateEntity,
+		},
+	}
+
+	for _, cc := range cases {
+		err := channelRepo.RestoreChannels(context.Background(), cc.channels)
+		assert.True(t, errors.Contains(err, cc.err), fmt.Sprintf("%s: expected %s got %s\n", cc.desc, cc.err, err))
+	}
+}
+
+func TestRestoreConnections(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	chanRepo := postgres.NewChannelRepository(dbMiddleware)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	email := "test@example.com"
+
+	thID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thkey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	th := things.Thing{
+		ID:       thID,
+		Owner:    email,
+		Key:      thkey,
+		Metadata: things.Metadata{},
+	}
+
+	_, err = thingRepo.Save(context.Background(), th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var chs []things.Channel
+	for i := uint64(0); i < 5; i++ {
+		chID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		ch := things.Channel{
+			ID:    chID,
+			Owner: email,
+			Name:  fmt.Sprintf("channel-%d", i),
+		}
+		_, err = chanRepo.Save(context.Background(), ch)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		chs = append(chs, ch)
+	}
+
+	connections := []things.Connection{}
+	for _, ch := range chs {
+
+		conn := things.Connection{
+			ChannelID:    ch.ID,
+			ChannelOwner: ch.Owner,
+			ThingID:      th.ID,
+			ThingOwner:   th.Owner,
+		}
+
+		connections = append(connections, conn)
+	}
+
+	cases := map[string]struct {
+		connection []things.Connection
+		err        error
+	}{
+		"Restore all connections": {
+			connection: connections,
+			err:        nil,
+		},
+		"Restore already existing connections": {
+			connection: connections,
+			err:        errors.ErrCreateEntity,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := chanRepo.RestoreConnections(context.Background(), tc.connection)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
