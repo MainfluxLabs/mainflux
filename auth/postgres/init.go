@@ -110,6 +110,29 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TRIGGER IF EXISTS inherit_group_tr ON groups`,
 				},
 			},
+			{
+				Id: "auth_2",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS orgs (
+							id          UUID UNIQUE NOT NULL,
+							owner_id    UUID,
+							name        VARCHAR(254) NOT NULL,
+							description VARCHAR(1024),
+							metadata    JSONB,
+							created_at  TIMESTAMPTZ,
+							updated_at  TIMESTAMPTZ,
+							PRIMARY KEY (owner_id, name)
+						 )`,
+					`CREATE TABLE IF NOT EXISTS org_relations (
+							member_id   UUID NOT NULL,
+							org_id      UUID NOT NULL,
+							created_at  TIMESTAMPTZ,
+							updated_at  TIMESTAMPTZ,
+							FOREIGN KEY (org_id) REFERENCES orgs (id),
+							PRIMARY KEY (member_id, org_id)
+						 )`,
+				},
+			},
 		},
 	}
 

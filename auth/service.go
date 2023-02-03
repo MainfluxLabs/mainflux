@@ -75,12 +75,16 @@ type Service interface {
 	Authz
 
 	// GroupService implements groups API, creating groups, assigning members
+	OrgService
+
+	// GroupService implements groups API, creating groups, assigning members
 	GroupService
 }
 
 var _ Service = (*service)(nil)
 
 type service struct {
+	orgs          OrgRepository
 	keys          KeyRepository
 	groups        GroupRepository
 	idProvider    mainflux.IDProvider
@@ -91,9 +95,10 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, policyAgent PolicyAgent, duration time.Duration) Service {
+func New(orgs OrgRepository, keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, policyAgent PolicyAgent, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
+		orgs:          orgs,
 		keys:          keys,
 		groups:        groups,
 		idProvider:    idp,
@@ -437,4 +442,128 @@ func (svc service) ListMemberships(ctx context.Context, token string, memberID s
 
 func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
+}
+
+func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Org{}, err
+	}
+
+	ulid, err := svc.idProvider.ID()
+	if err != nil {
+		return Org{}, err
+	}
+
+	timestamp := getTimestmap()
+
+	g := Org{
+		ID:          ulid,
+		OwnerID:     user.ID,
+		Name:        org.Name,
+		Description: org.Description,
+		UpdatedAt:   timestamp,
+		CreatedAt:   timestamp,
+	}
+
+	if err := svc.orgs.Save(ctx, g); err != nil {
+		return Org{}, err
+	}
+
+	return g, nil
+}
+
+func (svc service) ListOrgs(ctx context.Context, token string, pm OrgPageMetadata) (OrgPage, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return OrgPage{}, err
+	}
+
+	return svc.orgs.RetrieveAll(ctx, user.ID, pm)
+}
+
+func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm OrgPageMetadata) (OrgMembersPage, error) {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return OrgMembersPage{}, err
+	}
+	mp, err := svc.orgs.Members(ctx, orgID, pm)
+	if err != nil {
+		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+	}
+	return mp, nil
+}
+
+func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+	return svc.orgs.Delete(ctx, id)
+}
+
+func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Org{}, err
+	}
+
+	g := Org{
+		ID:          org.ID,
+		OwnerID:     user.ID,
+		Name:        org.Name,
+		Description: org.Description,
+		UpdatedAt:   getTimestmap(),
+	}
+
+	if err := svc.orgs.Update(ctx, org); err != nil {
+		return Org{}, err
+	}
+
+	return g, nil
+}
+
+func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return Org{}, err
+	}
+
+	return svc.orgs.RetrieveByID(ctx, id)
+}
+
+func (svc service) AssignOrg(ctx context.Context, token, orgID string, memberIDs ...string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.Assign(ctx, orgID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) UnassignOrg(ctx context.Context, token string, orgID string, memberIDs ...string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.Unassign(ctx, orgID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm OrgPageMetadata) (OrgPage, error) {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return OrgPage{}, err
+	}
+
+	return svc.orgs.Memberships(ctx, memberID, pm)
+}
+
+func (svc service) AssignOrgAccessRights(ctx context.Context, token, thingOrgID, userOrgID string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+	return svc.agent.AddPolicy(ctx, PolicyReq{Object: thingOrgID, Relation: memberRelation, Subject: fmt.Sprintf("%s:%s#%s", "members", userOrgID, memberRelation)})
 }
