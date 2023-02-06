@@ -302,6 +302,20 @@ func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]thin
 }
 
 func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, connections []things.Connection) error {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	for _, conn := range connections {
+		if _, ok := crm.cconns[conn.ChannelOwner]; !ok {
+			crm.cconns[conn.ChannelOwner] = make(map[string]things.Channel)
+		}
+		crm.cconns[conn.ChannelOwner][conn.ChannelID] = things.Channel{
+			ID:    conn.ChannelID,
+			Owner: conn.ChannelOwner,
+		}
+
+	}
+
 	return nil
 }
 
