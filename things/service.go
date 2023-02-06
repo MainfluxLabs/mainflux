@@ -110,7 +110,7 @@ type Service interface {
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore insert all things, channels and connections for all users. Only accessible by admin.
+	// Restore adds things, channels and connections from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
