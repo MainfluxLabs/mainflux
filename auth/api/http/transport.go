@@ -5,13 +5,14 @@ package http
 import (
 	"net/http"
 
-	"github.com/go-zoo/bone"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/groups"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/keys"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/orgs"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/policies"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -19,6 +20,7 @@ import (
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc auth.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	mux := bone.New()
+	mux = orgs.MakeHandler(svc, mux, tracer, logger)
 	mux = keys.MakeHandler(svc, mux, tracer, logger)
 	mux = groups.MakeHandler(svc, mux, tracer, logger)
 	mux = policies.MakeHandler(svc, mux, tracer, logger)

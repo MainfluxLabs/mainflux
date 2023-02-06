@@ -42,7 +42,7 @@ func newService() auth.Service {
 	ketoMock := mocks.NewKetoMock(mockAuthzDB)
 
 	t := jwt.New(secret)
-	return auth.New(repo, groupRepo, idProvider, t, ketoMock, loginDuration)
+	return auth.New(nil, repo, groupRepo, idProvider, t, ketoMock, loginDuration)
 }
 
 func TestIssue(t *testing.T) {

@@ -311,3 +311,133 @@ func (lm *loggingMiddleware) AssignGroupAccessRights(ctx context.Context, token,
 
 	return lm.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
 }
+
+func (lm *loggingMiddleware) CreateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_org for token %s and name %s took %s to complete", token, org.Name, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateOrg(ctx, token, org)
+}
+
+func (lm *loggingMiddleware) UpdateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_org for token %s and name %s took %s to complete", token, org.Name, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateOrg(ctx, token, org)
+}
+
+func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_org for token %s and id %s took %s to complete", token, id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroup(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o auth.Org, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_org for token %s and id %s took %s to complete", token, id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewOrg(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth.OrgPageMetadata) (gp auth.OrgPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_orgs for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListOrgs(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.OrgPageMetadata) (op auth.OrgMembersPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_org_members for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListOrgMembers(ctx, token, orgID, pm)
+}
+
+func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.OrgPageMetadata) (op auth.OrgPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_org_memberships for token %s and member id %s took %s to complete", token, memberID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListOrgMemberships(ctx, token, memberID, pm)
+}
+
+func (lm *loggingMiddleware) AssignOrg(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign for token %s and member %s group id %s took %s to complete", token, memberIDs, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignOrg(ctx, token, groupID, memberIDs...)
+}
+
+func (lm *loggingMiddleware) UnassignOrg(ctx context.Context, token string, orgID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign for token %s and member %s org id %s took %s to complete", token, memberIDs, orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignOrg(ctx, token, orgID, memberIDs...)
+}
+
+func (lm *loggingMiddleware) AssignOrgAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method share_group_access took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignOrgAccessRights(ctx, token, thingGroupID, userGroupID)
+}
