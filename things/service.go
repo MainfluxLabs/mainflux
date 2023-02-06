@@ -107,10 +107,10 @@ type Service interface {
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
 
-	// Backup retrives data for all things, channels and connections for the admin identified by the provided key.
+	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore insert all things, channels and connections for the admin identified by the provided key.
+	// Restore insert all things, channels and connections for all users. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -644,19 +644,21 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	err = ts.things.RestoreThings(ctx, backup.Things)
+	_, err = ts.things.Save(ctx, backup.Things...)
 	if err != nil {
 		return err
 	}
 
-	err = ts.channels.RestoreChannels(ctx, backup.Channels)
+	_, err = ts.channels.Save(ctx, backup.Channels...)
 	if err != nil {
 		return err
 	}
 
-	err = ts.channels.RestoreConnections(ctx, backup.Connections)
-	if err != nil {
-		return err
+	for _, conn := range backup.Connections {
+		err = ts.channels.Connect(ctx, conn.ThingOwner, []string{conn.ChannelID}, []string{conn.ThingID})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

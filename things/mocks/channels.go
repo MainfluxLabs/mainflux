@@ -300,38 +300,6 @@ func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]thin
 
 }
 
-func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, connections []things.Connection) error {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
-
-	for _, conn := range connections {
-		if _, ok := crm.cconns[conn.ChannelOwner]; !ok {
-			crm.cconns[conn.ChannelOwner] = make(map[string]things.Channel)
-		}
-		crm.cconns[conn.ChannelOwner][conn.ChannelID] = things.Channel{
-			ID:    conn.ChannelID,
-			Owner: conn.ChannelOwner,
-		}
-	}
-
-	return nil
-}
-
-func (crm *channelRepositoryMock) RestoreChannels(ctx context.Context, channels []things.Channel) error {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
-
-	for i := range channels {
-		crm.counter++
-		if channels[i].ID == "" {
-			channels[i].ID = fmt.Sprintf("%03d", crm.counter)
-		}
-		crm.channels[key(channels[i].Owner, channels[i].ID)] = channels[i]
-	}
-
-	return nil
-}
-
 type channelCacheMock struct {
 	mu       sync.Mutex
 	channels map[string]string

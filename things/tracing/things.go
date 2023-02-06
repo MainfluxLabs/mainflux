@@ -124,14 +124,6 @@ func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things
 	return trm.repo.BackupThings(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RestoreThings(ctx context.Context, things []things.Thing) error {
-	span := createSpan(ctx, trm.tracer, restoreThingsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.RestoreThings(ctx, things)
-}
-
 type thingCacheMiddleware struct {
 	tracer opentracing.Tracer
 	cache  things.ThingCache

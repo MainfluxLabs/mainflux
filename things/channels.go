@@ -79,12 +79,6 @@ type ChannelRepository interface {
 
 	// BackupConnections retrieves all connections between channels and things.
 	BackupConnections(ctx context.Context) ([]Connection, error)
-
-	// RestoreChannels insert all channels.
-	RestoreChannels(ctx context.Context, channels []Channel) error
-
-	// RestoreConnections insert all connections between channels and things.
-	RestoreConnections(ctx context.Context, connections []Connection) error
 }
 
 // ChannelCache contains channel-thing connection caching interface.

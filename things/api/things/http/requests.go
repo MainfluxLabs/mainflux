@@ -421,7 +421,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Things) == 0 || len(req.Channels) == 0 || len(req.Connections) == 0 {
+	if len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

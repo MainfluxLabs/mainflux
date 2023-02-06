@@ -469,54 +469,6 @@ func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Con
 	return connections, nil
 }
 
-func (cr channelRepository) RestoreChannels(ctx context.Context, channels []things.Channel) error {
-	q := `INSERT INTO channels (id, owner, name, metadata) VALUES (:id, :owner, :name, :metadata);`
-
-	tx, err := cr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	for _, ch := range channels {
-		dbch := toDBChannel(ch)
-		_, err := tx.NamedExecContext(ctx, q, dbch)
-		if err != nil {
-			tx.Rollback()
-			return errors.Wrap(errors.ErrCreateEntity, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
-func (cr channelRepository) RestoreConnections(ctx context.Context, connections []things.Connection) error {
-	q := `INSERT INTO connections (channel_id, channel_owner, thing_id, thing_owner) VALUES (:channel_id, :channel_owner, :thing_id, :thing_owner);`
-
-	tx, err := cr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	for _, co := range connections {
-		dbco := toDBConnection(co)
-		_, err := tx.NamedExecContext(ctx, q, dbco)
-		if err != nil {
-			tx.Rollback()
-			return errors.Wrap(errors.ErrCreateEntity, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
 // dbMetadata type for handling metadata properly in database/sql.
 type dbMetadata map[string]interface{}
 

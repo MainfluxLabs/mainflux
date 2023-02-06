@@ -308,27 +308,6 @@ type thingCacheMock struct {
 	things map[string]string
 }
 
-func (trm *thingRepositoryMock) RestoreThings(_ context.Context, things []things.Thing) error {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	for i := range things {
-		for _, th := range trm.things {
-			if th.Key == things[i].Key {
-				return errors.ErrConflict
-			}
-		}
-
-		trm.counter++
-		if things[i].ID == "" {
-			things[i].ID = fmt.Sprintf("%03d", trm.counter)
-		}
-		trm.things[key(things[i].Owner, things[i].ID)] = things[i]
-	}
-
-	return nil
-}
-
 // NewThingCache returns mock cache instance.
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{
