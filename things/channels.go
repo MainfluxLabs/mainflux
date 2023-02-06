@@ -77,7 +77,7 @@ type ChannelRepository interface {
 	// BackupChannels retrieves all channels for all users.
 	BackupChannels(ctx context.Context) ([]Channel, error)
 
-	// BackupConnections retrieves all connections between channels and things.
+	// BackupConnections retrieves all connections between channels and things for all users.
 	BackupConnections(ctx context.Context) ([]Connection, error)
 }
 

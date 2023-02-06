@@ -77,7 +77,7 @@ type ThingRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, owner, id string) error
 
-	// BackupThings retrieves all things.
+	// BackupThings retrieves all things for all users.
 	BackupThings(ctx context.Context) ([]Thing, error)
 }
 
