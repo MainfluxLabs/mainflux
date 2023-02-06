@@ -1381,6 +1381,164 @@ func TestIdentify(t *testing.T) {
 	}
 }
 
+func TestBackup(t *testing.T) {
+	svc := newService(map[string]string{token: adminEmail})
+
+	ths, err := svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var chs []things.Channel
+	n := uint64(10)
+	for i := uint64(0); i < n; i++ {
+		ch := channel
+		ch.Name = fmt.Sprintf("name-%d", i)
+		chs = append(chs, ch)
+	}
+
+	chsc, err := svc.CreateChannels(context.Background(), token, chs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var chIDs []string
+	for _, chID := range chsc {
+		chIDs = append(chIDs, chID.ID)
+	}
+	thIDs := []string{ths[0].ID}
+
+	err = svc.Connect(context.Background(), token, chIDs[0:10], thIDs)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	// Wait for things and channels to connect.
+	time.Sleep(time.Second)
+
+	connections := []things.Connection{}
+	for _, ch := range chsc {
+		connections = append(connections, things.Connection{
+			ChannelID:    ch.ID,
+			ChannelOwner: ths[0].Owner,
+			ThingID:      ths[0].ID,
+			ThingOwner:   ths[0].Owner,
+		})
+	}
+
+	backup := things.Backup{
+		Things:      ths,
+		Channels:    chsc,
+		Connections: connections,
+	}
+
+	cases := map[string]struct {
+		token  string
+		backup things.Backup
+		err    error
+	}{
+		"list backups": {
+			token:  token,
+			backup: backup,
+			err:    nil,
+		},
+		"list backups with invalid token": {
+			token:  wrongValue,
+			backup: things.Backup{},
+			err:    errors.ErrAuthentication,
+		},
+		"list backups with empty token": {
+			token:  "",
+			backup: things.Backup{},
+			err:    errors.ErrAuthentication,
+		},
+	}
+
+	for desc, tc := range cases {
+		backup, err := svc.Backup(context.Background(), tc.token)
+		thingsSize := len(backup.Things)
+		channelsSize := len(backup.Channels)
+		connectionsSize := len(backup.Connections)
+		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
+		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
+		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+	}
+}
+
+func TestRestore(t *testing.T) {
+	svc := newService(map[string]string{token: adminEmail})
+	idProvider := uuid.New()
+
+	thkey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	chID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	ths := []things.Thing{
+		{
+			ID:       thID,
+			Name:     "testThing",
+			Owner:    adminEmail,
+			Key:      thkey,
+			Metadata: map[string]interface{}{},
+		},
+	}
+
+	var chs []things.Channel
+	n := uint64(10)
+	for i := uint64(0); i < n; i++ {
+		ch := things.Channel{
+			ID:       chID,
+			Name:     "testChannel",
+			Owner:    adminEmail,
+			Metadata: map[string]interface{}{},
+		}
+		ch.Name = fmt.Sprintf("name-%d", i)
+		chs = append(chs, ch)
+	}
+
+	var connections []things.Connection
+	for _, ch := range chs {
+		conn := things.Connection{
+			ChannelID:    ch.ID,
+			ChannelOwner: ch.Owner,
+			ThingID:      ths[0].ID,
+			ThingOwner:   ths[0].Owner,
+		}
+
+		connections = append(connections, conn)
+	}
+
+	backup := things.Backup{
+		Things:      ths,
+		Channels:    chs,
+		Connections: connections,
+	}
+
+	cases := map[string]struct {
+		token  string
+		backup things.Backup
+		err    error
+	}{
+		"Restore backup": {
+			token:  token,
+			backup: backup,
+			err:    nil,
+		},
+		"Restore backup with invalid token": {
+			token: wrongValue,
+			err:   errors.ErrAuthentication,
+		},
+		"Restore backup with empty token": {
+			token: "",
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := svc.Restore(context.Background(), tc.token, tc.backup)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
 func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
 	switch pm.Order {
 	case "name":

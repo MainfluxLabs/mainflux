@@ -6,8 +6,8 @@ package redis
 import (
 	"context"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-redis/redis/v8"
 )
 
 const (
@@ -96,6 +96,14 @@ func (es eventStore) ListThings(ctx context.Context, token string, pm things.Pag
 
 func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.Page, error) {
 	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
+}
+
+func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, error) {
+	return es.svc.Backup(ctx, token)
+}
+
+func (es eventStore) Restore(ctx context.Context, token string, backup things.Backup) error {
+	return es.svc.Restore(ctx, token, backup)
 }
 
 func (es eventStore) RemoveThing(ctx context.Context, token, id string) error {

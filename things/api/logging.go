@@ -304,3 +304,29 @@ func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID str
 
 	return lm.svc.ListMembers(ctx, token, groupID, pm)
 }
+
+func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Backup(ctx, token)
+}
+
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup things.Backup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Restore(ctx, token, backup)
+}

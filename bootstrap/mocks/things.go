@@ -181,6 +181,14 @@ func (svc *mainfluxThings) ListThingsByChannel(context.Context, string, string, 
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CreateChannels(_ context.Context, owner string, chs ...things.Channel) ([]things.Channel, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()

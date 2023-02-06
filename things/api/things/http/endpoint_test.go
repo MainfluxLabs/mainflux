@@ -2869,6 +2869,210 @@ func TestDisconnnect(t *testing.T) {
 	}
 }
 
+func TestBackup(t *testing.T) {
+	svc := newService(map[string]string{token: adminEmail})
+	ts := newServer(svc)
+	defer ts.Close()
+
+	ths, err := svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	channels := []things.Channel{}
+	for i := 0; i < 10; i++ {
+		name := "name_" + fmt.Sprintf("%03d", i+1)
+		chs, err := svc.CreateChannels(context.Background(), token,
+			things.Channel{
+				Name:     name,
+				Metadata: map[string]interface{}{"test": "data"},
+			})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		ch := chs[0]
+
+		svc.Connect(context.Background(), token, []string{ch.ID}, []string{ths[0].ID})
+
+		channels = append(channels, ch)
+	}
+
+	connections := []things.Connection{}
+	for _, ch := range channels {
+		connections = append(connections, things.Connection{
+			ChannelID:    ch.ID,
+			ChannelOwner: ch.Owner,
+			ThingID:      ths[0].ID,
+			ThingOwner:   ths[0].Owner,
+		})
+	}
+
+	backup := backupRes{
+		Things:      ths,
+		Channels:    channels,
+		Connections: connections,
+	}
+
+	backupURL := fmt.Sprintf("%s/backup", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    backupRes
+	}{
+		{
+			desc:   "backup all things channels and connections",
+			auth:   token,
+			status: http.StatusOK,
+			url:    backupURL,
+			res:    backup,
+		},
+		{
+			desc:   "backup with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    backupURL,
+			res:    backupRes{},
+		},
+		{
+			desc:   "backup with empty token",
+			auth:   "",
+			status: http.StatusUnauthorized,
+			url:    backupURL,
+			res:    backupRes{},
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body backupRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res.Channels, body.Channels, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Channels, body.Channels))
+		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
+	}
+}
+
+func TestRestore(t *testing.T) {
+	svc := newService(map[string]string{token: adminEmail})
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	thId, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thKey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	testThing := things.Thing{
+		ID:       thId,
+		Owner:    adminEmail,
+		Name:     nameKey,
+		Key:      thKey,
+		Metadata: map[string]interface{}{"test": "data"},
+	}
+
+	channels := []things.Channel{}
+	for i := 0; i < n; i++ {
+		chID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		name := "name_" + fmt.Sprintf("%03d", i+1)
+		channels = append(channels, things.Channel{
+			ID:       chID,
+			Owner:    adminEmail,
+			Name:     name,
+			Metadata: map[string]interface{}{"test": "data"},
+		})
+	}
+
+	connections := []things.Connection{}
+	for _, ch := range channels {
+		connections = append(connections, things.Connection{
+			ChannelID:    ch.ID,
+			ChannelOwner: ch.Owner,
+			ThingID:      testThing.ID,
+			ThingOwner:   testThing.Owner,
+		})
+	}
+
+	type restoreReq struct {
+		Things      []things.Thing      `json:"things"`
+		Channels    []things.Channel    `json:"channels"`
+		Connections []things.Connection `json:"connections"`
+	}
+
+	data := toJSON(restoreReq{
+		Things:      []things.Thing{testThing},
+		Channels:    channels,
+		Connections: connections,
+	})
+	invalidData := toJSON(restoreReq{})
+	restoreURL := fmt.Sprintf("%s/restore", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		status      int
+		url         string
+		req         string
+		contentType string
+	}{
+		{
+			desc:        "restore all things channels and connections",
+			auth:        token,
+			status:      http.StatusCreated,
+			url:         restoreURL,
+			req:         data,
+			contentType: contentType,
+		},
+		{
+			desc:        "restore with invalid token",
+			auth:        wrongValue,
+			status:      http.StatusUnauthorized,
+			url:         restoreURL,
+			req:         data,
+			contentType: contentType,
+		},
+		{
+			desc:        "restore with empty token",
+			auth:        "",
+			status:      http.StatusUnauthorized,
+			url:         restoreURL,
+			req:         data,
+			contentType: contentType,
+		},
+		{
+			desc:        "restore with invalid request",
+			auth:        token,
+			status:      http.StatusBadRequest,
+			url:         restoreURL,
+			req:         invalidData,
+			contentType: contentType,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+
+	}
+}
+
 type thingRes struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name,omitempty"`
@@ -2894,4 +3098,10 @@ type channelsPageRes struct {
 	Total    uint64       `json:"total"`
 	Offset   uint64       `json:"offset"`
 	Limit    uint64       `json:"limit"`
+}
+
+type backupRes struct {
+	Things      []things.Thing      `json:"things"`
+	Channels    []things.Channel    `json:"channels"`
+	Connections []things.Connection `json:"connections"`
 }

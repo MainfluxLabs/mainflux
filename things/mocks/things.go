@@ -291,6 +291,18 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 	delete(trm.tconns[conn.chanID], conn.thing.ID)
 }
 
+func (trm *thingRepositoryMock) BackupThings(_ context.Context) ([]things.Thing, error) {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+	var ths []things.Thing
+
+	for _, v := range trm.things {
+		ths = append(ths, v)
+	}
+
+	return ths, nil
+}
+
 type thingCacheMock struct {
 	mu     sync.Mutex
 	things map[string]string

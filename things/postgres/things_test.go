@@ -551,6 +551,76 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 }
 
+func TestBackupThings(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	err := cleanTestTable(context.Background(), "things", dbMiddleware)
+	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+
+	email := "thing-multi-retrieval@example.com"
+	name := "thing_name"
+	metaStr := `{"field1":"value1","field2":{"subfield11":"value2","subfield12":{"subfield121":"value3","subfield122":"value4"}}}`
+	subMetaStr := `{"field2":{"subfield12":{"subfield121":"value3"}}}`
+
+	metadata := things.Metadata{}
+	json.Unmarshal([]byte(metaStr), &metadata)
+
+	subMeta := things.Metadata{}
+	json.Unmarshal([]byte(subMetaStr), &subMeta)
+
+	nameNum := uint64(3)
+	metaNum := uint64(3)
+	nameMetaNum := uint64(2)
+
+	n := uint64(101)
+	for i := uint64(0); i < n; i++ {
+		id, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		key, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		th := things.Thing{
+			Owner: email,
+			ID:    id,
+			Key:   key,
+		}
+
+		// Create Things with name.
+		if i < nameNum {
+			th.Name = fmt.Sprintf("%s-%d", name, i)
+		}
+		// Create Things with metadata.
+		if i >= nameNum && i < nameNum+metaNum {
+			th.Metadata = metadata
+		}
+		// Create Things with name and metadata.
+		if i >= n-nameMetaNum {
+			th.Metadata = metadata
+			th.Name = name
+		}
+
+		_, err = thingRepo.Save(context.Background(), th)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	cases := map[string]struct {
+		size uint64
+		err  error
+	}{
+		"retrieve all things": {
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		things, err := thingRepo.BackupThings(context.Background())
+		size := uint64(len(things))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
 func TestMultiThingRetrievalByChannel(t *testing.T) {
 	email := "thing-multi-retrieval-by-channel@example.com"
 

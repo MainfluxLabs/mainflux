@@ -6,9 +6,9 @@ package http
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func createThingEndpoint(svc things.Service) endpoint.Endpoint {
@@ -541,6 +541,47 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return buildThingsResponse(page), nil
+	}
+}
+
+func backupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup, err := svc.Backup(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
+		return backupRes{
+			Things:      backup.Things,
+			Channels:    backup.Channels,
+			Connections: backup.Connections,
+		}, nil
+	}
+}
+
+func restoreEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup := things.Backup{
+			Things:      req.Things,
+			Channels:    req.Channels,
+			Connections: req.Connections,
+		}
+
+		if err := svc.Restore(ctx, req.token, backup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 

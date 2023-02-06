@@ -106,6 +106,12 @@ type Service interface {
 
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
+
+	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
+	Backup(ctx context.Context, token string) (Backup, error)
+
+	// Restore adds things, channels and connections from a backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, backup Backup) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -119,6 +125,12 @@ type PageMetadata struct {
 	Metadata          map[string]interface{} `json:"metadata,omitempty"`
 	Disconnected      bool                   // Used for connected or disconnected lists
 	FetchSharedThings bool                   // Used for identifying fetching either all or shared things.
+}
+
+type Backup struct {
+	Things      []Thing
+	Channels    []Channel
+	Connections []Connection
 }
 
 var _ Service = (*thingsService)(nil)
@@ -586,6 +598,70 @@ func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string,
 	}
 
 	return ts.things.RetrieveByIDs(ctx, res, pm)
+}
+
+func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Backup{}, err
+	}
+
+	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	things, err := ts.things.BackupThings(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	channels, err := ts.channels.BackupChannels(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	connections, err := ts.channels.BackupConnections(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	return Backup{
+		Things:      things,
+		Channels:    channels,
+		Connections: connections,
+	}, nil
+}
+
+func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = ts.things.Save(ctx, backup.Things...)
+	if err != nil {
+		return err
+	}
+
+	_, err = ts.channels.Save(ctx, backup.Channels...)
+	if err != nil {
+		return err
+	}
+
+	for _, conn := range backup.Connections {
+		err = ts.channels.Connect(ctx, conn.ThingOwner, []string{conn.ChannelID}, []string{conn.ThingID})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (ts *thingsService) members(ctx context.Context, token, groupID, groupType string, limit, offset uint64) ([]string, error) {

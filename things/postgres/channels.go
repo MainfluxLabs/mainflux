@@ -425,6 +425,50 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	return nil
 }
 
+func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
+	q := `SELECT id, owner, name, metadata FROM channels;`
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrViewEntity, err)
+	}
+	defer rows.Close()
+
+	channels := make([]things.Channel, 0)
+	for rows.Next() {
+		dbch := dbChannel{}
+		if err := rows.StructScan(&dbch); err != nil {
+			return nil, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		channels = append(channels, toChannel(dbch))
+	}
+
+	return channels, nil
+}
+
+func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connection, error) {
+	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrViewEntity, err)
+	}
+	defer rows.Close()
+
+	connections := make([]things.Connection, 0)
+	for rows.Next() {
+		dbco := dbConn{}
+		if err := rows.StructScan(&dbco); err != nil {
+			return nil, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		connections = append(connections, toConnection(dbco))
+	}
+
+	return connections, nil
+}
+
 // dbMetadata type for handling metadata properly in database/sql.
 type dbMetadata map[string]interface{}
 
@@ -485,6 +529,31 @@ func toChannel(ch dbChannel) things.Channel {
 		Owner:    ch.Owner,
 		Name:     ch.Name,
 		Metadata: ch.Metadata,
+	}
+}
+
+type dbConn struct {
+	ChannelID    string `db:"channel_id"`
+	ChannelOwner string `db:"channel_owner"`
+	ThingID      string `db:"thing_id"`
+	ThingOwner   string `db:"thing_owner"`
+}
+
+func toConnection(co dbConn) things.Connection {
+	return things.Connection{
+		ChannelID:    co.ChannelID,
+		ChannelOwner: co.ChannelOwner,
+		ThingID:      co.ThingID,
+		ThingOwner:   co.ThingOwner,
+	}
+}
+
+func toDBConnection(co things.Connection) dbConn {
+	return dbConn{
+		ChannelID:    co.ChannelID,
+		ChannelOwner: co.ChannelOwner,
+		ThingID:      co.ThingID,
+		ThingOwner:   co.ThingOwner,
 	}
 }
 

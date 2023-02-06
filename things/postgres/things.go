@@ -436,6 +436,32 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 	return nil
 }
 
+func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, error) {
+	q := `SELECT id, owner, name, key, metadata FROM things;`
+	rows, err := tr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+	}
+	defer rows.Close()
+
+	var items []things.Thing
+	for rows.Next() {
+		dbth := dbThing{}
+		if err := rows.StructScan(&dbth); err != nil {
+			return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		th, err := toThing(dbth)
+		if err != nil {
+			return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+		}
+
+		items = append(items, th)
+	}
+
+	return items, nil
+}
+
 type dbThing struct {
 	ID       string `db:"id"`
 	Owner    string `db:"owner"`
