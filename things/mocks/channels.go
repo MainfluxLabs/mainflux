@@ -294,7 +294,6 @@ func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]thin
 			}
 			conns = append(conns, con)
 		}
-
 	}
 
 	return conns, nil
@@ -313,7 +312,6 @@ func (crm *channelRepositoryMock) RestoreConnections(ctx context.Context, connec
 			ID:    conn.ChannelID,
 			Owner: conn.ChannelOwner,
 		}
-
 	}
 
 	return nil

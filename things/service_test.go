@@ -1524,7 +1524,7 @@ func TestRestore(t *testing.T) {
 			backup: backup,
 			err:    nil,
 		},
-		"Restore backups with invalid token": {
+		"Restore backup with invalid token": {
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
