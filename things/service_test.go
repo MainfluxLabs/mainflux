@@ -1497,7 +1497,6 @@ func TestRestore(t *testing.T) {
 
 	var connections []things.Connection
 	for _, ch := range chs {
-
 		conn := things.Connection{
 			ChannelID:    ch.ID,
 			ChannelOwner: ch.Owner,
