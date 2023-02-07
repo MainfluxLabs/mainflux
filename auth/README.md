@@ -1,6 +1,6 @@
 # Auth - Authentication and Authorization service
 
-Auth service provides authentication features as an API for managing authentication keys as well as administering groups of entities - `things` and `users`. 
+Auth service provides authentication features as an API for managing authentication keys as well as administering groups of entities - `things` and `users`.
 
 # Authentication
 User service is using Auth service gRPC API to obtain login token or password reset token. Authentication key consists of the following fields:
@@ -74,15 +74,10 @@ default values.
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth           |
 | MF_AUTH_LOGIN_TOKEN_DURATION  | The login token expiration period                                        | 10h            |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831 |
-| MF_KETO_READ_REMOTE_HOST      | Keto Read Host                                                           | mainfluxlabs-keto  |
-| MF_KETO_WRITE_REMOTE_HOST     | Keto Write Host                                                          | mainfluxlabs-keto  |
-| MF_KETO_READ_REMOTE_PORT      | Keto Read Port                                                           | 4466           |
-| MF_KETO_WRITE_REMOTE_PORT     | Keto Write Port                                                          | 4467           |
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`auth`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L71-L94) service section in 
-docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`auth`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L71-L94) service section in docker-compose to see how service is deployed.
 
 
 To start the service outside of the container, execute the following shell script:

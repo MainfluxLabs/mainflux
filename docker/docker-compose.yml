@@ -11,7 +11,6 @@ volumes:
   mainfluxlabs-auth-db-volume:
   mainfluxlabs-users-db-volume:
   mainfluxlabs-things-db-volume:
-  mainfluxlabs-keto-db-volume:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
@@ -36,56 +35,6 @@ services:
       MF_PROXY_LOGOUT_URL: ${MF_PROXY_LOGOUT_URL}
       MF_UI_APP_PREFIX: ${MF_UI_APP_PREFIX}
     command: /entrypoint.sh
-
-  keto:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainfluxlabs-keto
-    ports:
-      - ${MF_KETO_READ_REMOTE_PORT}:${MF_KETO_READ_REMOTE_PORT}
-      - ${MF_KETO_WRITE_REMOTE_PORT}:${MF_KETO_WRITE_REMOTE_PORT}
-    environment:
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    command: serve -c /home/ory/keto.yml
-    restart: on-failure
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    networks:
-      - mainfluxlabs-base-net
-    depends_on:
-      - keto-db
-
-  keto-migrate:
-    image: oryd/keto:v0.6.0-alpha.3
-    container_name: mainfluxlabs-keto-migrate
-    environment:
-      - KETO_WRITE_REMOTE=keto:${MF_KETO_WRITE_REMOTE_PORT}
-      - KETO_READ_REMOTE=keto:${MF_KETO_READ_REMOTE_PORT}
-      - DSN=postgresql://${MF_KETO_DB_USER}:${MF_KETO_DB_PASS}@keto-db:${MF_KETO_DB_PORT}/${MF_KETO_DB}?sslmode=disable
-    volumes:
-      - type: bind
-        source: ./keto
-        target: /home/ory
-    command: migrate up --all-namespaces -c /home/ory/keto.yml --yes
-    restart: on-failure
-    networks:
-      - mainfluxlabs-base-net
-    depends_on:
-      - keto-db
-
-  keto-db:
-    image: postgres:13.3-alpine
-    container_name: mainfluxlabs-keto-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_KETO_DB_USER}
-      POSTGRES_PASSWORD: ${MF_KETO_DB_PASS}
-      POSTGRES_DB: ${MF_KETO_DB}
-    networks:
-      - mainfluxlabs-base-net
-    volumes:
-      - mainfluxlabs-keto-db-volume:/var/lib/postgresql/data
 
   nginx:
     image: nginx:1.20.0-alpine
@@ -145,7 +94,6 @@ services:
     container_name: mainfluxlabs-auth
     depends_on:
       - auth-db
-      - keto
     expose:
       - ${MF_AUTH_GRPC_PORT}
     restart: on-failure
