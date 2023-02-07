@@ -61,6 +61,15 @@ func TestAuthConnect(t *testing.T) {
 			session: nil,
 		},
 		{
+			desc: "connect without clientID",
+			err:  nil,
+			session: &session.Client{
+				ID:       "",
+				Username: thingID,
+				Password: []byte(password),
+			},
+		},
+		{
 			desc: "connect with invalid password",
 			err:  errors.ErrAuthentication,
 			session: &session.Client{

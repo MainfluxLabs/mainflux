@@ -186,13 +186,13 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	subscriptions, err := h.getSubcriptions(c, topics)
+	subs, err := h.getSubcriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
 	}
 
-	for _, s := range subscriptions {
+	for _, s := range subs {
 		err = h.service.CreateSubscription(context.Background(), s)
 		if err != nil {
 			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
@@ -208,13 +208,13 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	subscriptions, err := h.getSubcriptions(c, topics)
+	subs, err := h.getSubcriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
 	}
 
-	for _, s := range subscriptions {
+	for _, s := range subs {
 		h.service.RemoveSubscription(context.Background(), s)
 		if c == nil {
 			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
@@ -283,7 +283,7 @@ func parseSubtopic(subtopic string) (string, error) {
 }
 
 func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
-	var subscriptions []Subscription
+	var subs []Subscription
 	for _, t := range *topics {
 		channelAndSubtopic := channelRegExp.FindStringSubmatch(t)
 		if len(channelAndSubtopic) < 2 {
@@ -298,14 +298,14 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		subscription := Subscription{
+		sub := Subscription{
 			Subtopic:  subtopic,
 			ChanID:    chanID,
 			ThingID:   c.Username,
 			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
 		}
-		subscriptions = append(subscriptions, subscription)
+		subs = append(subs, sub)
 	}
 
-	return subscriptions, nil
+	return subs, nil
 }
