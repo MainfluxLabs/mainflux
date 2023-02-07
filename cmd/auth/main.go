@@ -17,7 +17,6 @@ import (
 	grpcapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	httpapi "github.com/MainfluxLabs/mainflux/auth/api/http"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
-	"github.com/MainfluxLabs/mainflux/auth/keto"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -26,7 +25,6 @@ import (
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
-	acl "github.com/ory/keto/proto/ory/keto/acl/v1alpha1"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
@@ -55,10 +53,6 @@ const (
 	defServerCert    = ""
 	defServerKey     = ""
 	defJaegerURL     = ""
-	defKetoReadHost  = "mainfluxlabs-keto"
-	defKetoWriteHost = "mainfluxlabs-keto"
-	defKetoReadPort  = "4466"
-	defKetoWritePort = "4467"
 	defLoginDuration = "10h"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
@@ -168,10 +162,6 @@ func loadConfig() config {
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		ketoReadHost:  mainflux.Env(envKetoReadHost, defKetoReadHost),
-		ketoWriteHost: mainflux.Env(envKetoWriteHost, defKetoWriteHost),
-		ketoReadPort:  mainflux.Env(envKetoReadPort, defKetoReadPort),
-		ketoWritePort: mainflux.Env(envKetoWritePort, defKetoWritePort),
 		loginDuration: loginDuration,
 	}
 
@@ -236,12 +226,10 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger lo
 	groupsRepo := postgres.NewGroupRepo(database)
 	groupsRepo = tracing.GroupRepositoryMiddleware(tracer, groupsRepo)
 
-	pa := keto.NewPolicyAgent(acl.NewCheckServiceClient(readerConn), acl.NewWriteServiceClient(writerConn), acl.NewReadServiceClient(readerConn))
-
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, keysRepo, groupsRepo, idProvider, t, pa, duration)
+	svc := auth.New(orgsRepo, keysRepo, groupsRepo, idProvider, t, duration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

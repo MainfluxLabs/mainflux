@@ -5,8 +5,6 @@ package auth
 
 import (
 	"context"
-
-	acl "github.com/ory/keto/proto/ory/keto/acl/v1alpha1"
 )
 
 // PolicyReq represents an argument struct for making a policy related
@@ -68,5 +66,5 @@ type PolicyAgent interface {
 	// DeletePolicy removes a policy.
 	DeletePolicy(ctx context.Context, pr PolicyReq) error
 
-	RetrievePolicies(ctx context.Context, pr PolicyReq) ([]*acl.RelationTuple, error)
+	RetrievePolicies(ctx context.Context, pr PolicyReq) (PolicyPage, error)
 }

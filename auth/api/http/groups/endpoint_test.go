@@ -61,8 +61,8 @@ func newService() auth.Service {
 	groups := mocks.NewGroupRepository()
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
-	policies := mocks.NewKetoMock(map[string][]mocks.MockSubjectSet{})
-	return auth.New(keys, groups, idProvider, t, policies, loginDuration)
+
+	return auth.New(nil, keys, groups, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
