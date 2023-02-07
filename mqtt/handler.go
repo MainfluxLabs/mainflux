@@ -181,13 +181,18 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 // Subscribe - after client successfully subscribed
 func (h *handler) Subscribe(c *session.Client, topics *[]string) {
-	sub, err := h.getSubcription(c, topics)
+	if c == nil {
+		h.logger.Error(LogErrFailedSubscribe + (ErrClientNotInitialized).Error())
+		return
+	}
+
+	subscriptions, err := h.getSubcriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
 	}
 
-	for _, s := range sub {
+	for _, s := range subscriptions {
 		err = h.service.CreateSubscription(context.Background(), s)
 		if err != nil {
 			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
@@ -198,13 +203,18 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 
 // Unsubscribe - after client unsubscribed
 func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
-	sub, err := h.getSubcription(c, topics)
+	if c == nil {
+		h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
+		return
+	}
+
+	subscriptions, err := h.getSubcriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
 	}
 
-	for _, s := range sub {
+	for _, s := range subscriptions {
 		h.service.RemoveSubscription(context.Background(), s)
 		if c == nil {
 			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
@@ -272,8 +282,8 @@ func parseSubtopic(subtopic string) (string, error) {
 	return subtopic, nil
 }
 
-func (h *handler) getSubcription(c *session.Client, topics *[]string) ([]Subscription, error) {
-	var subs []Subscription
+func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
+	var subscriptions []Subscription
 	for _, t := range *topics {
 		channelAndSubtopic := channelRegExp.FindStringSubmatch(t)
 		if len(channelAndSubtopic) < 2 {
@@ -288,14 +298,14 @@ func (h *handler) getSubcription(c *session.Client, topics *[]string) ([]Subscri
 			return nil, err
 		}
 
-		sub := Subscription{
+		subscription := Subscription{
 			Subtopic:  subtopic,
 			ChanID:    chanID,
 			ThingID:   c.Username,
 			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
 		}
-		subs = append(subs, sub)
+		subscriptions = append(subscriptions, subscription)
 	}
 
-	return subs, nil
+	return subscriptions, nil
 }

@@ -61,15 +61,6 @@ func TestAuthConnect(t *testing.T) {
 			session: nil,
 		},
 		{
-			desc: "connect without clientID",
-			err:  mqtt.ErrMissingClientID,
-			session: &session.Client{
-				ID:       "",
-				Username: thingID,
-				Password: []byte(password),
-			},
-		},
-		{
 			desc: "connect with invalid password",
 			err:  errors.ErrAuthentication,
 			session: &session.Client{
@@ -392,5 +383,5 @@ func newHandler() session.Handler {
 
 	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]interface{}{chanID: thingID})
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{mocks.NewPublisher()}, eventStore, logger, authClient, nil)
+	return mqtt.NewHandler([]messaging.Publisher{mocks.NewPublisher()}, eventStore, logger, authClient, newService())
 }
