@@ -412,6 +412,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		OwnerID:     user.ID,
 		Name:        org.Name,
 		Description: org.Description,
+		Metadata:    org.Metadata,
 		UpdatedAt:   timestamp,
 		CreatedAt:   timestamp,
 	}
