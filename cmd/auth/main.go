@@ -71,10 +71,6 @@ const (
 	envServerCert    = "MF_AUTH_SERVER_CERT"
 	envServerKey     = "MF_AUTH_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
-	envKetoReadHost  = "MF_KETO_READ_REMOTE_HOST"
-	envKetoWriteHost = "MF_KETO_WRITE_REMOTE_HOST"
-	envKetoReadPort  = "MF_KETO_READ_REMOTE_PORT"
-	envKetoWritePort = "MF_KETO_WRITE_REMOTE_PORT"
 	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
 )
 
@@ -87,10 +83,6 @@ type config struct {
 	serverCert    string
 	serverKey     string
 	jaegerURL     string
-	ketoReadHost  string
-	ketoWriteHost string
-	ketoWritePort string
-	ketoReadPort  string
 	loginDuration time.Duration
 }
 
@@ -112,9 +104,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	readerConn, writerConn := initKeto(cfg.ketoReadHost, cfg.ketoReadPort, cfg.ketoWriteHost, cfg.ketoWritePort, logger)
-
-	svc := newService(db, dbTracer, cfg.secret, logger, readerConn, writerConn, cfg.loginDuration)
+	svc := newService(db, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
@@ -216,7 +206,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, readerConn, writerConn *grpc.ClientConn, duration time.Duration) auth.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
