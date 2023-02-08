@@ -54,6 +54,8 @@ const (
 	defServerKey     = ""
 	defJaegerURL     = ""
 	defLoginDuration = "10h"
+	defAdminEmail    = ""
+	defAdminPassword = ""
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
 	envDBHost        = "MF_AUTH_DB_HOST"
@@ -72,6 +74,7 @@ const (
 	envServerKey     = "MF_AUTH_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
 	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
 )
 
 type config struct {
@@ -84,6 +87,7 @@ type config struct {
 	serverKey     string
 	jaegerURL     string
 	loginDuration time.Duration
+	adminEmail    string
 }
 
 func main() {
@@ -104,7 +108,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, logger, cfg.loginDuration)
+	svc := newService(db, dbTracer, cfg.secret, logger, cfg.loginDuration, cfg.adminEmail)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
@@ -153,6 +157,7 @@ func loadConfig() config {
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration: loginDuration,
+		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
 	}
 
 }
@@ -206,7 +211,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration) auth.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration, adminEmail string) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -219,7 +224,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger lo
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, keysRepo, groupsRepo, idProvider, t, duration)
+	svc := auth.New(orgsRepo, keysRepo, groupsRepo, idProvider, t, duration, adminEmail)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

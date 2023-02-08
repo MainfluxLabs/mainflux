@@ -41,7 +41,7 @@ func newService() auth.Service {
 	mockAuthzDB[id] = append(mockAuthzDB[id], mocks.MockSubjectSet{Object: authoritiesObj, Relation: memberRelation})
 
 	t := jwt.New(secret)
-	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration)
+	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration, email)
 }
 
 func TestIssue(t *testing.T) {
@@ -1011,7 +1011,7 @@ func TestUnassign(t *testing.T) {
 func TestAuthorize(t *testing.T) {
 	svc := newService()
 
-	pr := auth.PolicyReq{Object: authoritiesObj, Relation: memberRelation, Subject: id}
+	pr := auth.PolicyReq{Object: authoritiesObj, Relation: memberRelation, Subject: email}
 	err := svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v policy expected to succeed: %s", pr, err))
 }

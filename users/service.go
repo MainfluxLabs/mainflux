@@ -227,7 +227,7 @@ func (svc usersService) checkAuthz(ctx context.Context, token string) error {
 		return err
 	}
 
-	return svc.authorize(ctx, ir.id, authoritiesObjKey, memberRelationKey)
+	return svc.authorize(ctx, ir.email, authoritiesObjKey, memberRelationKey)
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
@@ -284,7 +284,7 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, id.id, "authorities", "member"); err != nil {
+	if err := svc.authorize(ctx, id.email, "authorities", "member"); err != nil {
 		return UserPage{}, err
 	}
 	return svc.users.RetrieveAll(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)

@@ -91,10 +91,11 @@ type service struct {
 	ulidProvider  mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
+	adminEmail    string
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, keys KeyRepository, groups GroupRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		orgs:          orgs,
@@ -103,6 +104,7 @@ func New(orgs OrgRepository, keys KeyRepository, groups GroupRepository, idp mai
 		idProvider:    idp,
 		ulidProvider:  ulid.New(),
 		loginDuration: duration,
+		adminEmail:    adminEmail,
 	}
 }
 
@@ -165,6 +167,9 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 }
 
 func (svc service) Authorize(ctx context.Context, pr PolicyReq) error {
+	if pr.Object == "authorities" && pr.Relation == "member" && pr.Subject != svc.adminEmail {
+		return errors.ErrAuthorization
+	}
 	return nil
 }
 

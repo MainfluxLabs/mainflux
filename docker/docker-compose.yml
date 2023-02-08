@@ -109,6 +109,7 @@ services:
       MF_AUTH_SECRET: ${MF_AUTH_SECRET}
       MF_AUTH_LOGIN_TOKEN_DURATION: ${MF_AUTH_LOGIN_TOKEN_DURATION}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
     ports:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
@@ -227,7 +228,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainflux/vernemq:0.13.0
+    image: mainfluxlabs/vernemq:0.13.2-arm64
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
