@@ -72,7 +72,7 @@ func newService() auth.Service {
 	mockAuthzDB := map[string][]mocks.MockSubjectSet{}
 	mockAuthzDB[id] = append(mockAuthzDB[id], mocks.MockSubjectSet{Object: "authorities", Relation: "member"})
 
-	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration)
+	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration, email)
 }
 
 func newServer(svc auth.Service) *httptest.Server {

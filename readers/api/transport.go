@@ -356,7 +356,7 @@ func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 	}
 
 	req := &mainflux.AuthorizeReq{
-		Sub: identity.Id,
+		Sub: identity.Email,
 		Obj: object,
 		Act: relation,
 	}
@@ -365,7 +365,6 @@ func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-
 	if !res.GetAuthorized() {
 		return errors.ErrAuthorization
 	}

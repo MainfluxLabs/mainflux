@@ -606,7 +606,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	err = ts.authorize(ctx, res.GetEmail(), authoritiesObject, memberRelationKey)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -639,7 +639,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	err = ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey)
+	err = ts.authorize(ctx, res.GetEmail(), authoritiesObject, memberRelationKey)
 	if err != nil {
 		return err
 	}

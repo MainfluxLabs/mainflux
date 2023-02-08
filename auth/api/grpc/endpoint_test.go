@@ -52,7 +52,7 @@ func newService() auth.Service {
 
 	t := jwt.New(secret)
 
-	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration)
+	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration, email)
 }
 
 func startGRPCServer(svc auth.Service, port int) {

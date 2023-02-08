@@ -42,7 +42,7 @@ func newService() users.Service {
 
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 
-	mockAuthzDB[userAdmin.ID] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
+	mockAuthzDB[userAdmin.Email] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
 
 	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}

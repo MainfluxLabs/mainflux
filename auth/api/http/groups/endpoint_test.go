@@ -62,7 +62,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, keys, groups, idProvider, t, loginDuration)
+	return auth.New(nil, keys, groups, idProvider, t, loginDuration, email)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
