@@ -275,7 +275,6 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return Page{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	// subject := res.GetId()
 	// If the user is admin, fetch all things from database.
 	if err := ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
 		page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
@@ -284,23 +283,6 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		}
 		return page, err
 	}
-
-	// If the user is not admin, check 'shared' parameter from page metadata.
-	// If user provides 'shared' key, fetch things from policies. Otherwise,
-	// fetch things from the database based on thing's 'owner' field.
-	// if pm.FetchSharedThings {
-	// 	req := &mainflux.ListPoliciesReq{Act: "read", Sub: subject}
-	// 	lpr, err := ts.auth.ListPolicies(ctx, req)
-	// 	if err != nil {
-	// 		return Page{}, err
-	// 	}
-
-	// 	var page Page
-	// 	for _, thingID := range lpr.Policies {
-	// 		page.Things = append(page.Things, Thing{ID: thingID})
-	// 	}
-	// 	return page, nil
-	// }
 
 	// By default, fetch things from Things service.
 	page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
