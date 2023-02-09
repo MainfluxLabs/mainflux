@@ -243,13 +243,6 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	return page, nil
 }
 
-func getOwnerQuery(fetchSharedThings bool) string {
-	if fetchSharedThings {
-		return ""
-	}
-	return "owner = :owner"
-}
-
 func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)

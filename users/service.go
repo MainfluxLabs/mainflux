@@ -153,10 +153,6 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 	}
 	user.ID = uid
 
-	if err := svc.claimOwnership(ctx, user.ID, usersObjKey, memberRelationKey); err != nil {
-		return "", err
-	}
-
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrMalformedEntity, err)
@@ -189,10 +185,6 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 	user.ID = uid
-
-	if err := svc.claimOwnership(ctx, user.ID, usersObjKey, memberRelationKey); err != nil {
-		return "", err
-	}
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
@@ -430,22 +422,6 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	}
 
 	return userIdentity{identity.Id, identity.Email}, nil
-}
-
-func (svc usersService) claimOwnership(ctx context.Context, subject, object, relation string) error {
-	req := &mainflux.AddPolicyReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
-	}
-	res, err := svc.auth.AddPolicy(ctx, req)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-	return nil
 }
 
 func (svc usersService) members(ctx context.Context, token, groupID string, limit, offset uint64) ([]string, error) {

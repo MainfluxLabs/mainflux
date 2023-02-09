@@ -31,7 +31,6 @@ const (
 	dirKey      = "dir"
 	metadataKey = "metadata"
 	disconnKey  = "disconnected"
-	sharedKey   = "shared"
 	defOffset   = 0
 	defLimit    = 10
 )
@@ -54,13 +53,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	r.Post("/things/bulk", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
 		decodeThingsCreation,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/things/:id/share", kithttp.NewServer(
-		kitot.TraceServer(tracer, "share_thing")(shareThingEndpoint(svc)),
-		decodeShareThing,
 		encodeResponse,
 		opts...,
 	))
@@ -238,22 +230,6 @@ func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, erro
 
 	req := createThingsReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeShareThing(ctx context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
-	}
-
-	req := shareThingReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, "id"),
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 

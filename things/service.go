@@ -5,7 +5,6 @@ package things
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
@@ -31,11 +30,6 @@ type Service interface {
 	// UpdateThing updates the thing identified by the provided ID, that
 	// belongs to the user identified by the provided key.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
-
-	// ShareThing gives actions associated with the thing to the given user IDs.
-	// The requester user identified by the token has to have a "write" relation
-	// on the thing in order to share the thing.
-	ShareThing(ctx context.Context, token, thingID string, actions, userIDs []string) error
 
 	// UpdateKey updates key value of the existing thing. A non-nil error is
 	// returned to indicate operation failure.
@@ -205,11 +199,6 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 		return Thing{}, errors.ErrCreateEntity
 	}
 
-	ss := fmt.Sprintf("%s:%s#%s", "members", authoritiesObject, memberRelationKey)
-	if err := ts.claimOwnership(ctx, ths[0].ID, []string{readRelationKey, writeRelationKey, deleteRelationKey}, []string{identity.GetId(), ss}); err != nil {
-		return Thing{}, err
-	}
-
 	return ths[0], nil
 }
 
@@ -222,31 +211,6 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 	thing.Owner = res.GetId()
 
 	return ts.things.Update(ctx, thing)
-}
-
-func (ts *thingsService) ShareThing(ctx context.Context, token, thingID string, actions, userIDs []string) error {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	return ts.claimOwnership(ctx, thingID, actions, userIDs)
-}
-
-func (ts *thingsService) claimOwnership(ctx context.Context, objectID string, actions, userIDs []string) error {
-	var errs error
-	for _, userID := range userIDs {
-		for _, action := range actions {
-			apr, err := ts.auth.AddPolicy(ctx, &mainflux.AddPolicyReq{Obj: objectID, Act: action, Sub: userID})
-			if err != nil {
-				errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': %s", objectID, userID, err), errs)
-			}
-			if !apr.GetAuthorized() {
-				errs = errors.Wrap(fmt.Errorf("cannot claim ownership on object '%s' by user '%s': unauthorized", objectID, userID), errs)
-			}
-		}
-	}
-	return errs
 }
 
 func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
@@ -350,10 +314,6 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 		return Channel{}, errors.ErrCreateEntity
 	}
 
-	ss := fmt.Sprintf("%s:%s#%s", "members", authoritiesObject, memberRelationKey)
-	if err := ts.claimOwnership(ctx, chs[0].ID, []string{readRelationKey, writeRelationKey, deleteRelationKey}, []string{identity.GetId(), ss}); err != nil {
-		return Channel{}, err
-	}
 	return chs[0], nil
 }
 
