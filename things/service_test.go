@@ -130,7 +130,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:  "update non-existing thing",
 			thing: other,
 			token: token,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrNotFound,
 		},
 	}
 
@@ -173,7 +173,7 @@ func TestUpdateKey(t *testing.T) {
 			token: token,
 			id:    wrongID,
 			key:   wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrNotFound,
 		},
 	}
 
@@ -212,7 +212,7 @@ func TestShareThing(t *testing.T) {
 			thingID:  th.ID,
 			policies: policies,
 			userIDs:  []string{email2},
-			err:      errors.ErrAuthorization,
+			err:      nil,
 		},
 		{
 			desc:     "share a thing with invalid token",
@@ -607,7 +607,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:  "remove non-existing thing",
 			id:    wrongID,
 			token: token,
-			err:   errors.ErrAuthorization,
+			err:   nil,
 		},
 	}
 

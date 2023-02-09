@@ -254,7 +254,6 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm thin
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
-	ownerQuery := getOwnerQuery(pm.FetchSharedThings)
 	m, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -266,9 +265,6 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm thin
 	}
 	if nq != "" {
 		query = append(query, nq)
-	}
-	if ownerQuery != "" {
-		query = append(query, ownerQuery)
 	}
 
 	var whereClause string

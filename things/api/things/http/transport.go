@@ -373,21 +373,16 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	shared, err := apiutil.ReadBoolQuery(r, sharedKey, false)
-	if err != nil {
-		return nil, err
-	}
 
 	req := listResourcesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
-			Offset:            o,
-			Limit:             l,
-			Name:              n,
-			Order:             or,
-			Dir:               d,
-			Metadata:          m,
-			FetchSharedThings: shared,
+			Offset:   o,
+			Limit:    l,
+			Name:     n,
+			Order:    or,
+			Dir:      d,
+			Metadata: m,
 		},
 	}
 

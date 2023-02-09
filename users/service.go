@@ -143,11 +143,6 @@ func New(users UserRepository, hasher Hasher, auth mainflux.AuthServiceClient, e
 }
 
 func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
-	// self register allowed, token not used
-	if err := svc.authorize(ctx, "*", "user", "create"); err != nil {
-		return "", errors.Wrap(errors.ErrAuthorization, err)
-	}
-
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
@@ -178,7 +173,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 }
 
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
-	if err := svc.checkAuthz(ctx, token); err != nil {
+	if _, err := svc.identify(ctx, token); err != nil {
 		return "", err
 	}
 
@@ -219,15 +214,6 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 	return uid, nil
-}
-
-func (svc usersService) checkAuthz(ctx context.Context, token string) error {
-	ir, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	return svc.authorize(ctx, ir.email, authoritiesObjKey, memberRelationKey)
 }
 
 func (svc usersService) Login(ctx context.Context, user User) (string, error) {
@@ -279,14 +265,10 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
-	id, err := svc.identify(ctx, token)
-	if err != nil {
+	if _, err := svc.identify(ctx, token); err != nil {
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, id.email, "authorities", "member"); err != nil {
-		return UserPage{}, err
-	}
 	return svc.users.RetrieveAll(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)
 }
 
@@ -448,22 +430,6 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	}
 
 	return userIdentity{identity.Id, identity.Email}, nil
-}
-
-func (svc usersService) authorize(ctx context.Context, subject, object, relation string) error {
-	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
-	}
-	res, err := svc.auth.Authorize(ctx, req)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-	return nil
 }
 
 func (svc usersService) claimOwnership(ctx context.Context, subject, object, relation string) error {

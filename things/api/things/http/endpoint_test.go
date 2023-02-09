@@ -376,7 +376,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          strconv.FormatUint(wrongID, 10),
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid id",
@@ -384,7 +384,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          "invalid",
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid user token",
@@ -540,14 +540,6 @@ func TestShareThing(t *testing.T) {
 			contentType: contentType,
 			token:       "invalid",
 			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "share a thing with unauthorized access",
-			req:         data,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token2,
-			status:      http.StatusForbidden,
 		},
 	}
 
@@ -1392,7 +1384,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:   "delete non-existent thing",
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
-			status: http.StatusNotFound,
+			status: http.StatusNoContent,
 		},
 		{
 			desc:   "delete thing with invalid token",

@@ -130,7 +130,6 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
-	ownerQuery := getOwnerQuery(pm.FetchSharedThings)
 	meta, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -144,10 +143,6 @@ func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm th
 	if nq != "" {
 		query = append(query, nq)
 	}
-	if ownerQuery != "" {
-		query = append(query, ownerQuery)
-	}
-
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
