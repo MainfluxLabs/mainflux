@@ -257,7 +257,12 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return UserPage{}, err
+	}
+
+	if err := svc.authorize(ctx, user.email, "authorities", "member"); err != nil {
 		return UserPage{}, err
 	}
 
@@ -438,4 +443,20 @@ func (svc usersService) members(ctx context.Context, token, groupID string, limi
 		return nil, err
 	}
 	return res.Members, nil
+}
+
+func (svc usersService) authorize(ctx context.Context, subject, object, relation string) error {
+	req := &mainflux.AuthorizeReq{
+		Sub: subject,
+		Obj: object,
+		Act: relation,
+	}
+	res, err := svc.auth.Authorize(ctx, req)
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
+	}
+	return nil
 }

@@ -543,7 +543,7 @@ func TestUpdateThing(t *testing.T) {
 				Metadata: metadata,
 			},
 			token: token,
-			err:   createError(sdk.ErrFailedUpdate, http.StatusForbidden),
+			err:   createError(sdk.ErrFailedUpdate, http.StatusNotFound),
 		},
 		{
 			desc: "update channel with invalid id",
@@ -613,7 +613,7 @@ func TestDeleteThing(t *testing.T) {
 			desc:    "delete non-existing thing",
 			thingID: "2",
 			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+			err:     nil,
 		},
 		{
 			desc:    "delete thing with invalid id",

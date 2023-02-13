@@ -239,15 +239,6 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return Page{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	// If the user is admin, fetch all things from database.
-	if err := ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
-		page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
-		if err != nil {
-			return Page{}, err
-		}
-		return page, err
-	}
-
 	// By default, fetch things from Things service.
 	page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
 	if err != nil {
@@ -340,15 +331,6 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	// If the user is admin, fetch all channels from the database.
-	if err := ts.authorize(ctx, res.GetId(), authoritiesObject, memberRelationKey); err == nil {
-		page, err := ts.channels.RetrieveAll(ctx, res.GetId(), pm)
-		if err != nil {
-			return ChannelsPage{}, err
-		}
-		return page, err
 	}
 
 	// By default, fetch channels from database based on the owner field.
@@ -555,20 +537,4 @@ func (ts *thingsService) members(ctx context.Context, token, groupID, groupType 
 		return nil, nil
 	}
 	return res.Members, nil
-}
-
-func (ts *thingsService) authorize(ctx context.Context, subject, object string, relation string) error {
-	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
-	}
-	res, err := ts.auth.Authorize(ctx, req)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-	return nil
 }
