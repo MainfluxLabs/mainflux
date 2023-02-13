@@ -130,7 +130,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:  "update non-existing thing",
 			thing: other,
 			token: token,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrNotFound,
 		},
 	}
 
@@ -173,7 +173,7 @@ func TestUpdateKey(t *testing.T) {
 			token: token,
 			id:    wrongID,
 			key:   wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrNotFound,
 		},
 	}
 
@@ -181,62 +181,6 @@ func TestUpdateKey(t *testing.T) {
 		err := svc.UpdateKey(context.Background(), tc.token, tc.id, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
-}
-
-func TestShareThing(t *testing.T) {
-	svc := newService(map[string]string{token: email, token2: email2})
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-	policies := []string{"read"}
-
-	cases := []struct {
-		desc     string
-		token    string
-		thingID  string
-		policies []string
-		userIDs  []string
-		err      error
-	}{
-		{
-			desc:     "share a thing with a valid user",
-			token:    token,
-			thingID:  th.ID,
-			policies: policies,
-			userIDs:  []string{email2},
-			err:      nil,
-		},
-		{
-			desc:     "share a thing via unauthorized access",
-			token:    token2,
-			thingID:  th.ID,
-			policies: policies,
-			userIDs:  []string{email2},
-			err:      errors.ErrAuthorization,
-		},
-		{
-			desc:     "share a thing with invalid token",
-			token:    wrongValue,
-			thingID:  th.ID,
-			policies: policies,
-			userIDs:  []string{email2},
-			err:      errors.ErrAuthentication,
-		},
-		{
-			desc:     "share a thing with partially invalid policies",
-			token:    token,
-			thingID:  th.ID,
-			policies: []string{"", "read"},
-			userIDs:  []string{email2},
-			err:      fmt.Errorf("cannot claim ownership on object '%s' by user '%s': %s", th.ID, email2, errors.ErrMalformedEntity),
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.ShareThing(context.Background(), tc.token, tc.thingID, tc.policies, tc.userIDs)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-
 }
 
 func TestViewThing(t *testing.T) {
@@ -607,7 +551,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:  "remove non-existing thing",
 			id:    wrongID,
 			token: token,
-			err:   errors.ErrAuthorization,
+			err:   nil,
 		},
 	}
 

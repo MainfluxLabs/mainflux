@@ -376,7 +376,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          strconv.FormatUint(wrongID, 10),
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid id",
@@ -384,7 +384,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          "invalid",
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid user token",
@@ -446,123 +446,6 @@ func TestUpdateThing(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-	}
-}
-
-func TestShareThing(t *testing.T) {
-	token2 := "token2"
-	svc := newService(map[string]string{token: email, token2: "user@ex.com"})
-	ts := newServer(svc)
-	defer ts.Close()
-
-	type shareThingReq struct {
-		UserIDs  []string `json:"user_ids"`
-		Policies []string `json:"policies"`
-	}
-
-	data := toJSON(shareThingReq{UserIDs: []string{"token2"}, Policies: []string{"read"}})
-	invalidData := toJSON(shareThingReq{})
-	invalidPolicies := toJSON(shareThingReq{UserIDs: []string{"token2"}, Policies: []string{"wrong"}})
-
-	ths, err := svc.CreateThings(context.Background(), token, thing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-
-	cases := []struct {
-		desc        string
-		req         string
-		thingID     string
-		contentType string
-		token       string
-		status      int
-	}{
-		{
-			desc:        "share a thing",
-			req:         data,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token,
-			status:      http.StatusOK,
-		},
-		{
-			desc:        "share a thing with empty content-type",
-			req:         data,
-			thingID:     th.ID,
-			contentType: "",
-			token:       token,
-			status:      http.StatusUnsupportedMediaType,
-		},
-		{
-			desc:        "share a thing with empty req body",
-			req:         "",
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "share a thing with empty token",
-			req:         data,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       "",
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "share a thing with empty thing id",
-			req:         data,
-			thingID:     "",
-			contentType: contentType,
-			token:       token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "share a thing with invalid req body",
-			req:         invalidData,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "share a thing with invalid policies request",
-			req:         invalidPolicies,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "share a thing with invalid token",
-			req:         data,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       "invalid",
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "share a thing with unauthorized access",
-			req:         data,
-			thingID:     th.ID,
-			contentType: contentType,
-			token:       token2,
-			status:      http.StatusForbidden,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/things/%s/share", ts.URL, tc.thingID),
-			contentType: tc.contentType,
-			token:       tc.token,
-			body:        strings.NewReader(tc.req),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
@@ -1392,7 +1275,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:   "delete non-existent thing",
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
-			status: http.StatusNotFound,
+			status: http.StatusNoContent,
 		},
 		{
 			desc:   "delete thing with invalid token",

@@ -243,18 +243,10 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	return page, nil
 }
 
-func getOwnerQuery(fetchSharedThings bool) string {
-	if fetchSharedThings {
-		return ""
-	}
-	return "owner = :owner"
-}
-
 func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
-	ownerQuery := getOwnerQuery(pm.FetchSharedThings)
 	m, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
@@ -266,9 +258,6 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm thin
 	}
 	if nq != "" {
 		query = append(query, nq)
-	}
-	if ownerQuery != "" {
-		query = append(query, ownerQuery)
 	}
 
 	var whereClause string
