@@ -450,10 +450,12 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 }
 
 func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	res, err := svc.Identify(ctx, token)
+	if err != nil {
 		return err
 	}
-	return svc.orgs.Delete(ctx, id)
+
+	return svc.orgs.Delete(ctx, res.ID, id)
 }
 
 func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, error) {
