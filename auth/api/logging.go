@@ -348,7 +348,7 @@ func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveGroup(ctx, token, id)
+	return lm.svc.RemoveOrg(ctx, token, id)
 }
 
 func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o auth.Org, err error) {

@@ -99,10 +99,11 @@ func (gr orgRepository) Update(ctx context.Context, g auth.Org) error {
 	return nil
 }
 
-func (gr orgRepository) Delete(ctx context.Context, orgID string) error {
-	qd := `DELETE FROM orgs WHERE id = :id`
+func (gr orgRepository) Delete(ctx context.Context, owner, orgID string) error {
+	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
 	org := auth.Org{
-		ID: orgID,
+		ID:      orgID,
+		OwnerID: owner,
 	}
 	dbg, err := toDBOrg(org)
 	if err != nil {
