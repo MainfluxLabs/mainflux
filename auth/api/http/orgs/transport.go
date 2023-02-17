@@ -109,7 +109,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 func decodeShareOrgRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := shareOrgAccessReq{
@@ -192,7 +192,7 @@ func decodeListMembershipsRequest(_ context.Context, r *http.Request) (interface
 
 func decodeOrgCreate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createOrgReq{token: apiutil.ExtractBearerToken(r)}
@@ -205,7 +205,7 @@ func decodeOrgCreate(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeOrgUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateOrgReq{
@@ -292,7 +292,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, auth.ErrMemberAlreadyAssigned):
 		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrUnsupportedContentType):
+	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 
 	case errors.Contains(err, errors.ErrCreateEntity),

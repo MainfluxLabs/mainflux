@@ -98,4 +98,13 @@ var (
 
 	// ErrBootstrapState indicates an invalid boostrap state.
 	ErrBootstrapState = errors.New("invalid bootstrap state")
+
+	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
+	ErrUnsupportedContentType = errors.New("unsupported content type")
+
+	// ErrInvalidQueryParams indicates invalid query parameters
+	ErrInvalidQueryParams = errors.New("invalid query parameters")
+
+	// ErrNotFoundParam indicates that the parameter was not found in the query
+	ErrNotFoundParam = errors.New("parameter not found in the query")
 )

@@ -165,7 +165,7 @@ func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{
 	}
 
 	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
-	if err != nil && err != errors.ErrNotFoundParam {
+	if err != nil && err != apiutil.ErrNotFoundParam {
 		return nil, err
 	}
 	if err == nil {
@@ -262,7 +262,7 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 	}
 
 	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
-	if err != nil && err != errors.ErrNotFoundParam {
+	if err != nil && err != apiutil.ErrNotFoundParam {
 		return nil, err
 	}
 	if err == nil {
@@ -293,7 +293,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, nil):
-	case errors.Contains(err, errors.ErrInvalidQueryParams),
+	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrLimitSize,

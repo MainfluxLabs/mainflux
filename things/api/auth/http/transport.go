@@ -56,7 +56,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger logger.Lo
 
 func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := identifyReq{}
@@ -69,7 +69,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeCanAccessByKey(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := canAccessByKeyReq{
@@ -84,7 +84,7 @@ func decodeCanAccessByKey(_ context.Context, r *http.Request) (interface{}, erro
 
 func decodeCanAccessByID(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := canAccessByIDReq{
@@ -123,7 +123,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrUnsupportedContentType):
+	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, errors.ErrMalformedEntity),
 		errors.Contains(err, apiutil.ErrMissingID):

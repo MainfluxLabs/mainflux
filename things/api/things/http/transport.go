@@ -212,7 +212,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createThingReq{token: apiutil.ExtractBearerToken(r)}
@@ -225,7 +225,7 @@ func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createThingsReq{token: apiutil.ExtractBearerToken(r)}
@@ -238,7 +238,7 @@ func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, erro
 
 func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateThingReq{
@@ -254,7 +254,7 @@ func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 
 func decodeKeyUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateKeyReq{
@@ -270,7 +270,7 @@ func decodeKeyUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeChannelCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createChannelReq{token: apiutil.ExtractBearerToken(r)}
@@ -283,7 +283,7 @@ func decodeChannelCreation(_ context.Context, r *http.Request) (interface{}, err
 
 func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createChannelsReq{token: apiutil.ExtractBearerToken(r)}
@@ -296,7 +296,7 @@ func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, er
 
 func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateChannelReq{
@@ -427,7 +427,7 @@ func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error)
 
 func decodeConnectList(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := connectReq{token: apiutil.ExtractBearerToken(r)}
@@ -474,7 +474,7 @@ func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errors.ErrUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
@@ -513,9 +513,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrUnsupportedContentType):
+	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrInvalidQueryParams),
+	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrEmptyList,
