@@ -14,5 +14,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build Docker images
-      run: make dockers
+    - name: Go tests
+      run: go test ./...

@@ -105,7 +105,7 @@ type OrgRepository interface {
 	Update(ctx context.Context, g Org) error
 
 	// Delete a org
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, owner, id string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)

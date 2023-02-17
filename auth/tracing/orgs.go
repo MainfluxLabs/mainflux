@@ -54,12 +54,12 @@ func (orm orgRepositoryMiddleware) Update(ctx context.Context, g auth.Org) error
 	return orm.repo.Update(ctx, g)
 }
 
-func (orm orgRepositoryMiddleware) Delete(ctx context.Context, orgID string) error {
+func (orm orgRepositoryMiddleware) Delete(ctx context.Context, owner, orgID string) error {
 	span := createSpan(ctx, orm.tracer, deleteOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.Delete(ctx, orgID)
+	return orm.repo.Delete(ctx, owner, orgID)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
