@@ -6,6 +6,7 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -25,6 +26,11 @@ var (
 	_ mainflux.Response = (*disconnectRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
+	_ mainflux.Response = (*memberPageRes)(nil)
+	_ mainflux.Response = (*groupRes)(nil)
+	_ mainflux.Response = (*deleteRes)(nil)
+	_ mainflux.Response = (*assignRes)(nil)
+	_ mainflux.Response = (*unassignRes)(nil)
 )
 
 type removeRes struct{}
@@ -328,4 +334,131 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Order  string `json:"order"`
 	Dir    string `json:"direction"`
+	Name   string `json:"name"`
+}
+
+type memberPageRes struct {
+	pageRes
+	Type    string   `json:"type"`
+	Members []string `json:"members"`
+}
+
+func (res memberPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res memberPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res memberPageRes) Empty() bool {
+	return false
+}
+
+type viewGroupRes struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	OwnerID     string                 `json:"owner_id"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+func (res viewGroupRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewGroupRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewGroupRes) Empty() bool {
+	return false
+}
+
+type groupRes struct {
+	id      string
+	created bool
+}
+
+func (res groupRes) Code() int {
+	if res.created {
+		return http.StatusCreated
+	}
+
+	return http.StatusOK
+}
+
+func (res groupRes) Headers() map[string]string {
+	if res.created {
+		return map[string]string{
+			"Location": fmt.Sprintf("/groups/%s", res.id),
+		}
+	}
+
+	return map[string]string{}
+}
+
+func (res groupRes) Empty() bool {
+	return true
+}
+
+type groupPageRes struct {
+	pageRes
+	Groups []viewGroupRes `json:"groups"`
+}
+
+func (res groupPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res groupPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res groupPageRes) Empty() bool {
+	return false
+}
+
+type deleteRes struct{}
+
+func (res deleteRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res deleteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res deleteRes) Empty() bool {
+	return true
+}
+
+type assignRes struct{}
+
+func (res assignRes) Code() int {
+	return http.StatusOK
+}
+
+func (res assignRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res assignRes) Empty() bool {
+	return true
+}
+
+type unassignRes struct{}
+
+func (res unassignRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res unassignRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res unassignRes) Empty() bool {
+	return true
 }

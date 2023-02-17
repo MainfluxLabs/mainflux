@@ -183,9 +183,65 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/groups/:groupId", kithttp.NewServer(
+	r.Post("/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_group")(createGroupEndpoint(svc)),
+		decodeGroupCreate,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group")(viewGroupEndpoint(svc)),
+		decodeGroupRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
+		decodeGroupUpdate,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Delete("/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_group")(deleteGroupEndpoint(svc)),
+		decodeGroupRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
+		decodeListGroupsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
+		decodeAssignRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Delete("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
+		decodeUnassignRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/members/:memberID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
+		decodeListMembershipsRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -454,15 +510,120 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
-	req := listThingsGroupReq{
+	req := listMembersReq{
+		token:    apiutil.ExtractBearerToken(r),
+		id:       bone.GetValue(r, "groupID"),
+		offset:   o,
+		limit:    l,
+		metadata: m,
+	}
+	return req, nil
+}
+
+func decodeGroupCreate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := createGroupReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listGroupsReq{
+		token:    apiutil.ExtractBearerToken(r),
+		metadata: m,
+		id:       bone.GetValue(r, "groupID"),
+	}
+	return req, nil
+}
+
+func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, errors.ErrUnsupportedContentType
+	}
+
+	req := updateGroupReq{
+		id:    bone.GetValue(r, "groupID"),
+		token: apiutil.ExtractBearerToken(r),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := groupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "groupID"),
+	}
+
+	return req, nil
+}
+
+func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := assignReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, "groupId"),
-		pageMetadata: things.PageMetadata{
-			Offset:   o,
-			Limit:    l,
-			Metadata: m,
+		groupID: bone.GetValue(r, "groupID"),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := unassignReq{
+		assignReq{
+			token:   apiutil.ExtractBearerToken(r),
+			groupID: bone.GetValue(r, "groupID"),
 		},
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listMembersReq{
+		token:    apiutil.ExtractBearerToken(r),
+		id:       bone.GetValue(r, "memberID"),
+		offset:   o,
+		limit:    l,
+		metadata: m,
+	}
+
 	return req, nil
 }
 

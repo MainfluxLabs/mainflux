@@ -513,22 +513,6 @@ func disconnectThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listThingsGroupReq)
-		if err := req.validate(); err != nil {
-			return thingsPageRes{}, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		page, err := svc.ListMembers(ctx, req.token, req.groupID, req.pageMetadata)
-		if err != nil {
-			return thingsPageRes{}, err
-		}
-
-		return buildThingsResponse(page), nil
-	}
-}
-
 func backupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
@@ -570,24 +554,233 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildThingsResponse(up things.Page) thingsPageRes {
-	res := thingsPageRes{
-		pageRes: pageRes{
-			Total:  up.Total,
-			Offset: up.Offset,
-			Limit:  up.Limit,
-		},
-		Things: []viewThingRes{},
-	}
-	for _, th := range up.Things {
-		view := viewThingRes{
-			ID:       th.ID,
-			Key:      th.Key,
-			Owner:    th.Owner,
-			Metadata: th.Metadata,
-			Name:     th.Name,
+func createGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createGroupReq)
+		if err := req.validate(); err != nil {
+			return groupRes{}, err
 		}
-		res.Things = append(res.Things, view)
+
+		group := things.Group{
+			Name:        req.Name,
+			Description: req.Description,
+			Metadata:    req.Metadata,
+		}
+
+		group, err := svc.CreateGroup(ctx, req.token, group)
+		if err != nil {
+			return groupRes{}, err
+		}
+
+		return groupRes{created: true, id: group.ID}, nil
 	}
+}
+
+func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupReq)
+		if err := req.validate(); err != nil {
+			return viewGroupRes{}, err
+		}
+
+		group, err := svc.ViewGroup(ctx, req.token, req.id)
+		if err != nil {
+			return viewGroupRes{}, err
+		}
+
+		res := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+
+		return res, nil
+	}
+}
+
+func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(updateGroupReq)
+		if err := req.validate(); err != nil {
+			return groupRes{}, err
+		}
+
+		group := things.Group{
+			ID:          req.id,
+			Name:        req.Name,
+			Description: req.Description,
+			Metadata:    req.Metadata,
+		}
+
+		_, err := svc.UpdateGroup(ctx, req.token, group)
+		if err != nil {
+			return groupRes{}, err
+		}
+
+		res := groupRes{created: false}
+		return res, nil
+	}
+}
+
+func deleteGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveGroup(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+
+		return deleteRes{}, nil
+	}
+}
+
+func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listGroupsReq)
+		if err := req.validate(); err != nil {
+			return groupPageRes{}, err
+		}
+		pm := things.PageMetadata{
+			Metadata: req.metadata,
+		}
+		page, err := svc.ListGroups(ctx, req.token, pm)
+		if err != nil {
+			return groupPageRes{}, err
+		}
+
+		return buildGroupsResponse(page), nil
+	}
+}
+func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return memberPageRes{}, err
+		}
+
+		pm := things.PageMetadata{
+			Offset:   req.offset,
+			Limit:    req.limit,
+			Metadata: req.metadata,
+		}
+		page, err := svc.ListMembers(ctx, req.token, req.id, pm)
+		if err != nil {
+			return memberPageRes{}, err
+		}
+
+		return buildUsersResponse(page), nil
+	}
+}
+
+func listMemberships(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return memberPageRes{}, err
+		}
+
+		pm := things.PageMetadata{
+			Offset:   req.offset,
+			Limit:    req.limit,
+			Metadata: req.metadata,
+		}
+
+		page, err := svc.ListMemberships(ctx, req.token, req.id, pm)
+		if err != nil {
+			return memberPageRes{}, err
+		}
+
+		return buildGroupsResponse(page), nil
+	}
+}
+
+func assignEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(assignReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.Assign(ctx, req.token, req.groupID, req.Members...); err != nil {
+			return nil, err
+		}
+
+		return assignRes{}, nil
+	}
+}
+
+func unassignEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(unassignReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.Unassign(ctx, req.token, req.groupID, req.Members...); err != nil {
+			return nil, err
+		}
+
+		return unassignRes{}, nil
+	}
+}
+
+func toViewGroupRes(group things.Group) viewGroupRes {
+	view := viewGroupRes{
+		ID:          group.ID,
+		OwnerID:     group.OwnerID,
+		Name:        group.Name,
+		Description: group.Description,
+		Metadata:    group.Metadata,
+		CreatedAt:   group.CreatedAt,
+		UpdatedAt:   group.UpdatedAt,
+	}
+
+	return view
+}
+
+func buildGroupsResponse(gp things.GroupPage) groupPageRes {
+	res := groupPageRes{
+		pageRes: pageRes{
+			Total: gp.Total,
+		},
+		Groups: []viewGroupRes{},
+	}
+
+	for _, group := range gp.Groups {
+		view := viewGroupRes{
+			ID:          group.ID,
+			OwnerID:     group.OwnerID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		res.Groups = append(res.Groups, view)
+	}
+
+	return res
+}
+
+func buildUsersResponse(mp things.MemberPage) memberPageRes {
+	res := memberPageRes{
+		pageRes: pageRes{
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
+			Name:   mp.Name,
+		},
+		Members: []string{},
+	}
+
+	res.Members = append(res.Members, mp.Members...)
+
 	return res
 }

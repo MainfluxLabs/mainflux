@@ -99,6 +99,34 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE IF EXISTS things ADD CONSTRAINT things_id_key UNIQUE (id)`,
 				},
 			},
+			{
+				Id: "things_5",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS groups (
+						id          VARCHAR(254) UNIQUE NOT NULL,
+						owner_id    VARCHAR(254),
+						name        VARCHAR(254) NOT NULL,
+						description VARCHAR(1024),
+						metadata    JSONB,
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						UNIQUE (owner_id, name)
+					)`,
+					`CREATE TABLE IF NOT EXISTS group_relations (
+						member_id   VARCHAR(254) NOT NULL,
+						group_id    VARCHAR(254) NOT NULL,
+						type        VARCHAR(254),
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						FOREIGN KEY (group_id) REFERENCES groups (id),
+						PRIMARY KEY (member_id, group_id)
+				   )`,
+				},
+				Down: []string{
+					"DROP TABLE groups",
+					"DROP TABLE group_relations",
+				},
+			},
 		},
 	}
 

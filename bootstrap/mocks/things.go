@@ -249,6 +249,42 @@ func findIndex(list []string, val string) int {
 	return -1
 }
 
-func (svc *mainfluxThings) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.Page, error) {
+func (svc *mainfluxThings) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) CreateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RemoveGroup(ctx context.Context, token, id string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) UpdateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (things.Group, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
