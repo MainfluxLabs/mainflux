@@ -103,8 +103,8 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "things_5",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS groups (
-						id          VARCHAR(254) UNIQUE NOT NULL,
-						owner_id    VARCHAR(254),
+						id          UUID,
+						owner_id    UUID,
 						name        VARCHAR(254) NOT NULL,
 						description VARCHAR(1024),
 						metadata    JSONB,
@@ -113,9 +113,8 @@ func migrateDB(db *sqlx.DB) error {
 						UNIQUE (owner_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_relations (
-						member_id   VARCHAR(254) NOT NULL,
-						group_id    VARCHAR(254) NOT NULL,
-						type        VARCHAR(254),
+						member_id   UUID,
+						group_id    UUID,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
 						FOREIGN KEY (group_id) REFERENCES groups (id),

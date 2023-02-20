@@ -10,16 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
-)
-
-const (
-	usersObjectKey    = "users"
-	authoritiesObject = "authorities"
-	memberRelationKey = "member"
-	readRelationKey   = "read"
-	writeRelationKey  = "write"
-	deleteRelationKey = "delete"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -141,7 +131,6 @@ type PageMetadata struct {
 	Total        uint64
 	Offset       uint64                 `json:"offset,omitempty"`
 	Limit        uint64                 `json:"limit,omitempty"`
-	Size         uint64                 `json:"size,omitempty"`
 	Name         string                 `json:"name,omitempty"`
 	Order        string                 `json:"order,omitempty"`
 	Dir          string                 `json:"dir,omitempty"`
@@ -165,7 +154,6 @@ type thingsService struct {
 	channelCache ChannelCache
 	thingCache   ThingCache
 	idProvider   mainflux.IDProvider
-	ulidProvider mainflux.IDProvider
 }
 
 // New instantiates the things service implementation.
@@ -177,7 +165,6 @@ func New(auth mainflux.AuthServiceClient, things ThingRepository, channels Chann
 		channelCache: ccache,
 		thingCache:   tcache,
 		idProvider:   idp,
-		ulidProvider: ulid.New(),
 	}
 }
 
@@ -540,45 +527,13 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	return nil
 }
 
-func (ts *thingsService) members(ctx context.Context, token, groupID, groupType string, limit, offset uint64) ([]string, error) {
-	req := mainflux.MembersReq{
-		Token:   token,
-		GroupID: groupID,
-		Offset:  offset,
-		Limit:   limit,
-		Type:    groupType,
-	}
-
-	res, err := ts.auth.Members(ctx, &req)
-	if err != nil {
-		return nil, nil
-	}
-	return res.Members, nil
-}
-
-func (ts *thingsService) authorize(ctx context.Context, subject, object string, relation string) error {
-	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
-	}
-	res, err := ts.auth.Authorize(ctx, req)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-	return nil
-}
-
 func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Group) (Group, error) {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	ulid, err := ts.ulidProvider.ID()
+	id, err := ts.idProvider.ID()
 	if err != nil {
 		return Group{}, err
 	}
@@ -587,7 +542,7 @@ func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Gr
 	group.UpdatedAt = timestamp
 	group.CreatedAt = timestamp
 
-	group.ID = ulid
+	group.ID = id
 	group.OwnerID = user.Id
 
 	group, err = ts.groups.Save(ctx, group)

@@ -339,7 +339,6 @@ type pageRes struct {
 
 type memberPageRes struct {
 	pageRes
-	Type    string   `json:"type"`
 	Members []string `json:"members"`
 }
 

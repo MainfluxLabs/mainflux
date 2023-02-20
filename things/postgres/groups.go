@@ -210,7 +210,6 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 		Groups: items,
 		PageMetadata: things.PageMetadata{
 			Total: total,
-			Size:  uint64(len(items)),
 		},
 	}
 
@@ -265,7 +264,6 @@ func (gr groupRepository) Members(ctx context.Context, groupID string, pm things
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Size:   uint64(len(items)),
 		},
 	}
 
@@ -324,7 +322,6 @@ func (gr groupRepository) Memberships(ctx context.Context, memberID string, pm t
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Size:   uint64(len(items)),
 		},
 	}
 
@@ -443,7 +440,6 @@ type dbMemberPage struct {
 	Metadata dbMetadata `db:"metadata"`
 	Limit    uint64     `db:"limit"`
 	Offset   uint64     `db:"offset"`
-	Size     uint64
 }
 
 func toUUID(id string) (uuid.NullUUID, error) {
