@@ -442,7 +442,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, 
 	return channels, nil
 }
 
-func (cr channelRepository) BackupConnections(ctx context.Context) ([]things.Connection, error) {
+func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
 	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

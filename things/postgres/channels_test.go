@@ -997,7 +997,7 @@ func TestBackupConnections(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		connections, err := chanRepo.BackupConnections(context.Background())
+		connections, err := chanRepo.RetrieveAllConnections(context.Background())
 		size := uint64(len(connections))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))

@@ -281,7 +281,7 @@ func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Cha
 	return chs, nil
 }
 
-func (crm *channelRepositoryMock) BackupConnections(ctx context.Context) ([]things.Connection, error) {
+func (crm *channelRepositoryMock) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 	var conns []things.Connection

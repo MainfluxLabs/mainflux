@@ -11,18 +11,19 @@ import (
 )
 
 const (
-	saveThingOp                = "save_thing"
-	saveThingsOp               = "save_things"
-	updateThingOp              = "update_thing"
-	updateThingKeyOp           = "update_thing_by_key"
-	retrieveThingByIDOp        = "retrieve_thing_by_id"
-	retrieveThingByKeyOp       = "retrieve_thing_by_key"
-	retrieveAllThingsByOwnerOp = "retrieve_all_things_by_owner"
-	retrieveThingsByChannelOp  = "retrieve_things_by_chan"
-	removeThingOp              = "remove_thing"
-	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
-	retrieveAllThingsOp        = "retrieve_all_things"
-	restoreThingsOp            = "restore_things"
+	saveThingOp               = "save_thing"
+	saveThingsOp              = "save_things"
+	updateThingOp             = "update_thing"
+	updateThingKeyOp          = "update_thing_by_key"
+	retrieveThingByIDOp       = "retrieve_thing_by_id"
+	retrieveThingsByIDsOp     = "retrieve_things_by_ids"
+	retrieveThingByKeyOp      = "retrieve_thing_by_key"
+	retrieveThingsByOwnerOp   = "retrieve_things_by_owner"
+	retrieveThingsByChannelOp = "retrieve_things_by_chan"
+	removeThingOp             = "remove_thing"
+	retrieveThingIDByKeyOp    = "retrieve_id_by_key"
+	retrieveAllThingsOp       = "retrieve_all_things"
+	restoreThingsOp           = "restore_things"
 )
 
 var (
@@ -85,7 +86,7 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsByOwnerOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingsByOwnerOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -93,7 +94,7 @@ func (trm thingRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owner 
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.Page, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsByOwnerOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingsByIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

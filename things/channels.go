@@ -77,8 +77,8 @@ type ChannelRepository interface {
 	// RetrieveAll retrieves all channels for all users.
 	RetrieveAll(ctx context.Context) ([]Channel, error)
 
-	// BackupConnections retrieves all connections between channels and things for all users.
-	BackupConnections(ctx context.Context) ([]Connection, error)
+	// RetrieveAllConnections retrieves all connections between channels and things for all users.
+	RetrieveAllConnections(ctx context.Context) ([]Connection, error)
 }
 
 // ChannelCache contains channel-thing connection caching interface.

@@ -485,7 +485,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	connections, err := ts.channels.BackupConnections(ctx)
+	connections, err := ts.channels.RetrieveAllConnections(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
