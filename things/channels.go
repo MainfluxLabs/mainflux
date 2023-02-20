@@ -46,8 +46,8 @@ type ChannelRepository interface {
 	// by the specified user.
 	RetrieveByID(ctx context.Context, owner, id string) (Channel, error)
 
-	// RetrieveAll retrieves the subset of channels owned by the specified user.
-	RetrieveAll(ctx context.Context, owner string, pm PageMetadata) (ChannelsPage, error)
+	// RetrieveByOwner retrieves the subset of channels owned by the specified user.
+	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ChannelsPage, error)
 
 	// RetrieveByThing retrieves the subset of channels owned by the specified
 	// user and have specified thing connected or not connected to them.
@@ -74,11 +74,11 @@ type ChannelRepository interface {
 	// returned error will be nil.
 	HasThingByID(ctx context.Context, chanID, thingID string) error
 
-	// BackupChannels retrieves all channels for all users.
-	BackupChannels(ctx context.Context) ([]Channel, error)
+	// RetrieveAll retrieves all channels for all users.
+	RetrieveAll(ctx context.Context) ([]Channel, error)
 
-	// BackupConnections retrieves all connections between channels and things for all users.
-	BackupConnections(ctx context.Context) ([]Connection, error)
+	// RetrieveAllConnections retrieves all connections between channels and things for all users.
+	RetrieveAllConnections(ctx context.Context) ([]Connection, error)
 }
 
 // ChannelCache contains channel-thing connection caching interface.

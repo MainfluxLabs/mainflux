@@ -16,12 +16,13 @@ const (
 	updateThingOp             = "update_thing"
 	updateThingKeyOp          = "update_thing_by_key"
 	retrieveThingByIDOp       = "retrieve_thing_by_id"
+	retrieveThingsByIDsOp     = "retrieve_things_by_ids"
 	retrieveThingByKeyOp      = "retrieve_thing_by_key"
-	retrieveAllThingsOp       = "retrieve_all_things"
+	retrieveThingsByOwnerOp   = "retrieve_things_by_owner"
 	retrieveThingsByChannelOp = "retrieve_things_by_chan"
 	removeThingOp             = "remove_thing"
 	retrieveThingIDByKeyOp    = "retrieve_id_by_key"
-	backupThingsOp            = "backup_things"
+	retrieveAllThingsOp       = "retrieve_all_things"
 	restoreThingsOp           = "restore_things"
 )
 
@@ -84,16 +85,16 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+func (trm thingRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+	span := createSpan(ctx, trm.tracer, retrieveThingsByOwnerOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveAll(ctx, owner, pm)
+	return trm.repo.RetrieveByOwner(ctx, owner, pm)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.Page, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingsByIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -116,12 +117,12 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner, id strin
 	return trm.repo.Remove(ctx, owner, id)
 }
 
-func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, backupThingsOp)
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
+	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.BackupThings(ctx)
+	return trm.repo.RetrieveAll(ctx)
 }
 
 type thingCacheMiddleware struct {

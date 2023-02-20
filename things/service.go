@@ -240,7 +240,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	}
 
 	// By default, fetch things from Things service.
-	page, err := ts.things.RetrieveAll(ctx, res.GetId(), pm)
+	page, err := ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
 	if err != nil {
 		return Page{}, err
 	}
@@ -334,7 +334,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	}
 
 	// By default, fetch channels from database based on the owner field.
-	return ts.channels.RetrieveAll(ctx, res.GetId(), pm)
+	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
 }
 
 func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID string, pm PageMetadata) (ChannelsPage, error) {
@@ -475,17 +475,17 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	things, err := ts.things.BackupThings(ctx)
+	things, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	channels, err := ts.channels.BackupChannels(ctx)
+	channels, err := ts.channels.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	connections, err := ts.channels.BackupConnections(ctx)
+	connections, err := ts.channels.RetrieveAllConnections(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

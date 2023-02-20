@@ -243,7 +243,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	return page, nil
 }
 
-func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
@@ -425,7 +425,7 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 	return nil
 }
 
-func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, error) {
+func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
 	q := `SELECT id, owner, name, key, metadata FROM things;`
 	rows, err := tr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
