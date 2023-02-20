@@ -113,7 +113,7 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, owner, id string
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

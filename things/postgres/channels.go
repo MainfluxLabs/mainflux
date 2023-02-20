@@ -126,7 +126,7 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, owner, id string) 
 	return toChannel(dbch), nil
 }
 
-func (cr channelRepository) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)

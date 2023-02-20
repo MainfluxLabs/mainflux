@@ -359,7 +359,7 @@ func TestMultiChannelRetrieval(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := chanRepo.RetrieveAll(context.Background(), tc.owner, tc.pageMetadata)
+		page, err := chanRepo.RetrieveByOwner(context.Background(), tc.owner, tc.pageMetadata)
 		size := uint64(len(page.Channels))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))

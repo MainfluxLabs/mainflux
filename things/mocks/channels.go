@@ -79,7 +79,7 @@ func (crm *channelRepositoryMock) RetrieveByID(_ context.Context, owner, id stri
 	return things.Channel{}, errors.ErrNotFound
 }
 
-func (crm *channelRepositoryMock) RetrieveAll(_ context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (crm *channelRepositoryMock) RetrieveByOwner(_ context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	if pm.Limit < 0 {
 		return things.ChannelsPage{}, nil
 	}

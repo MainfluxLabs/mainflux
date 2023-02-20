@@ -243,7 +243,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	return page, nil
 }
 
-func (tr thingRepository) RetrieveAll(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
