@@ -22,7 +22,7 @@ const (
 	hasThingOp                = "has_thing"
 	hasThingByIDOp            = "has_thing_by_id"
 	retrieveAllChannelsOp     = "retrieve_all_channels"
-	backupConnectionsOp       = "backup_connections"
+	retrieveAllConnectionsOp  = "retrieve_all_connections"
 )
 
 var (
@@ -133,7 +133,7 @@ func (crm channelRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]thing
 }
 
 func (crm channelRepositoryMiddleware) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
-	span := createSpan(ctx, crm.tracer, backupConnectionsOp)
+	span := createSpan(ctx, crm.tracer, retrieveAllConnectionsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
