@@ -291,7 +291,7 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 	delete(trm.tconns[conn.chanID], conn.thing.ID)
 }
 
-func (trm *thingRepositoryMock) BackupThings(_ context.Context) ([]things.Thing, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 	var ths []things.Thing

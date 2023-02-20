@@ -613,7 +613,7 @@ func TestBackupThings(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		things, err := thingRepo.BackupThings(context.Background())
+		things, err := thingRepo.RetrieveAll(context.Background())
 		size := uint64(len(things))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))

@@ -420,7 +420,7 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	return nil
 }
 
-func (cr channelRepository) BackupChannels(ctx context.Context) ([]things.Channel, error) {
+func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
 	q := `SELECT id, owner, name, metadata FROM channels;`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

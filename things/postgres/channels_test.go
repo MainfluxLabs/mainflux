@@ -942,7 +942,7 @@ func TestBackupChannel(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		channels, err := chanRepo.BackupChannels(context.Background())
+		channels, err := chanRepo.RetrieveAll(context.Background())
 		size := uint64(len(channels))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))

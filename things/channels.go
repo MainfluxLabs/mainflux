@@ -74,8 +74,8 @@ type ChannelRepository interface {
 	// returned error will be nil.
 	HasThingByID(ctx context.Context, chanID, thingID string) error
 
-	// BackupChannels retrieves all channels for all users.
-	BackupChannels(ctx context.Context) ([]Channel, error)
+	// RetrieveAll retrieves all channels for all users.
+	RetrieveAll(ctx context.Context) ([]Channel, error)
 
 	// BackupConnections retrieves all connections between channels and things for all users.
 	BackupConnections(ctx context.Context) ([]Connection, error)

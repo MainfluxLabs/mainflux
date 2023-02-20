@@ -425,7 +425,7 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 	return nil
 }
 
-func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, error) {
+func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
 	q := `SELECT id, owner, name, key, metadata FROM things;`
 	rows, err := tr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {

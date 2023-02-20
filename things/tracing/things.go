@@ -21,7 +21,7 @@ const (
 	retrieveThingsByChannelOp  = "retrieve_things_by_chan"
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
-	backupThingsOp             = "backup_things"
+	retrieveAllThingsOp        = "retrieve_all_things"
 	restoreThingsOp            = "restore_things"
 )
 
@@ -116,12 +116,12 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner, id strin
 	return trm.repo.Remove(ctx, owner, id)
 }
 
-func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, backupThingsOp)
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
+	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.BackupThings(ctx)
+	return trm.repo.RetrieveAll(ctx)
 }
 
 type thingCacheMiddleware struct {
