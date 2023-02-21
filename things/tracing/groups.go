@@ -1,0 +1,108 @@
+package tracing
+
+import (
+	"context"
+
+	"github.com/MainfluxLabs/mainflux/things"
+	opentracing "github.com/opentracing/opentracing-go"
+)
+
+const (
+	saveGroupOp           = "save_group"
+	updateGroupOp         = "update_group"
+	removeGroupOp         = "remove_group"
+	retrieveGroupByIDOp   = "retrieve_group_by_id"
+	retrieveAllGroupsOp   = "retrieve_all_groups"
+	retrieveMembershipsOp = "retrieve_memberships"
+	retrieveMembersOp     = "retrieve_members"
+	assignMemberOp        = "assign_member"
+	unassignMemberOp      = "unassign_member"
+)
+
+var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
+
+type groupRepositoryMiddleware struct {
+	tracer opentracing.Tracer
+	repo   things.GroupRepository
+}
+
+// GroupRepositoryMiddleware tracks request and their latency, and adds spans
+// to context.
+func GroupRepositoryMiddleware(tracer opentracing.Tracer, repo things.GroupRepository) things.GroupRepository {
+	return groupRepositoryMiddleware{
+		tracer: tracer,
+		repo:   repo,
+	}
+}
+
+func (grm groupRepositoryMiddleware) Save(ctx context.Context, g things.Group) (things.Group, error) {
+	span := createSpan(ctx, grm.tracer, saveGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Save(ctx, g)
+}
+
+func (grm groupRepositoryMiddleware) Update(ctx context.Context, g things.Group) (things.Group, error) {
+	span := createSpan(ctx, grm.tracer, updateGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Update(ctx, g)
+}
+
+func (grm groupRepositoryMiddleware) Delete(ctx context.Context, id string) error {
+	span := createSpan(ctx, grm.tracer, removeGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Delete(ctx, id)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
+	span := createSpan(ctx, grm.tracer, retrieveGroupByIDOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveByID(ctx, id)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveAllGroupsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveAll(ctx, pm)
+}
+
+func (grm groupRepositoryMiddleware) Memberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveMembershipsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Memberships(ctx, memberID, pm)
+}
+
+func (grm groupRepositoryMiddleware) Members(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveMembersOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Members(ctx, groupID, pm)
+}
+
+func (grm groupRepositoryMiddleware) Assign(ctx context.Context, groupID string, memberIDs ...string) error {
+	span := createSpan(ctx, grm.tracer, assignMemberOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Assign(ctx, groupID, memberIDs...)
+}
+
+func (grm groupRepositoryMiddleware) Unassign(ctx context.Context, groupID string, memberIDs ...string) error {
+	span := createSpan(ctx, grm.tracer, unassignMemberOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.Unassign(ctx, groupID, memberIDs...)
+}

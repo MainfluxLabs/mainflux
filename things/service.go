@@ -149,19 +149,20 @@ var _ Service = (*thingsService)(nil)
 type thingsService struct {
 	auth         mainflux.AuthServiceClient
 	things       ThingRepository
-	groups       GroupRepository
 	channels     ChannelRepository
+	groups       GroupRepository
 	channelCache ChannelCache
 	thingCache   ThingCache
 	idProvider   mainflux.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth mainflux.AuthServiceClient, things ThingRepository, channels ChannelRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		things:       things,
 		channels:     channels,
+		groups:       groups,
 		channelCache: ccache,
 		thingCache:   tcache,
 		idProvider:   idp,

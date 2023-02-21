@@ -35,11 +35,6 @@ type Identity struct {
 // GroupMetadata defines the Metadata type.
 type GroupMetadata map[string]interface{}
 
-// Member represents the member information.
-type Member struct {
-	ID string
-}
-
 // Group represents the group information.
 type Group struct {
 	ID          string
