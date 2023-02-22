@@ -46,10 +46,9 @@ func (req issueReq) validate() error {
 }
 
 type assignReq struct {
-	token     string
-	groupID   string
-	memberID  string
-	groupType string
+	token    string
+	groupID  string
+	memberID string
 }
 
 func (req assignReq) validate() error {

@@ -125,7 +125,7 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err = svc.AssignMembers(ctx, req.token, req.memberID, req.groupID, req.groupType)
+		err = svc.AssignMembers(ctx, req.token, req.memberID, req.groupID)
 		if err != nil {
 			return emptyRes{}, err
 		}
