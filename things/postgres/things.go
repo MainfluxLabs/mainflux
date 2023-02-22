@@ -146,7 +146,7 @@ func (tr thingRepository) UpdateKey(ctx context.Context, owner, id, key string) 
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, owner, id string) (things.Thing, error) {
-	q := `SELECT name, key, metadata FROM things WHERE id = $1;`
+	q := `SELECT name, key, metadata FROM things WHERE id = $1 ;`
 
 	dbth := dbThing{ID: id}
 
@@ -156,7 +156,7 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, owner, id string) (t
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return things.Thing{}, errors.Wrap(errors.ErrNotFound, err)
 		}
-		return things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toThing(dbth)
@@ -170,7 +170,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 		if err == sql.ErrNoRows {
 			return "", errors.Wrap(errors.ErrNotFound, err)
 		}
-		return "", errors.Wrap(errors.ErrViewEntity, err)
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return id, nil
@@ -188,7 +188,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	m, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner, name, key, metadata FROM things
@@ -203,7 +203,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -211,12 +211,12 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	for rows.Next() {
 		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -226,7 +226,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	total, err := total(ctx, tr.db, cq, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := things.Page{
@@ -249,7 +249,7 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 	dq := getDirQuery(pm.Dir)
 	m, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var query []string
@@ -282,7 +282,7 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -290,12 +290,12 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 	for rows.Next() {
 		dbth := dbThing{Owner: owner}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -305,7 +305,7 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 
 	total, err := total(ctx, tr.db, cq, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := things.Page{
@@ -379,7 +379,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -387,12 +387,12 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 	for rows.Next() {
 		dbth := dbThing{Owner: owner}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -400,7 +400,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 
 	var total uint64
 	if err := tr.db.GetContext(ctx, &total, qc, owner, chID); err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return things.Page{
@@ -429,7 +429,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	q := `SELECT id, owner, name, key, metadata FROM things;`
 	rows, err := tr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+		return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -437,12 +437,12 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	for rows.Next() {
 		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
-			return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return []things.Thing{}, errors.Wrap(errors.ErrViewEntity, err)
+			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
