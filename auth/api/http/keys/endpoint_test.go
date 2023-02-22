@@ -65,14 +65,13 @@ func (tr testRequest) make() (*http.Response, error) {
 
 func newService() auth.Service {
 	repo := mocks.NewKeyRepository()
-	groupRepo := mocks.NewGroupRepository()
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
 	mockAuthzDB := map[string][]mocks.MockSubjectSet{}
 	mockAuthzDB[id] = append(mockAuthzDB[id], mocks.MockSubjectSet{Object: "authorities", Relation: "member"})
 
-	return auth.New(nil, repo, groupRepo, idProvider, t, loginDuration, email)
+	return auth.New(nil, repo, idProvider, t, loginDuration, email)
 }
 
 func newServer(svc auth.Service) *httptest.Server {

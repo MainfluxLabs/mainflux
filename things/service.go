@@ -279,12 +279,12 @@ func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) erro
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
-
 	}
 
 	if err := ts.thingCache.Remove(ctx, id); err != nil {
 		return err
 	}
+
 	return ts.things.Remove(ctx, res.GetId(), id)
 }
 

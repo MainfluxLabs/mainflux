@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/jackc/pgerrcode"
@@ -250,12 +249,11 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 }
 
 type dbUser struct {
-	ID       string       `db:"id"`
-	Email    string       `db:"email"`
-	Password string       `db:"password"`
-	Metadata []byte       `db:"metadata"`
-	Groups   []auth.Group `db:"groups"`
-	Status   string       `db:"status"`
+	ID       string `db:"id"`
+	Email    string `db:"email"`
+	Password string `db:"password"`
+	Metadata []byte `db:"metadata"`
+	Status   string `db:"status"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {

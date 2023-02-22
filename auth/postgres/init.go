@@ -55,59 +55,9 @@ func migrateDB(db *sqlx.DB) error {
 						expires_at  TIMESTAMP,
 						PRIMARY KEY (id, issuer_id)
 					)`,
-					`CREATE EXTENSION IF NOT EXISTS LTREE`,
-					`CREATE TABLE IF NOT EXISTS groups (
-						id          VARCHAR(254) UNIQUE NOT NULL,
-						parent_id   VARCHAR(254),
-						owner_id    VARCHAR(254),
-						name        VARCHAR(254) NOT NULL,
-						description VARCHAR(1024),
-						metadata    JSONB,
-						path        LTREE,
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
-						UNIQUE (owner_id, name, parent_id),
-						FOREIGN KEY (parent_id) REFERENCES groups (id) ON DELETE CASCADE
-				   )`,
-					`CREATE TABLE IF NOT EXISTS group_relations (
-						member_id   VARCHAR(254) NOT NULL,
-						group_id    VARCHAR(254) NOT NULL,
-						type        VARCHAR(254),
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (group_id) REFERENCES groups (id),
-						PRIMARY KEY (member_id, group_id)
-				   )`,
-					`CREATE INDEX path_gist_idx ON groups USING GIST (path);`,
-					`CREATE OR REPLACE FUNCTION inherit_group()
-					 RETURNS trigger
-					 LANGUAGE PLPGSQL
-					 AS
-					 $$
-					 BEGIN
-					 IF NEW.parent_id IS NULL OR NEW.parent_id = '' THEN
-						RETURN NEW;
-					 END IF;
-					 IF NOT EXISTS (SELECT id FROM groups WHERE id = NEW.parent_id) THEN
-						RAISE EXCEPTION 'wrong parent id';
-					 END IF;
-					 SELECT text2ltree(ltree2text(path) || '.' || NEW.id) INTO NEW.path FROM groups WHERE id = NEW.parent_id;
-					 RETURN NEW;
-					 END;
-					 $$`,
-					`CREATE TRIGGER inherit_group_tr
-					 BEFORE INSERT
-					 ON groups
-					 FOR EACH ROW
-					 EXECUTE PROCEDURE inherit_group();`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS keys`,
-					`DROP EXTENSION IF EXISTS LTREE`,
-					`DROP TABLE IF EXISTS groups`,
-					`DROP TABLE IF EXISTS group_relations`,
-					`DROP FUNCTION IF EXISTS inherit_group`,
-					`DROP TRIGGER IF EXISTS inherit_group_tr ON groups`,
 				},
 			},
 			{
@@ -121,7 +71,7 @@ func migrateDB(db *sqlx.DB) error {
 							metadata    JSONB,
 							created_at  TIMESTAMPTZ,
 							updated_at  TIMESTAMPTZ,
-							PRIMARY KEY (owner_id, name)
+							PRIMARY KEY (id, owner_id)
 						 )`,
 					`CREATE TABLE IF NOT EXISTS org_relations (
 							member_id   UUID NOT NULL,
@@ -131,6 +81,25 @@ func migrateDB(db *sqlx.DB) error {
 							FOREIGN KEY (org_id) REFERENCES orgs (id),
 							PRIMARY KEY (member_id, org_id)
 						 )`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS orgs`,
+					`DROP TABLE IF EXISTS org_relations`,
+				},
+			},
+			{
+				Id: "auth_3",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS group_relations (
+							group_id    UUID NOT NULL,
+							org_id      UUID NOT NULL,
+							created_at  TIMESTAMPTZ,
+							updated_at  TIMESTAMPTZ,
+							PRIMARY KEY (group_id, org_id)
+						 )`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS group_relations`,
 				},
 			},
 		},

@@ -129,15 +129,6 @@ func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, host, email,
 	return ms.svc.SendPasswordReset(ctx, host, email, token)
 }
 
-func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID string, pm users.PageMetadata) (users.UserPage, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members").Add(1)
-		ms.latency.With("method", "list_members").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListMembers(ctx, token, groupID, pm)
-}
-
 func (ms *metricsMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "enable_user").Add(1)

@@ -11,7 +11,7 @@ func createOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createOrgReq)
 		if err := req.validate(); err != nil {
-			return orgRes{}, err
+			return nil, err
 		}
 
 		org := auth.Org{
@@ -22,7 +22,7 @@ func createOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 
 		org, err := svc.CreateOrg(ctx, req.token, org)
 		if err != nil {
-			return orgRes{}, err
+			return nil, err
 		}
 
 		return orgRes{created: true, id: org.ID}, nil
@@ -33,12 +33,12 @@ func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(orgReq)
 		if err := req.validate(); err != nil {
-			return viewOrgRes{}, err
+			return nil, err
 		}
 
 		org, err := svc.ViewOrg(ctx, req.token, req.id)
 		if err != nil {
-			return viewOrgRes{}, err
+			return nil, err
 		}
 
 		res := viewOrgRes{
@@ -59,7 +59,7 @@ func updateOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateOrgReq)
 		if err := req.validate(); err != nil {
-			return orgRes{}, err
+			return nil, err
 		}
 
 		org := auth.Org{
@@ -71,11 +71,10 @@ func updateOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 
 		_, err := svc.UpdateOrg(ctx, req.token, org)
 		if err != nil {
-			return orgRes{}, err
+			return nil, err
 		}
 
-		res := orgRes{created: false}
-		return res, nil
+		return orgRes{created: false}, nil
 	}
 }
 
@@ -98,14 +97,14 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listOrgsReq)
 		if err := req.validate(); err != nil {
-			return orgPageRes{}, err
+			return nil, err
 		}
-		pm := auth.OrgPageMetadata{
+		pm := auth.PageMetadata{
 			Metadata: req.metadata,
 		}
 		page, err := svc.ListOrgs(ctx, req.token, pm)
 		if err != nil {
-			return orgPageRes{}, err
+			return nil, err
 		}
 
 		return buildOrgsResponse(page), nil
@@ -116,10 +115,10 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listOrgMembershipsReq)
 		if err := req.validate(); err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
-		pm := auth.OrgPageMetadata{
+		pm := auth.PageMetadata{
 			Offset:   req.offset,
 			Limit:    req.limit,
 			Metadata: req.metadata,
@@ -127,35 +126,21 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 
 		page, err := svc.ListOrgMemberships(ctx, req.token, req.id, pm)
 		if err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
 		return buildOrgsResponse(page), nil
 	}
 }
 
-func shareOrgAccessEndpoint(svc auth.Service) endpoint.Endpoint {
+func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(shareOrgAccessReq)
-		if err := req.validate(); err != nil {
-			return shareOrgRes{}, err
-		}
-
-		if err := svc.AssignOrgAccessRights(ctx, req.token, req.ThingOrgID, req.userOrgID); err != nil {
-			return shareOrgRes{}, err
-		}
-		return shareOrgRes{}, nil
-	}
-}
-
-func assignEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignOrgReq)
+		req := request.(assignMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.AssignOrg(ctx, req.token, req.orgID, req.Members...); err != nil {
+		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -163,14 +148,14 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func unassignEndpoint(svc auth.Service) endpoint.Endpoint {
+func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(unassignOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.UnassignOrg(ctx, req.token, req.orgID, req.Members...); err != nil {
+		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -178,24 +163,75 @@ func unassignEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listOrgMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listOrgMembersReq)
 		if err := req.validate(); err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
-		pm := auth.OrgPageMetadata{
+		pm := auth.PageMetadata{
 			Offset:   req.offset,
 			Limit:    req.limit,
 			Metadata: req.metadata,
 		}
 		page, err := svc.ListOrgMembers(ctx, req.token, req.id, pm)
 		if err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
-		return buildUsersResponse(page), nil
+		return buildMembersResponse(page), nil
+	}
+}
+
+func assignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(assignMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.AssignGroups(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return assignRes{}, nil
+	}
+}
+
+func unassignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(unassignOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UnassignGroups(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return unassignRes{}, nil
+	}
+}
+
+func listOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listOrgGroupsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		pm := auth.PageMetadata{
+			Offset:   req.offset,
+			Limit:    req.limit,
+			Metadata: req.metadata,
+		}
+		page, err := svc.ListOrgGroups(ctx, req.token, req.id, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupsResponse(page), nil
 	}
 }
 
@@ -213,8 +249,8 @@ func toViewOrgRes(org auth.Org) viewOrgRes {
 	return view
 }
 
-func buildOrgsResponse(gp auth.OrgPage) orgPageRes {
-	res := orgPageRes{
+func buildOrgsResponse(gp auth.OrgsPage) orgsPageRes {
+	res := orgsPageRes{
 		pageRes: pageRes{
 			Total: gp.Total,
 		},
@@ -237,7 +273,7 @@ func buildOrgsResponse(gp auth.OrgPage) orgPageRes {
 	return res
 }
 
-func buildUsersResponse(mp auth.OrgMembersPage) memberPageRes {
+func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
 	res := memberPageRes{
 		pageRes: pageRes{
 			Total:  mp.Total,
@@ -245,11 +281,29 @@ func buildUsersResponse(mp auth.OrgMembersPage) memberPageRes {
 			Limit:  mp.Limit,
 			Name:   mp.Name,
 		},
-		Members: []string{},
+		MemberIDs: []string{},
 	}
 
-	for _, m := range mp.Members {
-		res.Members = append(res.Members, m.ID)
+	for _, m := range mp.MemberIDs {
+		res.MemberIDs = append(res.MemberIDs, m)
+	}
+
+	return res
+}
+
+func buildGroupsResponse(mp auth.OrgGroupsPage) groupsPageRes {
+	res := groupsPageRes{
+		pageRes: pageRes{
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
+			Name:   mp.Name,
+		},
+		GroupIDs: []string{},
+	}
+
+	for _, m := range mp.GroupIDs {
+		res.GroupIDs = append(res.GroupIDs, m)
 	}
 
 	return res
