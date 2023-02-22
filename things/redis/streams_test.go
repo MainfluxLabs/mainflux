@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	r "github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/MainfluxLabs/mainflux/things/redis"
+	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,11 +47,12 @@ func newService(tokens map[string]string) things.Service {
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := mocks.NewGroupRepository()
 	chanCache := mocks.NewChannelCache()
 	thingCache := mocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, thingsRepo, channelsRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
 }
 
 func TestCreateThings(t *testing.T) {

@@ -5,20 +5,11 @@ package things
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
-)
-
-const (
-	usersObjectKey    = "users"
-	authoritiesObject = "authorities"
-	memberRelationKey = "member"
-	readRelationKey   = "read"
-	writeRelationKey  = "write"
-	deleteRelationKey = "delete"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -98,14 +89,41 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// ListMembers retrieves everything that is assigned to a group identified by groupID.
-	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error)
-
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
 	// Restore adds things, channels and connections from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
+
+	// CreateGroup creates new  group.
+	CreateGroup(ctx context.Context, token string, g Group) (Group, error)
+
+	// UpdateGroup updates the group identified by the provided ID.
+	UpdateGroup(ctx context.Context, token string, g Group) (Group, error)
+
+	// ViewGroup retrieves data about the group identified by ID.
+	ViewGroup(ctx context.Context, token, id string) (Group, error)
+
+	// ListGroups retrieves groups.
+	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
+
+	// ListMembers retrieves everything that is assigned to a group identified by groupID.
+	ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error)
+
+	// ListMemberships retrieves all groups for member that is identified with memberID belongs to.
+	ListMemberships(ctx context.Context, token, memberID string, pm PageMetadata) (GroupPage, error)
+
+	// RemoveGroup removes the group identified with the provided ID.
+	RemoveGroup(ctx context.Context, token, id string) error
+
+	// Assign adds a member with memberID into the group identified by groupID.
+	Assign(ctx context.Context, token, groupID string, memberIDs ...string) error
+
+	// Unassign removes member with memberID from group identified by groupID.
+	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
+
+	// AssignGroupAccessRights adds access rights on thing groups to user group.
+	AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -132,22 +150,22 @@ type thingsService struct {
 	auth         mainflux.AuthServiceClient
 	things       ThingRepository
 	channels     ChannelRepository
+	groups       GroupRepository
 	channelCache ChannelCache
 	thingCache   ThingCache
 	idProvider   mainflux.IDProvider
-	ulidProvider mainflux.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth mainflux.AuthServiceClient, things ThingRepository, channels ChannelRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		things:       things,
 		channels:     channels,
+		groups:       groups,
 		channelCache: ccache,
 		thingCache:   tcache,
 		idProvider:   idp,
-		ulidProvider: ulid.New(),
 	}
 }
 
@@ -456,19 +474,6 @@ func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) 
 	return thingID, nil
 }
 
-func (ts *thingsService) ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (Page, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
-		return Page{}, err
-	}
-
-	res, err := ts.members(ctx, token, groupID, "things", pm.Limit, pm.Offset)
-	if err != nil {
-		return Page{}, nil
-	}
-
-	return ts.things.RetrieveByIDs(ctx, res, pm)
-}
-
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
 	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
@@ -523,18 +528,110 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	return nil
 }
 
-func (ts *thingsService) members(ctx context.Context, token, groupID, groupType string, limit, offset uint64) ([]string, error) {
-	req := mainflux.MembersReq{
-		Token:   token,
-		GroupID: groupID,
-		Offset:  offset,
-		Limit:   limit,
-		Type:    groupType,
+func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Group) (Group, error) {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	res, err := ts.auth.Members(ctx, &req)
+	id, err := ts.idProvider.ID()
 	if err != nil {
-		return nil, nil
+		return Group{}, err
 	}
-	return res.Members, nil
+
+	timestamp := getTimestmap()
+	group.UpdatedAt = timestamp
+	group.CreatedAt = timestamp
+
+	group.ID = id
+	group.OwnerID = user.Id
+
+	group, err = ts.groups.Save(ctx, group)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
+}
+
+func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return GroupPage{}, err
+	}
+
+	return ts.groups.RetrieveAll(ctx, pm)
+}
+
+func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return err
+	}
+	return ts.groups.Delete(ctx, id)
+}
+
+func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return Group{}, err
+	}
+
+	group.UpdatedAt = getTimestmap()
+	return ts.groups.Update(ctx, group)
+}
+
+func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return Group{}, err
+	}
+	return ts.groups.RetrieveByID(ctx, id)
+}
+
+func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return err
+	}
+
+	if err := ts.groups.AssignMember(ctx, groupID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return err
+	}
+
+	return ts.groups.UnassignMember(ctx, groupID, memberIDs...)
+}
+
+func getTimestmap() time.Time {
+	return time.Now().UTC().Round(time.Millisecond)
+}
+
+func (ts *thingsService) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return MemberPage{}, err
+	}
+
+	mp, err := ts.groups.RetrieveMembers(ctx, groupID, pm)
+	if err != nil {
+		return MemberPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+	}
+
+	return mp, nil
+}
+
+func (ts *thingsService) ListMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (GroupPage, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return GroupPage{}, err
+	}
+	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
