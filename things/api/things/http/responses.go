@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	_ mainflux.Response = (*removeRes)(nil)
 	_ mainflux.Response = (*thingRes)(nil)
 	_ mainflux.Response = (*viewThingRes)(nil)
 	_ mainflux.Response = (*thingsPageRes)(nil)
@@ -33,17 +32,17 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 )
 
-type removeRes struct{}
+type deleteRes struct{}
 
-func (res removeRes) Code() int {
+func (res deleteRes) Code() int {
 	return http.StatusNoContent
 }
 
-func (res removeRes) Headers() map[string]string {
+func (res deleteRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res removeRes) Empty() bool {
+func (res deleteRes) Empty() bool {
 	return true
 }
 
@@ -418,20 +417,6 @@ func (res groupPageRes) Headers() map[string]string {
 
 func (res groupPageRes) Empty() bool {
 	return false
-}
-
-type deleteRes struct{}
-
-func (res deleteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res deleteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res deleteRes) Empty() bool {
-	return true
 }
 
 type assignRes struct{}

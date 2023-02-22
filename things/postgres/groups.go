@@ -216,7 +216,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 	return page, nil
 }
 
-func (gr groupRepository) Members(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
+func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
@@ -270,7 +270,7 @@ func (gr groupRepository) Members(ctx context.Context, groupID string, pm things
 	return page, nil
 }
 
-func (gr groupRepository) Memberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
@@ -328,7 +328,7 @@ func (gr groupRepository) Memberships(ctx context.Context, memberID string, pm t
 	return page, nil
 }
 
-func (gr groupRepository) Assign(ctx context.Context, groupID string, ids ...string) error {
+func (gr groupRepository) AssignMember(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrAssignToGroup, err)
@@ -371,7 +371,7 @@ func (gr groupRepository) Assign(ctx context.Context, groupID string, ids ...str
 	return nil
 }
 
-func (gr groupRepository) Unassign(ctx context.Context, groupID string, ids ...string) error {
+func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrAssignToGroup, err)

@@ -77,15 +77,15 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context, pm PageMetadata) (GroupPage, error)
 
-	//  Retrieves list of groups that member belongs to
-	Memberships(ctx context.Context, memberID string, pm PageMetadata) (GroupPage, error)
+	// RetrieveMemberships retrieves list of groups that member belongs to
+	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (GroupPage, error)
 
-	// Members retrieves everything that is assigned to a group identified by groupID.
-	Members(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)
+	// RetrieveMembers retrieves everything that is assigned to a group identified by groupID.
+	RetrieveMembers(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)
 
-	// Assign adds a member to group.
-	Assign(ctx context.Context, groupID string, memberIDs ...string) error
+	// AssignMember adds a member to group.
+	AssignMember(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// Unassign removes a member from a group
-	Unassign(ctx context.Context, groupID string, memberIDs ...string) error
+	// UnassignMember removes a member from a group
+	UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error
 }

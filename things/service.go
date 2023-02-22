@@ -590,7 +590,7 @@ func (ts *thingsService) Assign(ctx context.Context, token string, groupID strin
 		return err
 	}
 
-	if err := ts.groups.Assign(ctx, groupID, memberIDs...); err != nil {
+	if err := ts.groups.AssignMember(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -602,7 +602,7 @@ func (ts *thingsService) Unassign(ctx context.Context, token string, groupID str
 		return err
 	}
 
-	return ts.groups.Unassign(ctx, groupID, memberIDs...)
+	return ts.groups.UnassignMember(ctx, groupID, memberIDs...)
 }
 
 func getTimestmap() time.Time {
@@ -621,7 +621,7 @@ func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID 
 		return MemberPage{}, err
 	}
 
-	mp, err := ts.groups.Members(ctx, groupID, pm)
+	mp, err := ts.groups.RetrieveMembers(ctx, groupID, pm)
 	if err != nil {
 		return MemberPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
@@ -633,5 +633,5 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return GroupPage{}, err
 	}
-	return ts.groups.Memberships(ctx, memberID, pm)
+	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }

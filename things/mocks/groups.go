@@ -109,7 +109,7 @@ func (grm *groupRepositoryMock) RetrieveAll(ctx context.Context, pm things.PageM
 	}, nil
 }
 
-func (grm *groupRepositoryMock) Unassign(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[groupID]; !ok {
@@ -129,7 +129,7 @@ func (grm *groupRepositoryMock) Unassign(ctx context.Context, groupID string, me
 	return nil
 }
 
-func (grm *groupRepositoryMock) Assign(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string, memberIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[groupID]; !ok {
@@ -155,7 +155,7 @@ func (grm *groupRepositoryMock) Assign(ctx context.Context, groupID string, memb
 
 }
 
-func (grm *groupRepositoryMock) Memberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []things.Group
@@ -181,7 +181,7 @@ func (grm *groupRepositoryMock) Memberships(ctx context.Context, memberID string
 	}, nil
 }
 
-func (grm *groupRepositoryMock) Members(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
+func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []string

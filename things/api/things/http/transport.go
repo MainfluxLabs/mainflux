@@ -73,7 +73,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Delete("/things/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_thing")(removeThingEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_thing")(deleteThingEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,
@@ -129,7 +129,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Delete("/channels/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_channel")(removeChannelEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_channel")(deleteChannelEndpoint(svc)),
 		decodeView,
 		encodeResponse,
 		opts...,

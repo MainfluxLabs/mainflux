@@ -1251,7 +1251,7 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 }
 
-func TestRemoveThing(t *testing.T) {
+func TestDeleteThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	ts := newServer(svc)
 	defer ts.Close()
@@ -2115,7 +2115,7 @@ func TestListChannelsByThing(t *testing.T) {
 	}
 }
 
-func TestRemoveChannel(t *testing.T) {
+func TestDeleteChannel(t *testing.T) {
 	svc := newService(map[string]string{token: adminEmail})
 	ts := newServer(svc)
 	defer ts.Close()
@@ -2130,31 +2130,31 @@ func TestRemoveChannel(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "remove channel with invalid token",
+			desc:   "delete channel with invalid token",
 			id:     ch.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "remove existing channel",
+			desc:   "delete existing channel",
 			id:     ch.ID,
 			auth:   token,
 			status: http.StatusNoContent,
 		},
 		{
-			desc:   "remove removed channel",
+			desc:   "delete deleted channel",
 			id:     ch.ID,
 			auth:   token,
 			status: http.StatusNoContent,
 		},
 		{
-			desc:   "remove channel with invalid token",
+			desc:   "delete channel with invalid token",
 			id:     ch.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "remove channel with empty token",
+			desc:   "delete channel with empty token",
 			id:     ch.ID,
 			auth:   "",
 			status: http.StatusUnauthorized,
