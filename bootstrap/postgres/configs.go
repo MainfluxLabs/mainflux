@@ -97,7 +97,7 @@ func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, err
 			return empty, errors.Wrap(errors.ErrNotFound, err)
 		}
 
-		return empty, errors.Wrap(errors.ErrViewEntity, err)
+		return empty, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q = `SELECT mainflux_channel, name, metadata FROM channels ch
@@ -108,7 +108,7 @@ func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, err
 	rows, err := cr.db.NamedQuery(q, dbcfg)
 	if err != nil {
 		cr.log.Error(fmt.Sprintf("Failed to retrieve connected due to %s", err))
-		return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+		return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -117,13 +117,13 @@ func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, err
 		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read connected thing due to %s", err))
-			return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+			return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		dbch.Owner = nullString(dbcfg.Owner)
 
 		ch, err := toChannel(dbch)
 		if err != nil {
-			return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+			return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		chans = append(chans, ch)
 	}
@@ -193,7 +193,7 @@ func (cr configRepository) RetrieveByExternalID(externalID string) (bootstrap.Co
 		if err == sql.ErrNoRows {
 			return empty, errors.Wrap(errors.ErrNotFound, err)
 		}
-		return empty, errors.Wrap(errors.ErrViewEntity, err)
+		return empty, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q = `SELECT mainflux_channel, name, metadata FROM channels ch
@@ -204,7 +204,7 @@ func (cr configRepository) RetrieveByExternalID(externalID string) (bootstrap.Co
 	rows, err := cr.db.NamedQuery(q, dbcfg)
 	if err != nil {
 		cr.log.Error(fmt.Sprintf("Failed to retrieve connected due to %s", err))
-		return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+		return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -213,13 +213,13 @@ func (cr configRepository) RetrieveByExternalID(externalID string) (bootstrap.Co
 		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read connected thing due to %s", err))
-			return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+			return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		ch, err := toChannel(dbch)
 		if err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to deserialize channel due to %s", err))
-			return bootstrap.Config{}, errors.Wrap(errors.ErrViewEntity, err)
+			return bootstrap.Config{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		channels = append(channels, ch)
@@ -350,14 +350,14 @@ func (cr configRepository) ListExisting(owner string, ids []string) ([]bootstrap
 	q := "SELECT mainflux_channel, name, metadata FROM channels WHERE owner = $1 AND mainflux_channel = ANY ($2)"
 	rows, err := cr.db.Queryx(q, owner, chans)
 	if err != nil {
-		return []bootstrap.Channel{}, errors.Wrap(errors.ErrViewEntity, err)
+		return []bootstrap.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	for rows.Next() {
 		var dbch dbChannel
 		if err := rows.StructScan(&dbch); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read retrieved channels due to %s", err))
-			return []bootstrap.Channel{}, errors.Wrap(errors.ErrViewEntity, err)
+			return []bootstrap.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		ch, err := toChannel(dbch)

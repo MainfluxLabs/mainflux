@@ -222,7 +222,7 @@ func TestRetrieveByID(t *testing.T) {
 				},
 				Subscriptions: nil,
 			},
-			err: errors.ErrViewEntity,
+			err: errors.ErrRetrieveEntity,
 		},
 	}
 

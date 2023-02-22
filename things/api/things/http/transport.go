@@ -697,7 +697,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 	case errors.Contains(err, errors.ErrCreateEntity),
 		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrViewEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity),
 		errors.Contains(err, errors.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 

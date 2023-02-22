@@ -162,7 +162,7 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 			return things.Group{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
-		return things.Group{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	return toGroup(dbu)
 }

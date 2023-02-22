@@ -67,7 +67,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -75,7 +75,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 	for rows.Next() {
 		item := dbSubscription{}
 		if err := rows.StructScan(&item); err != nil {
-			return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		items = append(items, fromDBSub(item))
 	}
@@ -87,7 +87,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 	cq := `SELECT COUNT(*) FROM subscriptions WHERE channel_id= :chanID;`
 	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
-		return mqtt.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return mqtt.Page{

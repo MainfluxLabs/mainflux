@@ -151,7 +151,7 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 			return auth.Org{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
-		return auth.Org{}, errors.Wrap(errors.ErrViewEntity, err)
+		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	return toOrg(dbu)
 }
