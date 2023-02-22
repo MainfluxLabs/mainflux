@@ -87,9 +87,6 @@ type Service interface {
 	// SendPasswordReset sends reset password link to email.
 	SendPasswordReset(ctx context.Context, host, email, token string) error
 
-	// ListMembers retrieves everything that is assigned to a group identified by groupID.
-	ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (UserPage, error)
-
 	// EnableUser logically enableds the user identified with the provided ID
 	EnableUser(ctx context.Context, token, id string) error
 
@@ -105,12 +102,6 @@ type PageMetadata struct {
 	Email    string
 	Status   string
 	Metadata Metadata
-}
-
-// GroupPage contains a page of groups.
-type GroupPage struct {
-	PageMetadata
-	Groups []auth.Group
 }
 
 // UserPage contains a page of users.
@@ -349,30 +340,6 @@ func (svc usersService) SendPasswordReset(_ context.Context, host, email, token 
 	return svc.email.SendPasswordReset(to, host, token)
 }
 
-func (svc usersService) ListMembers(ctx context.Context, token, groupID string, pm PageMetadata) (UserPage, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
-		return UserPage{}, err
-	}
-
-	userIDs, err := svc.members(ctx, token, groupID, pm.Offset, pm.Limit)
-	if err != nil {
-		return UserPage{}, err
-	}
-
-	if len(userIDs) == 0 {
-		return UserPage{
-			Users: []User{},
-			PageMetadata: PageMetadata{
-				Total:  0,
-				Offset: pm.Offset,
-				Limit:  pm.Limit,
-			},
-		}, nil
-	}
-
-	return svc.users.RetrieveAll(ctx, pm.Status, pm.Offset, pm.Limit, userIDs, pm.Email, pm.Metadata)
-}
-
 func (svc usersService) EnableUser(ctx context.Context, token, id string) error {
 	if err := svc.changeStatus(ctx, token, id, EnabledStatusKey); err != nil {
 		return err
@@ -427,22 +394,6 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	}
 
 	return userIdentity{identity.Id, identity.Email}, nil
-}
-
-func (svc usersService) members(ctx context.Context, token, groupID string, limit, offset uint64) ([]string, error) {
-	req := mainflux.MembersReq{
-		Token:   token,
-		GroupID: groupID,
-		Offset:  offset,
-		Limit:   limit,
-		Type:    "users",
-	}
-
-	res, err := svc.auth.Members(ctx, &req)
-	if err != nil {
-		return nil, err
-	}
-	return res.Members, nil
 }
 
 func (svc usersService) authorize(ctx context.Context, subject, object, relation string) error {

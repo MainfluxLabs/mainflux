@@ -3,8 +3,8 @@ package policies
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func createPolicyEndpoint(svc auth.Service) endpoint.Endpoint {

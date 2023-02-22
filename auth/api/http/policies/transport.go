@@ -90,7 +90,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, auth.ErrMemberAlreadyAssigned):
+	case errors.Contains(err, auth.ErrOrgMemberAlreadyAssigned):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

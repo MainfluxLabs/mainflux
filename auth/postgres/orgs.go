@@ -26,7 +26,9 @@ type orgRepository struct {
 }
 
 var (
-	orgIDFkey = "org_relations_org_id_fkey"
+	errCreateMetadataQuery = errors.New("failed to create query for metadata")
+	errGetTotal            = errors.New("failed to get total number of groups")
+	orgIDFkey              = "org_relations_org_id_fkey"
 )
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
@@ -154,10 +156,10 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	return toOrg(dbu)
 }
 
-func (gr orgRepository) RetrieveAll(ctx context.Context, ownerID string, pm auth.OrgPageMetadata) (auth.OrgPage, error) {
+func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	_, metaQuery, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
 	}
 
 	var mq string
@@ -168,20 +170,20 @@ func (gr orgRepository) RetrieveAll(ctx context.Context, ownerID string, pm auth
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs
 					  WHERE owner_id = :owner_id %s`, mq)
 
-	dbPage, err := toDBOrgPage(ownerID, pm)
+	dbPage, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
 	}
 	defer rows.Close()
 
 	items, err := gr.processRows(rows)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
 	}
 
 	cq := "SELECT COUNT(*) FROM orgs"
@@ -191,12 +193,12 @@ func (gr orgRepository) RetrieveAll(ctx context.Context, ownerID string, pm auth
 
 	total, err := total(ctx, gr.db, cq, dbPage)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
 	}
 
-	page := auth.OrgPage{
+	page := auth.OrgsPage{
 		Orgs: items,
-		OrgPageMetadata: auth.OrgPageMetadata{
+		PageMetadata: auth.PageMetadata{
 			Total: total,
 		},
 	}
@@ -204,7 +206,7 @@ func (gr orgRepository) RetrieveAll(ctx context.Context, ownerID string, pm auth
 	return page, nil
 }
 
-func (gr orgRepository) Members(ctx context.Context, orgID string, pm auth.OrgPageMetadata) (auth.OrgMembersPage, error) {
+func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
@@ -224,7 +226,7 @@ func (gr orgRepository) Members(ctx context.Context, orgID string, pm auth.OrgPa
 	}
 	defer rows.Close()
 
-	var items []auth.OrgMember
+	var items []string
 	for rows.Next() {
 		member := dbOrgMember{}
 		if err := rows.StructScan(&member); err != nil {
@@ -235,7 +237,7 @@ func (gr orgRepository) Members(ctx context.Context, orgID string, pm auth.OrgPa
 			return auth.OrgMembersPage{}, err
 		}
 
-		items = append(items, auth.OrgMember{ID: member.MemberID})
+		items = append(items, member.MemberID)
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, org_relations ore
@@ -247,8 +249,8 @@ func (gr orgRepository) Members(ctx context.Context, orgID string, pm auth.OrgPa
 	}
 
 	page := auth.OrgMembersPage{
-		Members: items,
-		OrgPageMetadata: auth.OrgPageMetadata{
+		MemberIDs: items,
+		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -258,10 +260,10 @@ func (gr orgRepository) Members(ctx context.Context, orgID string, pm auth.OrgPa
 	return page, nil
 }
 
-func (gr orgRepository) Memberships(ctx context.Context, memberID string, pm auth.OrgPageMetadata) (auth.OrgPage, error) {
+func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
 	if mq != "" {
@@ -274,12 +276,12 @@ func (gr orgRepository) Memberships(ctx context.Context, memberID string, pm aut
 
 	params, err := toDBOrgMemberPage(memberID, "", pm)
 	if err != nil {
-		return auth.OrgPage{}, err
+		return auth.OrgsPage{}, err
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 	defer rows.Close()
 
@@ -287,11 +289,11 @@ func (gr orgRepository) Memberships(ctx context.Context, memberID string, pm aut
 	for rows.Next() {
 		dbg := dbOrg{}
 		if err := rows.StructScan(&dbg); err != nil {
-			return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
+			return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 		}
 		gr, err := toOrg(dbg)
 		if err != nil {
-			return auth.OrgPage{}, err
+			return auth.OrgsPage{}, err
 		}
 		items = append(items, gr)
 	}
@@ -301,12 +303,12 @@ func (gr orgRepository) Memberships(ctx context.Context, memberID string, pm aut
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
-		return auth.OrgPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
-	page := auth.OrgPage{
+	page := auth.OrgsPage{
 		Orgs: items,
-		OrgPageMetadata: auth.OrgPageMetadata{
+		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -316,7 +318,7 @@ func (gr orgRepository) Memberships(ctx context.Context, memberID string, pm aut
 	return page, nil
 }
 
-func (gr orgRepository) Assign(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -344,7 +346,7 @@ func (gr orgRepository) Assign(ctx context.Context, orgID string, ids ...string)
 				case pgerrcode.ForeignKeyViolation:
 					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
+					return errors.Wrap(auth.ErrOrgMemberAlreadyAssigned, errors.New(pgErr.Detail))
 				}
 			}
 
@@ -359,7 +361,7 @@ func (gr orgRepository) Assign(ctx context.Context, orgID string, ids ...string)
 	return nil
 }
 
-func (gr orgRepository) Unassign(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -396,6 +398,140 @@ func (gr orgRepository) Unassign(ctx context.Context, orgID string, ids ...strin
 	return nil
 }
 
+func (gr orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(auth.ErrAssignToOrg, err)
+	}
+
+	qIns := `INSERT INTO group_relations (org_id, group_id, created_at, updated_at)
+			 VALUES(:org_id, :group_id, :created_at, :updated_at)`
+
+	for _, id := range groupIDs {
+		dbg, err := toDBOrgRelation(id, orgID)
+		if err != nil {
+			return errors.Wrap(auth.ErrAssignToOrg, err)
+		}
+		created := time.Now()
+		dbg.CreatedAt = created
+		dbg.UpdatedAt = created
+
+		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(auth.ErrOrgMemberAlreadyAssigned, errors.New(pgErr.Detail))
+				}
+			}
+
+			return errors.Wrap(auth.ErrAssignToOrg, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(auth.ErrAssignToOrg, err)
+	}
+
+	return nil
+}
+
+func (gr orgRepository) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(auth.ErrAssignToOrg, err)
+	}
+
+	qDel := `DELETE from group_relations WHERE org_id = :org_id AND group_id = :group_id`
+
+	for _, id := range groupIDs {
+		dbg, err := toDBOrgRelation(id, orgID)
+		if err != nil {
+			return errors.Wrap(auth.ErrAssignToOrg, err)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(auth.ErrAssignToOrg, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(auth.ErrAssignToOrg, err)
+	}
+
+	return nil
+}
+
+func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
+	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	if err != nil {
+		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
+	}
+
+	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, oge.updated_at FROM group_relations gre
+					  WHERE gre.org_id = :org_id %s`, mq)
+
+	params, err := toDBOrgMemberPage("", orgID, pm)
+	if err != nil {
+		return auth.OrgGroupsPage{}, err
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveGroups, err)
+	}
+	defer rows.Close()
+
+	var items []string
+	for rows.Next() {
+		member := dbOrgMember{}
+		if err := rows.StructScan(&member); err != nil {
+			return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveGroups, err)
+		}
+
+		if err != nil {
+			return auth.OrgGroupsPage{}, err
+		}
+
+		items = append(items, member.MemberID)
+	}
+
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, group_relations gre
+					   WHERE gre.org_id = :org_id AND gre.org_id = o.id %s;`, mq)
+
+	total, err := total(ctx, gr.db, cq, params)
+	if err != nil {
+		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
+	}
+
+	page := auth.OrgGroupsPage{
+		GroupIDs: items,
+		PageMetadata: auth.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 type dbOrgMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`
@@ -413,7 +549,7 @@ type dbOrg struct {
 	UpdatedAt   time.Time     `db:"updated_at"`
 }
 
-type dbOrgPage struct {
+type dbOrgsPage struct {
 	ID       string        `db:"id"`
 	OwnerID  string        `db:"owner_id"`
 	Metadata dbOrgMetadata `db:"metadata"`
@@ -423,11 +559,11 @@ type dbOrgPage struct {
 }
 
 type dbOrgMemberPage struct {
-	OrgID    string     `db:"org_id"`
-	MemberID string     `db:"member_id"`
-	Metadata dbMetadata `db:"metadata"`
-	Limit    uint64     `db:"limit"`
-	Offset   uint64     `db:"offset"`
+	OrgID    string        `db:"org_id"`
+	MemberID string        `db:"member_id"`
+	Metadata dbOrgMetadata `db:"metadata"`
+	Limit    uint64        `db:"limit"`
+	Offset   uint64        `db:"offset"`
 }
 
 func toDBOrg(o auth.Org) (dbOrg, error) {
@@ -442,8 +578,8 @@ func toDBOrg(o auth.Org) (dbOrg, error) {
 	}, nil
 }
 
-func toDBOrgPage(ownerID string, pm auth.OrgPageMetadata) (dbOrgPage, error) {
-	return dbOrgPage{
+func toDBOrgsPage(ownerID string, pm auth.PageMetadata) (dbOrgsPage, error) {
+	return dbOrgsPage{
 		Metadata: dbOrgMetadata(pm.Metadata),
 		OwnerID:  ownerID,
 		Total:    pm.Total,
@@ -452,11 +588,11 @@ func toDBOrgPage(ownerID string, pm auth.OrgPageMetadata) (dbOrgPage, error) {
 	}, nil
 }
 
-func toDBOrgMemberPage(memberID, orgID string, pm auth.OrgPageMetadata) (dbOrgMemberPage, error) {
+func toDBOrgMemberPage(memberID, orgID string, pm auth.PageMetadata) (dbOrgMemberPage, error) {
 	return dbOrgMemberPage{
 		OrgID:    orgID,
 		MemberID: memberID,
-		Metadata: dbMetadata(pm.Metadata),
+		Metadata: dbOrgMetadata(pm.Metadata),
 		Offset:   pm.Offset,
 		Limit:    pm.Limit,
 	}, nil
@@ -475,26 +611,16 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 }
 
 type dbOrgRelation struct {
-	OrgID     sql.NullString `db:"org_id"`
-	MemberID  sql.NullString `db:"member_id"`
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at"`
+	OrgID     string    `db:"org_id"`
+	MemberID  string    `db:"member_id"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func toDBOrgRelation(memberID, orgID string) (dbOrgRelation, error) {
-	var grID sql.NullString
-	if orgID != "" {
-		grID = sql.NullString{String: orgID, Valid: true}
-	}
-
-	var mID sql.NullString
-	if memberID != "" {
-		mID = sql.NullString{String: memberID, Valid: true}
-	}
-
 	return dbOrgRelation{
-		OrgID:    grID,
-		MemberID: mID,
+		OrgID:    orgID,
+		MemberID: memberID,
 	}, nil
 }
 
@@ -528,6 +654,21 @@ func (gr orgRepository) processRows(rows *sqlx.Rows) ([]auth.Org, error) {
 		items = append(items, org)
 	}
 	return items, nil
+}
+
+func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+	rows, err := db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return 0, errors.Wrap(errGetTotal, err)
+	}
+	defer rows.Close()
+	total := uint64(0)
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, errors.Wrap(errGetTotal, err)
+		}
+	}
+	return total, nil
 }
 
 // dbOrgMetadata type for handling metadata properly in database/sql

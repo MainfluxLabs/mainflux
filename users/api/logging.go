@@ -171,19 +171,6 @@ func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email,
 	return lm.svc.SendPasswordReset(ctx, host, email, token)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm users.PageMetadata) (mp users.UserPage, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for group %s took %s to complete", groupID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListMembers(ctx, token, groupID, pm)
-}
-
 func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method enable_user for user %s took %s to complete", id, time.Since(begin))

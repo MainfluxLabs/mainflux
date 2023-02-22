@@ -62,13 +62,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/orgs/:subjectOrgID/share", kithttp.NewServer(
-		kitot.TraceServer(tracer, "share_org_access")(shareOrgAccessEndpoint(svc)),
-		decodeShareOrgRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_orgs")(listOrgsEndpoint(svc)),
 		decodeListOrgsRequest,
@@ -77,21 +70,42 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Post("/orgs/:orgID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
+		kitot.TraceServer(tracer, "assign_members")(assignMembersEndpoint(svc)),
 		decodeAssignRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/orgs/:orgID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
+		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
 		decodeUnassignRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:orgID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_members")(listOrgMembersEndpoint(svc)),
+		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
+		decodeAssignRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/orgs/:orgID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_groups")(unassignOrgGroupsEndpoint(svc)),
+		decodeUnassignRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/orgs/:orgID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_groups")(listOrgGroupsEndpoint(svc)),
 		decodeListMembersRequest,
 		encodeResponse,
 		opts...,
@@ -105,22 +119,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	return mux
-}
-
-func decodeShareOrgRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := shareOrgAccessReq{
-		token:     apiutil.ExtractBearerToken(r),
-		userOrgID: bone.GetValue(r, "subjectOrgID"),
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
 }
 
 func decodeListOrgsRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -229,7 +227,7 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := assignOrgReq{
+	req := assignMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
 	}
@@ -243,7 +241,7 @@ func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := unassignOrgReq{
-		assignOrgReq{
+		assignMembersReq{
 			token: apiutil.ExtractBearerToken(r),
 			orgID: bone.GetValue(r, orgIDKey),
 		},
@@ -290,7 +288,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, auth.ErrMemberAlreadyAssigned):
+	case errors.Contains(err, auth.ErrOrgMemberAlreadyAssigned):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
