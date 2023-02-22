@@ -569,7 +569,7 @@ func createGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 		group, err := svc.CreateGroup(ctx, req.token, group)
 		if err != nil {
-			return groupRes{}, err
+			return nil, err
 		}
 
 		return groupRes{created: true, id: group.ID}, nil
