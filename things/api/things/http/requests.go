@@ -84,34 +84,6 @@ func (req createThingsReq) validate() error {
 	return nil
 }
 
-type shareThingReq struct {
-	token    string
-	thingID  string
-	UserIDs  []string `json:"user_ids"`
-	Policies []string `json:"policies"`
-}
-
-func (req shareThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.thingID == "" || len(req.UserIDs) == 0 {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.Policies) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, p := range req.Policies {
-		if p != readPolicy && p != writePolicy && p != deletePolicy {
-			return apiutil.ErrMalformedPolicy
-		}
-	}
-	return nil
-}
-
 type updateThingReq struct {
 	token    string
 	id       string

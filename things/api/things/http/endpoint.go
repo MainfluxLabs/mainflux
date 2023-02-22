@@ -558,7 +558,7 @@ func createGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createGroupReq)
 		if err := req.validate(); err != nil {
-			return groupRes{}, err
+			return nil, err
 		}
 
 		group := things.Group{
@@ -580,12 +580,12 @@ func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupReq)
 		if err := req.validate(); err != nil {
-			return viewGroupRes{}, err
+			return nil, err
 		}
 
 		group, err := svc.ViewGroup(ctx, req.token, req.id)
 		if err != nil {
-			return viewGroupRes{}, err
+			return nil, err
 		}
 
 		res := viewGroupRes{
@@ -606,7 +606,7 @@ func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateGroupReq)
 		if err := req.validate(); err != nil {
-			return groupRes{}, err
+			return nil, err
 		}
 
 		group := things.Group{
@@ -618,7 +618,7 @@ func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 		_, err := svc.UpdateGroup(ctx, req.token, group)
 		if err != nil {
-			return groupRes{}, err
+			return nil, err
 		}
 
 		res := groupRes{created: false}
@@ -645,7 +645,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listGroupsReq)
 		if err := req.validate(); err != nil {
-			return groupPageRes{}, err
+			return nil, err
 		}
 		pm := things.PageMetadata{
 			Metadata: req.metadata,
@@ -662,7 +662,7 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
 		pm := things.PageMetadata{
@@ -683,7 +683,7 @@ func listMemberships(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
 		pm := things.PageMetadata{
@@ -694,7 +694,7 @@ func listMemberships(svc things.Service) endpoint.Endpoint {
 
 		page, err := svc.ListMemberships(ctx, req.token, req.id, pm)
 		if err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
 		return buildGroupsResponse(page), nil
@@ -729,20 +729,6 @@ func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return unassignRes{}, nil
 	}
-}
-
-func toViewGroupRes(group things.Group) viewGroupRes {
-	view := viewGroupRes{
-		ID:          group.ID,
-		OwnerID:     group.OwnerID,
-		Name:        group.Name,
-		Description: group.Description,
-		Metadata:    group.Metadata,
-		CreatedAt:   group.CreatedAt,
-		UpdatedAt:   group.UpdatedAt,
-	}
-
-	return view
 }
 
 func buildGroupsResponse(gp things.GroupPage) groupPageRes {
