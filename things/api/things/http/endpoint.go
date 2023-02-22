@@ -652,7 +652,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 		page, err := svc.ListGroups(ctx, req.token, pm)
 		if err != nil {
-			return groupPageRes{}, err
+			return nil, err
 		}
 
 		return buildGroupsResponse(page), nil
@@ -672,7 +672,7 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 		page, err := svc.ListMembers(ctx, req.token, req.id, pm)
 		if err != nil {
-			return memberPageRes{}, err
+			return nil, err
 		}
 
 		return buildUsersResponse(page), nil
