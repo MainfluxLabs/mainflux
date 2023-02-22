@@ -31,6 +31,7 @@ const (
 	dirKey      = "dir"
 	metadataKey = "metadata"
 	disconnKey  = "disconnected"
+	groupIDKey  = "groupID"
 	defOffset   = 0
 	defLimit    = 10
 )
@@ -512,7 +513,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 
 	req := listMembersReq{
 		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, "groupID"),
+		id:       bone.GetValue(r, groupIDKey),
 		offset:   o,
 		limit:    l,
 		metadata: m,
@@ -542,7 +543,7 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	req := listGroupsReq{
 		token:    apiutil.ExtractBearerToken(r),
 		metadata: m,
-		id:       bone.GetValue(r, "groupID"),
+		id:       bone.GetValue(r, groupIDKey),
 	}
 	return req, nil
 }
@@ -553,7 +554,7 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := updateGroupReq{
-		id:    bone.GetValue(r, "groupID"),
+		id:    bone.GetValue(r, groupIDKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -566,7 +567,7 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := groupReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "groupID"),
+		id:    bone.GetValue(r, groupIDKey),
 	}
 
 	return req, nil
@@ -575,7 +576,7 @@ func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error)
 func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := assignReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, "groupID"),
+		groupID: bone.GetValue(r, groupIDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -589,7 +590,7 @@ func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, err
 	req := unassignReq{
 		assignReq{
 			token:   apiutil.ExtractBearerToken(r),
-			groupID: bone.GetValue(r, "groupID"),
+			groupID: bone.GetValue(r, groupIDKey),
 		},
 	}
 

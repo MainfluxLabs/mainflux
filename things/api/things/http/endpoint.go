@@ -777,10 +777,10 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Limit:  mp.Limit,
 			Name:   mp.Name,
 		},
-		Members: []string{},
+		MemberIDs: []string{},
 	}
 
-	res.Members = append(res.Members, mp.Members...)
+	res.MemberIDs = append(res.MemberIDs, mp.Members...)
 
 	return res
 }

@@ -239,8 +239,8 @@ func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, g th
 
 func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (things.Group, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "viewGroup_group").Add(1)
-		ms.latency.With("method", "viewGroup_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_group").Add(1)
+		ms.latency.With("method", "view_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ViewGroup(ctx, token, id)
