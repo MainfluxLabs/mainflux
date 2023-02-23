@@ -127,6 +127,7 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, owner, id string) 
 }
 
 func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	ownq := getOwnerQuery(owner)
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
@@ -137,6 +138,9 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 
 	var whereClause string
 	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
+	}
 	if mq != "" {
 		query = append(query, mq)
 	}
@@ -167,6 +171,7 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	}
 	defer rows.Close()
 
+	println(q)
 	items := []things.Channel{}
 	for rows.Next() {
 		dbch := dbChannel{Owner: owner}
@@ -554,6 +559,13 @@ func toDBConnection(co things.Connection) dbConn {
 		ThingID:      co.ThingID,
 		ThingOwner:   co.ThingOwner,
 	}
+}
+
+func getOwnerQuery(owner string) string {
+	if owner == "" {
+		return ""
+	}
+	return "owner = :owner"
 }
 
 func getNameQuery(name string) (string, string) {
