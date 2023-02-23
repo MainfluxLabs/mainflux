@@ -614,7 +614,7 @@ func TestDeleteThing(t *testing.T) {
 			desc:    "delete non-existing thing",
 			thingID: "2",
 			token:   token,
-			err:     nil,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
 			desc:    "delete thing with invalid id",
@@ -638,7 +638,7 @@ func TestDeleteThing(t *testing.T) {
 			desc:    "delete deleted thing",
 			thingID: id,
 			token:   token,
-			err:     nil,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 
