@@ -21,9 +21,6 @@ var (
 
 	// ErrFailedToRetrieveMembership failed to retrieve memberships
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
-
-	// ErrFailedToRetrieveAll failed to retrieve groups.
-	ErrFailedToRetrieveAll = errors.New("failed to retrieve all groups")
 )
 
 // Identity contains ID and Email.
@@ -74,8 +71,8 @@ type GroupRepository interface {
 	// RetrieveByID retrieves group by its id
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
-	// RetrieveAll retrieves all groups.
-	RetrieveAll(ctx context.Context, pm PageMetadata) (GroupPage, error)
+	// RetrieveByOwner retrieves all groups.
+	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
 
 	// RetrieveMemberships retrieves list of groups that member belongs to
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (GroupPage, error)

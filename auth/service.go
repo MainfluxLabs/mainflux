@@ -23,14 +23,8 @@ var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.
 	ErrFailedToRetrieveMembers = errors.New("failed to retrieve org members")
 
-	// ErrFailedToRetrieveMembers failed to retrieve group members.
-	ErrFailedToRetrieveGroups = errors.New("failed to retrieve org groups")
-
 	// ErrFailedToRetrieveMembership failed to retrieve memberships
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
-
-	// ErrFailedToRetrieveAll failed to retrieve groups.
-	ErrFailedToRetrieveAll = errors.New("failed to retrieve all groups")
 
 	errIssueUser = errors.New("failed to issue new login key")
 	errIssueTmp  = errors.New("failed to issue new temporary key")

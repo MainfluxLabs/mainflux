@@ -94,7 +94,7 @@ func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (th
 	return val, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []things.Group

@@ -159,7 +159,7 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	_, metaQuery, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var mq string
@@ -172,18 +172,18 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 
 	dbPage, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
 	items, err := gr.processRows(rows)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	cq := "SELECT COUNT(*) FROM orgs"
@@ -193,7 +193,7 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 
 	total, err := total(ctx, gr.db, cq, dbPage)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveAll, err)
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := auth.OrgsPage{
@@ -481,7 +481,7 @@ func (gr orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
+		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, oge.updated_at FROM group_relations gre
@@ -494,7 +494,7 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveGroups, err)
+		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -502,7 +502,7 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	for rows.Next() {
 		member := dbOrgMember{}
 		if err := rows.StructScan(&member); err != nil {
-			return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveGroups, err)
+			return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		if err != nil {
@@ -517,7 +517,7 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
+		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := auth.OrgGroupsPage{

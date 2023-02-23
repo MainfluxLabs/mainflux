@@ -66,12 +66,12 @@ func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	return grm.repo.RetrieveByID(ctx, id)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveByOwnerOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveAll(ctx, pm)
+	return grm.repo.RetrieveByOwner(ctx, ownerID, pm)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
