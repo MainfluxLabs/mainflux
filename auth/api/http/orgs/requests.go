@@ -77,6 +77,26 @@ func (req listOrgMembersReq) validate() error {
 	return nil
 }
 
+type listOrgGroupsReq struct {
+	token    string
+	id       string
+	offset   uint64
+	limit    uint64
+	metadata auth.OrgMetadata
+}
+
+func (req listOrgGroupsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type listOrgMembershipsReq struct {
 	token    string
 	id       string
@@ -97,13 +117,13 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type assignOrgReq struct {
-	token   string
-	orgID   string
-	Members []string `json:"members"`
+type assignMembersReq struct {
+	token     string
+	orgID     string
+	MemberIDs []string `json:"member_ids"`
 }
 
-func (req assignOrgReq) validate() error {
+func (req assignMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -112,25 +132,25 @@ func (req assignOrgReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 {
+	if len(req.MemberIDs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
 	return nil
 }
 
-type shareOrgAccessReq struct {
-	token      string
-	userOrgID  string
-	ThingOrgID string `json:"thing_org_id"`
+type assignGroupsReq struct {
+	token    string
+	orgID    string
+	GroupIDs []string `json:"group_ids"`
 }
 
-func (req shareOrgAccessReq) validate() error {
+func (req assignGroupsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.ThingOrgID == "" || req.userOrgID == "" {
+	if len(req.GroupIDs) < 0 || req.orgID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -138,7 +158,7 @@ func (req shareOrgAccessReq) validate() error {
 }
 
 type unassignOrgReq struct {
-	assignOrgReq
+	assignMembersReq
 }
 
 func (req unassignOrgReq) validate() error {
@@ -150,7 +170,7 @@ func (req unassignOrgReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 {
+	if len(req.MemberIDs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -84,34 +84,6 @@ func (req createThingsReq) validate() error {
 	return nil
 }
 
-type shareThingReq struct {
-	token    string
-	thingID  string
-	UserIDs  []string `json:"user_ids"`
-	Policies []string `json:"policies"`
-}
-
-func (req shareThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.thingID == "" || len(req.UserIDs) == 0 {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.Policies) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, p := range req.Policies {
-		if p != readPolicy && p != writePolicy && p != deletePolicy {
-			return apiutil.ErrMalformedPolicy
-		}
-	}
-	return nil
-}
-
 type updateThingReq struct {
 	token    string
 	id       string
@@ -360,43 +332,6 @@ func (req connectReq) validate() error {
 	return nil
 }
 
-type listThingsGroupReq struct {
-	token        string
-	groupID      string
-	pageMetadata things.PageMetadata
-}
-
-func (req listThingsGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if req.pageMetadata.Limit > maxLimitSize || req.pageMetadata.Limit < 1 {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.pageMetadata.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
-		return apiutil.ErrInvalidOrder
-	}
-
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
-
-}
-
 type backupReq struct {
 	token string
 }
@@ -423,6 +358,137 @@ func (req restoreReq) validate() error {
 
 	if len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
 		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type createGroupReq struct {
+	token       string
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (req createGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Name) > maxNameSize || req.Name == "" {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
+type updateGroupReq struct {
+	token       string
+	id          string
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (req updateGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type listGroupsReq struct {
+	token    string
+	id       string
+	metadata things.GroupMetadata
+}
+
+func (req listGroupsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
+type listMembersReq struct {
+	token    string
+	id       string
+	offset   uint64
+	limit    uint64
+	metadata things.GroupMetadata
+}
+
+func (req listMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type assignReq struct {
+	token   string
+	groupID string
+	Members []string `json:"members"`
+}
+
+func (req assignReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Members) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type unassignReq struct {
+	assignReq
+}
+
+func (req unassignReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Members) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type groupReq struct {
+	token string
+	id    string
+}
+
+func (req groupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil

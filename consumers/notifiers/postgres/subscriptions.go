@@ -57,7 +57,7 @@ func (repo subscriptionsRepo) Retrieve(ctx context.Context, id string) (notifier
 		if err == sql.ErrNoRows {
 			return notifiers.Subscription{}, errors.Wrap(errors.ErrNotFound, err)
 		}
-		return notifiers.Subscription{}, errors.Wrap(errors.ErrViewEntity, err)
+		return notifiers.Subscription{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return fromDBSub(sub), nil
@@ -90,7 +90,7 @@ func (repo subscriptionsRepo) RetrieveAll(ctx context.Context, pm notifiers.Page
 
 	rows, err := repo.db.NamedQueryContext(ctx, q, args)
 	if err != nil {
-		return notifiers.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return notifiers.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -98,7 +98,7 @@ func (repo subscriptionsRepo) RetrieveAll(ctx context.Context, pm notifiers.Page
 	for rows.Next() {
 		sub := dbSubscription{}
 		if err := rows.StructScan(&sub); err != nil {
-			return notifiers.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+			return notifiers.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		subs = append(subs, fromDBSub(sub))
 	}
@@ -110,7 +110,7 @@ func (repo subscriptionsRepo) RetrieveAll(ctx context.Context, pm notifiers.Page
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM subscriptions %s`, condition)
 	total, err := total(ctx, repo.db, cq, args)
 	if err != nil {
-		return notifiers.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return notifiers.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	ret := notifiers.Page{

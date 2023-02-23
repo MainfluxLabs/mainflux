@@ -162,7 +162,7 @@ func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialI
 			return c, errors.Wrap(errors.ErrNotFound, err)
 		}
 
-		return c, errors.Wrap(errors.ErrViewEntity, err)
+		return c, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	c = toCert(dbcrt)
 

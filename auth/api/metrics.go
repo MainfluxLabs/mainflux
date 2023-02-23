@@ -116,111 +116,6 @@ func (ms *metricsMiddleware) DeletePolicies(ctx context.Context, token, object s
 	return ms.svc.DeletePolicies(ctx, token, object, subjectIDs, relations)
 }
 
-func (ms *metricsMiddleware) CreateGroup(ctx context.Context, token string, group auth.Group) (gr auth.Group, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "create_group").Add(1)
-		ms.latency.With("method", "create_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-	return ms.svc.CreateGroup(ctx, token, group)
-}
-
-func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, group auth.Group) (gr auth.Group, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "update_group").Add(1)
-		ms.latency.With("method", "update_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-	return ms.svc.UpdateGroup(ctx, token, group)
-}
-
-func (ms *metricsMiddleware) RemoveGroup(ctx context.Context, token string, id string) (err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_group").Add(1)
-		ms.latency.With("method", "remove_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-	return ms.svc.RemoveGroup(ctx, token, id)
-}
-
-func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (group auth.Group, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "view_group").Add(1)
-		ms.latency.With("method", "view_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ViewGroup(ctx, token, id)
-}
-
-func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm auth.PageMetadata) (gp auth.GroupPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_groups").Add(1)
-		ms.latency.With("method", "list_groups").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListGroups(ctx, token, pm)
-}
-
-func (ms *metricsMiddleware) ListParents(ctx context.Context, token, childID string, pm auth.PageMetadata) (gp auth.GroupPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "parents").Add(1)
-		ms.latency.With("method", "parents").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListParents(ctx, token, childID, pm)
-}
-
-func (ms *metricsMiddleware) ListChildren(ctx context.Context, token, parentID string, pm auth.PageMetadata) (gp auth.GroupPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_children").Add(1)
-		ms.latency.With("method", "list_children").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListChildren(ctx, token, parentID, pm)
-}
-
-func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID, groupType string, pm auth.PageMetadata) (gp auth.MemberPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members").Add(1)
-		ms.latency.With("method", "list_members").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListMembers(ctx, token, groupID, groupType, pm)
-}
-
-func (ms *metricsMiddleware) ListMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (gp auth.GroupPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_memberships").Add(1)
-		ms.latency.With("method", "list_memberships").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListMemberships(ctx, token, memberID, pm)
-}
-
-func (ms *metricsMiddleware) Assign(ctx context.Context, token, groupID, groupType string, memberIDs ...string) (err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "assign").Add(1)
-		ms.latency.With("method", "assign").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.Assign(ctx, token, groupID, groupType, memberIDs...)
-}
-
-func (ms *metricsMiddleware) Unassign(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "unassign").Add(1)
-		ms.latency.With("method", "unassign").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.Unassign(ctx, token, groupID, memberIDs...)
-}
-
-func (ms *metricsMiddleware) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "share_group_access").Add(1)
-		ms.latency.With("method", "share_group_access").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
-}
-
 func (ms *metricsMiddleware) CreateOrg(ctx context.Context, token string, group auth.Org) (gr auth.Org, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_group").Add(1)
@@ -254,56 +149,74 @@ func (ms *metricsMiddleware) ViewOrg(ctx context.Context, token, id string) (gro
 	return ms.svc.ViewOrg(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm auth.OrgPageMetadata) (gp auth.OrgPage, err error) {
+func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_groups").Add(1)
-		ms.latency.With("method", "list_groups").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_orgs").Add(1)
+		ms.latency.With("method", "list_orgs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ListOrgs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, groupID string, pm auth.OrgPageMetadata) (op auth.OrgMembersPage, err error) {
+func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members").Add(1)
-		ms.latency.With("method", "list_members").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListOrgMembers(ctx, token, groupID, pm)
-}
-
-func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.OrgPageMetadata) (gp auth.OrgPage, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_memberships").Add(1)
-		ms.latency.With("method", "list_memberships").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_org_memberships").Add(1)
+		ms.latency.With("method", "list_org_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ListOrgMemberships(ctx, token, memberID, pm)
 }
 
-func (ms *metricsMiddleware) AssignOrg(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "assign_org").Add(1)
-		ms.latency.With("method", "assign_org").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "assign_members").Add(1)
+		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignOrg(ctx, token, groupID, memberIDs...)
+	return ms.svc.AssignMembers(ctx, token, orgID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) UnassignOrg(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "unassign_org").Add(1)
-		ms.latency.With("method", "unassign_org").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "unassign_members").Add(1)
+		ms.latency.With("method", "unassign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UnassignOrg(ctx, token, groupID, memberIDs...)
+	return ms.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) AssignOrgAccessRights(ctx context.Context, token, thingOrgID, userOrgID string) error {
+func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgMembersPage, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "share_org_access").Add(1)
-		ms.latency.With("method", "share_org_access").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_org_members").Add(1)
+		ms.latency.With("method", "list_org_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignOrgAccessRights(ctx, token, thingOrgID, userOrgID)
+	return ms.svc.ListOrgMembers(ctx, token, orgID, pm)
+}
+
+func (ms *metricsMiddleware) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_groups").Add(1)
+		ms.latency.With("method", "assign_groups").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignGroups(ctx, token, orgID, groupIDs...)
+}
+
+func (ms *metricsMiddleware) UnassignGroups(ctx context.Context, token, orgID string, groupIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_groups").Add(1)
+		ms.latency.With("method", "unassign_groups").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignGroups(ctx, token, orgID, groupIDs...)
+}
+
+func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID string, pm auth.PageMetadata) (op auth.OrgGroupsPage, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_org_groups").Add(1)
+		ms.latency.With("method", "list_org_groups").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListOrgGroups(ctx, token, groupID, pm)
 }

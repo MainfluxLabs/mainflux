@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/jackc/pgerrcode"
@@ -108,7 +107,7 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 			return users.User{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
-		return users.User{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.User{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toUser(dbu)
@@ -126,7 +125,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 			return users.User{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
-		return users.User{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.User{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toUser(dbu)
@@ -135,12 +134,12 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", email)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	mq, mp, err := createMetadataQuery("", um)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	aq := fmt.Sprintf("status = '%s'", status)
 	if status == users.AllStatusKey {
@@ -182,7 +181,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset,
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -190,7 +189,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset,
 	for rows.Next() {
 		dbusr := dbUser{}
 		if err := rows.StructScan(&dbusr); err != nil {
-			return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
+			return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		user, err := toUser(dbusr)
@@ -205,7 +204,7 @@ func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset,
 
 	total, err := total(ctx, ur.db, cq, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := users.UserPage{
@@ -250,12 +249,11 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 }
 
 type dbUser struct {
-	ID       string       `db:"id"`
-	Email    string       `db:"email"`
-	Password string       `db:"password"`
-	Metadata []byte       `db:"metadata"`
-	Groups   []auth.Group `db:"groups"`
-	Status   string       `db:"status"`
+	ID       string `db:"id"`
+	Email    string `db:"email"`
+	Password string `db:"password"`
+	Metadata []byte `db:"metadata"`
+	Status   string `db:"status"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {

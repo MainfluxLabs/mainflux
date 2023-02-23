@@ -22,11 +22,11 @@ var (
 	// ErrCreateEntity indicates error in creating entity or entities.
 	ErrCreateEntity = New("failed to create entity in the db")
 
-	// ErrViewEntity indicates error in viewing entity or entities.
-	ErrViewEntity = New("view entity failed")
+	// ErrRetrieveEntity indicates error in viewing entity or entities.
+	ErrRetrieveEntity = New("failed to retrieve entity")
 
 	// ErrUpdateEntity indicates error in updating entity or entities.
-	ErrUpdateEntity = New("update entity failed")
+	ErrUpdateEntity = New("failed to update entity")
 
 	// ErrRemoveEntity indicates error in removing entity.
 	ErrRemoveEntity = New("failed to remove entity")

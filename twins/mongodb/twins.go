@@ -108,7 +108,7 @@ func (tr *twinRepository) RetrieveByAttribute(ctx context.Context, channel, subt
 
 	cur, err := coll.Aggregate(ctx, []bson.M{prj1, match, prj2}, findOptions)
 	if err != nil {
-		return []string{}, errors.Wrap(errors.ErrViewEntity, err)
+		return []string{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer cur.Close(ctx)
 
@@ -151,17 +151,17 @@ func (tr *twinRepository) RetrieveAll(ctx context.Context, owner string, offset 
 	}
 	cur, err := coll.Find(ctx, filter, findOptions)
 	if err != nil {
-		return twins.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return twins.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	results, err := decodeTwins(ctx, cur)
 	if err != nil {
-		return twins.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return twins.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	total, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
-		return twins.Page{}, errors.Wrap(errors.ErrViewEntity, err)
+		return twins.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return twins.Page{

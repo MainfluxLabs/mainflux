@@ -6,13 +6,13 @@ package grpc
 import (
 	"context"
 
-	kitot "github.com/go-kit/kit/tracing/opentracing"
-	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	mainflux "github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
+	kitgrpc "github.com/go-kit/kit/transport/grpc"
+	"github.com/golang/protobuf/ptypes/empty"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -223,7 +223,6 @@ func encodeMembersResponse(_ context.Context, grpcRes interface{}) (interface{},
 		Total:   res.total,
 		Offset:  res.offset,
 		Limit:   res.limit,
-		Type:    res.groupType,
 		Members: res.members,
 	}, nil
 }

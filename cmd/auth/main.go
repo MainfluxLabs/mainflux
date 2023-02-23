@@ -218,13 +218,10 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger lo
 	database := postgres.NewDatabase(db)
 	keysRepo := tracing.New(postgres.New(database), tracer)
 
-	groupsRepo := postgres.NewGroupRepo(database)
-	groupsRepo = tracing.GroupRepositoryMiddleware(tracer, groupsRepo)
-
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, keysRepo, groupsRepo, idProvider, t, duration, adminEmail)
+	svc := auth.New(orgsRepo, keysRepo, idProvider, t, duration, adminEmail)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -279,19 +279,6 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (tp things.Page, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListMembers(ctx, token, groupID, pm)
-}
-
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
@@ -316,4 +303,134 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup t
 	}(time.Now())
 
 	return lm.svc.Restore(ctx, token, backup)
+}
+
+func (lm *loggingMiddleware) CreateGroup(ctx context.Context, token string, gr things.Group) (g things.Group, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_group for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateGroup(ctx, token, gr)
+}
+
+func (lm *loggingMiddleware) UpdateGroup(ctx context.Context, token string, gr things.Group) (g things.Group, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_group for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateGroup(ctx, token, gr)
+}
+
+func (lm *loggingMiddleware) ViewGroup(ctx context.Context, token, id string) (g things.Group, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_group for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroup(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (g things.GroupPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_groups for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroups(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (mp things.MemberPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListMembers(ctx, token, groupID, pm)
+}
+
+func (lm *loggingMiddleware) ListMemberships(ctx context.Context, token, memberID string, pm things.PageMetadata) (g things.GroupPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_memberships for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListMemberships(ctx, token, memberID, pm)
+}
+
+func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_group for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroup(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) Assign(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Assign(ctx, token, groupID, memberIDs...)
+}
+
+func (lm *loggingMiddleware) Unassign(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Unassign(ctx, token, groupID, memberIDs...)
+}
+
+func (lm *loggingMiddleware) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign_group_access_rights for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
 }

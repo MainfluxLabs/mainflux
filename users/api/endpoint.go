@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -195,28 +194,6 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		return tokenRes{token}, nil
-	}
-}
-
-func listMembersEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMemberGroupReq)
-		if err := req.validate(); err != nil {
-			return userPageRes{}, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		pm := users.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Status:   req.status,
-			Metadata: req.metadata,
-		}
-		page, err := svc.ListMembers(ctx, req.token, req.id, pm)
-		if err != nil {
-			return userPageRes{}, err
-		}
-
-		return buildUsersResponse(page), nil
 	}
 }
 

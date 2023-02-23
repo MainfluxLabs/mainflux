@@ -7,11 +7,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/MainfluxLabs/mainflux"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 )
@@ -281,7 +281,6 @@ func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, 
 		Offset:  mr.offset,
 		Limit:   mr.limit,
 		Total:   mr.total,
-		Type:    mr.groupType,
 		Members: mr.members,
 	}, err
 }

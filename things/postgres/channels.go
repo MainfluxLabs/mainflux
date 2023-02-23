@@ -120,7 +120,7 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, owner, id string) 
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return things.Channel{}, errors.ErrNotFound
 		}
-		return things.Channel{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toChannel(dbch), nil
@@ -132,7 +132,7 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	dq := getDirQuery(pm.Dir)
 	meta, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var whereClause string
@@ -163,7 +163,7 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	}
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -171,7 +171,7 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	for rows.Next() {
 		dbch := dbChannel{Owner: owner}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		ch := toChannel(dbch)
 
@@ -182,7 +182,7 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 
 	total, err := total(ctx, cr.db, cq, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := things.ChannelsPage{
@@ -255,7 +255,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -263,7 +263,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 	for rows.Next() {
 		dbch := dbChannel{Owner: owner}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		ch := toChannel(dbch)
@@ -272,7 +272,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 
 	var total uint64
 	if err := cr.db.GetContext(ctx, &total, qc, owner, thID); err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrViewEntity, err)
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return things.ChannelsPage{
@@ -406,7 +406,7 @@ func (cr channelRepository) HasThing(ctx context.Context, chanID, thingKey strin
 	var thingID string
 	q := `SELECT id FROM things WHERE key = $1`
 	if err := cr.db.QueryRowxContext(ctx, q, thingKey).Scan(&thingID); err != nil {
-		return "", errors.Wrap(errors.ErrViewEntity, err)
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	if err := cr.hasThing(ctx, chanID, thingID); err != nil {
@@ -424,7 +424,7 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	q := `SELECT EXISTS (SELECT 1 FROM connections WHERE channel_id = $1 AND thing_id = $2);`
 	exists := false
 	if err := cr.db.QueryRowxContext(ctx, q, chanID, thingID).Scan(&exists); err != nil {
-		return errors.Wrap(errors.ErrViewEntity, err)
+		return errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	if !exists {
@@ -439,7 +439,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, 
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrViewEntity, err)
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -447,7 +447,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, 
 	for rows.Next() {
 		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
-			return nil, errors.Wrap(errors.ErrViewEntity, err)
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		channels = append(channels, toChannel(dbch))
@@ -461,7 +461,7 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrViewEntity, err)
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -469,7 +469,7 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 	for rows.Next() {
 		dbco := dbConn{}
 		if err := rows.StructScan(&dbco); err != nil {
-			return nil, errors.Wrap(errors.ErrViewEntity, err)
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		connections = append(connections, toConnection(dbco))

@@ -29,11 +29,10 @@ type listPoliciesRes struct {
 }
 
 type membersRes struct {
-	total     uint64
-	offset    uint64
-	limit     uint64
-	groupType string
-	members   []string
+	total   uint64
+	offset  uint64
+	limit   uint64
+	members []string
 }
 type emptyRes struct {
 	err error

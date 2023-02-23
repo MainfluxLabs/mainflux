@@ -7,8 +7,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func issueEndpoint(svc auth.Service) endpoint.Endpoint {
@@ -125,7 +125,7 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err = svc.Assign(ctx, req.token, req.memberID, req.groupID, req.groupType)
+		err = svc.AssignMembers(ctx, req.token, req.memberID, req.groupID)
 		if err != nil {
 			return emptyRes{}, err
 		}
@@ -145,13 +145,13 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 			Offset: req.offset,
 			Limit:  req.limit,
 		}
-		mp, err := svc.ListMembers(ctx, req.token, req.groupID, req.memberType, pm)
+		mp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return membersRes{}, err
 		}
 		var members []string
-		for _, m := range mp.Members {
-			members = append(members, m.ID)
+		for _, id := range mp.MemberIDs {
+			members = append(members, id)
 		}
 		return membersRes{
 			offset:  req.offset,

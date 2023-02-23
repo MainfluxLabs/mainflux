@@ -18,7 +18,7 @@ var (
 
 type memberPageRes struct {
 	pageRes
-	Members []string `json:"members"`
+	MemberIDs []string `json:"member_ids"`
 }
 
 func (res memberPageRes) Code() int {
@@ -33,18 +33,20 @@ func (res memberPageRes) Empty() bool {
 	return false
 }
 
-type shareOrgRes struct {
+type groupsPageRes struct {
+	pageRes
+	GroupIDs []string `json:"group_ids"`
 }
 
-func (res shareOrgRes) Code() int {
+func (res groupsPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res shareOrgRes) Headers() map[string]string {
+func (res groupsPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res shareOrgRes) Empty() bool {
+func (res groupsPageRes) Empty() bool {
 	return false
 }
 
@@ -97,7 +99,7 @@ func (res orgRes) Empty() bool {
 	return true
 }
 
-type orgPageRes struct {
+type orgsPageRes struct {
 	pageRes
 	Orgs []viewOrgRes `json:"orgs"`
 }
@@ -109,15 +111,15 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-func (res orgPageRes) Code() int {
+func (res orgsPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res orgPageRes) Headers() map[string]string {
+func (res orgsPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res orgPageRes) Empty() bool {
+func (res orgsPageRes) Empty() bool {
 	return false
 }
 

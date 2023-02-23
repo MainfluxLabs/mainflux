@@ -104,13 +104,6 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Get("/groups/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
-		decodeListMembersRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Post("/tokens", kithttp.NewServer(
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
 		decodeCredentials,
@@ -372,7 +365,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 	case errors.Contains(err, errors.ErrCreateEntity),
 		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrViewEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity),
 		errors.Contains(err, errors.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 

@@ -256,6 +256,42 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.Page, error) {
+func (es eventStore) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
 	return es.svc.ListMembers(ctx, token, groupID, pm)
+}
+
+func (es eventStore) CreateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+	return es.svc.CreateGroup(ctx, token, group)
+}
+
+func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroups(ctx, token, pm)
+}
+
+func (es eventStore) RemoveGroup(ctx context.Context, token, id string) error {
+	return es.svc.RemoveGroup(ctx, token, id)
+}
+
+func (es eventStore) UpdateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+	return es.svc.UpdateGroup(ctx, token, group)
+}
+
+func (es eventStore) ViewGroup(ctx context.Context, token, id string) (things.Group, error) {
+	return es.svc.ViewGroup(ctx, token, id)
+}
+
+func (es eventStore) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	return es.svc.Assign(ctx, token, groupID, memberIDs...)
+}
+
+func (es eventStore) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+	return es.svc.Unassign(ctx, token, groupID, memberIDs...)
+}
+
+func (es eventStore) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
+	return es.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
+}
+
+func (es eventStore) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListMemberships(ctx, token, memberID, pm)
 }

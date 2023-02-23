@@ -7,26 +7,21 @@ import (
 )
 
 var (
-	// ErrAssignToOrg indicates failure to assign member to a org.
-	ErrAssignToOrg = errors.New("failed to assign member to a org")
+	// ErrAssignToOrg indicates failure to assign member to an org.
+	ErrAssignToOrg = errors.New("failed to assign member to an org")
 
-	// ErrUnassignFromOrg indicates failure to unassign member from a org.
-	ErrUnassignFromOrg = errors.New("failed to unassign member from a org")
+	// ErrUnassignFromOrg indicates failure to unassign member from an org.
+	ErrUnassignFromOrg = errors.New("failed to unassign member from an org")
 
 	// ErrOrgNotEmpty indicates org is not empty, can't be deleted.
 	ErrOrgNotEmpty = errors.New("org is not empty")
 
-	// ErrMemberAlreadyAssigned indicates that members is already assigned.
-	ErrOrgMemberAlreadyAssignedTo = errors.New("org member is already assigned")
+	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
+	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.
 type OrgMetadata map[string]interface{}
-
-// Member represents the member information.
-type OrgMember struct {
-	ID string
-}
 
 // Org represents the org information.
 type Org struct {
@@ -40,7 +35,7 @@ type Org struct {
 }
 
 // PageMetadata contains page metadata that helps navigation.
-type OrgPageMetadata struct {
+type PageMetadata struct {
 	Total    uint64
 	Offset   uint64
 	Limit    uint64
@@ -48,18 +43,25 @@ type OrgPageMetadata struct {
 	Metadata OrgMetadata
 }
 
-// OrgPage contains page related metadata as well as list of orgs that
+// OrgsPage contains page related metadata as well as list of orgs that
 // belong to this page.
-type OrgPage struct {
-	OrgPageMetadata
+type OrgsPage struct {
+	PageMetadata
 	Orgs []Org
 }
 
 // OrgMembersPage contains page related metadata as well as list of members that
 // belong to this page.
 type OrgMembersPage struct {
-	OrgPageMetadata
-	Members []OrgMember
+	PageMetadata
+	MemberIDs []string
+}
+
+// OrgGroupsPage contains page related metadata as well as list of groups that
+// belong to this page.
+type OrgGroupsPage struct {
+	PageMetadata
+	GroupIDs []string
 }
 
 // OrgService specifies an API that must be fullfiled by the domain service
@@ -75,53 +77,68 @@ type OrgService interface {
 	ViewOrg(ctx context.Context, token, id string) (Org, error)
 
 	// ListOrgs retrieves orgs.
-	ListOrgs(ctx context.Context, token string, pm OrgPageMetadata) (OrgPage, error)
-
-	// ListOrgMembers retrieves everything that is assigned to a org identified by orgID.
-	ListOrgMembers(ctx context.Context, token, orgID string, pm OrgPageMetadata) (OrgMembersPage, error)
+	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
 	// ListOrgMemberships retrieves all orgs for member that is identified with memberID belongs to.
-	ListOrgMemberships(ctx context.Context, token, memberID string, pm OrgPageMetadata) (OrgPage, error)
+	ListOrgMemberships(ctx context.Context, token, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
-	// AssignOrg adds a member with memberID into the org identified by orgID.
-	AssignOrg(ctx context.Context, token, orgID string, memberIDs ...string) error
+	// AssignMembers adds members with memberIDs into the org identified by orgID.
+	AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error
 
-	// UnassignOrg removes member with memberID from org identified by orgID.
-	UnassignOrg(ctx context.Context, token, orgID string, memberIDs ...string) error
+	// UnassignMembers removes members with memberIDs from org identified by orgID.
+	UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error
 
-	// AssignOrgAccessRights adds access rights on thing orgs to user org.
-	AssignOrgAccessRights(ctx context.Context, token, thingOrgID, userOrgID string) error
+	// ListOrgMembers retrieves members assigned to an org identified by orgID.
+	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
+
+	// AssignGroups adds groups with groupIDs into the org identified by orgID.
+	AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
+
+	// UnassignGroups removes groups with groupIDs from org identified by orgID.
+	UnassignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
+
+	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
+	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (OrgGroupsPage, error)
 }
 
-// OrgRepository specifies a org persistence API.
+// OrgRepository specifies an org persistence API.
 type OrgRepository interface {
 	// Save org
 	Save(ctx context.Context, g Org) error
 
-	// Update a org
+	// Update an org
 	Update(ctx context.Context, g Org) error
 
-	// Delete a org
+	// Delete an org
 	Delete(ctx context.Context, owner, id string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
 
-	// RetrieveAll retrieves all orgs.
-	RetrieveAll(ctx context.Context, ownerID string, pm OrgPageMetadata) (OrgPage, error)
+	// RetrieveByOwner retrieves orgs by owner.
+	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (OrgsPage, error)
 
-	//  Retrieves list of orgs that member belongs to
-	Memberships(ctx context.Context, memberID string, pm OrgPageMetadata) (OrgPage, error)
+	// RetrieveMemberships list of orgs that member belongs to
+	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
-	// Members retrieves everything that is assigned to a org identified by orgID.
-	Members(ctx context.Context, orgID string, pm OrgPageMetadata) (OrgMembersPage, error)
+	// AssignMembers adds members to an org.
+	AssignMembers(ctx context.Context, orgID string, memberIDs ...string) error
 
-	// Assign adds a member to org.
-	Assign(ctx context.Context, orgID string, memberIDs ...string) error
+	// UnassignMembers removes members from an org
+	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
 
-	// Unassign removes a member from a org
-	Unassign(ctx context.Context, orgID string, memberIDs ...string) error
+	// RetrieveMembers retrieves members assigned to an org identified by orgID.
+	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
+
+	// AssignGroups adds groups to an org.
+	AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error
+
+	// UnassigGroups removes groups from an org
+	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error
+
+	// RetrieveOrgGroups retrieves groups assigned to an org identified by orgID.
+	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
 }
