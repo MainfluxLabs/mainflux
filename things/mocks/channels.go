@@ -175,8 +175,15 @@ func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID
 }
 
 func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) error {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	if _, ok := crm.channels[key(owner, id)]; !ok {
+		return errors.ErrNotFound
+	}
+
 	delete(crm.channels, key(owner, id))
-	// delete channel from any thing list
+
 	for thk := range crm.cconns {
 		delete(crm.cconns[thk], key(owner, id))
 	}

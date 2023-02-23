@@ -531,7 +531,7 @@ func TestDeleteChannel(t *testing.T) {
 			desc:   "delete non-existing channel",
 			chanID: "2",
 			token:  token,
-			err:    nil,
+			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
 			desc:   "delete channel with invalid id",
@@ -555,7 +555,7 @@ func TestDeleteChannel(t *testing.T) {
 			desc:   "delete deleted channel",
 			chanID: id,
 			token:  token,
-			err:    nil,
+			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 

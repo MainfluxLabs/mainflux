@@ -291,7 +291,11 @@ func (cr channelRepository) Remove(ctx context.Context, owner, id string) error 
 		Owner: owner,
 	}
 	q := `DELETE FROM channels WHERE id = :id AND owner = :owner`
-	cr.db.NamedExecContext(ctx, q, dbch)
+	_, err := cr.db.NamedExecContext(ctx, q, dbch)
+	if err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
 	return nil
 }
 

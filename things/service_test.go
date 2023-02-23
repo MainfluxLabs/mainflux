@@ -546,13 +546,13 @@ func TestRemoveThing(t *testing.T) {
 			desc:  "remove removed thing",
 			id:    sth.ID,
 			token: token,
-			err:   nil,
+			err:   errors.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing thing",
 			id:    wrongID,
 			token: token,
-			err:   nil,
+			err:   errors.ErrNotFound,
 		},
 	}
 
@@ -1014,7 +1014,7 @@ func TestListChannelsByThing(t *testing.T) {
 }
 
 func TestRemoveChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService(map[string]string{token: email})
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -1041,13 +1041,13 @@ func TestRemoveChannel(t *testing.T) {
 			desc:  "remove removed channel",
 			id:    ch.ID,
 			token: token,
-			err:   nil,
+			err:   errors.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing channel",
-			id:    ch.ID,
+			id:    wrongID,
 			token: token,
-			err:   nil,
+			err:   errors.ErrNotFound,
 		},
 	}
 

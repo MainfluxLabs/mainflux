@@ -253,6 +253,10 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 func (trm *thingRepositoryMock) Remove(_ context.Context, owner, id string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
+
+	if _, ok := trm.things[key(owner, id)]; !ok {
+		return errors.ErrNotFound
+	}
 	delete(trm.things, key(owner, id))
 	return nil
 }

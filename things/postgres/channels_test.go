@@ -565,14 +565,26 @@ func TestChannelRemoval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	chID = chs[0].ID
 
-	// show that the removal works the same for both existing and non-existing
-	// (removed) channel
-	for i := 0; i < 2; i++ {
-		err := chanRepo.Remove(context.Background(), email, chID)
-		require.Nil(t, err, fmt.Sprintf("#%d: failed to remove channel due to: %s", i, err))
+	cases := map[string]struct {
+		owner string
+		chID  string
+		err   error
+	}{
+		"remove non-existing channel": {
+			owner: email,
+			chID:  wrongValue,
+			err:   errors.ErrRemoveEntity,
+		},
+		"remove channel": {
+			owner: email,
+			chID:  chID,
+			err:   nil,
+		},
+	}
 
-		_, err = chanRepo.RetrieveByID(context.Background(), email, chID)
-		assert.True(t, errors.Contains(err, errors.ErrNotFound), fmt.Sprintf("#%d: expected %s got %s", i, errors.ErrNotFound, err))
+	for desc, tc := range cases {
+		err := chanRepo.Remove(context.Background(), tc.owner, tc.chID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 

@@ -27,22 +27,22 @@ var (
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*memberPageRes)(nil)
 	_ mainflux.Response = (*groupRes)(nil)
-	_ mainflux.Response = (*deleteRes)(nil)
+	_ mainflux.Response = (*removeRes)(nil)
 	_ mainflux.Response = (*assignRes)(nil)
 	_ mainflux.Response = (*unassignRes)(nil)
 )
 
-type deleteRes struct{}
+type removeRes struct{}
 
-func (res deleteRes) Code() int {
+func (res removeRes) Code() int {
 	return http.StatusNoContent
 }
 
-func (res deleteRes) Headers() map[string]string {
+func (res removeRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res deleteRes) Empty() bool {
+func (res removeRes) Empty() bool {
 	return true
 }
 
