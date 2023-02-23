@@ -244,6 +244,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 }
 
 func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+	ownq := getOwnerQuery(owner)
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
@@ -253,6 +254,9 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 	}
 
 	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
+	}
 	if mq != "" {
 		query = append(query, mq)
 	}
@@ -423,7 +427,7 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 	if err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
-	
+
 	return nil
 }
 
