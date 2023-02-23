@@ -22,8 +22,8 @@ const (
 )
 
 var (
-	invalidDesc  = strings.Repeat("m", maxDescSize+1)
-	metadata     = things.GroupMetadata{
+	invalidDesc = strings.Repeat("m", maxDescSize+1)
+	metadata    = things.GroupMetadata{
 		"admin": "true",
 	}
 )
@@ -348,7 +348,7 @@ func TestRetrieveAllGroups(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := groupRepo.RetrieveAll(context.Background(), tc.Metadata)
+		page, err := groupRepo.RetrieveByOwner(context.Background(), uid, tc.Metadata)
 		size := len(page.Groups)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Equal(t, tc.Metadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.Metadata.Total, page.Total))

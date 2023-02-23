@@ -555,11 +555,12 @@ func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return GroupPage{}, err
 	}
 
-	return ts.groups.RetrieveAll(ctx, pm)
+	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
 }
 
 func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {
