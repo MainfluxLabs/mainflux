@@ -824,14 +824,36 @@ func TestThingRemoval(t *testing.T) {
 	ths, _ := thingRepo.Save(context.Background(), thing)
 	thing.ID = ths[0].ID
 
-	// show that the removal works the same for both existing and non-existing
-	// (removed) thing
-	for i := 0; i < 2; i++ {
-		err := thingRepo.Remove(context.Background(), email, thing.ID)
-		require.Nil(t, err, fmt.Sprintf("#%d: failed to remove thing due to: %s", i, err))
+	cases := map[string]struct {
+		owner   string
+		thingID string
+		err     error
+	}{
+		"remove non-existing thing": {
+			owner:   email,
+			thingID: wrongValue,
+			err:     errors.ErrRemoveEntity,
+		},
+		"remove thing with invalid owner": {
+			owner:   wrongValue,
+			thingID: thing.ID,
+			err:     errors.ErrRemoveEntity,
+		},
+		"remove thing": {
+			owner:   email,
+			thingID: thing.ID,
+			err:     nil,
+		},
+		"remove removed thing": {
+			owner:   email,
+			thingID: thing.ID,
+			err:     errors.ErrRemoveEntity,
+		},
+	}
 
-		_, err = thingRepo.RetrieveByID(context.Background(), email, thing.ID)
-		require.True(t, errors.Contains(err, errors.ErrNotFound), fmt.Sprintf("#%d: expected %s got %s", i, errors.ErrNotFound, err))
+	for desc, tc := range cases {
+		err := thingRepo.Remove(context.Background(), tc.owner, tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 

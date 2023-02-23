@@ -419,9 +419,20 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 		Owner: owner,
 	}
 	q := `DELETE FROM things WHERE id = :id AND owner = :owner;`
-	if _, err := tr.db.NamedExecContext(ctx, q, dbth); err != nil {
+	res, err := tr.db.NamedExecContext(ctx, q, dbth)
+	if err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
 	return nil
 }
 
