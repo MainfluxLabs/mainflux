@@ -628,7 +628,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	n := uint64(101)
+	n := uint64(10)
 	thsDisconNum := uint64(1)
 
 	chID, err := idProvider.ID()

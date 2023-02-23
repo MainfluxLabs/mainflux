@@ -903,9 +903,12 @@ func TestHasThingByID(t *testing.T) {
 	}
 }
 
-func TestBackupChannel(t *testing.T) {
+func TestRetrieveAll(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	chanRepo := postgres.NewChannelRepository(dbMiddleware)
+
+	err := cleanTestTable(context.Background(), "channels", dbMiddleware)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	email := "channel-multi-retrieval@example.com"
 	name := "channel_name"
@@ -962,11 +965,14 @@ func TestBackupChannel(t *testing.T) {
 	}
 }
 
-func TestBackupConnections(t *testing.T) {
+func TestRetrieveAllConnections(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	chanRepo := postgres.NewChannelRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	email := "Channel-connect@example.com"
+
+	err := cleanTestTable(context.Background(), "connections", dbMiddleware)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
