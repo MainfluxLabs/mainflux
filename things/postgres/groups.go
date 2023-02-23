@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -167,49 +168,62 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	return toGroup(dbu)
 }
 
-func (gr groupRepository) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
-	_, metaQuery, err := getGroupsMetadataQuery("groups", pm.Metadata)
+func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+	ownq := getOwnerQuery(ownerID)
+	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveAll, err)
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var mq string
-	if metaQuery != "" {
-		mq = fmt.Sprintf("WHERE %s", metaQuery)
+	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
+	}
+	if mq != "" {
+		query = append(query, mq)
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s`, mq)
+	var whereClause string
+	if len(query) > 0 {
+		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
+	}
 
-	dbPage, err := toDBGroupPage("", pm)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s`, whereClause)
+
+	dbPage, err := toDBGroupPage(ownerID, "", pm)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveAll, err)
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveAll, err)
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
 	items, err := gr.processRows(rows)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveAll, err)
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	cq := "SELECT COUNT(*) FROM groups"
-	if metaQuery != "" {
-		cq = fmt.Sprintf(" %s WHERE %s", cq, metaQuery)
+	if mq != "" {
+		cq = fmt.Sprintf(" %s WHERE %s", cq, mq)
 	}
 
 	total, err := total(ctx, gr.db, cq, dbPage)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveAll, err)
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := things.GroupPage{
 		Groups: items,
 		PageMetadata: things.PageMetadata{
-			Total: total,
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
 		},
 	}
 
@@ -426,12 +440,12 @@ type dbGroup struct {
 }
 
 type dbGroupPage struct {
-	ID       string        `db:"id"`
-	OwnerID  uuid.NullUUID `db:"owner_id"`
-	Metadata dbMetadata    `db:"metadata"`
-	Total    uint64        `db:"total"`
-	Limit    uint64        `db:"limit"`
-	Offset   uint64        `db:"offset"`
+	ID       string     `db:"id"`
+	OwnerID  string     `db:"owner_id"`
+	Metadata dbMetadata `db:"metadata"`
+	Total    uint64     `db:"total"`
+	Limit    uint64     `db:"limit"`
+	Offset   uint64     `db:"offset"`
 }
 
 type dbMemberPage struct {
@@ -480,8 +494,9 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 	}, nil
 }
 
-func toDBGroupPage(id string, pm things.PageMetadata) (dbGroupPage, error) {
+func toDBGroupPage(ownerID, id string, pm things.PageMetadata) (dbGroupPage, error) {
 	return dbGroupPage{
+		OwnerID:  ownerID,
 		Metadata: dbMetadata(pm.Metadata),
 		ID:       id,
 		Total:    pm.Total,

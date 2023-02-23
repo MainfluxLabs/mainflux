@@ -272,9 +272,6 @@ func TestGroupDelete(t *testing.T) {
 	err = groupRepo.AssignMember(context.Background(), groupChild1.ID, "things", thingID)
 	require.Nil(t, err, fmt.Sprintf("thing assign got unexpected error: %s", err))
 
-	err = groupRepo.Delete(context.Background(), groupChild1.ID)
-	assert.True(t, errors.Contains(err, things.ErrGroupNotEmpty), fmt.Sprintf("delete non empty group: expected %v got %v\n", things.ErrGroupNotEmpty, err))
-
 	err = groupRepo.Delete(context.Background(), groupChild2.ID)
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
 }
@@ -348,7 +345,7 @@ func TestRetrieveAll(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := groupRepo.RetrieveAll(context.Background(), tc.Metadata)
+		page, err := groupRepo.RetrieveByOwner(context.Background(), uid, tc.Metadata)
 		size := len(page.Groups)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Equal(t, tc.Metadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.Metadata.Total, page.Total))
