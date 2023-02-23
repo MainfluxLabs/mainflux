@@ -171,7 +171,6 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	}
 	defer rows.Close()
 
-	println(q)
 	items := []things.Channel{}
 	for rows.Next() {
 		dbch := dbChannel{Owner: owner}
