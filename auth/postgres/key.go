@@ -11,11 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var (
-	errSave     = errors.New("failed to save key in database")
-	errRetrieve = errors.New("failed to retrieve key from database")
-	errDelete   = errors.New("failed to delete key from database")
-)
 var _ auth.KeyRepository = (*repo)(nil)
 
 type repo struct {
@@ -40,7 +35,7 @@ func (kr repo) Save(ctx context.Context, key auth.Key) (string, error) {
 			return "", errors.Wrap(errors.ErrConflict, err)
 		}
 
-		return "", errors.Wrap(errSave, err)
+		return "", errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
 	return dbKey.ID, nil
@@ -55,7 +50,7 @@ func (kr repo) Retrieve(ctx context.Context, issuerID, id string) (auth.Key, err
 			return auth.Key{}, errors.Wrap(errors.ErrNotFound, err)
 		}
 
-		return auth.Key{}, errors.Wrap(errRetrieve, err)
+		return auth.Key{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toKey(key), nil
@@ -68,7 +63,7 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 		IssuerID: issuerID,
 	}
 	if _, err := kr.db.NamedExecContext(ctx, q, key); err != nil {
-		return errors.Wrap(errDelete, err)
+		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
