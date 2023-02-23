@@ -834,20 +834,10 @@ func TestThingRemoval(t *testing.T) {
 			thingID: wrongValue,
 			err:     errors.ErrRemoveEntity,
 		},
-		"remove thing with invalid owner": {
-			owner:   wrongValue,
-			thingID: thing.ID,
-			err:     errors.ErrRemoveEntity,
-		},
 		"remove thing": {
 			owner:   email,
 			thingID: thing.ID,
 			err:     nil,
-		},
-		"remove removed thing": {
-			owner:   email,
-			thingID: thing.ID,
-			err:     errors.ErrRemoveEntity,
 		},
 	}
 

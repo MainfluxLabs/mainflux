@@ -1251,7 +1251,7 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 }
 
-func TestDeleteThing(t *testing.T) {
+func TestRemoveThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	ts := newServer(svc)
 	defer ts.Close()
@@ -1267,25 +1267,25 @@ func TestDeleteThing(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "delete existing thing",
+			desc:   "remove existing thing",
 			id:     th.ID,
 			auth:   token,
 			status: http.StatusNoContent,
 		},
 		{
-			desc:   "delete non-existent thing",
+			desc:   "remove non-existent thing",
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
-			status: http.StatusNoContent,
+			status: http.StatusNotFound,
 		},
 		{
-			desc:   "delete thing with invalid token",
+			desc:   "remove thing with invalid token",
 			id:     th.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "delete thing with empty token",
+			desc:   "remove thing with empty token",
 			id:     th.ID,
 			auth:   "",
 			status: http.StatusUnauthorized,
@@ -2115,7 +2115,7 @@ func TestListChannelsByThing(t *testing.T) {
 	}
 }
 
-func TestDeleteChannel(t *testing.T) {
+func TestRemoveChannel(t *testing.T) {
 	svc := newService(map[string]string{token: adminEmail})
 	ts := newServer(svc)
 	defer ts.Close()
@@ -2130,31 +2130,31 @@ func TestDeleteChannel(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "delete channel with invalid token",
+			desc:   "remove channel with invalid token",
 			id:     ch.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "delete existing channel",
+			desc:   "remove existing channel",
 			id:     ch.ID,
 			auth:   token,
 			status: http.StatusNoContent,
 		},
 		{
-			desc:   "delete deleted channel",
+			desc:   "remove removed channel",
 			id:     ch.ID,
 			auth:   token,
-			status: http.StatusNoContent,
+			status: http.StatusNotFound,
 		},
 		{
-			desc:   "delete channel with invalid token",
+			desc:   "remove channel with invalid token",
 			id:     ch.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "delete channel with empty token",
+			desc:   "remove channel with empty token",
 			id:     ch.ID,
 			auth:   "",
 			status: http.StatusUnauthorized,

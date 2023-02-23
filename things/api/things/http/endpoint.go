@@ -220,13 +220,13 @@ func listThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteThingEndpoint(svc things.Service) endpoint.Endpoint {
+func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewResourceReq)
 
 		err := req.validate()
 		if err == errors.ErrNotFound {
-			return deleteRes{}, nil
+			return removeRes{}, nil
 		}
 
 		if err != nil {
@@ -237,7 +237,7 @@ func deleteThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return deleteRes{}, nil
+		return removeRes{}, nil
 	}
 }
 
@@ -431,13 +431,13 @@ func listChannelsByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewResourceReq)
 
 		if err := req.validate(); err != nil {
 			if err == errors.ErrNotFound {
-				return deleteRes{}, nil
+				return removeRes{}, nil
 			}
 			return nil, err
 		}
@@ -446,7 +446,7 @@ func deleteChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return deleteRes{}, nil
+		return removeRes{}, nil
 	}
 }
 
@@ -637,7 +637,7 @@ func deleteGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return deleteRes{}, nil
+		return removeRes{}, nil
 	}
 }
 

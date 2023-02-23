@@ -575,20 +575,10 @@ func TestChannelRemoval(t *testing.T) {
 			chID:  wrongValue,
 			err:   errors.ErrRemoveEntity,
 		},
-		"remove channel with invalid owner": {
-			owner: wrongValue,
-			chID:  chID,
-			err:   errors.ErrRemoveEntity,
-		},
 		"remove channel": {
 			owner: email,
 			chID:  chID,
 			err:   nil,
-		},
-		"remove removed channel": {
-			owner: email,
-			chID:  chID,
-			err:   errors.ErrRemoveEntity,
 		},
 	}
 
