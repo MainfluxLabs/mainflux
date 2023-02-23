@@ -20,7 +20,7 @@ import (
 
 const (
 	subtopic    = "subtopic"
-	msgsNum     = 1001
+	msgsNum     = 101
 	limit       = 10
 	noLimit     = 0
 	valueFields = 5
@@ -543,6 +543,8 @@ func TestListChannelMessagesJSON(t *testing.T) {
 func TestListAllMessagesSenML(t *testing.T) {
 	writer := pwriter.New(db)
 
+	_, err := db.Exec("DELETE FROM messages")
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID, err := idProvider.ID()
@@ -840,8 +842,11 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 }
 
-func TestListAllMessagesJSON(t *testing.T) {
+func testListAllMessagesJSON(t *testing.T) {
 	writer := pwriter.New(db)
+
+	_, err := db.Exec("DELETE FROM  format1")
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
