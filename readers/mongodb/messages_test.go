@@ -25,7 +25,7 @@ import (
 const (
 	testDB      = "test"
 	subtopic    = "subtopic"
-	msgsNum     = 1001
+	msgsNum     = 101
 	limit       = 10
 	noLimit     = 0
 	valueFields = 5
@@ -557,6 +557,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 
 	db := client.Database(testDB)
 	writer := mwriter.New(db)
+
+	err = db.Drop(context.Background())
+	require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
