@@ -207,7 +207,7 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, p
 
 	cq := "SELECT COUNT(*) FROM groups"
 	if mq != "" {
-		cq = fmt.Sprintf(" %s WHERE %s", cq, whereClause)
+		cq = fmt.Sprintf("%s%s", cq, whereClause)
 	}
 
 	total, err := total(ctx, gr.db, cq, dbPage)
