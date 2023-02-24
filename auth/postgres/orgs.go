@@ -186,7 +186,7 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	cq := "SELECT COUNT(*) FROM orgs"
+	cq := "SELECT COUNT(*) FROM orgs WHERE owner_id = :owner_id"
 	if metaQuery != "" {
 		cq = fmt.Sprintf(" %s WHERE %s", cq, metaQuery)
 	}

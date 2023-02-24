@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
@@ -169,7 +168,7 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 }
 
 func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
-	ownq := getOwnerQuery(ownerID)
+	ownq := getOwnerIDQuery(ownerID)
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -208,7 +207,7 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, p
 
 	cq := "SELECT COUNT(*) FROM groups"
 	if mq != "" {
-		cq = fmt.Sprintf(" %s WHERE %s", cq, mq)
+		cq = fmt.Sprintf(" %s WHERE %s", cq, whereClause)
 	}
 
 	total, err := total(ctx, gr.db, cq, dbPage)
@@ -430,13 +429,13 @@ type dbMember struct {
 }
 
 type dbGroup struct {
-	ID          string        `db:"id"`
-	OwnerID     uuid.NullUUID `db:"owner_id"`
-	Name        string        `db:"name"`
-	Description string        `db:"description"`
-	Metadata    dbMetadata    `db:"metadata"`
-	CreatedAt   time.Time     `db:"created_at"`
-	UpdatedAt   time.Time     `db:"updated_at"`
+	ID          string     `db:"id"`
+	OwnerID     string     `db:"owner_id"`
+	Name        string     `db:"name"`
+	Description string     `db:"description"`
+	Metadata    dbMetadata `db:"metadata"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
 }
 
 type dbGroupPage struct {
@@ -456,39 +455,13 @@ type dbMemberPage struct {
 	Offset   uint64     `db:"offset"`
 }
 
-func toUUID(id string) (uuid.NullUUID, error) {
-	var uid uuid.NullUUID
-	if id == "" {
-		return uuid.NullUUID{UUID: uuid.Nil, Valid: false}, nil
-	}
-	err := uid.Scan(id)
-	return uid, err
-}
-
-func toString(id uuid.NullUUID) (string, error) {
-	if id.Valid {
-		return id.UUID.String(), nil
-	}
-	if id.UUID == uuid.Nil {
-		return "", nil
-	}
-	return "", errStringToUUID
-}
-
 func toDBGroup(g things.Group) (dbGroup, error) {
-	ownerID, err := toUUID(g.OwnerID)
-	if err != nil {
-		return dbGroup{}, err
-	}
-
-	meta := dbMetadata(g.Metadata)
-
 	return dbGroup{
 		ID:          g.ID,
 		Name:        g.Name,
-		OwnerID:     ownerID,
+		OwnerID:     g.OwnerID,
 		Description: g.Description,
-		Metadata:    meta,
+		Metadata:    dbMetadata(g.Metadata),
 		CreatedAt:   g.CreatedAt,
 		UpdatedAt:   g.UpdatedAt,
 	}, nil
@@ -516,15 +489,10 @@ func toDBMemberPage(memberID, groupID string, pm things.PageMetadata) (dbMemberP
 }
 
 func toGroup(dbu dbGroup) (things.Group, error) {
-	ownerID, err := toString(dbu.OwnerID)
-	if err != nil {
-		return things.Group{}, err
-	}
-
 	return things.Group{
 		ID:          dbu.ID,
 		Name:        dbu.Name,
-		OwnerID:     ownerID,
+		OwnerID:     dbu.OwnerID,
 		Description: dbu.Description,
 		Metadata:    things.GroupMetadata(dbu.Metadata),
 		UpdatedAt:   dbu.UpdatedAt,
@@ -554,6 +522,13 @@ func toDBGroupRelation(memberID, groupID string) (dbGroupRelation, error) {
 		GroupID:  grID,
 		MemberID: mID,
 	}, nil
+}
+
+func getOwnerIDQuery(owner string) string {
+	if owner == "" {
+		return ""
+	}
+	return "owner_id = :owner_id"
 }
 
 func getGroupsMetadataQuery(db string, m things.GroupMetadata) (mb []byte, mq string, err error) {
