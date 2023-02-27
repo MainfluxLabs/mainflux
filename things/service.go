@@ -457,9 +457,15 @@ func (ts *thingsService) CanAccessByID(ctx context.Context, chanID, thingID stri
 }
 
 func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	if _, err := ts.channels.RetrieveByID(ctx, owner, chanID); err != nil {
+	ch, err := ts.channels.RetrieveByID(ctx, owner, chanID)
+	if err != nil {
 		return err
 	}
+
+	if ch.Owner != owner {
+		return errors.ErrAuthorization
+	}
+
 	return nil
 }
 
