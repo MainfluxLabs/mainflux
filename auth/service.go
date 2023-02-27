@@ -343,11 +343,21 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 }
 
 func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	owner, err := svc.Identify(ctx, token)
+	if err != nil {
 		return Org{}, err
 	}
 
-	return svc.orgs.RetrieveByID(ctx, id)
+	org, err := svc.orgs.RetrieveByID(ctx, id)
+	if err != nil {
+		return Org{}, err
+	}
+	
+	if org.OwnerID != owner.ID {
+		return Org{}, errors.ErrAuthorization
+	}
+
+	return org, nil
 }
 
 func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
