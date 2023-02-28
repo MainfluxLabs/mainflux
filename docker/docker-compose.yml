@@ -90,7 +90,7 @@ services:
       - mainfluxlabs-auth-db-volume:/var/lib/postgresql/data
 
   auth:
-    image: mainfluxlabs/auth:0.15.0
+    image: mainfluxlabs/auth:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-auth
     depends_on:
       - auth-db

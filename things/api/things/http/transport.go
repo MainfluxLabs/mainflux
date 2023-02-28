@@ -240,7 +240,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/members/:memberID/groups", kithttp.NewServer(
+	r.Get("/things/:memberID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
 		decodeListMembershipsRequest,
 		encodeResponse,
@@ -535,15 +535,29 @@ func decodeGroupCreate(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
 	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listGroupsReq{
-		token:    apiutil.ExtractBearerToken(r),
-		metadata: m,
-		id:       bone.GetValue(r, groupIDKey),
+		token: apiutil.ExtractBearerToken(r),
+		pageMetadata: things.PageMetadata{
+			Offset:   o,
+			Limit:    l,
+			Metadata: m,
+		},
+		id: bone.GetValue(r, groupIDKey),
 	}
 	return req, nil
 }
