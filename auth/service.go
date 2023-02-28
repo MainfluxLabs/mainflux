@@ -318,6 +318,11 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
+	_, err = svc.orgs.RetrieveByID(ctx, id)
+	if err != nil {
+		return errors.ErrNotFound
+	}
+
 	return svc.orgs.Delete(ctx, res.ID, id)
 }
 
