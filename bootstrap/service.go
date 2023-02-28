@@ -172,16 +172,7 @@ func (bs bootstrapService) View(ctx context.Context, token, id string) (Config, 
 		return Config{}, err
 	}
 
-	conf, err := bs.configs.RetrieveByID(owner, id)
-	if err != nil {
-		return Config{}, err
-	}
-
-	if conf.Owner != owner {
-		return Config{}, errors.ErrAuthorization
-	}
-
-	return conf, nil
+	return bs.configs.RetrieveByID(owner, id)
 }
 
 func (bs bootstrapService) Update(ctx context.Context, token string, cfg Config) error {
