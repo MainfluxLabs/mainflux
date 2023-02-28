@@ -647,10 +647,8 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		pm := things.PageMetadata{
-			Metadata: req.metadata,
-		}
-		page, err := svc.ListGroups(ctx, req.token, pm)
+
+		page, err := svc.ListGroups(ctx, req.token, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -734,7 +732,9 @@ func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	res := groupPageRes{
 		pageRes: pageRes{
-			Total: gp.Total,
+			Total:  gp.Total,
+			Limit:  gp.Limit,
+			Offset: gp.Offset,
 		},
 		Groups: []viewGroupRes{},
 	}

@@ -421,7 +421,18 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 }
 
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return OrgsPage{}, err
+	}
+
+	req := PolicyReq{
+		Subject:  user.Email,
+		Object:   "authorities",
+		Relation: "member",
+	}
+
+	if err := svc.Authorize(ctx, req); err != nil {
 		return OrgsPage{}, err
 	}
 
