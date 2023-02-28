@@ -168,26 +168,22 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 }
 
 func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
-	ownq := getOwnerIDQuery(ownerID)
+	whereq := "WHERE owner_id = :owner_id"
+
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var query []string
-	if ownq != "" {
-		query = append(query, ownq)
-	}
 	if mq != "" {
 		query = append(query, mq)
 	}
-
-	var whereClause string
 	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
+		whereq = fmt.Sprintf(whereq, strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s`, whereClause)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s;`, whereq)
 
 	dbPage, err := toDBGroupPage(ownerID, "", pm)
 	if err != nil {
@@ -205,10 +201,7 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, p
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	cq := "SELECT COUNT(*) FROM groups"
-	if mq != "" {
-		cq = fmt.Sprintf(" %s WHERE %s", cq, whereClause)
-	}
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereq)
 
 	total, err := total(ctx, gr.db, cq, dbPage)
 	if err != nil {
@@ -522,13 +515,6 @@ func toDBGroupRelation(memberID, groupID string) (dbGroupRelation, error) {
 		GroupID:  grID,
 		MemberID: mID,
 	}, nil
-}
-
-func getOwnerIDQuery(owner string) string {
-	if owner == "" {
-		return ""
-	}
-	return "owner_id = :owner_id"
 }
 
 func getGroupsMetadataQuery(db string, m things.GroupMetadata) (mb []byte, mq string, err error) {
