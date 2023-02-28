@@ -65,8 +65,8 @@ type GroupRepository interface {
 	// Update a group
 	Update(ctx context.Context, g Group) (Group, error)
 
-	// Delete a group
-	Delete(ctx context.Context, id string) error
+	// Remove a group
+	Remove(ctx context.Context, id string) error
 
 	// RetrieveByID retrieves group by its id
 	RetrieveByID(ctx context.Context, id string) (Group, error)

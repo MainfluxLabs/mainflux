@@ -113,7 +113,7 @@ func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Gr
 	return toGroup(dbu)
 }
 
-func (gr groupRepository) Delete(ctx context.Context, groupID string) error {
+func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 	qd := `DELETE FROM groups WHERE id = :id`
 	group := things.Group{
 		ID: groupID,
