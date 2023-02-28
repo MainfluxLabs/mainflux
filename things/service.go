@@ -604,7 +604,7 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return err
 	}
 
-	return ts.groups.Delete(ctx, id)
+	return ts.groups.Remove(ctx, id)
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {

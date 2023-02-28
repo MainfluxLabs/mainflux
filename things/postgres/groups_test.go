@@ -272,7 +272,7 @@ func TestGroupDelete(t *testing.T) {
 	err = groupRepo.AssignMember(context.Background(), groupChild1.ID, "things", thingID)
 	require.Nil(t, err, fmt.Sprintf("thing assign got unexpected error: %s", err))
 
-	err = groupRepo.Delete(context.Background(), groupChild2.ID)
+	err = groupRepo.Remove(context.Background(), groupChild2.ID)
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
 }
 
