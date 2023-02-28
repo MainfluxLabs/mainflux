@@ -318,9 +318,8 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	_, err = svc.orgs.RetrieveByID(ctx, id)
-	if err != nil {
-		return errors.ErrNotFound
+	if _, err = svc.orgs.RetrieveByID(ctx, id); err != nil {
+		return err
 	}
 
 	return svc.orgs.Delete(ctx, res.ID, id)
@@ -357,7 +356,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	if err != nil {
 		return Org{}, err
 	}
-	
+
 	if org.OwnerID != owner.ID {
 		return Org{}, errors.ErrAuthorization
 	}

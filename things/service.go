@@ -290,9 +290,8 @@ func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) erro
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	_, err = ts.things.RetrieveByID(ctx, res.GetId(), id)
-	if err != nil {
-		return errors.ErrNotFound
+	if _, err = ts.things.RetrieveByID(ctx, res.GetId(), id); err != nil {
+		return err
 	}
 
 	if err := ts.thingCache.Remove(ctx, id); err != nil {
@@ -393,9 +392,8 @@ func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) er
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	_, err = ts.channels.RetrieveByID(ctx, res.GetId(), id)
-	if err != nil {
-		return errors.ErrNotFound
+	if _, err = ts.channels.RetrieveByID(ctx, res.GetId(), id); err != nil {
+		return err
 	}
 
 	if err := ts.channelCache.Remove(ctx, id); err != nil {
@@ -602,9 +600,8 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return err
 	}
 
-	_, err := ts.groups.RetrieveByID(ctx, id)
-	if err != nil {
-		return errors.ErrNotFound
+	if _, err := ts.groups.RetrieveByID(ctx, id); err != nil {
+		return err
 	}
 
 	return ts.groups.Delete(ctx, id)
