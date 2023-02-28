@@ -248,7 +248,16 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return ts.things.RetrieveByID(ctx, res.GetId(), id)
+	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
+	if err != nil {
+		return Thing{}, err
+	}
+
+	if thing.Owner != res.GetId() {
+		return Thing{}, errors.ErrAuthorization
+	}
+
+	return thing, nil
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error) {
@@ -342,7 +351,16 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return ts.channels.RetrieveByID(ctx, res.GetId(), id)
+	channel, err := ts.channels.RetrieveByID(ctx, res.GetId(), id)
+	if err != nil {
+		return Channel{}, err
+	}
+
+	if channel.Owner != res.GetId() {
+		return Channel{}, errors.ErrAuthorization
+	}
+
+	return channel, nil
 }
 
 func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
@@ -439,9 +457,15 @@ func (ts *thingsService) CanAccessByID(ctx context.Context, chanID, thingID stri
 }
 
 func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	if _, err := ts.channels.RetrieveByID(ctx, owner, chanID); err != nil {
+	ch, err := ts.channels.RetrieveByID(ctx, owner, chanID)
+	if err != nil {
 		return err
 	}
+
+	if ch.Owner != owner {
+		return errors.ErrAuthorization
+	}
+
 	return nil
 }
 
@@ -580,10 +604,21 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return Group{}, err
 	}
-	return ts.groups.RetrieveByID(ctx, id)
+
+	gr, err := ts.groups.RetrieveByID(ctx, id)
+	if err != nil {
+		return Group{}, errors.ErrNotFound
+	}
+
+	if gr.OwnerID != res.GetId() {
+		return Group{}, errors.ErrAuthorization
+	}
+
+	return gr, nil
 }
 
 func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
