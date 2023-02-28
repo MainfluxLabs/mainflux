@@ -18,7 +18,6 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/golang/protobuf v1.5.2
-	github.com/gopcua/opcua v0.1.6
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/vault/api v1.7.2
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
@@ -48,7 +47,6 @@ require (
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/grpc v1.46.2
-	google.golang.org/protobuf v1.28.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
@@ -151,6 +149,7 @@ require (
 	golang.org/x/text v0.3.8 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect

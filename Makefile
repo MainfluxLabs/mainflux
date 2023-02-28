@@ -5,7 +5,7 @@ MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap ws lora influxdb-writer influxdb-reader mongodb-writer \
 	mongodb-reader cassandra-writer cassandra-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
-	bootstrap opcua auth twins mqtt provision certs smtp-notifier smpp-notifier
+	bootstrap auth mqtt provision certs smtp-notifier smpp-notifier
 DOCKERS = $(addprefix docker_,$(SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
 CGO_ENABLED ?= 0
