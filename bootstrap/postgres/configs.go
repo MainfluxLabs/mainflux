@@ -82,7 +82,7 @@ func (cr configRepository) Save(cfg bootstrap.Config, chsConnIDs []string) (stri
 }
 
 func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, error) {
-	q := `SELECT mainflux_thing, mainflux_key, external_id, external_key, name, content, state
+	q := `SELECT mainflux_thing, owner, mainflux_key, external_id, external_key, name, content, state
 		  FROM configs
 		  WHERE mainflux_thing = $1 AND owner = $2`
 

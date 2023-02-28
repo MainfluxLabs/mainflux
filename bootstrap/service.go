@@ -383,7 +383,7 @@ func (bs bootstrapService) identify(token string) (string, error) {
 		return "", errors.ErrAuthentication
 	}
 
-	return res.GetEmail(), nil
+	return res.GetId(), nil
 }
 
 // Method thing retrieves Mainflux Thing creating one if an empty ID is passed.
