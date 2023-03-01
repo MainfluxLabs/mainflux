@@ -52,6 +52,35 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves things
+      description: |
+        Retrieves a list of things. Due to performance concerns, data
+        is retrieved in subsets. The API things must ensure that the entire
+        dataset is consumed either by making subsequent requests, or by
+        increasing the subset size of the initial request.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: A non-existent entity request.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"      
   /things/{thingId}:
     get:
       summary: Retrieves thing info
@@ -185,6 +214,33 @@ paths:
           description: Entity already exist.
         '415':
           description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves channels
+      description: |
+        Retrieves a list of channels. Due to performance concerns, data
+        is retrieved in subsets. The API things must ensure that the entire
+        dataset is consumed either by making subsequent requests, or by
+        increasing the subset size of the initial request.
+      tags:
+        - channels
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/ChannelsPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
   /channels/{chanId}:
