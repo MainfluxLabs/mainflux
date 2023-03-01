@@ -1,6 +1,7 @@
 package influxdb_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ const (
 
 	format1 = "format1"
 	format2 = "format2"
+	format5 = "format5"
 	wrongID = "wrong_id"
 )
 
@@ -404,7 +406,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 		},
 	}
 	messages1 := json.Messages{
-		Format: format1,
+		Format: format5,
 	}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
@@ -532,6 +534,8 @@ func TestListChannelMessagesJSON(t *testing.T) {
 }
 
 func TestListAllMessagesSenML(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -831,6 +835,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
@@ -971,4 +978,41 @@ func toMap(msg json.Message) map[string]interface{} {
 		"protocol":  msg.Protocol,
 		"payload":   map[string]interface{}(msg.Payload),
 	}
+}
+
+func deleteBucket() error {
+	bucketsAPI := client.BucketsAPI()
+	bucket, err := bucketsAPI.FindBucketByName(context.Background(), repoCfg.Bucket)
+	if err != nil {
+		return err
+	}
+
+	if err = bucketsAPI.DeleteBucket(context.Background(), bucket); err != nil {
+		return err
+	}
+
+	return nil
+}
+func createBucket() error {
+	orgAPI := client.OrganizationsAPI()
+	org, err := orgAPI.FindOrganizationByName(context.Background(), repoCfg.Org)
+	if err != nil {
+		return err
+	}
+	bucketsAPI := client.BucketsAPI()
+	if _, err = bucketsAPI.CreateBucketWithName(context.Background(), org, repoCfg.Bucket); err != nil {
+		return err
+	}
+
+	return nil
+}
+func resetBucket() error {
+	if err := deleteBucket(); err != nil {
+		return err
+	}
+	if err := createBucket(); err != nil {
+		return err
+	}
+
+	return nil
 }
