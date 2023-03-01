@@ -940,16 +940,6 @@ components:
             $ref: "#/components/schemas/ShareThingReqSchema"
 
   responses:
-    CreateThingRes:
-      description: Thing registered.
-      headers:
-        Location:
-          content:
-            text/plain:
-              schema:
-                type: string
-                description: Created thing's relative URL.
-                example: /things/{thingId}
     ThingRes:
       description: Data retrieved.
       content:
