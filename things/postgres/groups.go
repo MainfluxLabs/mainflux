@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	errStringToUUID        = errors.New("error converting string to uuid")
 	errCreateMetadataQuery = errors.New("failed to create query for metadata")
 	groupIDFkeyy           = "group_relations_group_id_fkey"
 )
@@ -180,7 +179,7 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, p
 		query = append(query, mq)
 	}
 	if len(query) > 0 {
-		whereq = fmt.Sprintf(whereq, strings.Join(query, " AND "))
+		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s;`, whereq)
