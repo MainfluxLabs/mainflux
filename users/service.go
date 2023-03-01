@@ -253,7 +253,7 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email, "authorities", "member"); err != nil {
+	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
 		return UserPage{}, err
 	}
 

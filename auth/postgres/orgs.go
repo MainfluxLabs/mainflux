@@ -9,6 +9,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -157,18 +158,22 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	_, metaQuery, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	whereq := "WHERE owner_id = :owner_id"
+
+	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var mq string
-	if metaQuery != "" {
-		mq = fmt.Sprintf(" AND %s", metaQuery)
+	var query []string
+	if mq != "" {
+		query = append(query, mq)
+	}
+	if len(query) > 0 {
+		whereq = fmt.Sprintf(whereq, strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs
-					  WHERE owner_id = :owner_id %s`, mq)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, mq)
 
 	dbPage, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
@@ -186,10 +191,7 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	cq := "SELECT COUNT(*) FROM orgs WHERE owner_id = :owner_id"
-	if metaQuery != "" {
-		cq = fmt.Sprintf(" %s WHERE %s", cq, metaQuery)
-	}
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereq)
 
 	total, err := total(ctx, gr.db, cq, dbPage)
 	if err != nil {
@@ -269,10 +271,10 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
 	}
-	q := fmt.Sprintf(`SELECT g.id, g.owner_id, g.name, g.description, g.metadata
-					  FROM org_relations gr, orgs g
-					  WHERE gr.org_id = g.id and gr.member_id = :member_id
-		  			  %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
+	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata
+		FROM org_relations ore, orgs o
+		WHERE ore.org_id = o.id and ore.member_id = :member_id
+		%s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
 
 	params, err := toDBOrgMemberPage(memberID, "", pm)
 	if err != nil {
@@ -298,8 +300,8 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM org_relations gr, orgs g
-					   WHERE gr.org_id = g.id and gr.member_id = :member_id %s `, mq)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM org_relations ore, orgs o
+		WHERE ore.org_id = o.id and ore.member_id = :member_id %s `, mq)
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {

@@ -66,7 +66,7 @@ func (grm *groupRepositoryMock) Update(ctx context.Context, group things.Group) 
 	return up, nil
 }
 
-func (grm *groupRepositoryMock) Delete(ctx context.Context, id string) error {
+func (grm *groupRepositoryMock) Remove(ctx context.Context, id string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[id]; !ok {

@@ -402,14 +402,18 @@ func (req updateGroupReq) validate() error {
 }
 
 type listGroupsReq struct {
-	token    string
-	id       string
-	metadata things.GroupMetadata
+	token        string
+	id           string
+	pageMetadata things.PageMetadata
 }
 
 func (req listGroupsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
 	}
 
 	return nil
