@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.0.1CreateThingRes
 info:
   title: Mainflux things service
   description: HTTP API for managing platform things and channels.
@@ -17,11 +17,13 @@ paths:
         $ref: "#/components/requestBodies/ThingsCreateReq"
       responses:
         '201':
-          description: Things registered.
+          $ref: "#/components/responses/CreateThingRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '409':
+          description: Entity already exist.  
         '415':
           description: Missing or invalid content type.
         '500':
@@ -54,7 +56,7 @@ paths:
         '422':
           description: Database can't process request.
         '500':
-          $ref: "#/components/responses/ServiceError"      
+          $ref: "#/components/responses/ServiceError"
   /things/search:
     post:
       summary: Search and retrieves things
@@ -205,7 +207,7 @@ paths:
         $ref: "#/components/requestBodies/ChannelsCreateReq"
       responses:
         '201':
-          description: Channels registered.
+          $ref: "#/components/responses/ChannelCreateRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -940,6 +942,16 @@ components:
             $ref: "#/components/schemas/ShareThingReqSchema"
 
   responses:
+    CreateThingRes:
+      description: Thing registered.
+      headers:
+        Location:
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Created thing's relative URL.
+                example: /things/{thingId}
     ThingRes:
       description: Data retrieved.
       content:
