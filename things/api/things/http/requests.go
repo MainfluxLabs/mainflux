@@ -22,37 +22,10 @@ const (
 )
 
 type createThingReq struct {
-	token    string
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key,omitempty"`
 	ID       string                 `json:"id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
-
-func validateUUID(extID string) (err error) {
-	id, err := uuid.FromString(extID)
-	if id.String() != extID || err != nil {
-		return apiutil.ErrInvalidIDFormat
-	}
-
-	return nil
-}
-
-func (req createThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	// Do the validation only if request contains ID
-	if req.ID != "" {
-		return validateUUID(req.ID)
-	}
-
-	return nil
 }
 
 type createThingsReq struct {
@@ -130,27 +103,9 @@ func (req updateKeyReq) validate() error {
 }
 
 type createChannelReq struct {
-	token    string
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
-
-func (req createChannelReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	// Do the validation only if request contains ID
-	if req.ID != "" {
-		return validateUUID(req.ID)
-	}
-
-	return nil
 }
 
 type createChannelsReq struct {
@@ -497,3 +452,14 @@ func (req groupReq) validate() error {
 
 	return nil
 }
+
+func validateUUID(extID string) (err error) {
+	id, err := uuid.FromString(extID)
+	if id.String() != extID || err != nil {
+		return apiutil.ErrInvalidIDFormat
+	}
+
+	return nil
+}
+
+

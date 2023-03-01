@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -17,28 +16,16 @@ import (
 const channelsEndpoint = "channels"
 
 func (sdk mfSDK) CreateChannel(c Channel, token string) (string, error) {
-	data, err := json.Marshal(c)
+	channels, err := sdk.CreateChannels([]Channel{c}, token)
 	if err != nil {
 		return "", err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-	if err != nil {
-		return "", err
+	if len(channels) < 1 {
+		return "", nil
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
-	}
-
-	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", channelsEndpoint))
-	return id, nil
+	return channels[0].ID, nil
 }
 
 func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, error) {
@@ -47,7 +34,7 @@ func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, error) 
 		return []Channel{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, "bulk")
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return []Channel{}, err

@@ -45,13 +45,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	r := bone.New()
 
 	r.Post("/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_thing")(createThingEndpoint(svc)),
-		decodeThingCreation,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/things/bulk", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
 		decodeThingsCreation,
 		encodeResponse,
@@ -108,13 +101,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Post("/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_channel")(createChannelEndpoint(svc)),
-		decodeChannelCreation,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/channels/bulk", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_channels")(createChannelsEndpoint(svc)),
 		decodeChannelsCreation,
 		encodeResponse,
@@ -267,19 +253,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	return r
 }
 
-func decodeThingCreation(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := createThingReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
 func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -318,19 +291,6 @@ func decodeKeyUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeChannelCreation(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := createChannelReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}

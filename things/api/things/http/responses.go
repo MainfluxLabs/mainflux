@@ -13,10 +13,8 @@ import (
 )
 
 var (
-	_ mainflux.Response = (*thingRes)(nil)
 	_ mainflux.Response = (*viewThingRes)(nil)
 	_ mainflux.Response = (*thingsPageRes)(nil)
-	_ mainflux.Response = (*channelRes)(nil)
 	_ mainflux.Response = (*viewChannelRes)(nil)
 	_ mainflux.Response = (*channelsPageRes)(nil)
 	_ mainflux.Response = (*connectThingRes)(nil)
@@ -46,37 +44,6 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-type thingRes struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	created  bool
-}
-
-func (res thingRes) Code() int {
-	if res.created {
-		return http.StatusCreated
-	}
-
-	return http.StatusOK
-}
-
-func (res thingRes) Headers() map[string]string {
-	if res.created {
-		return map[string]string{
-			"Location":           fmt.Sprintf("/things/%s", res.ID),
-			"Warning-Deprecated": "This endpoint will be depreciated in v1.0.0. It will be replaced with the bulk endpoint currently found at /things/bulk.",
-		}
-	}
-
-	return map[string]string{}
-}
-
-func (res thingRes) Empty() bool {
-	return true
-}
-
 type shareThingRes struct{}
 
 func (res shareThingRes) Code() int {
@@ -89,6 +56,14 @@ func (res shareThingRes) Headers() map[string]string {
 
 func (res shareThingRes) Empty() bool {
 	return false
+}
+
+type thingRes struct {
+	ID       string                 `json:"id"`
+	Name     string                 `json:"name,omitempty"`
+	Key      string                 `json:"key"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	created  bool
 }
 
 type thingsRes struct {
@@ -154,29 +129,6 @@ type channelRes struct {
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
-}
-
-func (res channelRes) Code() int {
-	if res.created {
-		return http.StatusCreated
-	}
-
-	return http.StatusOK
-}
-
-func (res channelRes) Headers() map[string]string {
-	if res.created {
-		return map[string]string{
-			"Location":           fmt.Sprintf("/channels/%s", res.ID),
-			"Warning-Deprecated": "This endpoint will be depreciated in v1.0.0. It will be replaced with the bulk endpoint currently found at /channels/bulk.",
-		}
-	}
-
-	return map[string]string{}
-}
-
-func (res channelRes) Empty() bool {
-	return true
 }
 
 type channelsRes struct {

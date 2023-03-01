@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -29,30 +28,16 @@ type identifyThingResp struct {
 }
 
 func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
-	data, err := json.Marshal(t)
+	things, err := sdk.CreateThings([]Thing{t}, token)
 	if err != nil {
 		return "", err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsEndpoint)
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-	if err != nil {
-		return "", err
+	if len(things) < 1 {
+		return "", nil
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
-	}
-
-	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", thingsEndpoint))
-	return id, nil
+	return things[0].ID, nil
 }
 
 func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
@@ -61,7 +46,7 @@ func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
 		return []Thing{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, "bulk")
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
