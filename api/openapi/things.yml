@@ -824,13 +824,6 @@ components:
         additionalProperties: {}
 
   requestBodies:
-    ThingCreateReq:
-      description: JSON-formatted document describing the new thing.
-      required: true
-      content:
-        application/json:
-          schema:
-           $ref: "#/components/schemas/ThingReqSchema"
     ThingsCreateReq:
       description: JSON-formatted document describing the new things.
       required: true
