@@ -33,7 +33,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /things:
     post:
-      summary: Bulk provisions new things
+      summary: Adds new things
       description: |
         Adds new things to the list of things owned by user identified using
         the provided access token.
@@ -195,7 +195,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /channels:
     post:
-      summary: Bulk provisions new channels
+      summary: Adds new channels
       description: |
         Adds new channels to the list of channels owned by user identified using
         the provided access token.
