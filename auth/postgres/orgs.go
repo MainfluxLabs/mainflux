@@ -170,7 +170,7 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		query = append(query, mq)
 	}
 	if len(query) > 0 {
-		whereq = fmt.Sprintf(whereq, strings.Join(query, " AND "))
+		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, mq)
