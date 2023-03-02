@@ -7,17 +7,17 @@ info:
 paths:
   /things:
     post:
-      summary: Adds new thing
+      summary: Adds new things
       description: |
-        Adds new thing to the list of things owned by user identified using
+        Adds new things to the list of things owned by user identified using
         the provided access token.
       tags:
         - things
       requestBody:
-        $ref: "#/components/requestBodies/ThingCreateReq"
+        $ref: "#/components/requestBodies/ThingsCreateReq"
       responses:
         '201':
-          $ref: "#/components/responses/CreateThingRes"
+          $ref: "#/components/responses/CreateThingsRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -26,8 +26,6 @@ paths:
           description: Entity already exist.
         '415':
           description: Missing or invalid content type.
-        '422':
-          description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
@@ -83,27 +81,6 @@ paths:
           description: A non-existent entity request.
         '422':
           description: Unprocessable Entity
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /things/bulk:
-    post:
-      summary: Bulk provisions new things
-      description: |
-        Adds new things to the list of things owned by user identified using
-        the provided access token.
-      tags:
-        - things
-      requestBody:
-        $ref: "#/components/requestBodies/ThingsCreateReq"
-      responses:
-        '201':
-          description: Things registered.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '415':
-          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}:
@@ -220,17 +197,17 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /channels:
     post:
-      summary: Creates new channel
+      summary: Adds new channels
       description: |
-        Creates new channel. User identified by the provided access token will
-        be the channel's owner.
+        Adds new channels to the list of channels owned by user identified using
+        the provided access token.
       tags:
         - channels
       requestBody:
-        $ref: "#/components/requestBodies/ChannelCreateReq"
+        $ref: "#/components/requestBodies/ChannelsCreateReq"
       responses:
         '201':
-          $ref: "#/components/responses/ChannelCreateRes"
+          $ref: "#/components/responses/ChannelsCreateRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -266,29 +243,6 @@ paths:
           description: Missing or invalid access token provided.
         '422':
           description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /channels/bulk:
-    post:
-      summary: Bulk provisions new channels
-      description: |
-        Adds new channels to the list of channels owned by user identified using
-        the provided access token.
-      tags:
-        - channels
-      requestBody:
-        $ref: "#/components/requestBodies/ChannelsCreateReq"
-      responses:
-        '201':
-          description: Channels registered.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '409':
-          description: Entity already exist.
-        '415':
-          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /channels/{chanId}:
@@ -691,6 +645,17 @@ components:
         - id
         - type
         - key
+    ThingsResSchema:
+      type: object
+      properties:
+        things:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ThingResSchema"
+      required:
+        - things
     ThingsPage:
       type: object
       properties:
@@ -734,6 +699,17 @@ components:
           description: Arbitrary, object-encoded channel's data.
       required:
         - id
+    ChannelsResSchema:
+      type: object
+      properties:
+        channels:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ChannelResSchema"
+      required:
+        - channels
     ChannelsPage:
       type: object
       properties:
@@ -872,13 +848,6 @@ components:
         additionalProperties: {}
 
   requestBodies:
-    ThingCreateReq:
-      description: JSON-formatted document describing the new thing.
-      required: true
-      content:
-        application/json:
-          schema:
-           $ref: "#/components/schemas/ThingReqSchema"
     ThingsCreateReq:
       description: JSON-formatted document describing the new things.
       required: true
@@ -995,16 +964,14 @@ components:
             $ref: "#/components/schemas/ShareThingReqSchema"
 
   responses:
-    CreateThingRes:
-      description: Thing registered.
-      headers:
-        Location:
-          content:
-            text/plain:
-              schema:
-                type: string
-                description: Created thing's relative URL.
-                example: /things/{thingId}
+    CreateThingsRes:
+      description: Things created.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/ThingResSchema"
     ThingRes:
       description: Data retrieved.
       content:
@@ -1017,15 +984,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsPage"
-    ChannelCreateRes:
-      description: Channel created.
-      headers:
-        Location:
-          content:
-            text/plain:
-              schema:
-                type: string
-                description: Created channel's relative URL (i.e. /channels/{chanId}).
+    ChannelsCreateRes:
+      description: Channels created.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/ChannelResSchema"
     ChannelRes:
       description: Data retrieved.
       content:

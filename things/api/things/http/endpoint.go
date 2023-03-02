@@ -11,34 +11,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func createThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createThingReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		th := things.Thing{
-			Key:      req.Key,
-			ID:       req.ID,
-			Name:     req.Name,
-			Metadata: req.Metadata,
-		}
-		saved, err := svc.CreateThings(ctx, req.token, th)
-		if err != nil {
-			return nil, err
-		}
-
-		res := thingRes{
-			ID:      saved[0].ID,
-			created: true,
-		}
-
-		return res, nil
-	}
-}
-
 func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createThingsReq)
@@ -238,32 +210,6 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return removeRes{}, nil
-	}
-}
-
-func createChannelEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createChannelReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		ch := things.Channel{
-			Name:     req.Name,
-			ID:       req.ID,
-			Metadata: req.Metadata}
-
-		saved, err := svc.CreateChannels(ctx, req.token, ch)
-		if err != nil {
-			return nil, err
-		}
-
-		res := channelRes{
-			ID:      saved[0].ID,
-			created: true,
-		}
-		return res, nil
 	}
 }
 
