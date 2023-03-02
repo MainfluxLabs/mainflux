@@ -20,7 +20,7 @@ import (
 
 const (
 	subtopic    = "subtopic"
-	msgsNum     = 101
+	msgsNum     = 1001
 	limit       = 10
 	valueFields = 5
 	zeroOffset  = 0
@@ -905,17 +905,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1),
 			},
 		},
-		// "read messages page for non-existent channel": {
-		// 	pageMeta: readers.PageMetadata{
-		// 		Format: messages2.Format,
-		// 		Offset: zeroOffset,
-		// 		Limit:  limit,
-		// 	},
-		// 	page: readers.MessagesPage{
-		// 		Total:    0,
-		// 		Messages: []readers.Message{},
-		// 	},
-		// },
 		"read messages last page": {
 			pageMeta: readers.PageMetadata{
 				Format: messages2.Format,

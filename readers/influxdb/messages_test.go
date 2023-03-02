@@ -20,7 +20,7 @@ import (
 const (
 	testDB      = "test"
 	subtopic    = "topic"
-	msgsNum     = 101
+	msgsNum     = 1001
 	limit       = 10
 	oneMsgLimit = 1
 	noLimit     = 0
@@ -406,7 +406,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 		},
 	}
 	messages1 := json.Messages{
-		Format: format5,
+		Format: format1,
 	}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
@@ -835,9 +835,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
-	err := resetBucket()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
@@ -855,7 +852,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 		},
 	}
 	messages1 := json.Messages{
-		Format: format1,
+		Format: format5,
 	}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {

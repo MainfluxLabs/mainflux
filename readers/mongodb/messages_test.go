@@ -25,7 +25,7 @@ import (
 const (
 	testDB      = "test"
 	subtopic    = "subtopic"
-	msgsNum     = 101
+	msgsNum     = 1001
 	limit       = 10
 	noLimit     = 0
 	valueFields = 5
