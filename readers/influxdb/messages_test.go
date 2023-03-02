@@ -837,6 +837,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 func TestListAllMessagesJSON(t *testing.T) {
 	writer := iwriter.New(client, repoCfg)
 
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	m := json.Message{
@@ -852,7 +855,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 		},
 	}
 	messages1 := json.Messages{
-		Format: format5,
+		Format: format1,
 	}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
