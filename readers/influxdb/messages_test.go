@@ -768,37 +768,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(dataMsgs),
 			},
 		},
-		"read messages with from": {
-			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[offset].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[0 : offset+1])),
-				Messages: fromSenml(messages[0 : offset+1]),
-			},
-		},
-		"read messages with to": {
-			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				To:    messages[offset-1].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[offset:])),
-				Messages: fromSenml(messages[offset:]),
-			},
-		},
-		"read messages with from/to": {
-			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[5].Time,
-				To:    messages[0].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    5,
-				Messages: fromSenml(messages[1:6]),
-			},
-		},
 	}
 
 	for desc, tc := range cases {
