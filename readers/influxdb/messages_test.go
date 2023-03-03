@@ -55,6 +55,8 @@ var (
 )
 
 func TestListChannelMessagesSenML(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -388,6 +390,8 @@ func TestListChannelMessagesSenML(t *testing.T) {
 }
 
 func TestListChannelMessagesJSON(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
