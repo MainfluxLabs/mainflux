@@ -322,13 +322,13 @@ func TestRetrieveAllGroups(t *testing.T) {
 		Size     uint64
 		Metadata things.PageMetadata
 	}{
-		// "retrieve all groups": {
-		// 	Metadata: things.PageMetadata{
-		// 		Total: n,
-		// 		Limit: n,
-		// 	},
-		// 	Size: n,
-		// },
+		"retrieve all groups": {
+			Metadata: things.PageMetadata{
+				Total: n,
+				Limit: n,
+			},
+			Size: n,
+		},
 		"retrieve groups with existing metadata": {
 			Metadata: things.PageMetadata{
 				Total:    metaNum,

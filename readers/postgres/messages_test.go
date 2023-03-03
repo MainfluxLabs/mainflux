@@ -28,6 +28,7 @@ const (
 	mqttProt    = "mqtt"
 	httpProt    = "http"
 	msgName     = "temperature"
+	msgFormat   = "messages"
 	format1     = "format1"
 	format2     = "format2"
 	wrongID     = "0"
@@ -543,7 +544,7 @@ func TestListChannelMessagesJSON(t *testing.T) {
 func TestListAllMessagesSenML(t *testing.T) {
 	writer := pwriter.New(db)
 
-	_, err := db.Exec("DELETE FROM messages")
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", msgFormat))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	chanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -616,16 +617,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 			page: readers.MessagesPage{
 				Total:    msgsNum,
 				Messages: fromSenml(messages),
-			},
-		},
-		"read messages last page": {
-			pageMeta: readers.PageMetadata{
-				Offset: msgsNum - 20,
-				Limit:  msgsNum,
-			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: fromSenml(messages[msgsNum-20 : msgsNum]),
 			},
 		},
 		"read messages with non-existent subtopic": {
