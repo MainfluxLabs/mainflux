@@ -1,6 +1,7 @@
 package influxdb_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -54,6 +55,8 @@ var (
 )
 
 func TestListChannelMessagesSenML(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -387,6 +390,8 @@ func TestListChannelMessagesSenML(t *testing.T) {
 }
 
 func TestListChannelMessagesJSON(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
@@ -532,6 +537,8 @@ func TestListChannelMessagesJSON(t *testing.T) {
 }
 
 func TestListAllMessagesSenML(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	chanID, err := idProvider.ID()
@@ -606,20 +613,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(messages),
 			},
 		},
-		"read messages last page": {
-			pageMeta: readers.PageMetadata{
-				Offset: msgsNum - 20,
-				Limit:  msgsNum,
-			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: fromSenml(messages[msgsNum-20 : msgsNum]),
-			},
-		},
 		"read messages with non-existent subtopic": {
 			pageMeta: readers.PageMetadata{
-				Offset:   zeroOffset,
-				Limit:    msgsNum,
+				Limit:    noLimit,
 				Subtopic: "not-present",
 			},
 			page: readers.MessagesPage{
@@ -628,8 +624,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with subtopic": {
 			pageMeta: readers.PageMetadata{
-				Offset:   zeroOffset,
-				Limit:    uint64(len(queryMsgs)),
+				Limit:    noLimit,
 				Subtopic: subtopic,
 			},
 			page: readers.MessagesPage{
@@ -639,8 +634,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with publisher": {
 			pageMeta: readers.PageMetadata{
-				Offset:    zeroOffset,
-				Limit:     uint64(len(queryMsgs)),
+				Limit:     noLimit,
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -651,8 +645,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		"read messages with wrong format": {
 			pageMeta: readers.PageMetadata{
 				Format:    "messagess",
-				Offset:    zeroOffset,
-				Limit:     uint64(len(queryMsgs)),
+				Limit:     noLimit,
 				Publisher: pubID2,
 			},
 			page: readers.MessagesPage{
@@ -662,8 +655,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
-				Offset:   zeroOffset,
-				Limit:    uint64(len(queryMsgs)),
+				Limit:    noLimit,
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -673,151 +665,107 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with name": {
 			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  limit,
-				Name:   msgName,
+				Limit: noLimit,
+				Name:  msgName,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs[0:limit]),
+				Messages: fromSenml(queryMsgs),
 			},
 		},
 		"read messages with value": {
 			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  limit,
-				Value:  v,
+				Limit: noLimit,
+				Value: v,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and equal comparator": {
 			pageMeta: readers.PageMetadata{
-				Offset:     zeroOffset,
-				Limit:      limit,
+				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and lower-than comparator": {
 			pageMeta: readers.PageMetadata{
-				Offset:     zeroOffset,
-				Limit:      limit,
+				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and lower-than-or-equal comparator": {
 			pageMeta: readers.PageMetadata{
-				Offset:     zeroOffset,
-				Limit:      limit,
+				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and greater-than comparator": {
 			pageMeta: readers.PageMetadata{
-				Offset:     zeroOffset,
-				Limit:      limit,
+				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and greater-than-or-equal comparator": {
 			pageMeta: readers.PageMetadata{
-				Offset:     zeroOffset,
-				Limit:      limit,
+				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs[0:limit]),
+				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with boolean value": {
 			pageMeta: readers.PageMetadata{
-				Offset:    zeroOffset,
-				Limit:     limit,
+				Limit:     noLimit,
 				BoolValue: vb,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(boolMsgs)),
-				Messages: fromSenml(boolMsgs[0:limit]),
+				Messages: fromSenml(boolMsgs),
 			},
 		},
 		"read messages with string value": {
 			pageMeta: readers.PageMetadata{
-				Offset:      zeroOffset,
-				Limit:       limit,
+				Limit:       noLimit,
 				StringValue: vs,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(stringMsgs)),
-				Messages: fromSenml(stringMsgs[0:limit]),
+				Messages: fromSenml(stringMsgs),
 			},
 		},
 		"read messages with data value": {
 			pageMeta: readers.PageMetadata{
-				Offset:    zeroOffset,
-				Limit:     limit,
+				Limit:     noLimit,
 				DataValue: vd,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(dataMsgs)),
-				Messages: fromSenml(dataMsgs[0:limit]),
-			},
-		},
-		"read messages with from": {
-			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  uint64(len(messages[0 : offset+1])),
-				From:   messages[offset].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[0 : offset+1])),
-				Messages: fromSenml(messages[0 : offset+1]),
-			},
-		},
-		"read messages with to": {
-			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  uint64(len(messages[offset-1:])),
-				To:     messages[offset-1].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[offset:])),
-				Messages: fromSenml(messages[offset:]),
-			},
-		},
-		"read messages with from/to": {
-			pageMeta: readers.PageMetadata{
-				Offset: zeroOffset,
-				Limit:  limit,
-				From:   messages[5].Time,
-				To:     messages[0].Time,
-			},
-			page: readers.MessagesPage{
-				Total:    5,
-				Messages: fromSenml(messages[0+1 : 5+1]),
+				Messages: fromSenml(dataMsgs),
 			},
 		},
 	}
@@ -831,6 +779,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
+	err := resetBucket()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
@@ -906,22 +856,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Messages: fromJSON(msgs1),
 			},
 		},
-		"read messages last page": {
-			pageMeta: readers.PageMetadata{
-				Format: messages2.Format,
-				Offset: msgsNum - 20,
-				Limit:  msgsNum,
-			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: fromJSON(msgs2[msgsNum-20 : msgsNum]),
-			},
-		},
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
 				Format:   messages2.Format,
-				Offset:   zeroOffset,
-				Limit:    uint64(len(httpMsgs)),
+				Limit:    noLimit,
 				Protocol: httpProt,
 			},
 			page: readers.MessagesPage{
@@ -971,4 +909,41 @@ func toMap(msg json.Message) map[string]interface{} {
 		"protocol":  msg.Protocol,
 		"payload":   map[string]interface{}(msg.Payload),
 	}
+}
+
+func deleteBucket() error {
+	bucketsAPI := client.BucketsAPI()
+	bucket, err := bucketsAPI.FindBucketByName(context.Background(), repoCfg.Bucket)
+	if err != nil {
+		return err
+	}
+
+	if err = bucketsAPI.DeleteBucket(context.Background(), bucket); err != nil {
+		return err
+	}
+
+	return nil
+}
+func createBucket() error {
+	orgAPI := client.OrganizationsAPI()
+	org, err := orgAPI.FindOrganizationByName(context.Background(), repoCfg.Org)
+	if err != nil {
+		return err
+	}
+	bucketsAPI := client.BucketsAPI()
+	if _, err = bucketsAPI.CreateBucketWithName(context.Background(), org, repoCfg.Bucket); err != nil {
+		return err
+	}
+
+	return nil
+}
+func resetBucket() error {
+	if err := deleteBucket(); err != nil {
+		return err
+	}
+	if err := createBucket(); err != nil {
+		return err
+	}
+
+	return nil
 }

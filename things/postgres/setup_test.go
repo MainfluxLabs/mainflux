@@ -8,6 +8,7 @@ package postgres_test
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -69,9 +70,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not setup test DB connection: %s", err)
 	}
 
+	code := m.Run()
+
 	// Defers will not be run when using os.Exit
 	db.Close()
 	if err := pool.Purge(container); err != nil {
 		log.Fatalf("Could not purge container: %s", err)
 	}
+
+	os.Exit(code)
 }

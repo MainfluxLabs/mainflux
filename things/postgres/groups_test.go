@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
 	"github.com/stretchr/testify/assert"
@@ -23,16 +22,14 @@ const (
 )
 
 var (
-	invalidName1 = strings.Repeat("m", maxNameSize+1)
-	invalidDesc  = strings.Repeat("m", maxDescSize+1)
-	metadata     = things.GroupMetadata{
+	invalidDesc = strings.Repeat("m", maxDescSize+1)
+	metadata    = things.GroupMetadata{
 		"admin": "true",
 	}
-	ulidProvider = ulid.New()
 )
 
 func generateGroupID(t *testing.T) string {
-	grpID, err := ulidProvider.ID()
+	grpID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	return grpID
 }
@@ -73,7 +70,7 @@ func TestGroupSave(t *testing.T) {
 		{
 			desc: "create group with invalid name",
 			group: things.Group{
-				ID:      generateGroupID(t),
+				ID:      grpID,
 				OwnerID: usrID,
 				Name:    invalidName,
 			},
@@ -82,7 +79,7 @@ func TestGroupSave(t *testing.T) {
 		{
 			desc: "create group with invalid description",
 			group: things.Group{
-				ID:          generateGroupID(t),
+				ID:          grpID,
 				OwnerID:     usrID,
 				Name:        groupName,
 				Description: invalidDesc,
@@ -155,6 +152,9 @@ func TestGroupUpdate(t *testing.T) {
 	uid, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	wrongUid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	creationTime := time.Now().UTC()
 	updateTime := time.Now().UTC()
 	groupID := generateGroupID(t)
@@ -201,7 +201,7 @@ func TestGroupUpdate(t *testing.T) {
 		{
 			desc: "update group for non-existing id",
 			groupUpdate: things.Group{
-				ID:   "wrong",
+				ID:   wrongUid,
 				Name: groupName + "-2",
 			},
 			err: errors.ErrUpdateEntity,
@@ -234,7 +234,7 @@ func TestGroupUpdate(t *testing.T) {
 	}
 }
 
-func TestGroupDelete(t *testing.T) {
+func TestGroupRemove(t *testing.T) {
 	t.Cleanup(func() { cleanUp(t) })
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepo(dbMiddleware)
@@ -243,7 +243,7 @@ func TestGroupDelete(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	creationTime := time.Now().UTC()
-	groupChild1 := things.Group{
+	group1 := things.Group{
 		ID:        generateGroupID(t),
 		Name:      groupName + "child1",
 		OwnerID:   uid,
@@ -252,7 +252,7 @@ func TestGroupDelete(t *testing.T) {
 	}
 
 	creationTime = time.Now().UTC()
-	groupChild2 := things.Group{
+	group2 := things.Group{
 		ID:        generateGroupID(t),
 		Name:      groupName + "child2",
 		OwnerID:   uid,
@@ -260,23 +260,26 @@ func TestGroupDelete(t *testing.T) {
 		UpdatedAt: creationTime,
 	}
 
-	groupChild1, err = groupRepo.Save(context.Background(), groupChild1)
+	group1, err = groupRepo.Save(context.Background(), group1)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	groupChild2, err = groupRepo.Save(context.Background(), groupChild2)
+	group2, err = groupRepo.Save(context.Background(), group2)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
 	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("thing id create unexpected error: %s", err))
 
-	err = groupRepo.AssignMember(context.Background(), groupChild1.ID, "things", thingID)
+	err = groupRepo.AssignMember(context.Background(), group1.ID, thingID)
 	require.Nil(t, err, fmt.Sprintf("thing assign got unexpected error: %s", err))
 
-	err = groupRepo.Remove(context.Background(), groupChild2.ID)
+	err = groupRepo.Remove(context.Background(), group1.ID)
+	assert.True(t, errors.Contains(err, things.ErrGroupNotEmpty), fmt.Sprintf("delete non empty group: expected %v got %v\n", things.ErrGroupNotEmpty, err))
+
+	err = groupRepo.Remove(context.Background(), group2.ID)
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
 }
 
-func TestRetrieveAll(t *testing.T) {
+func TestRetrieveAllGroups(t *testing.T) {
 	t.Cleanup(func() { cleanUp(t) })
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepo(dbMiddleware)
@@ -388,7 +391,7 @@ func TestAssign(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("member assign save unexpected error: %s", err))
 	assert.True(t, mp.Total == 1, fmt.Sprintf("retrieve members of a group: expected %d got %d\n", 1, mp.Total))
 
-	err = groupRepo.AssignMember(context.Background(), group.ID, "things", mid)
+	err = groupRepo.AssignMember(context.Background(), group.ID, mid)
 	assert.True(t, errors.Contains(err, things.ErrMemberAlreadyAssigned), fmt.Sprintf("assign member again: expected %v got %v\n", things.ErrMemberAlreadyAssigned, err))
 }
 

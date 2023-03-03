@@ -56,7 +56,11 @@ func TestMain(m *testing.M) {
 		testLog.Error(fmt.Sprintf("Could not connect to docker: %s", err))
 	}
 
+	code := m.Run()
+
 	if err := pool.Purge(container); err != nil {
 		testLog.Error(fmt.Sprintf("Could not purge container: %s", err))
 	}
+
+	os.Exit(code)
 }
