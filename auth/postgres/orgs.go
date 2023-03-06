@@ -173,7 +173,7 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, mq)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, whereq)
 
 	dbPage, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
