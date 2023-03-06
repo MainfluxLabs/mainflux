@@ -88,7 +88,7 @@ func TestListChannelMessagesSenML(t *testing.T) {
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = float64(now)/float64(1e9) - 10*float64(i)
+		msg.Time = float64(now)/float64(1e9) - float64(i)
 
 		count := i % valueFields
 		switch count {
@@ -568,7 +568,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = float64(now)/float64(1e9) - 10*float64(i)
+		msg.Time = float64(now)/float64(1e9) - float64(i)
 
 		count := i % valueFields
 		switch count {
