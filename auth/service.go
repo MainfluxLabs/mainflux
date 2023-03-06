@@ -279,7 +279,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	ulid, err := svc.idProvider.ID()
+	id, err := svc.idProvider.ID()
 	if err != nil {
 		return Org{}, err
 	}
@@ -287,7 +287,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 	timestamp := getTimestmap()
 
 	g := Org{
-		ID:          ulid,
+		ID:          id,
 		OwnerID:     user.ID,
 		Name:        org.Name,
 		Description: org.Description,
