@@ -141,4 +141,7 @@ type OrgRepository interface {
 
 	// RetrieveOrgGroups retrieves groups assigned to an org identified by orgID.
 	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
+
+	// HasMemberByID indicates if a member is assigned in an org.
+	HasMemberByID(ctx context.Context, orgID, memberID string) error
 }

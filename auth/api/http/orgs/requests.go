@@ -117,13 +117,13 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type assignMembersReq struct {
+type membersReq struct {
 	token     string
 	orgID     string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req assignMembersReq) validate() error {
+func (req membersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -139,29 +139,13 @@ func (req assignMembersReq) validate() error {
 	return nil
 }
 
-type assignGroupsReq struct {
+type groupsReq struct {
 	token    string
 	orgID    string
 	GroupIDs []string `json:"group_ids"`
 }
 
-func (req assignGroupsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.GroupIDs) < 0 || req.orgID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type unassignOrgReq struct {
-	assignMembersReq
-}
-
-func (req unassignOrgReq) validate() error {
+func (req groupsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -170,7 +154,7 @@ func (req unassignOrgReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.MemberIDs) == 0 {
+	if len(req.GroupIDs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -149,9 +149,10 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 }
 
 func (svc service) Authorize(ctx context.Context, pr PolicyReq) error {
-	if pr.Object == authoritiesObject && pr.Relation == memberRelation && pr.Subject != svc.adminEmail {
-		return errors.ErrAuthorization
-	}
+	// TODO: Implement properly Authorize method
+	// if pr.Object == authoritiesObject && pr.Relation == memberRelation && pr.Subject != svc.adminEmail {
+	//	return errors.ErrAuthorization
+	// }
 	return nil
 }
 
@@ -347,7 +348,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 }
 
 func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
-	owner, err := svc.Identify(ctx, token)
+	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return Org{}, err
 	}
@@ -357,8 +358,8 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 		return Org{}, err
 	}
 
-	if org.OwnerID != owner.ID {
-		return Org{}, errors.ErrAuthorization
+	if err := svc.orgs.HasMemberByID(ctx, id, user.ID); org.OwnerID != user.ID && err != nil {
+		return Org{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	return org, nil
@@ -399,24 +400,24 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 	return mp, nil
 }
 
-func (svc service) AssignGroups(ctx context.Context, token, orgID string, memberIDs ...string) error {
+func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error {
 	if _, err := svc.Identify(ctx, token); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.AssignGroups(ctx, orgID, groupIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) UnassignGroups(ctx context.Context, token string, orgID string, memberIDs ...string) error {
+func (svc service) UnassignGroups(ctx context.Context, token string, orgID string, groupIDs ...string) error {
 	if _, err := svc.Identify(ctx, token); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.UnassignGroups(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.UnassignGroups(ctx, orgID, groupIDs...); err != nil {
 		return err
 	}
 
@@ -424,13 +425,25 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 }
 
 func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgGroupsPage, error) {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
 		return OrgGroupsPage{}, err
 	}
+
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	if err != nil {
+		return OrgGroupsPage{}, err
+	}
+
+	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); org.OwnerID != user.ID && err != nil {
+		return OrgGroupsPage{}, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
 	mp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
 	if err != nil {
 		return OrgGroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
+
 	return mp, nil
 }
 

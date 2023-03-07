@@ -19,11 +19,12 @@ const (
 	retrieveByOwner    = "retrieve_by_owner"
 	orgMemberships     = "org_memberships"
 	orgMembers         = "org_members"
-	orgGroups          = "org_groups"
+	retrieveGroups     = "retrieve_groups"
 	assignOrgMembers   = "assign_org_members"
 	assignOrgGroups    = "assign_org_groups"
 	unassignOrgMembers = "unassign_org_members"
 	unassignOrgGroups  = "unassign_org_groups"
+	hasMember          = "has_member"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -130,9 +131,17 @@ func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID str
 }
 
 func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
-	span := createSpan(ctx, orm.tracer, orgGroups)
+	span := createSpan(ctx, orm.tracer, retrieveGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveGroups(ctx, orgID, pm)
+}
+
+func (orm orgRepositoryMiddleware) HasMemberByID(ctx context.Context, orgID, memberID string) error {
+	span := createSpan(ctx, orm.tracer, hasMember)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.HasMemberByID(ctx, orgID, memberID)
 }
