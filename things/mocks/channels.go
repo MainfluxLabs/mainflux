@@ -293,11 +293,13 @@ func (crm *channelRepositoryMock) RetrieveAllConnections(ctx context.Context) ([
 	defer crm.mu.Unlock()
 	var conns []things.Connection
 
-	for _, con := range crm.cconns {
+	for thingID, con := range crm.cconns {
 		for _, v := range con {
 			con := things.Connection{
 				ChannelID:    v.ID,
 				ChannelOwner: v.Owner,
+				ThingID:      thingID,
+				ThingOwner:   v.Owner,
 			}
 			conns = append(conns, con)
 		}
