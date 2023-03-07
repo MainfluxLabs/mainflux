@@ -60,7 +60,7 @@ func (grm groupRepositoryMiddleware) Remove(ctx context.Context, id string) erro
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAllGroupsOp)
+	span := createSpan(ctx, grm.tracer, retrieveAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
