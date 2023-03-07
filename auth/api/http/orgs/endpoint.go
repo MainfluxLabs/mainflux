@@ -135,7 +135,7 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 
 func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignMembersReq)
+		req := request.(membersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(unassignOrgReq)
+		req := request.(membersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -163,7 +163,7 @@ func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listOrgMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listOrgMembersReq)
 		if err := req.validate(); err != nil {
@@ -186,12 +186,12 @@ func listOrgMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func assignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignMembersReq)
+		req := request.(groupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.AssignGroups(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+		if err := svc.AssignGroups(ctx, req.token, req.orgID, req.GroupIDs...); err != nil {
 			return nil, err
 		}
 
@@ -201,12 +201,12 @@ func assignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func unassignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(unassignOrgReq)
+		req := request.(groupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.UnassignGroups(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+		if err := svc.UnassignGroups(ctx, req.token, req.orgID, req.GroupIDs...); err != nil {
 			return nil, err
 		}
 
@@ -214,7 +214,7 @@ func unassignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
+func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listOrgGroupsReq)
 		if err := req.validate(); err != nil {
