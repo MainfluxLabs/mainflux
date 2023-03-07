@@ -11,7 +11,7 @@ const (
 	saveGroupOp           = "save_group"
 	updateGroupOp         = "update_group"
 	removeGroupOp         = "remove_group"
-	retrieveAllGroupsOp   = "retrieve_all_groups"
+	retrieveAllOp         = "retrieve_all"
 	retrieveGroupByIDOp   = "retrieve_group_by_id"
 	retrieveByOwnerOp     = "retrieve_by_owner"
 	retrieveMembershipsOp = "retrieve_memberships"
