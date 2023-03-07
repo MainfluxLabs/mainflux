@@ -551,8 +551,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
+		return err
+	}
+
+	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
 		return err
 	}
 
