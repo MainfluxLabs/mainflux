@@ -85,4 +85,7 @@ type GroupRepository interface {
 
 	// UnassignMember removes a member from a group
 	UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error
+
+	// RetrieveAll retrieves all groups.
+	RetrieveAll(ctx context.Context) ([]Group, error)
 }

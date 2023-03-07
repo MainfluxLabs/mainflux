@@ -248,6 +248,7 @@ func (res disconnectThingRes) Empty() bool {
 }
 
 type backupRes struct {
+	Groups      []things.Group      `json:"groups"`
 	Things      []things.Thing      `json:"things"`
 	Channels    []things.Channel    `json:"channels"`
 	Connections []things.Connection `json:"connections"`

@@ -12,6 +12,11 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 )
 
+const (
+	memberRelationKey = "member"
+	authoritiesObjKey = "authorities"
+)
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -139,6 +144,7 @@ type PageMetadata struct {
 }
 
 type Backup struct {
+	Groups      []Group
 	Things      []Thing
 	Channels    []Channel
 	Connections []Connection
@@ -507,7 +513,16 @@ func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) 
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Backup{}, err
+	}
+
+	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+		return Backup{}, err
+	}
+
+	groups, err := ts.groups.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -528,6 +543,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
+		Groups:      groups,
 		Things:      things,
 		Channels:    channels,
 		Connections: connections,
@@ -535,9 +551,20 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
+	}
+
+	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+		return err
+	}
+
+	for _, group := range backup.Groups {
+		_, err = ts.groups.Save(ctx, group)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = ts.things.Save(ctx, backup.Things...)
@@ -683,4 +710,20 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 		return GroupPage{}, err
 	}
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
+}
+
+func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
+	req := &mainflux.AuthorizeReq{
+		Sub: subject,
+		Obj: object,
+		Act: relation,
+	}
+	res, err := ts.auth.Authorize(ctx, req)
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
+	}
+	return nil
 }

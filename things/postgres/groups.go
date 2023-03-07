@@ -151,6 +151,32 @@ func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 	return nil
 }
 
+func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
+	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups`
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	groups := []things.Group{}
+	for rows.Next() {
+		dbg := dbGroup{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gr, err := toGroup(dbg)
+		if err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		groups = append(groups, gr)
+	}
+
+	return groups, nil
+}
+
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	dbu := dbGroup{
 		ID: id,

@@ -83,6 +83,18 @@ func (grm *groupRepositoryMock) Remove(ctx context.Context, id string) error {
 
 }
 
+func (grm *groupRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Group, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var items []things.Group
+	for _, g := range grm.groups {
+		items = append(items, g)
+	}
+
+	return items, nil
+}
+
 func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()

@@ -6,6 +6,7 @@ package things_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1329,6 +1330,20 @@ func TestIdentify(t *testing.T) {
 func TestBackup(t *testing.T) {
 	svc := newService(map[string]string{token: adminEmail})
 
+	var groups []things.Group
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		gr := things.Group{
+			Name:        "test-group-" + num,
+			Description: "test group desc",
+		}
+
+		grp, err := svc.CreateGroup(context.Background(), token, gr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		groups = append(groups, grp)
+	}
+
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -1366,6 +1381,7 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := things.Backup{
+		Groups:      groups,
 		Things:      ths,
 		Channels:    chsc,
 		Connections: connections,
@@ -1395,9 +1411,11 @@ func TestBackup(t *testing.T) {
 
 	for desc, tc := range cases {
 		backup, err := svc.Backup(context.Background(), tc.token)
+		groupSize := len(backup.Groups)
 		thingsSize := len(backup.Things)
 		channelsSize := len(backup.Channels)
 		connectionsSize := len(backup.Connections)
+		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
@@ -1416,6 +1434,18 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var groups []things.Group
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		gr := things.Group{
+			ID:          fmt.Sprintf("%s%012d", prefix, i+1),
+			Name:        "test-group-" + num,
+			Description: "test group desc",
+		}
+
+		groups = append(groups, gr)
+	}
 
 	ths := []things.Thing{
 		{
@@ -1453,6 +1483,7 @@ func TestRestore(t *testing.T) {
 	}
 
 	backup := things.Backup{
+		Groups:      groups,
 		Things:      ths,
 		Channels:    chs,
 		Connections: connections,
