@@ -168,6 +168,9 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 
 func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	whereq := "WHERE owner_id = :owner_id"
+	if ownerID == "" {
+		whereq = ""
+	}
 
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
 	if err != nil {

@@ -12,6 +12,11 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 )
 
+const (
+	memberRelationKey = "member"
+	authoritiesObjKey = "authorities"
+)
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -513,8 +518,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
+	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+		return Backup{}, err
+	}
+
 	pm := PageMetadata{}
-	gp, err := ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
+	gp, err := ts.groups.RetrieveByOwner(ctx, "", pm)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -698,4 +707,34 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 		return GroupPage{}, err
 	}
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
+}
+
+type userIdentity struct {
+	id    string
+	email string
+}
+
+func (ts *thingsService) identify(ctx context.Context, token string) (userIdentity, error) {
+	identity, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return userIdentity{identity.Id, identity.Email}, nil
+}
+
+func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
+	req := &mainflux.AuthorizeReq{
+		Sub: subject,
+		Obj: object,
+		Act: relation,
+	}
+	res, err := ts.auth.Authorize(ctx, req)
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+	if !res.GetAuthorized() {
+		return errors.ErrAuthorization
+	}
+	return nil
 }
