@@ -139,6 +139,7 @@ type PageMetadata struct {
 }
 
 type Backup struct {
+	Groups      []Group
 	Things      []Thing
 	Channels    []Channel
 	Connections []Connection
@@ -507,7 +508,13 @@ func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) 
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Backup{}, err
+	}
+
+	pm := PageMetadata{}
+	gp, err := ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -528,6 +535,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
+		Groups:      gp.Groups,
 		Things:      things,
 		Channels:    channels,
 		Connections: connections,
@@ -538,6 +546,13 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
+	}
+
+	for _, group := range backup.Groups {
+		_, err = ts.groups.Save(ctx, group)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = ts.things.Save(ctx, backup.Things...)

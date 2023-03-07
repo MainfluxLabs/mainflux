@@ -2543,6 +2543,19 @@ func TestBackup(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	var groups []things.Group
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		gr := things.Group{
+			Name:        "test-group-" + num,
+			Description: "test group desc",
+		}
+		grp, err := svc.CreateGroup(context.Background(), token, gr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		groups = append(groups, grp)
+	}
+
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -2573,6 +2586,7 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := backupRes{
+		Groups:      groups,
 		Things:      ths,
 		Channels:    channels,
 		Connections: connections,
@@ -2623,7 +2637,9 @@ func TestBackup(t *testing.T) {
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res.Channels, body.Channels, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Channels, body.Channels))
+		//assert.ElementsMatch(t, tc.res.Connections, body.Connections, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Connections, body.Connections))
 		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
+		assert.ElementsMatch(t, tc.res.Groups, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Groups, body.Groups))
 	}
 }
 
@@ -2644,6 +2660,18 @@ func TestRestore(t *testing.T) {
 		Name:     nameKey,
 		Key:      thKey,
 		Metadata: map[string]interface{}{"test": "data"},
+	}
+
+	var groups []things.Group
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		gr := things.Group{
+			ID:          fmt.Sprintf("%s%012d", prefix, i+1),
+			Name:        "test-group-" + num,
+			Description: "test group desc",
+		}
+
+		groups = append(groups, gr)
 	}
 
 	channels := []things.Channel{}
@@ -2671,12 +2699,14 @@ func TestRestore(t *testing.T) {
 	}
 
 	type restoreReq struct {
+		Groups      []things.Group      `json:"groups"`
 		Things      []things.Thing      `json:"things"`
 		Channels    []things.Channel    `json:"channels"`
 		Connections []things.Connection `json:"connections"`
 	}
 
 	data := toJSON(restoreReq{
+		Groups:      groups,
 		Things:      []things.Thing{testThing},
 		Channels:    channels,
 		Connections: connections,
@@ -2770,6 +2800,7 @@ type channelsPageRes struct {
 }
 
 type backupRes struct {
+	Groups      []things.Group      `json:"groups"`
 	Things      []things.Thing      `json:"things"`
 	Channels    []things.Channel    `json:"channels"`
 	Connections []things.Connection `json:"connections"`

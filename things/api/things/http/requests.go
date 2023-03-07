@@ -301,6 +301,7 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token       string
+	Groups      []things.Group      `json:"groups"`
 	Things      []things.Thing      `json:"things"`
 	Channels    []things.Channel    `json:"channels"`
 	Connections []things.Connection `json:"connections"`
@@ -311,7 +312,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
+	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -461,5 +462,3 @@ func validateUUID(extID string) (err error) {
 
 	return nil
 }
-
-

@@ -472,6 +472,7 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return backupRes{
+			Groups:      backup.Groups,
 			Things:      backup.Things,
 			Channels:    backup.Channels,
 			Connections: backup.Connections,
@@ -487,6 +488,7 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		backup := things.Backup{
+			Groups:      req.Groups,
 			Things:      req.Things,
 			Channels:    req.Channels,
 			Connections: req.Connections,
