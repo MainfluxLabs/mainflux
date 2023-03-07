@@ -279,7 +279,7 @@ func TestGroupRemove(t *testing.T) {
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
 }
 
-func TestRetrieveAllGroups(t *testing.T) {
+func TestRetrieveByOwner(t *testing.T) {
 	t.Cleanup(func() { cleanUp(t) })
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepo(dbMiddleware)
@@ -352,6 +352,56 @@ func TestRetrieveAllGroups(t *testing.T) {
 		size := len(page.Groups)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Equal(t, tc.Metadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.Metadata.Total, page.Total))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestRetrieveAllGroups(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	metadata := things.PageMetadata{
+		Metadata: things.GroupMetadata{
+			"field": "value",
+		},
+	}
+
+	metaNum := uint64(3)
+
+	var n uint64 = 5
+	for i := uint64(0); i < n; i++ {
+		creationTime := time.Now().UTC()
+		group := things.Group{
+			ID:        generateGroupID(t),
+			Name:      fmt.Sprintf("%s-%d", groupName, i),
+			OwnerID:   uid,
+			CreatedAt: creationTime,
+			UpdatedAt: creationTime,
+		}
+		// Create Groups with metadata.
+		if i < metaNum {
+			group.Metadata = metadata.Metadata
+		}
+
+		_, err = groupRepo.Save(context.Background(), group)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	cases := map[string]struct {
+		Size uint64
+	}{
+		"retrieve all groups": {
+			Size: n,
+		},
+	}
+
+	for desc, tc := range cases {
+		gr, err := groupRepo.RetrieveAll(context.Background())
+		size := len(gr)
+		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}
 }

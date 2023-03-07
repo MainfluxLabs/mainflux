@@ -522,8 +522,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	pm := PageMetadata{}
-	gp, err := ts.groups.RetrieveByOwner(ctx, "", pm)
+	groups, err := ts.groups.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -544,7 +543,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Groups:      gp.Groups,
+		Groups:      groups,
 		Things:      things,
 		Channels:    channels,
 		Connections: connections,
