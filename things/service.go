@@ -712,20 +712,6 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
 
-type userIdentity struct {
-	id    string
-	email string
-}
-
-func (ts *thingsService) identify(ctx context.Context, token string) (userIdentity, error) {
-	identity, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	return userIdentity{identity.Id, identity.Email}, nil
-}
-
 func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
 	req := &mainflux.AuthorizeReq{
 		Sub: subject,
