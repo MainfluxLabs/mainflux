@@ -46,7 +46,7 @@ func (repo singleUserRepo) Identify(ctx context.Context, token *mainflux.Token, 
 }
 
 func (repo singleUserRepo) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *mainflux.AuthorizeRes, err error) {
-	if repo.email != req.Sub {
+	if repo.email != req.Email {
 		return &mainflux.AuthorizeRes{}, errUnsupported
 	}
 	return &mainflux.AuthorizeRes{Authorized: true}, nil

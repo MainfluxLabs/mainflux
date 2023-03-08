@@ -87,22 +87,12 @@ func (req membersReq) validate() error {
 // 2. object - an entity over which action will be executed
 // 3. action - type of action that will be executed (read/write)
 type authReq struct {
-	Sub string
-	Obj string
-	Act string
+	Email string
 }
 
 func (req authReq) validate() error {
-	if req.Sub == "" {
-		return apiutil.ErrMissingPolicySub
-	}
-
-	if req.Obj == "" {
-		return apiutil.ErrMissingPolicyObj
-	}
-
-	if req.Act == "" {
-		return apiutil.ErrMissingPolicyAct
+	if req.Email == "" {
+		return apiutil.ErrMissingEmail
 	}
 
 	return nil

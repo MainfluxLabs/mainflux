@@ -48,18 +48,6 @@ var (
 	// ErrEmptyList indicates that entity data is empty.
 	ErrEmptyList = errors.New("empty list provided")
 
-	// ErrMalformedPolicy indicates that policies are malformed.
-	ErrMalformedPolicy = errors.New("falmormed policy")
-
-	// ErrMissingPolicySub indicates that policies are subject.
-	ErrMissingPolicySub = errors.New("falmormed policy subject")
-
-	// ErrMissingPolicyObj indicates missing policies object.
-	ErrMissingPolicyObj = errors.New("falmormed policy object")
-
-	// ErrMissingPolicyAct indicates missing policies action.
-	ErrMissingPolicyAct = errors.New("falmormed policy action")
-
 	// ErrMissingCertData indicates missing cert data (ttl, key_type or key_bits).
 	ErrMissingCertData = errors.New("missing certificate data")
 

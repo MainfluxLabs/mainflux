@@ -14,9 +14,6 @@ import (
 )
 
 const (
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
-	usersObjKey       = "users"
 	EnabledStatusKey  = "enabled"
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
@@ -253,7 +250,7 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return UserPage{}, err
 	}
 
@@ -396,11 +393,9 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	return userIdentity{identity.Id, identity.Email}, nil
 }
 
-func (svc usersService) authorize(ctx context.Context, subject, object, relation string) error {
+func (svc usersService) authorize(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
+		Email: email,
 	}
 	res, err := svc.auth.Authorize(ctx, req)
 	if err != nil {

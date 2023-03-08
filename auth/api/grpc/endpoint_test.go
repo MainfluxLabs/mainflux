@@ -43,10 +43,6 @@ var svc auth.Service
 func newService() auth.Service {
 	repo := mocks.NewKeyRepository()
 	idProvider := uuid.NewMock()
-
-	mockAuthzDB := map[string][]mocks.MockSubjectSet{}
-	mockAuthzDB[id] = append(mockAuthzDB[id], mocks.MockSubjectSet{Object: authoritiesObj, Relation: memberRelation})
-
 	t := jwt.New(secret)
 
 	return auth.New(nil, repo, idProvider, t, loginDuration, email)
