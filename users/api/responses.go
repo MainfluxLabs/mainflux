@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/users"
 )
 
 var (
@@ -161,5 +162,35 @@ func (res deleteRes) Headers() map[string]string {
 }
 
 func (res deleteRes) Empty() bool {
+	return true
+}
+
+type backupRes struct {
+	Users []users.User `json:"users"`
+}
+
+func (res backupRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupRes) Empty() bool {
+	return false
+}
+
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res restoreRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res restoreRes) Empty() bool {
 	return true
 }

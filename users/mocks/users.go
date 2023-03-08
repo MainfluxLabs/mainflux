@@ -92,7 +92,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	return val, nil
 }
 
-func (urm *userRepositoryMock) RetrieveAll(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
+func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
@@ -132,6 +132,18 @@ func (urm *userRepositoryMock) RetrieveAll(ctx context.Context, status string, o
 	up.Total = uint64(i)
 
 	return up, nil
+}
+
+func (urm *userRepositoryMock) RetrieveAll(ctx context.Context) ([]users.User, error) {
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	var users []users.User
+	for _, user := range mockUsers {
+		users = append(users, user)
+	}
+	
+	return users, nil
 }
 
 func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password string) error {

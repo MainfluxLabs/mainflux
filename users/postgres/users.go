@@ -131,7 +131,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
-func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
+func (ur userRepository) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", email)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -217,6 +217,33 @@ func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset,
 	}
 
 	return page, nil
+}
+
+func (ur userRepository) RetrieveAll(ctx context.Context) ([]users.User, error) {
+	q := `SELECT id, email, password, metadata, status FROM users`
+
+	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []users.User
+	for rows.Next() {
+		dbusr := dbUser{}
+		if err := rows.StructScan(&dbusr); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		user, err := toUser(dbusr)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, user)
+	}
+
+	return items, nil
 }
 
 func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {

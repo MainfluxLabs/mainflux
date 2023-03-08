@@ -92,6 +92,12 @@ type Service interface {
 
 	// DisableUser logically disables the user identified with the provided ID
 	DisableUser(ctx context.Context, token, id string) error
+
+	// Backup returns all users. Only accessible by admin.
+	Backup(ctx context.Context, token string) ([]User, error)
+
+	// Restore restores users from backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, users []User) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -257,7 +263,40 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	return svc.users.RetrieveAll(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)
+	return svc.users.RetrieveByIDs(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)
+}
+
+func (svc usersService) Backup(ctx context.Context, token string) ([]User, error) {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return []User{}, err
+	}
+
+	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
+		return []User{}, err
+	}
+
+	return svc.users.RetrieveAll(ctx)
+}
+
+func (svc usersService) Restore(ctx context.Context, token string, users []User) error {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		_, err := svc.users.Save(ctx, user)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc usersService) UpdateUser(ctx context.Context, token string, u User) error {
