@@ -192,6 +192,71 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	return toGroup(dbu)
 }
 
+func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
+	if len(groupIDs) == 0 {
+		return things.GroupPage{}, nil
+	}
+
+	nq, name := getNameQuery(pm.Name)
+	og := getOrderQuery(pm.Order)
+	dq := getDirQuery(pm.Dir)
+	idq := fmt.Sprintf("WHERE id IN ('%s') ", strings.Join(groupIDs, "','"))
+
+	m, mq, err := getMetadataQuery(pm.Metadata)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	q := fmt.Sprintf(`SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups %s%s%s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, idq, mq, nq, og, dq)
+
+	params := map[string]interface{}{
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
+		"name":   name,
+		"meta":   m,
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items := []things.Group{}
+	for rows.Next() {
+		dbg := dbGroup{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gr, err := toGroup(dbg)
+		if err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		items = append(items, gr)
+	}
+
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s%s%s`, idq, mq, nq)
+
+	total, err := total(ctx, gr.db, cq, params)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := things.GroupPage{
+		Groups: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Name:   pm.Name,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
+	}
+
+	return page, nil
+}
+
 func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	whereq := "WHERE owner_id = :owner_id"
 

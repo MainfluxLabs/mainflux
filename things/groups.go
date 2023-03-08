@@ -71,6 +71,9 @@ type GroupRepository interface {
 	// RetrieveByID retrieves group by its id
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
+	// RetrieveByIDs retrieves groups by their ids
+	RetrieveByIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (GroupPage, error)
+
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
 
