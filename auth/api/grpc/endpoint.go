@@ -77,8 +77,6 @@ func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		println("HEREEE accessGroupEndpoint ", req.Token)
-
 		if err := svc.CanAccessGroup(ctx, req.Token, req.GroupID); err != nil {
 			return emptyRes{}, err
 		}

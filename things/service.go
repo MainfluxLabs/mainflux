@@ -654,7 +654,6 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	println("HEREEE VIEW GROUP ", token)
 	_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: id})
 	if user.GetId() != gr.OwnerID && err != nil {
 		return Group{}, err
