@@ -16,7 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const usersNum = 101
+const (
+	usersNum   = 101
+	usersTable = "users"
+)
 
 var idProvider = uuid.New()
 
@@ -249,6 +252,9 @@ func TestRetrieveByIDs(t *testing.T) {
 }
 
 func TestRetrieveAll(t *testing.T) {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", usersTable))
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	dbMiddleware := postgres.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 	metaNum := uint64(2)
