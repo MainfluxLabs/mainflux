@@ -13,11 +13,14 @@ import (
 )
 
 const (
-	saveOp            = "save_op"
+	saveOp            = "save"
+	updateOp          = "update"
 	retrieveByEmailOp = "retrieve_by_email"
+	retrieveByIDOp    = "retrieve_by_id"
+	retrieveByIDsOp   = "retrieve_by_ids"
 	retrieveAllOp     = "retrieve_all"
-	updatePassword    = "update_password"
-	members           = "members"
+	updatePasswordOp  = "update_password"
+	changeStatusOp    = "change_status"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -45,7 +48,7 @@ func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (
 }
 
 func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
-	span := createSpan(ctx, urm.tracer, saveOp)
+	span := createSpan(ctx, urm.tracer, updateOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -61,7 +64,7 @@ func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email s
 }
 
 func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveByEmailOp)
+	span := createSpan(ctx, urm.tracer, retrieveByIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -69,7 +72,7 @@ func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 }
 
 func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, password string) error {
-	span := createSpan(ctx, urm.tracer, updatePassword)
+	span := createSpan(ctx, urm.tracer, updatePasswordOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -77,7 +80,7 @@ func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, p
 }
 
 func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
-	span := createSpan(ctx, urm.tracer, members)
+	span := createSpan(ctx, urm.tracer, retrieveByIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -93,7 +96,7 @@ func (urm userRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]users.Us
 }
 
 func (urm userRepositoryMiddleware) ChangeStatus(ctx context.Context, id, status string) error {
-	span := createSpan(ctx, urm.tracer, members)
+	span := createSpan(ctx, urm.tracer, changeStatusOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

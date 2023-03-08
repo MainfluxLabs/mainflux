@@ -255,7 +255,7 @@ func TestRetrieveAll(t *testing.T) {
 	var nUsers = uint64(usersNum)
 
 	meta := users.Metadata{
-		"admin": "true",
+		"field": "value",
 	}
 
 	var ids []string

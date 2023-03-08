@@ -220,7 +220,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, status string, offse
 }
 
 func (ur userRepository) RetrieveAll(ctx context.Context) ([]users.User, error) {
-	q := `SELECT id, email, password, metadata, status FROM users`
+	q := `SELECT id, email, password, metadata, status FROM users;`
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
