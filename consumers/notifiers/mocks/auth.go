@@ -6,9 +6,9 @@ package mocks
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -44,15 +44,7 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AddPolicy(ctx context.Context, in *mainflux.AddPolicyReq, opts ...grpc.CallOption) (*mainflux.AddPolicyRes, error) {
-	panic("not implemented")
-}
-
-func (svc authServiceMock) DeletePolicy(ctx context.Context, in *mainflux.DeletePolicyReq, opts ...grpc.CallOption) (*mainflux.DeletePolicyRes, error) {
-	panic("not implemented")
-}
-
-func (svc authServiceMock) ListPolicies(ctx context.Context, in *mainflux.ListPoliciesReq, opts ...grpc.CallOption) (*mainflux.ListPoliciesRes, error) {
+func (svc authServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
 

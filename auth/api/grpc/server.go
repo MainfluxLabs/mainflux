@@ -21,14 +21,14 @@ import (
 var _ mainflux.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue        kitgrpc.Handler
-	identify     kitgrpc.Handler
-	authorize    kitgrpc.Handler
-	addPolicy    kitgrpc.Handler
-	deletePolicy kitgrpc.Handler
-	listPolicies kitgrpc.Handler
-	assign       kitgrpc.Handler
-	members      kitgrpc.Handler
+	issue          kitgrpc.Handler
+	identify       kitgrpc.Handler
+	authorize      kitgrpc.Handler
+	addPolicy      kitgrpc.Handler
+	deletePolicy   kitgrpc.Handler
+	canAccessGroup kitgrpc.Handler
+	assign         kitgrpc.Handler
+	members        kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -49,20 +49,10 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			decodeAuthorizeRequest,
 			encodeAuthorizeResponse,
 		),
-		addPolicy: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "add_policy")(addPolicyEndpoint(svc)),
-			decodeAddPolicyRequest,
-			encodeAddPolicyResponse,
-		),
-		deletePolicy: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "delete_policy")(deletePolicyEndpoint(svc)),
-			decodeDeletePolicyRequest,
-			encodeDeletePolicyResponse,
-		),
-		listPolicies: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "list_policies")(listPoliciesEndpoint(svc)),
-			decodeListPoliciesRequest,
-			encodeListPoliciesResponse,
+		canAccessGroup: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_access_group")(accessGroupEndpoint(svc)),
+			decodeAccessGroupRequest,
+			encodeEmptyResponse,
 		),
 		assign: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
@@ -101,28 +91,12 @@ func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) 
 	return res.(*mainflux.AuthorizeRes), nil
 }
 
-func (s *grpcServer) AddPolicy(ctx context.Context, req *mainflux.AddPolicyReq) (*mainflux.AddPolicyRes, error) {
-	_, res, err := s.addPolicy.ServeGRPC(ctx, req)
+func (s *grpcServer) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq) (*empty.Empty, error) {
+	_, res, err := s.canAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*mainflux.AddPolicyRes), nil
-}
-
-func (s *grpcServer) DeletePolicy(ctx context.Context, req *mainflux.DeletePolicyReq) (*mainflux.DeletePolicyRes, error) {
-	_, res, err := s.deletePolicy.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-	return res.(*mainflux.DeletePolicyRes), nil
-}
-
-func (s *grpcServer) ListPolicies(ctx context.Context, req *mainflux.ListPoliciesReq) (*mainflux.ListPoliciesRes, error) {
-	_, res, err := s.listPolicies.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-	return res.(*mainflux.ListPoliciesRes), nil
+	return res.(*empty.Empty), nil
 }
 
 func (s *grpcServer) Assign(ctx context.Context, token *mainflux.Assignment) (*empty.Empty, error) {
@@ -171,39 +145,14 @@ func encodeAuthorizeResponse(_ context.Context, grpcRes interface{}) (interface{
 	return &mainflux.AuthorizeRes{Authorized: res.authorized}, nil
 }
 
-func decodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AddPolicyReq)
-	return policyReq{Sub: req.GetSub(), Obj: req.GetObj(), Act: req.GetAct()}, nil
-}
-
-func encodeAddPolicyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(addPolicyRes)
-	return &mainflux.AddPolicyRes{Authorized: res.authorized}, nil
-}
-
 func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.Token)
 	return assignReq{token: req.GetValue()}, nil
 }
 
-func decodeDeletePolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.DeletePolicyReq)
-	return policyReq{Sub: req.GetSub(), Obj: req.GetObj(), Act: req.GetAct()}, nil
-}
-
-func encodeDeletePolicyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(deletePolicyRes)
-	return &mainflux.DeletePolicyRes{Deleted: res.deleted}, nil
-}
-
-func decodeListPoliciesRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.ListPoliciesReq)
-	return listPoliciesReq{Sub: req.GetSub(), Obj: req.GetObj(), Act: req.GetAct()}, nil
-}
-
-func encodeListPoliciesResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(listPoliciesRes)
-	return &mainflux.ListPoliciesRes{Policies: res.policies}, nil
+func decodeAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.AccessGroupReq)
+	return accessGroupReq{Token: req.GetToken(), GroupID: req.GetGroupID()}, nil
 }
 
 func decodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

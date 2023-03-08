@@ -220,3 +220,12 @@ func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID s
 
 	return ms.svc.ListOrgGroups(ctx, token, groupID, pm)
 }
+
+func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_access_group").Add(1)
+		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanAccessGroup(ctx, token, groupID)
+}

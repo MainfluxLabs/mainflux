@@ -227,14 +227,8 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	id, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
-	_, err = auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{
-		Sub: id,
-		Act: memberRelationKey,
-		Obj: authoritiesObjKey,
-	})
-	require.Nil(t, err, fmt.Sprintf("adding policy for user got unexpected error: %s", err))
 
 	mfxTok, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))

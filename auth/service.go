@@ -465,3 +465,25 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
+
+func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve orgs where group is assigned
+	op, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	for _, org := range op.Orgs {
+		err := svc.orgs.HasMemberByID(ctx, org.ID, user.ID)
+		if err == nil {
+			return nil
+		}
+	}
+
+	return errors.ErrAuthorization
+}
