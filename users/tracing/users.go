@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	saveOp             = "save_op"
-	retrieveByEmailOp  = "retrieve_by_email"
-	retrieveAllUsersOp = "retrieve_all_users"
-	updatePassword     = "update_password"
-	members            = "members"
+	saveOp            = "save_op"
+	retrieveByEmailOp = "retrieve_by_email"
+	retrieveAllOp     = "retrieve_all"
+	updatePassword    = "update_password"
+	members           = "members"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -85,7 +85,7 @@ func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, status st
 }
 
 func (urm userRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveAllUsersOp)
+	span := createSpan(ctx, urm.tracer, retrieveAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
