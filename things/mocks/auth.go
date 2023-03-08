@@ -14,19 +14,13 @@ import (
 
 var _ mainflux.AuthServiceClient = (*authServiceMock)(nil)
 
-type MockSubjectSet struct {
-	Object   string
-	Relation string
-}
-
 type authServiceMock struct {
-	users    map[string]string
-	policies map[string][]MockSubjectSet
+	users map[string]string
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(users map[string]string, policies map[string][]MockSubjectSet) mainflux.AuthServiceClient {
-	return &authServiceMock{users, policies}
+func NewAuthService(users map[string]string) mainflux.AuthServiceClient {
+	return &authServiceMock{users}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
@@ -47,12 +41,11 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *mainflux.AuthorizeRes, err error) {
-	for _, policy := range svc.policies[req.GetSub()] {
-		if policy.Relation == req.GetAct() && policy.Object == req.GetObj() {
-			return &mainflux.AuthorizeRes{Authorized: true}, nil
-		}
+	if req.GetEmail() != "admin@example.com" {
+		return &mainflux.AuthorizeRes{Authorized: false}, errors.ErrAuthorization
 	}
-	return nil, errors.ErrAuthorization
+
+	return &mainflux.AuthorizeRes{Authorized: true}, nil
 }
 
 func (svc authServiceMock) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {

@@ -16,9 +16,6 @@ const (
 	idOrder      = "id"
 	ascDir       = "asc"
 	descDir      = "desc"
-	readPolicy   = "read"
-	writePolicy  = "write"
-	deletePolicy = "delete"
 )
 
 type createThingReq struct {

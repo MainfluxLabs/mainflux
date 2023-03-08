@@ -12,11 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 )
 
-const (
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
-)
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -518,7 +513,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := ts.authorize(ctx, user.Email); err != nil {
 		return Backup{}, err
 	}
 
@@ -556,7 +551,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := ts.authorize(ctx, user.Email); err != nil {
 		return err
 	}
 
@@ -713,11 +708,9 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
+func (ts *thingsService) authorize(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
+		Email: email,
 	}
 	res, err := ts.auth.Authorize(ctx, req)
 	if err != nil {

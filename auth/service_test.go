@@ -36,9 +36,6 @@ func newService() auth.Service {
 	repo := mocks.NewKeyRepository()
 	idProvider := uuid.NewMock()
 
-	mockAuthzDB := map[string][]mocks.MockSubjectSet{}
-	mockAuthzDB[id] = append(mockAuthzDB[id], mocks.MockSubjectSet{Object: authoritiesObj, Relation: memberRelation})
-
 	t := jwt.New(secret)
 	return auth.New(nil, repo, idProvider, t, loginDuration, email)
 }
@@ -305,26 +302,7 @@ func TestIdentify(t *testing.T) {
 func TestAuthorize(t *testing.T) {
 	svc := newService()
 
-	pr := auth.PolicyReq{Object: authoritiesObj, Relation: memberRelation, Subject: email}
+	pr := auth.AuthzReq{Email: email}
 	err := svc.Authorize(context.Background(), pr)
-	require.Nil(t, err, fmt.Sprintf("authorizing initial %v policy expected to succeed: %s", pr, err))
-}
-
-func TestAddPolicy(t *testing.T) {
-	svc := newService()
-
-	pr := auth.PolicyReq{Object: "obj", Relation: "rel", Subject: "sub"}
-	err := svc.AddPolicy(context.Background(), pr)
-	require.Nil(t, err, fmt.Sprintf("adding %v policy expected to succeed: %v", pr, err))
-
-	err = svc.Authorize(context.Background(), pr)
-	require.Nil(t, err, fmt.Sprintf("checking shared %v policy expected to be succeed: %#v", pr, err))
-}
-
-func TestDeletePolicy(t *testing.T) {
-	svc := newService()
-
-	pr := auth.PolicyReq{Object: authoritiesObj, Relation: memberRelation, Subject: id}
-	err := svc.DeletePolicy(context.Background(), pr)
-	require.Nil(t, err, fmt.Sprintf("deleting %v policy expected to succeed: %s", pr, err))
+	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }

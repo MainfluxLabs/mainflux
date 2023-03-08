@@ -24,8 +24,6 @@ type grpcServer struct {
 	issue          kitgrpc.Handler
 	identify       kitgrpc.Handler
 	authorize      kitgrpc.Handler
-	addPolicy      kitgrpc.Handler
-	deletePolicy   kitgrpc.Handler
 	canAccessGroup kitgrpc.Handler
 	assign         kitgrpc.Handler
 	members        kitgrpc.Handler
@@ -137,7 +135,7 @@ func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.AuthorizeReq)
-	return authReq{Act: req.GetAct(), Obj: req.GetObj(), Sub: req.GetSub()}, nil
+	return authReq{Email: req.GetEmail()}, nil
 }
 
 func encodeAuthorizeResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
@@ -188,10 +186,7 @@ func encodeError(err error) error {
 	case errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrInvalidAuthKey,
 		err == apiutil.ErrMissingID,
-		err == apiutil.ErrMissingMemberType,
-		err == apiutil.ErrMissingPolicySub,
-		err == apiutil.ErrMissingPolicyObj,
-		err == apiutil.ErrMissingPolicyAct:
+		err == apiutil.ErrMissingMemberType:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, auth.ErrKeyExpired),

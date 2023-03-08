@@ -40,14 +40,8 @@ func newService() users.Service {
 	userRepo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-
-	mockAuthzDB[userAdmin.Email] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
-	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-
 	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
-
-	authSvc := mocks.NewAuthService(mockUsers, mockAuthzDB)
+	authSvc := mocks.NewAuthService(mockUsers)
 	e := mocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
@@ -403,9 +397,7 @@ func TestResetPassword(t *testing.T) {
 	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-	mockAuthzDB[user.Email] = append(mockAuthzDB[user.Email], mocks.SubjectSet{Object: "authorities", Relation: "member"})
-	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
+	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user})
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))

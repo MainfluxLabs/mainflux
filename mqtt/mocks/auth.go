@@ -70,14 +70,11 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *mainflux.AuthorizeRes, err error) {
-	if sub, ok := svc.authz[req.GetSub()]; ok {
-		for _, v := range sub {
-			if v.Relation == req.GetAct() && v.Object == req.GetObj() {
-				return &mainflux.AuthorizeRes{Authorized: true}, nil
-			}
-		}
+	if req.GetEmail() != "admin@example.com" {
+		return &mainflux.AuthorizeRes{Authorized: false}, errors.ErrAuthorization
 	}
-	return &mainflux.AuthorizeRes{Authorized: false}, nil
+
+	return &mainflux.AuthorizeRes{Authorized: true}, nil
 }
 
 func (svc authServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {

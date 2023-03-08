@@ -65,9 +65,7 @@ message IssueReq {
 }
 
 message AuthorizeReq {
-    string sub = 1;
-    string obj = 2;
-    string act = 3;
+    string email = 1;
 }
 
 message AuthorizeRes {

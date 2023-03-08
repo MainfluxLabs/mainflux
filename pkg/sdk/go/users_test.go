@@ -23,11 +23,9 @@ import (
 )
 
 const (
-	invalidEmail      = "userexample.com"
-	userEmail         = "user@example.com"
-	validPass         = "validPass"
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
+	invalidEmail = "userexample.com"
+	userEmail    = "user@example.com"
+	validPass    = "validPass"
 )
 
 var (
@@ -42,11 +40,8 @@ func newUserService() users.Service {
 	idProvider := uuid.New()
 	id, _ := idProvider.ID()
 	admin.ID = id
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-	mockAuthzDB[admin.Email] = []mocks.SubjectSet{{Object: authoritiesObjKey, Relation: memberRelationKey}}
-	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
 
-	auth := mocks.NewAuthService(map[string]users.User{adminEmail: admin}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{adminEmail: admin})
 
 	emailer := mocks.NewEmailer()
 
