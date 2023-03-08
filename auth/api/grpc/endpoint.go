@@ -70,45 +70,17 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func addPolicyEndpoint(svc auth.Service) endpoint.Endpoint {
+func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(policyReq)
+		req := request.(accessGroupReq)
 		if err := req.validate(); err != nil {
-			return addPolicyRes{}, err
+			return emptyRes{}, err
 		}
 
-		err := svc.AddPolicy(ctx, auth.PolicyReq{Subject: req.Sub, Object: req.Obj, Relation: req.Act})
-		if err != nil {
-			return addPolicyRes{}, err
+		if err := svc.CanAccessGroup(ctx, req.Token, req.GroupID); err != nil {
+			return emptyRes{}, err
 		}
-		return addPolicyRes{authorized: true}, err
-	}
-}
-
-func deletePolicyEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(policyReq)
-		if err := req.validate(); err != nil {
-			return deletePolicyRes{}, err
-		}
-
-		err := svc.DeletePolicy(ctx, auth.PolicyReq{Subject: req.Sub, Object: req.Obj, Relation: req.Act})
-		if err != nil {
-			return deletePolicyRes{}, err
-		}
-		return deletePolicyRes{deleted: true}, nil
-	}
-}
-
-func listPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listPoliciesReq)
-
-		page, err := svc.ListPolicies(ctx, auth.PolicyReq{Subject: req.Sub, Object: req.Obj, Relation: req.Act})
-		if err != nil {
-			return deletePolicyRes{}, err
-		}
-		return listPoliciesRes{policies: page.Policies}, nil
+		return emptyRes{}, nil
 	}
 }
 

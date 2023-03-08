@@ -102,6 +102,9 @@ type OrgService interface {
 
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (OrgGroupsPage, error)
+
+	// CanAccessGroup indicates if user can access group for a given token.
+	CanAccessGroup(ctx context.Context, token, groupID string) error
 }
 
 // OrgRepository specifies an org persistence API.
@@ -144,4 +147,7 @@ type OrgRepository interface {
 
 	// HasMemberByID indicates if a member is assigned in an org.
 	HasMemberByID(ctx context.Context, orgID, memberID string) error
+
+	// RetrieveByGroupID retrieves orgs where group is assigned.
+	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
 }

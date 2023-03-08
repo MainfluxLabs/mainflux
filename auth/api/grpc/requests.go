@@ -108,30 +108,19 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type policyReq struct {
-	Sub string
-	Obj string
-	Act string
+type accessGroupReq struct {
+	Token   string
+	GroupID string
 }
 
-func (req policyReq) validate() error {
-	if req.Sub == "" {
-		return apiutil.ErrMissingPolicySub
+func (req accessGroupReq) validate() error {
+	if req.Token == "" {
+		return apiutil.ErrBearerToken
 	}
 
-	if req.Obj == "" {
-		return apiutil.ErrMissingPolicyObj
-	}
-
-	if req.Act == "" {
-		return apiutil.ErrMissingPolicyAct
+	if req.GroupID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil
-}
-
-type listPoliciesReq struct {
-	Sub string
-	Obj string
-	Act string
 }

@@ -654,8 +654,9 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	if err := ts.canAccessGroup(ctx, id, user.GetId()); gr.OwnerID != user.GetId() && err != nil {
-		return Group{}, errors.ErrAuthorization
+	_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: id})
+	if user.GetId() != gr.OwnerID && err != nil {
+		return Group{}, err
 	}
 
 	return gr, nil
@@ -711,6 +712,7 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	}
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
+
 func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
 	req := &mainflux.AuthorizeReq{
 		Sub: subject,
@@ -720,23 +722,6 @@ func (ts *thingsService) authorize(ctx context.Context, subject, object, relatio
 	res, err := ts.auth.Authorize(ctx, req)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func (ts *thingsService) canAccessGroup(ctx context.Context, groupID, memberID string) error {
-	req := &mainflux.AuthorizeReq{
-		Sub: memberID,
-		Obj: groupID,
-		Act: "can_acces_group",
-	}
-	res, err := ts.auth.Authorize(ctx, req)
-	if err != nil {
-		return errors.ErrAuthorization
 	}
 	if !res.GetAuthorized() {
 		return errors.ErrAuthorization

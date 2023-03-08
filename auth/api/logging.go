@@ -311,3 +311,16 @@ func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID str
 
 	return lm.svc.ListOrgGroups(ctx, token, orgID, pm)
 }
+
+func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, orgID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_access_group for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanAccessGroup(ctx, token, orgID)
+}
