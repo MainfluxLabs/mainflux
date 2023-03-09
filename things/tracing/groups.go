@@ -13,6 +13,7 @@ const (
 	removeGroupOp         = "remove_group"
 	retrieveAllOp         = "retrieve_all"
 	retrieveGroupByIDOp   = "retrieve_group_by_id"
+	retrieveGroupByIDsOp  = "retrieve_group_by_ids"
 	retrieveByOwnerOp     = "retrieve_by_owner"
 	retrieveMembershipsOp = "retrieve_memberships"
 	retrieveMembersOp     = "retrieve_members"
@@ -72,6 +73,13 @@ func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByID(ctx, id)
+}
+func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs []string) (things.GroupPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveGroupByIDsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveByIDs(ctx, groupIDs)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
