@@ -105,6 +105,67 @@ func TestSingleUserRetrieval(t *testing.T) {
 	}
 }
 
+func TestRetrieveByIDs(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewUserRepo(dbMiddleware)
+
+	var ids []string
+	for i := 0; i < usersNum; i++ {
+		email := fmt.Sprintf("user-retrieval%d@example.com", i)
+
+		uid, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		user := users.User{
+			ID:       uid,
+			Email:    email,
+			Password: "pass",
+			Status:   users.EnabledStatusKey,
+		}
+
+		ids = append(ids, uid)
+
+		_, err = repo.Save(context.Background(), user)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	malformedIDs := []string{"malformed1", "malformed2"}
+
+	cases := map[string]struct {
+		IDs  []string
+		Size uint64
+		err  error
+	}{
+		"Retrieve users": {
+			IDs:  ids,
+			Size: uint64(usersNum),
+			err:  nil,
+		},
+		"Retrieve users without IDs": {
+			IDs:  []string{},
+			Size: 0,
+			err:  nil,
+		},
+		"Retrieve users with empty IDs": {
+			IDs:  []string{"", ""},
+			Size: 0,
+			err:  errors.ErrRetrieveEntity,
+		},
+		"Retrieve users with malformed IDs": {
+			IDs:  malformedIDs,
+			Size: 0,
+			err:  errors.ErrRetrieveEntity,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := repo.RetrieveByIDs(context.Background(), tc.IDs)
+		size := uint64(len(page.Users))
+		assert.Equal(t, tc.Size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.Size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
 func TestRetrieveAll(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)

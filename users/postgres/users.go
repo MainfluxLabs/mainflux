@@ -131,6 +131,51 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
+func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string) (users.UserPage, error) {
+	if len(userIDs) == 0 {
+		return users.UserPage{}, nil
+	}
+
+	idq := fmt.Sprintf("WHERE id IN ('%s') ", strings.Join(userIDs, "','"))
+	q := fmt.Sprintf(`SELECT id, email, password, metadata FROM users %s;`, idq)
+
+	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items := []users.User{}
+	for rows.Next() {
+		dbu := dbUser{}
+		if err := rows.StructScan(&dbu); err != nil {
+			return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		u, err := toUser(dbu)
+		if err != nil {
+			return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		items = append(items, u)
+	}
+
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM users %s;`, idq)
+	total, err := total(ctx, ur.db, cq, map[string]interface{}{})
+
+	if err != nil {
+		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := users.UserPage{
+		Users: items,
+		PageMetadata: users.PageMetadata{
+			Total: total,
+		},
+	}
+
+	return page, nil
+}
+
 func (ur userRepository) RetrieveAll(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", email)
 	if err != nil {

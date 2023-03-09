@@ -65,6 +65,9 @@ type UserRepository interface {
 	// RetrieveByID retrieves user by its unique identifier ID.
 	RetrieveByID(ctx context.Context, id string) (User, error)
 
+	// RetrieveByIDs retrieves users by their unique identifiers.
+	RetrieveByIDs(ctx context.Context, userIDs []string) (UserPage, error)
+
 	// RetrieveAll retrieves all users for given array of userIDs.
 	RetrieveAll(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, m Metadata) (UserPage, error)
 
