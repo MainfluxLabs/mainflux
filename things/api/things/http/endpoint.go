@@ -711,10 +711,18 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Limit:  mp.Limit,
 			Name:   mp.Name,
 		},
-		MemberIDs: []string{},
+		Members: []thingRes{},
 	}
 
-	res.MemberIDs = append(res.MemberIDs, mp.Members...)
+	for _, m := range mp.Members {
+		view := thingRes{
+			ID:       m.ID,
+			Metadata: m.Metadata,
+			Name:     m.Name,
+			Key:      m.Key,
+		}
+		res.Members = append(res.Members, view)
+	}
 
 	return res
 }

@@ -421,16 +421,3 @@ func (lm *loggingMiddleware) Unassign(ctx context.Context, token, groupID string
 
 	return lm.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
-
-func (lm *loggingMiddleware) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_group_access_rights for token %s took %s to complete", token, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
-}

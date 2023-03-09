@@ -121,9 +121,6 @@ type Service interface {
 
 	// Unassign removes member with memberID from group identified by groupID.
 	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
-
-	// AssignGroupAccessRights adds access rights on thing groups to user group.
-	AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -679,13 +676,6 @@ func (ts *thingsService) Unassign(ctx context.Context, token string, groupID str
 
 func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
-}
-
-func (ts *thingsService) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error) {

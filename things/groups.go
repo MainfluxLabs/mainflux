@@ -54,7 +54,7 @@ type GroupPage struct {
 // belong to this page.
 type MemberPage struct {
 	PageMetadata
-	Members []string
+	Members []Thing
 }
 
 // GroupRepository specifies a group persistence API.
