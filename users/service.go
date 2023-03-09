@@ -269,7 +269,7 @@ func (svc usersService) Backup(ctx context.Context, token string) ([]User, error
 		return []User{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return []User{}, err
 	}
 
@@ -282,7 +282,7 @@ func (svc usersService) Restore(ctx context.Context, token string, users []User)
 		return err
 	}
 
-	if err := svc.authorize(ctx, user.email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return err
 	}
 
