@@ -106,7 +106,7 @@ func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (th
 	return val, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, groupIDs []string) (things.GroupPage, error) {
 	panic("not implemented")
 }
 

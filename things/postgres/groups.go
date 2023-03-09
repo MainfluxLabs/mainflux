@@ -192,30 +192,15 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	return toGroup(dbu)
 }
 
-func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string) (things.GroupPage, error) {
 	if len(groupIDs) == 0 {
 		return things.GroupPage{}, nil
 	}
 
-	nq, name := getNameQuery(pm.Name)
-	og := getOrderQuery(pm.Order)
-	dq := getDirQuery(pm.Dir)
 	idq := fmt.Sprintf("WHERE id IN ('%s') ", strings.Join(groupIDs, "','"))
+	q := fmt.Sprintf(`SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups %s;`, idq)
 
-	m, mq, err := getMetadataQuery(pm.Metadata)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	q := fmt.Sprintf(`SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups %s%s%s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, idq, mq, nq, og, dq)
-
-	params := map[string]interface{}{
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
-		"name":   name,
-		"meta":   m,
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -235,9 +220,9 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s%s%s`, idq, mq, nq)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s`, idq)
 
-	total, err := total(ctx, gr.db, cq, params)
+	total, err := total(ctx, gr.db, cq, map[string]interface{}{})
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -245,12 +230,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	page := things.GroupPage{
 		Groups: items,
 		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Name:   pm.Name,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Total: total,
 		},
 	}
 
