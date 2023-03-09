@@ -223,6 +223,38 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func backupEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		users, err := svc.Backup(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
+		return backupRes{Users: users}, nil
+	}
+}
+
+func restoreEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		err := svc.Restore(ctx, req.token, req.Users)
+		if err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
+	}
+}
+
 func buildUsersResponse(up users.UserPage) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{

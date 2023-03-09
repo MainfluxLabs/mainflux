@@ -16,7 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const usersNum = 101
+const (
+	usersNum   = 101
+	usersTable = "users"
+)
 
 var idProvider = uuid.New()
 
@@ -36,7 +39,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   users.EnabledStatusKey,
 			},
 			err: nil,
@@ -46,7 +49,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   users.EnabledStatusKey,
 			},
 			err: errors.ErrConflict,
@@ -56,7 +59,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   "invalid",
 			},
 			err: errors.ErrMalformedEntity,
@@ -84,7 +87,7 @@ func TestSingleUserRetrieval(t *testing.T) {
 	user := users.User{
 		ID:       uid,
 		Email:    email,
-		Password: "pass",
+		Password: "password",
 		Status:   users.EnabledStatusKey,
 	}
 
@@ -105,7 +108,7 @@ func TestSingleUserRetrieval(t *testing.T) {
 	}
 }
 
-func TestRetrieveAll(t *testing.T) {
+func TestRetrieveByIDs(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 	metaNum := uint64(2)
@@ -127,7 +130,7 @@ func TestRetrieveAll(t *testing.T) {
 		user := users.User{
 			ID:       uid,
 			Email:    email,
-			Password: "pass",
+			Password: "password",
 			Status:   users.EnabledStatusKey,
 		}
 		if i < metaNum {
@@ -241,8 +244,55 @@ func TestRetrieveAll(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		page, err := userRepo.RetrieveAll(context.Background(), users.EnabledStatusKey, tc.offset, tc.limit, tc.ids, tc.email, tc.metadata)
+		page, err := userRepo.RetrieveByIDs(context.Background(), users.EnabledStatusKey, tc.offset, tc.limit, tc.ids, tc.email, tc.metadata)
 		size := uint64(len(page.Users))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestRetrieveAll(t *testing.T) {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", usersTable))
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	dbMiddleware := postgres.NewDatabase(db)
+	userRepo := postgres.NewUserRepo(dbMiddleware)
+	metaNum := uint64(2)
+	var nUsers = uint64(usersNum)
+
+	meta := users.Metadata{
+		"field": "value",
+	}
+
+	var ids []string
+	for i := uint64(0); i < nUsers; i++ {
+		uid, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		email := fmt.Sprintf("TestRetrieveAll%d@example.com", i)
+		user := users.User{
+			ID:       uid,
+			Email:    email,
+			Password: "password",
+			Status:   users.EnabledStatusKey,
+		}
+		if i < metaNum {
+			user.Metadata = meta
+		}
+		ids = append(ids, uid)
+		_, err = userRepo.Save(context.Background(), user)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := map[string]struct {
+		size uint64
+	}{
+		"retrieve all users": {
+			size: nUsers,
+		},
+	}
+	for desc, tc := range cases {
+		users, err := userRepo.RetrieveAll(context.Background())
+		size := uint64(len(users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}

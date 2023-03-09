@@ -194,3 +194,31 @@ func (req changeUserStatusReq) validate() error {
 	}
 	return nil
 }
+
+type backupReq struct {
+	token string
+}
+
+func (req backupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}
+
+type restoreReq struct {
+	token string
+	Users []users.User `json:"users"`
+}
+
+func (req restoreReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Users) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
