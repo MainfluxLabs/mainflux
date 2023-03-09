@@ -144,4 +144,7 @@ type OrgRepository interface {
 
 	// HasMemberByID indicates if a member is assigned in an org.
 	HasMemberByID(ctx context.Context, orgID, memberID string) error
+
+	// RetrieveByGroupID retrieves orgs where group is assigned.
+	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
 }

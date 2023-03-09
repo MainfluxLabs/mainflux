@@ -281,10 +281,6 @@ func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID s
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	panic("not implemented")
-}
-
 func (svc *mainfluxThings) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }

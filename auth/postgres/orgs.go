@@ -548,6 +548,42 @@ func (gr orgRepository) HasMemberByID(ctx context.Context, orgID, memberID strin
 	return nil
 }
 
+func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+	q := `SELECT o.id, o.owner_id, o.name, o.description, o.metadata
+		FROM group_relations gre, orgs o
+		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
+
+	params, err := toDBGroupRelation(groupID, "")
+	if err != nil {
+		return auth.OrgsPage{}, err
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []auth.Org
+	for rows.Next() {
+		dbg := dbOrg{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		gr, err := toOrg(dbg)
+		if err != nil {
+			return auth.OrgsPage{}, err
+		}
+		items = append(items, gr)
+	}
+
+	page := auth.OrgsPage{
+		Orgs: items,
+	}
+
+	return page, nil
+}
+
 type dbMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`

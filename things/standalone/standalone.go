@@ -6,9 +6,9 @@ package standalone
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -46,28 +46,14 @@ func (repo singleUserRepo) Identify(ctx context.Context, token *mainflux.Token, 
 }
 
 func (repo singleUserRepo) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *mainflux.AuthorizeRes, err error) {
-	if repo.email != req.Sub {
+	if repo.email != req.Email {
 		return &mainflux.AuthorizeRes{}, errUnsupported
 	}
 	return &mainflux.AuthorizeRes{Authorized: true}, nil
 }
 
-func (repo singleUserRepo) AddPolicy(ctx context.Context, req *mainflux.AddPolicyReq, opts ...grpc.CallOption) (*mainflux.AddPolicyRes, error) {
-	if repo.email != req.Sub {
-		return &mainflux.AddPolicyRes{}, errUnsupported
-	}
-	return &mainflux.AddPolicyRes{Authorized: true}, nil
-}
-
-func (repo singleUserRepo) DeletePolicy(ctx context.Context, req *mainflux.DeletePolicyReq, opts ...grpc.CallOption) (*mainflux.DeletePolicyRes, error) {
-	if repo.email != req.Sub {
-		return &mainflux.DeletePolicyRes{}, errUnsupported
-	}
-	return &mainflux.DeletePolicyRes{Deleted: true}, nil
-}
-
-func (repo singleUserRepo) ListPolicies(ctx context.Context, in *mainflux.ListPoliciesReq, opts ...grpc.CallOption) (*mainflux.ListPoliciesRes, error) {
-	return &mainflux.ListPoliciesRes{}, errUnsupported
+func (repo singleUserRepo) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
+	return &empty.Empty{}, errUnsupported
 }
 
 func (repo singleUserRepo) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {

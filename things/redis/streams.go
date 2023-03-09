@@ -288,10 +288,6 @@ func (es eventStore) Unassign(ctx context.Context, token string, groupID string,
 	return es.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
 
-func (es eventStore) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	return es.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
-}
-
 func (es eventStore) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
 	return es.svc.ListMemberships(ctx, token, memberID, pm)
 }

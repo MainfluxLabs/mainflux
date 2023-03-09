@@ -346,7 +346,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 }
 
 func authorizeAdmin(ctx context.Context, object, relation, token string) error {
-	identity, err := usersAuth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := usersAuth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		e, ok := status.FromError(err)
 		if ok && e.Code() == codes.PermissionDenied {
@@ -356,9 +356,7 @@ func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 	}
 
 	req := &mainflux.AuthorizeReq{
-		Sub: identity.Email,
-		Obj: object,
-		Act: relation,
+		Email: user.Email,
 	}
 
 	res, err := usersAuth.Authorize(ctx, req)

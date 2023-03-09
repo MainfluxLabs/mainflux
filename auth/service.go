@@ -5,7 +5,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -148,74 +147,12 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 	}
 }
 
-func (svc service) Authorize(ctx context.Context, pr PolicyReq) error {
+func (svc service) Authorize(ctx context.Context, pr AuthzReq) error {
 	// TODO: Implement properly Authorize method
 	// if pr.Object == authoritiesObject && pr.Relation == memberRelation && pr.Subject != svc.adminEmail {
 	//	return errors.ErrAuthorization
 	// }
 	return nil
-}
-
-func (svc service) AddPolicy(ctx context.Context, pr PolicyReq) error {
-	return nil
-}
-
-func (svc service) AddPolicies(ctx context.Context, token, object string, subjectIDs, relations []string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.Authorize(ctx, PolicyReq{Object: authoritiesObject, Relation: memberRelation, Subject: user.ID}); err != nil {
-		return err
-	}
-
-	var errs error
-	for _, subjectID := range subjectIDs {
-		for _, relation := range relations {
-			if err := svc.AddPolicy(ctx, PolicyReq{Object: object, Relation: relation, Subject: subjectID}); err != nil {
-				errs = errors.Wrap(fmt.Errorf("cannot add '%s' policy on object '%s' for subject '%s': %s", relation, object, subjectID, err), errs)
-			}
-		}
-	}
-	return errs
-}
-
-func (svc service) DeletePolicy(ctx context.Context, pr PolicyReq) error {
-	return nil
-}
-
-func (svc service) DeletePolicies(ctx context.Context, token, object string, subjectIDs, relations []string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	// Check if the user identified by token is the admin.
-	if err := svc.Authorize(ctx, PolicyReq{Object: authoritiesObject, Relation: memberRelation, Subject: user.ID}); err != nil {
-		return err
-	}
-
-	var errs error
-	for _, subjectID := range subjectIDs {
-		for _, relation := range relations {
-			if err := svc.DeletePolicy(ctx, PolicyReq{Object: object, Relation: relation, Subject: subjectID}); err != nil {
-				errs = errors.Wrap(fmt.Errorf("cannot delete '%s' policy on object '%s' for subject '%s': %s", relation, object, subjectID, err), errs)
-			}
-		}
-	}
-	return errs
-}
-
-func (svc service) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	if _, err := svc.Identify(ctx, token); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (svc service) ListPolicies(ctx context.Context, pr PolicyReq) (PolicyPage, error) {
-	return PolicyPage{}, nil
 }
 
 func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) {
@@ -453,10 +390,8 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	req := PolicyReq{
-		Subject:  user.Email,
-		Object:   "authorities",
-		Relation: "member",
+	req := AuthzReq{
+		Email: user.Email,
 	}
 
 	if err := svc.Authorize(ctx, req); err != nil {
@@ -464,4 +399,26 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	}
 
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
+}
+
+func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve orgs where group is assigned
+	op, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	for _, org := range op.Orgs {
+		err := svc.orgs.HasMemberByID(ctx, org.ID, user.ID)
+		if err == nil {
+			return nil
+		}
+	}
+
+	return errors.ErrAuthorization
 }

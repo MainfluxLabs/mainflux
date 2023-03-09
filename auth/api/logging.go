@@ -26,19 +26,6 @@ func LoggingMiddleware(svc auth.Service, logger log.Logger) auth.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) ListPolicies(ctx context.Context, pr auth.PolicyReq) (p auth.PolicyPage, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_policies took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListPolicies(ctx, pr)
-}
-
 func (lm *loggingMiddleware) Issue(ctx context.Context, token string, newKey auth.Key) (key auth.Key, secret string, err error) {
 	defer func(begin time.Time) {
 		d := "infinite duration"
@@ -95,7 +82,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id auth.
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) Authorize(ctx context.Context, pr auth.PolicyReq) (err error) {
+func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
 		if err != nil {
@@ -104,56 +91,7 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, pr auth.PolicyReq) (
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-	return lm.svc.Authorize(ctx, pr)
-}
-
-func (lm *loggingMiddleware) AddPolicy(ctx context.Context, pr auth.PolicyReq) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method add_policy took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.AddPolicy(ctx, pr)
-}
-
-func (lm *loggingMiddleware) AddPolicies(ctx context.Context, token, object string, subjectIDs, relations []string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_policy_bulk took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.AddPolicies(ctx, token, object, subjectIDs, relations)
-}
-
-func (lm *loggingMiddleware) DeletePolicy(ctx context.Context, pr auth.PolicyReq) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method delete_policy took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.DeletePolicy(ctx, pr)
-}
-
-func (lm *loggingMiddleware) DeletePolicies(ctx context.Context, token, object string, subjectIDs, relations []string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method delete_policies took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-	return lm.svc.DeletePolicies(ctx, token, object, subjectIDs, relations)
+	return lm.svc.Authorize(ctx, ar)
 }
 
 func (lm *loggingMiddleware) CreateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {
@@ -310,4 +248,17 @@ func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID str
 	}(time.Now())
 
 	return lm.svc.ListOrgGroups(ctx, token, orgID, pm)
+}
+
+func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, orgID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_access_group for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanAccessGroup(ctx, token, orgID)
 }

@@ -12,11 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 )
 
-const (
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
-)
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -126,9 +121,6 @@ type Service interface {
 
 	// Unassign removes member with memberID from group identified by groupID.
 	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
-
-	// AssignGroupAccessRights adds access rights on thing groups to user group.
-	AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -518,7 +510,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := ts.authorize(ctx, user.Email); err != nil {
 		return Backup{}, err
 	}
 
@@ -556,7 +548,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if err := ts.authorize(ctx, user.Email, authoritiesObjKey, memberRelationKey); err != nil {
+	if err := ts.authorize(ctx, user.Email); err != nil {
 		return err
 	}
 
@@ -654,8 +646,9 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	if err := ts.canAccessGroup(ctx, id, user.GetId()); gr.OwnerID != user.GetId() && err != nil {
-		return Group{}, errors.ErrAuthorization
+	_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: id})
+	if user.GetId() != gr.OwnerID && err != nil {
+		return Group{}, err
 	}
 
 	return gr, nil
@@ -685,13 +678,6 @@ func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
-func (ts *thingsService) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return MemberPage{}, err
@@ -711,32 +697,14 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	}
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
-func (ts *thingsService) authorize(ctx context.Context, subject, object, relation string) error {
+
+func (ts *thingsService) authorize(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
-		Sub: subject,
-		Obj: object,
-		Act: relation,
+		Email: email,
 	}
 	res, err := ts.auth.Authorize(ctx, req)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func (ts *thingsService) canAccessGroup(ctx context.Context, groupID, memberID string) error {
-	req := &mainflux.AuthorizeReq{
-		Sub: memberID,
-		Obj: groupID,
-		Act: "can_acces_group",
-	}
-	res, err := ts.auth.Authorize(ctx, req)
-	if err != nil {
-		return errors.ErrAuthorization
 	}
 	if !res.GetAuthorized() {
 		return errors.ErrAuthorization

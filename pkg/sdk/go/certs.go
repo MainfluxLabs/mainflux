@@ -43,7 +43,6 @@ func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token st
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		println(err.Error())
 		return Cert{}, err
 	}
 	if err := json.Unmarshal(body, &c); err != nil {

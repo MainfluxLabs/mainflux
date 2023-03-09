@@ -27,19 +27,17 @@ import (
 )
 
 const (
-	svcName           = "test-service"
-	thingToken        = "1"
-	email             = "user@example.com"
-	invalid           = "invalid"
-	numOfMessages     = 1001
-	valueFields       = 5
-	subtopic          = "topic"
-	mqttProt          = "mqtt"
-	httpProt          = "http"
-	msgName           = "temperature"
-	validPass         = "password"
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
+	svcName       = "test-service"
+	thingToken    = "1"
+	email         = "admin@example.com"
+	invalid       = "invalid"
+	numOfMessages = 1001
+	valueFields   = 5
+	subtopic      = "topic"
+	mqttProt      = "mqtt"
+	httpProt      = "http"
+	msgName       = "temperature"
+	validPass     = "password"
 )
 
 var (
@@ -85,11 +83,8 @@ func (tr testRequest) make() (*http.Response, error) {
 func newAuthService() mainflux.AuthServiceClient {
 	id, _ := idProvider.ID()
 	user.ID = id
-	mockAuthzDB := map[string][]authmocks.SubjectSet{}
-	mockAuthzDB[user.ID] = []authmocks.SubjectSet{{Object: authoritiesObjKey, Relation: memberRelationKey}}
-	mockAuthzDB[email] = append(mockAuthzDB[email], authmocks.SubjectSet{Object: authoritiesObjKey, Relation: memberRelationKey})
 
-	return authmocks.NewAuthService(map[string]users.User{user.Email: user}, mockAuthzDB)
+	return authmocks.NewAuthService(map[string]users.User{user.Email: user})
 }
 
 func TestListChannelMessages(t *testing.T) {

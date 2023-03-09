@@ -30,17 +30,15 @@ import (
 )
 
 const (
-	contentType       = "application/json"
-	validEmail        = "user@example.com"
-	adminEmail        = "admin@example.com"
-	invalidEmail      = "userexample.com"
-	validPass         = "password"
-	invalidToken      = "invalid"
-	invalidPass       = "wrong"
-	memberRelationKey = "member"
-	authoritiesObjKey = "authorities"
-	prefix            = "fe6b4e92-cc98-425e-b0aa-"
-	userNum           = 101
+	contentType  = "application/json"
+	validEmail   = "user@example.com"
+	adminEmail   = "admin@example.com"
+	invalidEmail = "userexample.com"
+	validPass    = "password"
+	invalidToken = "invalid"
+	invalidPass  = "wrong"
+	prefix       = "fe6b4e92-cc98-425e-b0aa-"
+	userNum      = 101
 )
 
 var (
@@ -88,11 +86,8 @@ func (tr testRequest) make() (*http.Response, error) {
 func newService() users.Service {
 	usersRepo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-	mockAuthzDB[admin.Email] = []mocks.SubjectSet{{Object: authoritiesObjKey, Relation: memberRelationKey}}
-	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
 
-	auth := mocks.NewAuthService(map[string]users.User{admin.Email: admin}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{admin.Email: admin})
 	email := mocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
@@ -209,9 +204,7 @@ func TestLogin(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-
-	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{})
 
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
@@ -227,14 +220,8 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	id, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
-	_, err = auth.AddPolicy(context.Background(), &mainflux.AddPolicyReq{
-		Sub: id,
-		Act: memberRelationKey,
-		Obj: authoritiesObjKey,
-	})
-	require.Nil(t, err, fmt.Sprintf("adding policy for user got unexpected error: %s", err))
 
 	mfxTok, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
@@ -283,9 +270,7 @@ func TestUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-
-	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{})
 
 	userID, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
@@ -549,9 +534,7 @@ func TestPasswordReset(t *testing.T) {
 		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-
-	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{})
 
 	id, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
@@ -622,8 +605,7 @@ func TestPasswordChange(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	mockAuthzDB := map[string][]mocks.SubjectSet{}
-	auth := mocks.NewAuthService(map[string]users.User{}, mockAuthzDB)
+	auth := mocks.NewAuthService(map[string]users.User{})
 
 	reqData := struct {
 		Token    string `json:"token,omitempty"`

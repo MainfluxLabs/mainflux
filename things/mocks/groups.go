@@ -106,6 +106,10 @@ func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (th
 	return val, nil
 }
 
+func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, groupIDs []string) (things.GroupPage, error) {
+	panic("not implemented")
+}
+
 func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -196,7 +200,7 @@ func (grm *groupRepositoryMock) RetrieveMemberships(ctx context.Context, memberI
 func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
-	var items []string
+	var items []things.Thing
 	members, ok := grm.members[groupID]
 	if !ok {
 		return things.MemberPage{}, errors.ErrNotFound
@@ -208,7 +212,7 @@ func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID str
 	i := uint64(0)
 	for _, g := range members {
 		if i >= first && i < last {
-			items = append(items, g[groupID])
+			items = append(items, things.Thing{ID: g[groupID]})
 		}
 		i++
 	}

@@ -356,6 +356,75 @@ func TestRetrieveByOwner(t *testing.T) {
 	}
 }
 
+func TestRetrieveByIDs(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	metadata := things.PageMetadata{
+		Metadata: things.GroupMetadata{
+			"field": "value",
+		},
+	}
+	
+	malformedIDs := []string{"malformed1", "malformed2"}
+
+	metaNum := uint64(3)
+
+	var n uint64 = 5
+	var ids []string
+	for i := uint64(0); i < n; i++ {
+		creationTime := time.Now().UTC()
+		group := things.Group{
+			ID:        generateGroupID(t),
+			Name:      fmt.Sprintf("%s-%d", groupName, i),
+			OwnerID:   uid,
+			CreatedAt: creationTime,
+			UpdatedAt: creationTime,
+		}
+		ids = append(ids, group.ID)
+		// Create Groups with metadata.
+		if i < metaNum {
+			group.Metadata = metadata.Metadata
+		}
+
+		_, err = groupRepo.Save(context.Background(), group)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	cases := map[string]struct {
+		Size     uint64
+		IDs      []string
+		Metadata things.PageMetadata
+		err      error
+	}{
+		"retrieve all groups": {
+			Size: n,
+			IDs:  ids,
+			err:  nil,
+		},
+		"retrieve groups without ids": {
+			Size: 0,
+			IDs:  []string{},
+			err:  nil,
+		},
+		"retrieve groups with malformed ids": {
+			Size: 0,
+			IDs:  malformedIDs,
+			err:  errors.ErrRetrieveEntity,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := groupRepo.RetrieveByIDs(context.Background(), tc.IDs)
+		size := len(page.Groups)
+		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
 func TestRetrieveAllGroups(t *testing.T) {
 	t.Cleanup(func() { cleanUp(t) })
 	dbMiddleware := postgres.NewDatabase(db)

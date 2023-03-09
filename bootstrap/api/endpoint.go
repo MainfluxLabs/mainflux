@@ -6,8 +6,8 @@ package api
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func addEndpoint(svc bootstrap.Service) endpoint.Endpoint {

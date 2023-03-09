@@ -54,7 +54,7 @@ type GroupPage struct {
 // belong to this page.
 type MemberPage struct {
 	PageMetadata
-	Members []string
+	Members []Thing
 }
 
 // GroupRepository specifies a group persistence API.
@@ -70,6 +70,9 @@ type GroupRepository interface {
 
 	// RetrieveByID retrieves group by its id
 	RetrieveByID(ctx context.Context, id string) (Group, error)
+
+	// RetrieveByIDs retrieves groups by their ids
+	RetrieveByIDs(ctx context.Context, groupIDs []string) (GroupPage, error)
 
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
