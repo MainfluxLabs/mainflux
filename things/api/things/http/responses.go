@@ -291,7 +291,7 @@ type pageRes struct {
 
 type memberPageRes struct {
 	pageRes
-	MemberIDs []string `json:"member_ids"`
+	Members []thingRes `json:"members"`
 }
 
 func (res memberPageRes) Code() int {

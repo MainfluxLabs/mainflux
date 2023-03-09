@@ -299,12 +299,3 @@ func (ms *metricsMiddleware) Unassign(ctx context.Context, token, groupID string
 
 	return ms.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
-
-func (ms *metricsMiddleware) AssignGroupAccessRights(ctx context.Context, token, thingGroupID, userGroupID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "assign_group_access_rights").Add(1)
-		ms.latency.With("method", "assign_group_access_rights").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.AssignGroupAccessRights(ctx, token, thingGroupID, userGroupID)
-}

@@ -253,8 +253,10 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 		return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
 	}
 
-	q := fmt.Sprintf(`SELECT gr.member_id, gr.group_id, gr.created_at, gr.updated_at FROM group_relations gr
-	WHERE gr.group_id = :group_id %s`, mq)
+	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+	FROM group_relations gr, things t
+	WHERE gr.group_id = :group_id and gr.member_id = t.id
+	%s LIMIT :limit OFFSET :offset;`, mq)
 
 	params, err := toDBMemberPage("", groupID, pm)
 	if err != nil {
@@ -267,22 +269,22 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 	}
 	defer rows.Close()
 
-	var items []string
+	var items []things.Thing
 	for rows.Next() {
-		member := dbMember{}
-		if err := rows.StructScan(&member); err != nil {
+		dbmem := dbThing{}
+		if err := rows.StructScan(&dbmem); err != nil {
 			return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
 		}
 
+		th, err := toThing(dbmem)
 		if err != nil {
 			return things.MemberPage{}, err
 		}
 
-		items = append(items, member.MemberID)
+		items = append(items, th)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM groups g, group_relations gr
-					   WHERE gr.group_id = :group_id AND gr.group_id = g.id  %s;`, mq)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr WHERE gr.group_id = :group_id %s;`, mq)
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
@@ -311,9 +313,9 @@ func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID stri
 		mq = fmt.Sprintf("AND %s", mq)
 	}
 	q := fmt.Sprintf(`SELECT g.id, g.owner_id, g.name, g.description, g.metadata
-					  FROM group_relations gr, groups g
-					  WHERE gr.group_id = g.id and gr.member_id = :member_id
-		  			  %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
+		FROM group_relations gr, groups g
+		WHERE gr.group_id = g.id and gr.member_id = :member_id
+		%s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
 
 	params, err := toDBMemberPage(memberID, "", pm)
 	if err != nil {
@@ -340,7 +342,7 @@ func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID stri
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr, groups g
-					   WHERE gr.group_id = g.id and gr.member_id = :member_id %s `, mq)
+		WHERE gr.group_id = g.id and gr.member_id = :member_id %s `, mq)
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
@@ -366,7 +368,7 @@ func (gr groupRepository) AssignMember(ctx context.Context, groupID string, ids 
 	}
 
 	qIns := `INSERT INTO group_relations (group_id, member_id, created_at, updated_at)
-			 VALUES(:group_id, :member_id, :created_at, :updated_at)`
+		VALUES(:group_id, :member_id, :created_at, :updated_at)`
 
 	for _, id := range ids {
 		dbg, err := toDBGroupRelation(id, groupID)
