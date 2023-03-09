@@ -39,7 +39,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   users.EnabledStatusKey,
 			},
 			err: nil,
@@ -49,7 +49,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   users.EnabledStatusKey,
 			},
 			err: errors.ErrConflict,
@@ -59,7 +59,7 @@ func TestUserSave(t *testing.T) {
 			user: users.User{
 				ID:       uid,
 				Email:    email,
-				Password: "pass",
+				Password: "password",
 				Status:   "invalid",
 			},
 			err: errors.ErrMalformedEntity,
@@ -87,7 +87,7 @@ func TestSingleUserRetrieval(t *testing.T) {
 	user := users.User{
 		ID:       uid,
 		Email:    email,
-		Password: "pass",
+		Password: "password",
 		Status:   users.EnabledStatusKey,
 	}
 
@@ -130,7 +130,7 @@ func TestRetrieveByIDs(t *testing.T) {
 		user := users.User{
 			ID:       uid,
 			Email:    email,
-			Password: "pass",
+			Password: "password",
 			Status:   users.EnabledStatusKey,
 		}
 		if i < metaNum {
@@ -272,7 +272,7 @@ func TestRetrieveAll(t *testing.T) {
 		user := users.User{
 			ID:       uid,
 			Email:    email,
-			Password: "pass",
+			Password: "password",
 			Status:   users.EnabledStatusKey,
 		}
 		if i < metaNum {
