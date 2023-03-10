@@ -124,6 +124,10 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, th
 	return nil
 }
 
+func (svc *mainfluxThings) ListThingsByIDs(ctx context.Context, thingIDs []string) (things.Page, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()

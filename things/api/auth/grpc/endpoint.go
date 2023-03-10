@@ -6,6 +6,7 @@ package grpc
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -65,15 +66,27 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listThingsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getThingsReq)
+		req := request.(getThingsByIDsReq)
 		things, err := svc.ListThingsByIDs(ctx, req.ids)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		if err != nil {
-			return getThingsRes{}, err
+			return getThingsByIDsRes{}, err
 		}
-		return getThingsRes{things: things.Things}, nil
+
+		mth := []*mainflux.Thing{}
+
+		for _, t := range things.Things {
+			mth = append(mth, &mainflux.Thing{
+				Id:    t.ID,
+				Owner: t.Owner,
+				Name:  t.Name,
+				Key:   t.Key,
+			})
+		}
+
+		return getThingsByIDsRes{things: mth}, nil
 	}
 }

@@ -3,7 +3,9 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux/things"
+import (
+	"github.com/MainfluxLabs/mainflux"
+)
 
 type identityRes struct {
 	id string
@@ -13,6 +15,6 @@ type emptyRes struct {
 	err error
 }
 
-type getThingsRes struct {
-	things []things.Thing
+type getThingsByIDsRes struct {
+	things []*mainflux.Thing
 }

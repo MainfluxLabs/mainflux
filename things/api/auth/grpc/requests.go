@@ -60,11 +60,11 @@ func (req identifyReq) validate() error {
 	return nil
 }
 
-type getThingsReq struct {
+type getThingsByIDsReq struct {
 	ids []string
 }
 
-func (req getThingsReq) validate() error {
+func (req getThingsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
 		return apiutil.ErrMissingID
 	}

@@ -6,9 +6,9 @@ package mocks
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,5 +59,9 @@ func (tc thingsClient) IsChannelOwner(context.Context, *mainflux.ChannelOwnerReq
 }
 
 func (tc thingsClient) Identify(ctx context.Context, req *mainflux.Token, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
+	panic("not implemented")
+}
+
+func (tc thingsClient) GetThingsByIDs(context.Context, *mainflux.ThingsReq, ...grpc.CallOption) (*mainflux.ThingsRes, error) {
 	panic("not implemented")
 }

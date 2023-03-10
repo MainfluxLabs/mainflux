@@ -12,7 +12,7 @@ service ThingsService {
     rpc IsChannelOwner(ChannelOwnerReq) returns (google.protobuf.Empty) {}
     rpc CanAccessByID(AccessByIDReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
-    rpc GetThingsByIds(ThingsReq) returns (ThingRes) {}
+    rpc GetThingsByIDs(ThingsReq) returns (ThingsRes) {}
 }
 
 service AuthService {
@@ -21,6 +21,7 @@ service AuthService {
     rpc Authorize(AuthorizeReq) returns (AuthorizeRes) {}
     rpc CanAccessGroup(AccessGroupReq) returns(google.protobuf.Empty) {}
     rpc Assign(Assignment) returns(google.protobuf.Empty) {}
+    rpc Members(MembersReq) returns (MembersRes) {}
 }
 
 message AccessByKeyReq {
@@ -107,9 +108,9 @@ message Thing {
 }
 
 message ThingsReq {
-    repeated string ids = 1;
+    repeated string id = 1;
 }
 
-message ThingRes {
+message ThingsRes {
     repeated Thing things = 1;
 }
