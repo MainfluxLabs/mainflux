@@ -303,6 +303,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, errors.ErrAuthentication),
 		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
+	case errors.Contains(err, errors.ErrAuthorization):
+		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, readers.ErrReadMessages):
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -329,7 +331,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			}
 			return err
 		}
-		if _, err = thingsAuth.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Email, ChanID: chanID}); err != nil {
+		if _, err = thingsAuth.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
 				return errors.Wrap(errUserAccess, err)

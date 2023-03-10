@@ -55,6 +55,10 @@ var (
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
 	logger := logger.NewMock()
 	mux := api.MakeHandler(repo, tc, ac, svcName, logger)
+
+	id, _ := idProvider.ID()
+	user.ID = id
+
 	return httptest.NewServer(mux)
 }
 
@@ -81,9 +85,6 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() mainflux.AuthServiceClient {
-	id, _ := idProvider.ID()
-	user.ID = id
-
 	return authmocks.NewAuthService(map[string]users.User{user.Email: user})
 }
 
@@ -140,7 +141,7 @@ func TestListChannelMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := mocks.NewThingsService(map[string]string{email: chanID})
+	thSvc := mocks.NewThingsService(map[string]string{user.ID: chanID})
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
