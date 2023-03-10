@@ -6,13 +6,13 @@ package grpc
 import (
 	"context"
 
-	kitot "github.com/go-kit/kit/tracing/opentracing"
-	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
+	kitgrpc "github.com/go-kit/kit/transport/grpc"
+	"github.com/golang/protobuf/ptypes/empty"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,6 +25,7 @@ type grpcServer struct {
 	canAccessByID  kitgrpc.Handler
 	isChannelOwner kitgrpc.Handler
 	identify       kitgrpc.Handler
+	getThingsByIDs  kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -50,6 +51,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsSer
 			decodeIdentifyRequest,
 			encodeIdentityResponse,
 		),
+		// identify: kitgrpc.NewServer(
+		// 	kitot.TraceServer(tracer, "get_things_by_ids")(listThingsByIDsEndpoint(svc)),
+		// 	decodeGetThingsByIDsRequest,
+		// 	encodeGetThingsByIDsResponse,
+		// ),
 	}
 }
 

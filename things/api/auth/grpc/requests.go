@@ -59,3 +59,15 @@ func (req identifyReq) validate() error {
 
 	return nil
 }
+
+type getThingsReq struct {
+	ids []string
+}
+
+func (req getThingsReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}

@@ -6,8 +6,8 @@ package grpc
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func canAccessEndpoint(svc things.Service) endpoint.Endpoint {
@@ -60,5 +60,20 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 			return identityRes{}, err
 		}
 		return identityRes{id: id}, nil
+	}
+}
+
+func listThingsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getThingsReq)
+		things, err := svc.ListThingsByIDs(ctx, req.ids)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err != nil {
+			return getThingsRes{}, err
+		}
+		return getThingsRes{things: things.Things}, nil
 	}
 }

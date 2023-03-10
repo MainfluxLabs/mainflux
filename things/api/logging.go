@@ -95,6 +95,19 @@ func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm th
 	return lm.svc.ListThings(ctx, token, pm)
 }
 
+func (lm *loggingMiddleware) ListThingsByIDs(ctx context.Context, ids []string) (page things.Page, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_things_by_ids for ids %s took %s to complete", ids, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListThingsByIDs(ctx, ids)
+}
+
 func (lm *loggingMiddleware) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (_ things.Page, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_channel for channel %s took %s to complete", chID, time.Since(begin))

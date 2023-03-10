@@ -34,6 +34,9 @@ type Service interface {
 	// user identified by the provided key.
 	ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error)
 
+	// ListThingsByIDs retrieves data about subset of things that are identified
+	ListThingsByIDs(ctx context.Context, ids []string) (Page, error)
+
 	// ListThingsByChannel retrieves data about subset of things that are
 	// connected or not connected to specified channel and belong to the user identified by
 	// the provided key.
@@ -271,6 +274,14 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	}
 
 	return page, nil
+}
+
+func (ts *thingsService) ListThingsByIDs(ctx context.Context, ids []string) (Page, error) {
+	things, err := ts.things.RetrieveByIDs(ctx, ids, PageMetadata{})
+	if err != nil {
+		return Page{}, err
+	}
+	return things, nil
 }
 
 func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (Page, error) {
