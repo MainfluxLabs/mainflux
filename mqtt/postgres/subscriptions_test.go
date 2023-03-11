@@ -207,7 +207,7 @@ func TestRetrieveByID(t *testing.T) {
 				},
 				Subscriptions: nil,
 			},
-			err: errors.ErrNotFound,
+			err: nil,
 		},
 		{
 			desc:      "retrieve subscriptions with invalid channel",

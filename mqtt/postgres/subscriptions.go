@@ -80,10 +80,6 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 		items = append(items, fromDBSub(item))
 	}
 
-	if len(items) == 0 {
-		return mqtt.Page{}, errors.ErrNotFound
-	}
-
 	cq := `SELECT COUNT(*) FROM subscriptions WHERE channel_id= :chanID;`
 	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
