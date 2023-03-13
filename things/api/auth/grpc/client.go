@@ -132,7 +132,7 @@ func (client grpcClient) GetThingsByIDs(ctx context.Context, req *mainflux.Thing
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getThingsByIDs(ctx, getThingsByIDsReq{ids: req.GetId()})
+	res, err := client.getThingsByIDs(ctx, getThingsByIDsReq{ids: req.GetIds()})
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 
 func encodeGetThingsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getThingsByIDsReq)
-	return &mainflux.ThingsReq{Id: req.ids}, nil
+	return &mainflux.ThingsReq{Ids: req.ids}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

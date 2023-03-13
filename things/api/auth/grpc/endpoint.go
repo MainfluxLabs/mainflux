@@ -53,13 +53,15 @@ func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(identifyReq)
-		id, err := svc.Identify(ctx, req.key)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
+		id, err := svc.Identify(ctx, req.key)
 		if err != nil {
 			return identityRes{}, err
 		}
+
 		return identityRes{id: id}, nil
 	}
 }
@@ -67,11 +69,11 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 func listThingsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getThingsByIDsReq)
-		things, err := svc.ListThingsByIDs(ctx, req.ids)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
+		things, err := svc.ListThingsByIDs(ctx, req.ids)
 		if err != nil {
 			return getThingsByIDsRes{}, err
 		}

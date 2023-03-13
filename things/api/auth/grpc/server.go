@@ -126,7 +126,7 @@ func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 
 func decodeGetThingsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.ThingsReq)
-	return getThingsByIDsReq{ids: req.GetId()}, nil
+	return getThingsByIDsReq{ids: req.GetIds()}, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
