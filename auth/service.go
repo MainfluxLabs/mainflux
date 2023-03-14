@@ -11,12 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const (
-	recoveryDuration = 5 * time.Minute
-
-	authoritiesObject = "authorities"
-	memberRelation    = "member"
-)
+const recoveryDuration = 5 * time.Minute
 
 var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.

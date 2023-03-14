@@ -112,6 +112,5 @@ message GroupsReq {
 }
 
 message GroupsRes {
-    uint64 total          = 1;
-    repeated Group groups = 2;
+    repeated Group groups = 1;
 }
