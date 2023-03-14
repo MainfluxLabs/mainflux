@@ -66,29 +66,30 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listThingsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
+func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getThingsByIDsReq)
+		req := request.(getGroupsByIDsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		things, err := svc.ListThingsByIDs(ctx, req.ids)
+		groups, err := svc.ListGroupsByIDs(ctx, req.ids)
 		if err != nil {
-			return getThingsByIDsRes{}, err
+			return getGroupsByIDsRes{}, err
 		}
 
-		mth := []*mainflux.Thing{}
+		mgr := []*mainflux.Group{}
 
-		for _, t := range things.Things {
-			mth = append(mth, &mainflux.Thing{
-				Id:    t.ID,
-				Owner: t.Owner,
-				Name:  t.Name,
-				Key:   t.Key,
-			})
+		for _, g := range groups {
+			gr := mainflux.Group{
+				Id:          g.ID,
+				OwnerID:     g.OwnerID,
+				Name:        g.Name,
+				Description: g.Description,
+			}
+			mgr = append(mgr, &gr)
 		}
 
-		return getThingsByIDsRes{things: mth}, nil
+		return getGroupsByIDsRes{groups: mgr}, nil
 	}
 }

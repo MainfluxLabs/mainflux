@@ -62,6 +62,6 @@ func (tc thingsClient) Identify(ctx context.Context, req *mainflux.Token, opts .
 	panic("not implemented")
 }
 
-func (tc thingsClient) GetThingsByIDs(context.Context, *mainflux.ThingsReq, ...grpc.CallOption) (*mainflux.ThingsRes, error) {
+func (tc thingsClient) GetGroupsByIDs(context.Context, *mainflux.GroupsReq, ...grpc.CallOption) (*mainflux.GroupsRes, error) {
 	panic("not implemented")
 }

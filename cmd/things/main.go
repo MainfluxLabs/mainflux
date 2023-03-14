@@ -23,7 +23,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
 	authgrpcapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	authhttpapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	thhttpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -72,7 +71,6 @@ const (
 	defJaegerURL       = ""
 	defAuthURL         = "localhost:8181"
 	defAuthTimeout     = "1s"
-	defThingsAuthURL   = "localhost:8183"
 
 	envLogLevel        = "MF_THINGS_LOG_LEVEL"
 	envDBHost          = "MF_THINGS_DB_HOST"
@@ -102,7 +100,6 @@ const (
 	envJaegerURL       = "MF_JAEGER_URL"
 	envAuthURL         = "MF_AUTH_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
-	envThingsAuthURL   = "MF_THINGS_AUTH_GRPC_URL"
 )
 
 type config struct {
@@ -125,7 +122,6 @@ type config struct {
 	standaloneToken string
 	jaegerURL       string
 	authURL         string
-	thingsAuthURL   string
 	authTimeout     time.Duration
 }
 
@@ -163,12 +159,7 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	conn := connectToThings(cfg, logger)
-	defer conn.Close()
-
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.authTimeout)
-
-	svc := newService(auth, tc, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
+	svc := newService(auth, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, "thing-http", thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.httpPort, cfg, logger)
@@ -238,7 +229,6 @@ func loadConfig() config {
 		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		authURL:         mainflux.Env(envAuthURL, defAuthURL),
-		thingsAuthURL:   mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		authTimeout:     authTimeout,
 	}
 }
@@ -324,31 +314,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-	return conn
-}
-
-func newService(auth mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
+func newService(auth mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
 	database := postgres.NewDatabase(db)
 
 	thingsRepo := postgres.NewThingRepository(database)
@@ -367,7 +333,7 @@ func newService(auth mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 	idProvider := uuid.New()
 
-	svc := things.New(auth, tc, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	svc := things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

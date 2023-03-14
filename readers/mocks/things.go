@@ -58,6 +58,6 @@ func (svc thingsServiceMock) Identify(context.Context, *mainflux.Token, ...grpc.
 	panic("not implemented")
 }
 
-func (svc thingsServiceMock) GetThingsByIDs(context.Context, *mainflux.ThingsReq, ...grpc.CallOption) (*mainflux.ThingsRes, error) {
+func (svc thingsServiceMock) GetGroupsByIDs(context.Context, *mainflux.GroupsReq, ...grpc.CallOption) (*mainflux.GroupsRes, error) {
 	panic("not implemented")
 }

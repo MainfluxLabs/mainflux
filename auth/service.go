@@ -70,6 +70,7 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs          OrgRepository
+	thClient      mainflux.ThingsServiceClient
 	keys          KeyRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
@@ -78,9 +79,10 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, thClient mainflux.ThingsServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
+		thClient:      thClient,
 		orgs:          orgs,
 		keys:          keys,
 		idProvider:    idp,

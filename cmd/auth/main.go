@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -22,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
@@ -56,6 +58,10 @@ const (
 	defLoginDuration = "10h"
 	defAdminEmail    = ""
 	defAdminPassword = ""
+	defAuthTimeout   = "1s"
+	defThingsAuthURL = "localhost:8183"
+	defCACerts       = ""
+	defClientTLS     = "false"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
 	envDBHost        = "MF_AUTH_DB_HOST"
@@ -69,12 +75,17 @@ const (
 	envDBSSLRootCert = "MF_AUTH_DB_SSL_ROOT_CERT"
 	envHTTPPort      = "MF_AUTH_HTTP_PORT"
 	envGRPCPort      = "MF_AUTH_GRPC_PORT"
+	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envAuthURL       = "MF_AUTH_GRPC_URL"
 	envSecret        = "MF_AUTH_SECRET"
 	envServerCert    = "MF_AUTH_SERVER_CERT"
 	envServerKey     = "MF_AUTH_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
 	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
 	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
+	envThingsAuthURL = "MF_THINGS_AUTH_GRPC_URL"
+	envCACerts       = "MF_THINGS_CA_CERTS"
+	envClientTLS     = "MF_THINGS_CLIENT_TLS"
 )
 
 type config struct {
@@ -87,7 +98,11 @@ type config struct {
 	serverKey     string
 	jaegerURL     string
 	loginDuration time.Duration
+	authTimeout   time.Duration
 	adminEmail    string
+	clientTLS     bool
+	caCerts       string
+	thingsAuthURL string
 }
 
 func main() {
@@ -108,7 +123,14 @@ func main() {
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, logger, cfg.loginDuration, cfg.adminEmail)
+	conn := connectToThings(cfg, logger)
+	defer conn.Close()
+
+	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	defer thingsCloser.Close()
+
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.authTimeout)
+	svc := newService(db, tc, dbTracer, cfg.secret, logger, cfg.loginDuration, cfg.adminEmail)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
@@ -142,9 +164,19 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
+	if err != nil {
+		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+	}
+
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
 	}
 
 	return config{
@@ -157,7 +189,11 @@ func loadConfig() config {
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration: loginDuration,
+		authTimeout:   authTimeout,
 		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
+		clientTLS:     tls,
+		caCerts:       mainflux.Env(envCACerts, defCACerts),
+		thingsAuthURL: mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 	}
 
 }
@@ -186,32 +222,42 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func initKeto(hostReadAddress, readPort, hostWriteAddress, writePort string, logger logger.Logger) (readerConnection, writerConnection *grpc.ClientConn) {
-	readConn, err := grpc.Dial(fmt.Sprintf("%s:%s", hostReadAddress, readPort), grpc.WithInsecure())
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial %s:%s for Keto Read Service: %s", hostReadAddress, readPort, err))
-		os.Exit(1)
-	}
-
-	writeConn, err := grpc.Dial(fmt.Sprintf("%s:%s", hostWriteAddress, writePort), grpc.WithInsecure())
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial %s:%s for Keto Write Service: %s", hostWriteAddress, writePort, err))
-		os.Exit(1)
-	}
-
-	return readConn, writeConn
-}
-
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	db, err := postgres.Connect(dbConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
 		os.Exit(1)
 	}
+
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration, adminEmail string) auth.Service {
+func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.clientTLS {
+		if cfg.caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		logger.Info("gRPC communication is not encrypted")
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
+		os.Exit(1)
+	}
+	
+	return conn
+}
+
+func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration, adminEmail string) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -221,7 +267,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger lo
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, keysRepo, idProvider, t, duration, adminEmail)
+	svc := auth.New(orgsRepo, tc, keysRepo, idProvider, t, duration, adminEmail)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

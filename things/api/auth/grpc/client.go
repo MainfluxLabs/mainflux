@@ -24,7 +24,7 @@ type grpcClient struct {
 	canAccessByID  endpoint.Endpoint
 	isChannelOwner endpoint.Endpoint
 	identify       endpoint.Endpoint
-	getThingsByIDs endpoint.Endpoint
+	getGroupsByIDs endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -65,13 +65,13 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeIdentityResponse,
 			mainflux.ThingID{},
 		).Endpoint()),
-		getThingsByIDs: kitot.TraceClient(tracer, "get_things_by_ids")(kitgrpc.NewClient(
+		getGroupsByIDs: kitot.TraceClient(tracer, "get_groups_by_ids")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"GetThingsByIDs",
-			encodeGetThingsByIDsRequest,
-			decodeGetThingsByIDsResponse,
-			mainflux.ThingsRes{},
+			"GetGroupsByIDs",
+			encodeGetGroupsByIDsRequest,
+			decodeGetGroupsByIDsResponse,
+			mainflux.GroupsRes{},
 		).Endpoint()),
 	}
 }
@@ -128,17 +128,17 @@ func (client grpcClient) Identify(ctx context.Context, req *mainflux.Token, _ ..
 	return &mainflux.ThingID{Value: ir.id}, nil
 }
 
-func (client grpcClient) GetThingsByIDs(ctx context.Context, req *mainflux.ThingsReq, _ ...grpc.CallOption) (*mainflux.ThingsRes, error) {
+func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *mainflux.GroupsReq, _ ...grpc.CallOption) (*mainflux.GroupsRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getThingsByIDs(ctx, getThingsByIDsReq{ids: req.GetIds()})
+	res, err := client.getGroupsByIDs(ctx, getGroupsByIDsReq{ids: req.GetIds()})
 	if err != nil {
 		return nil, err
 	}
 
-	ir := res.(getThingsByIDsRes)
-	return &mainflux.ThingsRes{Things: ir.things}, nil
+	ir := res.(getGroupsByIDsRes)
+	return &mainflux.GroupsRes{Groups: ir.groups}, nil
 }
 
 func encodeCanAccessByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -161,9 +161,9 @@ func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 	return &mainflux.Token{Value: req.key}, nil
 }
 
-func encodeGetThingsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(getThingsByIDsReq)
-	return &mainflux.ThingsReq{Ids: req.ids}, nil
+func encodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(getGroupsByIDsReq)
+	return &mainflux.GroupsReq{Ids: req.ids}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
@@ -175,7 +175,7 @@ func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) 
 	return emptyRes{}, nil
 }
 
-func decodeGetThingsByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.ThingsRes)
-	return getThingsByIDsRes{things: res.GetThings()}, nil
+func decodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*mainflux.GroupsRes)
+	return getGroupsByIDsRes{groups: res.GetGroups()}, nil
 }

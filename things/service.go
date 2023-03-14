@@ -110,6 +110,9 @@ type Service interface {
 	// ListGroups retrieves groups.
 	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
 
+	// ListGroupsByIDs retrieves groups by their IDs.
+	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
+
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error)
 
@@ -149,7 +152,6 @@ var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
 	auth         mainflux.AuthServiceClient
-	thingsClient mainflux.ThingsServiceClient
 	things       ThingRepository
 	channels     ChannelRepository
 	groups       GroupRepository
@@ -159,10 +161,9 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth mainflux.AuthServiceClient, thingsClient mainflux.ThingsServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
-		thingsClient: thingsClient,
 		things:       things,
 		channels:     channels,
 		groups:       groups,
@@ -625,6 +626,15 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMe
 	}
 
 	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
+}
+
+func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error) {
+	page, err := ts.groups.RetrieveByIDs(ctx, ids)
+	if err != nil {
+		return []Group{}, err
+	}
+
+	return page.Groups, nil
 }
 
 func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {

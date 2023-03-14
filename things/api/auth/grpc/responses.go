@@ -15,6 +15,6 @@ type emptyRes struct {
 	err error
 }
 
-type getThingsByIDsRes struct {
-	things []*mainflux.Thing
+type getGroupsByIDsRes struct {
+	groups []*mainflux.Group
 }

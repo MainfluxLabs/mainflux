@@ -15,7 +15,6 @@ import (
 
 	"github.com/opentracing/opentracing-go/mocktracer"
 
-	httpMock "github.com/MainfluxLabs/mainflux/http/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -70,7 +69,6 @@ func toJSON(data interface{}) string {
 
 func newService(tokens map[string]string) things.Service {
 	auth := mocks.NewAuthService(tokens)
-	thingsClient := httpMock.NewThingsClient(tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
@@ -79,7 +77,7 @@ func newService(tokens map[string]string) things.Service {
 	thingCache := mocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, thingsClient, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {

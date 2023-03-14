@@ -265,6 +265,10 @@ func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, pm thin
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) RemoveGroup(ctx context.Context, token, id string) error {
 	panic("not implemented")
 }

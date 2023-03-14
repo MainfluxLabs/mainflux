@@ -272,6 +272,10 @@ func (es eventStore) ListGroups(ctx context.Context, token string, pm things.Pag
 	return es.svc.ListGroups(ctx, token, pm)
 }
 
+func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
+	return es.svc.ListGroupsByIDs(ctx, groupIDs)
+}
+
 func (es eventStore) RemoveGroup(ctx context.Context, token, id string) error {
 	return es.svc.RemoveGroup(ctx, token, id)
 }
