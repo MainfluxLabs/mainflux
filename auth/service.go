@@ -358,27 +358,40 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 	return nil
 }
 
-func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgGroupsPage, error) {
+func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (GroupsPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
-		return OrgGroupsPage{}, err
+		return GroupsPage{}, err
 	}
 
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
-		return OrgGroupsPage{}, err
+		return GroupsPage{}, err
 	}
 
 	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); org.OwnerID != user.ID && err != nil {
-		return OrgGroupsPage{}, errors.Wrap(errors.ErrAuthorization, err)
+		return GroupsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	mp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
 	if err != nil {
-		return OrgGroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	return mp, nil
+	greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
+	resp, err := svc.thClient.GetGroupsByIDs(ctx, &greq)
+	if err != nil {
+		return GroupsPage{}, err
+	}
+
+	pg := GroupsPage{
+		Groups: resp.Groups,
+		PageMetadata: PageMetadata{
+			Total: mp.Total,
+		},
+	}
+
+	return pg, nil
 }
 
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {

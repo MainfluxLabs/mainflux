@@ -237,7 +237,7 @@ func (lm *loggingMiddleware) UnassignGroups(ctx context.Context, token string, o
 	return lm.svc.UnassignGroups(ctx, token, orgID, groupIDs...)
 }
 
-func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgGroupsPage, err error) {
+func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.GroupsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_groups for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
 		if err != nil {

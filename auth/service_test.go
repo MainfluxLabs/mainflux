@@ -18,8 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var idProvider = uuid.New()
-
 const (
 	secret      = "secret"
 	email       = "test@example.com"

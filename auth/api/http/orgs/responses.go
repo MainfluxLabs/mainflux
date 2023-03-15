@@ -35,7 +35,7 @@ func (res memberPageRes) Empty() bool {
 
 type groupsPageRes struct {
 	pageRes
-	GroupIDs []string `json:"group_ids"`
+	Groups []*mainflux.Group `json:"groups"`
 }
 
 func (res groupsPageRes) Code() int {
