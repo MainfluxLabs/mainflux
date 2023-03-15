@@ -294,7 +294,9 @@ func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
 func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
 	res := groupsPageRes{
 		pageRes: pageRes{
-			Total: mp.Total,
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
 		},
 		Groups: mp.Groups,
 	}

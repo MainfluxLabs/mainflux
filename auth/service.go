@@ -387,7 +387,9 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 	pg := GroupsPage{
 		Groups: resp.Groups,
 		PageMetadata: PageMetadata{
-			Total: mp.Total,
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
 		},
 	}
 
