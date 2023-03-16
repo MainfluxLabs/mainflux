@@ -65,7 +65,7 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs          OrgRepository
-	thClient      mainflux.ThingsServiceClient
+	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
@@ -74,10 +74,10 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, thClient mainflux.ThingsServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
-		thClient:      thClient,
+		things:        tc,
 		orgs:          orgs,
 		keys:          keys,
 		idProvider:    idp,
@@ -379,7 +379,7 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 	}
 
 	greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
-	resp, err := svc.thClient.GetGroupsByIDs(ctx, &greq)
+	resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
 	if err != nil {
 		return GroupsPage{}, err
 	}
