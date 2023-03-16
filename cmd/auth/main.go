@@ -61,6 +61,7 @@ const (
 	defAuthTimeout   = "1s"
 	defCACerts       = ""
 	defClientTLS     = "false"
+	defUsersAuthURL  = "localhost:8184"
 
 	envLogLevel      = "MF_AUTH_LOG_LEVEL"
 	envDBHost        = "MF_AUTH_DB_HOST"
@@ -192,6 +193,7 @@ func loadConfig() config {
 		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
 		clientTLS:     tls,
 		caCerts:       mainflux.Env(envCACerts, defCACerts),
+		usersAuthURL:  mainflux.Env(envUsersAuthURL, defUsersAuthURL),
 	}
 
 }
