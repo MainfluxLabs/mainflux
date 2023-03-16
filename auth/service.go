@@ -329,9 +329,18 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 }
 
 func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
-	_, err := svc.Identify(ctx, token)
+	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return OrgMembersPage{}, err
+	}
+
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	if err != nil {
+		return OrgMembersPage{}, err
+	}
+
+	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); org.OwnerID != user.ID && err != nil {
+		return OrgMembersPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)

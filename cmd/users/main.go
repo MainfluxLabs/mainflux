@@ -71,11 +71,11 @@ const (
 
 	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
 
-	defAuthTLS       = "false"
-	defAuthCACerts   = ""
-	defAuthURL       = "localhost:8181"
-	defAuthTimeout   = "1s"
-	defUsersGRPCPort = "8184"
+	defAuthTLS     = "false"
+	defAuthCACerts = ""
+	defAuthURL     = "localhost:8181"
+	defAuthTimeout = "1s"
+	defGRPCPort    = "8184"
 
 	defSelfRegister = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 
@@ -108,11 +108,11 @@ const (
 
 	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
 
-	envAuthTLS       = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts   = "MF_AUTH_CA_CERTS"
-	envAuthURL       = "MF_AUTH_GRPC_URL"
-	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envUsersGRPCPort = "MF_USERS_GRPC_PORT"
+	envAuthTLS     = "MF_AUTH_CLIENT_TLS"
+	envAuthCACerts = "MF_AUTH_CA_CERTS"
+	envAuthURL     = "MF_AUTH_GRPC_URL"
+	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envGRPCPort    = "MF_USERS_GRPC_PORT"
 
 	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
 )
@@ -122,7 +122,7 @@ type config struct {
 	dbConfig      postgres.Config
 	emailConf     email.Config
 	httpPort      string
-	usersGRPCPort  string
+	grcpPort      string
 	serverCert    string
 	serverKey     string
 	jaegerURL     string
@@ -237,7 +237,7 @@ func loadConfig() config {
 		dbConfig:      dbConfig,
 		emailConf:     emailConf,
 		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
-		usersGRPCPort:  mainflux.Env(envUsersGRPCPort, defUsersGRPCPort),
+		grcpPort:      mainflux.Env(envGRPCPort, defGRPCPort),
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
@@ -402,26 +402,26 @@ func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc users.S
 }
 
 func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.usersGRPCPort)
+	p := fmt.Sprintf(":%s", cfg.grcpPort)
 	errCh := make(chan error)
 	var server *grpc.Server
 
 	listener, err := net.Listen("tcp", p)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.usersGRPCPort, err)
+		return fmt.Errorf("failed to listen on port %s: %w", cfg.grcpPort, err)
 	}
 
 	switch {
 	case cfg.serverCert != "" || cfg.serverKey != "":
 		creds, err := credentials.NewServerTLSFromFile(cfg.serverCert, cfg.serverKey)
 		if err != nil {
-			return fmt.Errorf("failed to load things certificates: %w", err)
+			return fmt.Errorf("failed to load users certificates: %w", err)
 		}
-		logger.Info(fmt.Sprintf("Things gRPC service started using https on port %s with cert %s key %s",
-			cfg.usersGRPCPort, cfg.serverCert, cfg.serverKey))
+		logger.Info(fmt.Sprintf("Users gRPC service started using https on port %s with cert %s key %s",
+			cfg.grcpPort, cfg.serverCert, cfg.serverKey))
 		server = grpc.NewServer(grpc.Creds(creds))
 	default:
-		logger.Info(fmt.Sprintf("Things gRPC service started using http on port %s", cfg.usersGRPCPort))
+		logger.Info(fmt.Sprintf("Users gRPC service started using http on port %s", cfg.grcpPort))
 		server = grpc.NewServer()
 	}
 
