@@ -122,7 +122,7 @@ type config struct {
 	dbConfig      postgres.Config
 	emailConf     email.Config
 	httpPort      string
-	authGRPCPort  string
+	usersGRPCPort  string
 	serverCert    string
 	serverKey     string
 	jaegerURL     string
@@ -237,7 +237,7 @@ func loadConfig() config {
 		dbConfig:      dbConfig,
 		emailConf:     emailConf,
 		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
-		authGRPCPort:  mainflux.Env(envUsersGRPCPort, defUsersGRPCPort),
+		usersGRPCPort:  mainflux.Env(envUsersGRPCPort, defUsersGRPCPort),
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
@@ -402,13 +402,13 @@ func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc users.S
 }
 
 func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.authGRPCPort)
+	p := fmt.Sprintf(":%s", cfg.usersGRPCPort)
 	errCh := make(chan error)
 	var server *grpc.Server
 
 	listener, err := net.Listen("tcp", p)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.authGRPCPort, err)
+		return fmt.Errorf("failed to listen on port %s: %w", cfg.usersGRPCPort, err)
 	}
 
 	switch {
@@ -418,10 +418,10 @@ func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.
 			return fmt.Errorf("failed to load things certificates: %w", err)
 		}
 		logger.Info(fmt.Sprintf("Things gRPC service started using https on port %s with cert %s key %s",
-			cfg.authGRPCPort, cfg.serverCert, cfg.serverKey))
+			cfg.usersGRPCPort, cfg.serverCert, cfg.serverKey))
 		server = grpc.NewServer(grpc.Creds(creds))
 	default:
-		logger.Info(fmt.Sprintf("Things gRPC service started using http on port %s", cfg.authGRPCPort))
+		logger.Info(fmt.Sprintf("Things gRPC service started using http on port %s", cfg.usersGRPCPort))
 		server = grpc.NewServer()
 	}
 
