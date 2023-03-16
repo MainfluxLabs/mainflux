@@ -5,6 +5,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -70,6 +71,7 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs          OrgRepository
+	userClient    mainflux.UsersServiceClient
 	keys          KeyRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
@@ -78,10 +80,11 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, userClient mainflux.UsersServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		orgs:          orgs,
+		userClient:    userClient,
 		keys:          keys,
 		idProvider:    idp,
 		loginDuration: duration,
@@ -327,9 +330,19 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 }
 
 func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
-	if _, err := svc.Identify(ctx, token); err != nil {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
 		return OrgMembersPage{}, err
 	}
+
+	ureq := mainflux.UsersReq{Ids: []string{user.ID}}
+	us, err := svc.userClient.GetUsersByIDs(ctx, &ureq)
+	if err != nil {
+		return OrgMembersPage{}, err
+	}
+
+	fmt.Printf("**************************************************************************User: %v", us)
+
 	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
 	if err != nil {
 		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)

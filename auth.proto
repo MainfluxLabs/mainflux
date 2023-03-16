@@ -14,6 +14,10 @@ service ThingsService {
     rpc Identify(Token) returns (ThingID) {}
 }
 
+service UsersService {
+    rpc GetUsersByIDs(UsersReq) returns (UsersRes) {}
+}
+
 service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
@@ -97,4 +101,18 @@ message MembersRes {
     uint64 limit            = 3;
     string type             = 4;
     repeated string members = 5;
+}
+
+message User {
+	string id       = 1;
+	string email    = 2;
+	string status   = 3;
+}
+
+message UsersReq {
+    repeated string ids = 1;
+}
+
+message UsersRes {
+    repeated User users = 1;
 }

@@ -137,6 +137,8 @@ services:
     depends_on:
       - users-db
       - auth
+    expose:
+      - ${MF_USERS_GRPC_PORT}
     restart: on-failure
     environment:
       MF_USERS_LOG_LEVEL: ${MF_USERS_LOG_LEVEL}
@@ -160,8 +162,11 @@ services:
       MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
       MF_USERS_ADMIN_PASSWORD: ${MF_USERS_ADMIN_PASSWORD}
       MF_USERS_ALLOW_SELF_REGISTER: ${MF_USERS_ALLOW_SELF_REGISTER}
+      MF_USERS_GRPC_PORT: ${MF_USERS_GRPC_PORT}
+      MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
     ports:
       - ${MF_USERS_HTTP_PORT}:${MF_USERS_HTTP_PORT}
+      - ${MF_USERS_GRPC_PORT}:${MF_USERS_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
 
