@@ -6,5 +6,5 @@ package grpc
 import "github.com/MainfluxLabs/mainflux"
 
 type getUsersByIDsRes struct {
-	Users []*mainflux.User
+	users []*mainflux.User
 }

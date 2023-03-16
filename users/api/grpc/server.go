@@ -46,12 +46,12 @@ func (s *grpcServer) GetUsersByIDs(ctx context.Context, req *mainflux.UsersReq) 
 
 func decodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.UsersReq)
-	return getUsersByIDsReq{IDs: req.GetIds()}, nil
+	return getUsersByIDsReq{ids: req.GetIds()}, nil
 }
 
 func encodeGetUsersByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(getUsersByIDsRes)
-	return &mainflux.UsersRes{Users: res.Users}, nil
+	return &mainflux.UsersRes{Users: res.users}, nil
 }
 
 func encodeError(err error) error {

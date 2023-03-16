@@ -6,11 +6,11 @@ package grpc
 import "github.com/MainfluxLabs/mainflux/internal/apiutil"
 
 type getUsersByIDsReq struct {
-	IDs []string
+	ids []string
 }
 
 func (req getUsersByIDsReq) validate() error {
-	if len(req.IDs) == 0 {
+	if len(req.ids) == 0 {
 		return apiutil.ErrMissingID
 	}
 

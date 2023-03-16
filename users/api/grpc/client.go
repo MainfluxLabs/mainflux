@@ -27,6 +27,7 @@ type grpcClient struct {
 // NewClient returns new gRPC client instance.
 func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) mainflux.UsersServiceClient {
 	return &grpcClient{
+		timeout: timeout,
 		getUsersByIDs: kitot.TraceClient(tracer, "get_users_by_ids")(kitgrpc.NewClient(
 			conn,
 			svcName,
@@ -42,23 +43,23 @@ func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *mainflux.UsersRe
 	ctx, close := context.WithTimeout(ctx, clent.timeout)
 	defer close()
 
-	res, err := clent.getUsersByIDs(ctx, getUsersByIDsReq{IDs: req.GetIds()})
+	res, err := clent.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds()})
 	if err != nil {
 		return nil, err
 	}
 
 	ir := res.(getUsersByIDsRes)
 
-	return &mainflux.UsersRes{Users: ir.Users}, nil
+	return &mainflux.UsersRes{Users: ir.users}, nil
 
 }
 
 func encodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getUsersByIDsReq)
-	return &getUsersByIDsReq{IDs: req.IDs}, nil
+	return &mainflux.UsersReq{Ids: req.ids}, nil
 }
 
 func decodeGetUsersByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.UsersRes)
-	return getUsersByIDsRes{Users: res.GetUsers()}, nil
+	return getUsersByIDsRes{users: res.GetUsers()}, nil
 }

@@ -18,7 +18,7 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		up, err := svc.ListUsersByIDs(ctx, req.IDs)
+		up, err := svc.ListUsersByIDs(ctx, req.ids)
 		if err != nil {
 			return nil, err
 		}
@@ -34,6 +34,6 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			mu = append(mu, &user)
 		}
 
-		return getUsersByIDsRes{Users: mu}, nil
+		return getUsersByIDsRes{users: mu}, nil
 	}
 }
