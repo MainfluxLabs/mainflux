@@ -92,20 +92,22 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	return val, nil
 }
 
-func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
+// func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
+func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
+
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
 	up := users.UserPage{}
 	i := uint64(0)
 
-	if email != "" {
-		val, ok := mockUsers[email]
+	if pm.Email != "" {
+		val, ok := mockUsers[pm.Email]
 		if !ok {
 			return users.UserPage{}, errors.ErrNotFound
 		}
-		up.Offset = offset
-		up.Limit = limit
+		up.Offset = pm.Offset
+		up.Limit = pm.Limit
 		up.Total = uint64(i)
 		up.Users = []users.User{val}
 		return up, nil
@@ -113,11 +115,11 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string,
 
 	sortedUsers := sortUsers(mockUsers)
 	for _, u := range sortedUsers {
-		if i >= offset && i < offset+limit || limit == 0 {
-			switch status {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
+			switch pm.Status {
 			case users.DisabledStatusKey,
 				users.EnabledStatusKey:
-				if status == u.Status {
+				if pm.Status == u.Status {
 					up.Users = append(up.Users, u)
 				}
 			default:
@@ -127,8 +129,8 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string,
 		i++
 	}
 
-	up.Offset = offset
-	up.Limit = limit
+	up.Offset = pm.Offset
+	up.Limit = pm.Limit
 	up.Total = uint64(i)
 
 	return up, nil
@@ -142,7 +144,7 @@ func (urm *userRepositoryMock) RetrieveAll(ctx context.Context) ([]users.User, e
 	for _, user := range mockUsers {
 		users = append(users, user)
 	}
-	
+
 	return users, nil
 }
 

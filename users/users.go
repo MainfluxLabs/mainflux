@@ -66,7 +66,7 @@ type UserRepository interface {
 	RetrieveByID(ctx context.Context, id string) (User, error)
 
 	// RetrieveByIDs retrieves all users for given array of userIDs.
-	RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, m Metadata) (UserPage, error)
+	RetrieveByIDs(ctx context.Context, userIDs []string, pm PageMetadata) (UserPage, error)
 
 	// UpdatePassword updates password for user with given email
 	UpdatePassword(ctx context.Context, email, password string) error

@@ -131,18 +131,19 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
-func (ur userRepository) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, userIDs []string, email string, um users.Metadata) (users.UserPage, error) {
-	eq, ep, err := createEmailQuery("", email)
+func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm users.PageMetadata) (users.UserPage, error) {
+
+	eq, ep, err := createEmailQuery("", pm.Email)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	mq, mp, err := createMetadataQuery("", um)
+	mq, mp, err := createMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
-	aq := fmt.Sprintf("status = '%s'", status)
-	if status == users.AllStatusKey {
+	aq := fmt.Sprintf("status = '%s'", pm.Status)
+	if pm.Status == users.AllStatusKey {
 		aq = ""
 	}
 
@@ -166,15 +167,15 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, status string, offse
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
-	if limit == 0 {
+	if pm.Limit == 0 {
 		olq = ""
 	}
 
 	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY email %s;`, emq, olq)
 
 	params := map[string]interface{}{
-		"limit":    limit,
-		"offset":   offset,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 		"email":    ep,
 		"metadata": mp,
 	}
@@ -211,8 +212,8 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, status string, offse
 		Users: items,
 		PageMetadata: users.PageMetadata{
 			Total:  total,
-			Offset: offset,
-			Limit:  limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
 	}
 

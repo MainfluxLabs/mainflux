@@ -263,11 +263,12 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	return svc.users.RetrieveByIDs(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)
+	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
 func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
-	return svc.users.RetrieveByIDs(ctx, "", 0, 0, ids, "", nil)
+	pm := PageMetadata{Status: EnabledStatusKey}
+	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
 func (svc usersService) Backup(ctx context.Context, token string) ([]User, error) {
