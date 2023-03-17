@@ -92,9 +92,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	return val, nil
 }
 
-// func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, status string, offset, limit uint64, ids []string, email string, um users.Metadata) (users.UserPage, error) {
 func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
-
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
