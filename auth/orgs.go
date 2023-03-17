@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/MainfluxLabs/mainflux"
 )
 
 var (
@@ -65,10 +63,15 @@ type OrgGroupsPage struct {
 	PageMetadata
 	GroupIDs []string
 }
-
+type Group struct {
+	ID          string
+	OwnerID     string
+	Name        string
+	Description string
+}
 type GroupsPage struct {
 	PageMetadata
-	Groups []*mainflux.Group
+	Groups []Group
 }
 
 // OrgService specifies an API that must be fullfiled by the domain service

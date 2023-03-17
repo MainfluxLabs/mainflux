@@ -384,8 +384,19 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, err
 	}
 
+	var groups []Group
+	for _, g := range resp.Groups {
+		gr := Group{
+			ID:          g.Id,
+			OwnerID:     g.OwnerID,
+			Name:        g.Name,
+			Description: g.Description,
+		}
+		groups = append(groups, gr)
+	}
+
 	pg := GroupsPage{
-		Groups: resp.Groups,
+		Groups: groups,
 		PageMetadata: PageMetadata{
 			Total:  mp.Total,
 			Offset: mp.Offset,
