@@ -39,68 +39,68 @@ const (
 	httpProtocol  = "http"
 	httpsProtocol = "https"
 
-	defLogLevel      = "error"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "auth"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defHTTPPort      = "8180"
-	defGRPCPort      = "8181"
-	defSecret        = "auth"
-	defServerCert    = ""
-	defServerKey     = ""
-	defJaegerURL     = ""
-	defLoginDuration = "10h"
-	defAdminEmail    = ""
-	defTimeout       = "1s"
-	defThingsGRPCURL = "localhost:8183"
-	defCACerts       = ""
-	defClientTLS     = "false"
+	defLogLevel        = "error"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "auth"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defHTTPPort        = "8180"
+	defGRPCPort        = "8181"
+	defSecret          = "auth"
+	defServerCert      = ""
+	defServerKey       = ""
+	defJaegerURL       = ""
+	defLoginDuration   = "10h"
+	defAdminEmail      = ""
+	defTimeout         = "1s"
+	defThingsGRPCURL   = "localhost:8183"
+	defThingsCACerts   = ""
+	defThingsClientTLS = "false"
 
-	envLogLevel      = "MF_AUTH_LOG_LEVEL"
-	envDBHost        = "MF_AUTH_DB_HOST"
-	envDBPort        = "MF_AUTH_DB_PORT"
-	envDBUser        = "MF_AUTH_DB_USER"
-	envDBPass        = "MF_AUTH_DB_PASS"
-	envDB            = "MF_AUTH_DB"
-	envDBSSLMode     = "MF_AUTH_DB_SSL_MODE"
-	envDBSSLCert     = "MF_AUTH_DB_SSL_CERT"
-	envDBSSLKey      = "MF_AUTH_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_AUTH_DB_SSL_ROOT_CERT"
-	envHTTPPort      = "MF_AUTH_HTTP_PORT"
-	envGRPCPort      = "MF_AUTH_GRPC_PORT"
-	envTimeout       = "MF_AUTH_GRPC_TIMEOUT"
-	envSecret        = "MF_AUTH_SECRET"
-	envServerCert    = "MF_AUTH_SERVER_CERT"
-	envServerKey     = "MF_AUTH_SERVER_KEY"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
-	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envCACerts       = "MF_THINGS_CA_CERTS"
-	envClientTLS     = "MF_THINGS_CLIENT_TLS"
+	envLogLevel        = "MF_AUTH_LOG_LEVEL"
+	envDBHost          = "MF_AUTH_DB_HOST"
+	envDBPort          = "MF_AUTH_DB_PORT"
+	envDBUser          = "MF_AUTH_DB_USER"
+	envDBPass          = "MF_AUTH_DB_PASS"
+	envDB              = "MF_AUTH_DB"
+	envDBSSLMode       = "MF_AUTH_DB_SSL_MODE"
+	envDBSSLCert       = "MF_AUTH_DB_SSL_CERT"
+	envDBSSLKey        = "MF_AUTH_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_AUTH_DB_SSL_ROOT_CERT"
+	envHTTPPort        = "MF_AUTH_HTTP_PORT"
+	envGRPCPort        = "MF_AUTH_GRPC_PORT"
+	envTimeout         = "MF_AUTH_GRPC_TIMEOUT"
+	envSecret          = "MF_AUTH_SECRET"
+	envServerCert      = "MF_AUTH_SERVER_CERT"
+	envServerKey       = "MF_AUTH_SERVER_KEY"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
+	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsCACerts   = "MF_THINGS_CA_CERTS"
+	envThingsClientTLS = "MF_THINGS_CLIENT_TLS"
 )
 
 type config struct {
-	logLevel      string
-	dbConfig      postgres.Config
-	httpPort      string
-	grpcPort      string
-	secret        string
-	serverCert    string
-	serverKey     string
-	jaegerURL     string
-	loginDuration time.Duration
-	timeout       time.Duration
-	adminEmail    string
-	clientTLS     bool
-	caCerts       string
-	thingsGRPCURL string
+	logLevel        string
+	dbConfig        postgres.Config
+	httpPort        string
+	grpcPort        string
+	secret          string
+	serverCert      string
+	serverKey       string
+	jaegerURL       string
+	loginDuration   time.Duration
+	timeout         time.Duration
+	adminEmail      string
+	thingsClientTLS bool
+	thingsCACerts   string
+	thingsGRPCURL   string
 }
 
 func main() {
@@ -162,9 +162,9 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
+	tls, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
@@ -178,20 +178,20 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:      dbConfig,
-		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
-		grpcPort:      mainflux.Env(envGRPCPort, defGRPCPort),
-		secret:        mainflux.Env(envSecret, defSecret),
-		serverCert:    mainflux.Env(envServerCert, defServerCert),
-		serverKey:     mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration: loginDuration,
-		timeout:       timeout,
-		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		grpcPort:        mainflux.Env(envGRPCPort, defGRPCPort),
+		secret:          mainflux.Env(envSecret, defSecret),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration:   loginDuration,
+		timeout:         timeout,
+		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
+		thingsClientTLS: tls,
+		thingsCACerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
+		thingsGRPCURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 }
@@ -232,9 +232,9 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+	if cfg.thingsClientTLS {
+		if cfg.thingsCACerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.thingsCACerts, "")
 			if err != nil {
 				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
 				os.Exit(1)
