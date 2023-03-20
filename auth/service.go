@@ -328,26 +328,52 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 	return nil
 }
 
-func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
+func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (MembersPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
-		return OrgMembersPage{}, err
+		return MembersPage{}, err
 	}
 
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
-		return OrgMembersPage{}, err
+		return MembersPage{}, err
 	}
 
 	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); org.OwnerID != user.ID && err != nil {
-		return OrgMembersPage{}, errors.Wrap(errors.ErrAuthorization, err)
+		return MembersPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
 	if err != nil {
-		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return MembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
-	return mp, nil
+
+	usrReq := mainflux.UsersReq{Ids: mp.MemberIDs}
+	usr, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+	if err != nil {
+		return MembersPage{}, err
+	}
+
+	var members []User
+	for _, u := range usr.Users {
+		mbr := User{
+			ID:     u.Id,
+			Email:  u.Email,
+			Status: u.Status,
+		}
+		members = append(members, mbr)
+	}
+
+	mpg := MembersPage{
+		Members: members,
+		PageMetadata: PageMetadata{
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
+		},
+	}
+
+	return mpg, nil
 }
 
 func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error {
