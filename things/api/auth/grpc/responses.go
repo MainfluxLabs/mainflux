@@ -3,9 +3,7 @@
 
 package grpc
 
-import (
-	"github.com/MainfluxLabs/mainflux"
-)
+import "github.com/MainfluxLabs/mainflux"
 
 type identityRes struct {
 	id string

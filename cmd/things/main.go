@@ -69,7 +69,7 @@ const (
 	defStandaloneEmail = ""
 	defStandaloneToken = ""
 	defJaegerURL       = ""
-	defAuthURL         = "localhost:8181"
+	defAuthGRPCURL     = "localhost:8181"
 	defAuthTimeout     = "1s"
 
 	envLogLevel        = "MF_THINGS_LOG_LEVEL"
@@ -98,7 +98,7 @@ const (
 	envStandaloneEmail = "MF_THINGS_STANDALONE_EMAIL"
 	envStandaloneToken = "MF_THINGS_STANDALONE_TOKEN"
 	envJaegerURL       = "MF_JAEGER_URL"
-	envAuthURL         = "MF_AUTH_GRPC_URL"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
 	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
 )
 
@@ -121,7 +121,7 @@ type config struct {
 	standaloneEmail string
 	standaloneToken string
 	jaegerURL       string
-	authURL         string
+	authGRPCURL     string
 	authTimeout     time.Duration
 }
 
@@ -228,7 +228,7 @@ func loadConfig() config {
 		standaloneEmail: mainflux.Env(envStandaloneEmail, defStandaloneEmail),
 		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authURL:         mainflux.Env(envAuthURL, defAuthURL),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authTimeout:     authTimeout,
 	}
 }
@@ -305,7 +305,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.authURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)

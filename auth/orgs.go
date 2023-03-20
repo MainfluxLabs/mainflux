@@ -63,12 +63,14 @@ type OrgGroupsPage struct {
 	PageMetadata
 	GroupIDs []string
 }
+
 type Group struct {
 	ID          string
 	OwnerID     string
 	Name        string
 	Description string
 }
+
 type GroupsPage struct {
 	PageMetadata
 	Groups []Group

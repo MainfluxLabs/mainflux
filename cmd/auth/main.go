@@ -57,9 +57,8 @@ const (
 	defJaegerURL     = ""
 	defLoginDuration = "10h"
 	defAdminEmail    = ""
-	defAdminPassword = ""
-	defAuthTimeout   = "1s"
-	defThingsAuthURL = "localhost:8183"
+	defTimeout       = "1s"
+	defThingsGRPCURL = "localhost:8183"
 	defCACerts       = ""
 	defClientTLS     = "false"
 
@@ -75,15 +74,14 @@ const (
 	envDBSSLRootCert = "MF_AUTH_DB_SSL_ROOT_CERT"
 	envHTTPPort      = "MF_AUTH_HTTP_PORT"
 	envGRPCPort      = "MF_AUTH_GRPC_PORT"
-	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envAuthURL       = "MF_AUTH_GRPC_URL"
+	envTimeout       = "MF_AUTH_GRPC_TIMEOUT"
 	envSecret        = "MF_AUTH_SECRET"
 	envServerCert    = "MF_AUTH_SERVER_CERT"
 	envServerKey     = "MF_AUTH_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
 	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
 	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
-	envThingsAuthURL = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
 	envCACerts       = "MF_THINGS_CA_CERTS"
 	envClientTLS     = "MF_THINGS_CLIENT_TLS"
 )
@@ -98,11 +96,11 @@ type config struct {
 	serverKey     string
 	jaegerURL     string
 	loginDuration time.Duration
-	authTimeout   time.Duration
+	timeout       time.Duration
 	adminEmail    string
 	clientTLS     bool
 	caCerts       string
-	thingsAuthURL string
+	thingsGRPCURL string
 }
 
 func main() {
@@ -129,7 +127,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.authTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.timeout)
 	svc := newService(db, tc, dbTracer, cfg.secret, logger, cfg.loginDuration, cfg.adminEmail)
 
 	g.Go(func() error {
@@ -174,9 +172,9 @@ func loadConfig() config {
 		log.Fatal(err)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	timeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
 	return config{
@@ -189,11 +187,11 @@ func loadConfig() config {
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration: loginDuration,
-		authTimeout:   authTimeout,
+		timeout:       timeout,
 		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
 		clientTLS:     tls,
 		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		thingsAuthURL: mainflux.Env(envThingsAuthURL, defThingsAuthURL),
+		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 }
@@ -248,12 +246,12 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
 		os.Exit(1)
 	}
-	
+
 	return conn
 }
 

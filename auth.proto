@@ -101,10 +101,10 @@ message MembersRes {
 }
 
 message Group {
-    string id                           = 1;
-    string ownerID                      = 2;
-    string name                         = 3;
-    string description                  = 4;
+    string id          = 1;
+    string ownerID     = 2;
+    string name        = 3;
+    string description = 4;
 }
 
 message GroupsReq {
