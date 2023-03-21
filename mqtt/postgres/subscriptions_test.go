@@ -84,6 +84,7 @@ func TestRemove(t *testing.T) {
 		Subtopic: subtopic,
 		ThingID:  thingID,
 		ChanID:   chanID,
+		ClientID: "client-id-1",
 	}
 
 	nonExistingSub := sub
@@ -138,6 +139,7 @@ func TestRetrieveByID(t *testing.T) {
 			Subtopic: subtopic,
 			ThingID:  thID,
 			ChanID:   chanID,
+			ClientID: fmt.Sprintf("client-id-%d", i),
 		}
 
 		err = repo.Save(context.Background(), sub)

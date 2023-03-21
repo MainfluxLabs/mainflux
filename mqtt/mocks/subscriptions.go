@@ -79,5 +79,12 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	}
 
 	return errors.ErrNotFound
+}
 
+func (srm *subRepoMock) UpdateStatus(_ context.Context, sub mqtt.Subscription) error {
+	return nil
+}
+
+func (srm *subRepoMock) HasClientID(_ context.Context, clientID string) error {
+	return nil
 }

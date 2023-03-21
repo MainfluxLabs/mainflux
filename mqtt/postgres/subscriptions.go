@@ -22,11 +22,14 @@ func NewRepository(db Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := `INSERT INTO subscriptions (subtopic, thing_id, channel_id, created_at) VALUES (:subtopic, :thing_id, :channel_id, :created_at)`
+	q := `INSERT INTO subscriptions (subtopic, thing_id, channel_id, client_id, status, created_at)
+		VALUES (:subtopic, :thing_id, :channel_id, :client_id, :status, :created_at)`
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
 		ChanID:    sub.ChanID,
+		ClientID:  sub.ClientID,
+		Status:    sub.Status,
 		CreatedAt: sub.CreatedAt,
 	}
 
@@ -36,6 +39,23 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 			return errors.Wrap(errors.ErrConflict, err)
 		}
 		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+	defer row.Close()
+
+	return nil
+}
+
+func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
+	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
+
+	dbSub := dbSubscription{
+		ClientID: sub.ClientID,
+		Status:   sub.Status,
+	}
+
+	row, err := gr.db.NamedQueryContext(ctx, q, dbSub)
+	if err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
 	defer row.Close()
 
@@ -52,17 +72,31 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	return nil
 }
 
+func (gr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
+	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
+	exists := false
+	if err := gr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
+		return errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	if !exists {
+		return errors.ErrNotFound
+	}
+
+	return nil
+}
+
 func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageMetadata, chanID string) (mqtt.Page, error) {
 	olq := "LIMIT :limit OFFSET :offset"
 	if pm.Limit == 0 {
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT subtopic, channel_id, thing_id, created_at FROM subscriptions WHERE channel_id= :chanID ORDER BY created_at %s;`, olq)
+	q := fmt.Sprintf(`SELECT subtopic, channel_id, client_id, thing_id, status, created_at FROM subscriptions WHERE channel_id= :channel_id ORDER BY created_at %s;`, olq)
 	params := map[string]interface{}{
-		"chanID": chanID,
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
+		"channel_id": chanID,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
 	}
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
@@ -80,7 +114,7 @@ func (mr *mqttRepository) RetrieveByChannelID(ctx context.Context, pm mqtt.PageM
 		items = append(items, fromDBSub(item))
 	}
 
-	cq := `SELECT COUNT(*) FROM subscriptions WHERE channel_id= :chanID;`
+	cq := `SELECT COUNT(*) FROM subscriptions WHERE channel_id= :channel_id;`
 	total, err := mr.total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -116,6 +150,8 @@ type dbSubscription struct {
 	Subtopic  string  `db:"subtopic"`
 	ThingID   string  `db:"thing_id"`
 	ChanID    string  `db:"channel_id"`
+	ClientID  string  `db:"client_id"`
+	Status    string  `db:"status"`
 	CreatedAt float64 `db:"created_at"`
 }
 
@@ -124,6 +160,8 @@ func fromDBSub(sub dbSubscription) mqtt.Subscription {
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
 		ChanID:    sub.ChanID,
+		ClientID:  sub.ClientID,
+		Status:    sub.Status,
 		CreatedAt: sub.CreatedAt,
 	}
 }

@@ -62,7 +62,7 @@ func TestAuthConnect(t *testing.T) {
 		},
 		{
 			desc: "connect without clientID",
-			err:  nil,
+			err:  mqtt.ErrMissingClientID,
 			session: &session.Client{
 				ID:       "",
 				Username: thingID,

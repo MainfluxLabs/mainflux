@@ -49,12 +49,14 @@ func migrateDB(db *sqlx.DB) error {
 					    subtopic    VARCHAR(1024),
 					    channel_id  UUID,
 					    thing_id    UUID,
+					    client_id   VARCHAR(256) UNIQUE,
+					    status      VARCHAR(128),
 					    created_at  FLOAT,
 					    PRIMARY KEY (subtopic, channel_id, thing_id)
 					)`,
 				},
 				Down: []string{
-			            `DROP TABLE IF EXISTS subscriptions`,
+					`DROP TABLE IF EXISTS subscriptions`,
 				},
 			},
 		},

@@ -7,6 +7,8 @@ type Subscription struct {
 	Subtopic  string
 	ThingID   string
 	ChanID    string
+	ClientID  string
+	Status    string
 	CreatedAt float64
 }
 
@@ -30,4 +32,8 @@ type Repository interface {
 	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.
 	Remove(ctx context.Context, sub Subscription) error
+	// Update will update the subscription status.
+	UpdateStatus(ctx context.Context, sub Subscription) error
+	// HasClientID will update the subscription status.
+	HasClientID(ctx context.Context, clientID string) error
 }

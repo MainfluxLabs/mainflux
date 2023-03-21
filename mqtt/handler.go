@@ -21,7 +21,11 @@ import (
 
 var _ session.Handler = (*handler)(nil)
 
-const protocol = "mqtt"
+const (
+	protocol     = "mqtt"
+	connected    = "connected"
+	disconnected = "disconnected"
+)
 
 const (
 	LogInfoSubscribed                  = "subscribed with client_id %s to topics %s"
@@ -80,6 +84,10 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrClientNotInitialized
 	}
 
+	if c.ID == "" {
+		return ErrMissingClientID
+	}
+
 	thid, err := h.auth.Identify(context.Background(), string(c.Password))
 	if err != nil {
 		return err
@@ -135,7 +143,18 @@ func (h *handler) Connect(c *session.Client) {
 		h.logger.Error(LogErrFailedConnect + (ErrClientNotInitialized).Error())
 		return
 	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoConnected, c.ID))
+
+	if err := h.service.HasClientID(context.Background(), c.ID); err == nil {
+		sub := Subscription{
+			ClientID: c.ID,
+			Status:   connected,
+		}
+		if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
+			h.logger.Error(err.Error())
+		}
+	}
 }
 
 // Publish - after client successfully published
@@ -196,6 +215,7 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		err = h.service.CreateSubscription(context.Background(), s)
 		if err != nil {
 			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
+			return
 		}
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
@@ -231,6 +251,15 @@ func (h *handler) Disconnect(c *session.Client) {
 		h.logger.Error(LogErrFailedDisconnect + (ErrClientNotInitialized).Error())
 		return
 	}
+
+	sub := Subscription{
+		ClientID: c.ID,
+		Status:   disconnected,
+	}
+	if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
+		h.logger.Error(err.Error())
+	}
+
 	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID, c.Username))
 	if err := h.es.Disconnect(c.Username); err != nil {
 		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
@@ -302,6 +331,8 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			Subtopic:  subtopic,
 			ChanID:    chanID,
 			ThingID:   c.Username,
+			ClientID:  c.ID,
+			Status:    connected,
 			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
 		}
 		subs = append(subs, sub)
