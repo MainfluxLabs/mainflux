@@ -3,10 +3,16 @@
 
 package grpc
 
+import "github.com/MainfluxLabs/mainflux"
+
 type identityRes struct {
 	id string
 }
 
 type emptyRes struct {
 	err error
+}
+
+type getGroupsByIDsRes struct {
+	groups []*mainflux.Group
 }

@@ -13,13 +13,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentracing/opentracing-go/mocktracer"
-
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	"github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -11,12 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const (
-	recoveryDuration = 5 * time.Minute
-
-	authoritiesObject = "authorities"
-	memberRelation    = "member"
-)
+const recoveryDuration = 5 * time.Minute
 
 var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.
@@ -71,6 +66,7 @@ var _ Service = (*service)(nil)
 type service struct {
 	orgs          OrgRepository
 	users         mainflux.UsersServiceClient
+	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
@@ -79,9 +75,10 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, uc mainflux.UsersServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
+		things:        tc,
 		orgs:          orgs,
 		users:         uc,
 		keys:          keys,
@@ -400,27 +397,53 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 	return nil
 }
 
-func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgGroupsPage, error) {
+func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (GroupsPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
-		return OrgGroupsPage{}, err
+		return GroupsPage{}, err
 	}
 
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
-		return OrgGroupsPage{}, err
+		return GroupsPage{}, err
 	}
 
 	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); org.OwnerID != user.ID && err != nil {
-		return OrgGroupsPage{}, errors.Wrap(errors.ErrAuthorization, err)
+		return GroupsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	mp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
 	if err != nil {
-		return OrgGroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	return mp, nil
+	greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
+	resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
+	if err != nil {
+		return GroupsPage{}, err
+	}
+
+	var groups []Group
+	for _, g := range resp.Groups {
+		gr := Group{
+			ID:          g.Id,
+			OwnerID:     g.OwnerID,
+			Name:        g.Name,
+			Description: g.Description,
+		}
+		groups = append(groups, gr)
+	}
+
+	pg := GroupsPage{
+		Groups: groups,
+		PageMetadata: PageMetadata{
+			Total:  mp.Total,
+			Offset: mp.Offset,
+			Limit:  mp.Limit,
+		},
+	}
+
+	return pg, nil
 }
 
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {

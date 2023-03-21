@@ -36,7 +36,7 @@ func (res memberPageRes) Empty() bool {
 
 type groupsPageRes struct {
 	pageRes
-	GroupIDs []string `json:"group_ids"`
+	Groups []auth.Group `json:"groups"`
 }
 
 func (res groupsPageRes) Code() int {

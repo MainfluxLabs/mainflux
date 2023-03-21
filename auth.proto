@@ -12,6 +12,7 @@ service ThingsService {
     rpc IsChannelOwner(ChannelOwnerReq) returns (google.protobuf.Empty) {}
     rpc CanAccessByID(AccessByIDReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
+    rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
 }
 
 service UsersService {
@@ -115,4 +116,19 @@ message UsersReq {
 
 message UsersRes {
     repeated User users = 1;
+}
+
+message Group {
+    string id          = 1;
+    string ownerID     = 2;
+    string name        = 3;
+    string description = 4;
+}
+
+message GroupsReq {
+    repeated string ids = 1;
+}
+
+message GroupsRes {
+    repeated Group groups = 1;
 }

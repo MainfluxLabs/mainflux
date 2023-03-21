@@ -170,7 +170,7 @@ func (ms *metricsMiddleware) UnassignGroups(ctx context.Context, token, orgID st
 	return ms.svc.UnassignGroups(ctx, token, orgID, groupIDs...)
 }
 
-func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID string, pm auth.PageMetadata) (op auth.OrgGroupsPage, err error) {
+func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID string, pm auth.PageMetadata) (op auth.GroupsPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_org_groups").Add(1)
 		ms.latency.With("method", "list_org_groups").Observe(time.Since(begin).Seconds())

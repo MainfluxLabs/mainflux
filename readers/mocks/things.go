@@ -57,3 +57,7 @@ func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *mainflux.Ch
 func (svc thingsServiceMock) Identify(context.Context, *mainflux.Token, ...grpc.CallOption) (*mainflux.ThingID, error) {
 	panic("not implemented")
 }
+
+func (svc thingsServiceMock) GetGroupsByIDs(context.Context, *mainflux.GroupsReq, ...grpc.CallOption) (*mainflux.GroupsRes, error) {
+	panic("not implemented")
+}

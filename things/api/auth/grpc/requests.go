@@ -59,3 +59,15 @@ func (req identifyReq) validate() error {
 
 	return nil
 }
+
+type getGroupsByIDsReq struct {
+	ids []string
+}
+
+func (req getGroupsByIDsReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
