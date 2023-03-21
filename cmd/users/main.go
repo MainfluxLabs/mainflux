@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -30,6 +31,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/users/api"
+	grpcapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -73,6 +75,7 @@ const (
 	defAuthCACerts = ""
 	defAuthURL     = "localhost:8181"
 	defAuthTimeout = "1s"
+	defGRPCPort    = "8184"
 
 	defSelfRegister = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 
@@ -109,6 +112,7 @@ const (
 	envAuthCACerts = "MF_AUTH_CA_CERTS"
 	envAuthURL     = "MF_AUTH_GRPC_URL"
 	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envGRPCPort    = "MF_USERS_GRPC_PORT"
 
 	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
 )
@@ -118,6 +122,7 @@ type config struct {
 	dbConfig      postgres.Config
 	emailConf     email.Config
 	httpPort      string
+	grcpPort      string
 	serverCert    string
 	serverKey     string
 	jaegerURL     string
@@ -143,6 +148,9 @@ func main() {
 	}
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
+
+	usersTracer, usersCloser := initJaeger("users", cfg.jaegerURL, logger)
+	defer usersCloser.Close()
 
 	authTracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
 	defer closer.Close()
@@ -170,6 +178,10 @@ func main() {
 			logger.Info(fmt.Sprintf("Users service shutdown by signal: %s", sig))
 		}
 		return nil
+	})
+
+	g.Go(func() error {
+		return startGRPCServer(ctx, svc, usersTracer, cfg, logger)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -225,6 +237,7 @@ func loadConfig() config {
 		dbConfig:      dbConfig,
 		emailConf:     emailConf,
 		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
+		grcpPort:      mainflux.Env(envGRPCPort, defGRPCPort),
 		serverCert:    mainflux.Env(envServerCert, defServerCert),
 		serverKey:     mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
@@ -386,4 +399,51 @@ func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc users.S
 		return err
 	}
 
+}
+
+func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
+	p := fmt.Sprintf(":%s", cfg.grcpPort)
+	errCh := make(chan error)
+	var server *grpc.Server
+
+	listener, err := net.Listen("tcp", p)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %s: %w", cfg.grcpPort, err)
+	}
+
+	switch {
+	case cfg.serverCert != "" || cfg.serverKey != "":
+		creds, err := credentials.NewServerTLSFromFile(cfg.serverCert, cfg.serverKey)
+		if err != nil {
+			return fmt.Errorf("failed to load users certificates: %w", err)
+		}
+		logger.Info(fmt.Sprintf("Users gRPC service started using https on port %s with cert %s key %s",
+			cfg.grcpPort, cfg.serverCert, cfg.serverKey))
+		server = grpc.NewServer(grpc.Creds(creds))
+	default:
+		logger.Info(fmt.Sprintf("Users gRPC service started using http on port %s", cfg.grcpPort))
+		server = grpc.NewServer()
+	}
+
+	mainflux.RegisterUsersServiceServer(server, grpcapi.NewServer(tracer, svc))
+	go func() {
+		errCh <- server.Serve(listener)
+	}()
+
+	select {
+	case <-ctx.Done():
+		c := make(chan bool)
+		go func() {
+			defer close(c)
+			server.GracefulStop()
+		}()
+		select {
+		case <-c:
+		case <-time.After(stopWaitTime):
+		}
+		logger.Info(fmt.Sprintf("Users gRPC service shutdown at %s", p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }

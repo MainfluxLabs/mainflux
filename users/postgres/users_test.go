@@ -142,109 +142,138 @@ func TestRetrieveByIDs(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		email    string
-		offset   uint64
-		limit    uint64
-		size     uint64
-		total    uint64
-		ids      []string
-		metadata users.Metadata
+		pm   users.PageMetadata
+		size uint64
+		ids  []string
 	}{
 		"retrieve all users filtered by email": {
-			email:  "All",
-			offset: 0,
-			limit:  nUsers,
-			size:   nUsers,
-			total:  nUsers,
-			ids:    ids,
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Offset: 0,
+				Limit:  nUsers,
+				Total:  nUsers,
+			},
+			size: nUsers,
+			ids:  ids,
 		},
 		"retrieve all users by email with limit and offset": {
-			email:  "All",
-			offset: 2,
-			limit:  5,
-			size:   5,
-			total:  nUsers,
-			ids:    ids,
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Offset: 2,
+				Limit:  5,
+				Total:  nUsers,
+			},
+			size: 5,
+			ids:  ids,
 		},
 		"retrieve all users by email without limit": {
-			email: "All",
-			limit: 0,
-			size:  nUsers,
-			total: nUsers,
-			ids:   ids,
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Limit:  0,
+				Total:  nUsers,
+			},
+			size: nUsers,
+			ids:  ids,
 		},
 		"retrieve all users by metadata": {
-			email:    "All",
-			offset:   0,
-			limit:    nUsers,
-			size:     metaNum,
-			total:    nUsers,
-			metadata: meta,
-			ids:      ids,
+			pm: users.PageMetadata{
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
+				Metadata: meta,
+			},
+			size: metaNum,
+			ids:  ids,
 		},
 		"retrieve users by metadata and ids": {
-			email:    "All",
-			offset:   0,
-			limit:    nUsers,
-			size:     1,
-			total:    nUsers,
-			metadata: meta,
-			ids:      []string{ids[0]},
+			pm: users.PageMetadata{
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
+				Metadata: meta,
+			},
+			size: 1,
+			ids:  []string{ids[0]},
 		},
 		"retrieve users by wrong metadata": {
-			email:    "All",
-			offset:   0,
-			limit:    nUsers,
-			size:     0,
-			total:    nUsers,
-			metadata: wrongMeta,
-			ids:      ids,
+			pm: users.PageMetadata{
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
+				Metadata: wrongMeta,
+			},
+			size: 0,
+			ids:  ids,
 		},
 		"retrieve users by wrong metadata and ids": {
-			email:    "All",
-			offset:   0,
-			limit:    nUsers,
-			size:     0,
-			total:    nUsers,
-			metadata: wrongMeta,
-			ids:      []string{ids[0]},
+			pm: users.PageMetadata{
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
+				Metadata: wrongMeta,
+			},
+			size: 0,
+			ids:  []string{ids[0]},
 		},
 		"retrieve all users by list of ids with limit and offset": {
-			email:  "All",
-			offset: 2,
-			limit:  5,
-			size:   5,
-			total:  nUsers,
-			ids:    ids,
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Offset: 2,
+				Limit:  5,
+				Total:  nUsers,
+			},
+			size: 5,
+			ids:  ids,
 		},
 		"retrieve all users by list of ids with limit and offset and metadata": {
-			email:    "All",
-			offset:   1,
-			limit:    5,
-			size:     1,
-			total:    nUsers,
-			ids:      ids[0:5],
-			metadata: meta,
+			pm: users.PageMetadata{
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
+				Offset:   1,
+				Limit:    5,
+				Total:    nUsers,
+				Metadata: meta,
+			},
+			size: 1,
+			ids:  ids[0:5],
 		},
 		"retrieve all users from empty ids": {
-			email:  "All",
-			offset: 0,
-			limit:  nUsers,
-			size:   nUsers,
-			total:  nUsers,
-			ids:    []string{},
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Offset: 0,
+				Limit:  nUsers,
+				Total:  nUsers,
+			},
+			size: nUsers,
+			ids:  []string{},
 		},
 		"retrieve all users from empty ids with offset": {
-			email:  "All",
-			offset: 1,
-			limit:  5,
-			size:   5,
-			total:  nUsers,
-			ids:    []string{},
+			pm: users.PageMetadata{
+				Email:  "All",
+				Status: users.EnabledStatusKey,
+				Offset: 1,
+				Limit:  5,
+				Total:  nUsers,
+			},
+			size: 5,
+			ids:  []string{},
 		},
 	}
 	for desc, tc := range cases {
-		page, err := userRepo.RetrieveByIDs(context.Background(), users.EnabledStatusKey, tc.offset, tc.limit, tc.ids, tc.email, tc.metadata)
+		page, err := userRepo.RetrieveByIDs(context.Background(), tc.ids, tc.pm)
 		size := uint64(len(page.Users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))

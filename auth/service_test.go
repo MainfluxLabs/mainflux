@@ -18,8 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var idProvider = uuid.New()
-
 const (
 	secret      = "secret"
 	email       = "test@example.com"
@@ -37,7 +35,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 
 	t := jwt.New(secret)
-	return auth.New(nil, repo, idProvider, t, loginDuration, email)
+	return auth.New(nil, nil, nil, repo, idProvider, t, loginDuration, email)
 }
 
 func TestIssue(t *testing.T) {

@@ -9,11 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentracing/opentracing-go/mocktracer"
-
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"

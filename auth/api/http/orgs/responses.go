@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 
 type memberPageRes struct {
 	pageRes
-	MemberIDs []string `json:"member_ids"`
+	Members []auth.User `json:"members"`
 }
 
 func (res memberPageRes) Code() int {
@@ -35,7 +36,7 @@ func (res memberPageRes) Empty() bool {
 
 type groupsPageRes struct {
 	pageRes
-	GroupIDs []string `json:"group_ids"`
+	Groups []auth.Group `json:"groups"`
 }
 
 func (res groupsPageRes) Code() int {

@@ -122,8 +122,8 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return membersRes{}, err
 		}
 		var members []string
-		for _, id := range mp.MemberIDs {
-			members = append(members, id)
+		for _, id := range mp.Members {
+			members = append(members, id.ID)
 		}
 		return membersRes{
 			offset:  req.offset,

@@ -67,6 +67,9 @@ type Service interface {
 	// ListUsers retrieves users list for a valid admin token.
 	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
 
+	// ListUsersByIDs retrieves users list for the given IDs.
+	ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error)
+
 	// UpdateUser updates the user metadata.
 	UpdateUser(ctx context.Context, token string, user User) error
 
@@ -260,7 +263,12 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	return svc.users.RetrieveByIDs(ctx, pm.Status, pm.Offset, pm.Limit, nil, pm.Email, pm.Metadata)
+	return svc.users.RetrieveByIDs(ctx, nil, pm)
+}
+
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
+	pm := PageMetadata{Status: EnabledStatusKey}
+	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
 func (svc usersService) Backup(ctx context.Context, token string) ([]User, error) {

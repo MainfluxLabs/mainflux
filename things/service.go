@@ -34,6 +34,9 @@ type Service interface {
 	// user identified by the provided key.
 	ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error)
 
+	// ListThingsByIDs retrieves data about subset of things that are identified
+	ListThingsByIDs(ctx context.Context, ids []string) (Page, error)
+
 	// ListThingsByChannel retrieves data about subset of things that are
 	// connected or not connected to specified channel and belong to the user identified by
 	// the provided key.
@@ -106,6 +109,9 @@ type Service interface {
 
 	// ListGroups retrieves groups.
 	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
+
+	// ListGroupsByIDs retrieves groups by their IDs.
+	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
 
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error)
@@ -271,6 +277,14 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	}
 
 	return page, nil
+}
+
+func (ts *thingsService) ListThingsByIDs(ctx context.Context, ids []string) (Page, error) {
+	things, err := ts.things.RetrieveByIDs(ctx, ids, PageMetadata{})
+	if err != nil {
+		return Page{}, err
+	}
+	return things, nil
 }
 
 func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (Page, error) {
@@ -612,6 +626,15 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMe
 	}
 
 	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
+}
+
+func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error) {
+	page, err := ts.groups.RetrieveByIDs(ctx, ids)
+	if err != nil {
+		return []Group{}, err
+	}
+
+	return page.Groups, nil
 }
 
 func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {

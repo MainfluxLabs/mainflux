@@ -90,6 +90,10 @@ func (es eventStore) ListThings(ctx context.Context, token string, pm things.Pag
 	return es.svc.ListThings(ctx, token, pm)
 }
 
+func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {
+	return es.svc.ListThingsByIDs(ctx, ids)
+}
+
 func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.Page, error) {
 	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
 }
@@ -266,6 +270,10 @@ func (es eventStore) CreateGroup(ctx context.Context, token string, group things
 
 func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
 	return es.svc.ListGroups(ctx, token, pm)
+}
+
+func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
+	return es.svc.ListGroupsByIDs(ctx, groupIDs)
 }
 
 func (es eventStore) RemoveGroup(ctx context.Context, token, id string) error {
