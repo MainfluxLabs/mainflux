@@ -12,10 +12,18 @@ import (
 type Service interface {
 	// ListSubscriptions lists all subscriptions that belong to the specified channel.
 	ListSubscriptions(ctx context.Context, chanID, token string, pm PageMetadata) (Page, error)
+
 	// CreateSubscription create a subscription.
 	CreateSubscription(ctx context.Context, sub Subscription) error
+
 	// RemoveSubscription removes the subscription having the provided identifier.
 	RemoveSubscription(ctx context.Context, sub Subscription) error
+
+	// HasClientID  indicates if a subscription exist for a given client ID.
+	HasClientID(ctx context.Context, clientID string) error
+
+	// UpdateStatus updates the subscription status for a given client ID.
+	UpdateStatus(ctx context.Context, sub Subscription) error
 }
 
 type mqttService struct {
@@ -58,4 +66,12 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token stri
 	}
 
 	return page, nil
+}
+
+func (ms *mqttService) UpdateStatus(ctx context.Context, sub Subscription) error {
+	return ms.subscriptions.UpdateStatus(ctx, sub)
+}
+
+func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
+	return ms.subscriptions.HasClientID(ctx, clientID)
 }

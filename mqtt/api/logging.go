@@ -65,3 +65,29 @@ func (lm *loggingMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 
 	return lm.svc.RemoveSubscription(ctx, sub)
 }
+
+func (lm *loggingMiddleware) HasClientID(ctx context.Context, clientID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method has_client_id took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.HasClientID(ctx, clientID)
+}
+
+func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_status took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateStatus(ctx, sub)
+}
