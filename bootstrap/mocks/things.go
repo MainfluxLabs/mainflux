@@ -124,6 +124,10 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, th
 	return nil
 }
 
+func (svc *mainfluxThings) ListThingsByIDs(ctx context.Context, thingIDs []string) (things.Page, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
@@ -258,6 +262,10 @@ func (svc *mainfluxThings) CreateGroup(ctx context.Context, token string, group 
 }
 
 func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
 	panic("not implemented")
 }
 

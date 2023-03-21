@@ -24,6 +24,7 @@ type grpcClient struct {
 	canAccessByID  endpoint.Endpoint
 	isChannelOwner endpoint.Endpoint
 	identify       endpoint.Endpoint
+	getGroupsByIDs endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -63,6 +64,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeIdentifyRequest,
 			decodeIdentityResponse,
 			mainflux.ThingID{},
+		).Endpoint()),
+		getGroupsByIDs: kitot.TraceClient(tracer, "get_groups_by_ids")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetGroupsByIDs",
+			encodeGetGroupsByIDsRequest,
+			decodeGetGroupsByIDsResponse,
+			mainflux.GroupsRes{},
 		).Endpoint()),
 	}
 }
@@ -119,6 +128,19 @@ func (client grpcClient) Identify(ctx context.Context, req *mainflux.Token, _ ..
 	return &mainflux.ThingID{Value: ir.id}, nil
 }
 
+func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *mainflux.GroupsReq, _ ...grpc.CallOption) (*mainflux.GroupsRes, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getGroupsByIDs(ctx, getGroupsByIDsReq{ids: req.GetIds()})
+	if err != nil {
+		return nil, err
+	}
+
+	ir := res.(getGroupsByIDsRes)
+	return &mainflux.GroupsRes{Groups: ir.groups}, nil
+}
+
 func encodeCanAccessByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(accessByKeyReq)
 	return &mainflux.AccessByKeyReq{Token: req.thingKey, ChanID: req.chanID}, nil
@@ -139,6 +161,11 @@ func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 	return &mainflux.Token{Value: req.key}, nil
 }
 
+func encodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(getGroupsByIDsReq)
+	return &mainflux.GroupsReq{Ids: req.ids}, nil
+}
+
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.ThingID)
 	return identityRes{id: res.GetValue()}, nil
@@ -146,4 +173,9 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
 	return emptyRes{}, nil
+}
+
+func decodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*mainflux.GroupsRes)
+	return getGroupsByIDsRes{groups: res.GetGroups()}, nil
 }

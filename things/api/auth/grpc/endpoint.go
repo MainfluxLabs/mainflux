@@ -6,8 +6,9 @@ package grpc
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func canAccessEndpoint(svc things.Service) endpoint.Endpoint {
@@ -52,13 +53,43 @@ func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(identifyReq)
-		id, err := svc.Identify(ctx, req.key)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
+		id, err := svc.Identify(ctx, req.key)
 		if err != nil {
 			return identityRes{}, err
 		}
+
 		return identityRes{id: id}, nil
+	}
+}
+
+func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getGroupsByIDsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groups, err := svc.ListGroupsByIDs(ctx, req.ids)
+		if err != nil {
+			return getGroupsByIDsRes{}, err
+		}
+
+		mgr := []*mainflux.Group{}
+
+		for _, g := range groups {
+			gr := mainflux.Group{
+				Id:          g.ID,
+				OwnerID:     g.OwnerID,
+				Name:        g.Name,
+				Description: g.Description,
+			}
+			mgr = append(mgr, &gr)
+		}
+
+		return getGroupsByIDsRes{groups: mgr}, nil
 	}
 }

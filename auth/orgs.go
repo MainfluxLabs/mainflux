@@ -64,6 +64,18 @@ type OrgGroupsPage struct {
 	GroupIDs []string
 }
 
+type Group struct {
+	ID          string
+	OwnerID     string
+	Name        string
+	Description string
+}
+
+type GroupsPage struct {
+	PageMetadata
+	Groups []Group
+}
+
 // OrgService specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type OrgService interface {
@@ -101,7 +113,7 @@ type OrgService interface {
 	UnassignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
 
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
-	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (OrgGroupsPage, error)
+	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 }
 
 // OrgRepository specifies an org persistence API.

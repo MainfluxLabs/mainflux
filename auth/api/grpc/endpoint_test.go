@@ -45,7 +45,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, repo, idProvider, t, loginDuration, email)
+	return auth.New(nil, nil, repo, idProvider, t, loginDuration, email)
 }
 
 func startGRPCServer(svc auth.Service, port int) {

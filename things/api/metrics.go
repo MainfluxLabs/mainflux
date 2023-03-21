@@ -75,6 +75,15 @@ func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm th
 	return ms.svc.ListThings(ctx, token, pm)
 }
 
+func (ms *metricsMiddleware) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_things_by_ids").Add(1)
+		ms.latency.With("method", "list_things_by_ids").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListThingsByIDs(ctx, ids)
+}
+
 func (ms *metricsMiddleware) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_channel").Add(1)
@@ -253,6 +262,15 @@ func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm th
 	}(time.Now())
 
 	return ms.svc.ListGroups(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_groups_by_ids").Add(1)
+		ms.latency.With("method", "list_groups_by_ids").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupsByIDs(ctx, groupIDs)
 }
 
 func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (tp things.MemberPage, err error) {
