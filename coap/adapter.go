@@ -39,15 +39,15 @@ var _ Service = (*adapterService)(nil)
 
 // Observers is a map of maps,
 type adapterService struct {
-	auth    mainflux.ThingsServiceClient
+	things  mainflux.ThingsServiceClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
-		auth:    auth,
+		things:  things,
 		pubsub:  pubsub,
 		obsLock: sync.Mutex{},
 	}
@@ -60,7 +60,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 		Token:  key,
 		ChanID: msg.Channel,
 	}
-	thid, err := svc.auth.CanAccessByKey(ctx, ar)
+	thid, err := svc.things.CanAccessByKey(ctx, ar)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -74,7 +74,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 		Token:  key,
 		ChanID: chanID,
 	}
-	if _, err := svc.auth.CanAccessByKey(ctx, ar); err != nil {
+	if _, err := svc.things.CanAccessByKey(ctx, ar); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
@@ -89,7 +89,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopi
 		Token:  key,
 		ChanID: chanID,
 	}
-	if _, err := svc.auth.CanAccessByKey(ctx, ar); err != nil {
+	if _, err := svc.things.CanAccessByKey(ctx, ar); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)

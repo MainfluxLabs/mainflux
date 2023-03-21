@@ -19,9 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newMessageService(cc mainflux.ThingsServiceClient) adapter.Service {
+func newMessageService(tc mainflux.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
-	return adapter.New(pub, cc)
+	return adapter.New(pub, tc)
 }
 
 func newMessageServer(svc adapter.Service) *httptest.Server {

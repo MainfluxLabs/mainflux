@@ -68,7 +68,7 @@ const (
 	defESDB           = "0"
 	defESConsumerName = "bootstrap"
 	defJaegerURL      = ""
-	defAuthURL        = "localhost:8181"
+	defAuthGRPCURL    = "localhost:8181"
 	defAuthTimeout    = "1s"
 
 	envLogLevel       = "MF_BOOTSTRAP_LOG_LEVEL"
@@ -96,7 +96,7 @@ const (
 	envESDB           = "MF_BOOTSTRAP_ES_DB"
 	envESConsumerName = "MF_BOOTSTRAP_EVENT_CONSUMER"
 	envJaegerURL      = "MF_JAEGER_URL"
-	envAuthURL        = "MF_AUTH_GRPC_URL"
+	envAuthGRPCURL    = "MF_AUTH_GRPC_URL"
 	envAuthTimeout    = "MF_AUTH_GRPC_TIMEOUT"
 )
 
@@ -118,7 +118,7 @@ type config struct {
 	esDB           string
 	esConsumerName string
 	jaegerURL      string
-	authURL        string
+	authGRPCURL    string
 	authTimeout    time.Duration
 }
 
@@ -220,7 +220,7 @@ func loadConfig() config {
 		esDB:           mainflux.Env(envESDB, defESDB),
 		esConsumerName: mainflux.Env(envESConsumerName, defESConsumerName),
 		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
-		authURL:        mainflux.Env(envAuthURL, defAuthURL),
+		authGRPCURL:    mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authTimeout:    authTimeout,
 	}
 }
@@ -272,7 +272,7 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(auth mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
+func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
 	thingsRepo := postgres.NewConfigRepository(db, logger)
 
 	config := mfsdk.Config{
@@ -281,7 +281,7 @@ func newService(auth mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logge
 
 	sdk := mfsdk.NewSDK(config)
 
-	svc := bootstrap.New(auth, thingsRepo, sdk, cfg.encKey)
+	svc := bootstrap.New(ac, thingsRepo, sdk, cfg.encKey)
 	svc = redisprod.NewEventStoreMiddleware(svc, esClient)
 	svc = api.NewLoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -318,7 +318,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.authURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)

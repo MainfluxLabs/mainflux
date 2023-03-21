@@ -36,39 +36,39 @@ const (
 	svcName      = "timescaledb-reader"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel          = "error"
-	defPort              = "8911"
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defDBHost            = "localhost"
-	defDBPort            = "5432"
-	defDBUser            = "mainflux"
-	defDBPass            = "mainflux"
-	defDB                = "mainflux"
-	defDBSSLMode         = "disable"
-	defDBSSLCert         = ""
-	defDBSSLKey          = ""
-	defDBSSLRootCert     = ""
-	defJaegerURL         = ""
-	defThingsAuthURL     = "localhost:8183"
-	defThingsAuthTimeout = "1s"
+	defLogLevel      = "error"
+	defPort          = "8911"
+	defClientTLS     = "false"
+	defCACerts       = ""
+	defDBHost        = "localhost"
+	defDBPort        = "5432"
+	defDBUser        = "mainflux"
+	defDBPass        = "mainflux"
+	defDB            = "mainflux"
+	defDBSSLMode     = "disable"
+	defDBSSLCert     = ""
+	defDBSSLKey      = ""
+	defDBSSLRootCert = ""
+	defJaegerURL     = ""
+	defThingsGRPCURL = "localhost:8183"
+	defThingsTimeout = "1s"
 
-	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
-	envPort              = "MF_TIMESCALE_READER_PORT"
-	envClientTLS         = "MF_TIMESCALE_READER_CLIENT_TLS"
-	envCACerts           = "MF_TIMESCALE_READER_CA_CERTS"
-	envDBHost            = "MF_TIMESCALE_READER_DB_HOST"
-	envDBPort            = "MF_TIMESCALE_READER_DB_PORT"
-	envDBUser            = "MF_TIMESCALE_READER_DB_USER"
-	envDBPass            = "MF_TIMESCALE_READER_DB_PASS"
-	envDB                = "MF_TIMESCALE_READER_DB"
-	envDBSSLMode         = "MF_TIMESCALE_READER_DB_SSL_MODE"
-	envDBSSLCert         = "MF_TIMESCALE_READER_DB_SSL_CERT"
-	envDBSSLKey          = "MF_TIMESCALE_READER_DB_SSL_KEY"
-	envDBSSLRootCert     = "MF_TIMESCALE_READER_DB_SSL_ROOT_CERT"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envLogLevel      = "MF_TIMESCALE_READER_LOG_LEVEL"
+	envPort          = "MF_TIMESCALE_READER_PORT"
+	envClientTLS     = "MF_TIMESCALE_READER_CLIENT_TLS"
+	envCACerts       = "MF_TIMESCALE_READER_CA_CERTS"
+	envDBHost        = "MF_TIMESCALE_READER_DB_HOST"
+	envDBPort        = "MF_TIMESCALE_READER_DB_PORT"
+	envDBUser        = "MF_TIMESCALE_READER_DB_USER"
+	envDBPass        = "MF_TIMESCALE_READER_DB_PASS"
+	envDB            = "MF_TIMESCALE_READER_DB"
+	envDBSSLMode     = "MF_TIMESCALE_READER_DB_SSL_MODE"
+	envDBSSLCert     = "MF_TIMESCALE_READER_DB_SSL_CERT"
+	envDBSSLKey      = "MF_TIMESCALE_READER_DB_SSL_KEY"
+	envDBSSLRootCert = "MF_TIMESCALE_READER_DB_SSL_ROOT_CERT"
+	envJaegerURL     = "MF_JAEGER_URL"
+	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -149,9 +149,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
 
 	return config{
@@ -161,7 +161,7 @@ func loadConfig() config {
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		dbConfig:          dbConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
+		thingsAuthURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsAuthTimeout: authTimeout,
 	}
 }

@@ -36,52 +36,52 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel          = "error"
-	defPort              = "8180"
-	defDB                = "mainflux"
-	defDBHost            = "localhost"
-	defDBPort            = "27017"
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defServerCert        = ""
-	defServerKey         = ""
-	defJaegerURL         = ""
-	defThingsAuthURL     = "localhost:8183"
-	defThingsAuthTimeout = "1s"
-	defUsersAuthURL      = "localhost:8181"
-	defUsersAuthTimeout  = "1s"
+	defLogLevel      = "error"
+	defPort          = "8180"
+	defDB            = "mainflux"
+	defDBHost        = "localhost"
+	defDBPort        = "27017"
+	defClientTLS     = "false"
+	defCACerts       = ""
+	defServerCert    = ""
+	defServerKey     = ""
+	defJaegerURL     = ""
+	defThingsGRPCURL = "localhost:8183"
+	defThingsTimeout = "1s"
+	defAuthGRPCURL   = "localhost:8181"
+	defAuthTimeout   = "1s"
 
-	envLogLevel          = "MF_MONGO_READER_LOG_LEVEL"
-	envPort              = "MF_MONGO_READER_PORT"
-	envDB                = "MF_MONGO_READER_DB"
-	envDBHost            = "MF_MONGO_READER_DB_HOST"
-	envDBPort            = "MF_MONGO_READER_DB_PORT"
-	envClientTLS         = "MF_MONGO_READER_CLIENT_TLS"
-	envCACerts           = "MF_MONGO_READER_CA_CERTS"
-	envServerCert        = "MF_MONGO_READER_SERVER_CERT"
-	envServerKey         = "MF_MONGO_READER_SERVER_KEY"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envUsersAuthURL      = "MF_AUTH_GRPC_URL"
-	envUsersAuthTimeout  = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel      = "MF_MONGO_READER_LOG_LEVEL"
+	envPort          = "MF_MONGO_READER_PORT"
+	envDB            = "MF_MONGO_READER_DB"
+	envDBHost        = "MF_MONGO_READER_DB_HOST"
+	envDBPort        = "MF_MONGO_READER_DB_PORT"
+	envClientTLS     = "MF_MONGO_READER_CLIENT_TLS"
+	envCACerts       = "MF_MONGO_READER_CA_CERTS"
+	envServerCert    = "MF_MONGO_READER_SERVER_CERT"
+	envServerKey     = "MF_MONGO_READER_SERVER_KEY"
+	envJaegerURL     = "MF_JAEGER_URL"
+	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL   = "MF_AUTH_GRPC_URL"
+	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel          string
-	port              string
-	dbName            string
-	dbHost            string
-	dbPort            string
-	clientTLS         bool
-	caCerts           string
-	serverCert        string
-	serverKey         string
-	jaegerURL         string
-	thingsAuthURL     string
-	usersAuthURL      string
-	thingsAuthTimeout time.Duration
-	usersAuthTimeout  time.Duration
+	logLevel      string
+	port          string
+	dbName        string
+	dbHost        string
+	dbPort        string
+	clientTLS     bool
+	caCerts       string
+	serverCert    string
+	serverKey     string
+	jaegerURL     string
+	thingsGRPCURL string
+	authGRPCURL   string
+	thingsTimeout time.Duration
+	authTimeout   time.Duration
 }
 
 func main() {
@@ -99,7 +99,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
 
 	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
@@ -107,7 +107,7 @@ func main() {
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.usersAuthTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authTimeout)
 
 	db := connectToMongoDB(cfg.dbHost, cfg.dbPort, cfg.dbName, logger)
 
@@ -148,12 +148,12 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.usersAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)
 	}
-	logger.Info(fmt.Sprintf("Established gRPC connection to auth via gRPC: %s", cfg.usersAuthURL))
+	logger.Info(fmt.Sprintf("Established gRPC connection to auth via gRPC: %s", cfg.authGRPCURL))
 	return conn
 }
 
@@ -163,31 +163,31 @@ func loadConfigs() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
 
-	usersAuthTimeout, err := time.ParseDuration(mainflux.Env(envUsersAuthTimeout, defUsersAuthTimeout))
+	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
 
 	return config{
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		port:              mainflux.Env(envPort, defPort),
-		dbName:            mainflux.Env(envDB, defDB),
-		dbHost:            mainflux.Env(envDBHost, defDBHost),
-		dbPort:            mainflux.Env(envDBPort, defDBPort),
-		clientTLS:         tls,
-		caCerts:           mainflux.Env(envCACerts, defCACerts),
-		serverCert:        mainflux.Env(envServerCert, defServerCert),
-		serverKey:         mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
-		usersAuthURL:      mainflux.Env(envUsersAuthURL, defUsersAuthURL),
-		thingsAuthTimeout: authTimeout,
-		usersAuthTimeout:  usersAuthTimeout,
+		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
+		port:          mainflux.Env(envPort, defPort),
+		dbName:        mainflux.Env(envDB, defDB),
+		dbHost:        mainflux.Env(envDBHost, defDBHost),
+		dbPort:        mainflux.Env(envDBPort, defDBPort),
+		clientTLS:     tls,
+		caCerts:       mainflux.Env(envCACerts, defCACerts),
+		serverCert:    mainflux.Env(envServerCert, defServerCert),
+		serverKey:     mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		authGRPCURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		thingsTimeout: thingsTimeout,
+		authTimeout:   authTimeout,
 	}
 }
 
@@ -242,12 +242,12 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
 		os.Exit(1)
 	}
-	logger.Info(fmt.Sprintf("Established gRPC connection to things via gRPC: %s", cfg.thingsAuthURL))
+	logger.Info(fmt.Sprintf("Established gRPC connection to things via gRPC: %s", cfg.thingsGRPCURL))
 	return conn
 }
 

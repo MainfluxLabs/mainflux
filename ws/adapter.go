@@ -50,7 +50,7 @@ type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, thingKey string, msg messaging.Message) error
 
-	// Subscribes to a channel with specified id.
+	// Subscribe  subscribes to a channel with specified id.
 	Subscribe(ctx context.Context, thingKey, chanID, subtopic string, client *Client) error
 
 	// Unsubscribe method is used to stop observing resource.
@@ -60,14 +60,14 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	auth   mainflux.ThingsServiceClient
+	things mainflux.ThingsServiceClient
 	pubsub messaging.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
-		auth:   auth,
+		things: things,
 		pubsub: pubsub,
 	}
 }
@@ -117,7 +117,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subt
 	return nil
 }
 
-// Subscribe subscribes the thingKey and channelID  to the topic
+// Unsubscribe unsubscribes the thing and channel from the topic.
 func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, subtopic string) error {
 	if chanID == "" || thingKey == "" {
 		return ErrUnauthorizedAccess
@@ -141,7 +141,7 @@ func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID strin
 		Token:  thingKey,
 		ChanID: chanID,
 	}
-	thid, err := svc.auth.CanAccessByKey(ctx, ar)
+	thid, err := svc.things.CanAccessByKey(ctx, ar)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}

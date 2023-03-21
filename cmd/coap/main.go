@@ -34,34 +34,34 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	defPort              = "5683"
-	defBrokerURL         = "nats://localhost:4222"
-	defLogLevel          = "error"
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defJaegerURL         = ""
-	defThingsAuthURL     = "localhost:8183"
-	defThingsAuthTimeout = "1s"
+	defPort          = "5683"
+	defBrokerURL     = "nats://localhost:4222"
+	defLogLevel      = "error"
+	defClientTLS     = "false"
+	defCACerts       = ""
+	defJaegerURL     = ""
+	defThingsGRPCURL = "localhost:8183"
+	defThingsTimeout = "1s"
 
-	envPort              = "MF_COAP_ADAPTER_PORT"
-	envBrokerURL         = "MF_BROKER_URL"
-	envLogLevel          = "MF_COAP_ADAPTER_LOG_LEVEL"
-	envClientTLS         = "MF_COAP_ADAPTER_CLIENT_TLS"
-	envCACerts           = "MF_COAP_ADAPTER_CA_CERTS"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envPort          = "MF_COAP_ADAPTER_PORT"
+	envBrokerURL     = "MF_BROKER_URL"
+	envLogLevel      = "MF_COAP_ADAPTER_LOG_LEVEL"
+	envClientTLS     = "MF_COAP_ADAPTER_CLIENT_TLS"
+	envCACerts       = "MF_COAP_ADAPTER_CA_CERTS"
+	envJaegerURL     = "MF_JAEGER_URL"
+	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	port              string
-	brokerURL         string
-	logLevel          string
-	clientTLS         bool
-	caCerts           string
-	jaegerURL         string
-	thingsAuthURL     string
-	thingsAuthTimeout time.Duration
+	port          string
+	brokerURL     string
+	logLevel      string
+	clientTLS     bool
+	caCerts       string
+	jaegerURL     string
+	thingsGRPCURL string
+	thingsTimeout time.Duration
 }
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
 
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
@@ -114,7 +114,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return startCOAPServer(ctx, cfg, svc, nil, logger)
+		return startCOAPServer(ctx, cfg, svc, logger)
 	})
 
 	g.Go(func() error {
@@ -136,20 +136,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
 
 	return config{
-		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
-		port:              mainflux.Env(envPort, defPort),
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:         tls,
-		caCerts:           mainflux.Env(envCACerts, defCACerts),
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthURL:     mainflux.Env(envThingsAuthURL, defThingsAuthURL),
-		thingsAuthTimeout: authTimeout,
+		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
+		port:          mainflux.Env(envPort, defPort),
+		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
+		clientTLS:     tls,
+		caCerts:       mainflux.Env(envCACerts, defCACerts),
+		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsTimeout: thingsTimeout,
 	}
 }
 
@@ -169,7 +169,7 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
 		os.Exit(1)
@@ -226,7 +226,7 @@ func startHTTPServer(ctx context.Context, port string, logger logger.Logger) err
 	}
 }
 
-func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, auth mainflux.ThingsServiceClient, l logger.Logger) error {
+func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.port)
 	errCh := make(chan error)
 	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.port))
