@@ -273,19 +273,14 @@ func buildOrgsResponse(gp auth.OrgsPage) orgsPageRes {
 	return res
 }
 
-func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
+func buildMembersResponse(mp auth.MembersPage) memberPageRes {
 	res := memberPageRes{
 		pageRes: pageRes{
 			Total:  mp.Total,
 			Offset: mp.Offset,
 			Limit:  mp.Limit,
-			Name:   mp.Name,
 		},
-		MemberIDs: []string{},
-	}
-
-	for _, m := range mp.MemberIDs {
-		res.MemberIDs = append(res.MemberIDs, m)
+		Members: mp.Members,
 	}
 
 	return res

@@ -57,6 +57,17 @@ type OrgMembersPage struct {
 	MemberIDs []string
 }
 
+type User struct {
+	ID     string
+	Email  string
+	Status string
+}
+
+type MembersPage struct {
+	PageMetadata
+	Members []User
+}
+
 // OrgGroupsPage contains page related metadata as well as list of groups that
 // belong to this page.
 type OrgGroupsPage struct {
@@ -104,7 +115,7 @@ type OrgService interface {
 	UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
-	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
 
 	// AssignGroups adds groups with groupIDs into the org identified by orgID.
 	AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error

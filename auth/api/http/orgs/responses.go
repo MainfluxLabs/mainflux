@@ -19,7 +19,7 @@ var (
 
 type memberPageRes struct {
 	pageRes
-	MemberIDs []string `json:"member_ids"`
+	Members []auth.User `json:"members"`
 }
 
 func (res memberPageRes) Code() int {
