@@ -235,20 +235,6 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func toViewOrgRes(org auth.Org) viewOrgRes {
-	view := viewOrgRes{
-		ID:          org.ID,
-		OwnerID:     org.OwnerID,
-		Name:        org.Name,
-		Description: org.Description,
-		Metadata:    org.Metadata,
-		CreatedAt:   org.CreatedAt,
-		UpdatedAt:   org.UpdatedAt,
-	}
-
-	return view
-}
-
 func buildOrgsResponse(gp auth.OrgsPage) orgsPageRes {
 	res := orgsPageRes{
 		pageRes: pageRes{
