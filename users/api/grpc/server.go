@@ -59,11 +59,11 @@ func encodeError(err error) error {
 	case nil:
 		return nil
 	case errors.ErrMalformedEntity, apiutil.ErrMissingID:
-		return status.Error(codes.InvalidArgument, "received invalid can access request")
+		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.ErrAuthentication:
-		return status.Error(codes.Unauthenticated, "missing or invalid credentials provided")
+		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.ErrNotFound:
-		return status.Error(codes.NotFound, "entity does not exist")
+		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")
 	}
