@@ -48,113 +48,113 @@ const (
 	httpsProtocol = "https"
 	stopWaitTime  = 5 * time.Second
 
-	defLogLevel              = "error"
-	defMQTTPort              = "1883"
-	defMQTTTargetHost        = "0.0.0.0"
-	defMQTTTargetPort        = "1883"
-	defMQTTTimeout           = "30s" // 30 seconds
-	defMQTTTargetHealthCheck = ""
-	defHTTPPort              = "8080"
-	defHTTPTargetHost        = "localhost"
-	defHTTPTargetPort        = "8080"
-	defHTTPTargetPath        = "/mqtt"
-	defWSPort                = "8285"
-	defThingsGRPCURL         = "localhost:8183"
-	defThingsTimeout         = "1s"
-	defBrokerURL             = "nats://localhost:4222"
-	defJaegerURL             = ""
-	defClientTLS             = "false"
-	defCACerts               = ""
-	defInstance              = ""
-	defESURL                 = "localhost:6379"
-	defESPass                = ""
-	defESDB                  = "0"
-	defAuthcacheURL          = "localhost:6379"
-	defAuthCachePass         = ""
-	defAuthCacheDB           = "0"
-	defDBHost                = "localhost"
-	defAuthGRPCURL           = "localhost:8181"
-	defDBPort                = "5432"
-	defDBUser                = "mainflux"
-	defDBPass                = "mainflux"
-	defDB                    = "subscriptions"
-	defDBSSLMode             = "disable"
-	defDBSSLCert             = ""
-	defDBSSLKey              = ""
-	defDBSSLRootCert         = ""
-	defServerKey             = ""
-	defServerCert            = ""
-	defAuthTimeout           = "1s"
+	defLogLevel          = "error"
+	defPort              = "1883"
+	defTargetHost        = "0.0.0.0"
+	defTargetPort        = "1883"
+	defTimeout           = "30s" // 30 seconds
+	defTargetHealthCheck = ""
+	defHTTPPort          = "8080"
+	defHTTPTargetHost    = "localhost"
+	defHTTPTargetPort    = "8080"
+	defHTTPTargetPath    = "/mqtt"
+	defWSPort            = "8285"
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsTimeout     = "1s"
+	defBrokerURL         = "nats://localhost:4222"
+	defJaegerURL         = ""
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defInstance          = ""
+	defESURL             = "localhost:6379"
+	defESPass            = ""
+	defESDB              = "0"
+	defAuthcacheURL      = "localhost:6379"
+	defAuthCachePass     = ""
+	defAuthCacheDB       = "0"
+	defDBHost            = "localhost"
+	defAuthGRPCURL       = "localhost:8181"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "subscriptions"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defServerKey         = ""
+	defServerCert        = ""
+	defAuthTimeout       = "1s"
 
-	envLogLevel              = "MF_MQTT_ADAPTER_LOG_LEVEL"
-	envMQTTPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
-	envMQTTTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
-	envMQTTTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
-	envMQTTTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
-	envMQTTTimeout           = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
-	envHTTPPort              = "MF_MQTT_ADAPTER_HTTP_PORT"
-	envHTTPTargetHost        = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
-	envHTTPTargetPort        = "MF_MQTT_ADAPTER_WS_TARGET_PORT"
-	envHTTPTargetPath        = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
-	envWSPort                = "MF_MQTT_ADAPTER_WS_PORT"
-	envThingsGRPCURL         = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout         = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envBrokerURL             = "MF_BROKER_URL"
-	envJaegerURL             = "MF_JAEGER_URL"
-	envClientTLS             = "MF_MQTT_ADAPTER_CLIENT_TLS"
-	envCACerts               = "MF_MQTT_ADAPTER_CA_CERTS"
-	envInstance              = "MF_MQTT_ADAPTER_INSTANCE"
-	envESURL                 = "MF_MQTT_ADAPTER_ES_URL"
-	envESPass                = "MF_MQTT_ADAPTER_ES_PASS"
-	envESDB                  = "MF_MQTT_ADAPTER_ES_DB"
-	envAuthCacheURL          = "MF_AUTH_CACHE_URL"
-	envAuthCachePass         = "MF_AUTH_CACHE_PASS"
-	envAuthCacheDB           = "MF_AUTH_CACHE_DB"
-	envServerCert            = "MF_MQTT_ADAPTER_SERVER_CERT"
-	envServerKey             = "MF_MQTT_ADAPTER_SERVER_KEY"
-	envDBHost                = "MF_MQTT_ADAPTER_DB_HOST"
-	envDBPort                = "MF_MQTT_ADAPTER_DB_PORT"
-	envDBUser                = "MF_MQTT_ADAPTER_DB_USER"
-	envDBPass                = "MF_MQTT_ADAPTER_DB_PASS"
-	envDB                    = "MF_MQTT_ADAPTER_DB"
-	envDBSSLMode             = "MF_MQTT_ADAPTER_DB_SSL_MODE"
-	envDBSSLCert             = "MF_MQTT_ADAPTER_DB_SSL_CERT"
-	envDBSSLKey              = "MF_MQTT_ADAPTER_DB_SSL_KEY"
-	envDBSSLRootCert         = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
-	envAuthGRPCURL           = "MF_AUTH_GRPC_URL"
-	envAuthTimeout           = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
+	envPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
+	envTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
+	envTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
+	envTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
+	envTimeout           = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
+	envHTTPPort          = "MF_MQTT_ADAPTER_HTTP_PORT"
+	envHTTPTargetHost    = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
+	envHTTPTargetPort    = "MF_MQTT_ADAPTER_WS_TARGET_PORT"
+	envHTTPTargetPath    = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
+	envWSPort            = "MF_MQTT_ADAPTER_WS_PORT"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsTimeout     = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envBrokerURL         = "MF_BROKER_URL"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
+	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
+	envInstance          = "MF_MQTT_ADAPTER_INSTANCE"
+	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
+	envESPass            = "MF_MQTT_ADAPTER_ES_PASS"
+	envESDB              = "MF_MQTT_ADAPTER_ES_DB"
+	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
+	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
+	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
+	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
+	envServerKey         = "MF_MQTT_ADAPTER_SERVER_KEY"
+	envDBHost            = "MF_MQTT_ADAPTER_DB_HOST"
+	envDBPort            = "MF_MQTT_ADAPTER_DB_PORT"
+	envDBUser            = "MF_MQTT_ADAPTER_DB_USER"
+	envDBPass            = "MF_MQTT_ADAPTER_DB_PASS"
+	envDB                = "MF_MQTT_ADAPTER_DB"
+	envDBSSLMode         = "MF_MQTT_ADAPTER_DB_SSL_MODE"
+	envDBSSLCert         = "MF_MQTT_ADAPTER_DB_SSL_CERT"
+	envDBSSLKey          = "MF_MQTT_ADAPTER_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	mqttPort              string
-	mqttTargetHost        string
-	mqttTargetPort        string
-	mqttTimeout           time.Duration
-	mqttTargetHealthCheck string
-	httpPort              string
-	wsPort                string
-	httpTargetHost        string
-	httpTargetPort        string
-	httpTargetPath        string
-	jaegerURL             string
-	logLevel              string
-	thingsGRPCURL         string
-	thingsTimeout         time.Duration
-	brokerURL             string
-	authGRPCURL           string
-	clientTLS             bool
-	caCerts               string
-	instance              string
-	esURL                 string
-	esPass                string
-	esDB                  string
-	authURL               string
-	authPass              string
-	authDB                string
-	serverCert            string
-	serverKey             string
-	authTimeout           time.Duration
-	dbConfig              postgres.Config
+	port              string
+	targetHost        string
+	targetPort        string
+	timeout           time.Duration
+	targetHealthCheck string
+	httpPort          string
+	wsPort            string
+	httpTargetHost    string
+	httpTargetPort    string
+	httpTargetPath    string
+	jaegerURL         string
+	logLevel          string
+	thingsGRPCURL     string
+	thingsTimeout     time.Duration
+	brokerURL         string
+	authGRPCURL       string
+	clientTLS         bool
+	caCerts           string
+	instance          string
+	esURL             string
+	esPass            string
+	esDB              string
+	authCacheURL      string
+	authPass          string
+	authCacheDB       string
+	serverCert        string
+	serverKey         string
+	authTimeout       time.Duration
+	dbConfig          postgres.Config
 }
 
 func main() {
@@ -170,7 +170,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	if cfg.mqttTargetHealthCheck != "" {
+	if cfg.targetHealthCheck != "" {
 		notify := func(e error, next time.Duration) {
 			logger.Info(fmt.Sprintf("Broker not ready: %s, next try in %s", e.Error(), next))
 		}
@@ -195,7 +195,7 @@ func main() {
 	}
 	defer nps.Close()
 
-	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.mqttTargetHost, cfg.mqttTargetPort), cfg.mqttTimeout)
+	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort), cfg.timeout)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create MQTT publisher: %s", err))
 		os.Exit(1)
@@ -216,7 +216,7 @@ func main() {
 
 	es := mqttredis.NewEventStore(ec, cfg.instance)
 
-	ac := connectToRedis(cfg.authURL, cfg.authPass, cfg.authDB, logger)
+	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
@@ -242,7 +242,7 @@ func main() {
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, svc)
 
-	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.mqttPort))
+	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
 		return proxyMQTT(ctx, cfg, logger, h)
 	})
@@ -281,9 +281,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
 
-	mqttTimeout, err := time.ParseDuration(mainflux.Env(envMQTTTimeout, defMQTTTimeout))
+	mqttTimeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envMQTTTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
 	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
@@ -304,35 +304,35 @@ func loadConfig() config {
 	}
 
 	return config{
-		mqttPort:              mainflux.Env(envMQTTPort, defMQTTPort),
-		mqttTargetHost:        mainflux.Env(envMQTTTargetHost, defMQTTTargetHost),
-		mqttTargetPort:        mainflux.Env(envMQTTTargetPort, defMQTTTargetPort),
-		mqttTimeout:           mqttTimeout,
-		mqttTargetHealthCheck: mainflux.Env(envMQTTTargetHealthCheck, defMQTTTargetHealthCheck),
-		httpPort:              mainflux.Env(envHTTPPort, defHTTPPort),
-		wsPort:                mainflux.Env(envWSPort, defWSPort),
-		httpTargetHost:        mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
-		httpTargetPort:        mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
-		httpTargetPath:        mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
-		jaegerURL:             mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL:         mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout:         thingsTimeout,
-		brokerURL:             mainflux.Env(envBrokerURL, defBrokerURL),
-		authGRPCURL:           mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:             tls,
-		caCerts:               mainflux.Env(envCACerts, defCACerts),
-		instance:              mainflux.Env(envInstance, defInstance),
-		esURL:                 mainflux.Env(envESURL, defESURL),
-		esPass:                mainflux.Env(envESPass, defESPass),
-		esDB:                  mainflux.Env(envESDB, defESDB),
-		authURL:               mainflux.Env(envAuthCacheURL, defAuthcacheURL),
-		authPass:              mainflux.Env(envAuthCachePass, defAuthCachePass),
-		authDB:                mainflux.Env(envAuthCacheDB, defAuthCacheDB),
-		serverCert:            mainflux.Env(envServerCert, defServerCert),
-		serverKey:             mainflux.Env(envServerKey, defServerKey),
-		authTimeout:           authTimeout,
-		dbConfig:              dbConfig,
+		port:              mainflux.Env(envPort, defPort),
+		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
+		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
+		timeout:           mqttTimeout,
+		targetHealthCheck: mainflux.Env(envTargetHealthCheck, defTargetHealthCheck),
+		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
+		wsPort:            mainflux.Env(envWSPort, defWSPort),
+		httpTargetHost:    mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
+		httpTargetPort:    mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
+		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsTimeout:     thingsTimeout,
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		instance:          mainflux.Env(envInstance, defInstance),
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esPass:            mainflux.Env(envESPass, defESPass),
+		esDB:              mainflux.Env(envESDB, defESDB),
+		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthcacheURL),
+		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
+		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
+		serverCert:        mainflux.Env(envServerCert, defServerCert),
+		serverKey:         mainflux.Env(envServerKey, defServerKey),
+		authTimeout:       authTimeout,
+		dbConfig:          dbConfig,
 	}
 }
 
@@ -399,8 +399,8 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *r
 }
 
 func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
-	address := fmt.Sprintf(":%s", cfg.mqttPort)
-	target := fmt.Sprintf("%s:%s", cfg.mqttTargetHost, cfg.mqttTargetPort)
+	address := fmt.Sprintf(":%s", cfg.port)
+	target := fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort)
 	mp := mp.New(address, target, handler, logger)
 
 	errCh := make(chan error)
@@ -439,7 +439,7 @@ func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler sessi
 
 func healthcheck(cfg config) func() error {
 	return func() error {
-		res, err := http.Get(cfg.mqttTargetHealthCheck)
+		res, err := http.Get(cfg.targetHealthCheck)
 		if err != nil {
 			return err
 		}

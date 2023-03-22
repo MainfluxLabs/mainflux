@@ -73,7 +73,7 @@ const (
 
 	defAuthTLS     = "false"
 	defAuthCACerts = ""
-	defAuthURL     = "localhost:8181"
+	defAuthGRPCURL = "localhost:8181"
 	defAuthTimeout = "1s"
 	defGRPCPort    = "8184"
 
@@ -110,7 +110,7 @@ const (
 
 	envAuthTLS     = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts = "MF_AUTH_CA_CERTS"
-	envAuthURL     = "MF_AUTH_GRPC_URL"
+	envAuthGRPCURL = "MF_AUTH_GRPC_URL"
 	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort    = "MF_USERS_GRPC_PORT"
 
@@ -244,7 +244,7 @@ func loadConfig() config {
 		resetURL:      mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
 		authTLS:       tls,
 		authCACerts:   mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authURL:       mainflux.Env(envAuthURL, defAuthURL),
+		authURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authTimeout:   authTimeout,
 		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword: mainflux.Env(envAdminPassword, defAdminPassword),
