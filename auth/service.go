@@ -345,20 +345,22 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	usrReq := mainflux.UsersReq{Ids: mp.MemberIDs}
-	usr, err := svc.users.GetUsersByIDs(ctx, &usrReq)
-	if err != nil {
-		return MembersPage{}, err
-	}
-
 	var members []User
-	for _, u := range usr.Users {
-		mbr := User{
-			ID:     u.Id,
-			Email:  u.Email,
-			Status: u.Status,
+	if len(mp.MemberIDs) > 0 {
+		usrReq := mainflux.UsersReq{Ids: mp.MemberIDs}
+		usr, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+		if err != nil {
+			return MembersPage{}, err
 		}
-		members = append(members, mbr)
+
+		for _, u := range usr.Users {
+			mbr := User{
+				ID:     u.Id,
+				Email:  u.Email,
+				Status: u.Status,
+			}
+			members = append(members, mbr)
+		}
 	}
 
 	mpg := MembersPage{
@@ -417,21 +419,23 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
-	resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
-	if err != nil {
-		return GroupsPage{}, err
-	}
-
 	var groups []Group
-	for _, g := range resp.Groups {
-		gr := Group{
-			ID:          g.Id,
-			OwnerID:     g.OwnerID,
-			Name:        g.Name,
-			Description: g.Description,
+	if len(mp.GroupIDs) > 0 {
+		greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
+		resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
+		if err != nil {
+			return GroupsPage{}, err
 		}
-		groups = append(groups, gr)
+
+		for _, g := range resp.Groups {
+			gr := Group{
+				ID:          g.Id,
+				OwnerID:     g.OwnerID,
+				Name:        g.Name,
+				Description: g.Description,
+			}
+			groups = append(groups, gr)
+		}
 	}
 
 	pg := GroupsPage{

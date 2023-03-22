@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 var (
@@ -17,9 +16,15 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 )
 
+type viewMemberRes struct {
+	ID     string `json:"id"`
+	Email  string `json:"email"`
+	Status string `json:"status"`
+}
+
 type memberPageRes struct {
 	pageRes
-	Members []auth.User `json:"members"`
+	Members []viewMemberRes `json:"members"`
 }
 
 func (res memberPageRes) Code() int {
@@ -34,9 +39,16 @@ func (res memberPageRes) Empty() bool {
 	return false
 }
 
+type viewGroupRes struct {
+	ID          string `json:"id"`
+	OwnerID     string `json:"owner_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type groupsPageRes struct {
 	pageRes
-	Groups []auth.Group `json:"groups"`
+	Groups []viewGroupRes `json:"groups"`
 }
 
 func (res groupsPageRes) Code() int {

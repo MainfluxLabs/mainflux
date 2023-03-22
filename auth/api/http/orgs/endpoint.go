@@ -280,7 +280,16 @@ func buildMembersResponse(mp auth.MembersPage) memberPageRes {
 			Offset: mp.Offset,
 			Limit:  mp.Limit,
 		},
-		Members: mp.Members,
+		Members: []viewMemberRes{},
+	}
+
+	for _, memb := range mp.Members {
+		m := viewMemberRes{
+			ID:     memb.ID,
+			Email:  memb.Email,
+			Status: memb.Status,
+		}
+		res.Members = append(res.Members, m)
 	}
 
 	return res
@@ -293,7 +302,17 @@ func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
 			Offset: mp.Offset,
 			Limit:  mp.Limit,
 		},
-		Groups: mp.Groups,
+		Groups: []viewGroupRes{},
+	}
+
+	for _, group := range mp.Groups {
+		g := viewGroupRes{
+			ID:          group.ID,
+			OwnerID:     group.OwnerID,
+			Name:        group.Name,
+			Description: group.Description,
+		}
+		res.Groups = append(res.Groups, g)
 	}
 
 	return res
