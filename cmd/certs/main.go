@@ -22,18 +22,16 @@ import (
 	vault "github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	mflog "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
-	"github.com/jmoiron/sqlx"
-	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
 const (
@@ -138,7 +136,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
-	logger, err := mflog.New(os.Stdout, cfg.logLevel)
+	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -299,7 +297,7 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
+func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
 	certsRepo := postgres.NewRepository(db, logger)
 
 	certsConfig := certs.Config{
@@ -350,7 +348,7 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger,
 	return svc
 }
 
-func startHTTPServer(ctx context.Context, svc certs.Service, cfg config, logger mflog.Logger) error {
+func startHTTPServer(ctx context.Context, svc certs.Service, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.httpPort)
 	errCh := make(chan error)
 	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, logger)}

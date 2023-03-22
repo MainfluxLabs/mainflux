@@ -15,25 +15,23 @@ import (
 	"strconv"
 	"time"
 
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	rediscons "github.com/MainfluxLabs/mainflux/bootstrap/redis/consumer"
-	redisprod "github.com/MainfluxLabs/mainflux/bootstrap/redis/producer"
-	"github.com/MainfluxLabs/mainflux/logger"
-	opentracing "github.com/opentracing/opentracing-go"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
 	api "github.com/MainfluxLabs/mainflux/bootstrap/api"
 	"github.com/MainfluxLabs/mainflux/bootstrap/postgres"
-	mflog "github.com/MainfluxLabs/mainflux/logger"
+	rediscons "github.com/MainfluxLabs/mainflux/bootstrap/redis/consumer"
+	redisprod "github.com/MainfluxLabs/mainflux/bootstrap/redis/producer"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	r "github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
+	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -127,7 +125,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
-	logger, err := mflog.New(os.Stdout, cfg.logLevel)
+	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -225,7 +223,7 @@ func loadConfig() config {
 	}
 }
 
-func connectToDB(cfg postgres.Config, logger mflog.Logger) *sqlx.DB {
+func connectToDB(cfg postgres.Config, logger logger.Logger) *sqlx.DB {
 	db, err := postgres.Connect(cfg)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
@@ -234,7 +232,7 @@ func connectToDB(cfg postgres.Config, logger mflog.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *r.Client {
+func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *r.Client {
 	db, err := strconv.Atoi(redisDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
@@ -272,7 +270,7 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger mflog.Logger, esClient *r.Client, cfg config) bootstrap.Service {
+func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger, esClient *r.Client, cfg config) bootstrap.Service {
 	thingsRepo := postgres.NewConfigRepository(db, logger)
 
 	config := mfsdk.Config{
@@ -327,7 +325,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func startHTTPServer(ctx context.Context, svc bootstrap.Service, cfg config, logger mflog.Logger) error {
+func startHTTPServer(ctx context.Context, svc bootstrap.Service, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.httpPort)
 	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, bootstrap.NewConfigReader(cfg.encKey), logger)}
 	errCh := make(chan error)
@@ -363,7 +361,7 @@ func startHTTPServer(ctx context.Context, svc bootstrap.Service, cfg config, log
 	}
 }
 
-func subscribeToThingsES(svc bootstrap.Service, client *r.Client, consumer string, logger mflog.Logger) {
+func subscribeToThingsES(svc bootstrap.Service, client *r.Client, consumer string, logger logger.Logger) {
 	eventStore := rediscons.NewEventStore(svc, client, consumer, logger)
 	logger.Info("Subscribed to Redis Event Store")
 	if err := eventStore.Subscribe(context.Background(), "mainflux.things"); err != nil {

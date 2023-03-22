@@ -13,7 +13,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
@@ -162,7 +161,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
-	logger, err := mflog.New(os.Stdout, cfg.logLevel)
+	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -336,7 +335,7 @@ func loadConfig() config {
 	}
 }
 
-func initJaeger(svcName, url string, logger mflog.Logger) (opentracing.Tracer, io.Closer) {
+func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
 	if url == "" {
 		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
 	}
@@ -360,7 +359,7 @@ func initJaeger(svcName, url string, logger mflog.Logger) (opentracing.Tracer, i
 	return tracer, closer
 }
 
-func connectToThings(cfg config, logger mflog.Logger) *grpc.ClientConn {
+func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	if cfg.clientTLS {
 		if cfg.caCerts != "" {
@@ -384,7 +383,7 @@ func connectToThings(cfg config, logger mflog.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *redis.Client {
+func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *redis.Client {
 	db, err := strconv.Atoi(redisDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
@@ -398,7 +397,7 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *r
 	})
 }
 
-func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
+func proxyMQTT(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
 	address := fmt.Sprintf(":%s", cfg.port)
 	target := fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort)
 	mp := mp.New(address, target, handler, logger)
@@ -417,7 +416,7 @@ func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler ses
 	}
 
 }
-func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
+func proxyWS(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
 	target := fmt.Sprintf("%s:%s", cfg.httpTargetHost, cfg.httpTargetPort)
 	wp := ws.New(target, cfg.httpTargetPath, "ws", handler, logger)
 	http.Handle("/mqtt", wp.Handler())

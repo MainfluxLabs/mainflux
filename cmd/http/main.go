@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"google.golang.org/grpc/credentials"
-
 	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
@@ -29,6 +27,7 @@ import (
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -133,7 +132,7 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
 	}
@@ -146,7 +145,7 @@ func loadConfig() config {
 		caCerts:       mainflux.Env(envCACerts, defCACerts),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout: authTimeout,
+		thingsTimeout: thingsTimeout,
 	}
 }
 

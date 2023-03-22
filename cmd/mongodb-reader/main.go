@@ -170,7 +170,7 @@ func loadConfigs() config {
 
 	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
 	}
 
 	return config{
