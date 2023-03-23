@@ -48,24 +48,24 @@ type Service interface {
 
 // Config defines the service parameters
 type Config struct {
-	LogLevel        string
-	ClientTLS       bool
-	CaCerts         string
-	HTTPPort        string
-	ServerCert      string
-	ServerKey       string
-	CertsURL        string
-	JaegerURL       string
-	AuthURL         string
-	AuthGRPCTimeout time.Duration
-	SignTLSCert     tls.Certificate
-	SignX509Cert    *x509.Certificate
-	SignRSABits     int
-	SignHoursValid  string
-	PKIHost         string
-	PKIPath         string
-	PKIRole         string
-	PKIToken        string
+	LogLevel       string
+	ClientTLS      bool
+	CaCerts        string
+	HTTPPort       string
+	ServerCert     string
+	ServerKey      string
+	CertsURL       string
+	JaegerURL      string
+	AuthURL        string
+	AuthTimeout    time.Duration
+	SignTLSCert    tls.Certificate
+	SignX509Cert   *x509.Certificate
+	SignRSABits    int
+	SignHoursValid string
+	PKIHost        string
+	PKIPath        string
+	PKIRole        string
+	PKIToken       string
 }
 
 type certsService struct {
