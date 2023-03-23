@@ -48,7 +48,7 @@ const (
 	stopWaitTime  = 5 * time.Second
 
 	defLogLevel          = "error"
-	defPort              = "1883"
+	defMQTTPort          = "1883"
 	defTargetHost        = "0.0.0.0"
 	defTargetPort        = "1883"
 	defTimeout           = "30s" // 30 seconds
@@ -83,7 +83,7 @@ const (
 	defDBSSLRootCert     = ""
 	defServerKey         = ""
 	defServerCert        = ""
-	defAuthTimeout       = "1s"
+	defAuthGRPCTimeout   = "1s"
 
 	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
 	envPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
@@ -121,7 +121,7 @@ const (
 	envDBSSLKey          = "MF_MQTT_ADAPTER_DB_SSL_KEY"
 	envDBSSLRootCert     = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthTimeout       = "MF_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -152,7 +152,7 @@ type config struct {
 	authCacheDB       string
 	serverCert        string
 	serverKey         string
-	authTimeout       time.Duration
+	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 }
 
@@ -231,7 +231,7 @@ func main() {
 	usersAuthConn := connectToAuth(cfg, logger)
 	defer usersAuthConn.Close()
 
-	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.authTimeout)
+	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
 
 	authClient := auth.New(ac, tc)
@@ -285,9 +285,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -303,7 +303,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		port:              mainflux.Env(envPort, defPort),
+		port:              mainflux.Env(envPort, defMQTTPort),
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
 		timeout:           mqttTimeout,
@@ -330,7 +330,7 @@ func loadConfig() config {
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
 		serverCert:        mainflux.Env(envServerCert, defServerCert),
 		serverKey:         mainflux.Env(envServerKey, defServerKey),
-		authTimeout:       authTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
 }

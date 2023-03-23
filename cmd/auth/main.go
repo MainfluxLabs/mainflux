@@ -40,57 +40,57 @@ const (
 	httpProtocol  = "http"
 	httpsProtocol = "https"
 
-	defLogLevel      = "error"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "auth"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defHTTPPort      = "8180"
-	defGRPCPort      = "8181"
-	defSecret        = "auth"
-	defServerCert    = ""
-	defServerKey     = ""
-	defJaegerURL     = ""
-	defLoginDuration = "10h"
-	defAdminEmail    = ""
-	defTimeout       = "1s"
-	defThingsGRPCURL = "localhost:8183"
-	defThingsCACerts = ""
-	defThingsTLS     = "false"
-	defUsersCACerts  = ""
-	defUsersTLS      = "false"
-	defUsersGRPCURL  = "localhost:8184"
+	defLogLevel        = "error"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "auth"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defHTTPPort        = "8180"
+	defGRPCPort        = "8181"
+	defSecret          = "auth"
+	defServerCert      = ""
+	defServerKey       = ""
+	defJaegerURL       = ""
+	defLoginDuration   = "10h"
+	defAdminEmail      = ""
+	defTimeout         = "1s"
+	defThingsGRPCURL   = "localhost:8183"
+	defThingsCACerts   = ""
+	defThingsClientTLS = "false"
+	defUsersCACerts    = ""
+	defUsersClientTLS  = "false"
+	defUsersGRPCURL    = "localhost:8184"
 
-	envLogLevel      = "MF_AUTH_LOG_LEVEL"
-	envDBHost        = "MF_AUTH_DB_HOST"
-	envDBPort        = "MF_AUTH_DB_PORT"
-	envDBUser        = "MF_AUTH_DB_USER"
-	envDBPass        = "MF_AUTH_DB_PASS"
-	envDB            = "MF_AUTH_DB"
-	envDBSSLMode     = "MF_AUTH_DB_SSL_MODE"
-	envDBSSLCert     = "MF_AUTH_DB_SSL_CERT"
-	envDBSSLKey      = "MF_AUTH_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_AUTH_DB_SSL_ROOT_CERT"
-	envHTTPPort      = "MF_AUTH_HTTP_PORT"
-	envGRPCPort      = "MF_AUTH_GRPC_PORT"
-	envTimeout       = "MF_AUTH_GRPC_TIMEOUT"
-	envSecret        = "MF_AUTH_SECRET"
-	envServerCert    = "MF_AUTH_SERVER_CERT"
-	envServerKey     = "MF_AUTH_SERVER_KEY"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envLoginDuration = "MF_AUTH_LOGIN_TOKEN_DURATION"
-	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsCACerts = "MF_THINGS_CA_CERTS"
-	envThingsTLS     = "MF_THINGS_CLIENT_TLS"
-	envUsersGRPCURL  = "MF_USERS_GRPC_URL"
-	envUsersCACerts  = "MF_USERS_CA_CERTS"
-	envUsersTLS      = "MF_USERS_CLIENT_TLS"
+	envLogLevel        = "MF_AUTH_LOG_LEVEL"
+	envDBHost          = "MF_AUTH_DB_HOST"
+	envDBPort          = "MF_AUTH_DB_PORT"
+	envDBUser          = "MF_AUTH_DB_USER"
+	envDBPass          = "MF_AUTH_DB_PASS"
+	envDB              = "MF_AUTH_DB"
+	envDBSSLMode       = "MF_AUTH_DB_SSL_MODE"
+	envDBSSLCert       = "MF_AUTH_DB_SSL_CERT"
+	envDBSSLKey        = "MF_AUTH_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_AUTH_DB_SSL_ROOT_CERT"
+	envHTTPPort        = "MF_AUTH_HTTP_PORT"
+	envGRPCPort        = "MF_AUTH_GRPC_PORT"
+	envTimeout         = "MF_AUTH_GRPC_TIMEOUT"
+	envSecret          = "MF_AUTH_SECRET"
+	envServerCert      = "MF_AUTH_SERVER_CERT"
+	envServerKey       = "MF_AUTH_SERVER_KEY"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
+	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsCACerts   = "MF_THINGS_CA_CERTS"
+	envThingsClientTLS = "MF_THINGS_CLIENT_TLS"
+	envUsersGRPCURL    = "MF_USERS_GRPC_URL"
+	envUsersCACerts    = "MF_USERS_CA_CERTS"
+	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
 )
 
 type config struct {
@@ -181,14 +181,14 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	usersTLS, err := strconv.ParseBool(mainflux.Env(envUsersTLS, defUsersTLS))
+	usersTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s\n", envUsersTLS)
+		log.Fatalf("Invalid value passed for %s\n", envUsersClientTLS)
 	}
 
-	thingsTLS, err := strconv.ParseBool(mainflux.Env(envThingsTLS, defThingsTLS))
+	thingsTLS, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s\n", envThingsTLS)
+		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
