@@ -94,23 +94,23 @@ const (
 )
 
 type config struct {
-	logLevel      string
-	dbConfig      postgres.Config
-	httpPort      string
-	grpcPort      string
-	secret        string
-	serverCert    string
-	serverKey     string
-	jaegerURL     string
-	loginDuration time.Duration
-	timeout       time.Duration
-	adminEmail    string
-	thingsTLS     bool
-	thingsCACerts string
-	thingsGRPCURL string
-	usersTLS      bool
-	usersCACerts  string
-	usersGRPCURL  string
+	logLevel        string
+	dbConfig        postgres.Config
+	httpPort        string
+	grpcPort        string
+	secret          string
+	serverCert      string
+	serverKey       string
+	jaegerURL       string
+	loginDuration   time.Duration
+	timeout         time.Duration
+	adminEmail      string
+	thingsClientTLS bool
+	thingsCACerts   string
+	thingsGRPCURL   string
+	usersClientTLS  bool
+	usersCACerts    string
+	usersGRPCURL    string
 }
 
 func main() {
@@ -181,12 +181,12 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	usersTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
+	usersClientTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envUsersClientTLS)
 	}
 
-	thingsTLS, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
+	thingsClientTLS, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
@@ -202,23 +202,23 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:      dbConfig,
-		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
-		grpcPort:      mainflux.Env(envGRPCPort, defGRPCPort),
-		secret:        mainflux.Env(envSecret, defSecret),
-		serverCert:    mainflux.Env(envServerCert, defServerCert),
-		serverKey:     mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration: loginDuration,
-		timeout:       timeout,
-		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
-		thingsTLS:     thingsTLS,
-		thingsCACerts: mainflux.Env(envThingsCACerts, defThingsCACerts),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		usersTLS:      usersTLS,
-		usersCACerts:  mainflux.Env(envUsersCACerts, defUsersCACerts),
-		usersGRPCURL:  mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		grpcPort:        mainflux.Env(envGRPCPort, defGRPCPort),
+		secret:          mainflux.Env(envSecret, defSecret),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration:   loginDuration,
+		timeout:         timeout,
+		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
+		thingsClientTLS: thingsClientTLS,
+		thingsCACerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
+		thingsGRPCURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		usersClientTLS:  usersClientTLS,
+		usersCACerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
+		usersGRPCURL:    mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
 	}
 
 }
@@ -259,7 +259,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func connectToUsers(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
-	if cfg.usersTLS {
+	if cfg.usersClientTLS {
 		if cfg.usersCACerts != "" {
 			tpc, err := credentials.NewClientTLSFromFile(cfg.usersCACerts, "")
 			if err != nil {
@@ -284,7 +284,7 @@ func connectToUsers(cfg config, logger logger.Logger) *grpc.ClientConn {
 
 func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
-	if cfg.thingsTLS {
+	if cfg.thingsClientTLS {
 		if cfg.thingsCACerts != "" {
 			tpc, err := credentials.NewClientTLSFromFile(cfg.thingsCACerts, "")
 			if err != nil {
