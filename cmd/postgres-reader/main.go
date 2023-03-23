@@ -36,56 +36,56 @@ const (
 	svcName      = "postgres-reader"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
-	defPort          = "8180"
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "mainflux"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defJaegerURL     = ""
-	defThingsGRPCURL = "localhost:8183"
-	defThingsTimeout = "1s"
-	defAuthGRPCURL   = "localhost:8181"
-	defAuthTimeout   = "1s"
+	defLogLevel          = "error"
+	defPort              = "8180"
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defDBHost            = "localhost"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "mainflux"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defJaegerURL         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 
-	envLogLevel      = "MF_POSTGRES_READER_LOG_LEVEL"
-	envPort          = "MF_POSTGRES_READER_PORT"
-	envClientTLS     = "MF_POSTGRES_READER_CLIENT_TLS"
-	envCACerts       = "MF_POSTGRES_READER_CA_CERTS"
-	envDBHost        = "MF_POSTGRES_READER_DB_HOST"
-	envDBPort        = "MF_POSTGRES_READER_DB_PORT"
-	envDBUser        = "MF_POSTGRES_READER_DB_USER"
-	envDBPass        = "MF_POSTGRES_READER_DB_PASS"
-	envDB            = "MF_POSTGRES_READER_DB"
-	envDBSSLMode     = "MF_POSTGRES_READER_DB_SSL_MODE"
-	envDBSSLCert     = "MF_POSTGRES_READER_DB_SSL_CERT"
-	envDBSSLKey      = "MF_POSTGRES_READER_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_POSTGRES_READER_DB_SSL_ROOT_CERT"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL   = "MF_AUTH_GRPC_URL"
-	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_POSTGRES_READER_LOG_LEVEL"
+	envPort              = "MF_POSTGRES_READER_PORT"
+	envClientTLS         = "MF_POSTGRES_READER_CLIENT_TLS"
+	envCACerts           = "MF_POSTGRES_READER_CA_CERTS"
+	envDBHost            = "MF_POSTGRES_READER_DB_HOST"
+	envDBPort            = "MF_POSTGRES_READER_DB_PORT"
+	envDBUser            = "MF_POSTGRES_READER_DB_USER"
+	envDBPass            = "MF_POSTGRES_READER_DB_PASS"
+	envDB                = "MF_POSTGRES_READER_DB"
+	envDBSSLMode         = "MF_POSTGRES_READER_DB_SSL_MODE"
+	envDBSSLCert         = "MF_POSTGRES_READER_DB_SSL_CERT"
+	envDBSSLKey          = "MF_POSTGRES_READER_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_POSTGRES_READER_DB_SSL_ROOT_CERT"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel      string
-	port          string
-	clientTLS     bool
-	caCerts       string
-	dbConfig      postgres.Config
-	jaegerURL     string
-	thingsGRPCURL string
-	authGRPCURL   string
-	thingsTimeout time.Duration
-	authTimeout   time.Duration
+	logLevel          string
+	port              string
+	clientTLS         bool
+	caCerts           string
+	dbConfig          postgres.Config
+	jaegerURL         string
+	thingsGRPCURL     string
+	authGRPCURL       string
+	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 }
 
 func main() {
@@ -104,7 +104,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
@@ -112,7 +112,7 @@ func main() {
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -180,27 +180,27 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		port:          mainflux.Env(envPort, defPort),
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		dbConfig:      dbConfig,
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		authGRPCURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		thingsTimeout: thingsTimeout,
-		authTimeout:   authTimeout,
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		port:              mainflux.Env(envPort, defPort),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		dbConfig:          dbConfig,
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 	}
 }
 

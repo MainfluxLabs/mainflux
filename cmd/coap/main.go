@@ -34,34 +34,34 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	defPort          = "5683"
-	defBrokerURL     = "nats://localhost:4222"
-	defLogLevel      = "error"
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defJaegerURL     = ""
-	defThingsGRPCURL = "localhost:8183"
-	defThingsTimeout = "1s"
+	defPort              = "5683"
+	defBrokerURL         = "nats://localhost:4222"
+	defLogLevel          = "error"
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defJaegerURL         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
 
-	envPort          = "MF_COAP_ADAPTER_PORT"
-	envBrokerURL     = "MF_BROKER_URL"
-	envLogLevel      = "MF_COAP_ADAPTER_LOG_LEVEL"
-	envClientTLS     = "MF_COAP_ADAPTER_CLIENT_TLS"
-	envCACerts       = "MF_COAP_ADAPTER_CA_CERTS"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envPort              = "MF_COAP_ADAPTER_PORT"
+	envBrokerURL         = "MF_BROKER_URL"
+	envLogLevel          = "MF_COAP_ADAPTER_LOG_LEVEL"
+	envClientTLS         = "MF_COAP_ADAPTER_CLIENT_TLS"
+	envCACerts           = "MF_COAP_ADAPTER_CA_CERTS"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	port          string
-	brokerURL     string
-	logLevel      string
-	clientTLS     bool
-	caCerts       string
-	jaegerURL     string
-	thingsGRPCURL string
-	thingsTimeout time.Duration
+	port              string
+	brokerURL         string
+	logLevel          string
+	clientTLS         bool
+	caCerts           string
+	jaegerURL         string
+	thingsGRPCURL     string
+	thingsGRPCTimeout time.Duration
 }
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
@@ -136,20 +136,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	return config{
-		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
-		port:          mainflux.Env(envPort, defPort),
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout: thingsTimeout,
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		port:              mainflux.Env(envPort, defPort),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 }
 

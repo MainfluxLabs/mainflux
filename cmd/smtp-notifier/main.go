@@ -66,10 +66,10 @@ const (
 	defEmailFromName    = ""
 	defEmailTemplate    = "email.tmpl"
 
-	defAuthTLS     = "false"
-	defAuthCACerts = ""
-	defAuthGRPCURL = "localhost:8181"
-	defAuthTimeout = "1s"
+	defAuthTLS         = "false"
+	defAuthCACerts     = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
 
 	envLogLevel      = "MF_SMTP_NOTIFIER_LOG_LEVEL"
 	envDBHost        = "MF_SMTP_NOTIFIER_DB_HOST"
@@ -97,27 +97,27 @@ const (
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_SMTP_NOTIFIER_TEMPLATE"
 
-	envAuthTLS     = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts = "MF_AUTH_CA_CERTS"
-	envAuthGRPCURL = "MF_AUTH_GRPC_URL"
-	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
+	envAuthCACerts     = "MF_AUTH_CA_CERTS"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	brokerURL   string
-	configPath  string
-	logLevel    string
-	dbConfig    postgres.Config
-	emailConf   email.Config
-	from        string
-	httpPort    string
-	serverCert  string
-	serverKey   string
-	jaegerURL   string
-	authTLS     bool
-	authCACerts string
-	authGRPCURL string
-	authTimeout time.Duration
+	brokerURL       string
+	configPath      string
+	logLevel        string
+	dbConfig        postgres.Config
+	emailConf       email.Config
+	from            string
+	httpPort        string
+	serverCert      string
+	serverKey       string
+	jaegerURL       string
+	authTLS         bool
+	authCACerts     string
+	authGRPCURL     string
+	authGRPCTimeout time.Duration
 }
 
 func main() {
@@ -179,9 +179,9 @@ func main() {
 }
 
 func loadConfig() config {
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
 	}
 
 	tls, err := strconv.ParseBool(mainflux.Env(envAuthTLS, defAuthTLS))
@@ -212,20 +212,20 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:    mainflux.Env(envLogLevel, defLogLevel),
-		brokerURL:   mainflux.Env(envBrokerURL, defBrokerURL),
-		configPath:  mainflux.Env(envConfigPath, defConfigPath),
-		dbConfig:    dbConfig,
-		emailConf:   emailConf,
-		from:        mainflux.Env(envFrom, defFrom),
-		httpPort:    mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert:  mainflux.Env(envServerCert, defServerCert),
-		serverKey:   mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:   mainflux.Env(envJaegerURL, defJaegerURL),
-		authTLS:     tls,
-		authCACerts: mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authGRPCURL: mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout: authTimeout,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
+		configPath:      mainflux.Env(envConfigPath, defConfigPath),
+		dbConfig:        dbConfig,
+		emailConf:       emailConf,
+		from:            mainflux.Env(envFrom, defFrom),
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		authTLS:         tls,
+		authCACerts:     mainflux.Env(envAuthCACerts, defAuthCACerts),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
 	}
 
 }
@@ -285,7 +285,7 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 		os.Exit(1)
 	}
 
-	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
 func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {

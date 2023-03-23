@@ -41,83 +41,83 @@ const (
 	httpProtocol  = "http"
 	httpsProtocol = "https"
 
-	defLogLevel       = "error"
-	defDBHost         = "localhost"
-	defDBPort         = "5432"
-	defDBUser         = "mainflux"
-	defDBPass         = "mainflux"
-	defDB             = "bootstrap"
-	defDBSSLMode      = "disable"
-	defDBSSLCert      = ""
-	defDBSSLKey       = ""
-	defDBSSLRootCert  = ""
-	defEncryptKey     = "12345678910111213141516171819202"
-	defClientTLS      = "false"
-	defCACerts        = ""
-	defPort           = "8180"
-	defServerCert     = ""
-	defServerKey      = ""
-	defThingsURL      = "http://localhost"
-	defThingsESURL    = "localhost:6379"
-	defThingsESPass   = ""
-	defThingsESDB     = "0"
-	defESURL          = "localhost:6379"
-	defESPass         = ""
-	defESDB           = "0"
-	defESConsumerName = "bootstrap"
-	defJaegerURL      = ""
-	defAuthGRPCURL    = "localhost:8181"
-	defAuthTimeout    = "1s"
+	defLogLevel        = "error"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "bootstrap"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defEncryptKey      = "12345678910111213141516171819202"
+	defClientTLS       = "false"
+	defCACerts         = ""
+	defPort            = "8180"
+	defServerCert      = ""
+	defServerKey       = ""
+	defThingsURL       = "http://localhost"
+	defThingsESURL     = "localhost:6379"
+	defThingsESPass    = ""
+	defThingsESDB      = "0"
+	defESURL           = "localhost:6379"
+	defESPass          = ""
+	defESDB            = "0"
+	defESConsumerName  = "bootstrap"
+	defJaegerURL       = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
 
-	envLogLevel       = "MF_BOOTSTRAP_LOG_LEVEL"
-	envDBHost         = "MF_BOOTSTRAP_DB_HOST"
-	envDBPort         = "MF_BOOTSTRAP_DB_PORT"
-	envDBUser         = "MF_BOOTSTRAP_DB_USER"
-	envDBPass         = "MF_BOOTSTRAP_DB_PASS"
-	envDB             = "MF_BOOTSTRAP_DB"
-	envDBSSLMode      = "MF_BOOTSTRAP_DB_SSL_MODE"
-	envDBSSLCert      = "MF_BOOTSTRAP_DB_SSL_CERT"
-	envDBSSLKey       = "MF_BOOTSTRAP_DB_SSL_KEY"
-	envDBSSLRootCert  = "MF_BOOTSTRAP_DB_SSL_ROOT_CERT"
-	envEncryptKey     = "MF_BOOTSTRAP_ENCRYPT_KEY"
-	envClientTLS      = "MF_BOOTSTRAP_CLIENT_TLS"
-	envCACerts        = "MF_BOOTSTRAP_CA_CERTS"
-	envPort           = "MF_BOOTSTRAP_PORT"
-	envServerCert     = "MF_BOOTSTRAP_SERVER_CERT"
-	envServerKey      = "MF_BOOTSTRAP_SERVER_KEY"
-	envThingsURL      = "MF_THINGS_URL"
-	envThingsESURL    = "MF_THINGS_ES_URL"
-	envThingsESPass   = "MF_THINGS_ES_PASS"
-	envThingsESDB     = "MF_THINGS_ES_DB"
-	envESURL          = "MF_BOOTSTRAP_ES_URL"
-	envESPass         = "MF_BOOTSTRAP_ES_PASS"
-	envESDB           = "MF_BOOTSTRAP_ES_DB"
-	envESConsumerName = "MF_BOOTSTRAP_EVENT_CONSUMER"
-	envJaegerURL      = "MF_JAEGER_URL"
-	envAuthGRPCURL    = "MF_AUTH_GRPC_URL"
-	envAuthTimeout    = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel        = "MF_BOOTSTRAP_LOG_LEVEL"
+	envDBHost          = "MF_BOOTSTRAP_DB_HOST"
+	envDBPort          = "MF_BOOTSTRAP_DB_PORT"
+	envDBUser          = "MF_BOOTSTRAP_DB_USER"
+	envDBPass          = "MF_BOOTSTRAP_DB_PASS"
+	envDB              = "MF_BOOTSTRAP_DB"
+	envDBSSLMode       = "MF_BOOTSTRAP_DB_SSL_MODE"
+	envDBSSLCert       = "MF_BOOTSTRAP_DB_SSL_CERT"
+	envDBSSLKey        = "MF_BOOTSTRAP_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_BOOTSTRAP_DB_SSL_ROOT_CERT"
+	envEncryptKey      = "MF_BOOTSTRAP_ENCRYPT_KEY"
+	envClientTLS       = "MF_BOOTSTRAP_CLIENT_TLS"
+	envCACerts         = "MF_BOOTSTRAP_CA_CERTS"
+	envPort            = "MF_BOOTSTRAP_PORT"
+	envServerCert      = "MF_BOOTSTRAP_SERVER_CERT"
+	envServerKey       = "MF_BOOTSTRAP_SERVER_KEY"
+	envThingsURL       = "MF_THINGS_URL"
+	envThingsESURL     = "MF_THINGS_ES_URL"
+	envThingsESPass    = "MF_THINGS_ES_PASS"
+	envThingsESDB      = "MF_THINGS_ES_DB"
+	envESURL           = "MF_BOOTSTRAP_ES_URL"
+	envESPass          = "MF_BOOTSTRAP_ES_PASS"
+	envESDB            = "MF_BOOTSTRAP_ES_DB"
+	envESConsumerName  = "MF_BOOTSTRAP_EVENT_CONSUMER"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel       string
-	dbConfig       postgres.Config
-	clientTLS      bool
-	encKey         []byte
-	caCerts        string
-	httpPort       string
-	serverCert     string
-	serverKey      string
-	thingsURL      string
-	esThingsURL    string
-	esThingsPass   string
-	esThingsDB     string
-	esURL          string
-	esPass         string
-	esDB           string
-	esConsumerName string
-	jaegerURL      string
-	authGRPCURL    string
-	authTimeout    time.Duration
+	logLevel        string
+	dbConfig        postgres.Config
+	clientTLS       bool
+	encKey          []byte
+	caCerts         string
+	httpPort        string
+	serverCert      string
+	serverKey       string
+	thingsURL       string
+	esThingsURL     string
+	esThingsPass    string
+	esThingsDB      string
+	esURL           string
+	esPass          string
+	esDB            string
+	esConsumerName  string
+	jaegerURL       string
+	authGRPCURL     string
+	authGRPCTimeout time.Duration
 }
 
 func main() {
@@ -145,7 +145,7 @@ func main() {
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
 	svc := newService(auth, db, logger, esClient, cfg)
 
@@ -185,9 +185,9 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 	encKey, err := hex.DecodeString(mainflux.Env(envEncryptKey, defEncryptKey))
 	if err != nil {
@@ -201,25 +201,25 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:       dbConfig,
-		clientTLS:      tls,
-		encKey:         encKey,
-		caCerts:        mainflux.Env(envCACerts, defCACerts),
-		httpPort:       mainflux.Env(envPort, defPort),
-		serverCert:     mainflux.Env(envServerCert, defServerCert),
-		serverKey:      mainflux.Env(envServerKey, defServerKey),
-		thingsURL:      mainflux.Env(envThingsURL, defThingsURL),
-		esThingsURL:    mainflux.Env(envThingsESURL, defThingsESURL),
-		esThingsPass:   mainflux.Env(envThingsESPass, defThingsESPass),
-		esThingsDB:     mainflux.Env(envThingsESDB, defThingsESDB),
-		esURL:          mainflux.Env(envESURL, defESURL),
-		esPass:         mainflux.Env(envESPass, defESPass),
-		esDB:           mainflux.Env(envESDB, defESDB),
-		esConsumerName: mainflux.Env(envESConsumerName, defESConsumerName),
-		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:    mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout:    authTimeout,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		clientTLS:       tls,
+		encKey:          encKey,
+		caCerts:         mainflux.Env(envCACerts, defCACerts),
+		httpPort:        mainflux.Env(envPort, defPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		thingsURL:       mainflux.Env(envThingsURL, defThingsURL),
+		esThingsURL:     mainflux.Env(envThingsESURL, defThingsESURL),
+		esThingsPass:    mainflux.Env(envThingsESPass, defThingsESPass),
+		esThingsDB:      mainflux.Env(envThingsESDB, defThingsESDB),
+		esURL:           mainflux.Env(envESURL, defESURL),
+		esPass:          mainflux.Env(envESPass, defESPass),
+		esDB:            mainflux.Env(envESDB, defESDB),
+		esConsumerName:  mainflux.Env(envESConsumerName, defESConsumerName),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
 	}
 }
 

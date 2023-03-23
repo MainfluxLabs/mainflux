@@ -33,34 +33,34 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defPort          = "8180"
-	defBrokerURL     = "nats://localhost:4222"
-	defJaegerURL     = ""
-	defThingsGRPCURL = "localhost:8183"
-	defThingsTimeout = "1s"
+	defLogLevel          = "error"
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defPort              = "8180"
+	defBrokerURL         = "nats://localhost:4222"
+	defJaegerURL         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
 
-	envLogLevel      = "MF_HTTP_ADAPTER_LOG_LEVEL"
-	envClientTLS     = "MF_HTTP_ADAPTER_CLIENT_TLS"
-	envCACerts       = "MF_HTTP_ADAPTER_CA_CERTS"
-	envPort          = "MF_HTTP_ADAPTER_PORT"
-	envBrokerURL     = "MF_BROKER_URL"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_HTTP_ADAPTER_LOG_LEVEL"
+	envClientTLS         = "MF_HTTP_ADAPTER_CLIENT_TLS"
+	envCACerts           = "MF_HTTP_ADAPTER_CA_CERTS"
+	envPort              = "MF_HTTP_ADAPTER_PORT"
+	envBrokerURL         = "MF_BROKER_URL"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	brokerURL     string
-	logLevel      string
-	port          string
-	clientTLS     bool
-	caCerts       string
-	jaegerURL     string
-	thingsGRPCURL string
-	thingsTimeout time.Duration
+	brokerURL         string
+	logLevel          string
+	port              string
+	clientTLS         bool
+	caCerts           string
+	jaegerURL         string
+	thingsGRPCURL     string
+	thingsGRPCTimeout time.Duration
 }
 
 func main() {
@@ -89,7 +89,7 @@ func main() {
 	}
 	defer pub.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 	svc := adapter.New(pub, tc)
 
 	svc = api.LoggingMiddleware(svc, logger)
@@ -132,20 +132,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	return config{
-		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		port:          mainflux.Env(envPort, defPort),
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout: thingsTimeout,
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		port:              mainflux.Env(envPort, defPort),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 }
 

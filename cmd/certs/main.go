@@ -37,26 +37,26 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "certs"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defPort          = "8204"
-	defServerCert    = ""
-	defServerKey     = ""
-	defCertsURL      = "http://localhost"
-	defThingsURL     = "http://things:8182"
-	defJaegerURL     = ""
-	defAuthGRPCURL   = "localhost:8181"
-	defAuthTimeout   = "1s"
+	defLogLevel        = "error"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "certs"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defClientTLS       = "false"
+	defCACerts         = ""
+	defPort            = "8204"
+	defServerCert      = ""
+	defServerKey       = ""
+	defCertsURL        = "http://localhost"
+	defThingsURL       = "http://things:8182"
+	defJaegerURL       = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
 
 	defSignCAPath     = "ca.crt"
 	defSignCAKeyPath  = "ca.key"
@@ -68,30 +68,30 @@ const (
 	defVaultToken      = ""
 	defVaultPKIIntPath = "pki_int"
 
-	envPort           = "MF_CERTS_HTTP_PORT"
-	envLogLevel       = "MF_CERTS_LOG_LEVEL"
-	envDBHost         = "MF_CERTS_DB_HOST"
-	envDBPort         = "MF_CERTS_DB_PORT"
-	envDBUser         = "MF_CERTS_DB_USER"
-	envDBPass         = "MF_CERTS_DB_PASS"
-	envDB             = "MF_CERTS_DB"
-	envDBSSLMode      = "MF_CERTS_DB_SSL_MODE"
-	envDBSSLCert      = "MF_CERTS_DB_SSL_CERT"
-	envDBSSLKey       = "MF_CERTS_DB_SSL_KEY"
-	envDBSSLRootCert  = "MF_CERTS_DB_SSL_ROOT_CERT"
-	envClientTLS      = "MF_CERTS_CLIENT_TLS"
-	envCACerts        = "MF_CERTS_CA_CERTS"
-	envServerCert     = "MF_CERTS_SERVER_CERT"
-	envServerKey      = "MF_CERTS_SERVER_KEY"
-	envCertsURL       = "MF_SDK_CERTS_URL"
-	envJaegerURL      = "MF_JAEGER_URL"
-	envAuthGRPCURL    = "MF_AUTH_GRPC_URL"
-	envAuthTimeout    = "MF_AUTH_GRPC_TIMEOUT"
-	envThingsURL      = "MF_THINGS_URL"
-	envSignCAPath     = "MF_CERTS_SIGN_CA_PATH"
-	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
-	envSignHoursValid = "MF_CERTS_SIGN_HOURS_VALID"
-	envSignRSABits    = "MF_CERTS_SIGN_RSA_BITS"
+	envPort            = "MF_CERTS_HTTP_PORT"
+	envLogLevel        = "MF_CERTS_LOG_LEVEL"
+	envDBHost          = "MF_CERTS_DB_HOST"
+	envDBPort          = "MF_CERTS_DB_PORT"
+	envDBUser          = "MF_CERTS_DB_USER"
+	envDBPass          = "MF_CERTS_DB_PASS"
+	envDB              = "MF_CERTS_DB"
+	envDBSSLMode       = "MF_CERTS_DB_SSL_MODE"
+	envDBSSLCert       = "MF_CERTS_DB_SSL_CERT"
+	envDBSSLKey        = "MF_CERTS_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_CERTS_DB_SSL_ROOT_CERT"
+	envClientTLS       = "MF_CERTS_CLIENT_TLS"
+	envCACerts         = "MF_CERTS_CA_CERTS"
+	envServerCert      = "MF_CERTS_SERVER_CERT"
+	envServerKey       = "MF_CERTS_SERVER_KEY"
+	envCertsURL        = "MF_SDK_CERTS_URL"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envThingsURL       = "MF_THINGS_URL"
+	envSignCAPath      = "MF_CERTS_SIGN_CA_PATH"
+	envSignCAKey       = "MF_CERTS_SIGN_CA_KEY_PATH"
+	envSignHoursValid  = "MF_CERTS_SIGN_HOURS_VALID"
+	envSignRSABits     = "MF_CERTS_SIGN_RSA_BITS"
 
 	envVaultHost       = "MF_CERTS_VAULT_HOST"
 	envVaultPKIIntPath = "MF_VAULT_PKI_INT_PATH"
@@ -107,18 +107,18 @@ var (
 )
 
 type config struct {
-	logLevel    string
-	dbConfig    postgres.Config
-	clientTLS   bool
-	caCerts     string
-	httpPort    string
-	serverCert  string
-	serverKey   string
-	certsURL    string
-	thingsURL   string
-	jaegerURL   string
-	authGRPCURL string
-	authTimeout time.Duration
+	logLevel        string
+	dbConfig        postgres.Config
+	clientTLS       bool
+	caCerts         string
+	httpPort        string
+	serverCert      string
+	serverKey       string
+	certsURL        string
+	thingsURL       string
+	jaegerURL       string
+	authGRPCURL     string
+	authGRPCTimeout time.Duration
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
 	signCAKeyPath  string
@@ -164,7 +164,7 @@ func main() {
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
@@ -202,9 +202,9 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	signRSABits, err := strconv.Atoi(mainflux.Env(envSignRSABits, defSignRSABits))
@@ -213,18 +213,18 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:    mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:    dbConfig,
-		clientTLS:   tls,
-		caCerts:     mainflux.Env(envCACerts, defCACerts),
-		httpPort:    mainflux.Env(envPort, defPort),
-		serverCert:  mainflux.Env(envServerCert, defServerCert),
-		serverKey:   mainflux.Env(envServerKey, defServerKey),
-		certsURL:    mainflux.Env(envCertsURL, defCertsURL),
-		thingsURL:   mainflux.Env(envThingsURL, defThingsURL),
-		jaegerURL:   mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL: mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout: authTimeout,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		clientTLS:       tls,
+		caCerts:         mainflux.Env(envCACerts, defCACerts),
+		httpPort:        mainflux.Env(envPort, defPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		certsURL:        mainflux.Env(envCertsURL, defCertsURL),
+		thingsURL:       mainflux.Env(envThingsURL, defThingsURL),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
 
 		signCAKeyPath:  mainflux.Env(envSignCAKey, defSignCAKeyPath),
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
@@ -301,24 +301,24 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 	certsRepo := postgres.NewRepository(db, logger)
 
 	certsConfig := certs.Config{
-		LogLevel:       cfg.logLevel,
-		ClientTLS:      cfg.clientTLS,
-		CaCerts:        cfg.caCerts,
-		HTTPPort:       cfg.httpPort,
-		ServerCert:     cfg.serverCert,
-		ServerKey:      cfg.serverKey,
-		CertsURL:       cfg.certsURL,
-		JaegerURL:      cfg.jaegerURL,
-		AuthURL:        cfg.authGRPCURL,
-		AuthTimeout:    cfg.authTimeout,
-		SignTLSCert:    tlsCert,
-		SignX509Cert:   x509Cert,
-		SignHoursValid: cfg.signHoursValid,
-		SignRSABits:    cfg.signRSABits,
-		PKIToken:       cfg.pkiToken,
-		PKIHost:        cfg.pkiHost,
-		PKIPath:        cfg.pkiPath,
-		PKIRole:        cfg.pkiRole,
+		LogLevel:        cfg.logLevel,
+		ClientTLS:       cfg.clientTLS,
+		CaCerts:         cfg.caCerts,
+		HTTPPort:        cfg.httpPort,
+		ServerCert:      cfg.serverCert,
+		ServerKey:       cfg.serverKey,
+		CertsURL:        cfg.certsURL,
+		JaegerURL:       cfg.jaegerURL,
+		AuthURL:         cfg.authGRPCURL,
+		AuthGRPCTimeout: cfg.authGRPCTimeout,
+		SignTLSCert:     tlsCert,
+		SignX509Cert:    x509Cert,
+		SignHoursValid:  cfg.signHoursValid,
+		SignRSABits:     cfg.signRSABits,
+		PKIToken:        cfg.pkiToken,
+		PKIHost:         cfg.pkiHost,
+		PKIPath:         cfg.pkiPath,
+		PKIRole:         cfg.pkiRole,
 	}
 
 	config := mfsdk.Config{

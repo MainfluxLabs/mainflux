@@ -71,11 +71,11 @@ const (
 
 	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
 
-	defAuthTLS     = "false"
-	defAuthCACerts = ""
-	defAuthGRPCURL = "localhost:8181"
-	defAuthTimeout = "1s"
-	defGRPCPort    = "8184"
+	defAuthTLS         = "false"
+	defAuthCACerts     = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
+	defGRPCPort        = "8184"
 
 	defSelfRegister = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 
@@ -108,33 +108,33 @@ const (
 
 	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
 
-	envAuthTLS     = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts = "MF_AUTH_CA_CERTS"
-	envAuthGRPCURL = "MF_AUTH_GRPC_URL"
-	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
-	envGRPCPort    = "MF_USERS_GRPC_PORT"
+	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
+	envAuthCACerts     = "MF_AUTH_CA_CERTS"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
 	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
 )
 
 type config struct {
-	logLevel      string
-	dbConfig      postgres.Config
-	emailConf     email.Config
-	httpPort      string
-	grcpPort      string
-	serverCert    string
-	serverKey     string
-	jaegerURL     string
-	resetURL      string
-	authTLS       bool
-	authCACerts   string
-	authURL       string
-	authTimeout   time.Duration
-	adminEmail    string
-	adminPassword string
-	passRegex     *regexp.Regexp
-	selfRegister  bool
+	logLevel        string
+	dbConfig        postgres.Config
+	emailConf       email.Config
+	httpPort        string
+	grcpPort        string
+	serverCert      string
+	serverKey       string
+	jaegerURL       string
+	resetURL        string
+	authTLS         bool
+	authCACerts     string
+	authURL         string
+	authGRPCTimeout time.Duration
+	adminEmail      string
+	adminPassword   string
+	passRegex       *regexp.Regexp
+	selfRegister    bool
 }
 
 func main() {
@@ -190,9 +190,9 @@ func main() {
 }
 
 func loadConfig() config {
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
 	}
 
 	tls, err := strconv.ParseBool(mainflux.Env(envAuthTLS, defAuthTLS))
@@ -233,23 +233,23 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:      dbConfig,
-		emailConf:     emailConf,
-		httpPort:      mainflux.Env(envHTTPPort, defHTTPPort),
-		grcpPort:      mainflux.Env(envGRPCPort, defGRPCPort),
-		serverCert:    mainflux.Env(envServerCert, defServerCert),
-		serverKey:     mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		resetURL:      mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
-		authTLS:       tls,
-		authCACerts:   mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout:   authTimeout,
-		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
-		adminPassword: mainflux.Env(envAdminPassword, defAdminPassword),
-		passRegex:     passRegex,
-		selfRegister:  selfRegister,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		emailConf:       emailConf,
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		grcpPort:        mainflux.Env(envGRPCPort, defGRPCPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		resetURL:        mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
+		authTLS:         tls,
+		authCACerts:     mainflux.Env(envAuthCACerts, defAuthCACerts),
+		authURL:         mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
+		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
+		adminPassword:   mainflux.Env(envAdminPassword, defAdminPassword),
+		passRegex:       passRegex,
+		selfRegister:    selfRegister,
 	}
 
 }
@@ -308,7 +308,7 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 		os.Exit(1)
 	}
 
-	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
 func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) users.Service {

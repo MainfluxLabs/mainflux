@@ -59,7 +59,7 @@ const (
 	defHTTPTargetPath    = "/mqtt"
 	defWSPort            = "8285"
 	defThingsGRPCURL     = "localhost:8183"
-	defThingsTimeout     = "1s"
+	defThingsGRPCTimeout = "1s"
 	defBrokerURL         = "nats://localhost:4222"
 	defJaegerURL         = ""
 	defClientTLS         = "false"
@@ -97,7 +97,7 @@ const (
 	envHTTPTargetPath    = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
 	envWSPort            = "MF_MQTT_ADAPTER_WS_PORT"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout     = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envBrokerURL         = "MF_BROKER_URL"
 	envJaegerURL         = "MF_JAEGER_URL"
 	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
@@ -138,7 +138,7 @@ type config struct {
 	jaegerURL         string
 	logLevel          string
 	thingsGRPCURL     string
-	thingsTimeout     time.Duration
+	thingsGRPCTimeout time.Duration
 	brokerURL         string
 	authGRPCURL       string
 	clientTLS         bool
@@ -232,7 +232,7 @@ func main() {
 	defer usersAuthConn.Close()
 
 	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.authGRPCTimeout)
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authClient := auth.New(ac, tc)
 
@@ -275,9 +275,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	mqttTimeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
@@ -315,7 +315,7 @@ func loadConfig() config {
 		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout:     thingsTimeout,
+		thingsGRPCTimeout: thingsGRPCTimeout,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),

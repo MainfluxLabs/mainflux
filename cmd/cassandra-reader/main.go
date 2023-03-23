@@ -36,55 +36,55 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 
-	sep              = ","
-	defLogLevel      = "error"
-	defPort          = "8180"
-	defCluster       = "127.0.0.1"
-	defKeyspace      = "mainflux"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDBPort        = "9042"
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defServerCert    = ""
-	defServerKey     = ""
-	defJaegerURL     = ""
-	defThingsGRPCURL = "localhost:8183"
-	defThingsTimeout = "1s"
-	defAuthGRPCURL   = "localhost:8181"
-	defAuthTimeout   = "1s"
+	sep                  = ","
+	defLogLevel          = "error"
+	defPort              = "8180"
+	defCluster           = "127.0.0.1"
+	defKeyspace          = "mainflux"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDBPort            = "9042"
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defServerCert        = ""
+	defServerKey         = ""
+	defJaegerURL         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 
-	envLogLevel      = "MF_CASSANDRA_READER_LOG_LEVEL"
-	envPort          = "MF_CASSANDRA_READER_PORT"
-	envCluster       = "MF_CASSANDRA_READER_DB_CLUSTER"
-	envKeyspace      = "MF_CASSANDRA_READER_DB_KEYSPACE"
-	envDBUser        = "MF_CASSANDRA_READER_DB_USER"
-	envDBPass        = "MF_CASSANDRA_READER_DB_PASS"
-	envDBPort        = "MF_CASSANDRA_READER_DB_PORT"
-	envClientTLS     = "MF_CASSANDRA_READER_CLIENT_TLS"
-	envCACerts       = "MF_CASSANDRA_READER_CA_CERTS"
-	envServerCert    = "MF_CASSANDRA_READER_SERVER_CERT"
-	envServerKey     = "MF_CASSANDRA_READER_SERVER_KEY"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL   = "MF_AUTH_GRPC_URL"
-	envAuthTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_CASSANDRA_READER_LOG_LEVEL"
+	envPort              = "MF_CASSANDRA_READER_PORT"
+	envCluster           = "MF_CASSANDRA_READER_DB_CLUSTER"
+	envKeyspace          = "MF_CASSANDRA_READER_DB_KEYSPACE"
+	envDBUser            = "MF_CASSANDRA_READER_DB_USER"
+	envDBPass            = "MF_CASSANDRA_READER_DB_PASS"
+	envDBPort            = "MF_CASSANDRA_READER_DB_PORT"
+	envClientTLS         = "MF_CASSANDRA_READER_CLIENT_TLS"
+	envCACerts           = "MF_CASSANDRA_READER_CA_CERTS"
+	envServerCert        = "MF_CASSANDRA_READER_SERVER_CERT"
+	envServerKey         = "MF_CASSANDRA_READER_SERVER_KEY"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel      string
-	port          string
-	dbCfg         cassandra.DBConfig
-	clientTLS     bool
-	caCerts       string
-	serverCert    string
-	serverKey     string
-	jaegerURL     string
-	thingsGRPCURL string
-	authGRPCURL   string
-	thingsTimeout time.Duration
-	authTimeout   time.Duration
+	logLevel          string
+	port              string
+	dbCfg             cassandra.DBConfig
+	clientTLS         bool
+	caCerts           string
+	serverCert        string
+	serverKey         string
+	jaegerURL         string
+	thingsGRPCURL     string
+	authGRPCURL       string
+	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 }
 
 func main() {
@@ -106,14 +106,14 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
 	repo := newService(session, logger)
 
@@ -178,29 +178,29 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		port:          mainflux.Env(envPort, defPort),
-		dbCfg:         dbCfg,
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		serverCert:    mainflux.Env(envServerCert, defServerCert),
-		serverKey:     mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		authGRPCURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout:   authTimeout,
-		thingsTimeout: thingsTimeout,
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		port:              mainflux.Env(envPort, defPort),
+		dbCfg:             dbCfg,
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		serverCert:        mainflux.Env(envServerCert, defServerCert),
+		serverKey:         mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout:   authGRPCTimeout,
+		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 }
 

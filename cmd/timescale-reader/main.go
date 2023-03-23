@@ -36,52 +36,52 @@ const (
 	svcName      = "timescaledb-reader"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
-	defPort          = "8911"
-	defClientTLS     = "false"
-	defCACerts       = ""
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "mainflux"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defJaegerURL     = ""
-	defThingsGRPCURL = "localhost:8183"
-	defThingsTimeout = "1s"
+	defLogLevel          = "error"
+	defPort              = "8911"
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defDBHost            = "localhost"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "mainflux"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defJaegerURL         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
 
-	envLogLevel      = "MF_TIMESCALE_READER_LOG_LEVEL"
-	envPort          = "MF_TIMESCALE_READER_PORT"
-	envClientTLS     = "MF_TIMESCALE_READER_CLIENT_TLS"
-	envCACerts       = "MF_TIMESCALE_READER_CA_CERTS"
-	envDBHost        = "MF_TIMESCALE_READER_DB_HOST"
-	envDBPort        = "MF_TIMESCALE_READER_DB_PORT"
-	envDBUser        = "MF_TIMESCALE_READER_DB_USER"
-	envDBPass        = "MF_TIMESCALE_READER_DB_PASS"
-	envDB            = "MF_TIMESCALE_READER_DB"
-	envDBSSLMode     = "MF_TIMESCALE_READER_DB_SSL_MODE"
-	envDBSSLCert     = "MF_TIMESCALE_READER_DB_SSL_CERT"
-	envDBSSLKey      = "MF_TIMESCALE_READER_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_TIMESCALE_READER_DB_SSL_ROOT_CERT"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envThingsGRPCURL = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
+	envPort              = "MF_TIMESCALE_READER_PORT"
+	envClientTLS         = "MF_TIMESCALE_READER_CLIENT_TLS"
+	envCACerts           = "MF_TIMESCALE_READER_CA_CERTS"
+	envDBHost            = "MF_TIMESCALE_READER_DB_HOST"
+	envDBPort            = "MF_TIMESCALE_READER_DB_PORT"
+	envDBUser            = "MF_TIMESCALE_READER_DB_USER"
+	envDBPass            = "MF_TIMESCALE_READER_DB_PASS"
+	envDB                = "MF_TIMESCALE_READER_DB"
+	envDBSSLMode         = "MF_TIMESCALE_READER_DB_SSL_MODE"
+	envDBSSLCert         = "MF_TIMESCALE_READER_DB_SSL_CERT"
+	envDBSSLKey          = "MF_TIMESCALE_READER_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_TIMESCALE_READER_DB_SSL_ROOT_CERT"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel         string
-	port             string
-	clientTLS        bool
-	caCerts          string
-	dbConfig         timescale.Config
-	jaegerURL        string
-	thingsGRPCURL    string
-	usersAuthURL     string
-	thingsTimeout    time.Duration
-	usersAuthTimeout time.Duration
+	logLevel             string
+	port                 string
+	clientTLS            bool
+	caCerts              string
+	dbConfig             timescale.Config
+	jaegerURL            string
+	thingsGRPCURL        string
+	authGRPCURL         string
+	thingsGRPCTimeout    time.Duration
+	authGRPCTimeout time.Duration
 }
 
 func main() {
@@ -105,9 +105,9 @@ func main() {
 
 	authConn := connectToAuth(cfg, logger)
 	defer authConn.Close()
-	auth := authapi.NewClient(authTracer, authConn, cfg.usersAuthTimeout)
+	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -149,20 +149,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsTimeout, err := time.ParseDuration(mainflux.Env(envThingsTimeout, defThingsTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		port:          mainflux.Env(envPort, defPort),
-		clientTLS:     tls,
-		caCerts:       mainflux.Env(envCACerts, defCACerts),
-		dbConfig:      dbConfig,
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL: mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		thingsTimeout: thingsTimeout,
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		port:              mainflux.Env(envPort, defPort),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		dbConfig:          dbConfig,
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 }
 
@@ -183,12 +183,12 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.usersAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)
 	}
-	logger.Info(fmt.Sprintf("Established gRPC connection to auth via gRPC: %s", cfg.usersAuthURL))
+	logger.Info(fmt.Sprintf("Established gRPC connection to auth via gRPC: %s", cfg.authGRPCURL))
 	return conn
 }
 
