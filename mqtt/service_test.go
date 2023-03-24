@@ -29,7 +29,7 @@ func newService() mqtt.Service {
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
 	auth := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
-	return mqtt.NewMqttService(auth, repo, idProvider)
+	return mqtt.NewMqttService(auth, nil, repo, idProvider)
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -212,7 +212,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := svc.ListSubscriptions(context.Background(), tc.channelID, tc.token, tc.pageMeta)
+		page, err := svc.ListSubscriptions(context.Background(), tc.channelID, tc.token, "", tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.page, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.page, page))
 	}

@@ -17,7 +17,7 @@ func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		subs, err := svc.ListSubscriptions(ctx, req.chanID, req.token, req.pageMetadata)
+		subs, err := svc.ListSubscriptions(ctx, req.chanID, req.token, req.key, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

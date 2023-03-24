@@ -63,6 +63,7 @@ func decodeListSubscriptions(ctx context.Context, r *http.Request) (interface{},
 	return listSubscriptionsReq{
 		chanID: bone.GetValue(r, "id"),
 		token:  apiutil.ExtractBearerToken(r),
+		key:    apiutil.ExtractThingKey(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,
