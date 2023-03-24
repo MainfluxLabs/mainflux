@@ -33,12 +33,12 @@ const (
 
 	defLogLevel       = "error"
 	defHTTPPort       = "8180"
-	defLoraMsgURL     = "tcp://localhost:1883"
+	defMsgURL         = "tcp://localhost:1883"
 	defBrokerURL      = "nats://localhost:4222"
-	defLoraMsgTopic   = "application/+/device/+/event/up"
-	defLoraMsgUser    = ""
-	defLoraMsgPass    = ""
-	defLoraMsgTimeout = "30s"
+	defMsgTopic       = "application/+/device/+/event/up"
+	defMsgUser        = ""
+	defMsgPass        = ""
+	defMsgTimeout     = "30s"
 	defESURL          = "localhost:6379"
 	defESPass         = ""
 	defESDB           = "0"
@@ -48,12 +48,12 @@ const (
 	defRouteMapDB     = "0"
 
 	envHTTPPort       = "MF_LORA_ADAPTER_HTTP_PORT"
-	envLoraMsgURL     = "MF_LORA_ADAPTER_MESSAGES_URL"
+	envMsgURL         = "MF_LORA_ADAPTER_MESSAGES_URL"
 	envBrokerURL      = "MF_BROKER_URL"
-	envLoraMsgTopic   = "MF_LORA_ADAPTER_MESSAGES_TOPIC"
-	envLoraMsgUser    = "MF_LORA_ADAPTER_MESSAGES_USER"
-	envLoraMsgPass    = "MF_LORA_ADAPTER_MESSAGES_PASS"
-	envLoraMsgTimeout = "MF_LORA_ADAPTER_MESSAGES_TIMEOUT"
+	envMsgTopic       = "MF_LORA_ADAPTER_MESSAGES_TOPIC"
+	envMsgUser        = "MF_LORA_ADAPTER_MESSAGES_USER"
+	envMsgPass        = "MF_LORA_ADAPTER_MESSAGES_PASS"
+	envMsgTimeout     = "MF_LORA_ADAPTER_MESSAGES_TIMEOUT"
 	envLogLevel       = "MF_LORA_ADAPTER_LOG_LEVEL"
 	envESURL          = "MF_THINGS_ES_URL"
 	envESPass         = "MF_THINGS_ES_PASS"
@@ -70,12 +70,12 @@ const (
 
 type config struct {
 	httpPort       string
-	loraMsgURL     string
+	msgURL         string
 	brokerURL      string
-	loraMsgUser    string
-	loraMsgPass    string
-	loraMsgTopic   string
-	loraMsgTimeout time.Duration
+	msgUser        string
+	msgPass        string
+	msgTopic       string
+	msgTimeout     time.Duration
 	logLevel       string
 	esURL          string
 	esPass         string
@@ -131,9 +131,9 @@ func main() {
 		}, []string{"method"}),
 	)
 
-	mqttConn := connectToMQTTBroker(cfg.loraMsgURL, cfg.loraMsgUser, cfg.loraMsgPass, cfg.loraMsgTimeout, logger)
+	mqttConn := connectToMQTTBroker(cfg.msgURL, cfg.msgUser, cfg.msgPass, cfg.msgTimeout, logger)
 
-	go subscribeToLoRaBroker(svc, mqttConn, cfg.loraMsgTimeout, cfg.loraMsgTopic, logger)
+	go subscribeToLoRaBroker(svc, mqttConn, cfg.msgTimeout, cfg.msgTopic, logger)
 	go subscribeToThingsES(svc, esConn, cfg.esConsumerName, logger)
 
 	g.Go(func() error {
@@ -155,19 +155,19 @@ func main() {
 }
 
 func loadConfig() config {
-	mqttTimeout, err := time.ParseDuration(mainflux.Env(envLoraMsgTimeout, defLoraMsgTimeout))
+	mqttTimeout, err := time.ParseDuration(mainflux.Env(envMsgTimeout, defMsgTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envLoraMsgTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envMsgTimeout, err.Error())
 	}
 
 	return config{
 		httpPort:       mainflux.Env(envHTTPPort, defHTTPPort),
-		loraMsgURL:     mainflux.Env(envLoraMsgURL, defLoraMsgURL),
+		msgURL:         mainflux.Env(envMsgURL, defMsgURL),
 		brokerURL:      mainflux.Env(envBrokerURL, defBrokerURL),
-		loraMsgTopic:   mainflux.Env(envLoraMsgTopic, defLoraMsgTopic),
-		loraMsgUser:    mainflux.Env(envLoraMsgUser, defLoraMsgUser),
-		loraMsgPass:    mainflux.Env(envLoraMsgPass, defLoraMsgPass),
-		loraMsgTimeout: mqttTimeout,
+		msgTopic:       mainflux.Env(envMsgTopic, defMsgTopic),
+		msgUser:        mainflux.Env(envMsgUser, defMsgUser),
+		msgPass:        mainflux.Env(envMsgPass, defMsgPass),
+		msgTimeout:     mqttTimeout,
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		esURL:          mainflux.Env(envESURL, defESURL),
 		esPass:         mainflux.Env(envESPass, defESPass),

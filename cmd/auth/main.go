@@ -181,12 +181,12 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	usersTls, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
+	usersClientTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envUsersClientTLS)
 	}
 
-	thingsTls, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
+	thingsClientTLS, err := strconv.ParseBool(mainflux.Env(envThingsClientTLS, defThingsClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
@@ -213,10 +213,10 @@ func loadConfig() config {
 		loginDuration:   loginDuration,
 		timeout:         timeout,
 		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
-		thingsClientTLS: thingsTls,
+		thingsClientTLS: thingsClientTLS,
 		thingsCACerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
 		thingsGRPCURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		usersClientTLS:  usersTls,
+		usersClientTLS:  usersClientTLS,
 		usersCACerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
 		usersGRPCURL:    mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
 	}

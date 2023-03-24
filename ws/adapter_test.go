@@ -32,9 +32,9 @@ var msg = messaging.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
-func newService(cc mainflux.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc mainflux.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
-	return ws.New(cc, pubsub), pubsub
+	return ws.New(tc, pubsub), pubsub
 }
 
 func TestPublish(t *testing.T) {
