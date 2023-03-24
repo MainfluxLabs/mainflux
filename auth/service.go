@@ -347,7 +347,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 
 	var members []User
 	if len(mp.MemberIDs) > 0 {
-		usrReq := mainflux.UsersReq{Ids: mp.MemberIDs}
+		usrReq := mainflux.UsersByIDsReq{Ids: mp.MemberIDs}
 		usr, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return MembersPage{}, err

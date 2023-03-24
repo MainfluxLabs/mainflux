@@ -34,6 +34,18 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			mu = append(mu, &user)
 		}
 
-		return getUsersByIDsRes{users: mu}, nil
+		return getUsersRes{users: mu}, nil
+	}
+}
+
+func listUsersByEmailsEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getUsersByEmailsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		// TODO: call service method
+
+		return nil, nil
 	}
 }

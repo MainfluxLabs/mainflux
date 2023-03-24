@@ -16,7 +16,8 @@ service ThingsService {
 }
 
 service UsersService {
-    rpc GetUsersByIDs(UsersReq) returns (UsersRes) {}
+    rpc GetUsersByIDs(UsersByIDsReq) returns (UsersRes) {}
+    rpc GetUsersByEmails(UsersByEmailsReq) returns (UsersRes) {}
 }
 
 service AuthService {
@@ -110,7 +111,11 @@ message User {
 	string status   = 3;
 }
 
-message UsersReq {
+message UsersByEmailsReq {
+    repeated string emails = 1;
+}
+
+message UsersByIDsReq {
     repeated string ids = 1;
 }
 
