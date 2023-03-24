@@ -13,7 +13,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
@@ -48,113 +47,113 @@ const (
 	httpsProtocol = "https"
 	stopWaitTime  = 5 * time.Second
 
-	defLogLevel              = "error"
-	defMQTTPort              = "1883"
-	defMQTTTargetHost        = "0.0.0.0"
-	defMQTTTargetPort        = "1883"
-	defMQTTForwarderTimeout  = "30s" // 30 seconds
-	defMQTTTargetHealthCheck = ""
-	defHTTPPort              = "8080"
-	defHTTPTargetHost        = "localhost"
-	defHTTPTargetPort        = "8080"
-	defHTTPTargetPath        = "/mqtt"
-	defWSPort                = "8285"
-	defThingsAuthURL         = "localhost:8183"
-	defThingsAuthTimeout     = "1s"
-	defBrokerURL             = "nats://localhost:4222"
-	defJaegerURL             = ""
-	defClientTLS             = "false"
-	defCACerts               = ""
-	defInstance              = ""
-	defESURL                 = "localhost:6379"
-	defESPass                = ""
-	defESDB                  = "0"
-	defAuthcacheURL          = "localhost:6379"
-	defAuthCachePass         = ""
-	defAuthCacheDB           = "0"
-	defDBHost                = "localhost"
-	defUsersAuthURL          = "localhost:8181"
-	defDBPort                = "5432"
-	defDBUser                = "mainflux"
-	defDBPass                = "mainflux"
-	defDB                    = "subscriptions"
-	defDBSSLMode             = "disable"
-	defDBSSLCert             = ""
-	defDBSSLKey              = ""
-	defDBSSLRootCert         = ""
-	defServerKey             = ""
-	defServerCert            = ""
-	defUsersAuthTimeout      = "1s"
+	defLogLevel          = "error"
+	defMQTTPort          = "1883"
+	defTargetHost        = "0.0.0.0"
+	defTargetPort        = "1883"
+	defTimeout           = "30s" // 30 seconds
+	defTargetHealthCheck = ""
+	defHTTPPort          = "8080"
+	defHTTPTargetHost    = "localhost"
+	defHTTPTargetPort    = "8080"
+	defHTTPTargetPath    = "/mqtt"
+	defWSPort            = "8285"
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
+	defBrokerURL         = "nats://localhost:4222"
+	defJaegerURL         = ""
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defInstance          = ""
+	defESURL             = "localhost:6379"
+	defESPass            = ""
+	defESDB              = "0"
+	defAuthcacheURL      = "localhost:6379"
+	defAuthCachePass     = ""
+	defAuthCacheDB       = "0"
+	defDBHost            = "localhost"
+	defAuthGRPCURL       = "localhost:8181"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "subscriptions"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defServerKey         = ""
+	defServerCert        = ""
+	defAuthGRPCTimeout   = "1s"
 
-	envLogLevel              = "MF_MQTT_ADAPTER_LOG_LEVEL"
-	envMQTTPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
-	envMQTTTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
-	envMQTTTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
-	envMQTTTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
-	envMQTTForwarderTimeout  = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
-	envHTTPPort              = "MF_MQTT_ADAPTER_HTTP_PORT"
-	envHTTPTargetHost        = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
-	envHTTPTargetPort        = "MF_MQTT_ADAPTER_WS_TARGET_PORT"
-	envHTTPTargetPath        = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
-	envWSPort                = "MF_MQTT_ADAPTER_WS_PORT"
-	envThingsAuthURL         = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsAuthTimeout     = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envBrokerURL             = "MF_BROKER_URL"
-	envJaegerURL             = "MF_JAEGER_URL"
-	envClientTLS             = "MF_MQTT_ADAPTER_CLIENT_TLS"
-	envCACerts               = "MF_MQTT_ADAPTER_CA_CERTS"
-	envInstance              = "MF_MQTT_ADAPTER_INSTANCE"
-	envESURL                 = "MF_MQTT_ADAPTER_ES_URL"
-	envESPass                = "MF_MQTT_ADAPTER_ES_PASS"
-	envESDB                  = "MF_MQTT_ADAPTER_ES_DB"
-	envAuthCacheURL          = "MF_AUTH_CACHE_URL"
-	envAuthCachePass         = "MF_AUTH_CACHE_PASS"
-	envAuthCacheDB           = "MF_AUTH_CACHE_DB"
-	envServerCert            = "MF_MQTT_ADAPTER_SERVER_CERT"
-	envServerKey             = "MF_MQTT_ADAPTER_SERVER_KEY"
-	envDBHost                = "MF_MQTT_ADAPTER_DB_HOST"
-	envDBPort                = "MF_MQTT_ADAPTER_DB_PORT"
-	envDBUser                = "MF_MQTT_ADAPTER_DB_USER"
-	envDBPass                = "MF_MQTT_ADAPTER_DB_PASS"
-	envDB                    = "MF_MQTT_ADAPTER_DB"
-	envDBSSLMode             = "MF_MQTT_ADAPTER_DB_SSL_MODE"
-	envDBSSLCert             = "MF_MQTT_ADAPTER_DB_SSL_CERT"
-	envDBSSLKey              = "MF_MQTT_ADAPTER_DB_SSL_KEY"
-	envDBSSLRootCert         = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
-	envUsersAuthURL          = "MF_AUTH_GRPC_URL"
-	envUsersAuthTimeout      = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
+	envMQTTPort          = "MF_MQTT_ADAPTER_MQTT_PORT"
+	envTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
+	envTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
+	envTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
+	envTimeout           = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
+	envHTTPPort          = "MF_MQTT_ADAPTER_HTTP_PORT"
+	envHTTPTargetHost    = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
+	envHTTPTargetPort    = "MF_MQTT_ADAPTER_WS_TARGET_PORT"
+	envHTTPTargetPath    = "MF_MQTT_ADAPTER_WS_TARGET_PATH"
+	envWSPort            = "MF_MQTT_ADAPTER_WS_PORT"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envBrokerURL         = "MF_BROKER_URL"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
+	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
+	envInstance          = "MF_MQTT_ADAPTER_INSTANCE"
+	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
+	envESPass            = "MF_MQTT_ADAPTER_ES_PASS"
+	envESDB              = "MF_MQTT_ADAPTER_ES_DB"
+	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
+	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
+	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
+	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
+	envServerKey         = "MF_MQTT_ADAPTER_SERVER_KEY"
+	envDBHost            = "MF_MQTT_ADAPTER_DB_HOST"
+	envDBPort            = "MF_MQTT_ADAPTER_DB_PORT"
+	envDBUser            = "MF_MQTT_ADAPTER_DB_USER"
+	envDBPass            = "MF_MQTT_ADAPTER_DB_PASS"
+	envDB                = "MF_MQTT_ADAPTER_DB"
+	envDBSSLMode         = "MF_MQTT_ADAPTER_DB_SSL_MODE"
+	envDBSSLCert         = "MF_MQTT_ADAPTER_DB_SSL_CERT"
+	envDBSSLKey          = "MF_MQTT_ADAPTER_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	mqttPort              string
-	mqttTargetHost        string
-	mqttTargetPort        string
-	mqttForwarderTimeout  time.Duration
-	mqttTargetHealthCheck string
-	httpPort              string
-	wsPort                string
-	httpTargetHost        string
-	httpTargetPort        string
-	httpTargetPath        string
-	jaegerURL             string
-	logLevel              string
-	thingsAuthURL         string
-	thingsAuthTimeout     time.Duration
-	brokerURL             string
-	usersAuthURL          string
-	clientTLS             bool
-	caCerts               string
-	instance              string
-	esURL                 string
-	esPass                string
-	esDB                  string
-	authURL               string
-	authPass              string
-	authDB                string
-	serverCert            string
-	serverKey             string
-	usersAuthTimeout      time.Duration
-	dbConfig              postgres.Config
+	port              string
+	targetHost        string
+	targetPort        string
+	timeout           time.Duration
+	targetHealthCheck string
+	httpPort          string
+	wsPort            string
+	httpTargetHost    string
+	httpTargetPort    string
+	httpTargetPath    string
+	jaegerURL         string
+	logLevel          string
+	thingsGRPCURL     string
+	thingsGRPCTimeout time.Duration
+	brokerURL         string
+	authGRPCURL       string
+	clientTLS         bool
+	caCerts           string
+	instance          string
+	esURL             string
+	esPass            string
+	esDB              string
+	authCacheURL      string
+	authPass          string
+	authCacheDB       string
+	serverCert        string
+	serverKey         string
+	authGRPCTimeout   time.Duration
+	dbConfig          postgres.Config
 }
 
 func main() {
@@ -162,7 +161,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 
-	logger, err := mflog.New(os.Stdout, cfg.logLevel)
+	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -170,7 +169,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	if cfg.mqttTargetHealthCheck != "" {
+	if cfg.targetHealthCheck != "" {
 		notify := func(e error, next time.Duration) {
 			logger.Info(fmt.Sprintf("Broker not ready: %s, next try in %s", e.Error(), next))
 		}
@@ -195,7 +194,7 @@ func main() {
 	}
 	defer nps.Close()
 
-	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.mqttTargetHost, cfg.mqttTargetPort), cfg.mqttForwarderTimeout)
+	mpub, err := mqttpub.NewPublisher(fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort), cfg.timeout)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create MQTT publisher: %s", err))
 		os.Exit(1)
@@ -216,7 +215,7 @@ func main() {
 
 	es := mqttredis.NewEventStore(ec, cfg.instance)
 
-	ac := connectToRedis(cfg.authURL, cfg.authPass, cfg.authDB, logger)
+	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
@@ -232,8 +231,8 @@ func main() {
 	usersAuthConn := connectToAuth(cfg, logger)
 	defer usersAuthConn.Close()
 
-	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.usersAuthTimeout)
-	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsAuthTimeout)
+	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.authGRPCTimeout)
+	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authClient := auth.New(ac, tc)
 
@@ -242,7 +241,7 @@ func main() {
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, svc)
 
-	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.mqttPort))
+	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
 		return proxyMQTT(ctx, cfg, logger, h)
 	})
@@ -276,19 +275,19 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	mqttTimeout, err := time.ParseDuration(mainflux.Env(envMQTTForwarderTimeout, defMQTTForwarderTimeout))
+	mqttTimeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envMQTTForwarderTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
-	usersAuthTimeout, err := time.ParseDuration(mainflux.Env(envUsersAuthTimeout, defUsersAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envUsersAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -304,39 +303,39 @@ func loadConfig() config {
 	}
 
 	return config{
-		mqttPort:              mainflux.Env(envMQTTPort, defMQTTPort),
-		mqttTargetHost:        mainflux.Env(envMQTTTargetHost, defMQTTTargetHost),
-		mqttTargetPort:        mainflux.Env(envMQTTTargetPort, defMQTTTargetPort),
-		mqttForwarderTimeout:  mqttTimeout,
-		mqttTargetHealthCheck: mainflux.Env(envMQTTTargetHealthCheck, defMQTTTargetHealthCheck),
-		httpPort:              mainflux.Env(envHTTPPort, defHTTPPort),
-		wsPort:                mainflux.Env(envWSPort, defWSPort),
-		httpTargetHost:        mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
-		httpTargetPort:        mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
-		httpTargetPath:        mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
-		jaegerURL:             mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthURL:         mainflux.Env(envThingsAuthURL, defThingsAuthURL),
-		thingsAuthTimeout:     authTimeout,
-		brokerURL:             mainflux.Env(envBrokerURL, defBrokerURL),
-		usersAuthURL:          mainflux.Env(envUsersAuthURL, defUsersAuthURL),
-		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:             tls,
-		caCerts:               mainflux.Env(envCACerts, defCACerts),
-		instance:              mainflux.Env(envInstance, defInstance),
-		esURL:                 mainflux.Env(envESURL, defESURL),
-		esPass:                mainflux.Env(envESPass, defESPass),
-		esDB:                  mainflux.Env(envESDB, defESDB),
-		authURL:               mainflux.Env(envAuthCacheURL, defAuthcacheURL),
-		authPass:              mainflux.Env(envAuthCachePass, defAuthCachePass),
-		authDB:                mainflux.Env(envAuthCacheDB, defAuthCacheDB),
-		serverCert:            mainflux.Env(envServerCert, defServerCert),
-		serverKey:             mainflux.Env(envServerKey, defServerKey),
-		usersAuthTimeout:      usersAuthTimeout,
-		dbConfig:              dbConfig,
+		port:              mainflux.Env(envMQTTPort, defMQTTPort),
+		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
+		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
+		timeout:           mqttTimeout,
+		targetHealthCheck: mainflux.Env(envTargetHealthCheck, defTargetHealthCheck),
+		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
+		wsPort:            mainflux.Env(envWSPort, defWSPort),
+		httpTargetHost:    mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
+		httpTargetPort:    mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
+		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		instance:          mainflux.Env(envInstance, defInstance),
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esPass:            mainflux.Env(envESPass, defESPass),
+		esDB:              mainflux.Env(envESDB, defESDB),
+		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthcacheURL),
+		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
+		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
+		serverCert:        mainflux.Env(envServerCert, defServerCert),
+		serverKey:         mainflux.Env(envServerKey, defServerKey),
+		authGRPCTimeout:   authGRPCTimeout,
+		dbConfig:          dbConfig,
 	}
 }
 
-func initJaeger(svcName, url string, logger mflog.Logger) (opentracing.Tracer, io.Closer) {
+func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
 	if url == "" {
 		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
 	}
@@ -360,7 +359,7 @@ func initJaeger(svcName, url string, logger mflog.Logger) (opentracing.Tracer, i
 	return tracer, closer
 }
 
-func connectToThings(cfg config, logger mflog.Logger) *grpc.ClientConn {
+func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	if cfg.clientTLS {
 		if cfg.caCerts != "" {
@@ -376,7 +375,7 @@ func connectToThings(cfg config, logger mflog.Logger) *grpc.ClientConn {
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	conn, err := grpc.Dial(cfg.thingsAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
 		os.Exit(1)
@@ -384,7 +383,7 @@ func connectToThings(cfg config, logger mflog.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *redis.Client {
+func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *redis.Client {
 	db, err := strconv.Atoi(redisDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
@@ -398,9 +397,9 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger mflog.Logger) *r
 	})
 }
 
-func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
-	address := fmt.Sprintf(":%s", cfg.mqttPort)
-	target := fmt.Sprintf("%s:%s", cfg.mqttTargetHost, cfg.mqttTargetPort)
+func proxyMQTT(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
+	address := fmt.Sprintf(":%s", cfg.port)
+	target := fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort)
 	mp := mp.New(address, target, handler, logger)
 
 	errCh := make(chan error)
@@ -417,7 +416,7 @@ func proxyMQTT(ctx context.Context, cfg config, logger mflog.Logger, handler ses
 	}
 
 }
-func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler session.Handler) error {
+func proxyWS(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
 	target := fmt.Sprintf("%s:%s", cfg.httpTargetHost, cfg.httpTargetPort)
 	wp := ws.New(target, cfg.httpTargetPath, "ws", handler, logger)
 	http.Handle("/mqtt", wp.Handler())
@@ -439,7 +438,7 @@ func proxyWS(ctx context.Context, cfg config, logger mflog.Logger, handler sessi
 
 func healthcheck(cfg config) func() error {
 	return func() error {
-		res, err := http.Get(cfg.mqttTargetHealthCheck)
+		res, err := http.Get(cfg.targetHealthCheck)
 		if err != nil {
 			return err
 		}
@@ -464,10 +463,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
 	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(usersAuth, subscriptions, idp)
+	svc := mqtt.NewMqttService(ac, subscriptions, idp)
 
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(
@@ -542,7 +541,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.usersAuthURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)

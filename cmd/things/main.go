@@ -70,7 +70,7 @@ const (
 	defStandaloneToken = ""
 	defJaegerURL       = ""
 	defAuthGRPCURL     = "localhost:8181"
-	defAuthTimeout     = "1s"
+	defAuthGRPCTimeout = "1s"
 
 	envLogLevel        = "MF_THINGS_LOG_LEVEL"
 	envDBHost          = "MF_THINGS_DB_HOST"
@@ -99,7 +99,7 @@ const (
 	envStandaloneToken = "MF_THINGS_STANDALONE_TOKEN"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
-	envAuthTimeout     = "MF_AUTH_GRPC_TIMEOUT"
+	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -122,7 +122,7 @@ type config struct {
 	standaloneToken string
 	jaegerURL       string
 	authGRPCURL     string
-	authTimeout     time.Duration
+	authGRPCTimeout time.Duration
 }
 
 func main() {
@@ -192,9 +192,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -229,7 +229,7 @@ func loadConfig() config {
 		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authTimeout:     authTimeout,
+		authGRPCTimeout: authGRPCTimeout,
 	}
 }
 
@@ -286,7 +286,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 	}
 
 	conn := connectToAuth(cfg, logger)
-	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
 func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
@@ -314,7 +314,7 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(auth mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
+func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
 	database := postgres.NewDatabase(db)
 
 	thingsRepo := postgres.NewThingRepository(database)
@@ -333,7 +333,7 @@ func newService(auth mainflux.AuthServiceClient, dbTracer opentracing.Tracer, ca
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 	idProvider := uuid.New()
 
-	svc := things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	svc := things.New(ac, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

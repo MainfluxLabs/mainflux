@@ -38,8 +38,8 @@ const (
 	defMfBSURL         = "http://localhost:8202/things/configs"
 	defMfWhiteListURL  = "http://localhost:8202/things/state"
 	defMfCertsURL      = "http://localhost:8204"
-	defProvisionCerts  = "false"
-	defProvisionBS     = "true"
+	defCerts           = "false"
+	defBSConfig        = "true"
 	defBSAutoWhitelist = "true"
 	defBSContent       = ""
 	defCertsHoursValid = "2400h"
@@ -57,10 +57,10 @@ const (
 	envMfPass           = "MF_PROVISION_PASS"
 	envMfAPIKey         = "MF_PROVISION_API_KEY"
 	envMfCertsURL       = "MF_PROVISION_CERTS_SVC_URL"
-	envProvisionCerts   = "MF_PROVISION_X509_PROVISIONING"
+	envCerts            = "MF_PROVISION_X509_PROVISIONING"
 	envMfBSURL          = "MF_PROVISION_BS_SVC_URL"
 	envMfBSWhiteListURL = "MF_PROVISION_BS_SVC_WHITELIST_URL"
-	envProvisionBS      = "MF_PROVISION_BS_CONFIG_PROVISIONING"
+	envBSConfig         = "MF_PROVISION_BS_CONFIG_PROVISIONING"
 	envBSAutoWhiteList  = "MF_PROVISION_BS_AUTO_WHITELIST"
 	envBSContent        = "MF_PROVISION_BS_CONTENT"
 	envCertsHoursValid  = "MF_PROVISION_CERTS_HOURS_VALID"
@@ -182,13 +182,13 @@ func loadConfig() (provision.Config, error) {
 	if err != nil {
 		return provision.Config{}, errors.Wrap(errFailGettingTLSConf, err)
 	}
-	provisionX509, err := strconv.ParseBool(mainflux.Env(envProvisionCerts, defProvisionCerts))
+	provisionX509, err := strconv.ParseBool(mainflux.Env(envCerts, defCerts))
 	if err != nil {
 		return provision.Config{}, errors.Wrap(errFailGettingCertSettings, err)
 	}
-	provisionBS, err := strconv.ParseBool(mainflux.Env(envProvisionBS, defProvisionBS))
+	provisionBS, err := strconv.ParseBool(mainflux.Env(envBSConfig, defBSConfig))
 	if err != nil {
-		return provision.Config{}, errors.Wrap(errFailGettingProvBS, fmt.Errorf(" for %s", envProvisionBS))
+		return provision.Config{}, errors.Wrap(errFailGettingProvBS, fmt.Errorf(" for %s", envBSConfig))
 	}
 
 	autoWhiteList, err := strconv.ParseBool(mainflux.Env(envBSAutoWhiteList, defBSAutoWhitelist))
