@@ -6,8 +6,8 @@ package auth
 import (
 	"context"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/go-redis/redis/v8"
 )
 
 // Client represents Auth cache.
@@ -22,15 +22,15 @@ const (
 )
 
 type client struct {
-	redisClient  *redis.Client
-	thingsClient mainflux.ThingsServiceClient
+	redisClient *redis.Client
+	things      mainflux.ThingsServiceClient
 }
 
 // New returns redis channel cache implementation.
-func New(redisClient *redis.Client, thingsClient mainflux.ThingsServiceClient) Client {
+func New(redisClient *redis.Client, things mainflux.ThingsServiceClient) Client {
 	return client{
-		redisClient:  redisClient,
-		thingsClient: thingsClient,
+		redisClient: redisClient,
+		things:      things,
 	}
 }
 
@@ -42,7 +42,7 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 			Value: string(thingKey),
 		}
 
-		thid, err := c.thingsClient.Identify(context.TODO(), t)
+		thid, err := c.things.Identify(context.TODO(), t)
 		if err != nil {
 			return "", err
 		}
@@ -60,6 +60,6 @@ func (c client) Authorize(ctx context.Context, chanID, thingID string) error {
 		ThingID: thingID,
 		ChanID:  chanID,
 	}
-	_, err := c.thingsClient.CanAccessByID(ctx, ar)
+	_, err := c.things.CanAccessByID(ctx, ar)
 	return err
 }

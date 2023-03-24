@@ -44,14 +44,14 @@ const (
 var (
 	errThingAccess = errors.New("thing has no permission")
 	errUserAccess  = errors.New("user has no permission")
-	thingsAuth     mainflux.ThingsServiceClient
-	usersAuth      mainflux.AuthServiceClient
+	things         mainflux.ThingsServiceClient
+	auth           mainflux.AuthServiceClient
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
-	thingsAuth = tc
-	usersAuth = ac
+	things = tc
+	auth = ac
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
@@ -323,7 +323,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		user, err := usersAuth.Identify(ctx, &mainflux.Token{Value: token})
+		user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
@@ -331,7 +331,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			}
 			return err
 		}
-		if _, err = thingsAuth.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
+		if _, err = things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
 				return errors.Wrap(errUserAccess, err)
@@ -340,7 +340,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 		}
 		return nil
 	default:
-		if _, err := thingsAuth.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
+		if _, err := things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
 			return errors.Wrap(errThingAccess, err)
 		}
 		return nil
@@ -348,7 +348,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 }
 
 func authorizeAdmin(ctx context.Context, object, relation, token string) error {
-	user, err := usersAuth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		e, ok := status.FromError(err)
 		if ok && e.Code() == codes.PermissionDenied {
@@ -361,7 +361,7 @@ func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 		Email: user.Email,
 	}
 
-	res, err := usersAuth.Authorize(ctx, req)
+	res, err := auth.Authorize(ctx, req)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

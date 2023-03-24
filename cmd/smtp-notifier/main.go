@@ -288,7 +288,7 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.New(postgres.New(database), tracer)
 	idp := ulid.New()
@@ -300,7 +300,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServic
 	}
 
 	notifier := smtp.New(agent)
-	svc := notifiers.New(auth, repo, idp, notifier, c.from)
+	svc := notifiers.New(ac, repo, idp, notifier, c.from)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

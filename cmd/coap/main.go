@@ -226,7 +226,7 @@ func startHTTPServer(ctx context.Context, port string, logger logger.Logger) err
 	}
 }
 
-func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, auth mainflux.ThingsServiceClient, l logger.Logger) error {
+func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, tc mainflux.ThingsServiceClient, l logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.port)
 	errCh := make(chan error)
 	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.port))

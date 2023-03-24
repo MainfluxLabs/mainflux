@@ -464,10 +464,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(usersAuth mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
 	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(usersAuth, subscriptions, idp)
+	svc := mqtt.NewMqttService(ac, subscriptions, idp)
 
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(

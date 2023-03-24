@@ -60,14 +60,14 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	auth   mainflux.ThingsServiceClient
+	things mainflux.ThingsServiceClient
 	pubsub messaging.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(auth mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
-		auth:   auth,
+		things: things,
 		pubsub: pubsub,
 	}
 }
@@ -141,7 +141,7 @@ func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID strin
 		Token:  thingKey,
 		ChanID: chanID,
 	}
-	thid, err := svc.auth.CanAccessByKey(ctx, ar)
+	thid, err := svc.things.CanAccessByKey(ctx, ar)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
