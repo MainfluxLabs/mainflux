@@ -86,7 +86,7 @@ const (
 	defAuthGRPCTimeout   = "1s"
 
 	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
-	envPort              = "MF_MQTT_ADAPTER_MQTT_PORT"
+	envMQTTPort          = "MF_MQTT_ADAPTER_MQTT_PORT"
 	envTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
 	envTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
 	envTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
@@ -303,7 +303,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		port:              mainflux.Env(envPort, defMQTTPort),
+		port:              mainflux.Env(envMQTTPort, defMQTTPort),
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
 		timeout:           mqttTimeout,
