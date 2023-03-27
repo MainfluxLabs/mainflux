@@ -22,33 +22,27 @@ const (
 	key          = "thing-key"
 )
 
-var (
-	idProvider = uuid.NewMock()
-	chID       = ""
-	thID       = ""
-)
+var idProvider = uuid.NewMock()
 
 func newService() mqtt.Service {
 	repo := mocks.NewRepo(make(map[string][]mqtt.Subscription))
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	tc := mocks.NewThingsService(map[string]string{"email1@example.com": chID})
+	tc := mocks.NewThingsService(map[string]string{exampleUser1: chanID})
 	ac := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(ac, tc, repo, idProvider)
 }
 
-func TestInit(t *testing.T) {
-	cID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	tID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	chID = cID
-	thID = tID
-}
-
 func TestCreateSubscription(t *testing.T) {
 	svc := newService()
+
+	chID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	thID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
 		ChanID:   chID,
@@ -80,13 +74,20 @@ func TestCreateSubscription(t *testing.T) {
 
 func TestRemoveSubscription(t *testing.T) {
 	svc := newService()
+
+	chID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	thID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
 		ChanID:   chID,
 		ThingID:  thID,
 	}
 
-	err := svc.CreateSubscription(context.Background(), sub)
+	err = svc.CreateSubscription(context.Background(), sub)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -123,7 +124,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		sub := mqtt.Subscription{
 			Subtopic: subtopic,
 			ThingID:  thID,
-			ChanID:   chID,
+			ChanID:   chanID,
 		}
 
 		err = svc.CreateSubscription(context.Background(), sub)
@@ -143,7 +144,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 	}{
 		{
 			desc:      "retrieve subscriptions by channel as user",
-			channelID: chID,
+			channelID: chanID,
 			token:     exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
@@ -162,7 +163,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions by channel as user with no limit",
-			channelID: chID,
+			channelID: chanID,
 			token:     exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
@@ -181,7 +182,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions with invalid user",
-			channelID: chID,
+			channelID: chanID,
 			token:     invalidUser,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
@@ -196,7 +197,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions as user with empty token",
-			channelID: chID,
+			channelID: chanID,
 			token:     "",
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
@@ -211,7 +212,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions by channel as thing",
-			channelID: chID,
+			channelID: chanID,
 			key:       key,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
@@ -230,7 +231,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions by channel as thing with no limit",
-			channelID: chID,
+			channelID: chanID,
 			key:       key,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
@@ -264,7 +265,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		},
 		{
 			desc:      "retrieve subscriptions by channel without thing key",
-			channelID: chID,
+			channelID: chanID,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -277,7 +278,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: errors.ErrAuthentication,
 		},
 	}
-	
+
 	for _, tc := range cases {
 		page, err := svc.ListSubscriptions(context.Background(), tc.channelID, tc.token, tc.key, tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
