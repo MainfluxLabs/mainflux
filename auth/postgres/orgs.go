@@ -320,7 +320,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	return page, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids []string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)

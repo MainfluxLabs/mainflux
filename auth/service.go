@@ -301,12 +301,26 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	return org, nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberEmails, memberIDs []string) error {
 	if _, err := svc.Identify(ctx, token); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
+	var usrIDs []string
+	if len(memberEmails) > 0 {
+		muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+		usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+		if err != nil {
+			return err
+		}
+		for _, u := range usr.Users {
+			usrIDs = append(usrIDs, u.Id)
+		}
+
+		memberIDs = usrIDs
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs); err != nil {
 		return err
 	}
 

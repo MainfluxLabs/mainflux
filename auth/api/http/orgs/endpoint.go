@@ -140,7 +140,7 @@ func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.MemberEmails, req.MemberIDs); err != nil {
 			return nil, err
 		}
 

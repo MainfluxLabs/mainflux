@@ -125,13 +125,13 @@ func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memb
 	return ms.svc.ListOrgMemberships(ctx, token, memberID, pm)
 }
 
-func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
+func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberEmails, memberIDs []string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign_members").Add(1)
 		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignMembers(ctx, token, orgID, memberIDs...)
+	return ms.svc.AssignMembers(ctx, token, orgID, memberEmails, memberIDs)
 }
 
 func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
