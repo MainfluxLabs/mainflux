@@ -236,7 +236,7 @@ func main() {
 
 	authClient := auth.New(ac, tc)
 
-	svc := newService(usersAuth, db, logger)
+	svc := newService(usersAuth, tc, db, logger)
 
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, svc)
@@ -463,10 +463,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+func newService(ac mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
 	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(ac, subscriptions, idp)
+	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
 
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(
