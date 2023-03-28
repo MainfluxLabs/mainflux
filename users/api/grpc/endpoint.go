@@ -44,8 +44,23 @@ func listUsersByEmailsEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		// TODO: call service method
 
-		return nil, nil
+		users, err := svc.ListUsersByEmails(ctx, req.emails)
+		if err != nil {
+			return nil, err
+		}
+
+		mu := []*mainflux.User{}
+
+		for _, u := range users {
+			user := mainflux.User{
+				Id:     u.ID,
+				Email:  u.Email,
+				Status: u.Status,
+			}
+			mu = append(mu, &user)
+		}
+
+		return getUsersRes{users: mu}, nil
 	}
 }

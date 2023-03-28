@@ -301,35 +301,68 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	return org, nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberEmails, memberIDs []string) error {
+func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error {
 	if _, err := svc.Identify(ctx, token); err != nil {
 		return err
 	}
 
-	var usrIDs []string
-	if len(memberEmails) > 0 {
-		muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
-		usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
-		if err != nil {
-			return err
-		}
-		for _, u := range usr.Users {
-			usrIDs = append(usrIDs, u.Id)
-		}
-
-		memberIDs = usrIDs
-	}
-
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error {
 	if _, err := svc.Identify(ctx, token); err != nil {
 		return err
+	}
+
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	var memberIDs []string
+	for _, u := range usr.Users {
+		memberIDs = append(memberIDs, u.Id)
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID string, memberIDs ...string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error {
+	if _, err := svc.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	var memberIDs []string
+	for _, u := range usr.Users {
+		memberIDs = append(memberIDs, u.Id)
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {

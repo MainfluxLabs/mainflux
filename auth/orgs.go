@@ -108,11 +108,17 @@ type OrgService interface {
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
-	// AssignMembers adds members with memberIDs into the org identified by orgID.
-	AssignMembers(ctx context.Context, token, orgID string, memberEmails, memberIDs []string) error
+	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
+	AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
 
-	// UnassignMembers removes members with memberIDs from org identified by orgID.
-	UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error
+	// AssignMembers adds members with memberEmails into the org identified by orgID.
+	AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error
+
+	// UnassignMembersByIDs removes members with memberIDs from org identified by orgID.
+	UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
+
+	// UnassignMembers removes members with memberEmails from org identified by orgID.
+	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
 	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
@@ -148,7 +154,7 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, orgID string, memberIDs []string) error
+	AssignMembers(ctx context.Context, orgID string, memberIDs ...string) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
