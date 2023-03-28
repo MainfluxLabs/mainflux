@@ -108,10 +108,10 @@ type OrgService interface {
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
-	// AssignMembers adds members with memberEmails into the org identified by orgID.
+	// AssignMembers adds members with member emails into the org identified by orgID.
 	AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error
 
-	// UnassignMembers removes members with memberEmails from org identified by orgID.
+	// UnassignMembers removes members with member emails from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
 
 	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
