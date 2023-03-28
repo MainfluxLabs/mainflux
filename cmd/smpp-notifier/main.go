@@ -58,19 +58,19 @@ const (
 	defJaegerURL     = ""
 	defBrokerURL     = "nats://localhost:4222"
 
-	defSmppAddress    = ""
-	defSmppUsername   = ""
-	defSmppPassword   = ""
-	defSmppSystemType = ""
-	defSmppSrcAddrTON = "0"
-	defSmppDstAddrTON = "0"
-	defSmppSrcAddrNPI = "0"
-	defSmppDstAddrNPI = "0"
+	defAddress    = ""
+	defUsername   = ""
+	defPassword   = ""
+	defSystemType = ""
+	defSrcAddrTON = "0"
+	defDstAddrTON = "0"
+	defSrcAddrNPI = "0"
+	defDstAddrNPI = "0"
 
-	defAuthTLS     = "false"
-	defAuthCACerts = ""
-	defAuthURL     = "localhost:8181"
-	defAuthTimeout = "1s"
+	defAuthTLS         = "false"
+	defAuthCACerts     = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
 
 	envLogLevel      = "MF_SMPP_NOTIFIER_LOG_LEVEL"
 	envDBHost        = "MF_SMPP_NOTIFIER_DB_HOST"
@@ -90,36 +90,36 @@ const (
 	envJaegerURL     = "MF_JAEGER_URL"
 	envBrokerURL     = "MF_BROKER_URL"
 
-	envSmppAddress    = "MF_SMPP_ADDRESS"
-	envSmppUsername   = "MF_SMPP_USERNAME"
-	envSmppPassword   = "MF_SMPP_PASSWORD"
-	envSmppSystemType = "MF_SMPP_SYSTEM_TYPE"
-	envSmppSrcAddrTON = "MF_SMPP_SRC_ADDR_TON"
-	envSmppDstAddrTON = "MF_SMPP_DST_ADDR_TON"
-	envSmppSrcAddrNPI = "MF_SMPP_SRC_ADDR_NPI"
-	envSmppDstAddrNPI = "MF_SMPP_DST_ADDR_NPI"
+	envAddress    = "MF_SMPP_ADDRESS"
+	envUsername   = "MF_SMPP_USERNAME"
+	envPassword   = "MF_SMPP_PASSWORD"
+	envSystemType = "MF_SMPP_SYSTEM_TYPE"
+	envSrcAddrTON = "MF_SMPP_SRC_ADDR_TON"
+	envDstAddrTON = "MF_SMPP_DST_ADDR_TON"
+	envSrcAddrNPI = "MF_SMPP_SRC_ADDR_NPI"
+	envDstAddrNPI = "MF_SMPP_DST_ADDR_NPI"
 
-	envAuthTLS     = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts = "MF_AUTH_CA_CERTS"
-	envAuthURL     = "MF_AUTH_GRPC_URL"
-	envAuthTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
+	envAuthCACerts     = "MF_AUTH_CA_CERTS"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	brokerURL   string
-	configPath  string
-	logLevel    string
-	dbConfig    postgres.Config
-	smppConf    mfsmpp.Config
-	from        string
-	httpPort    string
-	serverCert  string
-	serverKey   string
-	jaegerURL   string
-	authTLS     bool
-	authCACerts string
-	authURL     string
-	authTimeout time.Duration
+	brokerURL       string
+	configPath      string
+	logLevel        string
+	dbConfig        postgres.Config
+	smppConf        mfsmpp.Config
+	from            string
+	httpPort        string
+	serverCert      string
+	serverKey       string
+	jaegerURL       string
+	authTLS         bool
+	authCACerts     string
+	authGRPCURL     string
+	authGRPCTimeout time.Duration
 }
 
 func main() {
@@ -181,9 +181,9 @@ func main() {
 }
 
 func loadConfig() config {
-	authTimeout, err := time.ParseDuration(mainflux.Env(envAuthTimeout, defAuthTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	tls, err := strconv.ParseBool(mainflux.Env(envAuthTLS, defAuthTLS))
@@ -203,28 +203,28 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	saton, err := strconv.ParseUint(mainflux.Env(envSmppSrcAddrTON, defSmppSrcAddrTON), 10, 8)
+	saton, err := strconv.ParseUint(mainflux.Env(envSrcAddrTON, defSrcAddrTON), 10, 8)
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s", envSmppSrcAddrTON)
+		log.Fatalf("Invalid value passed for %s", envSrcAddrTON)
 	}
-	daton, err := strconv.ParseUint(mainflux.Env(envSmppDstAddrTON, defSmppDstAddrTON), 10, 8)
+	daton, err := strconv.ParseUint(mainflux.Env(envDstAddrTON, defDstAddrTON), 10, 8)
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s", envSmppDstAddrTON)
+		log.Fatalf("Invalid value passed for %s", envDstAddrTON)
 	}
-	sanpi, err := strconv.ParseUint(mainflux.Env(envSmppSrcAddrNPI, defSmppSrcAddrNPI), 10, 8)
+	sanpi, err := strconv.ParseUint(mainflux.Env(envSrcAddrNPI, defSrcAddrNPI), 10, 8)
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s", envSmppSrcAddrNPI)
+		log.Fatalf("Invalid value passed for %s", envSrcAddrNPI)
 	}
-	danpi, err := strconv.ParseUint(mainflux.Env(envSmppDstAddrNPI, defSmppDstAddrNPI), 10, 8)
+	danpi, err := strconv.ParseUint(mainflux.Env(envDstAddrNPI, defDstAddrNPI), 10, 8)
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s", envSmppDstAddrNPI)
+		log.Fatalf("Invalid value passed for %s", envDstAddrNPI)
 	}
 
 	smppConf := mfsmpp.Config{
-		Address:       mainflux.Env(envSmppAddress, defSmppAddress),
-		Username:      mainflux.Env(envSmppUsername, defSmppUsername),
-		Password:      mainflux.Env(envSmppPassword, defSmppPassword),
-		SystemType:    mainflux.Env(envSmppSystemType, defSmppSystemType),
+		Address:       mainflux.Env(envAddress, defAddress),
+		Username:      mainflux.Env(envUsername, defUsername),
+		Password:      mainflux.Env(envPassword, defPassword),
+		SystemType:    mainflux.Env(envSystemType, defSystemType),
 		SourceAddrTON: uint8(saton),
 		DestAddrTON:   uint8(daton),
 		SourceAddrNPI: uint8(sanpi),
@@ -232,20 +232,20 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:    mainflux.Env(envLogLevel, defLogLevel),
-		brokerURL:   mainflux.Env(envBrokerURL, defBrokerURL),
-		configPath:  mainflux.Env(envConfigPath, defConfigPath),
-		dbConfig:    dbConfig,
-		smppConf:    smppConf,
-		from:        mainflux.Env(envFrom, defFrom),
-		httpPort:    mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert:  mainflux.Env(envServerCert, defServerCert),
-		serverKey:   mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:   mainflux.Env(envJaegerURL, defJaegerURL),
-		authTLS:     tls,
-		authCACerts: mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authURL:     mainflux.Env(envAuthURL, defAuthURL),
-		authTimeout: authTimeout,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
+		configPath:      mainflux.Env(envConfigPath, defConfigPath),
+		dbConfig:        dbConfig,
+		smppConf:        smppConf,
+		from:            mainflux.Env(envFrom, defFrom),
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		authTLS:         tls,
+		authCACerts:     mainflux.Env(envAuthCACerts, defAuthCACerts),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
 	}
 
 }
@@ -299,21 +299,21 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 		logger.Info("gRPC communication is not encrypted")
 	}
 
-	conn, err := grpc.Dial(cfg.authURL, opts...)
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
 		os.Exit(1)
 	}
 
-	return authapi.NewClient(tracer, conn, cfg.authTimeout), conn.Close
+	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, auth mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.New(postgres.New(database), tracer)
 	idp := ulid.New()
 	notifier := mfsmpp.New(c.smppConf)
-	svc := notifiers.New(auth, repo, idp, notifier, c.from)
+	svc := notifiers.New(ac, repo, idp, notifier, c.from)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

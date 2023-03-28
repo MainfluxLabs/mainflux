@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newService(cc mainflux.ThingsServiceClient) adapter.Service {
+func newService(tc mainflux.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
-	return adapter.New(pub, cc)
+	return adapter.New(pub, tc)
 }
 
 func newHTTPServer(svc adapter.Service) *httptest.Server {

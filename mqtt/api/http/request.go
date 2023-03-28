@@ -17,6 +17,7 @@ type apiReq interface {
 type listSubscriptionsReq struct {
 	chanID       string
 	token        string
+	key          string
 	pageMetadata mqtt.PageMetadata
 }
 
