@@ -108,17 +108,17 @@ type OrgService interface {
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
-	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
-	AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
-
 	// AssignMembers adds members with memberEmails into the org identified by orgID.
 	AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error
 
-	// UnassignMembersByIDs removes members with memberIDs from org identified by orgID.
-	UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
-
 	// UnassignMembers removes members with memberEmails from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
+
+	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
+	AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
+
+	// UnassignMembersByIDs removes members with memberIDs from org identified by orgID.
+	UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
 	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
