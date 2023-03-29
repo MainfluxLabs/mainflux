@@ -252,6 +252,20 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
+	opg, err := ts.groups.RetrieveByOwner(ctx, res.GetId(), PageMetadata{})
+	if err != nil {
+		return Thing{}, err
+	}
+
+	mpg, err := ts.groups.RetrieveMemberships(ctx, res.GetId(), PageMetadata{})
+	if err != nil {
+		return Thing{}, err
+	}
+
+	if len(opg.Groups) == 0 && len(mpg.Groups) == 0 {
+		return Thing{}, errors.ErrNotFound
+	}
+
 	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
 	if err != nil {
 		return Thing{}, err
