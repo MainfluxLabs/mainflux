@@ -9,14 +9,14 @@ package bootstrap
 // MFKey is key of corresponding Mainflux Thing.
 // MFChannels is a list of Mainflux Channels corresponding Mainflux Thing connects to.
 type Config struct {
-	MFThing     string
+	ThingID     string
+	ThingKey    string
+	Channels    []Channel
 	Owner       string
 	Name        string
 	ClientCert  string
 	ClientKey   string
 	CACert      string
-	MFKey       string
-	MFChannels  []Channel
 	ExternalID  string
 	ExternalKey string
 	Content     string
