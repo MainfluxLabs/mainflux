@@ -60,7 +60,7 @@ const (
 )
 
 func newService(tokens map[string]string) (certs.Service, error) {
-	ac := bsmocks.NewAuthClient(map[string]string{token: email})
+	ac := thmocks.NewAuthService(map[string]string{token: email})
 	server := newThingsServer(newThingsService(ac))
 	auth := thmocks.NewAuthService(tokens)
 

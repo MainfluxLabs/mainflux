@@ -29,6 +29,7 @@ import (
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -208,7 +209,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestAdd(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -333,7 +334,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -430,7 +431,7 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -524,7 +525,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 func TestUpdateCert(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -619,7 +620,7 @@ func TestUpdateCert(t *testing.T) {
 }
 
 func TestUpdateConnections(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -732,7 +733,7 @@ func TestList(t *testing.T) {
 	var active, inactive []config
 	list := make([]config, configNum)
 
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -975,7 +976,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -1037,7 +1038,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestBootstrap(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -1165,7 +1166,7 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestChangeState(t *testing.T) {
-	auth := mocks.NewAuthClient(map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)

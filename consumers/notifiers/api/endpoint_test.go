@@ -17,6 +17,7 @@ import (
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -67,7 +68,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService(tokens map[string]string) notifiers.Service {
-	auth := mocks.NewAuth(tokens)
+	auth := thmocks.NewAuthService(tokens)
 	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
 	idp := uuid.NewMock()
 	notif := mocks.NewNotifier()

@@ -11,16 +11,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentracing/opentracing-go/mocktracer"
-
 	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
-	"github.com/MainfluxLabs/mainflux/http/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 )
+
+const ServiceErrToken = "unavailable"
 
 func newService(tc mainflux.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
@@ -67,11 +68,11 @@ func TestPublish(t *testing.T) {
 	ctSenmlCBOR := "application/senml+cbor"
 	ctJSON := "application/json"
 	thingKey := "thing_key"
-	invalidKey := "invalid_key"
+	invalidKey := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
-	thingsClient := mocks.NewThingsClient(map[string]string{thingKey: chanID})
+	thingsClient := mocks.NewThingsService(map[string]string{thingKey: chanID})
 	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -153,7 +154,7 @@ func TestPublish(t *testing.T) {
 			chanID:      chanID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
-			key:         mocks.ServiceErrToken,
+			key:         ServiceErrToken,
 			status:      http.StatusInternalServerError,
 		},
 	}

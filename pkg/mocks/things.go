@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package mocks
 
 import (
@@ -7,6 +10,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ mainflux.ThingsServiceClient = (*thingsServiceMock)(nil)
@@ -22,6 +27,7 @@ func NewThingsService(channels map[string]string) mainflux.ThingsServiceClient {
 
 func (svc thingsServiceMock) CanAccessByKey(ctx context.Context, in *mainflux.AccessByKeyReq, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
 	token := in.GetToken()
+
 	if token == "invalid" {
 		return nil, errors.ErrAuthentication
 	}
@@ -32,6 +38,13 @@ func (svc thingsServiceMock) CanAccessByKey(ctx context.Context, in *mainflux.Ac
 
 	if token == "token" {
 		return nil, errors.ErrAuthorization
+	}
+
+	// Since there is no appropriate way to simulate internal server error,
+	// we had to use this obscure approach. ErrorToken simulates gRPC
+	// call which returns internal server error.
+	if token == "unavailable" {
+		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
 	return &mainflux.ThingID{Value: token}, nil

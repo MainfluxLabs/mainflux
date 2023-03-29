@@ -12,18 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/opentracing/opentracing-go/mocktracer"
-
 	"github.com/MainfluxLabs/mainflux/bootstrap"
 	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/bootstrap/redis/producer"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/go-redis/redis/v8"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -94,7 +94,7 @@ func newThingsServer(svc things.Service) *httptest.Server {
 }
 func TestAdd(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -163,7 +163,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 
@@ -182,7 +182,7 @@ func TestView(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -257,7 +257,7 @@ func TestUpdate(t *testing.T) {
 func TestUpdateConnections(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -319,7 +319,7 @@ func TestUpdateConnections(t *testing.T) {
 	}
 }
 func TestList(t *testing.T) {
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 
@@ -340,7 +340,7 @@ func TestList(t *testing.T) {
 func TestRemove(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -403,7 +403,7 @@ func TestRemove(t *testing.T) {
 func TestBootstrap(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -472,7 +472,7 @@ func TestBootstrap(t *testing.T) {
 func TestChangeState(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := mocks.NewAuthClient(map[string]string{validToken: email})
+	users := thmocks.NewAuthService(map[string]string{validToken: email})
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)

@@ -8,6 +8,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	tcmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ func newService() mqtt.Service {
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	tc := mocks.NewThingsService(map[string]string{exampleUser1: chanID})
+	tc := tcmocks.NewThingsService(map[string]string{exampleUser1: chanID})
 	ac := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(ac, tc, repo, idProvider)
 }
