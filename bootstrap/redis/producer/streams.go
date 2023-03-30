@@ -7,8 +7,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
+	"github.com/go-redis/redis/v8"
 )
 
 const (
@@ -39,12 +39,12 @@ func (es eventStore) Add(ctx context.Context, token string, cfg bootstrap.Config
 	}
 
 	var channels []string
-	for _, ch := range saved.MFChannels {
+	for _, ch := range saved.Channels {
 		channels = append(channels, ch.ID)
 	}
 
 	ev := createConfigEvent{
-		mfThing:    saved.MFThing,
+		mfThing:    saved.ThingID,
 		owner:      saved.Owner,
 		name:       saved.Name,
 		mfChannels: channels,
@@ -68,7 +68,7 @@ func (es eventStore) Update(ctx context.Context, token string, cfg bootstrap.Con
 	}
 
 	ev := updateConfigEvent{
-		mfThing:   cfg.MFThing,
+		mfThing:   cfg.ThingID,
 		name:      cfg.Name,
 		content:   cfg.Content,
 		timestamp: time.Now(),

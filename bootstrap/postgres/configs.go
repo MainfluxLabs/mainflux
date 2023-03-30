@@ -63,7 +63,7 @@ func (cr configRepository) Save(cfg bootstrap.Config, chsConnIDs []string) (stri
 		return "", errors.Wrap(errors.ErrCreateEntity, e)
 	}
 
-	if err := insertChannels(cfg.Owner, cfg.MFChannels, tx); err != nil {
+	if err := insertChannels(cfg.Owner, cfg.Channels, tx); err != nil {
 		cr.rollback("Failed to insert Channels", tx)
 		return "", errors.Wrap(errSaveChannels, err)
 	}
@@ -78,7 +78,7 @@ func (cr configRepository) Save(cfg bootstrap.Config, chsConnIDs []string) (stri
 		return "", err
 	}
 
-	return cfg.MFThing, nil
+	return cfg.ThingID, nil
 }
 
 func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, error) {
@@ -87,7 +87,7 @@ func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, err
 		  WHERE mainflux_thing = $1 AND owner = $2`
 
 	dbcfg := dbConfig{
-		MFThing: id,
+		ThingID: id,
 		Owner:   owner,
 	}
 
@@ -129,7 +129,7 @@ func (cr configRepository) RetrieveByID(owner, id string) (bootstrap.Config, err
 	}
 
 	cfg := toConfig(dbcfg)
-	cfg.MFChannels = chans
+	cfg.Channels = chans
 
 	return cfg, nil
 }
@@ -154,7 +154,7 @@ func (cr configRepository) RetrieveAll(owner string, filter bootstrap.Filter, of
 
 	for rows.Next() {
 		c := bootstrap.Config{Owner: owner}
-		if err := rows.Scan(&c.MFThing, &c.MFKey, &c.ExternalID, &c.ExternalKey, &name, &content, &c.State); err != nil {
+		if err := rows.Scan(&c.ThingID, &c.ThingKey, &c.ExternalID, &c.ExternalKey, &name, &content, &c.State); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read retrieved config due to %s", err))
 			return bootstrap.ConfigsPage{}
 		}
@@ -226,7 +226,7 @@ func (cr configRepository) RetrieveByExternalID(externalID string) (bootstrap.Co
 	}
 
 	cfg := toConfig(dbcfg)
-	cfg.MFChannels = channels
+	cfg.Channels = channels
 
 	return cfg, nil
 }
@@ -237,7 +237,7 @@ func (cr configRepository) Update(cfg bootstrap.Config) error {
 	content := nullString(cfg.Content)
 	name := nullString(cfg.Name)
 
-	res, err := cr.db.Exec(q, name, content, cfg.MFThing, cfg.Owner)
+	res, err := cr.db.Exec(q, name, content, cfg.ThingID, cfg.Owner)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
@@ -481,7 +481,7 @@ func insertConnections(cfg bootstrap.Config, connections []string, tx *sqlx.Tx) 
 	conns := []dbConnection{}
 	for _, conn := range connections {
 		dbconn := dbConnection{
-			Config:       cfg.MFThing,
+			Config:       cfg.ThingID,
 			Channel:      conn,
 			ConfigOwner:  cfg.Owner,
 			ChannelOwner: cfg.Owner,
@@ -556,13 +556,13 @@ func nullString(s string) sql.NullString {
 }
 
 type dbConfig struct {
-	MFThing     string          `db:"mainflux_thing"`
+	ThingID     string          `db:"mainflux_thing"`
+	ThingKey    string          `db:"mainflux_key"`
 	Owner       string          `db:"owner"`
 	Name        sql.NullString  `db:"name"`
 	ClientCert  sql.NullString  `db:"client_cert"`
 	ClientKey   sql.NullString  `db:"client_key"`
 	CaCert      sql.NullString  `db:"ca_cert"`
-	MFKey       string          `db:"mainflux_key"`
 	ExternalID  string          `db:"external_id"`
 	ExternalKey string          `db:"external_key"`
 	Content     sql.NullString  `db:"content"`
@@ -571,13 +571,13 @@ type dbConfig struct {
 
 func toDBConfig(cfg bootstrap.Config) dbConfig {
 	return dbConfig{
-		MFThing:     cfg.MFThing,
+		ThingID:     cfg.ThingID,
 		Owner:       cfg.Owner,
 		Name:        nullString(cfg.Name),
 		ClientCert:  nullString(cfg.ClientCert),
 		ClientKey:   nullString(cfg.ClientKey),
 		CaCert:      nullString(cfg.CACert),
-		MFKey:       cfg.MFKey,
+		ThingKey:    cfg.ThingKey,
 		ExternalID:  cfg.ExternalID,
 		ExternalKey: cfg.ExternalKey,
 		Content:     nullString(cfg.Content),
@@ -587,9 +587,9 @@ func toDBConfig(cfg bootstrap.Config) dbConfig {
 
 func toConfig(dbcfg dbConfig) bootstrap.Config {
 	cfg := bootstrap.Config{
-		MFThing:     dbcfg.MFThing,
+		ThingID:     dbcfg.ThingID,
 		Owner:       dbcfg.Owner,
-		MFKey:       dbcfg.MFKey,
+		ThingKey:    dbcfg.ThingKey,
 		ExternalID:  dbcfg.ExternalID,
 		ExternalKey: dbcfg.ExternalKey,
 		State:       dbcfg.State,

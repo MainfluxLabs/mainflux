@@ -103,7 +103,7 @@ func newConfig(channels []bootstrap.Channel) bootstrap.Config {
 	return bootstrap.Config{
 		ExternalID:  addExternalID,
 		ExternalKey: addExternalKey,
-		MFChannels:  channels,
+		Channels:    channels,
 		Name:        addName,
 		Content:     addContent,
 		ClientCert:  "newcert",
@@ -342,7 +342,7 @@ func TestView(t *testing.T) {
 
 	mfChs := generateChannels()
 	for id, ch := range mfChs {
-		c.MFChannels = append(c.MFChannels, bootstrap.Channel{
+		c.Channels = append(c.Channels, bootstrap.Channel{
 			ID:       ch.ID,
 			Name:     fmt.Sprintf("%s%s", "name ", id),
 			Metadata: map[string]interface{}{"type": fmt.Sprintf("some type %s", id)},
@@ -353,13 +353,13 @@ func TestView(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Saving config expected to succeed: %s.\n", err))
 
 	var channels []channel
-	for _, ch := range saved.MFChannels {
+	for _, ch := range saved.Channels {
 		channels = append(channels, channel{ID: ch.ID, Name: ch.Name, Metadata: ch.Metadata})
 	}
 
 	data := config{
-		MFThing:     saved.MFThing,
-		MFKey:       saved.MFKey,
+		ThingID:     saved.ThingID,
+		ThingKey:    saved.ThingKey,
 		State:       saved.State,
 		Channels:    channels,
 		ExternalID:  saved.ExternalID,
@@ -378,14 +378,14 @@ func TestView(t *testing.T) {
 		{
 			desc:   "view a config with invalid token",
 			auth:   invalidToken,
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			status: http.StatusUnauthorized,
 			res:    config{},
 		},
 		{
 			desc:   "view a config",
 			auth:   validToken,
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			status: http.StatusOK,
 			res:    data,
 		},
@@ -399,7 +399,7 @@ func TestView(t *testing.T) {
 		{
 			desc:   "view a config with an empty token",
 			auth:   "",
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			status: http.StatusUnauthorized,
 			res:    config{},
 		},
@@ -454,7 +454,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update with invalid token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        invalidToken,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -462,7 +462,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update with an empty token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        "",
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -470,7 +470,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update a valid config",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusOK,
@@ -478,7 +478,7 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update a config with wrong content type",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: "",
 			status:      http.StatusUnsupportedMediaType,
@@ -494,14 +494,14 @@ func TestUpdate(t *testing.T) {
 		{
 			desc:        "update a config with invalid request format",
 			req:         "}",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update a config with an empty request",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			req:         "",
 			auth:        validToken,
 			contentType: contentType,
@@ -548,7 +548,7 @@ func TestUpdateCert(t *testing.T) {
 		{
 			desc:        "update with invalid token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        invalidToken,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -556,7 +556,7 @@ func TestUpdateCert(t *testing.T) {
 		{
 			desc:        "update with an empty token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        "",
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -564,7 +564,7 @@ func TestUpdateCert(t *testing.T) {
 		{
 			desc:        "update a valid config",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusOK,
@@ -572,7 +572,7 @@ func TestUpdateCert(t *testing.T) {
 		{
 			desc:        "update a config with wrong content type",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: "",
 			status:      http.StatusUnsupportedMediaType,
@@ -588,14 +588,14 @@ func TestUpdateCert(t *testing.T) {
 		{
 			desc:        "update a config with invalid request format",
 			req:         "}",
-			id:          saved.MFKey,
+			id:          saved.ThingKey,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update a config with an empty request",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			req:         "",
 			auth:        validToken,
 			contentType: contentType,
@@ -648,7 +648,7 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update connections with invalid token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        invalidToken,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -656,7 +656,7 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update connections with an empty token",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        "",
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -664,7 +664,7 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update connections valid config",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusOK,
@@ -672,7 +672,7 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update connections with wrong content type",
 			req:         data,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: "",
 			status:      http.StatusUnsupportedMediaType,
@@ -688,7 +688,7 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update connections with invalid channels",
 			req:         wrongData,
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
@@ -696,14 +696,14 @@ func TestUpdateConnections(t *testing.T) {
 		{
 			desc:        "update a config with invalid request format",
 			req:         "}",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update a config with an empty request",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			req:         "",
 			auth:        validToken,
 			contentType: contentType,
@@ -742,7 +742,7 @@ func TestList(t *testing.T) {
 
 	for i := 0; i < configNum; i++ {
 		c.ExternalID = strconv.Itoa(i)
-		c.MFKey = c.ExternalID
+		c.ThingKey = c.ExternalID
 		c.Name = fmt.Sprintf("%s-%d", addName, i)
 		c.ExternalKey = fmt.Sprintf("%s%s", addExternalKey, strconv.Itoa(i))
 
@@ -750,12 +750,12 @@ func TestList(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("Saving config expected to succeed: %s.\n", err))
 
 		var channels []channel
-		for _, ch := range saved.MFChannels {
+		for _, ch := range saved.Channels {
 			channels = append(channels, channel{ID: ch.ID, Name: ch.Name, Metadata: ch.Metadata})
 		}
 		s := config{
-			MFThing:     saved.MFThing,
-			MFKey:       saved.MFKey,
+			ThingID:     saved.ThingID,
+			ThingKey:    saved.ThingKey,
 			Channels:    channels,
 			ExternalID:  saved.ExternalID,
 			ExternalKey: saved.ExternalKey,
@@ -772,7 +772,7 @@ func TestList(t *testing.T) {
 		if i%2 == 0 {
 			state = bootstrap.Inactive
 		}
-		err := svc.ChangeState(context.Background(), validToken, list[i].MFThing, state)
+		err := svc.ChangeState(context.Background(), validToken, list[i].ThingID, state)
 		require.Nil(t, err, fmt.Sprintf("Changing state expected to succeed: %s.\n", err))
 		list[i].State = state
 		if state == bootstrap.Inactive {
@@ -994,12 +994,12 @@ func TestRemove(t *testing.T) {
 	}{
 		{
 			desc:   "remove with invalid token",
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			auth:   invalidToken,
 			status: http.StatusUnauthorized,
 		}, {
 			desc:   "remove with an empty token",
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			auth:   "",
 			status: http.StatusUnauthorized,
 		},
@@ -1011,7 +1011,7 @@ func TestRemove(t *testing.T) {
 		},
 		{
 			desc:   "remove config",
-			id:     saved.MFThing,
+			id:     saved.ThingID,
 			auth:   validToken,
 			status: http.StatusNoContent,
 		},
@@ -1052,21 +1052,21 @@ func TestBootstrap(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Encrypting config expected to succeed: %s.\n", err))
 
 	var channels []channel
-	for _, ch := range saved.MFChannels {
+	for _, ch := range saved.Channels {
 		channels = append(channels, channel{ID: ch.ID, Name: ch.Name, Metadata: ch.Metadata})
 	}
 
 	s := struct {
-		MFThing    string    `json:"mainflux_id"`
-		MFKey      string    `json:"mainflux_key"`
-		MFChannels []channel `json:"mainflux_channels"`
+		ThingID    string    `json:"thing_id"`
+		ThingKey   string    `json:"thing_key"`
+		MFChannels []channel `json:"channels"`
 		Content    string    `json:"content"`
 		ClientCert string    `json:"client_cert"`
 		ClientKey  string    `json:"client_key"`
 		CACert     string    `json:"ca_cert"`
 	}{
-		MFThing:    saved.MFThing,
-		MFKey:      saved.MFKey,
+		ThingID:    saved.ThingID,
+		ThingKey:   saved.ThingKey,
 		MFChannels: channels,
 		Content:    saved.Content,
 		ClientCert: saved.ClientCert,
@@ -1189,7 +1189,7 @@ func TestChangeState(t *testing.T) {
 	}{
 		{
 			desc:        "change state with invalid token",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        invalidToken,
 			state:       active,
 			contentType: contentType,
@@ -1197,7 +1197,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state with an empty token",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        "",
 			state:       active,
 			contentType: contentType,
@@ -1205,7 +1205,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state with invalid content type",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			state:       active,
 			contentType: "",
@@ -1213,7 +1213,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state to active",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			state:       active,
 			contentType: contentType,
@@ -1221,7 +1221,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state to inactive",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			state:       inactive,
 			contentType: contentType,
@@ -1237,7 +1237,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state to invalid value",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			state:       fmt.Sprintf("{\"state\": %d}", -3),
 			contentType: contentType,
@@ -1245,7 +1245,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:        "change state with invalid data",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			auth:        validToken,
 			state:       "",
 			contentType: contentType,
@@ -1275,9 +1275,9 @@ type channel struct {
 }
 
 type config struct {
-	MFThing     string          `json:"mainflux_id,omitempty"`
-	MFKey       string          `json:"mainflux_key,omitempty"`
-	Channels    []channel       `json:"mainflux_channels,omitempty"`
+	ThingID     string          `json:"thing_id,omitempty"`
+	ThingKey    string          `json:"thing_key,omitempty"`
+	Channels    []channel       `json:"channels,omitempty"`
 	ExternalID  string          `json:"external_id"`
 	ExternalKey string          `json:"external_key,omitempty"`
 	Content     string          `json:"content,omitempty"`
