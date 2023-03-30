@@ -57,5 +57,9 @@ func (svc authServiceMock) Assign(ctx context.Context, req *mainflux.Assignment,
 }
 
 func (svc authServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	panic("not implemented")
+	if in.GetToken() != "token" && in.GetGroupID() != "group" {
+		return nil, errors.ErrAuthorization
+	}
+
+	return &empty.Empty{}, nil
 }

@@ -186,6 +186,13 @@ func TestViewThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	gr, err := svc.CreateGroup(context.Background(), token, things.Group{Name: "test", ID: "group"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.Assign(context.Background(), token, gr.ID, email)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	th := ths[0]
 
 	cases := map[string]struct {
