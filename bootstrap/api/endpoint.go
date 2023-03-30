@@ -111,9 +111,11 @@ func updateEndpoint(svc bootstrap.Service) endpoint.Endpoint {
 		}
 
 		config := bootstrap.Config{
-			ThingID: req.id,
-			Name:    req.Name,
-			Content: req.Content,
+			ThingID:     req.id,
+			Name:        req.Name,
+			Content:     req.Content,
+			ExternalID:  req.ExternalID,
+			ExternalKey: req.ExternalKey,
 		}
 
 		if err := svc.Update(ctx, req.token, config); err != nil {

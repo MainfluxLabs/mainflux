@@ -232,12 +232,12 @@ func (cr configRepository) RetrieveByExternalID(externalID string) (bootstrap.Co
 }
 
 func (cr configRepository) Update(cfg bootstrap.Config) error {
-	q := `UPDATE configs SET name = $1, content = $2 WHERE mainflux_thing = $3 AND owner = $4`
+	q := `UPDATE configs SET name = $1, content = $2, external_id = $3, external_key = $4 WHERE mainflux_thing = $5 AND owner = $6`
 
 	content := nullString(cfg.Content)
 	name := nullString(cfg.Name)
 
-	res, err := cr.db.Exec(q, name, content, cfg.ThingID, cfg.Owner)
+	res, err := cr.db.Exec(q, name, content, cfg.ExternalID, cfg.ExternalKey, cfg.ThingID, cfg.Owner)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}

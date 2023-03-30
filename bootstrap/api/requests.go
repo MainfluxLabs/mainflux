@@ -57,10 +57,12 @@ func (req entityReq) validate() error {
 }
 
 type updateReq struct {
-	token   string
-	id      string
-	Name    string `json:"name"`
-	Content string `json:"content"`
+	token       string
+	id          string
+	Name        string `json:"name"`
+	ExternalID  string `json:"external_id"`
+	ExternalKey string `json:"external_key"`
+	Content     string `json:"content"`
 }
 
 func (req updateReq) validate() error {
