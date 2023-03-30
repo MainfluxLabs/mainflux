@@ -37,28 +37,28 @@ func (crm *configRepositoryMock) Save(config bootstrap.Config, connections []str
 	defer crm.mu.Unlock()
 
 	for _, v := range crm.configs {
-		if v.MFThing == config.MFThing || v.ExternalID == config.ExternalID {
+		if v.ThingID == config.ThingID || v.ExternalID == config.ExternalID {
 			return "", errors.ErrConflict
 		}
 	}
 
 	crm.counter++
-	config.MFThing = strconv.FormatUint(crm.counter, 10)
-	crm.configs[config.MFThing] = config
+	config.ThingID = strconv.FormatUint(crm.counter, 10)
+	crm.configs[config.ThingID] = config
 
-	for _, ch := range config.MFChannels {
+	for _, ch := range config.Channels {
 		crm.channels[ch.ID] = ch
 	}
 
-	config.MFChannels = []bootstrap.Channel{}
+	config.Channels = []bootstrap.Channel{}
 
 	for _, ch := range connections {
-		config.MFChannels = append(config.MFChannels, crm.channels[ch])
+		config.Channels = append(config.Channels, crm.channels[ch])
 	}
 
-	crm.configs[config.MFThing] = config
+	crm.configs[config.ThingID] = config
 
-	return config.MFThing, nil
+	return config.ThingID, nil
 }
 
 func (crm *configRepositoryMock) RetrieveByID(token, id string) (bootstrap.Config, error) {
@@ -102,7 +102,7 @@ func (crm *configRepositoryMock) RetrieveAll(token string, filter bootstrap.Filt
 
 	var total uint64
 	for _, v := range crm.configs {
-		id, _ := strconv.ParseUint(v.MFThing, 10, 64)
+		id, _ := strconv.ParseUint(v.ThingID, 10, 64)
 		if (state == emptyState || v.State == state) &&
 			(name == "" || strings.Contains(strings.ToLower(v.Name), name)) &&
 			v.Owner == token {
@@ -114,7 +114,7 @@ func (crm *configRepositoryMock) RetrieveAll(token string, filter bootstrap.Filt
 	}
 
 	sort.SliceStable(configs, func(i, j int) bool {
-		return configs[i].MFThing < configs[j].MFThing
+		return configs[i].ThingID < configs[j].ThingID
 	})
 
 	return bootstrap.ConfigsPage{
@@ -142,14 +142,14 @@ func (crm *configRepositoryMock) Update(config bootstrap.Config) error {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	cfg, ok := crm.configs[config.MFThing]
+	cfg, ok := crm.configs[config.ThingID]
 	if !ok || cfg.Owner != config.Owner {
 		return errors.ErrNotFound
 	}
 
 	cfg.Name = config.Name
 	cfg.Content = config.Content
-	crm.configs[config.MFThing] = cfg
+	crm.configs[config.ThingID] = cfg
 
 	return nil
 }
@@ -159,18 +159,18 @@ func (crm *configRepositoryMock) UpdateCert(owner, thingID, clientCert, clientKe
 	defer crm.mu.Unlock()
 	var forUpdate bootstrap.Config
 	for _, v := range crm.configs {
-		if v.MFThing == thingID && v.Owner == owner {
+		if v.ThingID == thingID && v.Owner == owner {
 			forUpdate = v
 			break
 		}
 	}
-	if _, ok := crm.configs[forUpdate.MFThing]; !ok {
+	if _, ok := crm.configs[forUpdate.ThingID]; !ok {
 		return errors.ErrNotFound
 	}
 	forUpdate.ClientCert = clientCert
 	forUpdate.ClientKey = clientKey
 	forUpdate.CACert = caCert
-	crm.configs[forUpdate.MFThing] = forUpdate
+	crm.configs[forUpdate.ThingID] = forUpdate
 
 	return nil
 }
@@ -188,13 +188,13 @@ func (crm *configRepositoryMock) UpdateConnections(token, id string, channels []
 		crm.channels[ch.ID] = ch
 	}
 
-	config.MFChannels = []bootstrap.Channel{}
+	config.Channels = []bootstrap.Channel{}
 	for _, conn := range connections {
 		ch, ok := crm.channels[conn]
 		if !ok {
 			return errors.ErrNotFound
 		}
-		config.MFChannels = append(config.MFChannels, ch)
+		config.Channels = append(config.Channels, ch)
 	}
 	crm.configs[id] = config
 
@@ -287,7 +287,7 @@ func (crm *configRepositoryMock) DisconnectThing(channelID, thingID string) erro
 
 	idx := -1
 	if config, ok := crm.configs[thingID]; ok {
-		for i, ch := range config.MFChannels {
+		for i, ch := range config.Channels {
 			if ch.ID == channelID {
 				idx = i
 				break
@@ -295,7 +295,7 @@ func (crm *configRepositoryMock) DisconnectThing(channelID, thingID string) erro
 		}
 
 		if idx != -1 {
-			config.MFChannels = append(config.MFChannels[0:idx], config.MFChannels[idx:]...)
+			config.Channels = append(config.Channels[0:idx], config.Channels[idx:]...)
 		}
 		crm.configs[thingID] = config
 	}

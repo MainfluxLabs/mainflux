@@ -58,7 +58,7 @@ var (
 	config = bootstrap.Config{
 		ExternalID:  "external_id",
 		ExternalKey: "external_key",
-		MFChannels:  []bootstrap.Channel{channel},
+		Channels:    []bootstrap.Channel{channel},
 		Content:     "config",
 	}
 )
@@ -101,12 +101,12 @@ func TestAdd(t *testing.T) {
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
 
 	var channels []string
-	for _, ch := range config.MFChannels {
+	for _, ch := range config.Channels {
 		channels = append(channels, ch.ID)
 	}
 
 	invalidConfig := config
-	invalidConfig.MFChannels = []bootstrap.Channel{bootstrap.Channel{ID: "empty"}}
+	invalidConfig.Channels = []bootstrap.Channel{bootstrap.Channel{ID: "empty"}}
 
 	cases := []struct {
 		desc   string
@@ -170,10 +170,10 @@ func TestView(t *testing.T) {
 	saved, err := svc.Add(context.Background(), validToken, config)
 	require.Nil(t, err, fmt.Sprintf("Saving config expected to succeed: %s.\n", err))
 
-	svcConfig, svcErr := svc.View(context.Background(), validToken, saved.MFThing)
+	svcConfig, svcErr := svc.View(context.Background(), validToken, saved.ThingID)
 
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
-	esConfig, esErr := svc.View(context.Background(), validToken, saved.MFThing)
+	esConfig, esErr := svc.View(context.Background(), validToken, saved.ThingID)
 
 	assert.Equal(t, svcConfig, esConfig, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", svcConfig, esConfig))
 	assert.Equal(t, svcErr, esErr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", svcErr, esErr))
@@ -191,7 +191,7 @@ func TestUpdate(t *testing.T) {
 
 	ch := channel
 	ch.ID = "2"
-	c.MFChannels = append(c.MFChannels, ch)
+	c.Channels = append(c.Channels, ch)
 	saved, err := svc.Add(context.Background(), validToken, c)
 	require.Nil(t, err, fmt.Sprintf("Saving config expected to succeed: %s.\n", err))
 	redisClient.FlushAll(context.Background()).Err()
@@ -201,7 +201,7 @@ func TestUpdate(t *testing.T) {
 	modified.Name = "new name"
 
 	nonExisting := config
-	nonExisting.MFThing = "unknown"
+	nonExisting.ThingID = "unknown"
 
 	cases := []struct {
 		desc   string
@@ -216,7 +216,7 @@ func TestUpdate(t *testing.T) {
 			token:  validToken,
 			err:    nil,
 			event: map[string]interface{}{
-				"thing_id":  modified.MFThing,
+				"thing_id":  modified.ThingID,
 				"name":      modified.Name,
 				"content":   modified.Content,
 				"timestamp": time.Now().Unix(),
@@ -276,12 +276,12 @@ func TestUpdateConnections(t *testing.T) {
 	}{
 		{
 			desc:        "update connections successfully",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			token:       validToken,
 			connections: []string{"2"},
 			err:         nil,
 			event: map[string]interface{}{
-				"thing_id":  saved.MFThing,
+				"thing_id":  saved.ThingID,
 				"channels":  "2",
 				"timestamp": time.Now().Unix(),
 				"operation": thingUpdateConnections,
@@ -289,7 +289,7 @@ func TestUpdateConnections(t *testing.T) {
 		},
 		{
 			desc:        "update connections unsuccessfully",
-			id:          saved.MFThing,
+			id:          saved.ThingID,
 			token:       validToken,
 			connections: []string{"256"},
 			err:         errors.ErrMalformedEntity,
@@ -360,18 +360,18 @@ func TestRemove(t *testing.T) {
 	}{
 		{
 			desc:  "remove config successfully",
-			id:    saved.MFThing,
+			id:    saved.ThingID,
 			token: validToken,
 			err:   nil,
 			event: map[string]interface{}{
-				"thing_id":  saved.MFThing,
+				"thing_id":  saved.ThingID,
 				"timestamp": time.Now().Unix(),
 				"operation": configRemove,
 			},
 		},
 		{
 			desc:  "remove config with invalid credentials",
-			id:    saved.MFThing,
+			id:    saved.ThingID,
 			token: "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -493,12 +493,12 @@ func TestChangeState(t *testing.T) {
 	}{
 		{
 			desc:  "change state to active",
-			id:    saved.MFThing,
+			id:    saved.ThingID,
 			token: validToken,
 			state: bootstrap.Active,
 			err:   nil,
 			event: map[string]interface{}{
-				"thing_id":  saved.MFThing,
+				"thing_id":  saved.ThingID,
 				"state":     bootstrap.Active.String(),
 				"timestamp": time.Now().Unix(),
 				"operation": thingStateChange,
@@ -506,7 +506,7 @@ func TestChangeState(t *testing.T) {
 		},
 		{
 			desc:  "change state invalid credentials",
-			id:    saved.MFThing,
+			id:    saved.ThingID,
 			token: "",
 			state: bootstrap.Inactive,
 			err:   errors.ErrAuthentication,
