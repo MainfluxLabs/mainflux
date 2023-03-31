@@ -252,12 +252,12 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
+	mpg, err := ts.groups.RetrieveMemberships(ctx, id, PageMetadata{})
 	if err != nil {
 		return Thing{}, err
 	}
 
-	mpg, err := ts.groups.RetrieveMemberships(ctx, res.GetId(), PageMetadata{})
+	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
 	if err != nil {
 		return Thing{}, err
 	}

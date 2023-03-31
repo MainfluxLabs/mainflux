@@ -181,7 +181,7 @@ func (grm *groupRepositoryMock) RetrieveMemberships(ctx context.Context, memberI
 
 	i := uint64(0)
 	for _, g := range grm.memberships[memberID] {
-		if i >= first && i < last || pm.Limit == 0 {
+		if i >= first && i < last {
 			items = append(items, g)
 		}
 		i++
