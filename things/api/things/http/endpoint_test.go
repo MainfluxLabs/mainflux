@@ -465,6 +465,13 @@ func TestViewThing(t *testing.T) {
 
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	gr, err := svc.CreateGroup(context.Background(), token, things.Group{Name: "test"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.Assign(context.Background(), token, gr.ID, email)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	th := ths[0]
 
 	data := toJSON(thingRes{

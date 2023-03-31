@@ -252,11 +252,6 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	mpg, err := ts.groups.RetrieveMemberships(ctx, res.GetId(), PageMetadata{})
-	if err != nil {
-		return Thing{}, err
-	}
-
 	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
 	if err != nil {
 		return Thing{}, err
@@ -264,6 +259,11 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 
 	if thing.Owner != res.GetId() {
 		return Thing{}, errors.ErrAuthorization
+	}
+
+	mpg, err := ts.groups.RetrieveMemberships(ctx, res.GetId(), PageMetadata{})
+	if err != nil {
+		return Thing{}, err
 	}
 
 	for _, group := range mpg.Groups {
