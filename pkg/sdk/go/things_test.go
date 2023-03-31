@@ -224,13 +224,6 @@ func TestThing(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	id, err := mainfluxSDK.CreateThing(th1, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	gr, err := mainfluxSDK.CreateGroup(sdk.Group{Name: "test"}, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = mainfluxSDK.Assign([]string{email}, "", gr, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 1)
 
 	cases := []struct {
@@ -672,17 +665,9 @@ func TestIdentifyThing(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	mainfluxAuthSDK := sdk.NewSDK(authSdkConf)
 	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
-
 	id, err := mainfluxSDK.CreateThing(th, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	gr, err := mainfluxSDK.CreateGroup(sdk.Group{Name: "test"}, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = mainfluxSDK.Assign([]string{email}, "", gr, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thing, err := mainfluxSDK.Thing(id, token)
+	thing, err := mainfluxSDK.Thing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {

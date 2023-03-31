@@ -28,7 +28,7 @@ func (sdk mfSDK) CreateGroup(g Group, token string) (string, error) {
 		return "", err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, groupsEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.authURL, groupsEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return "", err
@@ -69,7 +69,7 @@ func (sdk mfSDK) DeleteGroup(id, token string) error {
 
 func (sdk mfSDK) Assign(memberIDs []string, memberType, groupID string, token string) error {
 	var ids []string
-	url := fmt.Sprintf("%s/%s/%s/members", sdk.thingsURL, groupsEndpoint, groupID)
+	url := fmt.Sprintf("%s/%s/%s/members", sdk.authURL, groupsEndpoint, groupID)
 	ids = append(ids, memberIDs...)
 	assignReq := assignRequest{
 		Type:    memberType,
