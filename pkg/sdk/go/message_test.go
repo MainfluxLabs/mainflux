@@ -12,8 +12,8 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
-	"github.com/MainfluxLabs/mainflux/http/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -33,9 +33,9 @@ func newMessageServer(svc adapter.Service) *httptest.Server {
 func TestSendMessage(t *testing.T) {
 	chanID := "1"
 	atoken := "auth_token"
-	invalidToken := "invalid_token"
+	invalidToken := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
-	thingsClient := mocks.NewThingsClient(map[string]string{atoken: chanID})
+	thingsClient := mocks.NewThingsService(map[string]string{atoken: chanID})
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)
 	defer ts.Close()
@@ -86,7 +86,7 @@ func TestSendMessage(t *testing.T) {
 		"publish message unable to authorize": {
 			chanID: chanID,
 			msg:    msg,
-			auth:   "invalid-token",
+			auth:   invalidToken,
 			err:    createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 	}
@@ -99,7 +99,7 @@ func TestSendMessage(t *testing.T) {
 func TestSetContentType(t *testing.T) {
 	chanID := "1"
 	atoken := "auth_token"
-	thingsClient := mocks.NewThingsClient(map[string]string{atoken: chanID})
+	thingsClient := mocks.NewThingsService(map[string]string{atoken: chanID})
 
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)

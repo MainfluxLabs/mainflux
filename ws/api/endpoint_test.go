@@ -11,14 +11,12 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/gorilla/websocket"
-
 	log "github.com/MainfluxLabs/mainflux/logger"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/ws"
-
-	httpmock "github.com/MainfluxLabs/mainflux/http/mocks"
 	"github.com/MainfluxLabs/mainflux/ws/api"
 	"github.com/MainfluxLabs/mainflux/ws/mocks"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,7 +75,7 @@ func handshake(tsURL, chanID, subtopic, thingKey string, addHeader bool) (*webso
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := httpmock.NewThingsClient(map[string]string{thingKey: chanID})
+	thingsClient := thmocks.NewThingsService(map[string]string{thingKey: chanID})
 	svc, _ := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()

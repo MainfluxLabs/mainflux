@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -141,7 +142,7 @@ func TestListChannelMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := mocks.NewThingsService(map[string]string{user.ID: chanID})
+	thSvc := thmocks.NewThingsService(map[string]string{user.ID: chanID})
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
@@ -815,7 +816,7 @@ func TestListAllMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := mocks.NewThingsService(map[string]string{email: ""})
+	thSvc := thmocks.NewThingsService(map[string]string{email: ""})
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
