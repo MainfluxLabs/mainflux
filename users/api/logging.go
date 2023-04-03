@@ -119,6 +119,19 @@ func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string) (
 	return lm.svc.ListUsersByIDs(ctx, ids)
 }
 
+func (lm *loggingMiddleware) ListUsersByEmails(ctx context.Context, emails []string) (u []users.User, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_users_by_emails for emails %s took %s to complete", emails, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListUsersByEmails(ctx, emails)
+}
+
 func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_user for user %s took %s to complete", u.Email, time.Since(begin))

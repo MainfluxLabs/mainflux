@@ -16,3 +16,15 @@ func (req getUsersByIDsReq) validate() error {
 
 	return nil
 }
+
+type getUsersByEmailsReq struct {
+	emails []string
+}
+
+func (req getUsersByEmailsReq) validate() error {
+	if len(req.emails) == 0 {
+		return apiutil.ErrMissingEmail
+	}
+
+	return nil
+}

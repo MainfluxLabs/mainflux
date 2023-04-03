@@ -93,6 +93,15 @@ func (ms *metricsMiddleware) ListUsersByIDs(ctx context.Context, ids []string) (
 	return ms.svc.ListUsersByIDs(ctx, ids)
 }
 
+func (ms *metricsMiddleware) ListUsersByEmails(ctx context.Context, emails []string) ([]users.User, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_users_by_emails").Add(1)
+		ms.latency.With("method", "list_users_by_emails").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListUsersByEmails(ctx, emails)
+}
+
 func (ms *metricsMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_user").Add(1)

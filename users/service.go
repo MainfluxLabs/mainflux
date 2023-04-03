@@ -70,6 +70,9 @@ type Service interface {
 	// ListUsersByIDs retrieves users list for the given IDs.
 	ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error)
 
+	// ListUsersByEmails retrieves users list for the given emails.
+	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
+
 	// UpdateUser updates the user metadata.
 	UpdateUser(ctx context.Context, token string, user User) error
 
@@ -269,6 +272,19 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
 	pm := PageMetadata{Status: EnabledStatusKey}
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
+}
+
+func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) ([]User, error) {
+	var users []User
+	for _, email := range emails {
+		u, err := svc.users.RetrieveByEmail(ctx, email)
+		if err != nil {
+			return []User{}, err
+		}
+		users = append(users, u)
+	}
+
+	return users, nil
 }
 
 func (svc usersService) Backup(ctx context.Context, token string) ([]User, error) {

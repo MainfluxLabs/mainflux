@@ -20,7 +20,8 @@ import (
 var _ mainflux.UsersServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	getUsersByIDs kitgrpc.Handler
+	getUsersByIDs    kitgrpc.Handler
+	getUsersByEmails kitgrpc.Handler
 }
 
 // NewServer returns new UsersServiceServer instance.
@@ -30,12 +31,17 @@ func NewServer(tracer opentracing.Tracer, svc users.Service) mainflux.UsersServi
 		getUsersByIDs: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "get_users_by_ids")(listUsersByIDsEndpoint(svc)),
 			decodeGetUsersByIDsRequest,
-			encodeGetUsersByIDsResponse,
+			encodeGetUsersResponse,
+		),
+		getUsersByEmails: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_users_by_emails")(listUsersByEmailsEndpoint(svc)),
+			decodeGetUsersByEmailsRequest,
+			encodeGetUsersResponse,
 		),
 	}
 }
 
-func (s *grpcServer) GetUsersByIDs(ctx context.Context, req *mainflux.UsersReq) (*mainflux.UsersRes, error) {
+func (s *grpcServer) GetUsersByIDs(ctx context.Context, req *mainflux.UsersByIDsReq) (*mainflux.UsersRes, error) {
 	_, res, err := s.getUsersByIDs.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -44,13 +50,27 @@ func (s *grpcServer) GetUsersByIDs(ctx context.Context, req *mainflux.UsersReq) 
 	return res.(*mainflux.UsersRes), nil
 }
 
+func (s *grpcServer) GetUsersByEmails(ctx context.Context, req *mainflux.UsersByEmailsReq) (*mainflux.UsersRes, error) {
+	_, res, err := s.getUsersByEmails.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*mainflux.UsersRes), nil
+}
+
 func decodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.UsersReq)
+	req := grpcReq.(*mainflux.UsersByIDsReq)
 	return getUsersByIDsReq{ids: req.GetIds()}, nil
 }
 
-func encodeGetUsersByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(getUsersByIDsRes)
+func decodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.UsersByEmailsReq)
+	return getUsersByEmailsReq{emails: req.GetEmails()}, nil
+}
+
+func encodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(getUsersRes)
 	return &mainflux.UsersRes{Users: res.users}, nil
 }
 
