@@ -263,7 +263,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 
 	mpg, err := ts.groups.RetrieveMemberships(ctx, id, PageMetadata{})
 	if err != nil {
-		return Thing{}, err
+		return Thing{}, errors.ErrAuthorization
 	}
 
 	for _, group := range mpg.Groups {
