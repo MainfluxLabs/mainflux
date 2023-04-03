@@ -257,7 +257,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	thing, err := ts.things.RetrieveByID(ctx, res.GetId(), id)
+	thing, err := ts.things.RetrieveByID(ctx, "", id)
 	if err != nil {
 		return Thing{}, err
 	}
