@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/lora"
 	"github.com/MainfluxLabs/mainflux/lora/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	pubmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +29,7 @@ const (
 )
 
 func newService() lora.Service {
-	pub := mocks.NewPublisher()
+	pub := pubmocks.NewPublisher()
 	thingsRM := mocks.NewRouteMap()
 	channelsRM := mocks.NewRouteMap()
 	connsRM := mocks.NewRouteMap()

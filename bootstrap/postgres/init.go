@@ -55,10 +55,10 @@ func migrateDB(db *sqlx.DB) error {
 						mainflux_key   CHAR(36) UNIQUE NOT NULL,
 						external_id    TEXT UNIQUE NOT NULL,
 						external_key   TEXT NOT NULL,
-						content  	   TEXT,
+						content  	     TEXT,
 						client_cert	   TEXT,
 						client_key 	   TEXT,
-						ca_cert 	   TEXT,
+						ca_cert 	     TEXT,
 						state          BIGINT NOT NULL,
 						PRIMARY KEY (mainflux_thing, owner)
 					)`,

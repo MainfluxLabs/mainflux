@@ -67,9 +67,9 @@ type channelRes struct {
 }
 
 type viewRes struct {
-	MFThing     string          `json:"mainflux_id,omitempty"`
-	MFKey       string          `json:"mainflux_key,omitempty"`
-	Channels    []channelRes    `json:"mainflux_channels,omitempty"`
+	ThingID     string          `json:"thing_id,omitempty"`
+	ThingKey    string          `json:"thing_key,omitempty"`
+	Channels    []channelRes    `json:"channels,omitempty"`
 	ExternalID  string          `json:"external_id"`
 	ExternalKey string          `json:"external_key,omitempty"`
 	Content     string          `json:"content,omitempty"`
