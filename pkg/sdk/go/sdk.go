@@ -190,12 +190,6 @@ type SDK interface {
 	// Groups returns page of groups.
 	Groups(meta PageMetadata, token string) (GroupsPage, error)
 
-	// Parents returns page of users groups.
-	Parents(id string, offset, limit uint64, token string) (GroupsPage, error)
-
-	// Children returns page of users groups.
-	Children(id string, offset, limit uint64, token string) (GroupsPage, error)
-
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
 
