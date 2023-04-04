@@ -18,11 +18,9 @@ var cmdGroups = []cobra.Command{
 		{
 			"Name":<group_name>,
 			"Description":<description>,
-			"ParentID":<parent_id>,
 			"Metadata":<metadata>,
 		}
 		Name - is unique group name
-		ParentID - ID of a group that is a parent to the creating group
 		Metadata - JSON structured string`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
@@ -43,11 +41,10 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | children <group_id> | parents <group_id> | <group_id>] <user_auth_token>",
+		Use:   "get [all | <group_id>] <user_auth_token>",
 		Short: "Get group",
-		Long: `Get all users groups, group children or group by id.
+		Long: `Get all users groups or group by id.
 		all - lists all groups
-		children <group_id> - lists all children groups of <group_id>
 		<group_id> - shows group with provided group ID`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
@@ -64,32 +61,6 @@ var cmdGroups = []cobra.Command{
 					Limit:  uint64(Limit),
 				}
 				l, err := sdk.Groups(meta, args[1])
-				if err != nil {
-					logError(err)
-					return
-				}
-				logJSON(l)
-				return
-			}
-			if args[0] == "children" {
-				if len(args) > 3 {
-					logUsage(cmd.Use)
-					return
-				}
-				l, err := sdk.Children(args[1], uint64(Offset), uint64(Limit), args[2])
-				if err != nil {
-					logError(err)
-					return
-				}
-				logJSON(l)
-				return
-			}
-			if args[0] == "parents" {
-				if len(args) > 3 {
-					logUsage(cmd.Use)
-					return
-				}
-				l, err := sdk.Parents(args[1], uint64(Offset), uint64(Limit), args[2])
 				if err != nil {
 					logError(err)
 					return

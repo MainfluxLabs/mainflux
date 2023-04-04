@@ -5,6 +5,6 @@ package grpc
 
 import "github.com/MainfluxLabs/mainflux"
 
-type getUsersByIDsRes struct {
+type getUsersRes struct {
 	users []*mainflux.User
 }

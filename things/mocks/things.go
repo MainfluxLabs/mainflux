@@ -106,8 +106,10 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, owner, id string
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	if c, ok := trm.things[key(owner, id)]; ok {
-		return c, nil
+	for _, th := range trm.things {
+		if th.ID == id {
+			return th, nil
+		}
 	}
 
 	return things.Thing{}, errors.ErrNotFound

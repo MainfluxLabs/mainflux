@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux"
-	httpmock "github.com/MainfluxLabs/mainflux/http/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	thmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/mocks"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +38,7 @@ func newService(tc mainflux.ThingsServiceClient) (ws.Service, mocks.MockPubSub) 
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := httpmock.NewThingsClient(map[string]string{thingKey: chanID})
+	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID})
 	svc, _ := newService(thingsClient)
 
 	cases := []struct {
@@ -92,7 +92,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := httpmock.NewThingsClient(map[string]string{thingKey: chanID})
+	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID})
 	svc, pubsub := newService(thingsClient)
 
 	c := ws.NewClient(nil)
@@ -171,7 +171,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient := httpmock.NewThingsClient(map[string]string{thingKey: chanID})
+	thingsClient :=thmock.NewThingsService(map[string]string{thingKey: chanID})
 	svc, pubsub := newService(thingsClient)
 
 	cases := []struct {

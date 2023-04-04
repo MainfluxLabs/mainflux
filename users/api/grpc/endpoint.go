@@ -34,6 +34,33 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			mu = append(mu, &user)
 		}
 
-		return getUsersByIDsRes{users: mu}, nil
+		return getUsersRes{users: mu}, nil
+	}
+}
+
+func listUsersByEmailsEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getUsersByEmailsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		users, err := svc.ListUsersByEmails(ctx, req.emails)
+		if err != nil {
+			return nil, err
+		}
+
+		mu := []*mainflux.User{}
+
+		for _, u := range users {
+			user := mainflux.User{
+				Id:     u.ID,
+				Email:  u.Email,
+				Status: u.Status,
+			}
+			mu = append(mu, &user)
+		}
+
+		return getUsersRes{users: mu}, nil
 	}
 }

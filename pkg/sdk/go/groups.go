@@ -182,16 +182,6 @@ func (sdk mfSDK) Groups(meta PageMetadata, token string) (GroupsPage, error) {
 	return sdk.getGroups(token, u.String())
 }
 
-func (sdk mfSDK) Parents(id string, offset, limit uint64, token string) (GroupsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/parents?offset=%d&limit=%d&tree=false&level=%d", sdk.thingsURL, groupsEndpoint, id, offset, limit, MaxLevel)
-	return sdk.getGroups(token, url)
-}
-
-func (sdk mfSDK) Children(id string, offset, limit uint64, token string) (GroupsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/children?offset=%d&limit=%d&tree=false&level=%d", sdk.thingsURL, groupsEndpoint, id, offset, limit, MaxLevel)
-	return sdk.getGroups(token, url)
-}
-
 func (sdk mfSDK) getGroups(token, url string) (GroupsPage, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

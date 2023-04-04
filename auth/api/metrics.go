@@ -125,22 +125,40 @@ func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memb
 	return ms.svc.ListOrgMemberships(ctx, token, memberID, pm)
 }
 
-func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
+func (ms *metricsMiddleware) AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_members_by_ids").Add(1)
+		ms.latency.With("method", "assign_members_by_ids").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignMembersByIDs(ctx, token, orgID, memberIDs...)
+}
+
+func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign_members").Add(1)
 		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignMembers(ctx, token, orgID, memberIDs...)
+	return ms.svc.AssignMembers(ctx, token, orgID, memberEmails...)
 }
 
-func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
+func (ms *metricsMiddleware) UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_members_by_ids").Add(1)
+		ms.latency.With("method", "unassign_members_by_ids").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignMembersByIDs(ctx, token, orgID, memberIDs...)
+}
+
+func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberEmails ...string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "unassign_members").Add(1)
 		ms.latency.With("method", "unassign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
+	return ms.svc.UnassignMembers(ctx, token, orgID, memberEmails...)
 }
 
 func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.MembersPage, err error) {
