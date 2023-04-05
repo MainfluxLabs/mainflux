@@ -225,7 +225,7 @@ paths:
         - users
       parameters:
         - $ref: "#/components/parameters/UserId"
-      responses:       
+      responses:
         '200':
           description: User enabled.
         '400':
@@ -245,7 +245,7 @@ paths:
         - users
       parameters:
         - $ref: "#/components/parameters/UserId"
-      responses:       
+      responses:
         '200':
           description: User disabled.
         '400':
@@ -256,6 +256,44 @@ paths:
           description: Missing or invalid access token provided.
         '500':
          $ref: "#/components/responses/ServiceError"
+  /backup:
+    get:
+      summary: Retrieves all users
+      description: |
+        Retrieves all users. Only accessible by admin.
+      tags:
+        - users
+      responses:
+        '200':
+          $ref: "#/components/responses/UsersRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: This endpoint is available only for administrators.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /restore:
+    post:
+      summary: Restore users
+      description: |
+        Restores all users. Only accessible by admin.
+      tags:
+        - users
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreUsersReq"
+      responses:
+        '201':
+          description: Users restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: This endpoint is available only for administrators.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /health:
     get:
       summary: Retrieves service health check info.
@@ -310,10 +348,25 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded user's data.
+        status:
+          type: string
+          enum: [enabled, disabled]
+          description: User status.
+    Users:
+      type: object
+      properties:
+        users:
+          type: array
+          minItems: 0
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/User"
+      required:
+        - users
     UsersPage:
       type: object
       properties:
-        things:
+        users:
           type: array
           minItems: 0
           uniqueItems: true
@@ -329,7 +382,7 @@ components:
           type: integer
           description: Maximum number of items to return in one page.
       required:
-        - things
+        - users
     UserMetadata:
       type: object
       properties:
@@ -417,6 +470,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/UserMetadata"
+    RestoreUsersReq:
+      description: JSON-formated document describing the users to be restored
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Users"
     RequestPasswordReset:
       description: Initiate password request procedure.
       required: true
@@ -479,18 +539,24 @@ components:
                 format: url
                 description: Registered user relative URL.
                 example: /users/{userId}
-    UserRes:
-      description: Data retrieved.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/User"
     UsersPageRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/UsersPage"
+    UserRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/User"
+    UsersRes:
+      description: Data retrieved
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Users"
     ServiceError:
       description: Unexpected server-side error occurred.
     HealthRes:
