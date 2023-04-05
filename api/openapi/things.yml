@@ -678,10 +678,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /backup:
     get:
-      summary: Retrieves backup of the service.
+      summary: Retrieves backup of the things service.
       description: |
-        Retrieves backup of the service. Backup is a JSON file that contains
-        all the data that is stored in the service.
+        Retrieves backup of the things service. Backup is a JSON file that contains
+        all groups, things, channels, and connections.
       tags:
         - backup
       responses:
@@ -693,10 +693,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /restore:
     post:
-      summary: Restores service from backup.
+      summary: Restores things service from backup.
       description: |
         Restores service from backup. Backup is a JSON file that contains
-        all the data that is stored in the service.
+        all groups, things, channels, and connections that will be restored.
       tags:
         - backup
       requestBody:
@@ -1100,7 +1100,11 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/ConnectionResSchema"
-
+      required:
+        - groups
+        - things
+        - channels
+        - connections
 
   parameters:
     ChanId:
@@ -1335,7 +1339,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/BackupResSchema"
+            $ref: "#/components/schemas/MembersReqSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
