@@ -265,7 +265,7 @@ func (sdk mfSDK) UpdateGroup(t Group, token string) error {
 }
 
 func (sdk mfSDK) Memberships(memberID, token string, offset, limit uint64) (GroupsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/groups?offset=%d&limit=%d&", sdk.thingsURL, membersEndpoint, memberID, offset, limit)
+	url := fmt.Sprintf("%s/%s/%s/groups?offset=%d&limit=%d&", sdk.thingsURL, thingsEndpoint, memberID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return GroupsPage{}, err
