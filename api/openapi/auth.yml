@@ -205,7 +205,7 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-    delete:
+    patch:
       summary: Unassigns members from organization.
       description: |
         Unassigns members from organization identified by the given IDs.
@@ -268,7 +268,7 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
-    delete:
+    patch:
       summary: Unassigns groups from organization.
       description: |
         Unassigns groups from organization identified by the given IDs.
