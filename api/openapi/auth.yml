@@ -161,9 +161,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/members:
     post:
-      summary: Adds new members to organization.
+      summary: Assigns members to organization.
       description: |
-        Adds new member to organization identified by the given IDs.
+        Assigns new members to organization identified by the given IDs.
       tags:
         - auth
       parameters:
@@ -206,9 +206,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Removes member from organization.
+      summary: Unassigns members from organization.
       description: |
-        Removes member from organization.
+        Unassigns members from organization identified by the given IDs.
       tags:
         - auth
       parameters:
@@ -222,8 +222,6 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
-        '415':
-          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:
