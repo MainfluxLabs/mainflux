@@ -54,9 +54,7 @@ $GOBIN/mainfluxlabs-influxdb
 ### Using docker-compose
 
 This service can be deployed using docker containers.
-Docker compose file is available in `<project_root>/docker/addons/influxdb-writer/docker-compose.yml`. Besides database
-and writer service, it contains [Grafana platform](https://grafana.com/) which can be used for database
-exploration and data visualization and analytics. In order to run Mainflux InfluxDB writer, execute the following command:
+Docker compose file is available in `<project_root>/docker/addons/influxdb-writer/docker-compose.yml`. Besides database and writer service, it contains [InfluxDB UI](https://docs.influxdata.com/influxdb/v2.6/visualize-data/) which can be used for database exploration and data visualization and analytics. In order to run Mainflux InfluxDB writer, execute the following command:
 
 ```bash
 docker-compose -f docker/addons/influxdb-writer/docker-compose.yml up -d

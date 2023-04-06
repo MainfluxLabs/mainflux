@@ -14,7 +14,6 @@ networks:
 
 volumes:
   mainfluxlabs-influxdb-volume:
-  mainfluxlabs-grafana-volume:
 
 services:
   influxdb:
@@ -58,16 +57,3 @@ services:
       - docker_mainfluxlabs-base-net
     volumes:
       - ./config.toml:/config.toml
-
-  grafana:
-    image: grafana/grafana:7.3.7
-    container_name: mainfluxlabs-grafana
-    depends_on:
-      - influxdb
-    restart: on-failure
-    ports:
-      - ${MF_INFLUX_WRITER_GRAFANA_PORT}:${MF_GRAFANA_PORT}
-    networks:
-      - docker_mainfluxlabs-base-net
-    volumes:
-      - mainfluxlabs-grafana-volume:/var/lib/grafana
