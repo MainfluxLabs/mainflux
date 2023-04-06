@@ -553,7 +553,7 @@ paths:
     post:
       summary: Assigns members to a group.
       description: |
-        Assigns thing or user id to a group.
+        Assigns things to a group specified by ids.
       tags:
         - groups
       parameters:
@@ -592,18 +592,20 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Removes members from a group.
+      summary: Unassigns members from a group.
       description: |
-        Removes thing from a group.
+        Unassigns things from a group specified by ids.
       tags:
         - groups
       parameters:
         - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/MembersReq"
       responses:
         '204':
           description: Members removed.
         '400':
-          description: Failed due to malformed query parameters.
+          description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
         '404':

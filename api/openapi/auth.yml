@@ -83,7 +83,7 @@ paths:
     get:
       summary: Retrieves all organizations.
       description: |
-        Retrieves all organizations.
+        Retrieves all organizations owner by the user.
       tags:
         - auth
       parameters:
@@ -172,7 +172,7 @@ paths:
         $ref: "#/components/requestBodies/OrgMembersReq"
       responses:
         '200':
-          description: Member added to organization.
+          description: Members assigned to organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -217,7 +217,7 @@ paths:
         $ref: "#/components/requestBodies/OrgMembersReq"
       responses:
         '204':
-          description: Member removed from organization.
+          description: Members unassigned from organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -226,9 +226,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:
     post:
-      summary: Adds new group to organization.
+      summary: Assigns groups to organization.
       description: |
-        Adds new group to organization.
+        Assigns new groups to organization identified by the given IDs.
       tags:
         - auth
       parameters:
@@ -237,7 +237,7 @@ paths:
         $ref: "#/components/requestBodies/OrgGroupsReq"
       responses:
         '200':
-          description: Group added to organization.
+          description: Groups assigned to organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -269,9 +269,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Removes group from organization.
+      summary: Unassigns groups from organization.
       description: |
-        Removes group from organization.
+        Unassigns groups from organization identified by the given IDs.
       tags:
         - auth
       parameters:
@@ -280,7 +280,7 @@ paths:
         $ref: "#/components/requestBodies/OrgGroupsReq"
       responses:
         '204':
-          description: Group removed from organization.
+          description: Groups unassigned from organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
