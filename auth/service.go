@@ -255,7 +255,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, id, user.ID)
+	err = svc.canAccessGroups(ctx, id, user.ID)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	err = svc.canAccessOrg(ctx, org.ID, user.ID)
+	err = svc.canAccessGroups(ctx, org.ID, user.ID)
 	if err != nil {
 		return Org{}, err
 	}
@@ -313,7 +313,7 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
+	err = svc.canAccessGroups(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
+	err = svc.canAccessGroups(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -411,7 +411,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		if err != nil {
 			return err
 		}
-		
+
 		return nil
 	}
 
@@ -432,7 +432,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
+	err = svc.canAccessGroups(ctx, orgID, user.ID)
 	if err != nil {
 		return MembersPage{}, err
 	}
@@ -586,7 +586,7 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 	return errors.ErrAuthorization
 }
 
-func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error {
+func (svc service) canAccessGroups(ctx context.Context, orgID, userID string) error {
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
 		return err
