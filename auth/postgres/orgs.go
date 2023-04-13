@@ -320,17 +320,17 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	return page, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID, role string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
-	qIns := `INSERT INTO org_relations (org_id, member_id, created_at, updated_at)
-			 VALUES(:org_id, :member_id, :created_at, :updated_at)`
+	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
+			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+		dbg, err := toDBMemberRelation(id, orgID, role)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -372,7 +372,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+		dbg, err := toDBMemberRelation(id, orgID, "")
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -672,14 +672,16 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 type dbMemberRelation struct {
 	OrgID     string    `db:"org_id"`
 	MemberID  string    `db:"member_id"`
+	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(memberID, orgID string) (dbMemberRelation, error) {
+func toDBMemberRelation(memberID, orgID, role string) (dbMemberRelation, error) {
 	return dbMemberRelation{
 		OrgID:    orgID,
 		MemberID: memberID,
+		Role:     role,
 	}, nil
 }
 

@@ -318,7 +318,7 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, "", memberIDs...); err != nil {
 		return err
 	}
 
@@ -331,7 +331,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
 		return err
 	}
@@ -347,12 +347,23 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		memberIDs = append(memberIDs, u.Id)
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
-		return err
+	if org.OwnerID == user.ID {
+		err := svc.orgs.AssignMembers(ctx, orgID, "member", memberIDs...)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); err == nil {
+		err := svc.orgs.AssignMembers(ctx, orgID, "member", memberIDs...)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil
-
 }
 
 func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID string, memberIDs ...string) error {
@@ -379,7 +390,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
 		return err
 	}
@@ -395,8 +406,21 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		memberIDs = append(memberIDs, u.Id)
 	}
 
-	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
-		return err
+	if org.OwnerID == user.ID {
+		err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
+		if err != nil {
+			return err
+		}
+		
+		return nil
+	}
+
+	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); err == nil {
+		err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil

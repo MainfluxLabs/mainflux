@@ -154,7 +154,7 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, orgID string, memberIDs ...string) error
+	AssignMembers(ctx context.Context, orgID, role string, memberIDs ...string) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
