@@ -109,7 +109,7 @@ type OrgService interface {
 	RemoveOrg(ctx context.Context, token, id string) error
 
 	// AssignMembers adds members with member emails into the org identified by orgID.
-	AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error
+	AssignMembers(ctx context.Context, token, orgID, role string, memberEmails ...string) error
 
 	// UnassignMembers removes members with member emails from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
@@ -158,6 +158,9 @@ type OrgRepository interface {
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
+
+	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
+	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
 	// RetrieveMembers retrieves members assigned to an org identified by orgID.
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)

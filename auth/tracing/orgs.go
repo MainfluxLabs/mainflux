@@ -107,6 +107,14 @@ func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID st
 	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
 }
 
+func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
+	span := createSpan(ctx, orm.tracer, retrieveByGroupID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveRole(ctx, orgID, memberID)
+}
+
 func (orm orgRepositoryMiddleware) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	span := createSpan(ctx, orm.tracer, orgMembers)
 	defer span.Finish()

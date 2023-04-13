@@ -320,6 +320,22 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	return page, nil
 }
 
+func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
+
+	var role string
+	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&role); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return "", errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return role, nil
+}
+
 func (gr orgRepository) AssignMembers(ctx context.Context, orgID, role string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {

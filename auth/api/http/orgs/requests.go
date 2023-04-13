@@ -120,6 +120,7 @@ func (req listOrgMembershipsReq) validate() error {
 type membersReq struct {
 	token        string
 	orgID        string
+	role         string
 	MemberEmails []string `json:"member_emails"`
 }
 

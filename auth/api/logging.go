@@ -198,7 +198,7 @@ func (lm *loggingMiddleware) AssignMembersByIDs(ctx context.Context, token, orgI
 	return lm.svc.AssignMembersByIDs(ctx, token, orgID, memberIDs...)
 }
 
-func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) (err error) {
+func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID, role string, memberEmails ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method assign_members for token %s , members %s and org id %s took %s to complete", token, memberEmails, orgID, time.Since(begin))
 		if err != nil {
@@ -208,7 +208,7 @@ func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.AssignMembers(ctx, token, orgID, memberEmails...)
+	return lm.svc.AssignMembers(ctx, token, orgID, role, memberEmails...)
 }
 
 func (lm *loggingMiddleware) UnassignMembersByIDs(ctx context.Context, token string, orgID string, memberIDs ...string) (err error) {

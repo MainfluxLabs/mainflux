@@ -11,7 +11,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const recoveryDuration = 5 * time.Minute
+const (
+	recoveryDuration = 5 * time.Minute
+	guestRole        = "guest"
+	adminRole        = "admin"
+	ownerRole        = "owner"
+)
 
 var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.
@@ -325,13 +330,14 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 	return nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID, role string, memberEmails ...string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	
+	r, err := svc.canAccessMembers(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -347,20 +353,9 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		memberIDs = append(memberIDs, u.Id)
 	}
 
-	if org.OwnerID == user.ID {
-		err := svc.orgs.AssignMembers(ctx, orgID, "member", memberIDs...)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); err == nil {
-		err := svc.orgs.AssignMembers(ctx, orgID, "member", memberIDs...)
-		if err != nil {
-			return err
-		}
-		return nil
+	err = svc.orgs.AssignMembers(ctx, orgID, r, memberIDs...)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -597,4 +592,17 @@ func (svc service) canAccessGroups(ctx context.Context, orgID, userID string) er
 	}
 
 	return nil
+}
+
+func (svc service) canAccessMembers(ctx context.Context, orgID, userID string) (string, error) {
+	role, err := svc.orgs.RetrieveRole(ctx, orgID, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if role != ownerRole && role != adminRole {
+		return "", errors.ErrAuthorization
+	}
+
+	return role, nil
 }

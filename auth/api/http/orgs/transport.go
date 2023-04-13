@@ -27,6 +27,8 @@ const (
 	defLimit    = 10
 	defLevel    = 1
 	orgIDKey    = "orgID"
+	roleKey     = "role"
+	defRole     = "guest"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -253,9 +255,15 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	rl, err := apiutil.ReadStringQuery(r, roleKey, defRole)
+	if err != nil {
+		return nil, err
+	}
+
 	req := membersReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
+		role:  rl,
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
