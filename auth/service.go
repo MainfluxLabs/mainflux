@@ -323,37 +323,50 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, "", memberIDs...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, []MembersByID{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID, role string, memberEmails ...string) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, members []Members) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	
-	r, err := svc.canAccessMembers(ctx, orgID, user.ID)
+	err = svc.canAccessGroups(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
 
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	err = svc.canAccessMembers(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
 
-	var memberIDs []string
-	for _, u := range usr.Users {
-		memberIDs = append(memberIDs, u.Id)
+	var membersByID []MembersByID
+	for _, member := range members {
+		muReq := mainflux.UsersByEmailsReq{Emails: []string{member.Email}}
+		usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+		if err != nil {
+			return err
+		}
+
+		m := MembersByID{
+			ID:   usr.Users[0].Id,
+			Role: member.Role,
+		}
+
+		if m.Role == "" {
+			m.Role = guestRole
+		}
+
+		membersByID = append(membersByID, m)
 	}
 
-	err = svc.orgs.AssignMembers(ctx, orgID, r, memberIDs...)
+	err = svc.orgs.AssignMembers(ctx, orgID, membersByID)
 	if err != nil {
 		return err
 	}
@@ -385,7 +398,12 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	err = svc.canAccessGroups(ctx, orgID, user.ID)
+	if err != nil {
+		return err
+	}
+
+	err = svc.canAccessMembers(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -401,21 +419,9 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		memberIDs = append(memberIDs, u.Id)
 	}
 
-	if org.OwnerID == user.ID {
-		err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	if err := svc.orgs.HasMemberByID(ctx, orgID, user.ID); err == nil {
-		err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
-		if err != nil {
-			return err
-		}
-		return nil
+	err = svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -594,15 +600,15 @@ func (svc service) canAccessGroups(ctx context.Context, orgID, userID string) er
 	return nil
 }
 
-func (svc service) canAccessMembers(ctx context.Context, orgID, userID string) (string, error) {
+func (svc service) canAccessMembers(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, orgID, userID)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if role != ownerRole && role != adminRole {
-		return "", errors.ErrAuthorization
+		return errors.ErrAuthorization
 	}
 
-	return role, nil
+	return nil
 }

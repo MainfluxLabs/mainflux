@@ -336,7 +336,7 @@ func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return role, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID, role string, ids ...string) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members []auth.MembersByID) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -345,8 +345,8 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID, role string, i
 	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID, role)
+	for _, member := range members {
+		dbg, err := toDBMemberRelation(member.ID, orgID, member.Role)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}

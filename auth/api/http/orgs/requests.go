@@ -5,6 +5,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
+const (
+	adminRole = "admin"
+	ownerRole = "owner"
+	guestRole = "guest"
+)
+
 type createOrgReq struct {
 	token       string
 	Name        string                 `json:"name,omitempty"`
@@ -117,14 +123,41 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type membersReq struct {
+type assignMembersReq struct {
+	token   string
+	orgID   string
+	Members []auth.Members `json:"members"`
+}
+
+func (req assignMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Members) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, m := range req.Members {
+		if m.Role != adminRole && m.Role != ownerRole && m.Role != guestRole && m.Role != "" {
+			return apiutil.ErrInvalidIDFormat
+		}
+	}
+
+	return nil
+}
+
+type unassignMembersReq struct {
 	token        string
 	orgID        string
-	role         string
 	MemberEmails []string `json:"member_emails"`
 }
 
-func (req membersReq) validate() error {
+func (req unassignMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

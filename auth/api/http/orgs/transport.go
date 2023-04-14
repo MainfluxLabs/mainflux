@@ -73,14 +73,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Post("/orgs/:orgID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_members")(assignMembersEndpoint(svc)),
-		decodeMembersRequest,
+		decodeAssignMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/orgs/:orgID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
-		decodeMembersRequest,
+		decodeUnassignMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -254,16 +254,23 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	rl, err := apiutil.ReadStringQuery(r, roleKey, defRole)
-	if err != nil {
-		return nil, err
-	}
-
-	req := membersReq{
+func decodeAssignMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := assignMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
-		role:  rl,
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := unassignMembersReq{
+		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, orgIDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
