@@ -22,7 +22,7 @@ volumes:
 
 services:
   ui:
-    image: ${MF_RELEASE_PREFIX}/ui:0.14.2
+    image: ${MF_RELEASE_PREFIX}/ui:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-ui
     restart: on-failure
     ports:
@@ -451,7 +451,7 @@ services:
         - mainfluxlabs-filestore-db-volume:/var/lib/postgresql/data
 
   filestore:
-    image: ${MF_RELEASE_PREFIX}/filestore:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/filestore:0.14.2
     container_name: mainfluxlabs-filestore
     depends_on:
         - filestore-db
