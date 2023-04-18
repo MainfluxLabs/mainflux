@@ -324,7 +324,7 @@ func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
 
 	var role string
-	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&role); err != nil {
+	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).Scan(&role); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return "", errors.Wrap(errors.ErrNotFound, err)
