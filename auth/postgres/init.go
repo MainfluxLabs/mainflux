@@ -76,7 +76,7 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS org_relations (
 							member_id   UUID NOT NULL,
 							org_id      UUID NOT NULL,
-							role        TEXT CHECK (role IN ('admin', 'owner', 'guest')),
+							role        VARCHAR(254) NOT NULL,
 							created_at  TIMESTAMPTZ,
 							updated_at  TIMESTAMPTZ,
 							FOREIGN KEY (org_id) REFERENCES orgs (id),

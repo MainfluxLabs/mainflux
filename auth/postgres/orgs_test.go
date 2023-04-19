@@ -10,6 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	orgName   = "test"
+	orgDesc   = "test_description"
+	adminRole = "admin"
+)
+
 func TestRetrieveRole(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
@@ -24,16 +30,15 @@ func TestRetrieveRole(t *testing.T) {
 	org := auth.Org{
 		ID:          id,
 		OwnerID:     ownerID,
-		Name:        "test",
-		Description: "test",
-		Metadata:    nil,
+		Name:        orgName,
+		Description: orgDesc,
 	}
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	member1 := auth.MembersByID{
 		ID:   memberID,
-		Role: "admin",
+		Role: adminRole,
 	}
 
 	err = repo.AssignMembers(context.Background(), org.ID, []auth.MembersByID{member1})
@@ -57,6 +62,7 @@ func TestRetrieveRole(t *testing.T) {
 
 	for _, tc := range cases {
 		role, _ := repo.RetrieveRole(context.Background(), tc.orgID, tc.memberID)
+		fmt.Println("ROLE", tc.role)
 		require.Equal(t, tc.role, role, fmt.Sprintf("expected %s got %s", tc.role, role))
 	}
 }
