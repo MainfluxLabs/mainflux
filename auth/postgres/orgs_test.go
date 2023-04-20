@@ -7,6 +7,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,6 +16,7 @@ const (
 	orgName   = "test"
 	orgDesc   = "test_description"
 	adminRole = "admin"
+	invalidID = "invalid"
 )
 
 func TestRetrieveRole(t *testing.T) {
@@ -36,12 +39,12 @@ func TestRetrieveRole(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	member1 := auth.MembersByID{
+	member := auth.Member{
 		ID:   memberID,
 		Role: adminRole,
 	}
 
-	err = repo.AssignMembers(context.Background(), org.ID, []auth.MembersByID{member1})
+	err = repo.AssignMembers(context.Background(), org.ID, []auth.Member{member})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -55,14 +58,42 @@ func TestRetrieveRole(t *testing.T) {
 			desc:     "retrieve role",
 			orgID:    org.ID,
 			memberID: memberID,
-			role:     "admin",
+			role:     adminRole,
+			err:      nil,
+		},
+		{
+			desc:     "retrieve role with non existing member",
+			orgID:    org.ID,
+			memberID: invalidID,
+			role:     "",
+			err:      nil,
+		},
+		{
+			desc:     "retrieve role without member",
+			orgID:    org.ID,
+			memberID: "",
+			role:     "",
+			err:      nil,
+		},
+		{
+			desc:     "retrieve role with non existing org",
+			orgID:    invalidID,
+			memberID: memberID,
+			role:     "",
+			err:      nil,
+		},
+		{
+			desc:     "retrieve role without org",
+			orgID:    "",
+			memberID: memberID,
+			role:     "",
 			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
-		role, _ := repo.RetrieveRole(context.Background(), tc.orgID, tc.memberID)
-		fmt.Println("ROLE", tc.role)
-		require.Equal(t, tc.role, role, fmt.Sprintf("expected %s got %s", tc.role, role))
+		role, _ := repo.RetrieveRole(context.Background(), tc.memberID, tc.orgID)
+		require.Equal(t, tc.role, role, fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.role, role))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
