@@ -336,7 +336,7 @@ func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members []auth.Member) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)

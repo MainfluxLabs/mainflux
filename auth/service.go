@@ -248,7 +248,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		Role: ownerRole,
 	}
 
-	err = svc.orgs.AssignMembers(ctx, id, []Member{member})
+	err = svc.orgs.AssignMembers(ctx, id, member)
 	if err != nil {
 		return Org{}, err
 	}
@@ -334,14 +334,14 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, []Member{}); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, Member{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, members []Member) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, members ...Member) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -373,7 +373,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 
 	}
 
-	err = svc.orgs.AssignMembers(ctx, orgID, mbs)
+	err = svc.orgs.AssignMembers(ctx, orgID, mbs...)
 	if err != nil {
 		return err
 	}
@@ -405,13 +405,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
-		return err
-	}
-
-	err = svc.canEditOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err = svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -426,8 +420,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		memberIDs = append(memberIDs, u.Id)
 	}
 
-	err = svc.orgs.UnassignMembers(ctx, orgID, memberIDs...)
-	if err != nil {
+	if err = svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
 

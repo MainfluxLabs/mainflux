@@ -44,7 +44,7 @@ func TestRetrieveRole(t *testing.T) {
 		Role: adminRole,
 	}
 
-	err = repo.AssignMembers(context.Background(), org.ID, []auth.Member{member})
+	err = repo.AssignMembers(context.Background(), org.ID, member)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
