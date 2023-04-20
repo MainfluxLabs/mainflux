@@ -262,6 +262,12 @@ func decodeAssignMembersRequest(_ context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
+	for i := range req.Members {
+		if req.Members[i].Role == "" {
+			req.Members[i].Role = viewerRole
+		}
+	}
+
 	return req, nil
 }
 
