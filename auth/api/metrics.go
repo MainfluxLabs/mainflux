@@ -134,7 +134,7 @@ func (ms *metricsMiddleware) AssignMembersByIDs(ctx context.Context, token, orgI
 	return ms.svc.AssignMembersByIDs(ctx, token, orgID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, members []auth.Members) error {
+func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, members []auth.Member) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign_members").Add(1)
 		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())

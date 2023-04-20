@@ -13,9 +13,10 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-	guestRole        = "guest"
+	viewerRole       = "viewer"
 	adminRole        = "admin"
 	ownerRole        = "owner"
+	editorRole       = "editor"
 )
 
 var (
@@ -323,18 +324,19 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, []MembersByID{}); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, []Member{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, members []Members) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, members []Member) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
+
 	err = svc.canAccessOrg(ctx, orgID, user.ID)
 	if err != nil {
 		return err
@@ -345,27 +347,28 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	var membersByID []MembersByID
-	for _, member := range members {
-		muReq := mainflux.UsersByEmailsReq{Emails: []string{member.Email}}
-		usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
-		if err != nil {
-			return err
-		}
-
-		m := MembersByID{
-			ID:   usr.Users[0].Id,
-			Role: member.Role,
-		}
-
-		if m.Role == "" {
-			m.Role = guestRole
-		}
-
-		membersByID = append(membersByID, m)
+	var memberEmails []string
+	var member = make(map[string]string)
+	for _, m := range members {
+		member[m.Email] = m.Role
+		memberEmails = append(memberEmails, m.Email)
 	}
 
-	err = svc.orgs.AssignMembers(ctx, orgID, membersByID)
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	mbs := []Member{}
+	for _, user := range usr.Users {
+		mbs = append(mbs, Member{
+			Role: member[user.Email],
+			ID:   user.Id,
+		})
+	}
+
+	err = svc.orgs.AssignMembers(ctx, orgID, mbs)
 	if err != nil {
 		return err
 	}
@@ -605,7 +608,7 @@ func (svc service) canAccessMembers(ctx context.Context, orgID, userID string) e
 		return err
 	}
 
-	if role != ownerRole && role != adminRole {
+	if role != ownerRole && role != adminRole && role != editorRole {
 		return errors.ErrAuthorization
 	}
 

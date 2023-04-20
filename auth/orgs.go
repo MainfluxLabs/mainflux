@@ -87,14 +87,10 @@ type GroupsPage struct {
 	Groups []Group
 }
 
-type Members struct {
+type Member struct {
+	ID    string
 	Email string
 	Role  string
-}
-
-type MembersByID struct {
-	ID   string
-	Role string
 }
 
 // OrgService specifies an API that must be fullfiled by the domain service
@@ -119,7 +115,7 @@ type OrgService interface {
 	RemoveOrg(ctx context.Context, token, id string) error
 
 	// AssignMembers adds members with member emails into the org identified by orgID.
-	AssignMembers(ctx context.Context, token, orgID string, members []Members) error
+	AssignMembers(ctx context.Context, token, orgID string, members []Member) error
 
 	// UnassignMembers removes members with member emails from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
@@ -164,7 +160,7 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, orgID string, members []MembersByID) error
+	AssignMembers(ctx context.Context, orgID string, members []Member) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error

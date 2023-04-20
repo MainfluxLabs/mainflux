@@ -323,7 +323,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
 	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
 
-	member := auth.Members{}
+	member := auth.Member{}
 	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&member); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
@@ -336,7 +336,7 @@ func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members []auth.MembersByID) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members []auth.Member) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)

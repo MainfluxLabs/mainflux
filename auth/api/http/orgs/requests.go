@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	adminRole = "admin"
-	ownerRole = "owner"
-	guestRole = "guest"
+	adminRole  = "admin"
+	ownerRole  = "owner"
+	viewerRole = "viewer"
+	editorRole = "editor"
 )
 
 type createOrgReq struct {
@@ -126,7 +127,7 @@ func (req listOrgMembershipsReq) validate() error {
 type assignMembersReq struct {
 	token   string
 	orgID   string
-	Members []auth.Members `json:"members"`
+	Members []auth.Member `json:"members"`
 }
 
 func (req assignMembersReq) validate() error {
@@ -143,7 +144,7 @@ func (req assignMembersReq) validate() error {
 	}
 
 	for _, m := range req.Members {
-		if m.Role != adminRole && m.Role != ownerRole && m.Role != guestRole && m.Role != "" {
+		if m.Role != adminRole && m.Role != ownerRole && m.Role != viewerRole && m.Role != editorRole && m.Role != "" {
 			return apiutil.ErrInvalidMemberRole
 		}
 	}

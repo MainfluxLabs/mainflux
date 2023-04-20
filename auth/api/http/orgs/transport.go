@@ -27,8 +27,6 @@ const (
 	defLimit    = 10
 	defLevel    = 1
 	orgIDKey    = "orgID"
-	roleKey     = "role"
-	defRole     = "guest"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
