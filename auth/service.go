@@ -347,10 +347,6 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	if err = svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
-		return err
-	}
-
 	if err = svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
