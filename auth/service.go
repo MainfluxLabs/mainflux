@@ -243,6 +243,16 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
+	member := Member{
+		ID:   user.ID,
+		Role: ownerRole,
+	}
+
+	err = svc.orgs.AssignMembers(ctx, id, []Member{member})
+	if err != nil {
+		return Org{}, err
+	}
+
 	return g, nil
 }
 
@@ -337,13 +347,11 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err = svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
-	err = svc.canAccessMembers(ctx, orgID, user.ID)
-	if err != nil {
+	if err = svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -406,7 +414,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	err = svc.canAccessMembers(ctx, orgID, user.ID)
+	err = svc.canEditOrg(ctx, orgID, user.ID)
 	if err != nil {
 		return err
 	}
@@ -603,7 +611,7 @@ func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error
 	return nil
 }
 
-func (svc service) canAccessMembers(ctx context.Context, orgID, userID string) error {
+func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, orgID, userID)
 	if err != nil {
 		return err
