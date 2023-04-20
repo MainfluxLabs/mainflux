@@ -248,8 +248,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		Role: ownerRole,
 	}
 
-	err = svc.orgs.AssignMembers(ctx, id, member)
-	if err != nil {
+	if err = svc.orgs.AssignMembers(ctx, id, member); err != nil {
 		return Org{}, err
 	}
 
@@ -601,7 +600,7 @@ func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error
 }
 
 func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
-	role, err := svc.orgs.RetrieveRole(ctx, orgID, userID)
+	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
 	}
