@@ -362,10 +362,16 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 
 	mbs := []Member{}
 	for _, user := range usr.Users {
+		role := member[user.Email]
+		if role == "" {
+			role = viewerRole
+		}
+
 		mbs = append(mbs, Member{
-			Role: member[user.Email],
+			Role: role,
 			ID:   user.Id,
 		})
+
 	}
 
 	err = svc.orgs.AssignMembers(ctx, orgID, mbs)
