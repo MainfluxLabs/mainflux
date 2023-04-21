@@ -346,7 +346,7 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, member := range members {
-		dbg, err := toDBMemberRelation(member.ID, orgID, member.Role)
+		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -388,7 +388,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID, "")
+		dbg, err := toDBMemberRelation(orgID, id, "")
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -693,7 +693,7 @@ type dbMemberRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(memberID, orgID, role string) (dbMemberRelation, error) {
+func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) {
 	return dbMemberRelation{
 		OrgID:    orgID,
 		MemberID: memberID,
