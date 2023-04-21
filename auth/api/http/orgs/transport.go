@@ -264,7 +264,7 @@ func decodeAssignMembersRequest(_ context.Context, r *http.Request) (interface{}
 
 	for i := range req.Members {
 		if req.Members[i].Role == "" {
-			req.Members[i].Role = viewerRole
+			req.Members[i].Role = auth.ViewerRole
 		}
 	}
 

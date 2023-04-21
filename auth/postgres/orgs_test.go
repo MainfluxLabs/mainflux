@@ -15,7 +15,6 @@ import (
 const (
 	orgName   = "test"
 	orgDesc   = "test_description"
-	adminRole = "admin"
 	invalidID = "invalid"
 )
 
@@ -41,7 +40,7 @@ func TestRetrieveRole(t *testing.T) {
 
 	member := auth.Member{
 		ID:   memberID,
-		Role: adminRole,
+		Role: auth.AdminRole,
 	}
 
 	err = repo.AssignMembers(context.Background(), org.ID, member)
@@ -58,7 +57,7 @@ func TestRetrieveRole(t *testing.T) {
 			desc:     "retrieve role",
 			orgID:    org.ID,
 			memberID: memberID,
-			role:     adminRole,
+			role:     auth.AdminRole,
 			err:      nil,
 		},
 		{

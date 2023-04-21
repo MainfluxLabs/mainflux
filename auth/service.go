@@ -13,10 +13,10 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-	viewerRole       = "viewer"
-	adminRole        = "admin"
-	ownerRole        = "owner"
-	editorRole       = "editor"
+	ViewerRole       = "viewer"
+	AdminRole        = "admin"
+	OwnerRole        = "owner"
+	EditorRole       = "editor"
 )
 
 var (
@@ -245,7 +245,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 
 	member := Member{
 		ID:   user.ID,
-		Role: ownerRole,
+		Role: OwnerRole,
 	}
 
 	if err := svc.orgs.AssignMembers(ctx, id, member); err != nil {
@@ -599,7 +599,7 @@ func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
 		return err
 	}
 
-	if role != ownerRole && role != adminRole && role != editorRole {
+	if role != OwnerRole && role != AdminRole && role != EditorRole {
 		return errors.ErrAuthorization
 	}
 

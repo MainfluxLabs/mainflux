@@ -5,13 +5,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
-const (
-	adminRole  = "admin"
-	ownerRole  = "owner"
-	viewerRole = "viewer"
-	editorRole = "editor"
-)
-
 type createOrgReq struct {
 	token       string
 	Name        string                 `json:"name,omitempty"`
@@ -144,7 +137,7 @@ func (req assignMembersReq) validate() error {
 	}
 
 	for _, m := range req.Members {
-		if m.Role != adminRole && m.Role != ownerRole && m.Role != viewerRole && m.Role != editorRole {
+		if m.Role != auth.AdminRole && m.Role != auth.OwnerRole && m.Role != auth.ViewerRole && m.Role != auth.EditorRole {
 			return apiutil.ErrInvalidMemberRole
 		}
 	}
