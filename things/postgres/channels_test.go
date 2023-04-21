@@ -172,29 +172,25 @@ func TestSingleChannelRetrieval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		owner string
 		ID    string
 		err   error
 	}{
 		"retrieve channel with existing user": {
-			owner: ch.Owner,
 			ID:    ch.ID,
 			err:   nil,
 		},
 		"retrieve channel with existing user, non-existing channel": {
-			owner: ch.Owner,
 			ID:    nonexistentChanID,
 			err:   errors.ErrNotFound,
 		},
 		"retrieve channel with malformed ID": {
-			owner: ch.Owner,
 			ID:    wrongValue,
 			err:   errors.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		_, err := chanRepo.RetrieveByID(context.Background(), tc.owner, tc.ID)
+		_, err := chanRepo.RetrieveByID(context.Background(), tc.ID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

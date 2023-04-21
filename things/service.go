@@ -252,7 +252,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	thing, err := ts.things.RetrieveByID(ctx, "", id)
+	thing, err := ts.things.RetrieveByID(ctx, id)
 	if err != nil {
 		return Thing{}, err
 	}
@@ -314,7 +314,7 @@ func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) erro
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if _, err = ts.things.RetrieveByID(ctx, res.GetId(), id); err != nil {
+	if _, err = ts.things.RetrieveByID(ctx, id); err != nil {
 		return err
 	}
 
@@ -379,7 +379,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	channel, err := ts.channels.RetrieveByID(ctx, res.GetId(), id)
+	channel, err := ts.channels.RetrieveByID(ctx, id)
 	if err != nil {
 		return Channel{}, err
 	}
@@ -416,7 +416,7 @@ func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) er
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if _, err = ts.channels.RetrieveByID(ctx, res.GetId(), id); err != nil {
+	if _, err = ts.channels.RetrieveByID(ctx, id); err != nil {
 		return err
 	}
 
@@ -489,7 +489,7 @@ func (ts *thingsService) CanAccessByID(ctx context.Context, chanID, thingID stri
 }
 
 func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	ch, err := ts.channels.RetrieveByID(ctx, owner, chanID)
+	ch, err := ts.channels.RetrieveByID(ctx, chanID)
 	if err != nil {
 		return err
 	}

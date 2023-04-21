@@ -58,7 +58,7 @@ type ThingRepository interface {
 
 	// RetrieveByID retrieves the thing having the provided identifier, that is owned
 	// by the specified user.
-	RetrieveByID(ctx context.Context, owner, id string) (Thing, error)
+	RetrieveByID(ctx context.Context, id string) (Thing, error)
 
 	// RetrieveByKey returns thing ID for given thing key.
 	RetrieveByKey(ctx context.Context, key string) (string, error)

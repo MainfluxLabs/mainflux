@@ -296,29 +296,25 @@ func TestSingleThingRetrieval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		owner string
 		ID    string
 		err   error
 	}{
 		"retrieve thing with existing user": {
-			owner: th.Owner,
 			ID:    th.ID,
 			err:   nil,
 		},
 		"retrieve non-existing thing with existing user": {
-			owner: th.Owner,
 			ID:    nonexistentThingID,
 			err:   errors.ErrNotFound,
 		},
 		"retrieve thing with malformed ID": {
-			owner: th.Owner,
 			ID:    wrongValue,
 			err:   errors.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		_, err := thingRepo.RetrieveByID(context.Background(), tc.owner, tc.ID)
+		_, err := thingRepo.RetrieveByID(context.Background(), tc.ID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

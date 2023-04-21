@@ -71,9 +71,14 @@ func (crm *channelRepositoryMock) Update(_ context.Context, channel things.Chann
 	return nil
 }
 
-func (crm *channelRepositoryMock) RetrieveByID(_ context.Context, owner, id string) (things.Channel, error) {
-	if c, ok := crm.channels[key(owner, id)]; ok {
-		return c, nil
+func (crm *channelRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Channel, error) {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	for _, ch := range crm.channels {
+		if ch.ID == id {
+			return ch, nil
+		}
 	}
 
 	return things.Channel{}, errors.ErrNotFound
@@ -196,15 +201,19 @@ func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) er
 
 func (crm *channelRepositoryMock) Connect(_ context.Context, owner string, chIDs, thIDs []string) error {
 	for _, chID := range chIDs {
-		ch, err := crm.RetrieveByID(context.Background(), owner, chID)
+		ch, err := crm.RetrieveByID(context.Background(), chID)
 		if err != nil {
 			return err
 		}
 
 		for _, thID := range thIDs {
-			th, err := crm.things.RetrieveByID(context.Background(), owner, thID)
+			th, err := crm.things.RetrieveByID(context.Background(), thID)
 			if err != nil {
 				return err
+			}
+
+			if owner != ch.Owner {
+				return errors.ErrNotFound
 			}
 
 			crm.tconns <- Connection{

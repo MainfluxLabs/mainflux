@@ -44,7 +44,7 @@ type ChannelRepository interface {
 
 	// RetrieveByID retrieves the channel having the provided identifier, that is owned
 	// by the specified user.
-	RetrieveByID(ctx context.Context, owner, id string) (Channel, error)
+	RetrieveByID(ctx context.Context, id string) (Channel, error)
 
 	// RetrieveByOwner retrieves the subset of channels owned by the specified user.
 	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ChannelsPage, error)

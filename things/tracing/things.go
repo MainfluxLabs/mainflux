@@ -69,12 +69,12 @@ func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, owner, id, k
 	return trm.repo.UpdateKey(ctx, owner, id, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, owner, id string) (things.Thing, error) {
+func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingByIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByID(ctx, owner, id)
+	return trm.repo.RetrieveByID(ctx, id)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key string) (string, error) {

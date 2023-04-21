@@ -1279,7 +1279,7 @@ func TestIsChannelOwner(t *testing.T) {
 		},
 		"user does not own channel": {
 			channel: nonOwnedCh.ID,
-			err:     errors.ErrNotFound,
+			err:     errors.ErrAuthorization,
 		},
 		"access to non-existing channel": {
 			channel: wrongID,

@@ -60,12 +60,12 @@ func (crm channelRepositoryMiddleware) Update(ctx context.Context, ch things.Cha
 	return crm.repo.Update(ctx, ch)
 }
 
-func (crm channelRepositoryMiddleware) RetrieveByID(ctx context.Context, owner, id string) (things.Channel, error) {
+func (crm channelRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
 	span := createSpan(ctx, crm.tracer, retrieveChannelByIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByID(ctx, owner, id)
+	return crm.repo.RetrieveByID(ctx, id)
 }
 
 func (crm channelRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
