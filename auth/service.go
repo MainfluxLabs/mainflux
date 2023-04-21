@@ -11,7 +11,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const recoveryDuration = 5 * time.Minute
+const (
+	recoveryDuration = 5 * time.Minute
+	ViewerRole       = "viewer"
+	AdminRole        = "admin"
+	OwnerRole        = "owner"
+	EditorRole       = "editor"
+)
 
 var (
 	// ErrFailedToRetrieveMembers failed to retrieve group members.
@@ -237,6 +243,15 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
+	member := Member{
+		ID:   user.ID,
+		Role: OwnerRole,
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, id, member); err != nil {
+		return Org{}, err
+	}
+
 	return g, nil
 }
 
@@ -255,8 +270,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, id, user.ID)
-	if err != nil {
+	if err := svc.canAccessOrg(ctx, id, user.ID); err != nil {
 		return err
 	}
 
@@ -269,8 +283,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	err = svc.canAccessOrg(ctx, org.ID, user.ID)
-	if err != nil {
+	if err := svc.canAccessOrg(ctx, org.ID, user.ID); err != nil {
 		return Org{}, err
 	}
 
@@ -313,27 +326,32 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, Member{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, memberEmails ...string) error {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, members ...Member) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
+	}
+
+	var memberEmails []string
+	var member = make(map[string]string)
+	for _, m := range members {
+		member[m.Email] = m.Role
+		memberEmails = append(memberEmails, m.Email)
 	}
 
 	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
@@ -342,17 +360,20 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	var memberIDs []string
-	for _, u := range usr.Users {
-		memberIDs = append(memberIDs, u.Id)
+	mbs := []Member{}
+	for _, user := range usr.Users {
+		mbs = append(mbs, Member{
+			Role: member[user.Email],
+			ID:   user.Id,
+		})
+
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, orgID, mbs...); err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
 func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID string, memberIDs ...string) error {
@@ -361,8 +382,7 @@ func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -379,8 +399,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -408,8 +427,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, err
 	}
 
-	err = svc.canAccessOrg(ctx, orgID, user.ID)
-	if err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return MembersPage{}, err
 	}
 
@@ -570,6 +588,19 @@ func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error
 
 	if err := svc.orgs.HasMemberByID(ctx, orgID, userID); org.OwnerID != userID && err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return nil
+}
+
+func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
+	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	if role != OwnerRole && role != AdminRole && role != EditorRole {
+		return errors.ErrAuthorization
 	}
 
 	return nil

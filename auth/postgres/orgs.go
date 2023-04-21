@@ -320,17 +320,33 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	return page, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
+
+	member := auth.Member{}
+	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&member); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return "", errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return member.Role, nil
+}
+
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
-	qIns := `INSERT INTO org_relations (org_id, member_id, created_at, updated_at)
-			 VALUES(:org_id, :member_id, :created_at, :updated_at)`
+	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
+			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+	for _, member := range members {
+		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -372,7 +388,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+		dbg, err := toDBMemberRelation(orgID, id, "")
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -672,14 +688,16 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 type dbMemberRelation struct {
 	OrgID     string    `db:"org_id"`
 	MemberID  string    `db:"member_id"`
+	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(memberID, orgID string) (dbMemberRelation, error) {
+func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) {
 	return dbMemberRelation{
 		OrgID:    orgID,
 		MemberID: memberID,
+		Role:     role,
 	}, nil
 }
 

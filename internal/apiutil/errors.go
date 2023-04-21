@@ -95,4 +95,7 @@ var (
 
 	// ErrNotFoundParam indicates that the parameter was not found in the query
 	ErrNotFoundParam = errors.New("parameter not found in the query")
+
+	// ErrInvalidMemberRole indicates an invalid member role.
+	ErrInvalidMemberRole = errors.New("invalid member role")
 )

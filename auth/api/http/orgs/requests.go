@@ -117,13 +117,41 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type membersReq struct {
+type assignMembersReq struct {
+	token   string
+	orgID   string
+	Members []auth.Member `json:"members"`
+}
+
+func (req assignMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Members) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, m := range req.Members {
+		if m.Role != auth.AdminRole && m.Role != auth.OwnerRole && m.Role != auth.ViewerRole && m.Role != auth.EditorRole {
+			return apiutil.ErrInvalidMemberRole
+		}
+	}
+
+	return nil
+}
+
+type unassignMembersReq struct {
 	token        string
 	orgID        string
 	MemberEmails []string `json:"member_emails"`
 }
 
-func (req membersReq) validate() error {
+func (req unassignMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
