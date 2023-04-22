@@ -925,7 +925,7 @@ func TestListChannelsByThing(t *testing.T) {
 				Limit:  n,
 			},
 			size: 0,
-			err:  nil,
+			err:  errors.ErrNotFound,
 		},
 		"list all non-connected channels by existing thing": {
 			token: token,

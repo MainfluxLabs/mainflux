@@ -88,9 +88,9 @@ type GroupsPage struct {
 }
 
 type Member struct {
-	ID    string
-	Email string
-	Role  string
+	ID    string `json:"id"`
+	Role  string `json:"role"`
+	Email string `json:"email"`
 }
 
 // OrgService specifies an API that must be fullfiled by the domain service

@@ -298,10 +298,15 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 		return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
 	}
 
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 	FROM group_relations gr, things t
 	WHERE gr.group_id = :group_id and gr.member_id = t.id
-	%s LIMIT :limit OFFSET :offset;`, mq)
+	%s %s;`, mq, olq)
 
 	params, err := toDBMemberPage("", groupID, pm)
 	if err != nil {
@@ -357,10 +362,16 @@ func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID stri
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
 	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	q := fmt.Sprintf(`SELECT g.id, g.owner_id, g.name, g.description, g.metadata
 		FROM group_relations gr, groups g
 		WHERE gr.group_id = g.id and gr.member_id = :member_id
-		%s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
+		%s ORDER BY id %s;`, mq, olq)
 
 	params, err := toDBMemberPage(memberID, "", pm)
 	if err != nil {

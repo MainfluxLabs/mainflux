@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-redis/redis/v8"
 )
 
 const chanPrefix = "channel"

@@ -174,6 +174,10 @@ func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID
 	return page, nil
 }
 
+func (crm *channelRepositoryMock) RetrieveConns(_ context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	return things.ChannelsPage{}, nil
+}
+
 func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) error {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
