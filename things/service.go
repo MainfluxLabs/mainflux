@@ -261,7 +261,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return thing, nil
 	}
 
-	mpg, err := ts.groups.RetrieveMemberships(ctx, id, PageMetadata{})
+	mpg, err := ts.groups.RetrieveMemberships(ctx, id, PageMetadata{Limit: 1000})
 	if err != nil {
 		return Thing{}, errors.ErrAuthorization
 	}
@@ -407,7 +407,28 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
+	thing, err := ts.things.RetrieveByID(ctx, "", thID)
+	if err != nil {
+		return ChannelsPage{}, err
+	}
+
+	if thing.Owner == res.GetId() {
+		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
+	}
+
+	mpg, err := ts.groups.RetrieveMemberships(ctx, thID, PageMetadata{Limit: 0})
+	if err != nil {
+		return ChannelsPage{}, err
+	}
+
+	for _, group := range mpg.Groups {
+		_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: group.ID})
+		if err == nil {
+			return ts.channels.RetrieveConns(ctx, thID, pm)
+		}
+	}
+
+	return ChannelsPage{}, errors.ErrAuthorization
 }
 
 func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) error {

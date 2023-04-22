@@ -53,6 +53,10 @@ type ChannelRepository interface {
 	// user and have specified thing connected or not connected to them.
 	RetrieveByThing(ctx context.Context, owner, thID string, pm PageMetadata) (ChannelsPage, error)
 
+	// RetrieveConns retrieves the subset of channels connected to the specified
+	// thing.
+	RetrieveConns(ctx context.Context, thID string, pm PageMetadata) (ChannelsPage, error)
+
 	// Remove removes the channel having the provided identifier, that is owned
 	// by the specified user.
 	Remove(ctx context.Context, owner, id string) error
