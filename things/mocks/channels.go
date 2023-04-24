@@ -201,25 +201,21 @@ func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) er
 
 func (crm *channelRepositoryMock) Connect(_ context.Context, owner string, chIDs, thIDs []string) error {
 	for _, chID := range chIDs {
-		ch, err := crm.RetrieveByID(context.Background(), chID)
-		if err != nil {
-			return err
-		}
-
 		for _, thID := range thIDs {
-			th, err := crm.things.RetrieveByID(context.Background(), thID)
-			if err != nil {
-				return err
-			}
 			crm.tconns <- Connection{
 				chanID:    chID,
-				thing:     th,
+				thing:     things.Thing{ID: thID},
 				connected: true,
 			}
 			if _, ok := crm.cconns[thID]; !ok {
 				crm.cconns[thID] = make(map[string]things.Channel)
 			}
-			crm.cconns[thID][chID] = ch
+
+			crm.cconns[thID][chID] = things.Channel{
+				ID:    chID,
+				Owner: owner,
+			}
+
 		}
 	}
 

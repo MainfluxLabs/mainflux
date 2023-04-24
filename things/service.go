@@ -433,9 +433,14 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
+	for _, thID := range thIDs {
+		if err := ts.isThingOwner(ctx, res.GetId(), thID); err != nil {
+			return err
+		}
+	}
+
 	for _, chID := range chIDs {
-		err := ts.IsChannelOwner(ctx, res.GetId(), chID)
-		if err != nil {
+		if err := ts.IsChannelOwner(ctx, res.GetId(), chID); err != nil {
 			return err
 		}
 	}
@@ -750,6 +755,19 @@ func (ts *thingsService) authorize(ctx context.Context, email string) error {
 	}
 	if !res.GetAuthorized() {
 		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (ts *thingsService) isThingOwner(ctx context.Context, owner string, thingID string) error {
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	if thing.Owner != owner {
+		return errors.ErrNotFound
 	}
 
 	return nil
