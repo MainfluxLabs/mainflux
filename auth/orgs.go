@@ -54,7 +54,7 @@ type OrgsPage struct {
 // belong to this page.
 type OrgMembersPage struct {
 	PageMetadata
-	MemberIDs []string
+	Members []Member
 }
 
 type User struct {
@@ -65,7 +65,7 @@ type User struct {
 
 type MembersPage struct {
 	PageMetadata
-	Members []User
+	Members []Member
 }
 
 // OrgGroupsPage contains page related metadata as well as list of groups that

@@ -17,9 +17,9 @@ var (
 )
 
 type viewMemberRes struct {
-	ID     string `json:"id"`
-	Email  string `json:"email"`
-	Status string `json:"status"`
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 
 type memberPageRes struct {

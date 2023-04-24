@@ -155,7 +155,7 @@ func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberEmails...); err != nil {
+		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -271,9 +271,9 @@ func buildMembersResponse(mp auth.MembersPage) memberPageRes {
 
 	for _, memb := range mp.Members {
 		m := viewMemberRes{
-			ID:     memb.ID,
-			Email:  memb.Email,
-			Status: memb.Status,
+			ID:    memb.ID,
+			Email: memb.Email,
+			Role:  memb.Role,
 		}
 		res.Members = append(res.Members, m)
 	}
