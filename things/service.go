@@ -436,7 +436,7 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 	for _, chID := range chIDs {
 		err := ts.IsChannelOwner(ctx, res.GetId(), chID)
 		if err != nil {
-			return err
+			return errors.ErrAuthorization
 		}
 	}
 
