@@ -790,7 +790,7 @@ func TestConnectThing(t *testing.T) {
 			thingID: thingID,
 			chanID:  chanID2,
 			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
+			err:     createError(sdk.ErrFailedConnect, http.StatusForbidden),
 		},
 	}
 

@@ -2168,7 +2168,7 @@ func TestCreateConnections(t *testing.T) {
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
-			status:      http.StatusNotFound,
+			status:      http.StatusForbidden,
 		},
 		{
 			desc:        "connect with invalid content type",
