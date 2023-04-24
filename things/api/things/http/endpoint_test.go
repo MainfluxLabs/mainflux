@@ -1992,7 +1992,7 @@ func TestConnect(t *testing.T) {
 			chanID:  strconv.FormatUint(wrongID, 10),
 			thingID: th1.ID,
 			auth:    token,
-			status:  http.StatusForbidden,
+			status:  http.StatusNotFound,
 		},
 		{
 			desc:    "connect non-existing thing to existing channel",
@@ -2006,7 +2006,7 @@ func TestConnect(t *testing.T) {
 			chanID:  "invalid",
 			thingID: th1.ID,
 			auth:    token,
-			status:  http.StatusForbidden,
+			status:  http.StatusNotFound,
 		},
 		{
 			desc:    "connect thing with invalid id to existing channel",
