@@ -211,11 +211,6 @@ func (crm *channelRepositoryMock) Connect(_ context.Context, owner string, chIDs
 			if err != nil {
 				return err
 			}
-
-			if owner != ch.Owner {
-				return errors.ErrNotFound
-			}
-
 			crm.tconns <- Connection{
 				chanID:    chID,
 				thing:     th,
