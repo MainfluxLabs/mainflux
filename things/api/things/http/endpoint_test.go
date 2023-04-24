@@ -2034,7 +2034,7 @@ func TestConnect(t *testing.T) {
 			chanID:  ch2.ID,
 			thingID: th1.ID,
 			auth:    token,
-			status:  http.StatusNotFound,
+			status:  http.StatusForbidden,
 		},
 	}
 
