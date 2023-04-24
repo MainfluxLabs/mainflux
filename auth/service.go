@@ -393,7 +393,7 @@ func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID
 	return nil
 }
 
-func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error {
+func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -401,17 +401,6 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 
 	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
-	}
-
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
-	if err != nil {
-		return err
-	}
-
-	var memberIDs []string
-	for _, u := range usr.Users {
-		memberIDs = append(memberIDs, u.Id)
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
@@ -436,19 +425,23 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	var members []User
-	if len(mp.MemberIDs) > 0 {
-		usrReq := mainflux.UsersByIDsReq{Ids: mp.MemberIDs}
-		usr, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+	var memberIDs []string
+	for _, m := range mp.Members {
+		memberIDs = append(memberIDs, m.ID)
+	}
+	var members []Member
+	if len(mp.Members) > 0 {
+		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
+		page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return MembersPage{}, err
 		}
 
-		for _, u := range usr.Users {
-			mbr := User{
-				ID:     u.Id,
-				Email:  u.Email,
-				Status: u.Status,
+		for i, m := range mp.Members {
+			mbr := Member{
+				ID:    m.ID,
+				Email: page.Users[i].GetEmail(),
+				Role:  m.Role,
 			}
 			members = append(members, mbr)
 		}
