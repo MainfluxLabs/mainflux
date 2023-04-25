@@ -237,6 +237,19 @@ func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, 
 	return lm.svc.UnassignMembers(ctx, token, orgID, memberEmails...)
 }
 
+func (lm *loggingMiddleware) UpdateMembers(ctx context.Context, token, orgID string, members ...auth.Member) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_members for token %s , members %s and org id %s took %s to complete", token, members, orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateMembers(ctx, token, orgID, members...)
+}
+
 func (lm *loggingMiddleware) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method assign_groups for token %s , group ids %s and org id %s took %s to complete", token, groupIDs, orgID, time.Since(begin))

@@ -161,6 +161,15 @@ func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID s
 	return ms.svc.UnassignMembers(ctx, token, orgID, memberEmails...)
 }
 
+func (ms *metricsMiddleware) UpdateMembers(ctx context.Context, token, orgID string, members ...auth.Member) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_members").Add(1)
+		ms.latency.With("method", "update_members").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateMembers(ctx, token, orgID, members...)
+}
+
 func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.MembersPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_org_members").Add(1)

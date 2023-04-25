@@ -135,7 +135,7 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 
 func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignMembersReq)
+		req := request.(membersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -160,6 +160,21 @@ func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return unassignRes{}, nil
+	}
+}
+
+func updateMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(membersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UpdateMembers(ctx, req.token, req.orgID, req.Members...); err != nil {
+			return nil, err
+		}
+
+		return assignRes{}, nil
 	}
 }
 

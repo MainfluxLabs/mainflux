@@ -26,6 +26,7 @@ const (
 	unassignOrgGroups  = "unassign_org_groups"
 	hasMember          = "has_member"
 	retrieveByGroupID  = "retrieve_by_group_id"
+	updateOrgMembers   = "update_org_members"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -105,6 +106,14 @@ func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID st
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
+}
+
+func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+	span := createSpan(ctx, orm.tracer, updateOrgMembers)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.UpdateMembers(ctx, orgID, members...)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {

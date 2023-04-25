@@ -496,6 +496,37 @@ func (gr orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	return nil
 }
 
+func (gr orgRepository) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+	qUpd := `UPDATE org_relations SET role = :role, updated_at = :updated_at
+			 WHERE org_id = :org_id AND member_id = :member_id`
+
+	for _, member := range members {
+		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+		dbg.UpdatedAt = time.Now()
+
+		row, err := gr.db.NamedQueryContext(ctx, qUpd, dbg)
+		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
+
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+		defer row.Close()
+	}
+
+	return nil
+}
+
 func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {

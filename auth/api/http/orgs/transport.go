@@ -71,7 +71,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Post("/orgs/:orgID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_members")(assignMembersEndpoint(svc)),
-		decodeAssignMembersRequest,
+		decodeMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -79,6 +79,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Delete("/orgs/:orgID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
 		decodeUnassignMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Put("/orgs/:orgID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_members")(updateMembersEndpoint(svc)),
+		decodeMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -252,8 +259,8 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeAssignMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := assignMembersReq{
+func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := membersReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
 	}
