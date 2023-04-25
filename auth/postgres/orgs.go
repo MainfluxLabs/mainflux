@@ -214,8 +214,8 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
 
-	q := fmt.Sprintf(`SELECT ore.member_id, ore.org_id, ore.created_at, ore.updated_at FROM org_relations ore
-					  WHERE ore.org_id = :org_id %s`, mq)
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_relations
+					  WHERE org_id = :org_id %s`, mq)
 
 	params, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
@@ -228,18 +228,19 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 	defer rows.Close()
 
-	var items []string
+	var items []auth.Member
 	for rows.Next() {
-		member := dbMember{}
-		if err := rows.StructScan(&member); err != nil {
+		dbmb := dbMember{}
+		if err := rows.StructScan(&dbmb); err != nil {
 			return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 		}
 
+		mb, err := toMember(dbmb)
 		if err != nil {
 			return auth.OrgMembersPage{}, err
 		}
 
-		items = append(items, member.MemberID)
+		items = append(items, mb)
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, org_relations ore
@@ -251,7 +252,7 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	page := auth.OrgMembersPage{
-		MemberIDs: items,
+		Members: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -260,6 +261,13 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	return page, nil
+}
+
+func toMember(dbmb dbMember) (auth.Member, error) {
+	return auth.Member{
+		ID:   dbmb.MemberID,
+		Role: dbmb.Role,
+	}, nil
 }
 
 func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -320,17 +328,33 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	return page, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
+
+	member := auth.Member{}
+	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&member); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return "", errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return member.Role, nil
+}
+
+func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
-	qIns := `INSERT INTO org_relations (org_id, member_id, created_at, updated_at)
-			 VALUES(:org_id, :member_id, :created_at, :updated_at)`
+	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
+			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+	for _, member := range members {
+		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -372,7 +396,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(id, orgID)
+		dbg, err := toDBMemberRelation(orgID, id, "")
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -587,6 +611,7 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 type dbMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`
+	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -672,14 +697,16 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 type dbMemberRelation struct {
 	OrgID     string    `db:"org_id"`
 	MemberID  string    `db:"member_id"`
+	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(memberID, orgID string) (dbMemberRelation, error) {
+func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) {
 	return dbMemberRelation{
 		OrgID:    orgID,
 		MemberID: memberID,
+		Role:     role,
 	}, nil
 }
 

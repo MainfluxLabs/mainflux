@@ -289,6 +289,70 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID str
 	}, nil
 }
 
+func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	oq := getConnOrderQuery(pm.Order, "ch")
+	dq := getDirQuery(pm.Dir)
+
+	// Verify if UUID format is valid to avoid internal Postgres error
+	if _, err := uuid.FromString(thID); err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
+		        INNER JOIN connections conn
+		        ON ch.id = conn.channel_id
+		        WHERE conn.thing_id = :thing
+		        ORDER BY %s %s %s;`, oq, dq, olq)
+
+	qc := `SELECT COUNT(*)
+		        FROM channels ch
+		        INNER JOIN connections conn
+		        ON ch.id = conn.channel_id
+		        WHERE conn.thing_id = $1`
+
+	params := map[string]interface{}{
+		"thing":  thID,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
+	}
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items := []things.Channel{}
+	for rows.Next() {
+		dbch := dbChannel{}
+		if err := rows.StructScan(&dbch); err != nil {
+			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		ch := toChannel(dbch)
+		items = append(items, ch)
+	}
+
+	var total uint64
+	if err := cr.db.GetContext(ctx, &total, qc, thID); err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return things.ChannelsPage{
+		Channels: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
+}
+
 func (cr channelRepository) Remove(ctx context.Context, owner, id string) error {
 	dbch := dbChannel{
 		ID:    id,

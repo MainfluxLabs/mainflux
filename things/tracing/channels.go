@@ -16,6 +16,7 @@ const (
 	retrieveChannelByIDOp     = "retrieve_channel_by_id"
 	retrieveChannelsByOwnerOp = "retrieve_channels_by_owner"
 	retrieveChannelsByThingOp = "retrieve_channels_by_thing"
+	retrieveChannelConnsOp    = "retrieve_channels_conns"
 	removeChannelOp           = "retrieve_channel"
 	connectOp                 = "connect"
 	disconnectOp              = "disconnect"
@@ -82,6 +83,14 @@ func (crm channelRepositoryMiddleware) RetrieveByThing(ctx context.Context, owne
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.RetrieveByThing(ctx, owner, thID, pm)
+}
+
+func (crm channelRepositoryMiddleware) RetrieveConns(ctx context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	span := createSpan(ctx, crm.tracer, retrieveChannelConnsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RetrieveConns(ctx, thID, pm)
 }
 
 func (crm channelRepositoryMiddleware) Remove(ctx context.Context, owner, id string) error {

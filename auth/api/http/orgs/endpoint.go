@@ -135,12 +135,12 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 
 func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersReq)
+		req := request.(assignMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.MemberEmails...); err != nil {
+		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.Members...); err != nil {
 			return nil, err
 		}
 
@@ -150,12 +150,12 @@ func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersReq)
+		req := request.(unassignMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberEmails...); err != nil {
+		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -271,9 +271,9 @@ func buildMembersResponse(mp auth.MembersPage) memberPageRes {
 
 	for _, memb := range mp.Members {
 		m := viewMemberRes{
-			ID:     memb.ID,
-			Email:  memb.Email,
-			Status: memb.Status,
+			ID:    memb.ID,
+			Email: memb.Email,
+			Role:  memb.Role,
 		}
 		res.Members = append(res.Members, m)
 	}
