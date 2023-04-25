@@ -146,7 +146,7 @@ func (tr thingRepository) UpdateKey(ctx context.Context, owner, id, key string) 
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT name, owner, key, metadata FROM things WHERE id = $1 ;`
+	q := `SELECT name, owner, key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
