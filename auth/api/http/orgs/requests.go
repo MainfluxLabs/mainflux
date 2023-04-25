@@ -146,9 +146,9 @@ func (req membersReq) validate() error {
 }
 
 type unassignMembersReq struct {
-	token        string
-	orgID        string
-	MemberEmails []string `json:"member_emails"`
+	token     string
+	orgID     string
+	MemberIDs []string `json:"member_ids"`
 }
 
 func (req unassignMembersReq) validate() error {
@@ -160,7 +160,7 @@ func (req unassignMembersReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.MemberEmails) == 0 {
+	if len(req.MemberIDs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

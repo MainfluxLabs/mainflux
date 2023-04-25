@@ -214,8 +214,8 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
 
-	q := fmt.Sprintf(`SELECT ore.member_id, ore.org_id, ore.created_at, ore.updated_at FROM org_relations ore
-					  WHERE ore.org_id = :org_id %s`, mq)
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_relations
+					  WHERE org_id = :org_id %s`, mq)
 
 	params, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
@@ -228,18 +228,19 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 	defer rows.Close()
 
-	var items []string
+	var items []auth.Member
 	for rows.Next() {
-		member := dbMember{}
-		if err := rows.StructScan(&member); err != nil {
+		dbmb := dbMember{}
+		if err := rows.StructScan(&dbmb); err != nil {
 			return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 		}
 
+		mb, err := toMember(dbmb)
 		if err != nil {
 			return auth.OrgMembersPage{}, err
 		}
 
-		items = append(items, member.MemberID)
+		items = append(items, mb)
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, org_relations ore
@@ -251,7 +252,7 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	page := auth.OrgMembersPage{
-		MemberIDs: items,
+		Members: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -260,6 +261,13 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	return page, nil
+}
+
+func toMember(dbmb dbMember) (auth.Member, error) {
+	return auth.Member{
+		ID:   dbmb.MemberID,
+		Role: dbmb.Role,
+	}, nil
 }
 
 func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -634,6 +642,7 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 type dbMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`
+	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }

@@ -6,9 +6,9 @@ package jwt
 import (
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 const issuerName = "mainflux.auth"
