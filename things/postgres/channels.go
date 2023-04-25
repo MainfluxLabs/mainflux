@@ -107,7 +107,7 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 	return nil
 }
 
-func (cr channelRepository) RetrieveByID(ctx context.Context, owner, id string) (things.Channel, error) {
+func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
 	q := `SELECT name, metadata, owner FROM channels WHERE id = $1;`
 
 	dbch := dbChannel{

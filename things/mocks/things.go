@@ -102,7 +102,7 @@ func (trm *thingRepositoryMock) UpdateKey(_ context.Context, owner, id, val stri
 	return nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, owner, id string) (things.Thing, error) {
+func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
