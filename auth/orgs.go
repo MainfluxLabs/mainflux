@@ -120,6 +120,9 @@ type OrgService interface {
 	// UnassignMembers removes members with member emails from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
 
+	// UpdateMembers updates members role in an org.
+	UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error
+
 	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
 	AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
 
@@ -164,6 +167,9 @@ type OrgRepository interface {
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
+
+	// UpdateMembers updates members role in an org.
+	UpdateMembers(ctx context.Context, orgID string, members ...Member) error
 
 	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)

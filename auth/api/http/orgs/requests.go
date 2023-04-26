@@ -117,13 +117,13 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type assignMembersReq struct {
+type membersReq struct {
 	token   string
 	orgID   string
 	Members []auth.Member `json:"members"`
 }
 
-func (req assignMembersReq) validate() error {
+func (req membersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

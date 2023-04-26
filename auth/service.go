@@ -410,6 +410,45 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 	return nil
 }
 
+func (svc service) UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
+		return err
+	}
+
+	var memberEmails []string
+	var member = make(map[string]string)
+	for _, m := range members {
+		member[m.Email] = m.Role
+		memberEmails = append(memberEmails, m.Email)
+	}
+
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	mbs := []Member{}
+	for _, user := range usr.Users {
+		mbs = append(mbs, Member{
+			Role: member[user.Email],
+			ID:   user.Id,
+		})
+
+	}
+
+	if err := svc.orgs.UpdateMembers(ctx, orgID, mbs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (MembersPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
