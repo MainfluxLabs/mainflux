@@ -180,14 +180,11 @@ type OrgRepository interface {
 	// AssignGroups adds groups to an org.
 	AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
-	// UnassigGroups removes groups from an org
+	// UnassignGroups removes groups from an org
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
-	// RetrieveOrgGroups retrieves groups assigned to an org identified by orgID.
+	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
 	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
-
-	// HasMemberByID indicates if a member is assigned in an org.
-	HasMemberByID(ctx context.Context, orgID, memberID string) error
 
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)

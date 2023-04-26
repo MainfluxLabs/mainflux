@@ -597,20 +597,6 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	return page, nil
 }
 
-func (gr orgRepository) HasMemberByID(ctx context.Context, orgID, memberID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM org_relations WHERE org_id = $1 AND member_id = $2);`
-	exists := false
-	if err := gr.db.QueryRowxContext(ctx, q, orgID, memberID).Scan(&exists); err != nil {
-		return errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	if !exists {
-		return errors.ErrNotFound
-	}
-
-	return nil
-}
-
 func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
 	q := `SELECT o.id, o.owner_id, o.name, o.description, o.metadata
 		FROM group_relations gre, orgs o

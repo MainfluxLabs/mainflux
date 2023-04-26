@@ -137,7 +137,7 @@ func (req membersReq) validate() error {
 	}
 
 	for _, m := range req.Members {
-		if m.Role != auth.AdminRole && m.Role != auth.OwnerRole && m.Role != auth.ViewerRole && m.Role != auth.EditorRole {
+		if m.Role != auth.AdminRole && m.Role != auth.ViewerRole && m.Role != auth.EditorRole {
 			return apiutil.ErrInvalidMemberRole
 		}
 	}
