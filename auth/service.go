@@ -283,7 +283,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	if _, err := svc.canEditMembers(ctx, org.ID, user.ID); err != nil {
+	if err := svc.canEditMembers(ctx, org.ID, user.ID); err != nil {
 		return Org{}, err
 	}
 
@@ -326,19 +326,8 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.canEditMembers(ctx, orgID, user.ID); err != nil {
+	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
 		return err
-	}
-
-	for _, memberID := range memberIDs {
-		role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
-		if err != nil {
-			return err
-		}
-
-		if role == OwnerRole {
-			return errors.ErrMalformedEntity
-		}
 	}
 
 	if err := svc.orgs.AssignMembers(ctx, orgID, Member{}); err != nil {
@@ -393,19 +382,8 @@ func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID
 		return err
 	}
 
-	if err := svc.canEditMembers(ctx, orgID, user.ID); err != nil {
+	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
 		return err
-	}
-
-	for _, memberID := range memberIDs {
-		role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
-		if err != nil {
-			return err
-		}
-
-		if role == OwnerRole {
-			return errors.ErrMalformedEntity
-		}
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
@@ -421,19 +399,8 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	if err := svc.canEditMembers(ctx, orgID, user.ID); err != nil {
+	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
 		return err
-	}
-
-	for _, memberID := range memberIDs {
-		role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
-		if err != nil {
-			return err
-		}
-
-		if role == OwnerRole {
-			return errors.ErrMalformedEntity
-		}
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
@@ -658,7 +625,7 @@ func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	return nil
 }
 
-func (svc service) canEditMembers(ctx context.Context, orgID, userID string) error {
+func (svc service) canEditMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
@@ -666,6 +633,19 @@ func (svc service) canEditMembers(ctx context.Context, orgID, userID string) err
 
 	if role != OwnerRole && role != AdminRole {
 		return errors.ErrAuthorization
+	}
+
+	if len(memberIDs) > 0 {
+		for _, mID := range memberIDs {
+			mbr, err := svc.orgs.RetrieveRole(ctx, mID, orgID)
+			if err != nil {
+				return err
+			}
+
+			if mbr == OwnerRole {
+				return errors.ErrMalformedEntity
+			}
+		}
 	}
 
 	return nil
