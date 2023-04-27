@@ -308,7 +308,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 		return Org{}, err
 	}
 
-	if err := svc.canView(ctx, id, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, id, user.ID); err != nil {
 		return Org{}, err
 	}
 
@@ -455,7 +455,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, err
 	}
 
-	if err := svc.canView(ctx, orgID, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return MembersPage{}, err
 	}
 
@@ -538,7 +538,7 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, err
 	}
 
-	if err := svc.canView(ctx, orgID, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
 		return GroupsPage{}, err
 	}
 
@@ -584,7 +584,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.canView(ctx, memberID, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, memberID, user.ID); err != nil {
 		return OrgsPage{}, err
 	}
 
@@ -664,7 +664,7 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	return nil
 }
 
-func (svc service) canView(ctx context.Context, orgID, userID string) error {
+func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
