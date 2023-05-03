@@ -283,7 +283,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	if err := svc.canEditMembers(ctx, org.ID, user.ID); err != nil {
+	if err := svc.canEditOrg(ctx, org.ID, user.ID); err != nil {
 		return Org{}, err
 	}
 
@@ -343,7 +343,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	if err := svc.canEditMembers(ctx, orgID, user.ID); err != nil {
+	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -416,7 +416,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	if err := svc.canEditMembers(ctx, orgID, user.ID); err != nil {
+	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
 		return err
 	}
 
@@ -625,22 +625,7 @@ func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	return nil
 }
 
-func (svc service) canEditOrg(ctx context.Context, orgID string, memberIDs ...string) error {
-	for _, mID := range memberIDs {
-		mbr, err := svc.orgs.RetrieveRole(ctx, mID, orgID)
-		if err != nil {
-			return err
-		}
-
-		if mbr == OwnerRole {
-			return errors.ErrMalformedEntity
-		}
-	}
-
-	return nil
-}
-
-func (svc service) canEditMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
+func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
@@ -650,10 +635,22 @@ func (svc service) canEditMembers(ctx context.Context, orgID, userID string, mem
 		return errors.ErrAuthorization
 	}
 
-	if role == AdminRole {
-		err := svc.canEditOrg(ctx, orgID, memberIDs...)
+	return nil
+}
+
+func (svc service) canEditMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
+	if err := svc.canEditOrg(ctx, orgID, userID); err != nil {
+		return err
+	}
+
+	for _, memberID := range memberIDs {
+		role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
 		if err != nil {
 			return err
+		}
+
+		if role == OwnerRole {
+			return errors.ErrAuthorization
 		}
 	}
 
