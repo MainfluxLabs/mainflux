@@ -625,6 +625,21 @@ func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	return nil
 }
 
+func (svc service) canEditOrg(ctx context.Context, orgID string, memberIDs ...string) error {
+	for _, mID := range memberIDs {
+		mbr, err := svc.orgs.RetrieveRole(ctx, mID, orgID)
+		if err != nil {
+			return err
+		}
+
+		if mbr == OwnerRole {
+			return errors.ErrMalformedEntity
+		}
+	}
+
+	return nil
+}
+
 func (svc service) canEditMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
@@ -635,16 +650,10 @@ func (svc service) canEditMembers(ctx context.Context, orgID, userID string, mem
 		return errors.ErrAuthorization
 	}
 
-	if len(memberIDs) > 0 {
-		for _, mID := range memberIDs {
-			mbr, err := svc.orgs.RetrieveRole(ctx, mID, orgID)
-			if err != nil {
-				return err
-			}
-
-			if mbr == OwnerRole {
-				return errors.ErrMalformedEntity
-			}
+	if role == AdminRole {
+		err := svc.canEditOrg(ctx, orgID, memberIDs...)
+		if err != nil {
+			return err
 		}
 	}
 
