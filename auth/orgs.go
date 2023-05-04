@@ -117,8 +117,8 @@ type OrgService interface {
 	// AssignMembers adds members with member emails into the org identified by orgID.
 	AssignMembers(ctx context.Context, token, orgID string, members ...Member) error
 
-	// UnassignMembers removes members with member emails from org identified by orgID.
-	UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) error
+	// UnassignMembers removes members with member ids from org identified by orgID.
+	UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error
 
 	// UpdateMembers updates members role in an org.
 	UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error
