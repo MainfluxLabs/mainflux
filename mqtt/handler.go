@@ -145,16 +145,6 @@ func (h *handler) Connect(c *session.Client) {
 	}
 
 	h.logger.Info(fmt.Sprintf(LogInfoConnected, c.ID))
-
-	if err := h.service.HasClientID(context.Background(), c.ID); err == nil {
-		sub := Subscription{
-			ClientID: c.ID,
-			Status:   connected,
-		}
-		if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
-			h.logger.Error(err.Error())
-		}
-	}
 }
 
 // Publish - after client successfully published
@@ -212,10 +202,21 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		err = h.service.CreateSubscription(context.Background(), s)
-		if err != nil {
-			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
-			return
+		switch h.service.HasClientID(context.Background(), c.ID) {
+		case nil:
+			sub := Subscription{
+				ClientID: c.ID,
+				Status:   connected,
+			}
+			if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
+				h.logger.Error(err.Error())
+			}
+		default:
+			err = h.service.CreateSubscription(context.Background(), s)
+			if err != nil {
+				h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
+				return
+			}
 		}
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
@@ -252,12 +253,14 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	sub := Subscription{
-		ClientID: c.ID,
-		Status:   disconnected,
-	}
-	if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
-		h.logger.Error(err.Error())
+	if err := h.service.HasClientID(context.Background(), c.ID); err == nil {
+		sub := Subscription{
+			ClientID: c.ID,
+			Status:   disconnected,
+		}
+		if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
+			h.logger.Error(err.Error())
+		}
 	}
 
 	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID, c.Username))

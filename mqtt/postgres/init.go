@@ -52,7 +52,7 @@ func migrateDB(db *sqlx.DB) error {
 					    client_id   VARCHAR(256) UNIQUE,
 					    status      VARCHAR(128),
 					    created_at  FLOAT,
-					    PRIMARY KEY (subtopic, channel_id, thing_id)
+					    PRIMARY KEY (client_id, subtopic, channel_id, thing_id)
 					)`,
 				},
 				Down: []string{

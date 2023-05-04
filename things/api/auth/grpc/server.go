@@ -37,12 +37,12 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsSer
 			encodeIdentityResponse,
 		),
 		canAccessByID: kitgrpc.NewServer(
-			canAccessByIDEndpoint(svc),
+			kitot.TraceServer(tracer, "can_access_by_id")(canAccessByIDEndpoint(svc)),
 			decodeCanAccessByIDRequest,
 			encodeEmptyResponse,
 		),
 		isChannelOwner: kitgrpc.NewServer(
-			isChannelOwnerEndpoint(svc),
+			kitot.TraceServer(tracer, "is_channel_owner")(isChannelOwnerEndpoint(svc)),
 			decodeIsChannelOwnerRequest,
 			encodeEmptyResponse,
 		),
