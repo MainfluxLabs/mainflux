@@ -24,7 +24,6 @@ const (
 	assignOrgGroups    = "assign_org_groups"
 	unassignOrgMembers = "unassign_org_members"
 	unassignOrgGroups  = "unassign_org_groups"
-	hasMember          = "has_member"
 	retrieveByGroupID  = "retrieve_by_group_id"
 	updateOrgMembers   = "update_org_members"
 )
@@ -154,14 +153,6 @@ func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID str
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveGroups(ctx, orgID, pm)
-}
-
-func (orm orgRepositoryMiddleware) HasMemberByID(ctx context.Context, orgID, memberID string) error {
-	span := createSpan(ctx, orm.tracer, hasMember)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return orm.repo.HasMemberByID(ctx, orgID, memberID)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
