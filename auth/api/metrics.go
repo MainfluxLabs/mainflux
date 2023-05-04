@@ -152,13 +152,13 @@ func (ms *metricsMiddleware) UnassignMembersByIDs(ctx context.Context, token, or
 	return ms.svc.UnassignMembersByIDs(ctx, token, orgID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberEmails ...string) (err error) {
+func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "unassign_members").Add(1)
 		ms.latency.With("method", "unassign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UnassignMembers(ctx, token, orgID, memberEmails...)
+	return ms.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
 }
 
 func (ms *metricsMiddleware) UpdateMembers(ctx context.Context, token, orgID string, members ...auth.Member) error {

@@ -224,9 +224,9 @@ func (lm *loggingMiddleware) UnassignMembersByIDs(ctx context.Context, token str
 	return lm.svc.UnassignMembersByIDs(ctx, token, orgID, memberIDs...)
 }
 
-func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, orgID string, memberEmails ...string) (err error) {
+func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_members for token %s , member ids %s and org id %s took %s to complete", token, memberEmails, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_members for token %s , member ids %s and org id %s took %s to complete", token, memberIDs, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -234,7 +234,7 @@ func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UnassignMembers(ctx, token, orgID, memberEmails...)
+	return lm.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
 }
 
 func (lm *loggingMiddleware) UpdateMembers(ctx context.Context, token, orgID string, members ...auth.Member) (err error) {
