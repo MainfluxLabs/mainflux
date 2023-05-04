@@ -69,6 +69,7 @@ func createGroups() map[string]things.Group {
 			Metadata:    map[string]interface{}{"meta": "data"},
 		}
 	}
+	
 	return groups
 }
 

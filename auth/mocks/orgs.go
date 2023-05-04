@@ -60,8 +60,8 @@ func (orm *orgRepositoryMock) Delete(ctx context.Context, owner, id string) erro
 	if _, ok := orm.orgs[id]; !ok && orm.orgs[id].OwnerID != owner {
 		return errors.ErrNotFound
 	}
-
 	delete(orm.orgs, id)
+
 	return nil
 }
 
@@ -81,7 +81,6 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-
 	orgs := make([]auth.Org, 0)
 	for _, org := range orm.orgs {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
@@ -107,7 +106,6 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-
 	orgs := make([]auth.Org, 0)
 	for _, org := range orm.orgs {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
@@ -186,7 +184,6 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-
 	members := []auth.Member{}
 	for _, member := range orm.members {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
