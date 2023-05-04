@@ -228,7 +228,7 @@ func decodeOrgCreate(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req := createOrgReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -244,7 +244,7 @@ func decodeOrgUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -266,16 +266,16 @@ func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, erro
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	for i := range req.Members {
 		if req.Members[i].Role == "" {
 			req.Members[i].Role = auth.ViewerRole
 		}
-		
+
 		if req.Members[i].Role == auth.OwnerRole {
-			return nil, errors.ErrMalformedEntity
+			return nil, apiutil.ErrMalformedEntity
 		}
 	}
 
@@ -289,7 +289,7 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -302,7 +302,7 @@ func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -328,7 +328,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, errors.ErrMalformedEntity),
+	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingMemberType,
