@@ -41,17 +41,18 @@ const (
 )
 
 var (
-	org        = auth.Org{Name: name, Description: description}
-	members    = []auth.Member{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
-	usrs       = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}}
-	idProvider = uuid.New()
+	org           = auth.Org{Name: name, Description: description}
+	members       = []auth.Member{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
+	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
+	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
+	idProvider    = uuid.New()
 )
 
 func newService() auth.Service {
 	keyRepo := mocks.NewKeyRepository()
 	idMockProvider := uuid.NewMock()
 	orgRepo := mocks.NewOrgRepository()
-	uc := mocks.NewUsersService(usrs)
+	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, createGroups())
 	t := jwt.New(secret)
 	return auth.New(orgRepo, tc, uc, keyRepo, idMockProvider, t, loginDuration, email)
@@ -69,7 +70,7 @@ func createGroups() map[string]things.Group {
 			Metadata:    map[string]interface{}{"meta": "data"},
 		}
 	}
-	
+
 	return groups
 }
 
