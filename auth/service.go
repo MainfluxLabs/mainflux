@@ -579,12 +579,8 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 }
 
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
-	user, err := svc.Identify(ctx, token)
+	_, err := svc.Identify(ctx, token)
 	if err != nil {
-		return OrgsPage{}, err
-	}
-
-	if err := svc.canAccessOrg(ctx, memberID, user.ID); err != nil {
 		return OrgsPage{}, err
 	}
 
