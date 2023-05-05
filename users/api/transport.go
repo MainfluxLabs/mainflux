@@ -199,7 +199,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
 	req := updateUserReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -212,7 +212,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 	user.Email = strings.TrimSpace(user.Email)
 	return userReq{user}, nil
@@ -225,7 +225,7 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	user.Email = strings.TrimSpace(user.Email)
@@ -244,7 +244,7 @@ func decodeSelfRegisterUserReq(_ context.Context, r *http.Request) (interface{},
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return selfRegisterUserReq{user: user}, nil
@@ -258,7 +258,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 	var req passwResetReq
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	req.Host = r.Header.Get("Referer")
@@ -272,7 +272,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 
 	var req resetTokenReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -285,7 +285,7 @@ func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, erro
 
 	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -344,7 +344,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -369,7 +369,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
-		errors.Contains(err, errors.ErrMalformedEntity),
+		errors.Contains(err, apiutil.ErrMalformedEntity),
 		errors.Contains(err, users.ErrPasswordFormat),
 		err == apiutil.ErrMissingEmail,
 		err == apiutil.ErrMissingHost,

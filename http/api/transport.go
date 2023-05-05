@@ -105,7 +105,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
 	if len(channelParts) < 2 {
-		return nil, errors.ErrMalformedEntity
+		return nil, apiutil.ErrMalformedEntity
 	}
 
 	subtopic, err := parseSubtopic(channelParts[2])
@@ -124,7 +124,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, errors.ErrMalformedEntity
+		return nil, apiutil.ErrMalformedEntity
 	}
 	defer r.Body.Close()
 
@@ -157,7 +157,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, errMalformedSubtopic),
-		errors.Contains(err, errors.ErrMalformedEntity):
+		errors.Contains(err, apiutil.ErrMalformedEntity):
 		w.WriteHeader(http.StatusBadRequest)
 
 	default:

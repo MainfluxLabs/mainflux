@@ -61,7 +61,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req := identifyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -76,7 +76,7 @@ func decodeCanAccessByKey(_ context.Context, r *http.Request) (interface{}, erro
 		chanID: bone.GetValue(r, "chanId"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -91,7 +91,7 @@ func decodeCanAccessByID(_ context.Context, r *http.Request) (interface{}, error
 		chanID: bone.GetValue(r, "chanId"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -125,7 +125,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrMalformedEntity),
+	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		errors.Contains(err, apiutil.ErrMissingID):
 		w.WriteHeader(http.StatusBadRequest)
 	default:

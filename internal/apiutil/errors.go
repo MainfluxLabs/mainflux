@@ -98,4 +98,7 @@ var (
 
 	// ErrInvalidMemberRole indicates an invalid member role.
 	ErrInvalidMemberRole = errors.New("invalid member role")
+
+	// ErrMalformedEntity indicates a malformed entity specification.
+	ErrMalformedEntity = errors.New("malformed entity specification")
 )

@@ -44,6 +44,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			ErrMaxLevelExceeded,
 			ErrBootstrapState,
 			ErrUnsupportedContentType,
+			ErrMalformedEntity,
 			ErrInvalidQueryParams:
 			logger.Error(err.Error())
 		}

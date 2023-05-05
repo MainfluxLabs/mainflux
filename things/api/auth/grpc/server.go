@@ -148,7 +148,7 @@ func encodeError(err error) error {
 	switch err {
 	case nil:
 		return nil
-	case errors.ErrMalformedEntity,
+	case apiutil.ErrMalformedEntity,
 		apiutil.ErrMissingID,
 		apiutil.ErrBearerKey:
 		return status.Error(codes.InvalidArgument, err.Error())
