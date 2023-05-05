@@ -604,8 +604,8 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 	}
 
 	for _, org := range op.Orgs {
-		if err := svc.canEditGroups(ctx, org.ID, user.ID); err != nil {
-			return err
+		if err := svc.canEditGroups(ctx, org.ID, user.ID); err == nil {
+			return nil
 		}
 	}
 
