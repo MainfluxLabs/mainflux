@@ -584,8 +584,8 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, memberID, user.ID); err != nil {
-		return OrgsPage{}, err
+	if user.ID != memberID {
+		return OrgsPage{}, errors.ErrAuthorization
 	}
 
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
