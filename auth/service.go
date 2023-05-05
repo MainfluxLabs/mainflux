@@ -603,17 +603,14 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 		return err
 	}
 
-	if len(op.Orgs) == 0 {
-		return errors.ErrAuthorization
-	}
-
 	for _, org := range op.Orgs {
-		if err := svc.canEditGroups(ctx, org.ID, user.ID); err != nil {
-			return err
+		err := svc.canEditGroups(ctx, org.ID, user.ID)
+		if err == nil {
+			return nil
 		}
 	}
 
-	return nil
+	return errors.ErrAuthorization
 }
 
 func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
