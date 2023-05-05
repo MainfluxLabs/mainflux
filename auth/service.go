@@ -476,7 +476,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 			return MembersPage{}, err
 		}
 
-		emails := make(map[string]interface{})
+		emails := make(map[string]string)
 		for _, user := range page.Users {
 			emails[user.Id] = user.GetEmail()
 		}
@@ -489,7 +489,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 
 			mbr := Member{
 				ID:    m.ID,
-				Email: email.(string),
+				Email: email,
 				Role:  m.Role,
 			}
 			members = append(members, mbr)
