@@ -46,11 +46,12 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 }
 
 func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
+	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
-		ClientID: sub.ClientID,
-		Status:   sub.Status,
+		ClientID:  sub.ClientID,
+		Status:    sub.Status,
+		CreatedAt: sub.CreatedAt,
 	}
 
 	row, err := gr.db.NamedQueryContext(ctx, q, dbSub)

@@ -205,8 +205,9 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		switch h.service.HasClientID(context.Background(), c.ID) {
 		case nil:
 			sub := Subscription{
-				ClientID: c.ID,
-				Status:   connected,
+				ClientID:  c.ID,
+				Status:    connected,
+				CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
 			}
 			if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
 				h.logger.Error(err.Error())
@@ -255,8 +256,9 @@ func (h *handler) Disconnect(c *session.Client) {
 
 	if err := h.service.HasClientID(context.Background(), c.ID); err == nil {
 		sub := Subscription{
-			ClientID: c.ID,
-			Status:   disconnected,
+			ClientID:  c.ID,
+			Status:    disconnected,
+			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
 		}
 		if err := h.service.UpdateStatus(context.Background(), sub); err != nil {
 			h.logger.Error(err.Error())
