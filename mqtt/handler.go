@@ -237,10 +237,8 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		h.service.RemoveSubscription(context.Background(), s)
-		if c == nil {
+		if h.service.RemoveSubscription(context.Background(), s); err != nil {
 			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
-			return
 		}
 	}
 
