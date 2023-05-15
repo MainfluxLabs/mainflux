@@ -214,7 +214,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/UnAssignMembersReq"
+        $ref: "#/components/requestBodies/UnassignMembersReq"
       responses:
         '204':
           description: Members unassigned from organization.
@@ -636,7 +636,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMembersSchema"
-    UnAssignMembersReq:
+    UnassignMembersReq:
       description: JSON-formatted document describing unassigning members request.
       required: true
       content:
