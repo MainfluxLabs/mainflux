@@ -76,6 +76,8 @@ func encodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func encodeError(err error) error {
 	switch {
+	case errors.Contains(err, nil):
+		return nil
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrMissingID:
 		return status.Error(codes.InvalidArgument, err.Error())
