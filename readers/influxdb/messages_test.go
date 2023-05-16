@@ -913,8 +913,24 @@ func toMap(msg json.Message) map[string]interface{} {
 
 func deleteBucket() error {
 	bucketsAPI := client.BucketsAPI()
+	orgAPI := client.OrganizationsAPI()
+
+	org, err := orgAPI.FindOrganizationByName(context.Background(), repoCfg.Org)
+	if err != nil {
+		return err
+	}
+
 	bucket, err := bucketsAPI.FindBucketByName(context.Background(), repoCfg.Bucket)
 	if err != nil {
+		return err
+	}
+
+	start := time.Unix(0, 0)
+	stop := time.Now()
+	predicate := ""
+	deleteAPI := client.DeleteAPI()
+
+	if err = deleteAPI.Delete(context.Background(), org, bucket, start, stop, predicate); err != nil {
 		return err
 	}
 
@@ -924,6 +940,7 @@ func deleteBucket() error {
 
 	return nil
 }
+
 func createBucket() error {
 	orgAPI := client.OrganizationsAPI()
 	org, err := orgAPI.FindOrganizationByName(context.Background(), repoCfg.Org)
@@ -937,6 +954,7 @@ func createBucket() error {
 
 	return nil
 }
+
 func resetBucket() error {
 	if err := deleteBucket(); err != nil {
 		return err
