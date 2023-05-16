@@ -46,6 +46,7 @@ func (req updateOrgReq) validate() error {
 type listOrgsReq struct {
 	token    string
 	id       string
+	name     string
 	metadata auth.OrgMetadata
 }
 
