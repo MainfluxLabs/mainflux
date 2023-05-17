@@ -55,12 +55,12 @@ func TestSave(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "save org with invalid owner",
+			desc: "save org with invalid owner id",
 			org:  invalidOwnerOrg,
 			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save org with invalid id",
+			desc: "save org with invalid org id",
 			org:  invalidIDOrg,
 			err:  errors.ErrMalformedEntity,
 		},
@@ -135,7 +135,7 @@ func TestUpdate(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "update org with invalid id",
+			desc: "update org with invalid org id",
 			org:  invalidIDOrg,
 			err:  errors.ErrMalformedEntity,
 		},
@@ -186,25 +186,25 @@ func TestDelete(t *testing.T) {
 		err     error
 	}{
 		{
-			desc:    "remove org with invalid id",
+			desc:    "remove org with invalid org id",
 			orgID:   invalidID,
 			ownerID: ownerID,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "remove org with unknown id",
+			desc:    "remove org with unknown org id",
 			orgID:   unknownID,
 			ownerID: ownerID,
 			err:     errors.ErrRemoveEntity,
 		},
 		{
-			desc:    "remove org with invalid owner",
+			desc:    "remove org with invalid owner id",
 			orgID:   orgID,
 			ownerID: invalidID,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "remove org with unknown owner",
+			desc:    "remove org with unknown owner id",
 			orgID:   orgID,
 			ownerID: unknownID,
 			err:     errors.ErrRemoveEntity,
@@ -262,18 +262,18 @@ func TestRetrieveByID(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc:  "retrieve unknown org",
+			desc:  "retrieve org with unknown org id",
 			orgID: unknownID,
 			err:   errors.ErrNotFound,
 		},
 		{
-			desc:  "retrieve org with invalid id",
+			desc:  "retrieve org with invalid org id",
 			orgID: invalidID,
 			err:   errors.ErrRetrieveEntity,
 		},
 		{
-			desc:  "retrieve org without id",
-			orgID: invalidID,
+			desc:  "retrieve org without org id",
+			orgID: "",
 			err:   errors.ErrRetrieveEntity,
 		},
 	}
@@ -328,7 +328,7 @@ func TestRetrieveByOwner(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve orgs by owner with invalid id",
+			desc:    "retrieve orgs by owner with invalid owner id",
 			ownerID: invalidID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -339,7 +339,7 @@ func TestRetrieveByOwner(t *testing.T) {
 			err:  errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by owner without id",
+			desc:    "retrieve orgs by owner without owner id",
 			ownerID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -350,7 +350,7 @@ func TestRetrieveByOwner(t *testing.T) {
 			err:  errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by unknown owner",
+			desc:    "retrieve orgs by owner with unknown owner id",
 			ownerID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -523,13 +523,13 @@ func TestAssignMembers(t *testing.T) {
 			err:     auth.ErrOrgMemberAlreadyAssigned,
 		},
 		{
-			desc:    "assign members to org with invalid id",
+			desc:    "assign members to org with invalid org id",
 			orgID:   invalidID,
 			members: members,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "assign members to org without id",
+			desc:    "assign members to org without org id",
 			orgID:   "",
 			members: members,
 			err:     errors.ErrMalformedEntity,
@@ -541,7 +541,7 @@ func TestAssignMembers(t *testing.T) {
 			err:     nil,
 		},
 		{
-			desc:    "assign members to org with invalid members",
+			desc:    "assign members to org with invalid member id",
 			orgID:   orgID,
 			members: []auth.Member{{ID: invalidID}},
 			err:     errors.ErrMalformedEntity,
@@ -601,13 +601,13 @@ func TestUnassignMembers(t *testing.T) {
 		err       error
 	}{
 		{
-			desc:      "unassign members from org with invalid id",
+			desc:      "unassign members from org with invalid org id",
 			orgID:     invalidID,
 			memberIDs: memberIDs,
 			err:       errors.ErrMalformedEntity,
 		},
 		{
-			desc:      "unassign members from org without id",
+			desc:      "unassign members from org without org id",
 			orgID:     "",
 			memberIDs: memberIDs,
 			err:       errors.ErrMalformedEntity,
@@ -619,7 +619,7 @@ func TestUnassignMembers(t *testing.T) {
 			err:       nil,
 		},
 		{
-			desc:      "unassign members from org with invalid members",
+			desc:      "unassign members from org with invalid member id",
 			orgID:     orgID,
 			memberIDs: []string{invalidID},
 			err:       errors.ErrMalformedEntity,
@@ -688,28 +688,28 @@ func TestRetrieveRole(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "retrieve role with non existing member",
+			desc:     "retrieve role with invalid member id",
 			orgID:    org.ID,
 			memberID: invalidID,
 			role:     "",
 			err:      nil,
 		},
 		{
-			desc:     "retrieve role without member",
+			desc:     "retrieve role without member id",
 			orgID:    org.ID,
 			memberID: "",
 			role:     "",
 			err:      nil,
 		},
 		{
-			desc:     "retrieve role with non existing org",
+			desc:     "retrieve role with invalid org id",
 			orgID:    invalidID,
 			memberID: memberID,
 			role:     "",
 			err:      nil,
 		},
 		{
-			desc:     "retrieve role without org",
+			desc:     "retrieve role without org id",
 			orgID:    "",
 			memberID: memberID,
 			role:     "",
@@ -766,27 +766,27 @@ func TestUpdateMembers(t *testing.T) {
 			member: member,
 			err:    nil,
 		}, {
-			desc:   "update role with invalid org",
+			desc:   "update role with invalid org id",
 			orgID:  invalidID,
 			member: member,
 			err:    errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with non-existing org",
+			desc:   "update role with unknown org id",
 			orgID:  unknownID,
 			member: member,
 			err:    errors.ErrNotFound,
 		}, {
-			desc:   "update role with empty org",
+			desc:   "update role without org id",
 			orgID:  "",
 			member: member,
 			err:    errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with invalid member",
+			desc:   "update role with invalid member id",
 			orgID:  org.ID,
 			member: auth.Member{ID: invalidID},
 			err:    errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with non-existing member",
+			desc:   "update role with unknown member id",
 			orgID:  org.ID,
 			member: auth.Member{ID: unknownID},
 			err:    errors.ErrNotFound,
@@ -863,7 +863,7 @@ func TestRetrieveMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve members for non existing org",
+			desc:  "retrieve org members with unknown org id",
 			orgID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -874,7 +874,7 @@ func TestRetrieveMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve members with invalid org id",
+			desc:  "retrieve org members with invalid org id",
 			orgID: invalidID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -885,7 +885,7 @@ func TestRetrieveMembers(t *testing.T) {
 			err:  auth.ErrFailedToRetrieveMembers,
 		},
 		{
-			desc:  "retrieve members without org id",
+			desc:  "retrieve org members without org id",
 			orgID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -955,19 +955,19 @@ func TestAssignGroups(t *testing.T) {
 			err:      auth.ErrOrgMemberAlreadyAssigned,
 		},
 		{
-			desc:     "assign groups to org with invalid id",
+			desc:     "assign groups to org with invalid org id",
 			orgID:    invalidID,
 			groupIDs: groupIDs,
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "assign groups to org without id",
+			desc:     "assign groups to org without org id",
 			orgID:    "",
 			groupIDs: groupIDs,
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "assign groups to non-existing org",
+			desc:     "assign groups to org with unknown org id",
 			orgID:    unknownID,
 			groupIDs: groupIDs,
 			err:      nil,
@@ -1032,13 +1032,13 @@ func TestUnassignGroups(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "unassign groups from org with invalid id",
+			desc:     "unassign groups from org with invalid org id",
 			orgID:    invalidID,
 			groupIDs: groupIDs,
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "unassign groups from org without id",
+			desc:     "unassign groups from org without org id",
 			orgID:    "",
 			groupIDs: groupIDs,
 			err:      errors.ErrMalformedEntity,
@@ -1050,13 +1050,13 @@ func TestUnassignGroups(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "unassign groups with invalid id from org",
+			desc:     "unassign groups from org with invalid group id",
 			orgID:    orgID,
 			groupIDs: []string{invalidID},
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "unassign groups from unknown org",
+			desc:     "unassign groups from org with unknown org id",
 			orgID:    unknownID,
 			groupIDs: groupIDs,
 			err:      nil,
@@ -1159,7 +1159,7 @@ func TestRetrieveGroups(t *testing.T) {
 			err:      errors.ErrRetrieveEntity,
 		},
 		{
-			desc:  "retrieve groups for unknown org id",
+			desc:  "retrieve groups with unknown org id",
 			orgID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1236,7 +1236,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 			err:     errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by non-exist group",
+			desc:    "retrieve orgs by unknown group id",
 			groupID: unknownID,
 			size:    0,
 			err:     nil,
