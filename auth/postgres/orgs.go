@@ -283,13 +283,20 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
+	nq := getNameQuery(pm.Name)
+
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
 	}
+
+	if nq != "" {
+		nq = fmt.Sprintf("AND %s", nq)
+	}
+
 	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata
 		FROM org_relations ore, orgs o
 		WHERE ore.org_id = o.id and ore.member_id = :member_id
-		%s ORDER BY id LIMIT :limit OFFSET :offset;`, mq)
+		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
 	params, err := toDBOrgMemberPage(memberID, "", pm)
 	if err != nil {
@@ -316,7 +323,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM org_relations ore, orgs o
-		WHERE ore.org_id = o.id and ore.member_id = :member_id %s `, mq)
+		WHERE ore.org_id = o.id and ore.member_id = :member_id %s %s`, mq, nq)
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
