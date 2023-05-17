@@ -302,7 +302,7 @@ func TestRetrieveByOwner(t *testing.T) {
 			OwnerID:     ownerID,
 			Name:        fmt.Sprintf("%s-%d", orgName, i),
 			Description: fmt.Sprintf("%s-%d", orgDesc, i),
-			Metadata:    map[string]interface{}{"key": "value"},
+			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
 
 		err = repo.Save(context.Background(), org)
@@ -321,10 +321,46 @@ func TestRetrieveByOwner(t *testing.T) {
 			ownerID: ownerID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
-				Limit:  1,
+				Limit:  n,
 				Total:  n,
 			},
 			size: n,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve orgs by owner filtered by name",
+			ownerID: ownerID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  1,
+				Name:   orgName + "-1",
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve orgs by owner filtered by part of name",
+			ownerID: ownerID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  n,
+				Name:   "tes",
+			},
+			size: n,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve orgs by owner filtered by metadata",
+			ownerID: ownerID,
+			pageMetadata: auth.PageMetadata{
+				Offset:   0,
+				Limit:    n,
+				Total:    1,
+				Metadata: map[string]interface{}{"key-1": "value-1"},
+			},
+			size: 1,
 			err:  nil,
 		},
 		{
