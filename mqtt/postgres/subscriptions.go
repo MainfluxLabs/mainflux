@@ -46,11 +46,12 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 }
 
 func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
+	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
-		ClientID: sub.ClientID,
-		Status:   sub.Status,
+		ClientID:  sub.ClientID,
+		Status:    sub.Status,
+		CreatedAt: sub.CreatedAt,
 	}
 
 	row, err := gr.db.NamedQueryContext(ctx, q, dbSub)
@@ -63,9 +64,9 @@ func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscriptio
 }
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := `DELETE FROM subscriptions WHERE subtopic =$1 AND thing_id=$2 AND channel_id=$3`
+	q := `DELETE FROM subscriptions WHERE client_id =$1 AND subtopic =$2 AND thing_id=$3 AND channel_id=$4;`
 
-	if r := mr.db.QueryRowxContext(ctx, q, sub.Subtopic, sub.ThingID, sub.ChanID); r.Err() != nil {
+	if r := mr.db.QueryRowxContext(ctx, q, sub.ClientID, sub.Subtopic, sub.ThingID, sub.ChanID); r.Err() != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, r.Err())
 	}
 

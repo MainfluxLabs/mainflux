@@ -214,7 +214,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/OrgMembersReq"
+        $ref: "#/components/requestBodies/UnassignMembersReq"
       responses:
         '204':
           description: Members unassigned from organization.
@@ -222,6 +222,27 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Updates members of organization.
+      description: |
+        Updates members role of organization identified by the given IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/OrgMembersReq"
+      responses:
+        '200':
+          description: Members role updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:
@@ -428,19 +449,14 @@ components:
     OrgMember:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          example: "c5747f2f-2a7c-4fe1-b41a-51a5ae290945"
-          description: Organization member unique identifier
         email:
           type: string
           example: "test@example.com"
           description: Organization member email.
-        status:
+        role:
           type: string
-          example: "enabled"
-          description: Organization member status.
+          example: "viewer"
+          description: Organization member role.
     OrgMemberPageSchema:
       type: object
       properties:
@@ -464,8 +480,18 @@ components:
     OrgMembersSchema:
       type: object
       properties:
+        members:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/OrgMember"
+    OrgMemberIDsSchema:
+      type: object
+      properties:
         member_ids:
           type: array
+          example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
           minItems: 1
           uniqueItems: true
           items:
@@ -604,12 +630,19 @@ components:
           schema:
             $ref: "#/components/schemas/OrgSchema"
     OrgMembersReq:
-      description: JSON-formatted document describing adding members request.
+      description: JSON-formatted document describing adding and updating members request.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMembersSchema"
+    UnassignMembersReq:
+      description: JSON-formatted document describing unassigning members request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OrgMemberIDsSchema"
     OrgGroupsReq:
       description: JSON-formatted document describing adding groups request.
       required: true

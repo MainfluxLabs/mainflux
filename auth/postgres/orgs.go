@@ -165,10 +165,17 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
+	nq := getNameQuery(pm.Name)
+
 	var query []string
 	if mq != "" {
 		query = append(query, mq)
 	}
+
+	if nq != "" {
+		query = append(query, nq)
+	}
+
 	if len(query) > 0 {
 		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
@@ -763,6 +770,17 @@ func getOrgsMetadataQuery(db string, m auth.OrgMetadata) (mb []byte, mq string, 
 		mb = b
 	}
 	return mb, mq, nil
+}
+
+func getNameQuery(name string) string {
+	if name == "" {
+		return ""
+	}
+
+	name = fmt.Sprintf(`%%%s%%`, strings.ToLower(name))
+	nq := fmt.Sprintf("LOWER(name) LIKE '%s'", name)
+
+	return nq
 }
 
 func (gr orgRepository) processRows(rows *sqlx.Rows) ([]auth.Org, error) {

@@ -99,9 +99,12 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		pm := auth.PageMetadata{
 			Metadata: req.metadata,
+			Name:     req.name,
 		}
+
 		page, err := svc.ListOrgs(ctx, req.token, pm)
 		if err != nil {
 			return nil, err
