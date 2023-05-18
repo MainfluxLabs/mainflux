@@ -62,7 +62,7 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err := svc.AuthorizeAdmin(ctx, auth.AuthzReq{Email: req.Email})
+		err := svc.Authorize(ctx, auth.AuthzReq{Email: req.Email})
 		if err != nil {
 			return emptyRes{}, err
 		}

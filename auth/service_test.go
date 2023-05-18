@@ -301,6 +301,6 @@ func TestAuthorize(t *testing.T) {
 	svc := newService()
 
 	pr := auth.AuthzReq{Email: email}
-	err := svc.AuthorizeAdmin(context.Background(), pr)
+	err := svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }

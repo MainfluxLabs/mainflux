@@ -66,12 +66,12 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (auth.I
 	return ms.svc.Identify(ctx, token)
 }
 
-func (ms *metricsMiddleware) AuthorizeAdmin(ctx context.Context, ar auth.AuthzReq) error {
+func (ms *metricsMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "authorize").Add(1)
 		ms.latency.With("method", "authorize").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.AuthorizeAdmin(ctx, ar)
+	return ms.svc.Authorize(ctx, ar)
 }
 
 func (ms *metricsMiddleware) CreateOrg(ctx context.Context, token string, group auth.Org) (gr auth.Org, err error) {
