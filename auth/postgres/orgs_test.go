@@ -433,7 +433,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			OwnerID:     ownerID,
 			Name:        orgName,
 			Description: orgDesc,
-			Metadata:    map[string]interface{}{"key": "value"},
+			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
 
 		err = repo.Save(context.Background(), org)
@@ -459,6 +459,18 @@ func TestRetrieveMemberships(t *testing.T) {
 				Total:  n,
 			},
 			size: n,
+			err:  nil,
+		},
+		{
+			desc:     "retrieve memberships filtered by metadata",
+			memberID: memberID,
+			pageMetadata: auth.PageMetadata{
+				Offset:   0,
+				Limit:    n,
+				Total:    1,
+				Metadata: map[string]interface{}{"key-1": "value-1"},
+			},
+			size: 1,
 			err:  nil,
 		},
 		{
