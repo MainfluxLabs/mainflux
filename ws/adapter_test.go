@@ -38,7 +38,7 @@ func newService(tc mainflux.ThingsServiceClient) (ws.Service, mocks.MockPubSub) 
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID})
+	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID}, nil)
 	svc, _ := newService(thingsClient)
 
 	cases := []struct {
@@ -92,7 +92,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID})
+	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID}, nil)
 	svc, pubsub := newService(thingsClient)
 
 	c := ws.NewClient(nil)
@@ -171,7 +171,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient :=thmock.NewThingsService(map[string]string{thingKey: chanID})
+	thingsClient := thmock.NewThingsService(map[string]string{thingKey: chanID}, nil)
 	svc, pubsub := newService(thingsClient)
 
 	cases := []struct {

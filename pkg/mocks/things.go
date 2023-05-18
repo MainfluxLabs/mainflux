@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -18,11 +19,12 @@ var _ mainflux.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
 	channels map[string]string
+	groups   map[string]things.Group
 }
 
 // NewThingsService returns mock implementation of things service
-func NewThingsService(channels map[string]string) mainflux.ThingsServiceClient {
-	return &thingsServiceMock{channels}
+func NewThingsService(channels map[string]string, groups map[string]things.Group) mainflux.ThingsServiceClient {
+	return &thingsServiceMock{channels, groups}
 }
 
 func (svc thingsServiceMock) CanAccessByKey(ctx context.Context, in *mainflux.AccessByKeyReq, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
@@ -67,6 +69,13 @@ func (svc thingsServiceMock) Identify(context.Context, *mainflux.Token, ...grpc.
 	panic("not implemented")
 }
 
-func (svc thingsServiceMock) GetGroupsByIDs(context.Context, *mainflux.GroupsReq, ...grpc.CallOption) (*mainflux.GroupsRes, error) {
-	panic("not implemented")
+func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *mainflux.GroupsReq, opts ...grpc.CallOption) (*mainflux.GroupsRes, error) {
+	var groups []*mainflux.Group
+	for _, id := range req.Ids {
+		if group, ok := svc.groups[id]; ok {
+			groups = append(groups, &mainflux.Group{Id: group.ID, Name: group.Name})
+		}
+	}
+
+	return &mainflux.GroupsRes{Groups: groups}, nil
 }
