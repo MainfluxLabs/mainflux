@@ -82,7 +82,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id auth.
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (err error) {
+func (lm *loggingMiddleware) AuthorizeAdmin(ctx context.Context, ar auth.AuthzReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
 		if err != nil {
@@ -91,7 +91,7 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (e
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
-	return lm.svc.Authorize(ctx, ar)
+	return lm.svc.AuthorizeAdmin(ctx, ar)
 }
 
 func (lm *loggingMiddleware) CreateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {

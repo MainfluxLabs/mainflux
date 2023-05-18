@@ -55,6 +55,26 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
+// AuthReq represents an argument struct for making an authz related
+// function calls.
+type AuthzReq struct {
+	Email string
+}
+
+// Authz represents a authorization service. It exposes
+// functionalities through `auth` to perform authorization.
+type Authz interface {
+	// Authorize checks authorization of the given `subject`. Basically,
+	// Authorize verifies that Is `subject` allowed to `relation` on
+	// `object`. Authorize returns a non-nil error if the subject has
+	// no relation on the object (which simply means the operation is
+	// denied).
+	AuthorizeAdmin(ctx context.Context, pr AuthzReq) error
+
+	// CanAccessGroup indicates if user can access group for a given token.
+	CanAccessGroup(ctx context.Context, token, groupID string) error
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // Token is a string value of the actual Key and is used to authenticate
@@ -152,11 +172,11 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 	}
 }
 
-func (svc service) Authorize(ctx context.Context, pr AuthzReq) error {
-	// TODO: Implement properly Authorize method
-	// if pr.Object == authoritiesObject && pr.Relation == memberRelation && pr.Subject != svc.adminEmail {
-	//	return errors.ErrAuthorization
-	// }
+func (svc service) AuthorizeAdmin(ctx context.Context, pr AuthzReq) error {
+	if pr.Email != svc.adminEmail {
+		return errors.ErrAuthorization
+	}
+
 	return nil
 }
 
