@@ -55,6 +55,22 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
+// AuthReq represents an argument struct for making an authz related
+// function calls.
+type AuthzReq struct {
+	Email string
+}
+
+// Authz represents a authorization service. It exposes
+// functionalities through `auth` to perform authorization.
+type Authz interface {
+	// Authorize indicates if user is admin.
+	Authorize(ctx context.Context, pr AuthzReq) error
+
+	// CanAccessGroup indicates if user can access group for a given token.
+	CanAccessGroup(ctx context.Context, token, groupID string) error
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // Token is a string value of the actual Key and is used to authenticate
@@ -153,10 +169,10 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 }
 
 func (svc service) Authorize(ctx context.Context, pr AuthzReq) error {
-	// TODO: Implement properly Authorize method
-	// if pr.Object == authoritiesObject && pr.Relation == memberRelation && pr.Subject != svc.adminEmail {
-	//	return errors.ErrAuthorization
-	// }
+	if pr.Email != svc.adminEmail {
+		return errors.ErrAuthorization
+	}
+
 	return nil
 }
 
