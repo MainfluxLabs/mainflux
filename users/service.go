@@ -460,12 +460,10 @@ func (svc usersService) authorize(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
 		Email: email,
 	}
-	res, err := svc.auth.Authorize(ctx, req)
-	if err != nil {
+
+	if _, err := svc.auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
-	}
+
 	return nil
 }

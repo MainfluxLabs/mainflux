@@ -770,9 +770,8 @@ func (ts *thingsService) authorize(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
 		Email: email,
 	}
-	
-	_, err := ts.auth.Authorize(ctx, req)
-	if err != nil {
+
+	if _, err := ts.auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
