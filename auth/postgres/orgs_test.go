@@ -431,7 +431,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		org := auth.Org{
 			ID:          orgID,
 			OwnerID:     ownerID,
-			Name:        orgName,
+			Name:        fmt.Sprintf("%s-%d", orgName, i),
 			Description: orgDesc,
 			Metadata:    map[string]interface{}{"key": "value"},
 		}
@@ -457,6 +457,30 @@ func TestRetrieveMemberships(t *testing.T) {
 				Offset: 0,
 				Limit:  n,
 				Total:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		{
+			desc:     "retrieve memberships filter by name",
+			memberID: memberID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  1,
+				Name:   orgName + "-1",
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:     "retrieve memberships filter by part of the name",
+			memberID: memberID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  n,
+				Name:   "tes",
 			},
 			size: n,
 			err:  nil,
