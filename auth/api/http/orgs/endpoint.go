@@ -122,6 +122,7 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 		}
 
 		pm := auth.PageMetadata{
+			Name:     req.name,
 			Offset:   req.offset,
 			Limit:    req.limit,
 			Metadata: req.metadata,
