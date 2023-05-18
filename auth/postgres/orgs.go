@@ -278,7 +278,7 @@ func toMember(dbmb dbMember) (auth.Member, error) {
 }
 
 func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	_, mq, err := getOrgsMetadataQuery("o", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}

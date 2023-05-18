@@ -82,10 +82,6 @@ func (req membersReq) validate() error {
 	return nil
 }
 
-// authReq represents authorization request. It contains:
-// 1. subject - an action invoker
-// 2. object - an entity over which action will be executed
-// 3. action - type of action that will be executed (read/write)
 type authReq struct {
 	Email string
 }

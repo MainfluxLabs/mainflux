@@ -75,14 +75,15 @@ func encodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}
 }
 
 func encodeError(err error) error {
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return nil
-	case apiutil.ErrMalformedEntity, apiutil.ErrMissingID:
+	case errors.Contains(err, apiutil.ErrMalformedEntity),
+		err == apiutil.ErrMissingID:
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.ErrAuthentication:
+	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())
-	case errors.ErrNotFound:
+	case errors.Contains(err, errors.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")

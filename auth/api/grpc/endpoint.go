@@ -59,14 +59,14 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 		req := request.(authReq)
 
 		if err := req.validate(); err != nil {
-			return authorizeRes{}, err
+			return emptyRes{}, err
 		}
 
 		err := svc.Authorize(ctx, auth.AuthzReq{Email: req.Email})
 		if err != nil {
-			return authorizeRes{}, err
+			return emptyRes{}, err
 		}
-		return authorizeRes{authorized: true}, err
+		return emptyRes{}, nil
 	}
 }
 

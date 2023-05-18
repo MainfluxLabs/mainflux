@@ -23,9 +23,9 @@ service UsersService {
 service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
-    rpc Authorize(AuthorizeReq) returns (AuthorizeRes) {}
-    rpc CanAccessGroup(AccessGroupReq) returns(google.protobuf.Empty) {}
-    rpc Assign(Assignment) returns(google.protobuf.Empty) {}
+    rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
+    rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
+    rpc Assign(Assignment) returns (google.protobuf.Empty) {}
     rpc Members(MembersReq) returns (MembersRes) {}
 }
 
