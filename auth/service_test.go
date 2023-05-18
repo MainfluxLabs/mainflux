@@ -1559,7 +1559,7 @@ func TestListOrgMemberships(t *testing.T) {
 		},
 		{
 			desc:     "list half of member organisations",
-			token:    ownerLoginSecret,
+			token:    viewerLoginSecret,
 			memberID: viewerID,
 			meta: auth.PageMetadata{
 				Offset: n / 2,
@@ -1570,7 +1570,7 @@ func TestListOrgMemberships(t *testing.T) {
 		},
 		{
 			desc:     "list last member organisation",
-			token:    ownerLoginSecret,
+			token:    viewerLoginSecret,
 			memberID: viewerID,
 			meta: auth.PageMetadata{
 				Offset: n - 1,
