@@ -56,8 +56,8 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			svcName,
 			"Authorize",
 			encodeAuthorizeRequest,
-			decodeAuthorizeResponse,
-			mainflux.AuthorizeRes{},
+			decodeEmptyResponse,
+			empty.Empty{},
 		).Endpoint()),
 		canAccessGroup: kitot.TraceClient(tracer, "can_access_group")(kitgrpc.NewClient(
 			conn,
@@ -134,22 +134,17 @@ func decodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *mainflux.AuthorizeRes, err error) {
+func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
 	res, err := client.authorize(ctx, authReq{Email: req.GetEmail()})
 	if err != nil {
-		return &mainflux.AuthorizeRes{}, err
+		return &empty.Empty{}, err
 	}
 
-	ar := res.(authorizeRes)
-	return &mainflux.AuthorizeRes{Authorized: ar.authorized}, err
-}
-
-func decodeAuthorizeResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.AuthorizeRes)
-	return authorizeRes{authorized: res.Authorized}, nil
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
 }
 
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -239,8 +234,12 @@ func (client grpcClient) Assign(ctx context.Context, req *mainflux.Assignment, _
 }
 
 func encodeAssignRequest(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.AuthorizeRes)
-	return authorizeRes{authorized: res.Authorized}, nil
+	req := grpcRes.(assignReq)
+	return &mainflux.Assignment{
+		Token:    req.token,
+		GroupID:  req.groupID,
+		MemberID: req.memberID,
+	}, nil
 }
 
 func decodeAssignResponse(_ context.Context, grpcReq interface{}) (interface{}, error) {

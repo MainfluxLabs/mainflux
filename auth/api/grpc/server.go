@@ -45,7 +45,7 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 		authorize: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "authorize")(authorizeEndpoint(svc)),
 			decodeAuthorizeRequest,
-			encodeAuthorizeResponse,
+			encodeEmptyResponse,
 		),
 		canAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_access_group")(accessGroupEndpoint(svc)),
@@ -81,12 +81,12 @@ func (s *grpcServer) Identify(ctx context.Context, token *mainflux.Token) (*main
 	return res.(*mainflux.UserIdentity), nil
 }
 
-func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) (*mainflux.AuthorizeRes, error) {
+func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) (*empty.Empty, error) {
 	_, res, err := s.authorize.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*mainflux.AuthorizeRes), nil
+	return res.(*empty.Empty), nil
 }
 
 func (s *grpcServer) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq) (*empty.Empty, error) {
@@ -136,11 +136,6 @@ func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.AuthorizeReq)
 	return authReq{Email: req.GetEmail()}, nil
-}
-
-func encodeAuthorizeResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(authorizeRes)
-	return &mainflux.AuthorizeRes{Authorized: res.authorized}, nil
 }
 
 func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
