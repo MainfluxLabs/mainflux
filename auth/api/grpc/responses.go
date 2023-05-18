@@ -12,10 +12,6 @@ type issueRes struct {
 	value string
 }
 
-type authorizeRes struct {
-	authorized bool
-}
-
 type membersRes struct {
 	total     uint64
 	offset    uint64

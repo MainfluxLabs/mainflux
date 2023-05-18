@@ -361,12 +361,8 @@ func authorizeAdmin(ctx context.Context, object, relation, token string) error {
 		Email: user.Email,
 	}
 
-	res, err := auth.Authorize(ctx, req)
-	if err != nil {
+	if _, err := auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-	if !res.GetAuthorized() {
-		return errors.ErrAuthorization
 	}
 
 	return nil
