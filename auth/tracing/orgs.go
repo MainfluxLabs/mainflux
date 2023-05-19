@@ -12,20 +12,22 @@ import (
 )
 
 const (
-	saveOrg            = "save_org"
-	deleteOrg          = "delete_org"
-	updateOrg          = "update_org"
-	retrieveByID       = "retrieve_by_id"
-	retrieveByOwner    = "retrieve_by_owner"
-	orgMemberships     = "org_memberships"
-	orgMembers         = "org_members"
-	retrieveGroups     = "retrieve_groups"
-	assignOrgMembers   = "assign_org_members"
-	assignOrgGroups    = "assign_org_groups"
-	unassignOrgMembers = "unassign_org_members"
-	unassignOrgGroups  = "unassign_org_groups"
-	retrieveByGroupID  = "retrieve_by_group_id"
-	updateOrgMembers   = "update_org_members"
+	saveOrg                    = "save_org"
+	deleteOrg                  = "delete_org"
+	updateOrg                  = "update_org"
+	retrieveByID               = "retrieve_by_id"
+	retrieveByOwner            = "retrieve_by_owner"
+	orgMemberships             = "org_memberships"
+	orgMembers                 = "org_members"
+	retrieveGroups             = "retrieve_groups"
+	assignOrgMembers           = "assign_org_members"
+	assignOrgGroups            = "assign_org_groups"
+	unassignOrgMembers         = "unassign_org_members"
+	unassignOrgGroups          = "unassign_org_groups"
+	retrieveByGroupID          = "retrieve_by_group_id"
+	updateOrgMembers           = "update_org_members"
+	retrieveAllMemberRelations = "retrieve_all_member_relations"
+	retrieveAllGroupRelations  = "retrieve_all_group_relations"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -161,4 +163,20 @@ func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupI
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveByGroupID(ctx, groupID)
+}
+
+func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllMemberRelations)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveAllMemberRelations(ctx)
+}
+
+func (orm orgRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllGroupRelations)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveAllGroupRelations(ctx)
 }

@@ -14,6 +14,8 @@ var (
 	_ mainflux.Response = (*deleteRes)(nil)
 	_ mainflux.Response = (*assignRes)(nil)
 	_ mainflux.Response = (*unassignRes)(nil)
+	_ mainflux.Response = (*backupRes)(nil)
+	_ mainflux.Response = (*restoreRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -175,5 +177,52 @@ func (res unassignRes) Headers() map[string]string {
 }
 
 func (res unassignRes) Empty() bool {
+	return true
+}
+
+type viewMemberRelations struct {
+	MemberID  string    `json:"member_id"`
+	OrgID     string    `json:"org_id"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type viewGroupRelations struct {
+	GroupID   string    `json:"group_id"`
+	OrgID     string    `json:"org_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type backupRes struct {
+	Orgs            []viewOrgRes          `json:"orgs"`
+	MemberRelations []viewMemberRelations `json:"member_relations"`
+	GroupRelations  []viewGroupRelations  `json:"group_relations"`
+}
+
+func (res backupRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupRes) Empty() bool {
+	return false
+}
+
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res restoreRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res restoreRes) Empty() bool {
 	return true
 }

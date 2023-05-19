@@ -638,6 +638,67 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 	return errors.ErrAuthorization
 }
 
+func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	pr := AuthzReq{Email: user.Email}
+	if err := svc.Authorize(ctx, pr); err != nil {
+		return Backup{}, err
+	}
+
+	orgs, err := svc.orgs.RetrieveByOwner(ctx, "", PageMetadata{})
+	if err != nil {
+		return Backup{}, err
+	}
+
+	mRel, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	grRel, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	backup := Backup{
+		Orgs:            orgs.Orgs,
+		MemberRelations: mRel,
+		GroupRelations:  grRel,
+	}
+
+	return backup, nil
+}
+
+func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	pr := AuthzReq{Email: user.Email}
+	if err := svc.Authorize(ctx, pr); err != nil {
+		return err
+	}
+
+	for _, org := range backup.Orgs {
+		if err := svc.orgs.Save(ctx, org); err != nil {
+			return err
+		}
+	}
+	//TODO: REUSE ASSIGN METHODS
+	// for _, mr := range backup.MemberRelations {
+	// }
+
+	// for _, gr := range backup.GroupRelations {
+	// }
+
+	return nil
+}
+
 func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {

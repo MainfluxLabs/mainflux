@@ -206,3 +206,34 @@ func (req orgReq) validate() error {
 
 	return nil
 }
+
+type backupReq struct {
+	token string
+}
+
+func (req backupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
+type restoreReq struct {
+	token           string
+	Orgs            []auth.Org            `json:"orgs"`
+	MemberRelations []auth.MemberRelation `json:"member_relations"`
+	GroupRelations  []auth.GroupRelation  `json:"group_relations"`
+}
+
+func (req restoreReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Orgs) == 0 && len(req.MemberRelations) == 0 && len(req.GroupRelations) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}

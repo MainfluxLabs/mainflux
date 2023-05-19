@@ -93,6 +93,27 @@ type Member struct {
 	Email string `json:"email"`
 }
 
+type MemberRelation struct {
+	MemberID  string
+	OrgID     string
+	Role      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type GroupRelation struct {
+	GroupID   string
+	OrgID     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type Backup struct {
+	Orgs            []Org
+	MemberRelations []MemberRelation
+	GroupRelations  []GroupRelation
+}
+
 // OrgService specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type OrgService interface {
@@ -140,6 +161,12 @@ type OrgService interface {
 
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
+
+	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
+	Backup(ctx context.Context, token string) (Backup, error)
+
+	// Restore adds orgs, org relations and group relations from a backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, backup Backup) error
 }
 
 // OrgRepository specifies an org persistence API.
@@ -188,4 +215,10 @@ type OrgRepository interface {
 
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
+
+	// RetrieveAllMemberRelations retrieves all member relations.
+	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
+
+	// RetrieveAllGroupRelations retrieves all group relations.
+	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }

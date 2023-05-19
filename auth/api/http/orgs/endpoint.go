@@ -253,6 +253,44 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func backupEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup, err := svc.Backup(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildBackupResponse(backup), nil
+	}
+}
+
+func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup := auth.Backup{
+			Orgs:            req.Orgs,
+			MemberRelations: req.MemberRelations,
+			GroupRelations:  req.GroupRelations,
+		}
+
+		err := svc.Restore(ctx, req.token, backup)
+		if err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
+	}
+}
+
 func buildOrgsResponse(gp auth.OrgsPage) orgsPageRes {
 	res := orgsPageRes{
 		pageRes: pageRes{
@@ -317,6 +355,50 @@ func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
 			Description: group.Description,
 		}
 		res.Groups = append(res.Groups, g)
+	}
+
+	return res
+}
+
+func buildBackupResponse(b auth.Backup) backupRes {
+	res := backupRes{
+		Orgs:            []viewOrgRes{},
+		MemberRelations: []viewMemberRelations{},
+		GroupRelations:  []viewGroupRelations{},
+	}
+
+	for _, org := range b.Orgs {
+		view := viewOrgRes{
+			ID:          org.ID,
+			OwnerID:     org.OwnerID,
+			Name:        org.Name,
+			Description: org.Description,
+			Metadata:    org.Metadata,
+			CreatedAt:   org.CreatedAt,
+			UpdatedAt:   org.UpdatedAt,
+		}
+		res.Orgs = append(res.Orgs, view)
+	}
+
+	for _, mRel := range b.MemberRelations {
+		view := viewMemberRelations{
+			OrgID:     mRel.OrgID,
+			MemberID:  mRel.MemberID,
+			Role:      mRel.Role,
+			CreatedAt: mRel.CreatedAt,
+			UpdatedAt: mRel.UpdatedAt,
+		}
+		res.MemberRelations = append(res.MemberRelations, view)
+	}
+
+	for _, groupRel := range b.GroupRelations {
+		view := viewGroupRelations{
+			GroupID:   groupRel.GroupID,
+			OrgID:     groupRel.OrgID,
+			CreatedAt: groupRel.CreatedAt,
+			UpdatedAt: groupRel.UpdatedAt,
+		}
+		res.GroupRelations = append(res.GroupRelations, view)
 	}
 
 	return res

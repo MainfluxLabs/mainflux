@@ -158,7 +158,10 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	whereq := "WHERE owner_id = :owner_id"
+	var whereq string
+	if ownerID != "" {
+		whereq = "WHERE owner_id = :owner_id"
+	}
 
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
@@ -365,9 +368,6 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
 			tx.Rollback()
@@ -640,6 +640,52 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 	return page, nil
 }
 
+func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_relations;`
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return []auth.MemberRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var memberRelations []auth.MemberRelation
+	for rows.Next() {
+		dbg := dbMemberRelation{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return []auth.MemberRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		memberRelations = append(memberRelations, toMemberRelation(dbg))
+	}
+
+	return memberRelations, nil
+}
+
+func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+	q := `SELECT org_id, group_id, created_at, updated_at FROM group_relations;`
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return []auth.GroupRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	defer rows.Close()
+
+	var groupRelations []auth.GroupRelation
+	for rows.Next() {
+		dbg := dbGroupRelation{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return []auth.GroupRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		groupRelations = append(groupRelations, toGroupRelation(dbg))
+
+	}
+
+	return groupRelations, nil
+}
+
 type dbMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`
@@ -742,6 +788,16 @@ func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) 
 	}, nil
 }
 
+func toMemberRelation(mRel dbMemberRelation) auth.MemberRelation {
+	return auth.MemberRelation{
+		OrgID:     mRel.OrgID,
+		MemberID:  mRel.MemberID,
+		Role:      mRel.Role,
+		CreatedAt: mRel.CreatedAt,
+		UpdatedAt: mRel.UpdatedAt,
+	}
+}
+
 type dbGroupRelation struct {
 	OrgID     string    `db:"org_id"`
 	GroupID   string    `db:"group_id"`
@@ -754,6 +810,15 @@ func toDBGroupRelation(groupID, orgID string) (dbGroupRelation, error) {
 		OrgID:   orgID,
 		GroupID: groupID,
 	}, nil
+}
+
+func toGroupRelation(grRel dbGroupRelation) auth.GroupRelation {
+	return auth.GroupRelation{
+		OrgID:     grRel.OrgID,
+		GroupID:   grRel.GroupID,
+		CreatedAt: grRel.CreatedAt,
+		UpdatedAt: grRel.UpdatedAt,
+	}
 }
 
 func getOrgsMetadataQuery(db string, m auth.OrgMetadata) (mb []byte, mq string, err error) {

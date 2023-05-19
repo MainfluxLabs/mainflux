@@ -284,3 +284,11 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 		},
 	}, nil
 }
+
+func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+	panic("not implemented")
+}
+
+func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+	panic("not implemented")
+}
