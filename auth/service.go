@@ -689,12 +689,22 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 			return err
 		}
 	}
-	//TODO: REUSE ASSIGN METHODS
-	// for _, mr := range backup.MemberRelations {
-	// }
 
-	// for _, gr := range backup.GroupRelations {
-	// }
+	for _, mr := range backup.MemberRelations {
+		member := Member{
+			ID:   mr.MemberID,
+			Role: mr.Role,
+		}
+		if err := svc.orgs.AssignMembers(ctx, mr.OrgID, member); err != nil {
+			return err
+		}
+	}
+
+	for _, gr := range backup.GroupRelations {
+		if err := svc.orgs.AssignGroups(ctx, gr.OrgID, gr.GroupID); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
