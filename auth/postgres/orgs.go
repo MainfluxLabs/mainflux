@@ -369,6 +369,10 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
 
+		created := time.Now()
+		dbg.CreatedAt = created
+		dbg.UpdatedAt = created
+
 		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
