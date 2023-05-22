@@ -101,6 +101,7 @@ func (req listOrgGroupsReq) validate() error {
 type listOrgMembershipsReq struct {
 	token    string
 	id       string
+	name     string
 	offset   uint64
 	limit    uint64
 	metadata auth.OrgMetadata

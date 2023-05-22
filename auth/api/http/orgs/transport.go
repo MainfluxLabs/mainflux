@@ -218,9 +218,15 @@ func decodeListMembershipsRequest(_ context.Context, r *http.Request) (interface
 		return nil, err
 	}
 
+	n, err := apiutil.ReadStringQuery(r, nameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listOrgMembershipsReq{
 		token:    apiutil.ExtractBearerToken(r),
 		id:       bone.GetValue(r, "memberID"),
+		name:     n,
 		offset:   o,
 		limit:    l,
 		metadata: m,

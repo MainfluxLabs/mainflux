@@ -346,7 +346,7 @@ func TestRetrieveByOwner(t *testing.T) {
 				Offset: 0,
 				Limit:  n,
 				Total:  n,
-				Name:   "tes",
+				Name:   orgName,
 			},
 			size: n,
 			err:  nil,
@@ -431,7 +431,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		org := auth.Org{
 			ID:          orgID,
 			OwnerID:     ownerID,
-			Name:        orgName,
+			Name:        fmt.Sprintf("%s-%d", orgName, i),
 			Description: orgDesc,
 			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
@@ -471,6 +471,30 @@ func TestRetrieveMemberships(t *testing.T) {
 				Metadata: map[string]interface{}{"key-1": "value-1"},
 			},
 			size: 1,
+			err:  nil,
+		},
+		{
+			desc:     "retrieve memberships filter by name",
+			memberID: memberID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  1,
+				Name:   orgName + "-1",
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:     "retrieve memberships filter by part of the name",
+			memberID: memberID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  n,
+				Name:   orgName,
+			},
+			size: n,
 			err:  nil,
 		},
 		{
