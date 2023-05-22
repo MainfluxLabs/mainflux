@@ -649,28 +649,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	orgs, err := svc.orgs.RetrieveByOwner(ctx, "", PageMetadata{})
-	if err != nil {
-		return Backup{}, err
-	}
-
-	mRel, err := svc.orgs.RetrieveAllMemberRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	grRel, err := svc.orgs.RetrieveAllGroupRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	backup := Backup{
-		Orgs:            orgs.Orgs,
-		MemberRelations: mRel,
-		GroupRelations:  grRel,
-	}
-
-	return backup, nil
+	return svc.orgs.Dump(ctx)
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {

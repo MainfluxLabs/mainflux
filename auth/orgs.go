@@ -216,9 +216,6 @@ type OrgRepository interface {
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
 
-	// RetrieveAllMemberRelations retrieves all member relations.
-	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
-
-	// RetrieveAllGroupRelations retrieves all group relations.
-	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
+	// Dump retrieves all orgs, org relations and group relations. Only accessible by admin.
+	Dump(ctx context.Context) (Backup, error)
 }

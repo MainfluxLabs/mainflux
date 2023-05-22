@@ -158,64 +158,11 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	var whereq string
-	if ownerID != "" {
-		whereq = "WHERE owner_id = :owner_id"
-	}
+	return gr.retrieve(ctx, ownerID, pm)
+}
 
-	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	nq := getNameQuery(pm.Name)
-
-	var query []string
-	if mq != "" {
-		query = append(query, mq)
-	}
-
-	if nq != "" {
-		query = append(query, nq)
-	}
-
-	if len(query) > 0 {
-		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
-	}
-
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, whereq)
-
-	dbPage, err := toDBOrgsPage(ownerID, pm)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	items, err := gr.processRows(rows)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereq)
-
-	total, err := total(ctx, gr.db, cq, dbPage)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := auth.OrgsPage{
-		Orgs: items,
-		PageMetadata: auth.PageMetadata{
-			Total: total,
-		},
-	}
-
-	return page, nil
+func (gr orgRepository) RetrieveAll(ctx context.Context) (auth.OrgsPage, error) {
+	return gr.retrieve(ctx, "", auth.PageMetadata{})
 }
 
 func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
@@ -644,7 +591,30 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 	return page, nil
 }
 
-func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+func (gr orgRepository) Dump(ctx context.Context) (auth.Backup, error) {
+	orgs, err := gr.RetrieveAll(ctx)
+	if err != nil {
+		return auth.Backup{}, err
+	}
+
+	members, err := gr.dumpMemberRelations(ctx)
+	if err != nil {
+		return auth.Backup{}, err
+	}
+
+	groups, err := gr.dumpAllGroupRelations(ctx)
+	if err != nil {
+		return auth.Backup{}, err
+	}
+
+	return auth.Backup{
+		Orgs:            orgs.Orgs,
+		MemberRelations: members,
+		GroupRelations:  groups,
+	}, nil
+}
+
+func (gr orgRepository) dumpMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_relations;`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -666,7 +636,7 @@ func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.
 	return memberRelations, nil
 }
 
-func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+func (gr orgRepository) dumpAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
 	q := `SELECT org_id, group_id, created_at, updated_at FROM group_relations;`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -688,6 +658,67 @@ func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	}
 
 	return groupRelations, nil
+}
+
+func (gr orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	var whereq string
+	if ownerID != "" {
+		whereq = "WHERE owner_id = :owner_id"
+	}
+
+	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	nq := getNameQuery(pm.Name)
+
+	var query []string
+	if mq != "" {
+		query = append(query, mq)
+	}
+
+	if nq != "" {
+		query = append(query, nq)
+	}
+
+	if len(query) > 0 {
+		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
+	}
+
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, whereq)
+
+	dbPage, err := toDBOrgsPage(ownerID, pm)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items, err := gr.processRows(rows)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereq)
+
+	total, err := total(ctx, gr.db, cq, dbPage)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := auth.OrgsPage{
+		Orgs: items,
+		PageMetadata: auth.PageMetadata{
+			Total: total,
+		},
+	}
+
+	return page, nil
 }
 
 type dbMember struct {
