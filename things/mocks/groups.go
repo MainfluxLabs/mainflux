@@ -223,3 +223,7 @@ func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID str
 		},
 	}, nil
 }
+
+func (grm *groupRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {
+	panic("not implemented")
+}

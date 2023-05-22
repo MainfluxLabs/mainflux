@@ -8,17 +8,18 @@ import (
 )
 
 const (
-	saveGroupOp           = "save_group"
-	updateGroupOp         = "update_group"
-	removeGroupOp         = "remove_group"
-	retrieveAllOp         = "retrieve_all"
-	retrieveGroupByIDOp   = "retrieve_group_by_id"
-	retrieveGroupByIDsOp  = "retrieve_group_by_ids"
-	retrieveByOwnerOp     = "retrieve_by_owner"
-	retrieveMembershipsOp = "retrieve_memberships"
-	retrieveMembersOp     = "retrieve_members"
-	assignMemberOp        = "assign_member"
-	unassignMemberOp      = "unassign_member"
+	saveGroupOp                 = "save_group"
+	updateGroupOp               = "update_group"
+	removeGroupOp               = "remove_group"
+	retrieveAllOp               = "retrieve_all"
+	retrieveGroupByIDOp         = "retrieve_group_by_id"
+	retrieveGroupByIDsOp        = "retrieve_group_by_ids"
+	retrieveByOwnerOp           = "retrieve_by_owner"
+	retrieveMembershipsOp       = "retrieve_memberships"
+	retrieveMembersOp           = "retrieve_members"
+	assignMemberOp              = "assign_member"
+	unassignMemberOp            = "unassign_member"
+	retrieveAllGroupRelationsOp = "retrieve_all_group_relations"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -104,6 +105,14 @@ func (grm groupRepositoryMiddleware) RetrieveMembers(ctx context.Context, groupI
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveMembers(ctx, groupID, pm)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {
+	span := createSpan(ctx, grm.tracer, retrieveAllGroupRelationsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveAllGroupRelations(ctx)
 }
 
 func (grm groupRepositoryMiddleware) AssignMember(ctx context.Context, groupID string, memberIDs ...string) error {
