@@ -25,13 +25,13 @@ type OrgMetadata map[string]interface{}
 
 // Org represents the org information.
 type Org struct {
-	ID          string
-	OwnerID     string
-	Name        string
-	Description string
-	Metadata    OrgMetadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string      `json:"id"`
+	OwnerID     string      `json:"owner_id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Metadata    OrgMetadata `json:"metadata"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -94,18 +94,18 @@ type Member struct {
 }
 
 type MemberRelation struct {
-	MemberID  string
-	OrgID     string
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	MemberID  string    `json:"member_id"`
+	OrgID     string    `json:"org_id"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type GroupRelation struct {
-	GroupID   string
-	OrgID     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	GroupID   string    `json:"group_id"`
+	OrgID     string    `json:"org_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Backup struct {
