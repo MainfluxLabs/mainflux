@@ -19,6 +19,7 @@ const (
 	maxDescSize  = 1024
 	groupName    = "Mainflux"
 	description  = "description"
+	n            = uint64(5)
 )
 
 var (
@@ -298,8 +299,6 @@ func TestRetrieveByOwner(t *testing.T) {
 	}
 
 	metaNum := uint64(3)
-
-	var n uint64 = 5
 	for i := uint64(0); i < n; i++ {
 		creationTime := time.Now().UTC()
 		group := things.Group{
@@ -368,12 +367,9 @@ func TestRetrieveByIDs(t *testing.T) {
 			"field": "value",
 		},
 	}
-	
+
 	malformedIDs := []string{"malformed1", "malformed2"}
-
 	metaNum := uint64(3)
-
-	var n uint64 = 5
 	var ids []string
 	for i := uint64(0); i < n; i++ {
 		creationTime := time.Now().UTC()
@@ -439,8 +435,6 @@ func TestRetrieveAllGroups(t *testing.T) {
 	}
 
 	metaNum := uint64(3)
-
-	var n uint64 = 5
 	for i := uint64(0); i < n; i++ {
 		creationTime := time.Now().UTC()
 		group := things.Group{
@@ -560,6 +554,53 @@ func TestUnassign(t *testing.T) {
 	mp, err = groupRepo.RetrieveMembers(context.Background(), group.ID, pm)
 	require.Nil(t, err, fmt.Sprintf("members retrieve unexpected error: %s", err))
 	assert.True(t, mp.Total == 1, fmt.Sprintf("retrieve members of a group: expected %d got %d\n", 1, mp.Total))
+}
+
+func TestRetrieveAllGroupRelations(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	creationTime := time.Now().UTC()
+	group := things.Group{
+		ID:        generateGroupID(t),
+		Name:      groupName + "Updated",
+		OwnerID:   uid,
+		CreatedAt: creationTime,
+		UpdatedAt: creationTime,
+	}
+
+	group, err = groupRepo.Save(context.Background(), group)
+	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
+
+	for i := uint64(0); i < n; i++ {
+		mid, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		err = groupRepo.AssignMember(context.Background(), group.ID, mid)
+		require.Nil(t, err, fmt.Sprintf("member assign unexpected error: %s", err))
+
+	}
+
+	cases := map[string]struct {
+		size uint64
+		err  error
+	}{
+		"retrieve group relations": {
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		gr, err := groupRepo.RetrieveAllGroupRelations(context.Background())
+		size := len(gr)
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
 }
 
 func cleanUp(t *testing.T) {
