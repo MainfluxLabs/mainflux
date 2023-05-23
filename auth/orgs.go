@@ -207,7 +207,7 @@ type OrgRepository interface {
 	// RetrieveMembers retrieves members assigned to an org identified by orgID.
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
-	// RetrieveMemberRelations retrieves all member relations.
+	// RetrieveAllMemberRelations retrieves all member relations.
 	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
 
 	// AssignGroups adds groups to an org.
@@ -222,6 +222,6 @@ type OrgRepository interface {
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
 
-	// RetrieveGroupRelations retrieves all group relations.
+	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }
