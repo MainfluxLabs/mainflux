@@ -186,6 +186,9 @@ type OrgRepository interface {
 	// RetrieveByOwner retrieves orgs by owner.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (OrgsPage, error)
 
+	// RetrieveAll retrieves all orgs.
+	RetrieveAll(ctx context.Context) (OrgsPage, error)
+
 	// RetrieveMemberships list of orgs that member belongs to
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
@@ -204,6 +207,9 @@ type OrgRepository interface {
 	// RetrieveMembers retrieves members assigned to an org identified by orgID.
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
+	// RetrieveMemberRelations retrieves all member relations.
+	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
+
 	// AssignGroups adds groups to an org.
 	AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
@@ -216,6 +222,6 @@ type OrgRepository interface {
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
 
-	// Dump retrieves all orgs, org relations and group relations.
-	Dump(ctx context.Context) (Backup, error)
+	// RetrieveGroupRelations retrieves all group relations.
+	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }

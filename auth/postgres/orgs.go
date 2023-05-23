@@ -591,30 +591,7 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 	return page, nil
 }
 
-func (gr orgRepository) Dump(ctx context.Context) (auth.Backup, error) {
-	orgs, err := gr.RetrieveAll(ctx)
-	if err != nil {
-		return auth.Backup{}, err
-	}
-
-	members, err := gr.dumpMemberRelations(ctx)
-	if err != nil {
-		return auth.Backup{}, err
-	}
-
-	groups, err := gr.dumpAllGroupRelations(ctx)
-	if err != nil {
-		return auth.Backup{}, err
-	}
-
-	return auth.Backup{
-		Orgs:            orgs.Orgs,
-		MemberRelations: members,
-		GroupRelations:  groups,
-	}, nil
-}
-
-func (gr orgRepository) dumpMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_relations;`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -636,7 +613,7 @@ func (gr orgRepository) dumpMemberRelations(ctx context.Context) ([]auth.MemberR
 	return memberRelations, nil
 }
 
-func (gr orgRepository) dumpAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
 	q := `SELECT org_id, group_id, created_at, updated_at FROM group_relations;`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
