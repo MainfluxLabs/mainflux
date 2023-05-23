@@ -225,5 +225,20 @@ func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID str
 }
 
 func (grm *groupRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {
-	panic("not implemented")
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var groupRelations []things.GroupRelation
+	for _, group := range grm.groups {
+		if members, ok := grm.members[group.ID]; ok {
+			for _, memberID := range members[group.ID] {
+				groupRelations = append(groupRelations, things.GroupRelation{
+					GroupID:  group.ID,
+					MemberID: memberID,
+				})
+			}
+		}
+	}
+
+	return groupRelations, nil
 }

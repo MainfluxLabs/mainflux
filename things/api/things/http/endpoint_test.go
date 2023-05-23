@@ -2556,6 +2556,20 @@ func TestBackup(t *testing.T) {
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	for _, gr := range groups {
+		err = svc.Assign(context.Background(), token, gr.ID, ths[0].ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	var groupRelations []things.GroupRelation
+	for _, group := range groups {
+		grRel := things.GroupRelation{
+			GroupID:  group.ID,
+			MemberID: ths[0].ID,
+		}
+		groupRelations = append(groupRelations, grRel)
+	}
+
 	channels := []things.Channel{}
 	for i := 0; i < 10; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
@@ -2583,10 +2597,11 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := backupRes{
-		Groups:      groups,
-		Things:      ths,
-		Channels:    channels,
-		Connections: connections,
+		Groups:         groups,
+		Things:         ths,
+		Channels:       channels,
+		Connections:    connections,
+		GroupRelations: groupRelations,
 	}
 
 	backupURL := fmt.Sprintf("%s/backup", ts.URL)
@@ -2637,6 +2652,7 @@ func TestBackup(t *testing.T) {
 		assert.ElementsMatch(t, tc.res.Connections, body.Connections, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Connections, body.Connections))
 		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
 		assert.ElementsMatch(t, tc.res.Groups, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Groups, body.Groups))
+		assert.ElementsMatch(t, tc.res.GroupRelations, body.GroupRelations, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.GroupRelations, body.GroupRelations))
 	}
 }
 
@@ -2671,6 +2687,15 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
+	var groupRelations []things.GroupRelation
+	for _, gr := range groups {
+		grRel := things.GroupRelation{
+			GroupID:  gr.ID,
+			MemberID: testThing.ID,
+		}
+		groupRelations = append(groupRelations, grRel)
+	}
+
 	channels := []things.Channel{}
 	for i := 0; i < n; i++ {
 		chID, err := idProvider.ID()
@@ -2696,17 +2721,19 @@ func TestRestore(t *testing.T) {
 	}
 
 	type restoreReq struct {
-		Groups      []things.Group      `json:"groups"`
-		Things      []things.Thing      `json:"things"`
-		Channels    []things.Channel    `json:"channels"`
-		Connections []things.Connection `json:"connections"`
+		Groups         []things.Group         `json:"groups"`
+		Things         []things.Thing         `json:"things"`
+		Channels       []things.Channel       `json:"channels"`
+		Connections    []things.Connection    `json:"connections"`
+		GroupRelations []things.GroupRelation `json:"group_relations"`
 	}
 
 	data := toJSON(restoreReq{
-		Groups:      groups,
-		Things:      []things.Thing{testThing},
-		Channels:    channels,
-		Connections: connections,
+		Groups:         groups,
+		Things:         []things.Thing{testThing},
+		Channels:       channels,
+		Connections:    connections,
+		GroupRelations: groupRelations,
 	})
 	invalidData := toJSON(restoreReq{})
 	restoreURL := fmt.Sprintf("%s/restore", ts.URL)
@@ -2797,8 +2824,9 @@ type channelsPageRes struct {
 }
 
 type backupRes struct {
-	Groups      []things.Group      `json:"groups"`
-	Things      []things.Thing      `json:"things"`
-	Channels    []things.Channel    `json:"channels"`
-	Connections []things.Connection `json:"connections"`
+	Groups         []things.Group         `json:"groups"`
+	Things         []things.Thing         `json:"things"`
+	Channels       []things.Channel       `json:"channels"`
+	Connections    []things.Connection    `json:"connections"`
+	GroupRelations []things.GroupRelation `json:"group_relations"`
 }
