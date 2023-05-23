@@ -1095,7 +1095,7 @@ components:
           items:
             type: string
             format: uuid | ulid
-    BackupResSchema:
+    BackupAndRestoreSchema:
       type: object
       properties:
         groups:
@@ -1374,7 +1374,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/BackupResSchema"
+            $ref: "#/components/schemas/BackupAndRestoreSchema"
 
   responses:
     CreateThingsRes:
@@ -1475,7 +1475,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/BackupResSchema"
+            $ref: "#/components/schemas/BackupAndRestoreSchema"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:
