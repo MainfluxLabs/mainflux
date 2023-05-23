@@ -1065,6 +1065,26 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded group's data.
+    GroupRelationResSchema:
+      type: object
+      properties:
+          group_id:
+            type: string
+            format: uuid
+          member_id:
+            type: string
+            format: uuid
+          created_at:
+            type: string
+            description: Datetime of group-ralations creation.
+          updated_at:
+            type: string
+            description: Datetime of last group-relations updated.
+      required:
+        - group_id
+        - member_id
+        - created_at
+        - updated_at
     MembersReqSchema:
       type: object
       properties:
@@ -1102,6 +1122,12 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/ConnectionResSchema"
+        group_rlations:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/GroupRelationResSchema"
       required:
         - groups
         - things
