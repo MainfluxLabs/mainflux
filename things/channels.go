@@ -79,7 +79,10 @@ type ChannelRepository interface {
 	HasThingByID(ctx context.Context, chanID, thingID string) error
 
 	// RetrieveAll retrieves all channels for all users.
-	RetrieveAll(ctx context.Context) ([]Channel, error)
+	RetrieveAll(ctx context.Context) (ChannelsPage, error)
+
+	// RetrieveByAdmin  retrieves all channels for all users with pagination.
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ChannelsPage, error)
 
 	// RetrieveAllConnections retrieves all connections between channels and things for all users.
 	RetrieveAllConnections(ctx context.Context) ([]Connection, error)

@@ -172,20 +172,20 @@ func TestSingleChannelRetrieval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		ID    string
-		err   error
+		ID  string
+		err error
 	}{
 		"retrieve channel with existing user": {
-			ID:    ch.ID,
-			err:   nil,
+			ID:  ch.ID,
+			err: nil,
 		},
 		"retrieve channel with existing user, non-existing channel": {
-			ID:    nonexistentChanID,
-			err:   errors.ErrNotFound,
+			ID:  nonexistentChanID,
+			err: errors.ErrNotFound,
 		},
 		"retrieve channel with malformed ID": {
-			ID:    wrongValue,
-			err:   errors.ErrNotFound,
+			ID:  wrongValue,
+			err: errors.ErrNotFound,
 		},
 	}
 
@@ -953,8 +953,8 @@ func TestRetrieveAll(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		channels, err := chanRepo.RetrieveAll(context.Background())
-		size := uint64(len(channels))
+		chPage, err := chanRepo.RetrieveAll(context.Background())
+		size := uint64(len(chPage.Channels))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))

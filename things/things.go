@@ -78,7 +78,10 @@ type ThingRepository interface {
 	Remove(ctx context.Context, owner, id string) error
 
 	// RetrieveAll retrieves all things for all users.
-	RetrieveAll(ctx context.Context) ([]Thing, error)
+	RetrieveAll(ctx context.Context) (Page, error)
+
+	// RetrieveByAdmin retrieves all things for all users with pagination.
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (Page, error)
 }
 
 // ThingCache contains thing caching interface.

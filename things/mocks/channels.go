@@ -126,6 +126,10 @@ func (crm *channelRepositoryMock) RetrieveByOwner(_ context.Context, owner strin
 	return page, nil
 }
 
+func (crm *channelRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
+	panic("not implemented")
+}
+
 func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	if pm.Limit < 0 {
 		return things.ChannelsPage{}, nil
@@ -284,7 +288,7 @@ func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingI
 	return nil
 }
 
-func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
+func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) (things.ChannelsPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 	var chs []things.Channel
@@ -293,7 +297,9 @@ func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Cha
 		chs = append(chs, v)
 	}
 
-	return chs, nil
+	return things.ChannelsPage{
+		Channels: chs,
+	}, nil
 }
 
 func (crm *channelRepositoryMock) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {

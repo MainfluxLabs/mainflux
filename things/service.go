@@ -283,11 +283,8 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	}
 
 	if err := ts.authorize(ctx, res.Email); err == nil {
-		page, err := ts.things.RetrieveByOwner(ctx, "", pm)
-		if err != nil {
-			return Page{}, err
-		}
-		return page, nil
+		return ts.things.RetrieveByAdmin(ctx, pm)
+
 	}
 
 	return ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
@@ -400,11 +397,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	}
 
 	if err := ts.authorize(ctx, res.Email); err == nil {
-		page, err := ts.channels.RetrieveByOwner(ctx, "", pm)
-		if err != nil {
-			return ChannelsPage{}, err
-		}
-		return page, nil
+		return ts.channels.RetrieveByAdmin(ctx, pm)
 	}
 
 	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
@@ -587,12 +580,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	things, err := ts.things.RetrieveAll(ctx)
+	thPage, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	channels, err := ts.channels.RetrieveAll(ctx)
+	chPage, err := ts.channels.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -604,8 +597,8 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 
 	return Backup{
 		Groups:      groups,
-		Things:      things,
-		Channels:    channels,
+		Things:      thPage.Things,
+		Channels:    chPage.Channels,
 		Connections: connections,
 	}, nil
 }

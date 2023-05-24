@@ -297,16 +297,24 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 	delete(trm.tconns[conn.chanID], conn.thing.ID)
 }
 
-func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) (things.Page, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 	var ths []things.Thing
 
-	for _, v := range trm.things {
-		ths = append(ths, v)
+	for _, th := range trm.things {
+		ths = append(ths, th)
 	}
 
-	return ths, nil
+	page := things.Page{
+		Things: ths,
+	}
+
+	return page, nil
+}
+
+func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
+	panic("not implemented")
 }
 
 type thingCacheMock struct {

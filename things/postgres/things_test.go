@@ -296,20 +296,20 @@ func TestSingleThingRetrieval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		ID    string
-		err   error
+		ID  string
+		err error
 	}{
 		"retrieve thing with existing user": {
-			ID:    th.ID,
-			err:   nil,
+			ID:  th.ID,
+			err: nil,
 		},
 		"retrieve non-existing thing with existing user": {
-			ID:    nonexistentThingID,
-			err:   errors.ErrNotFound,
+			ID:  nonexistentThingID,
+			err: errors.ErrNotFound,
 		},
 		"retrieve thing with malformed ID": {
-			ID:    wrongValue,
-			err:   errors.ErrNotFound,
+			ID:  wrongValue,
+			err: errors.ErrNotFound,
 		},
 	}
 
@@ -609,8 +609,8 @@ func TestBackupThings(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		things, err := thingRepo.RetrieveAll(context.Background())
-		size := uint64(len(things))
+		thPage, err := thingRepo.RetrieveAll(context.Background())
+		size := uint64(len(thPage.Things))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
