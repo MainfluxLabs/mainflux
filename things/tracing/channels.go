@@ -133,7 +133,7 @@ func (crm channelRepositoryMiddleware) HasThingByID(ctx context.Context, chanID,
 	return crm.repo.HasThingByID(ctx, chanID, thingID)
 }
 
-func (crm channelRepositoryMiddleware) RetrieveAll(ctx context.Context) (things.ChannelsPage, error) {
+func (crm channelRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllChannelsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

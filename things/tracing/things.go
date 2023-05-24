@@ -117,7 +117,7 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner, id strin
 	return trm.repo.Remove(ctx, owner, id)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) (things.Page, error) {
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
 	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

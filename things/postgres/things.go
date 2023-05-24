@@ -251,8 +251,13 @@ func (tr thingRepository) RetrieveByOwner(ctx context.Context, owner string, pm 
 	return tr.retrieve(ctx, owner, pm)
 }
 
-func (tr thingRepository) RetrieveAll(ctx context.Context) (things.Page, error) {
-	return tr.retrieve(ctx, "", things.PageMetadata{})
+func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
+	thPage, err := tr.retrieve(ctx, "", things.PageMetadata{})
+	if err != nil {
+		return []things.Thing{}, err
+	}
+
+	return thPage.Things, nil
 }
 
 func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {

@@ -134,8 +134,13 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 	return cr.retrieve(ctx, owner, pm)
 }
 
-func (cr channelRepository) RetrieveAll(ctx context.Context) (things.ChannelsPage, error) {
-	return cr.retrieve(ctx, "", things.PageMetadata{})
+func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
+	chPage, err := cr.retrieve(ctx, "", things.PageMetadata{})
+	if err != nil {
+		return []things.Channel{}, err
+	}
+
+	return chPage.Channels, nil
 }
 
 func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {

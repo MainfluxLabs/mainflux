@@ -288,18 +288,16 @@ func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingI
 	return nil
 }
 
-func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) (things.ChannelsPage, error) {
+func (crm *channelRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
-	var chs []things.Channel
 
+	var chs []things.Channel
 	for _, v := range crm.channels {
 		chs = append(chs, v)
 	}
 
-	return things.ChannelsPage{
-		Channels: chs,
-	}, nil
+	return chs, nil
 }
 
 func (crm *channelRepositoryMock) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {

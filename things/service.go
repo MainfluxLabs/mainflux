@@ -586,12 +586,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	thPage, err := ts.things.RetrieveAll(ctx)
+	things, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	chPage, err := ts.channels.RetrieveAll(ctx)
+	channels, err := ts.channels.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -602,8 +602,8 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:         thPage.Things,
-		Channels:       chPage.Channels,
+		Things:         things,
+		Channels:       channels,
 		Connections:    connections,
 		Groups:         groups,
 		GroupRelations: groupRelations,

@@ -297,7 +297,7 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 	delete(trm.tconns[conn.chanID], conn.thing.ID)
 }
 
-func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 	var ths []things.Thing
@@ -306,11 +306,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) (things.Page, err
 		ths = append(ths, th)
 	}
 
-	page := things.Page{
-		Things: ths,
-	}
-
-	return page, nil
+	return ths, nil
 }
 
 func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
