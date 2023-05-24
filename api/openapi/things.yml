@@ -1122,7 +1122,7 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/ConnectionResSchema"
-        group_rlations:
+        group_relations:
           type: array
           minItems: 1
           uniqueItems: true
