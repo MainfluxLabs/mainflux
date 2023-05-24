@@ -187,7 +187,7 @@ type OrgRepository interface {
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (OrgsPage, error)
 
 	// RetrieveAll retrieves all orgs.
-	RetrieveAll(ctx context.Context) (OrgsPage, error)
+	RetrieveAll(ctx context.Context) ([]Org, error)
 
 	// RetrieveMemberships list of orgs that member belongs to
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)

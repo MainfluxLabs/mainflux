@@ -86,7 +86,7 @@ func (orm orgRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID 
 	return orm.repo.RetrieveByOwner(ctx, ownerID, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

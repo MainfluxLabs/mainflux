@@ -665,7 +665,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 	}
 
 	backup := Backup{
-		Orgs:            orgs.Orgs,
+		Orgs:            orgs,
 		MemberRelations: members,
 		GroupRelations:  groups,
 	}

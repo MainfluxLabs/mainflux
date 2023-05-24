@@ -285,7 +285,7 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -294,9 +294,7 @@ func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) (auth.OrgsPage, e
 		orgs = append(orgs, org)
 	}
 
-	return auth.OrgsPage{
-		Orgs: orgs,
-	}, nil
+	return orgs, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {

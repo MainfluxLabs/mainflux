@@ -165,8 +165,13 @@ func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 	return gr.retrieve(ctx, ownerID, pm)
 }
 
-func (gr orgRepository) RetrieveAll(ctx context.Context) (auth.OrgsPage, error) {
-	return gr.retrieve(ctx, "", auth.PageMetadata{})
+func (gr orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+	orPage, err := gr.retrieve(ctx, "", auth.PageMetadata{})
+	if err != nil {
+		return nil, err
+	}
+
+	return orPage.Orgs, nil
 }
 
 func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
