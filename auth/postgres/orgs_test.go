@@ -355,17 +355,6 @@ func TestRetrieveByOwner(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve orgs by owner without owner id",
-			ownerID: "",
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
-			},
-			size: 0,
-			err:  errors.ErrRetrieveEntity,
-		},
-		{
 			desc:    "retrieve orgs by owner filtered by metadata",
 			ownerID: ownerID,
 			pageMetadata: auth.PageMetadata{
@@ -380,6 +369,17 @@ func TestRetrieveByOwner(t *testing.T) {
 		{
 			desc:    "retrieve orgs by owner with invalid owner id",
 			ownerID: invalidID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  0,
+			},
+			size: 0,
+			err:  errors.ErrRetrieveEntity,
+		},
+		{
+			desc:    "retrieve orgs by owner without owner id",
+			ownerID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
