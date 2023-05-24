@@ -620,7 +620,6 @@ func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	if err != nil {
 		return []auth.GroupRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
-
 	defer rows.Close()
 
 	var groupRelations []auth.GroupRelation
@@ -631,7 +630,6 @@ func (gr orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 		}
 
 		groupRelations = append(groupRelations, toGroupRelation(dbg))
-
 	}
 
 	return groupRelations, nil
