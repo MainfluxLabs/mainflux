@@ -1367,6 +1367,20 @@ func TestBackup(t *testing.T) {
 	// Wait for things and channels to connect.
 	time.Sleep(time.Second)
 
+	for _, group := range groups {
+		err := svc.Assign(context.Background(), token, group.ID, ths[0].ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	groupRelations := []things.GroupRelation{}
+	for _, group := range groups {
+		grRel := things.GroupRelation{
+			GroupID:  group.ID,
+			MemberID: ths[0].ID,
+		}
+		groupRelations = append(groupRelations, grRel)
+	}
+
 	connections := []things.Connection{}
 	for _, ch := range chsc {
 		connections = append(connections, things.Connection{
@@ -1378,10 +1392,11 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := things.Backup{
-		Groups:      groups,
-		Things:      ths,
-		Channels:    chsc,
-		Connections: connections,
+		Groups:         groups,
+		Things:         ths,
+		Channels:       chsc,
+		Connections:    connections,
+		GroupRelations: groupRelations,
 	}
 
 	cases := map[string]struct {
@@ -1412,10 +1427,12 @@ func TestBackup(t *testing.T) {
 		thingsSize := len(backup.Things)
 		channelsSize := len(backup.Channels)
 		connectionsSize := len(backup.Connections)
+		groupRelationsSize := len(backup.GroupRelations)
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
+		assert.Equal(t, len(tc.backup.GroupRelations), groupRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupRelations), groupRelationsSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}
@@ -1442,6 +1459,15 @@ func TestRestore(t *testing.T) {
 		}
 
 		groups = append(groups, gr)
+	}
+
+	var groupRelations []things.GroupRelation
+	for _, group := range groups {
+		grRel := things.GroupRelation{
+			GroupID:  group.ID,
+			MemberID: thID,
+		}
+		groupRelations = append(groupRelations, grRel)
 	}
 
 	ths := []things.Thing{
@@ -1480,10 +1506,11 @@ func TestRestore(t *testing.T) {
 	}
 
 	backup := things.Backup{
-		Groups:      groups,
-		Things:      ths,
-		Channels:    chs,
-		Connections: connections,
+		Groups:         groups,
+		Things:         ths,
+		Channels:       chs,
+		Connections:    connections,
+		GroupRelations: groupRelations,
 	}
 
 	cases := map[string]struct {

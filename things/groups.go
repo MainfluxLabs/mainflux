@@ -43,6 +43,14 @@ type Group struct {
 	UpdatedAt   time.Time
 }
 
+// GroupRelation represents a relation between a group and a member.
+type GroupRelation struct {
+	MemberID  string
+	GroupID   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 // GroupPage contains page related metadata as well as list of groups that
 // belong to this page.
 type GroupPage struct {
@@ -91,4 +99,7 @@ type GroupRepository interface {
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
+
+	// RetrieveAllGroupRelations retrieves all group relations.
+	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }
