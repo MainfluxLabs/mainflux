@@ -286,13 +286,49 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 }
 
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) (auth.OrgsPage, error) {
-	panic("not implemented")
+	orm.mu.Lock()
+	defer orm.mu.Unlock()
+
+	var orgs []auth.Org
+	for _, org := range orm.orgs {
+		orgs = append(orgs, org)
+	}
+
+	return auth.OrgsPage{
+		Orgs: orgs,
+	}, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
-	panic("not implemented")
+	orm.mu.Lock()
+	defer orm.mu.Unlock()
+
+	var memberRelations []auth.MemberRelation
+	for _, org := range orm.orgs {
+		for _, member := range orm.members {
+			memberRelations = append(memberRelations, auth.MemberRelation{
+				OrgID:    org.ID,
+				MemberID: member.ID,
+			})
+		}
+	}
+
+	return memberRelations, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
-	panic("not implemented")
+	orm.mu.Lock()
+	defer orm.mu.Unlock()
+
+	var groupRelations []auth.GroupRelation
+	for _, org := range orm.orgs {
+		for _, group := range orm.groups {
+			groupRelations = append(groupRelations, auth.GroupRelation{
+				OrgID:   org.ID,
+				GroupID: group,
+			})
+		}
+	}
+
+	return groupRelations, nil
 }
