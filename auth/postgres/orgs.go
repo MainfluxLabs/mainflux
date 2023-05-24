@@ -158,6 +158,10 @@ func (gr orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (gr orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	if ownerID == "" {
+		return auth.OrgsPage{}, errors.ErrRetrieveEntity
+	}
+
 	return gr.retrieve(ctx, ownerID, pm)
 }
 
