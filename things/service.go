@@ -142,10 +142,11 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Groups      []Group
-	Things      []Thing
-	Channels    []Channel
-	Connections []Connection
+	Things         []Thing
+	Channels       []Channel
+	Connections    []Connection
+	Groups         []Group
+	GroupRelations []GroupRelation
 }
 
 var _ Service = (*thingsService)(nil)
@@ -580,6 +581,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
+	groupRelations, err := ts.groups.RetrieveAllGroupRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	thPage, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
@@ -596,10 +602,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Groups:      groups,
-		Things:      thPage.Things,
-		Channels:    chPage.Channels,
-		Connections: connections,
+		Things:         thPage.Things,
+		Channels:       chPage.Channels,
+		Connections:    connections,
+		Groups:         groups,
+		GroupRelations: groupRelations,
 	}, nil
 }
 
@@ -615,6 +622,13 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 
 	for _, group := range backup.Groups {
 		_, err = ts.groups.Save(ctx, group)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, grRel := range backup.GroupRelations {
+		err = ts.groups.AssignMember(ctx, grRel.GroupID, grRel.MemberID)
 		if err != nil {
 			return err
 		}

@@ -472,10 +472,11 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return backupRes{
-			Groups:      backup.Groups,
-			Things:      backup.Things,
-			Channels:    backup.Channels,
-			Connections: backup.Connections,
+			Things:         backup.Things,
+			Channels:       backup.Channels,
+			Connections:    backup.Connections,
+			Groups:         backup.Groups,
+			GroupRelations: backup.GroupRelations,
 		}, nil
 	}
 }
@@ -488,10 +489,11 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		backup := things.Backup{
-			Groups:      req.Groups,
-			Things:      req.Things,
-			Channels:    req.Channels,
-			Connections: req.Connections,
+			Things:         req.Things,
+			Channels:       req.Channels,
+			Connections:    req.Connections,
+			Groups:         req.Groups,
+			GroupRelations: req.GroupRelations,
 		}
 
 		if err := svc.Restore(ctx, req.token, backup); err != nil {

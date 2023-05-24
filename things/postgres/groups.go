@@ -417,6 +417,32 @@ func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID stri
 	return page, nil
 }
 
+func (gr groupRepository) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {
+	q := `SELECT group_id, member_id, created_at, updated_at FROM group_relations`
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	grRel := []things.GroupRelation{}
+	for rows.Next() {
+		dbg := dbGroupRelation{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gr, err := toGroupRelation(dbg)
+		if err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		grRel = append(grRel, gr)
+	}
+
+	return grRel, nil
+}
+
 func (gr groupRepository) AssignMember(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -597,6 +623,15 @@ func toDBGroupRelation(memberID, groupID string) (dbGroupRelation, error) {
 	return dbGroupRelation{
 		GroupID:  grID,
 		MemberID: mID,
+	}, nil
+}
+
+func toGroupRelation(dbgr dbGroupRelation) (things.GroupRelation, error) {
+	return things.GroupRelation{
+		GroupID:   dbgr.GroupID.String,
+		MemberID:  dbgr.MemberID.String,
+		CreatedAt: dbgr.CreatedAt,
+		UpdatedAt: dbgr.UpdatedAt,
 	}, nil
 }
 
