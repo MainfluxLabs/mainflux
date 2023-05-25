@@ -40,35 +40,36 @@ func NewOrgRepo(db Database) auth.OrgRepository {
 	}
 }
 
-func (gr orgRepository) Save(ctx context.Context, g auth.Org) error {
+func (gr orgRepository) Save(ctx context.Context, g ...auth.Org) error {
 	// For root org path is initialized with id
 	q := `INSERT INTO orgs (name, description, id, owner_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at)`
 
-	dbg, err := toDBOrg(g)
-	if err != nil {
-		return err
-	}
-
-	row, err := gr.db.NamedQueryContext(ctx, q, dbg)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				return errors.Wrap(errors.ErrCreateEntity, err)
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(errors.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			}
+	for _, org := range g {
+		dbg, err := toDBOrg(org)
+		if err != nil {
+			return err
 		}
 
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		_, err = gr.db.NamedExecContext(ctx, q, dbg)
+		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrCreateEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
+
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
 	}
-	defer row.Close()
 
 	return nil
 }

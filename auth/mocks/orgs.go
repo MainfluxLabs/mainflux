@@ -26,18 +26,19 @@ func NewOrgRepository() auth.OrgRepository {
 	}
 }
 
-func (orm *orgRepositoryMock) Save(ctx context.Context, g auth.Org) error {
+func (orm *orgRepositoryMock) Save(ctx context.Context, g ...auth.Org) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if _, ok := orm.orgs[g.ID]; ok {
-		return errors.ErrConflict
+	for _, org := range g {
+		if _, ok := orm.orgs[org.ID]; ok {
+			return errors.ErrConflict
+		}
+
+		orm.orgs[org.ID] = org
 	}
 
-	orm.orgs[g.ID] = g
-
 	return nil
-
 }
 
 func (orm *orgRepositoryMock) Update(ctx context.Context, g auth.Org) error {
