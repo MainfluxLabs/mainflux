@@ -283,13 +283,12 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return Page{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	// By default, fetch things from Things service.
-	page, err := ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
-	if err != nil {
-		return Page{}, err
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return ts.things.RetrieveByAdmin(ctx, pm)
+
 	}
 
-	return page, nil
+	return ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
 }
 
 func (ts *thingsService) ListThingsByIDs(ctx context.Context, ids []string) (Page, error) {
@@ -398,7 +397,10 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	// By default, fetch channels from database based on the owner field.
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return ts.channels.RetrieveByAdmin(ctx, pm)
+	}
+
 	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
 }
 

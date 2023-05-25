@@ -81,6 +81,9 @@ type ChannelRepository interface {
 	// RetrieveAll retrieves all channels for all users.
 	RetrieveAll(ctx context.Context) ([]Channel, error)
 
+	// RetrieveByAdmin  retrieves all channels for all users with pagination.
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ChannelsPage, error)
+
 	// RetrieveAllConnections retrieves all connections between channels and things for all users.
 	RetrieveAllConnections(ctx context.Context) ([]Connection, error)
 }

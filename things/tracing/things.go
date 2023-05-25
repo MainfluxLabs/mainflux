@@ -125,6 +125,14 @@ func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.
 	return trm.repo.RetrieveAll(ctx)
 }
 
+func (trm thingRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
+	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.RetrieveByAdmin(ctx, pm)
+}
+
 type thingCacheMiddleware struct {
 	tracer opentracing.Tracer
 	cache  things.ThingCache
