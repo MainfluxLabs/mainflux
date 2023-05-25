@@ -684,10 +684,8 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	for _, org := range backup.Orgs {
-		if err := svc.orgs.Save(ctx, org); err != nil {
-			return err
-		}
+	if err := svc.orgs.Save(ctx, backup.Orgs...); err != nil {
+		return err
 	}
 
 	for _, mr := range backup.MemberRelations {

@@ -172,7 +172,7 @@ type OrgService interface {
 // OrgRepository specifies an org persistence API.
 type OrgRepository interface {
 	// Save org
-	Save(ctx context.Context, g Org) error
+	Save(ctx context.Context, g ...Org) error
 
 	// Update an org
 	Update(ctx context.Context, g Org) error
