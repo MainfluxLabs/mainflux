@@ -145,20 +145,20 @@ func encodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (inter
 }
 
 func encodeError(err error) error {
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return nil
-	case apiutil.ErrMalformedEntity,
-		apiutil.ErrMissingID,
-		apiutil.ErrBearerKey:
+	case errors.Contains(err,apiutil.ErrMalformedEntity),
+		err == apiutil.ErrMissingID,
+		err == apiutil.ErrBearerKey:
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.ErrAuthentication:
+	case errors.Contains(err,errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())
-	case errors.ErrAuthorization:
+	case errors.Contains(err,errors.ErrAuthorization):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case things.ErrEntityConnected:
+	case errors.Contains(err,things.ErrEntityConnected):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.ErrNotFound:
+	case errors.Contains(err,errors.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")
