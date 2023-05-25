@@ -127,80 +127,24 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things
 }
 
 func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	ownq := getOwnerQuery(owner)
-	nq, name := getNameQuery(pm.Name)
-	oq := getOrderQuery(pm.Order)
-	dq := getDirQuery(pm.Dir)
-	meta, mq, err := getMetadataQuery(pm.Metadata)
+	if owner == "" {
+		return things.ChannelsPage{}, errors.ErrRetrieveEntity
+	}
+
+	return cr.retrieve(ctx, owner, pm)
+}
+
+func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
+	chPage, err := cr.retrieve(ctx, "", things.PageMetadata{})
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return []things.Channel{}, err
 	}
 
-	var whereClause string
-	var query []string
-	if ownq != "" {
-		query = append(query, ownq)
-	}
-	if mq != "" {
-		query = append(query, mq)
-	}
-	if nq != "" {
-		query = append(query, nq)
-	}
-	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
+	return chPage.Channels, nil
+}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	params := map[string]interface{}{
-		"owner":    owner,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": meta,
-	}
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	items := []things.Channel{}
-	for rows.Next() {
-		dbch := dbChannel{Owner: owner}
-		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		ch := toChannel(dbch)
-
-		items = append(items, ch)
-	}
-
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM channels %s;`, whereClause)
-
-	total, err := total(ctx, cr.db, cq, params)
-	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := things.ChannelsPage{
-		Channels: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-		},
-	}
-
-	return page, nil
+func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
+	return cr.retrieve(ctx, "", pm)
 }
 
 func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
@@ -492,28 +436,6 @@ func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string
 	return nil
 }
 
-func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
-	q := `SELECT id, owner, name, metadata FROM channels;`
-
-	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
-	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	channels := make([]things.Channel, 0)
-	for rows.Next() {
-		dbch := dbChannel{}
-		if err := rows.StructScan(&dbch); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		channels = append(channels, toChannel(dbch))
-	}
-
-	return channels, nil
-}
-
 func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
 	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
 
@@ -534,6 +456,83 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 	}
 
 	return connections, nil
+}
+
+func (cr channelRepository) retrieve(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	ownq := getOwnerQuery(owner)
+	nq, name := getNameQuery(pm.Name)
+	oq := getOrderQuery(pm.Order)
+	dq := getDirQuery(pm.Dir)
+	meta, mq, err := getMetadataQuery(pm.Metadata)
+	if err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	var whereClause string
+	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
+	}
+	if mq != "" {
+		query = append(query, mq)
+	}
+	if nq != "" {
+		query = append(query, nq)
+	}
+	if len(query) > 0 {
+		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+
+	params := map[string]interface{}{
+		"owner":    owner,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"name":     name,
+		"metadata": meta,
+	}
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items := []things.Channel{}
+	for rows.Next() {
+		dbch := dbChannel{Owner: owner}
+		if err := rows.StructScan(&dbch); err != nil {
+			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		ch := toChannel(dbch)
+
+		items = append(items, ch)
+	}
+
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM channels %s;`, whereClause)
+
+	total, err := total(ctx, cr.db, cq, params)
+	if err != nil {
+		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := things.ChannelsPage{
+		Channels: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
+	}
+
+	return page, nil
 }
 
 // dbMetadata type for handling metadata properly in database/sql.
