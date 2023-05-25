@@ -141,6 +141,14 @@ func (crm channelRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]thing
 	return crm.repo.RetrieveAll(ctx)
 }
 
+func (crm channelRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
+	span := createSpan(ctx, crm.tracer, retrieveAllChannelsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RetrieveByAdmin(ctx, pm)
+}
+
 func (crm channelRepositoryMiddleware) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllConnectionsOp)
 	defer span.Finish()

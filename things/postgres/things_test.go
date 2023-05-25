@@ -296,20 +296,20 @@ func TestSingleThingRetrieval(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		ID    string
-		err   error
+		ID  string
+		err error
 	}{
 		"retrieve thing with existing user": {
-			ID:    th.ID,
-			err:   nil,
+			ID:  th.ID,
+			err: nil,
 		},
 		"retrieve non-existing thing with existing user": {
-			ID:    nonexistentThingID,
-			err:   errors.ErrNotFound,
+			ID:  nonexistentThingID,
+			err: errors.ErrNotFound,
 		},
 		"retrieve thing with malformed ID": {
-			ID:    wrongValue,
-			err:   errors.ErrNotFound,
+			ID:  wrongValue,
+			err: errors.ErrNotFound,
 		},
 	}
 
