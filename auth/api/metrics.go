@@ -214,3 +214,21 @@ func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID 
 
 	return ms.svc.CanAccessGroup(ctx, token, groupID)
 }
+
+func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Backup, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup").Add(1)
+		ms.latency.With("method", "backup").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Backup(ctx, token)
+}
+
+func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "restore").Add(1)
+		ms.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Restore(ctx, token, backup)
+}

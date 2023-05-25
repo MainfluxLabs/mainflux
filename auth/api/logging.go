@@ -301,3 +301,29 @@ func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, orgID st
 
 	return lm.svc.CanAccessGroup(ctx, token, orgID)
 }
+
+func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup auth.Backup, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Backup(ctx, token)
+}
+
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Restore(ctx, token, backup)
+}

@@ -1610,3 +1610,156 @@ func TestListOrgMemberships(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
+
+func TestBackup(t *testing.T) {
+	svc := newService()
+
+	_, ownerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, viewerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	var grIDs []string
+	for i := 0; i < n; i++ {
+		groupID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		grIDs = append(grIDs, groupID)
+	}
+
+	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.AssignMembers(context.Background(), ownerLoginSecret, or.ID, members...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.AssignGroups(context.Background(), ownerLoginSecret, or.ID, grIDs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc                string
+		token               string
+		orgSize             int
+		memberRelationsSize int
+		groupRelationsSize  int
+		err                 error
+	}{
+		{
+			desc:                "backup all orgs, member relations and group relations",
+			token:               ownerLoginSecret,
+			orgSize:             1,
+			memberRelationsSize: len(members) + 1,
+			groupRelationsSize:  len(grIDs),
+			err:                 nil,
+		},
+		{
+			desc:                "backup with invalid credentials",
+			token:               invalid,
+			orgSize:             0,
+			memberRelationsSize: 0,
+			groupRelationsSize:  0,
+			err:                 errors.ErrAuthentication,
+		},
+		{
+			desc:                "backup without credentials",
+			token:               "",
+			orgSize:             0,
+			memberRelationsSize: 0,
+			groupRelationsSize:  0,
+			err:                 errors.ErrAuthentication,
+		},
+		{
+			desc:                "backup with non-admin credentials",
+			token:               viewerLoginSecret,
+			orgSize:             0,
+			memberRelationsSize: 0,
+			groupRelationsSize:  0,
+			err:                 errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.Backup(context.Background(), tc.token)
+		orgSize := len(page.Orgs)
+		memberRelationsSize := len(page.MemberRelations)
+		groupRelationsSize := len(page.GroupRelations)
+		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
+		assert.Equal(t, tc.memberRelationsSize, memberRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.memberRelationsSize, memberRelationsSize))
+		assert.Equal(t, tc.groupRelationsSize, groupRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.groupRelationsSize, groupRelationsSize))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRestore(t *testing.T) {
+	svc := newService()
+
+	_, ownerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, viewerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	var memberIDs []string
+	var groupIDs []string
+	for i := 0; i < n; i++ {
+		memberID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		memberIDs = append(memberIDs, memberID)
+
+		groupID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		groupIDs = append(groupIDs, groupID)
+	}
+
+	orgs := []auth.Org{{ID: id, OwnerID: ownerID, Name: name}}
+	var memberRelations []auth.MemberRelation
+	for _, memberID := range memberIDs {
+		memberRelations = append(memberRelations, auth.MemberRelation{MemberID: memberID, OrgID: id})
+	}
+
+	var groupRelations []auth.GroupRelation
+	for _, groupID := range groupIDs {
+		groupRelations = append(groupRelations, auth.GroupRelation{GroupID: groupID, OrgID: id})
+	}
+
+	backup := auth.Backup{
+		Orgs:            orgs,
+		MemberRelations: memberRelations,
+		GroupRelations:  groupRelations,
+	}
+
+	cases := []struct {
+		desc   string
+		token  string
+		backup auth.Backup
+		err    error
+	}{
+		{
+			desc:   "restore all orgs, member relations and group relations",
+			token:  ownerLoginSecret,
+			backup: backup,
+			err:    nil,
+		},
+		{
+			desc:   "restore with invalid credentials",
+			token:  invalid,
+			backup: backup,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "restore without credentials",
+			token:  "",
+			backup: backup,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "restore with non-admin credentials",
+			token:  viewerLoginSecret,
+			backup: backup,
+			err:    errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.Restore(context.Background(), tc.token, backup)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
