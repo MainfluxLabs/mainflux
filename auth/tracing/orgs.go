@@ -43,12 +43,12 @@ func OrgRepositoryMiddleware(tracer opentracing.Tracer, gr auth.OrgRepository) a
 	}
 }
 
-func (orm orgRepositoryMiddleware) Save(ctx context.Context, g auth.Org) error {
+func (orm orgRepositoryMiddleware) Save(ctx context.Context, g ...auth.Org) error {
 	span := createSpan(ctx, orm.tracer, saveOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.Save(ctx, g)
+	return orm.repo.Save(ctx, g...)
 }
 
 func (orm orgRepositoryMiddleware) Update(ctx context.Context, g auth.Org) error {
