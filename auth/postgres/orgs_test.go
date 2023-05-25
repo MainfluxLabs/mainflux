@@ -13,10 +13,13 @@ import (
 )
 
 const (
-	orgName   = "test"
-	orgDesc   = "test_description"
-	invalidID = "invalid"
-	n         = uint64(10)
+	orgName             = "test"
+	orgDesc             = "test_description"
+	invalidID           = "invalid"
+	n                   = uint64(10)
+	orgsTable           = "orgs"
+	orgRelationsTable   = "org_relations"
+	groupRelationsTable = "group_relations"
 )
 
 func TestSave(t *testing.T) {
@@ -403,6 +406,52 @@ func TestRetrieveByOwner(t *testing.T) {
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrieveAll(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", orgsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := uint64(0); i < n; i++ {
+		orgID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		org := auth.Org{
+			ID:          orgID,
+			OwnerID:     ownerID,
+			Name:        fmt.Sprintf("%s-%d", orgName, i),
+			Description: fmt.Sprintf("%s-%d", orgDesc, i),
+			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
+		}
+
+		err = repo.Save(context.Background(), org)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc string
+		size uint64
+		err  error
+	}{
+		{
+			desc: "retrieve all orgs",
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		orgs, err := repo.RetrieveAll(context.Background())
+		size := len(orgs)
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1318,6 +1367,113 @@ func TestRetrieveByGroupID(t *testing.T) {
 	for desc, tc := range cases {
 		page, err := repo.RetrieveByGroupID(context.Background(), tc.groupID)
 		size := len(page.Orgs)
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrieveAllMemberRelations(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", orgRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := uint64(0); i < n; i++ {
+		memberID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		member := auth.Member{
+			ID:   memberID,
+			Role: auth.EditorRole,
+		}
+
+		err = repo.AssignMembers(context.Background(), org.ID, member)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc string
+		size uint64
+		err  error
+	}{
+		{
+			desc: "retrieve all member relations",
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := repo.RetrieveAllMemberRelations(context.Background())
+		size := len(page)
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrieveAllGroupRelations(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := uint64(0); i < n; i++ {
+		groupID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		err = repo.AssignGroups(context.Background(), org.ID, groupID)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc string
+		size uint64
+		err  error
+	}{
+		{
+			desc: "retrieve all group relations",
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := repo.RetrieveAllGroupRelations(context.Background())
+		size := len(page)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}

@@ -125,6 +125,18 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
+	mux.Get("/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+	mux.Post("/restore", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
+		decodeRestore,
+		encodeResponse,
+		opts...,
+	))
 
 	return mux
 }
@@ -313,6 +325,26 @@ func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error
 	req := groupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	return req, nil
+}
+
+func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+	req := restoreReq{
+		token: apiutil.ExtractBearerToken(r),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

@@ -638,6 +638,77 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 	return errors.ErrAuthorization
 }
 
+func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	pr := AuthzReq{Email: user.Email}
+	if err := svc.Authorize(ctx, pr); err != nil {
+		return Backup{}, err
+	}
+
+	orgs, err := svc.orgs.RetrieveAll(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	members, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	groups, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	backup := Backup{
+		Orgs:            orgs,
+		MemberRelations: members,
+		GroupRelations:  groups,
+	}
+
+	return backup, nil
+}
+
+func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	pr := AuthzReq{Email: user.Email}
+	if err := svc.Authorize(ctx, pr); err != nil {
+		return err
+	}
+
+	for _, org := range backup.Orgs {
+		if err := svc.orgs.Save(ctx, org); err != nil {
+			return err
+		}
+	}
+
+	for _, mr := range backup.MemberRelations {
+		member := Member{
+			ID:   mr.MemberID,
+			Role: mr.Role,
+		}
+		if err := svc.orgs.AssignMembers(ctx, mr.OrgID, member); err != nil {
+			return err
+		}
+	}
+
+	for _, gr := range backup.GroupRelations {
+		if err := svc.orgs.AssignGroups(ctx, gr.OrgID, gr.GroupID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {

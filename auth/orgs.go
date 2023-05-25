@@ -25,13 +25,13 @@ type OrgMetadata map[string]interface{}
 
 // Org represents the org information.
 type Org struct {
-	ID          string
-	OwnerID     string
-	Name        string
-	Description string
-	Metadata    OrgMetadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string      `json:"id"`
+	OwnerID     string      `json:"owner_id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Metadata    OrgMetadata `json:"metadata"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -93,6 +93,27 @@ type Member struct {
 	Email string `json:"email"`
 }
 
+type MemberRelation struct {
+	MemberID  string    `json:"member_id"`
+	OrgID     string    `json:"org_id"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type GroupRelation struct {
+	GroupID   string    `json:"group_id"`
+	OrgID     string    `json:"org_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type Backup struct {
+	Orgs            []Org
+	MemberRelations []MemberRelation
+	GroupRelations  []GroupRelation
+}
+
 // OrgService specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type OrgService interface {
@@ -140,6 +161,12 @@ type OrgService interface {
 
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
+
+	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
+	Backup(ctx context.Context, token string) (Backup, error)
+
+	// Restore adds orgs, org relations and group relations from a backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, backup Backup) error
 }
 
 // OrgRepository specifies an org persistence API.
@@ -159,6 +186,9 @@ type OrgRepository interface {
 	// RetrieveByOwner retrieves orgs by owner.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (OrgsPage, error)
 
+	// RetrieveAll retrieves all orgs.
+	RetrieveAll(ctx context.Context) ([]Org, error)
+
 	// RetrieveMemberships list of orgs that member belongs to
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
@@ -177,6 +207,9 @@ type OrgRepository interface {
 	// RetrieveMembers retrieves members assigned to an org identified by orgID.
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
+	// RetrieveAllMemberRelations retrieves all member relations.
+	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
+
 	// AssignGroups adds groups to an org.
 	AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
@@ -188,4 +221,7 @@ type OrgRepository interface {
 
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
+
+	// RetrieveAllGroupRelations retrieves all group relations.
+	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }
