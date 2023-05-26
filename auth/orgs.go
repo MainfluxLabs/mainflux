@@ -193,7 +193,7 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, orgID string, members ...Member) error
+	AssignMembers(ctx context.Context, memberRelations ...MemberRelation) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
@@ -211,7 +211,7 @@ type OrgRepository interface {
 	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
 
 	// AssignGroups adds groups to an org.
-	AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error
+	AssignGroups(ctx context.Context, groupRelations ...GroupRelation) error
 
 	// UnassignGroups removes groups from an org
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error

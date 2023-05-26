@@ -259,12 +259,15 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	member := Member{
-		ID:   user.ID,
-		Role: OwnerRole,
+	mRel := MemberRelation{
+		OrgID:     id,
+		MemberID:  user.ID,
+		Role:      OwnerRole,
+		CreatedAt: timestamp,
+		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, id, member); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, mRel); err != nil {
 		return Org{}, err
 	}
 
@@ -369,7 +372,7 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, Member{}); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, MemberRelation{}); err != nil {
 		return err
 	}
 
@@ -408,8 +411,19 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, mbs...); err != nil {
-		return err
+	timestamp := getTimestmap()
+	for _, m := range mbs {
+		mRel := MemberRelation{
+			OrgID:     orgID,
+			MemberID:  m.ID,
+			Role:      m.Role,
+			UpdatedAt: timestamp,
+			CreatedAt: timestamp,
+		}
+
+		if err := svc.orgs.AssignMembers(ctx, mRel); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -557,8 +571,19 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		return err
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, orgID, groupIDs...); err != nil {
-		return err
+	timestamp := getTimestmap()
+	for _, groupID := range groupIDs {
+		gRel := GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: timestamp,
+			UpdatedAt: timestamp,
+		}
+
+		if err := svc.orgs.AssignGroups(ctx, gRel); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
@@ -711,20 +736,12 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	for _, mr := range backup.MemberRelations {
-		member := Member{
-			ID:   mr.MemberID,
-			Role: mr.Role,
-		}
-		if err := svc.orgs.AssignMembers(ctx, mr.OrgID, member); err != nil {
-			return err
-		}
+	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
+		return err
 	}
 
-	for _, gr := range backup.GroupRelations {
-		if err := svc.orgs.AssignGroups(ctx, gr.OrgID, gr.GroupID); err != nil {
-			return err
-		}
+	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+		return err
 	}
 
 	return nil

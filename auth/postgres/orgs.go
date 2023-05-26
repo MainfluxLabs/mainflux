@@ -318,7 +318,7 @@ func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (gr orgRepository) AssignMembers(ctx context.Context, memberRelations ...auth.MemberRelation) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -327,15 +327,11 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members
 	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, member := range members {
-		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
+	for _, memberRelation := range memberRelations {
+		dbg, err := toDBAssignMember(memberRelation)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
-
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
 			tx.Rollback()
@@ -438,7 +434,7 @@ func (gr orgRepository) UpdateMembers(ctx context.Context, orgID string, members
 	return nil
 }
 
-func (gr orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+func (gr orgRepository) AssignGroups(ctx context.Context, groupRelations ...auth.GroupRelation) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -447,14 +443,11 @@ func (gr orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs
 	qIns := `INSERT INTO group_relations (org_id, group_id, created_at, updated_at)
 			 VALUES(:org_id, :group_id, :created_at, :updated_at)`
 
-	for _, id := range groupIDs {
-		dbg, err := toDBGroupRelation(id, orgID)
+	for _, groupRelation := range groupRelations {
+		dbg, err := toDBAssignGroup(groupRelation)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
 			tx.Rollback()
@@ -815,6 +808,16 @@ func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) 
 	}, nil
 }
 
+func toDBAssignMember(mRel auth.MemberRelation) (dbMemberRelation, error) {
+	return dbMemberRelation{
+		OrgID:     mRel.OrgID,
+		MemberID:  mRel.MemberID,
+		Role:      mRel.Role,
+		CreatedAt: mRel.CreatedAt,
+		UpdatedAt: mRel.UpdatedAt,
+	}, nil
+}
+
 func toMemberRelation(mRel dbMemberRelation) auth.MemberRelation {
 	return auth.MemberRelation{
 		OrgID:     mRel.OrgID,
@@ -836,6 +839,15 @@ func toDBGroupRelation(groupID, orgID string) (dbGroupRelation, error) {
 	return dbGroupRelation{
 		OrgID:   orgID,
 		GroupID: groupID,
+	}, nil
+}
+
+func toDBAssignGroup(dRel auth.GroupRelation) (dbGroupRelation, error) {
+	return dbGroupRelation{
+		OrgID:     dRel.OrgID,
+		GroupID:   dRel.GroupID,
+		CreatedAt: dRel.CreatedAt,
+		UpdatedAt: dRel.UpdatedAt,
 	}, nil
 }
 

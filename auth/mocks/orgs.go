@@ -14,7 +14,7 @@ type orgRepositoryMock struct {
 	mu      sync.Mutex
 	orgs    map[string]auth.Org
 	members map[string]auth.Member
-	groups  map[string]string
+	groups  map[string]auth.Group
 }
 
 // NewOrgRepository returns mock of org repository
@@ -22,7 +22,7 @@ func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
 		orgs:    make(map[string]auth.Org),
 		members: make(map[string]auth.Member),
-		groups:  make(map[string]string),
+		groups:  make(map[string]auth.Group),
 	}
 }
 
@@ -95,7 +95,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	return auth.OrgsPage{
 		Orgs: orgs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(orgs)),
+			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -120,22 +120,25 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	return auth.OrgsPage{
 		Orgs: orgs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(orgs)),
+			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mRel ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, member := range members {
-		if _, ok := orm.orgs[orgID]; !ok {
+	for _, rel := range mRel {
+		if _, ok := orm.orgs[rel.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.members[member.ID] = member
+		orm.members[rel.MemberID] = auth.Member{
+			ID:   rel.MemberID,
+			Role: rel.Role,
+		}
 	}
 
 	return nil
@@ -198,23 +201,24 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	return auth.OrgMembersPage{
 		Members: members,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(members)),
+			Total:  uint64(len(orm.members)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, gRel ...auth.GroupRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, groupID := range groupIDs {
-		if _, ok := orm.orgs[orgID]; !ok {
+	for _, rel := range gRel {
+		if _, ok := orm.orgs[rel.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.groups[groupID] = groupID
-
+		orm.groups[rel.GroupID] = auth.Group{
+			ID: rel.GroupID,
+		}
 	}
 
 	return nil
@@ -243,7 +247,7 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 	for _, group := range orm.groups {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.orgs[orgID]; ok {
-				groups = append(groups, auth.Group{ID: group})
+				groups = append(groups, auth.Group{ID: group.ID})
 			}
 		}
 		i++
@@ -257,7 +261,7 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 	return auth.OrgGroupsPage{
 		GroupIDs: groupIDs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(groups)),
+			Total:  uint64(len(orm.groups)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -279,7 +283,7 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 	return auth.OrgsPage{
 		Orgs: orgs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(orgs)),
+			Total:  uint64(len(orm.orgs)),
 			Offset: 0,
 			Limit:  uint64(len(orgs)),
 		},
@@ -324,7 +328,7 @@ func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]
 		for _, group := range orm.groups {
 			groupRelations = append(groupRelations, auth.GroupRelation{
 				OrgID:   org.ID,
-				GroupID: group,
+				GroupID: group.ID,
 			})
 		}
 	}
