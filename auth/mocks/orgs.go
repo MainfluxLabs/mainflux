@@ -158,15 +158,18 @@ func (orm *orgRepositoryMock) UnassignMembers(ctx context.Context, orgID string,
 	return nil
 }
 
-func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, memberRelations ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, member := range members {
-		if _, ok := orm.members[member.ID]; !ok || orm.orgs[orgID].ID != orgID {
+	for _, rel := range memberRelations {
+		if _, ok := orm.members[rel.MemberID]; !ok || orm.orgs[rel.OrgID].ID != rel.OrgID {
 			return errors.ErrNotFound
 		}
-		orm.members[member.ID] = member
+		orm.members[rel.MemberID] = auth.Member{
+			ID:   rel.MemberID,
+			Role: rel.Role,
+		}
 	}
 
 	return nil

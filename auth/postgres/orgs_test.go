@@ -892,15 +892,10 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	member := auth.Member{
-		ID:   memberID,
-		Role: auth.AdminRole,
-	}
-
 	memberRelation := auth.MemberRelation{
 		OrgID:     org.ID,
 		MemberID:  memberID,
-		Role:      auth.AdminRole,
+		Role:      auth.EditorRole,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -908,52 +903,86 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.AssignMembers(context.Background(), memberRelation)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	updateMrel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	invalidOrgIDmRel := auth.MemberRelation{
+		OrgID:    invalidID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	unknownOrgIDmRel := auth.MemberRelation{
+		OrgID:    unknownID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	emptyOrgIDmRel := auth.MemberRelation{
+		OrgID:    "",
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	invalidMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: invalidID,
+		Role:     auth.ViewerRole,
+	}
+
+	unknownMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: unknownID,
+		Role:     auth.ViewerRole,
+	}
+
+	emptyMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: "",
+		Role:     auth.ViewerRole,
+	}
+
 	cases := []struct {
-		desc   string
-		orgID  string
-		member auth.Member
-		err    error
+		desc           string
+		memberRelation auth.MemberRelation
+		err            error
 	}{
 		{
-			desc:   "update member role",
-			orgID:  org.ID,
-			member: member,
-			err:    nil,
+			desc:           "update member role",
+			memberRelation: updateMrel,
+			err:            nil,
 		}, {
-			desc:   "update role with invalid org id",
-			orgID:  invalidID,
-			member: member,
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with invalid org id",
+			memberRelation: invalidOrgIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with unknown org id",
-			orgID:  unknownID,
-			member: member,
-			err:    errors.ErrNotFound,
+			desc:           "update role with unknown org id",
+			memberRelation: unknownOrgIDmRel,
+			err:            errors.ErrNotFound,
 		}, {
-			desc:   "update role without org id",
-			orgID:  "",
-			member: member,
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role without org id",
+			memberRelation: emptyOrgIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with invalid member id",
-			orgID:  org.ID,
-			member: auth.Member{ID: invalidID},
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with invalid member id",
+			memberRelation: invalidMemberIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with unknown member id",
-			orgID:  org.ID,
-			member: auth.Member{ID: unknownID},
-			err:    errors.ErrNotFound,
+			desc:           "update role with unknown member id",
+			memberRelation: unknownMemberIDmRel,
+			err:            errors.ErrNotFound,
 		}, {
-			desc:   "update role with empty member",
-			orgID:  org.ID,
-			member: auth.Member{},
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with empty member",
+			memberRelation: emptyMemberIDmRel,
+			err:            errors.ErrMalformedEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdateMembers(context.Background(), tc.orgID, tc.member)
+		err := repo.UpdateMembers(context.Background(), tc.memberRelation)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

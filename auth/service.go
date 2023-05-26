@@ -495,7 +495,19 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 
 	}
 
-	if err := svc.orgs.UpdateMembers(ctx, orgID, mbs...); err != nil {
+	var memberRelations []MemberRelation
+	for _, m := range mbs {
+		mRel := MemberRelation{
+			OrgID:     orgID,
+			MemberID:  m.ID,
+			Role:      m.Role,
+			UpdatedAt: getTimestmap(),
+		}
+
+		memberRelations = append(memberRelations, mRel)
+	}
+
+	if err := svc.orgs.UpdateMembers(ctx, memberRelations...); err != nil {
 		return err
 	}
 

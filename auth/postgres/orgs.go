@@ -328,7 +328,7 @@ func (gr orgRepository) AssignMembers(ctx context.Context, memberRelations ...au
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, memberRelation := range memberRelations {
-		dbg, err := toDBAssignMember(memberRelation)
+		dbg, err := toDBMemberRelation(memberRelation)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -367,7 +367,12 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(orgID, id, "")
+		mRel := auth.MemberRelation{
+			OrgID:    orgID,
+			MemberID: id,
+		}
+
+		dbg, err := toDBMemberRelation(mRel)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -395,16 +400,15 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	return nil
 }
 
-func (gr orgRepository) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (gr orgRepository) UpdateMembers(ctx context.Context, memberRelations ...auth.MemberRelation) error {
 	qUpd := `UPDATE org_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
-	for _, member := range members {
-		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
+	for _, memberRelation := range memberRelations {
+		dbg, err := toDBMemberRelation(memberRelation)
 		if err != nil {
 			return errors.Wrap(errors.ErrUpdateEntity, err)
 		}
-		dbg.UpdatedAt = time.Now()
 
 		row, err := gr.db.NamedExecContext(ctx, qUpd, dbg)
 		if err != nil {
@@ -444,7 +448,7 @@ func (gr orgRepository) AssignGroups(ctx context.Context, groupRelations ...auth
 			 VALUES(:org_id, :group_id, :created_at, :updated_at)`
 
 	for _, groupRelation := range groupRelations {
-		dbg, err := toDBAssignGroup(groupRelation)
+		dbg, err := toDBGroupRelation(groupRelation)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -483,7 +487,12 @@ func (gr orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	qDel := `DELETE from group_relations WHERE org_id = :org_id AND group_id = :group_id`
 
 	for _, id := range groupIDs {
-		dbg, err := toDBGroupRelation(id, orgID)
+		gRel := auth.GroupRelation{
+			OrgID:   orgID,
+			GroupID: id,
+		}
+
+		dbg, err := toDBGroupRelation(gRel)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -570,7 +579,8 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 		FROM group_relations gre, orgs o
 		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
 
-	params, err := toDBGroupRelation(groupID, "")
+	gRel := auth.GroupRelation{GroupID: groupID}
+	params, err := toDBGroupRelation(gRel)
 	if err != nil {
 		return auth.OrgsPage{}, err
 	}
@@ -800,15 +810,7 @@ type dbMemberRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) {
-	return dbMemberRelation{
-		OrgID:    orgID,
-		MemberID: memberID,
-		Role:     role,
-	}, nil
-}
-
-func toDBAssignMember(mRel auth.MemberRelation) (dbMemberRelation, error) {
+func toDBMemberRelation(mRel auth.MemberRelation) (dbMemberRelation, error) {
 	return dbMemberRelation{
 		OrgID:     mRel.OrgID,
 		MemberID:  mRel.MemberID,
@@ -835,14 +837,7 @@ type dbGroupRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBGroupRelation(groupID, orgID string) (dbGroupRelation, error) {
-	return dbGroupRelation{
-		OrgID:   orgID,
-		GroupID: groupID,
-	}, nil
-}
-
-func toDBAssignGroup(dRel auth.GroupRelation) (dbGroupRelation, error) {
+func toDBGroupRelation(dRel auth.GroupRelation) (dbGroupRelation, error) {
 	return dbGroupRelation{
 		OrgID:     dRel.OrgID,
 		GroupID:   dRel.GroupID,
