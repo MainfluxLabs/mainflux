@@ -618,6 +618,7 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 
 	return page, nil
 }
+
 func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_relations;`
 
