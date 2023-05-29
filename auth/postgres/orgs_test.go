@@ -1333,34 +1333,47 @@ func TestRetrieveByGroupID(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc    string
-		groupID string
-		size    uint64
-		err     error
+		desc         string
+		groupID      string
+		pageMetadata auth.PageMetadata
+		size         uint64
+		err          error
 	}{
 		{
 			desc:    "retrieve orgs by group",
 			groupID: groupID,
-			size:    n,
-			err:     nil,
+			pageMetadata: auth.PageMetadata{
+				Total: n,
+			},
+			size: n,
+			err:  nil,
 		},
 		{
 			desc:    "retrieve orgs by invalid group id",
 			groupID: invalidID,
-			size:    0,
-			err:     errors.ErrRetrieveEntity,
+			pageMetadata: auth.PageMetadata{
+				Total: 0,
+			},
+			size: 0,
+			err:  errors.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve orgs by empty group id",
 			groupID: "",
-			size:    0,
-			err:     errors.ErrRetrieveEntity,
+			pageMetadata: auth.PageMetadata{
+				Total: 0,
+			},
+			size: 0,
+			err:  errors.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve orgs by unknown group id",
 			groupID: unknownID,
-			size:    0,
-			err:     nil,
+			pageMetadata: auth.PageMetadata{
+				Total: 0,
+			},
+			size: 0,
+			err:  nil,
 		},
 	}
 
@@ -1368,6 +1381,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 		page, err := repo.RetrieveByGroupID(context.Background(), tc.groupID)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
+		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.pageMetadata.Total, page.Total))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
