@@ -309,7 +309,12 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	if err := svc.orgs.UnassignGroups(ctx, id, gPage.GroupIDs...); err != nil {
+	var groupIDs []string
+	for _, g := range gPage.GroupRelations {
+		groupIDs = append(groupIDs, g.GroupID)
+	}
+
+	if err := svc.orgs.UnassignGroups(ctx, id, groupIDs...); err != nil {
 		return err
 	}
 
@@ -596,9 +601,14 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
+	var groupIDs []string
+	for _, g := range mp.GroupRelations {
+		groupIDs = append(groupIDs, g.GroupID)
+	}
+
 	var groups []Group
-	if len(mp.GroupIDs) > 0 {
-		greq := mainflux.GroupsReq{Ids: mp.GroupIDs}
+	if len(groupIDs) > 0 {
+		greq := mainflux.GroupsReq{Ids: groupIDs}
 		resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
 		if err != nil {
 			return GroupsPage{}, err

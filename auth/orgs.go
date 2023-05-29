@@ -87,6 +87,11 @@ type GroupsPage struct {
 	Groups []Group
 }
 
+type GroupRelationPage struct {
+	PageMetadata
+	GroupRelations []GroupRelation
+ }
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -217,7 +222,7 @@ type OrgRepository interface {
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
 	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
-	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
+	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (GroupRelationPage, error)
 
 	// RetrieveByGroupID retrieves orgs where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)

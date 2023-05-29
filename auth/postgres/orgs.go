@@ -518,10 +518,10 @@ func (gr orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	return nil
 }
 
-func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
+func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, gre.updated_at FROM group_relations gre
@@ -529,27 +529,23 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	params, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
-		return auth.OrgGroupsPage{}, err
+		return auth.GroupRelationPage{}, err
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []string
+	var items []auth.GroupRelation
 	for rows.Next() {
-		group := dbGroup{}
-		if err := rows.StructScan(&group); err != nil {
-			return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		dbgr := dbGroupRelation{}
+		if err := rows.StructScan(&dbgr); err != nil {
+			return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		if err != nil {
-			return auth.OrgGroupsPage{}, err
-		}
-
-		items = append(items, group.GroupID)
+		items = append(items, toGroupRelation(dbgr))
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, group_relations gre
@@ -557,11 +553,11 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
-		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := auth.OrgGroupsPage{
-		GroupIDs: items,
+	page := auth.GroupRelationPage{
+		GroupRelations: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
