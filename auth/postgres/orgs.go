@@ -604,8 +604,19 @@ func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 		items = append(items, gr)
 	}
 
+	cq := `SELECT COUNT(*) FROM group_relations gre, orgs o
+		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
+
+	total, err := total(ctx, or.db, cq, params)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
 	page := auth.OrgsPage{
 		Orgs: items,
+		PageMetadata: auth.PageMetadata{
+			Total: total,
+		},
 	}
 
 	return page, nil
