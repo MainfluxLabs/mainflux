@@ -259,7 +259,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	mRel := MemberRelation{
+	mr := MemberRelation{
 		OrgID:     id,
 		MemberID:  user.ID,
 		Role:      OwnerRole,
@@ -267,7 +267,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, mRel); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
 		return Org{}, err
 	}
 
@@ -413,7 +413,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 
 	timestamp := getTimestmap()
 	for _, m := range mbs {
-		mRel := MemberRelation{
+		mr := MemberRelation{
 			OrgID:     orgID,
 			MemberID:  m.ID,
 			Role:      m.Role,
@@ -421,7 +421,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 			CreatedAt: timestamp,
 		}
 
-		if err := svc.orgs.AssignMembers(ctx, mRel); err != nil {
+		if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
 			return err
 		}
 	}
@@ -497,14 +497,14 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 
 	var memberRelations []MemberRelation
 	for _, m := range mbs {
-		mRel := MemberRelation{
+		mr := MemberRelation{
 			OrgID:     orgID,
 			MemberID:  m.ID,
 			Role:      m.Role,
 			UpdatedAt: getTimestmap(),
 		}
 
-		memberRelations = append(memberRelations, mRel)
+		memberRelations = append(memberRelations, mr)
 	}
 
 	if err := svc.orgs.UpdateMembers(ctx, memberRelations...); err != nil {
@@ -585,14 +585,14 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 
 	timestamp := getTimestmap()
 	for _, groupID := range groupIDs {
-		gRel := GroupRelation{
+		gr := GroupRelation{
 			OrgID:     orgID,
 			GroupID:   groupID,
 			CreatedAt: timestamp,
 			UpdatedAt: timestamp,
 		}
 
-		if err := svc.orgs.AssignGroups(ctx, gRel); err != nil {
+		if err := svc.orgs.AssignGroups(ctx, gr); err != nil {
 			return err
 		}
 

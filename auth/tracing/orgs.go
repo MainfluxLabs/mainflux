@@ -102,12 +102,12 @@ func (orm orgRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memb
 	return orm.repo.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, memeberRelations ...auth.MemberRelation) error {
+func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, mr ...auth.MemberRelation) error {
 	span := createSpan(ctx, orm.tracer, assignOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignMembers(ctx, memeberRelations...)
+	return orm.repo.AssignMembers(ctx, mr...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error {
@@ -118,12 +118,12 @@ func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID st
 	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
 }
 
-func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, memberRelations ...auth.MemberRelation) error {
+func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, mr ...auth.MemberRelation) error {
 	span := createSpan(ctx, orm.tracer, updateOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdateMembers(ctx, memberRelations...)
+	return orm.repo.UpdateMembers(ctx, mr...)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
@@ -150,12 +150,12 @@ func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Contex
 	return orm.repo.RetrieveAllMemberRelations(ctx)
 }
 
-func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, groupRelations ...auth.GroupRelation) error {
+func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, gr ...auth.GroupRelation) error {
 	span := createSpan(ctx, orm.tracer, assignOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignGroups(ctx, groupRelations...)
+	return orm.repo.AssignGroups(ctx, gr...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {

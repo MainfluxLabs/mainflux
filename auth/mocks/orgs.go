@@ -127,17 +127,17 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mRel ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mr ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, rel := range mRel {
-		if _, ok := orm.orgs[rel.OrgID]; !ok {
+	for _, m := range mr {
+		if _, ok := orm.orgs[m.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.members[rel.MemberID] = auth.Member{
-			ID:   rel.MemberID,
-			Role: rel.Role,
+		orm.members[m.MemberID] = auth.Member{
+			ID:   m.MemberID,
+			Role: m.Role,
 		}
 	}
 
@@ -158,17 +158,17 @@ func (orm *orgRepositoryMock) UnassignMembers(ctx context.Context, orgID string,
 	return nil
 }
 
-func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, memberRelations ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, mr ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, rel := range memberRelations {
-		if _, ok := orm.members[rel.MemberID]; !ok || orm.orgs[rel.OrgID].ID != rel.OrgID {
+	for _, m := range mr {
+		if _, ok := orm.members[m.MemberID]; !ok || orm.orgs[m.OrgID].ID != m.OrgID {
 			return errors.ErrNotFound
 		}
-		orm.members[rel.MemberID] = auth.Member{
-			ID:   rel.MemberID,
-			Role: rel.Role,
+		orm.members[m.MemberID] = auth.Member{
+			ID:   m.MemberID,
+			Role: m.Role,
 		}
 	}
 
@@ -211,16 +211,16 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, gRel ...auth.GroupRelation) error {
+func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, gr ...auth.GroupRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, rel := range gRel {
-		if _, ok := orm.orgs[rel.OrgID]; !ok {
+	for _, g := range gr {
+		if _, ok := orm.orgs[g.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.groups[rel.GroupID] = auth.Group{
-			ID: rel.GroupID,
+		orm.groups[g.GroupID] = auth.Group{
+			ID: g.GroupID,
 		}
 	}
 
