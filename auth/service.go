@@ -584,18 +584,20 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 	}
 
 	timestamp := getTimestmap()
+	var gr []GroupRelation
 	for _, groupID := range groupIDs {
-		gr := GroupRelation{
+		g := GroupRelation{
 			OrgID:     orgID,
 			GroupID:   groupID,
 			CreatedAt: timestamp,
 			UpdatedAt: timestamp,
 		}
 
-		if err := svc.orgs.AssignGroups(ctx, gr); err != nil {
-			return err
-		}
+		gr = append(gr, g)
+	}
 
+	if err := svc.orgs.AssignGroups(ctx, gr...); err != nil {
+		return err
 	}
 
 	return nil
