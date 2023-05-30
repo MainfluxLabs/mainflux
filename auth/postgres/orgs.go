@@ -367,12 +367,12 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		mRel := auth.MemberRelation{
+		mr := auth.MemberRelation{
 			OrgID:    orgID,
 			MemberID: id,
 		}
 
-		dbg, err := toDBMemberRelation(mRel)
+		dbg, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -821,23 +821,23 @@ type dbMemberRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(mRel auth.MemberRelation) (dbMemberRelation, error) {
+func toDBMemberRelation(mr auth.MemberRelation) (dbMemberRelation, error) {
 	return dbMemberRelation{
-		OrgID:     mRel.OrgID,
-		MemberID:  mRel.MemberID,
-		Role:      mRel.Role,
-		CreatedAt: mRel.CreatedAt,
-		UpdatedAt: mRel.UpdatedAt,
+		OrgID:     mr.OrgID,
+		MemberID:  mr.MemberID,
+		Role:      mr.Role,
+		CreatedAt: mr.CreatedAt,
+		UpdatedAt: mr.UpdatedAt,
 	}, nil
 }
 
-func toMemberRelation(mRel dbMemberRelation) auth.MemberRelation {
+func toMemberRelation(mr dbMemberRelation) auth.MemberRelation {
 	return auth.MemberRelation{
-		OrgID:     mRel.OrgID,
-		MemberID:  mRel.MemberID,
-		Role:      mRel.Role,
-		CreatedAt: mRel.CreatedAt,
-		UpdatedAt: mRel.UpdatedAt,
+		OrgID:     mr.OrgID,
+		MemberID:  mr.MemberID,
+		Role:      mr.Role,
+		CreatedAt: mr.CreatedAt,
+		UpdatedAt: mr.UpdatedAt,
 	}
 }
 
@@ -848,21 +848,21 @@ type dbGroupRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBGroupRelation(dRel auth.GroupRelation) (dbGroupRelation, error) {
+func toDBGroupRelation(gr auth.GroupRelation) (dbGroupRelation, error) {
 	return dbGroupRelation{
-		OrgID:     dRel.OrgID,
-		GroupID:   dRel.GroupID,
-		CreatedAt: dRel.CreatedAt,
-		UpdatedAt: dRel.UpdatedAt,
+		OrgID:     gr.OrgID,
+		GroupID:   gr.GroupID,
+		CreatedAt: gr.CreatedAt,
+		UpdatedAt: gr.UpdatedAt,
 	}, nil
 }
 
-func toGroupRelation(grRel dbGroupRelation) auth.GroupRelation {
+func toGroupRelation(gr dbGroupRelation) auth.GroupRelation {
 	return auth.GroupRelation{
-		OrgID:     grRel.OrgID,
-		GroupID:   grRel.GroupID,
-		CreatedAt: grRel.CreatedAt,
-		UpdatedAt: grRel.UpdatedAt,
+		OrgID:     gr.OrgID,
+		GroupID:   gr.GroupID,
+		CreatedAt: gr.CreatedAt,
+		UpdatedAt: gr.UpdatedAt,
 	}
 }
 
