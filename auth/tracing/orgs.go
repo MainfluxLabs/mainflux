@@ -94,6 +94,14 @@ func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org,
 	return orm.repo.RetrieveAll(ctx)
 }
 
+func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAll)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveByAdmin(ctx, pm)
+}
+
 func (orm orgRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, orgMemberships)
 	defer span.Finish()

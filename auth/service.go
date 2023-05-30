@@ -280,6 +280,10 @@ func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) 
 		return OrgsPage{}, err
 	}
 
+	if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+		return svc.orgs.RetrieveByAdmin(ctx, pm)
+	}
+
 	return svc.orgs.RetrieveByOwner(ctx, user.ID, pm)
 }
 

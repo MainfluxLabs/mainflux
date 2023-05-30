@@ -166,8 +166,12 @@ func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 	return or.retrieve(ctx, ownerID, pm)
 }
 
-func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	orPage, err := or.retrieve(ctx, "", auth.PageMetadata{})
+func (gr orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	return gr.retrieve(ctx, "", pm)
+}
+
+func (gr orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+	orPage, err := gr.retrieve(ctx, "", auth.PageMetadata{})
 	if err != nil {
 		return nil, err
 	}
