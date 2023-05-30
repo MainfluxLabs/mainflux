@@ -1333,34 +1333,34 @@ func TestRetrieveByGroupID(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc         string
-		groupID      string
-		size         uint64
-		err          error
+		desc    string
+		groupID string
+		size    uint64
+		err     error
 	}{
 		{
 			desc:    "retrieve orgs by group",
 			groupID: groupID,
-			size: n,
-			err:  nil,
+			size:    n,
+			err:     nil,
 		},
 		{
 			desc:    "retrieve orgs by invalid group id",
 			groupID: invalidID,
-			size: 0,
-			err:  errors.ErrRetrieveEntity,
+			size:    0,
+			err:     errors.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve orgs by empty group id",
 			groupID: "",
-			size: 0,
-			err:  errors.ErrRetrieveEntity,
+			size:    0,
+			err:     errors.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve orgs by unknown group id",
 			groupID: unknownID,
-			size: 0,
-			err:  nil,
+			size:    0,
+			err:     nil,
 		},
 	}
 
