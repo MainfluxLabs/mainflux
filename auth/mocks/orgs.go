@@ -276,7 +276,12 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 		}
 	}
 
-	return auth.OrgsPage{Orgs: orgs}, nil
+	return auth.OrgsPage{
+		Orgs: orgs,
+		PageMetadata: auth.PageMetadata{
+			Total: uint64(len(orm.orgs)),
+		},
+	}, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
