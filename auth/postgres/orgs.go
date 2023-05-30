@@ -522,10 +522,10 @@ func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	return nil
 }
 
-func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationPage, error) {
+func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
 	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, gre.updated_at FROM group_relations gre
@@ -533,12 +533,12 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	params, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
-		return auth.GroupRelationPage{}, err
+		return auth.GroupRelationsPage{}, err
 	}
 
 	rows, err := or.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -546,7 +546,7 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	for rows.Next() {
 		dbgr := dbGroupRelation{}
 		if err := rows.StructScan(&dbgr); err != nil {
-			return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, toGroupRelation(dbgr))
@@ -557,10 +557,10 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 
 	total, err := total(ctx, or.db, cq, params)
 	if err != nil {
-		return auth.GroupRelationPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := auth.GroupRelationPage{
+	page := auth.GroupRelationsPage{
 		GroupRelations: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,

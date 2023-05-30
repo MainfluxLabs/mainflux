@@ -234,7 +234,7 @@ func (orm *orgRepositoryMock) UnassignGroups(ctx context.Context, orgID string, 
 	return nil
 }
 
-func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationPage, error) {
+func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -252,7 +252,7 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 		i++
 	}
 
-	return auth.GroupRelationPage{
+	return auth.GroupRelationsPage{
 		GroupRelations: groups,
 		PageMetadata: auth.PageMetadata{
 			Total:  uint64(len(orm.groups)),
