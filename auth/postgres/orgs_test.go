@@ -1367,6 +1367,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 		page, err := repo.RetrieveByGroupID(context.Background(), tc.groupID)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
+		assert.Equal(t, tc.size, page.Total, fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, page.Total))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

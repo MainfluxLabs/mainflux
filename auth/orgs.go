@@ -194,6 +194,9 @@ type OrgRepository interface {
 	// RetrieveAll retrieves all orgs.
 	RetrieveAll(ctx context.Context) ([]Org, error)
 
+	// RetrieveByAdmin retrieves all orgs with pagination.
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (OrgsPage, error)
+
 	// RetrieveMemberships list of orgs that member belongs to
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
