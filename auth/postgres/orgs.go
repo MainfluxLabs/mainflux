@@ -572,51 +572,36 @@ func (gr orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	return page, nil
 }
 
-func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
 	q := `SELECT o.id, o.owner_id, o.name, o.description, o.metadata
 		FROM group_relations gre, orgs o
 		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
 
 	params, err := toDBGroupRelation(groupID, "")
 	if err != nil {
-		return auth.OrgsPage{}, err
+		return auth.Org{}, err
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []auth.Org
+	var org auth.Org
 	for rows.Next() {
 		dbg := dbOrg{}
 		if err := rows.StructScan(&dbg); err != nil {
-			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		gr, err := toOrg(dbg)
+
+		org, err = toOrg(dbg)
 		if err != nil {
-			return auth.OrgsPage{}, err
+			return auth.Org{}, err
 		}
-		items = append(items, gr)
 	}
 
-	cq := `SELECT COUNT(*) FROM group_relations gre, orgs o
-		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
-
-	total, err := total(ctx, gr.db, cq, params)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := auth.OrgsPage{
-		Orgs: items,
-		PageMetadata: auth.PageMetadata{
-			Total: total,
-		},
-	}
-
-	return page, nil
+	return org, nil
 }
 
 func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {

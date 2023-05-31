@@ -646,16 +646,14 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 		return err
 	}
 
-	// Retrieve orgs where group is assigned
-	op, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	// Retrieve org where group is assigned
+	or, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
 	if err != nil {
 		return err
 	}
 
-	for _, org := range op.Orgs {
-		if err := svc.canAccessOrg(ctx, org.ID, user.ID); err == nil {
-			return nil
-		}
+	if err := svc.canAccessOrg(ctx, or.ID, user.ID); err == nil {
+		return nil
 	}
 
 	return errors.ErrAuthorization

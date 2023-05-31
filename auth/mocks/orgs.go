@@ -265,23 +265,22 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 
 }
 
-func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	orgs := []auth.Org{}
-	for _, org := range orm.orgs {
+	org := auth.Org{}
+	for _, g := range orm.orgs {
 		if _, ok := orm.groups[groupID]; ok {
-			orgs = append(orgs, org)
+			org = g
 		}
 	}
 
-	return auth.OrgsPage{
-		Orgs: orgs,
-		PageMetadata: auth.PageMetadata{
-			Total: uint64(len(orm.orgs)),
-		},
-	}, nil
+	if org.ID == "" {
+		return auth.Org{}, errors.ErrNotFound
+	}
+
+	return org, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {

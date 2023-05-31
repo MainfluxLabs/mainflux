@@ -219,8 +219,8 @@ type OrgRepository interface {
 	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
 	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
 
-	// RetrieveByGroupID retrieves orgs where group is assigned.
-	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
+	// RetrieveByGroupID retrieves org where group is assigned.
+	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)
 
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
