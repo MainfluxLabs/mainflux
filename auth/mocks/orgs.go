@@ -239,11 +239,11 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-	groups := []auth.GroupRelation{}
+	gr := []auth.GroupRelation{}
 	for _, group := range orm.groups {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.orgs[orgID]; ok {
-				groups = append(groups, auth.GroupRelation{
+				gr = append(gr, auth.GroupRelation{
 					OrgID:   orgID,
 					GroupID: group,
 				})
@@ -253,7 +253,7 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 	}
 
 	return auth.GroupRelationsPage{
-		GroupRelations: groups,
+		GroupRelations: gr,
 		PageMetadata: auth.PageMetadata{
 			Total:  uint64(len(orm.groups)),
 			Offset: pm.Offset,
