@@ -29,7 +29,7 @@ type orgRepository struct {
 var (
 	errCreateMetadataQuery = errors.New("failed to create query for metadata")
 	errGetTotal            = errors.New("failed to get total number of groups")
-	orgIDFkey              = "org_relations_org_id_fkey"
+	membersIDFkey          = "member_relations_org_id_fkey"
 )
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
@@ -123,7 +123,7 @@ func (gr orgRepository) Delete(ctx context.Context, owner, orgID string) error {
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
 				switch pqErr.ConstraintName {
-				case orgIDFkey:
+				case membersIDFkey:
 					return errors.Wrap(auth.ErrOrgNotEmpty, err)
 				}
 				return errors.Wrap(errors.ErrConflict, err)
@@ -185,7 +185,7 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
 
-	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_relations
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
 					  WHERE org_id = :org_id %s`, mq)
 
 	params, err := toDBOrgMemberPage("", orgID, pm)
@@ -214,7 +214,7 @@ func (gr orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 		items = append(items, mb)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, org_relations ore
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, member_relations ore
 					   WHERE ore.org_id = :org_id AND ore.org_id = o.id %s;`, mq)
 
 	total, err := total(ctx, gr.db, cq, params)
@@ -258,7 +258,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	}
 
 	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata
-		FROM org_relations ore, orgs o
+		FROM member_relations ore, orgs o
 		WHERE ore.org_id = o.id and ore.member_id = :member_id
 		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
@@ -286,7 +286,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM org_relations ore, orgs o
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations ore, orgs o
 		WHERE ore.org_id = o.id and ore.member_id = :member_id %s %s`, mq, nq)
 
 	total, err := total(ctx, gr.db, cq, params)
@@ -307,7 +307,7 @@ func (gr orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 }
 
 func (gr orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
-	q := `SELECT role FROM org_relations WHERE member_id = $1 AND org_id = $2`
+	q := `SELECT role FROM member_relations WHERE member_id = $1 AND org_id = $2`
 
 	member := auth.Member{}
 	if err := gr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&member); err != nil {
@@ -328,7 +328,7 @@ func (gr orgRepository) AssignMembers(ctx context.Context, orgID string, members
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
-	qIns := `INSERT INTO org_relations (org_id, member_id, role, created_at, updated_at)
+	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, member := range members {
@@ -372,7 +372,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
-	qDel := `DELETE from org_relations WHERE org_id = :org_id AND member_id = :member_id`
+	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
 		dbg, err := toDBMemberRelation(orgID, id, "")
@@ -404,7 +404,7 @@ func (gr orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 }
 
 func (gr orgRepository) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
-	qUpd := `UPDATE org_relations SET role = :role, updated_at = :updated_at
+	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, member := range members {
@@ -624,7 +624,7 @@ func (gr orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 }
 
 func (gr orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
-	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_relations;`
+	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
