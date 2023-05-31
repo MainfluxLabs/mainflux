@@ -29,7 +29,7 @@ type orgRepository struct {
 var (
 	errCreateMetadataQuery = errors.New("failed to create query for metadata")
 	errGetTotal            = errors.New("failed to get total number of groups")
-	orgIDFkey              = "member_relations_org_id_fkey"
+	membersIDFkey          = "member_relations_org_id_fkey"
 )
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
@@ -123,7 +123,7 @@ func (gr orgRepository) Delete(ctx context.Context, owner, orgID string) error {
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
 				switch pqErr.ConstraintName {
-				case orgIDFkey:
+				case membersIDFkey:
 					return errors.Wrap(auth.ErrOrgNotEmpty, err)
 				}
 				return errors.Wrap(errors.ErrConflict, err)
