@@ -95,7 +95,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	return auth.OrgsPage{
 		Orgs: orgs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(orgs)),
+			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -120,7 +120,7 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	return auth.OrgsPage{
 		Orgs: orgs,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(orgs)),
+			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -293,6 +293,29 @@ func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, erro
 	}
 
 	return orgs, nil
+}
+
+func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	orm.mu.Lock()
+	defer orm.mu.Unlock()
+
+	i := uint64(0)
+	orgs := []auth.Org{}
+	for _, org := range orm.orgs {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+			orgs = append(orgs, org)
+		}
+		i++
+	}
+
+	return auth.OrgsPage{
+		Orgs: orgs,
+		PageMetadata: auth.PageMetadata{
+			Total:  uint64(len(orm.orgs)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
