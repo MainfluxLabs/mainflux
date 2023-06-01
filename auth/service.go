@@ -416,6 +416,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 	}
 
 	timestamp := getTimestmap()
+	var mrs []MemberRelation
 	for _, m := range mbs {
 		mr := MemberRelation{
 			OrgID:     orgID,
@@ -425,9 +426,11 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 			CreatedAt: timestamp,
 		}
 
-		if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
-			return err
-		}
+		mrs = append(mrs, mr)
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, mrs...); err != nil {
+		return err
 	}
 
 	return nil
