@@ -117,11 +117,11 @@ type Backup struct {
 // OrgService specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type OrgService interface {
-	// CreateOrg creates new  org.
-	CreateOrg(ctx context.Context, token string, g Org) (Org, error)
+	// CreateOrg creates new org.
+	CreateOrg(ctx context.Context, token string, org Org) (Org, error)
 
 	// UpdateOrg updates the org identified by the provided ID.
-	UpdateOrg(ctx context.Context, token string, g Org) (Org, error)
+	UpdateOrg(ctx context.Context, token string, org Org) (Org, error)
 
 	// ViewOrg retrieves data about the org identified by ID.
 	ViewOrg(ctx context.Context, token, id string) (Org, error)
@@ -171,11 +171,11 @@ type OrgService interface {
 
 // OrgRepository specifies an org persistence API.
 type OrgRepository interface {
-	// Save org
-	Save(ctx context.Context, g ...Org) error
+	// Save orgs
+	Save(ctx context.Context, orgs ...Org) error
 
 	// Update an org
-	Update(ctx context.Context, g Org) error
+	Update(ctx context.Context, org Org) error
 
 	// Delete an org
 	Delete(ctx context.Context, owner, id string) error
@@ -196,13 +196,13 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, mr ...MemberRelation) error
+	AssignMembers(ctx context.Context, mrs ...MemberRelation) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
 
 	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, mr ...MemberRelation) error
+	UpdateMembers(ctx context.Context, mrs ...MemberRelation) error
 
 	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
@@ -214,7 +214,7 @@ type OrgRepository interface {
 	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
 
 	// AssignGroups adds groups to an org.
-	AssignGroups(ctx context.Context, gr ...GroupRelation) error
+	AssignGroups(ctx context.Context, grs ...GroupRelation) error
 
 	// UnassignGroups removes groups from an org
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error

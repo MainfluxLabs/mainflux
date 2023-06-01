@@ -26,11 +26,11 @@ func NewOrgRepository() auth.OrgRepository {
 	}
 }
 
-func (orm *orgRepositoryMock) Save(ctx context.Context, g ...auth.Org) error {
+func (orm *orgRepositoryMock) Save(ctx context.Context, orgs ...auth.Org) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, org := range g {
+	for _, org := range orgs {
 		if _, ok := orm.orgs[org.ID]; ok {
 			return errors.ErrConflict
 		}
@@ -41,15 +41,15 @@ func (orm *orgRepositoryMock) Save(ctx context.Context, g ...auth.Org) error {
 	return nil
 }
 
-func (orm *orgRepositoryMock) Update(ctx context.Context, g auth.Org) error {
+func (orm *orgRepositoryMock) Update(ctx context.Context, org auth.Org) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if _, ok := orm.orgs[g.ID]; !ok {
+	if _, ok := orm.orgs[org.ID]; !ok {
 		return errors.ErrNotFound
 	}
 
-	orm.orgs[g.ID] = g
+	orm.orgs[org.ID] = org
 
 	return nil
 }
@@ -127,17 +127,17 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mr ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, m := range mr {
-		if _, ok := orm.orgs[m.OrgID]; !ok {
+	for _, mr := range mrs {
+		if _, ok := orm.orgs[mr.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.members[m.MemberID] = auth.Member{
-			ID:   m.MemberID,
-			Role: m.Role,
+		orm.members[mr.MemberID] = auth.Member{
+			ID:   mr.MemberID,
+			Role: mr.Role,
 		}
 	}
 
@@ -158,17 +158,17 @@ func (orm *orgRepositoryMock) UnassignMembers(ctx context.Context, orgID string,
 	return nil
 }
 
-func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, mr ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, m := range mr {
-		if _, ok := orm.members[m.MemberID]; !ok || orm.orgs[m.OrgID].ID != m.OrgID {
+	for _, mr := range mrs {
+		if _, ok := orm.members[mr.MemberID]; !ok || orm.orgs[mr.OrgID].ID != mr.OrgID {
 			return errors.ErrNotFound
 		}
-		orm.members[m.MemberID] = auth.Member{
-			ID:   m.MemberID,
-			Role: m.Role,
+		orm.members[mr.MemberID] = auth.Member{
+			ID:   mr.MemberID,
+			Role: mr.Role,
 		}
 	}
 
@@ -211,16 +211,16 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, gr ...auth.GroupRelation) error {
+func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, g := range gr {
-		if _, ok := orm.orgs[g.OrgID]; !ok {
+	for _, gr := range grs {
+		if _, ok := orm.orgs[gr.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.groups[g.GroupID] = auth.Group{
-			ID: g.GroupID,
+		orm.groups[gr.GroupID] = auth.Group{
+			ID: gr.GroupID,
 		}
 	}
 
@@ -330,32 +330,32 @@ func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	var memberRelations []auth.MemberRelation
+	var mrs []auth.MemberRelation
 	for _, org := range orm.orgs {
 		for _, member := range orm.members {
-			memberRelations = append(memberRelations, auth.MemberRelation{
+			mrs = append(mrs, auth.MemberRelation{
 				OrgID:    org.ID,
 				MemberID: member.ID,
 			})
 		}
 	}
 
-	return memberRelations, nil
+	return mrs, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	var groupRelations []auth.GroupRelation
+	var grs []auth.GroupRelation
 	for _, org := range orm.orgs {
 		for _, group := range orm.groups {
-			groupRelations = append(groupRelations, auth.GroupRelation{
+			grs = append(grs, auth.GroupRelation{
 				OrgID:   org.ID,
 				GroupID: group.ID,
 			})
 		}
 	}
 
-	return groupRelations, nil
+	return grs, nil
 }

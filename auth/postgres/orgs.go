@@ -40,12 +40,12 @@ func NewOrgRepo(db Database) auth.OrgRepository {
 	}
 }
 
-func (or orgRepository) Save(ctx context.Context, o ...auth.Org) error {
+func (or orgRepository) Save(ctx context.Context, orgs ...auth.Org) error {
 	// For root org path is initialized with id
 	q := `INSERT INTO orgs (name, description, id, owner_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at)`
 
-	for _, org := range o {
+	for _, org := range orgs {
 		dbo, err := toDBOrg(org)
 		if err != nil {
 			return err
@@ -74,11 +74,11 @@ func (or orgRepository) Save(ctx context.Context, o ...auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Update(ctx context.Context, o auth.Org) error {
+func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	q := `UPDATE orgs SET name = :name, description = :description, metadata = :metadata, updated_at = :updated_at WHERE id = :id
 		  RETURNING id, name, owner_id, description, metadata, created_at, updated_at`
 
-	dbo, err := toDBOrg(o)
+	dbo, err := toDBOrg(org)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
