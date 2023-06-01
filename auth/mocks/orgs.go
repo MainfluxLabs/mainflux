@@ -270,11 +270,12 @@ func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID str
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if orgID, ok := orm.groups[groupID]; ok {
-		return orm.orgs[orgID], nil
+	orgID, ok := orm.groups[groupID]
+	if !ok {
+		return auth.Org{}, errors.ErrNotFound
 	}
 
-	return auth.Org{}, errors.ErrNotFound
+	return orm.orgs[orgID], nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
