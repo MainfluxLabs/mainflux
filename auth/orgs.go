@@ -18,6 +18,9 @@ var (
 
 	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
 	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
+
+	// ErrOrgGgroupAlreadyAssigned indicates that group is already assigned.
+	ErrOrgGgroupAlreadyAssigned = errors.New("org group is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.

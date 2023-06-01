@@ -470,7 +470,7 @@ func (gr orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs
 				case pgerrcode.ForeignKeyViolation:
 					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrOrgMemberAlreadyAssigned, errors.New(pgErr.Detail))
+					return errors.Wrap(auth.ErrOrgGgroupAlreadyAssigned, errors.New(pgErr.Detail))
 				}
 			}
 

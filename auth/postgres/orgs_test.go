@@ -1073,7 +1073,7 @@ func TestAssignGroups(t *testing.T) {
 			desc:     "assign already assigned groups to org",
 			orgID:    orgID,
 			groupIDs: groupIDs,
-			err:      auth.ErrOrgMemberAlreadyAssigned,
+			err:      auth.ErrOrgGgroupAlreadyAssigned,
 		},
 		{
 			desc:     "assign groups to org with invalid org id",
@@ -1091,7 +1091,7 @@ func TestAssignGroups(t *testing.T) {
 			desc:     "assign groups to org with unknown org id",
 			orgID:    unknownID,
 			groupIDs: groupIDs,
-			err:      nil,
+			err:      auth.ErrOrgGgroupAlreadyAssigned,
 		},
 		{
 			desc:     "assign groups to org without group ids",
@@ -1337,25 +1337,25 @@ func TestRetrieveByGroupID(t *testing.T) {
 		err     error
 	}{
 		{
-			desc:    "retrieve orgs by group",
+			desc:    "retrieve org by group",
 			groupID: groupID,
 			org:     org,
 			err:     nil,
 		},
 		{
-			desc:    "retrieve orgs by invalid group id",
+			desc:    "retrieve org by invalid group id",
 			groupID: invalidID,
 			org:     auth.Org{},
 			err:     errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by empty group id",
+			desc:    "retrieve org by empty group id",
 			groupID: "",
 			org:     auth.Org{},
 			err:     errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by unknown group id",
+			desc:    "retrieve org by unknown group id",
 			groupID: unknownID,
 			org:     auth.Org{},
 			err:     nil,

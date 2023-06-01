@@ -70,11 +70,12 @@ func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if org, ok := orm.orgs[id]; ok {
-		return org, nil
+	org, ok := orm.orgs[id]
+	if !ok {
+		return auth.Org{}, errors.ErrNotFound
 	}
 
-	return auth.Org{}, errors.ErrNotFound
+	return org, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
