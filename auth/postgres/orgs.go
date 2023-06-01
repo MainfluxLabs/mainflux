@@ -491,12 +491,12 @@ func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	qDel := `DELETE from group_relations WHERE org_id = :org_id AND group_id = :group_id`
 
 	for _, id := range groupIDs {
-		gRel := auth.GroupRelation{
+		gr := auth.GroupRelation{
 			OrgID:   orgID,
 			GroupID: id,
 		}
 
-		dbgr, err := toDBGroupRelation(gRel)
+		dbgr, err := toDBGroupRelation(gr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
