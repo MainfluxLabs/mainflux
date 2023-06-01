@@ -73,7 +73,7 @@ func migrateDB(db *sqlx.DB) error {
 							updated_at  TIMESTAMPTZ,
 							PRIMARY KEY (id, owner_id)
 						 )`,
-					`CREATE TABLE IF NOT EXISTS org_relations (
+					`CREATE TABLE IF NOT EXISTS member_relations (
 							member_id   UUID NOT NULL,
 							org_id      UUID NOT NULL,
 							role        VARCHAR(10) NOT NULL,
@@ -85,7 +85,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS orgs`,
-					`DROP TABLE IF EXISTS org_relations`,
+					`DROP TABLE IF EXISTS member_relations`,
 				},
 			},
 			{

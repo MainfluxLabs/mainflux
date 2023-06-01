@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	orgName             = "test"
-	orgDesc             = "test_description"
-	invalidID           = "invalid"
-	n                   = uint64(10)
-	orgsTable           = "orgs"
-	orgRelationsTable   = "org_relations"
-	groupRelationsTable = "group_relations"
+	orgName              = "test"
+	orgDesc              = "test_description"
+	invalidID            = "invalid"
+	n                    = uint64(10)
+	orgsTable            = "orgs"
+	memberRelationsTable = "member_relations"
+	groupRelationsTable  = "group_relations"
 )
 
 func TestSave(t *testing.T) {
@@ -1489,7 +1489,7 @@ func TestRetrieveAllMemberRelations(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", orgRelationsTable))
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", memberRelationsTable))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	orgID, err := idProvider.ID()
