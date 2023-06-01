@@ -144,18 +144,18 @@ func (or orgRepository) Delete(ctx context.Context, owner, orgID string) error {
 }
 
 func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
-	dbu := dbOrg{
+	dbo := dbOrg{
 		ID: id,
 	}
 	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM orgs WHERE id = $1`
-	if err := or.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
+	if err := or.db.QueryRowxContext(ctx, q, id).StructScan(&dbo); err != nil {
 		if err == sql.ErrNoRows {
 			return auth.Org{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
 		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
-	return toOrg(dbu)
+	return toOrg(dbo)
 }
 
 func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -166,12 +166,12 @@ func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 	return or.retrieve(ctx, ownerID, pm)
 }
 
-func (gr orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	return gr.retrieve(ctx, "", pm)
+func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	return or.retrieve(ctx, "", pm)
 }
 
-func (gr orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	orPage, err := gr.retrieve(ctx, "", auth.PageMetadata{})
+func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+	orPage, err := or.retrieve(ctx, "", auth.PageMetadata{})
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (or orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (or orgRepository) AssignMembers(ctx context.Context, mr ...auth.MemberRelation) error {
+func (or orgRepository) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -331,8 +331,8 @@ func (or orgRepository) AssignMembers(ctx context.Context, mr ...auth.MemberRela
 	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, m := range mr {
-		dbmr, err := toDBMemberRelation(m)
+	for _, mr := range mrs {
+		dbmr, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -404,12 +404,12 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	return nil
 }
 
-func (or orgRepository) UpdateMembers(ctx context.Context, mr ...auth.MemberRelation) error {
+func (or orgRepository) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
-	for _, m := range mr {
-		dbmr, err := toDBMemberRelation(m)
+	for _, mr := range mrs {
+		dbmr, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(errors.ErrUpdateEntity, err)
 		}
@@ -442,7 +442,7 @@ func (or orgRepository) UpdateMembers(ctx context.Context, mr ...auth.MemberRela
 	return nil
 }
 
-func (or orgRepository) AssignGroups(ctx context.Context, gr ...auth.GroupRelation) error {
+func (or orgRepository) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -451,8 +451,8 @@ func (or orgRepository) AssignGroups(ctx context.Context, gr ...auth.GroupRelati
 	qIns := `INSERT INTO group_relations (org_id, group_id, created_at, updated_at)
 			 VALUES(:org_id, :group_id, :created_at, :updated_at)`
 
-	for _, g := range gr {
-		dbgr, err := toDBGroupRelation(g)
+	for _, gr := range grs {
+		dbgr, err := toDBGroupRelation(gr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
@@ -635,17 +635,17 @@ func (or orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.
 	}
 	defer rows.Close()
 
-	var mr []auth.MemberRelation
+	var mrs []auth.MemberRelation
 	for rows.Next() {
 		dbmr := dbMemberRelation{}
 		if err := rows.StructScan(&dbmr); err != nil {
 			return []auth.MemberRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		mr = append(mr, toMemberRelation(dbmr))
+		mrs = append(mrs, toMemberRelation(dbmr))
 	}
 
-	return mr, nil
+	return mrs, nil
 }
 
 func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
@@ -657,17 +657,17 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	}
 	defer rows.Close()
 
-	var gr []auth.GroupRelation
+	var grs []auth.GroupRelation
 	for rows.Next() {
 		dbgr := dbGroupRelation{}
 		if err := rows.StructScan(&dbgr); err != nil {
 			return []auth.GroupRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		gr = append(gr, toGroupRelation(dbgr))
+		grs = append(grs, toGroupRelation(dbgr))
 	}
 
-	return gr, nil
+	return grs, nil
 }
 
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
