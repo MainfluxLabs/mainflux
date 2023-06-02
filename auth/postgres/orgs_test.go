@@ -613,7 +613,7 @@ func TestAssignMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var memeberRelations []auth.MemberRelation
+	var memberRelations []auth.MemberRelation
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -626,29 +626,29 @@ func TestAssignMembers(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		memeberRelations = append(memeberRelations, memeberRelation)
+		memberRelations = append(memberRelations, memeberRelation)
 	}
 
 	var invalidOrgIDmRel []auth.MemberRelation
-	for _, m := range memeberRelations {
+	for _, m := range memberRelations {
 		m.OrgID = invalidID
 		invalidOrgIDmRel = append(invalidOrgIDmRel, m)
 	}
 
 	var emptyOrgIDmRel []auth.MemberRelation
-	for _, m := range memeberRelations {
+	for _, m := range memberRelations {
 		m.OrgID = ""
 		emptyOrgIDmRel = append(emptyOrgIDmRel, m)
 	}
 
 	var noMemberIDmRel []auth.MemberRelation
-	for _, m := range memeberRelations {
+	for _, m := range memberRelations {
 		m.MemberID = ""
 		noMemberIDmRel = append(noMemberIDmRel, m)
 	}
 
 	var invalidMemberIDmRel []auth.MemberRelation
-	for _, m := range memeberRelations {
+	for _, m := range memberRelations {
 		m.MemberID = invalidID
 		invalidMemberIDmRel = append(invalidMemberIDmRel, m)
 	}
@@ -660,12 +660,12 @@ func TestAssignMembers(t *testing.T) {
 	}{
 		{
 			desc:            "assign members to org",
-			memberRelations: memeberRelations,
+			memberRelations: memberRelations,
 			err:             nil,
 		},
 		{
 			desc:            "assign already assigned members to org",
-			memberRelations: memeberRelations,
+			memberRelations: memberRelations,
 			err:             auth.ErrOrgMemberAlreadyAssigned,
 		},
 		{
