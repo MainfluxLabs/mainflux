@@ -618,7 +618,7 @@ func TestAssignMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memeberRelation := auth.MemberRelation{
+		memberRelation := auth.MemberRelation{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -626,7 +626,7 @@ func TestAssignMembers(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		memberRelations = append(memberRelations, memeberRelation)
+		memberRelations = append(memberRelations, memberRelation)
 	}
 
 	var invalidOrgIDmRel []auth.MemberRelation
