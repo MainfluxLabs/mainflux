@@ -70,11 +70,12 @@ func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if org, ok := orm.orgs[id]; ok {
-		return org, nil
+	org, ok := orm.orgs[id]
+	if !ok {
+		return auth.Org{}, errors.ErrNotFound
 	}
 
-	return auth.Org{}, errors.ErrNotFound
+	return org, nil
 }
 
 func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -269,23 +270,16 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	orgs := []auth.Org{}
-	for _, org := range orm.orgs {
-		if _, ok := orm.groups[groupID]; ok {
-			orgs = append(orgs, org)
-		}
+	org, ok := orm.groups[groupID]
+	if !ok {
+		return auth.Org{}, errors.ErrNotFound
 	}
 
-	return auth.OrgsPage{
-		Orgs: orgs,
-		PageMetadata: auth.PageMetadata{
-			Total: uint64(len(orm.orgs)),
-		},
-	}, nil
+	return orm.orgs[org.ID], nil
 }
 
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {

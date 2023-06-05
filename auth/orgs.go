@@ -18,6 +18,9 @@ var (
 
 	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
 	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
+
+	// ErrOrgGgroupAlreadyAssigned indicates that group is already assigned.
+	ErrOrgGgroupAlreadyAssigned = errors.New("org group is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.
@@ -227,8 +230,8 @@ type OrgRepository interface {
 	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
 	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (GroupRelationsPage, error)
 
-	// RetrieveByGroupID retrieves orgs where group is assigned.
-	RetrieveByGroupID(ctx context.Context, groupID string) (OrgsPage, error)
+	// RetrieveByGroupID retrieves org where group is assigned.
+	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)
 
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)

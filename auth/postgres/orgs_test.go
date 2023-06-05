@@ -1168,7 +1168,7 @@ func TestAssignGroups(t *testing.T) {
 		{
 			desc:           "assign already assigned groups to org",
 			groupRelations: groupRelations,
-			err:            auth.ErrOrgMemberAlreadyAssigned,
+			err:            auth.ErrOrgGgroupAlreadyAssigned,
 		},
 		{
 			desc:           "assign groups to org with invalid org id",
@@ -1183,7 +1183,7 @@ func TestAssignGroups(t *testing.T) {
 		{
 			desc:           "assign groups to org with unknown org id",
 			groupRelations: unknownOrgIDgRel,
-			err:            nil,
+			err:            auth.ErrOrgGgroupAlreadyAssigned,
 		},
 		{
 			desc:           "assign groups to org without group ids",
@@ -1418,68 +1418,65 @@ func TestRetrieveByGroupID(t *testing.T) {
 	unknownID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	for i := uint64(0); i < n; i++ {
-		orgID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		org := auth.Org{
-			ID:          orgID,
-			OwnerID:     ownerID,
-			Name:        orgName,
-			Description: orgDesc,
-			Metadata:    map[string]interface{}{"key": "value"},
-		}
-
-		err = repo.Save(context.Background(), org)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		groupRelation := auth.GroupRelation{
-			OrgID:     orgID,
-			GroupID:   groupID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		err = repo.AssignGroups(context.Background(), groupRelation)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
 	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gr := auth.GroupRelation{
+		OrgID:     orgID,
+		GroupID:   groupID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err = repo.AssignGroups(context.Background(), gr)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc    string
 		groupID string
-		size    uint64
+		org     auth.Org
 		err     error
 	}{
 		{
-			desc:    "retrieve orgs by group",
+			desc:    "retrieve org by group",
 			groupID: groupID,
-			size:    n,
+			org:     org,
 			err:     nil,
 		},
 		{
-			desc:    "retrieve orgs by invalid group id",
+			desc:    "retrieve org by invalid group id",
 			groupID: invalidID,
-			size:    0,
+			org:     auth.Org{},
 			err:     errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by empty group id",
+			desc:    "retrieve org by empty group id",
 			groupID: "",
-			size:    0,
+			org:     auth.Org{},
 			err:     errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve orgs by unknown group id",
+			desc:    "retrieve org by unknown group id",
 			groupID: unknownID,
-			size:    0,
+			org:     auth.Org{},
 			err:     nil,
 		},
 	}
 
-	for desc, tc := range cases {
-		page, err := repo.RetrieveByGroupID(context.Background(), tc.groupID)
-		size := len(page.Orgs)
-		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
-		assert.Equal(t, tc.size, page.Total, fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, page.Total))
+	for _, tc := range cases {
+		or, err := repo.RetrieveByGroupID(context.Background(), tc.groupID)
+		assert.Equal(t, tc.org, or, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.org, or))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

@@ -467,7 +467,7 @@ func (or orgRepository) AssignGroups(ctx context.Context, grs ...auth.GroupRelat
 				case pgerrcode.ForeignKeyViolation:
 					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrOrgMemberAlreadyAssigned, errors.New(pgErr.Detail))
+					return errors.Wrap(auth.ErrOrgGgroupAlreadyAssigned, errors.New(pgErr.Detail))
 				}
 			}
 
@@ -574,7 +574,7 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	return page, nil
 }
 
-func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
 	q := `SELECT o.id, o.owner_id, o.name, o.description, o.metadata
 		FROM group_relations gre, orgs o
 		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
@@ -582,44 +582,29 @@ func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 	gr := auth.GroupRelation{GroupID: groupID}
 	dbgr, err := toDBGroupRelation(gr)
 	if err != nil {
-		return auth.OrgsPage{}, err
+		return auth.Org{}, err
 	}
 
 	rows, err := or.db.NamedQueryContext(ctx, q, dbgr)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []auth.Org
+	var org auth.Org
 	for rows.Next() {
-		dbo := dbOrg{}
-		if err := rows.StructScan(&dbo); err != nil {
-			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		dbg := dbOrg{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		or, err := toOrg(dbo)
+
+		org, err = toOrg(dbg)
 		if err != nil {
-			return auth.OrgsPage{}, err
+			return auth.Org{}, err
 		}
-		items = append(items, or)
 	}
 
-	cq := `SELECT COUNT(*) FROM group_relations gre, orgs o
-		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
-
-	total, err := total(ctx, or.db, cq, dbgr)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := auth.OrgsPage{
-		Orgs: items,
-		PageMetadata: auth.PageMetadata{
-			Total: total,
-		},
-	}
-
-	return page, nil
+	return org, nil
 }
 
 func (or orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {

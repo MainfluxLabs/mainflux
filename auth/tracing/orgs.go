@@ -182,7 +182,7 @@ func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID str
 	return orm.repo.RetrieveGroups(ctx, orgID, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
 	span := createSpan(ctx, orm.tracer, retrieveByGroupID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

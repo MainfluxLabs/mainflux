@@ -92,10 +92,11 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "auth_3",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS group_relations (
-							group_id    UUID NOT NULL,
+							group_id    UUID UNIQUE NOT NULL,
 							org_id      UUID NOT NULL,
 							created_at  TIMESTAMPTZ,
 							updated_at  TIMESTAMPTZ,
+							FOREIGN KEY (org_id) REFERENCES orgs (id),
 							PRIMARY KEY (group_id, org_id)
 						 )`,
 				},
