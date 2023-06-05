@@ -174,7 +174,7 @@ func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID str
 	return orm.repo.UnassignGroups(ctx, orgID, groupIDs...)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -241,35 +241,32 @@ func (orm *orgRepositoryMock) UnassignGroups(ctx context.Context, orgID string, 
 	return nil
 }
 
-func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
+func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-	groups := []auth.Group{}
+	grs := []auth.GroupRelation{}
 	for _, group := range orm.groups {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.orgs[orgID]; ok {
-				groups = append(groups, auth.Group{ID: group.ID})
+				grs = append(grs, auth.GroupRelation{
+					OrgID:   orgID,
+					GroupID: group.ID,
+				})
 			}
 		}
 		i++
 	}
 
-	var groupIDs []string
-	for _, g := range groups {
-		groupIDs = append(groupIDs, g.ID)
-	}
-
-	return auth.OrgGroupsPage{
-		GroupIDs: groupIDs,
+	return auth.GroupRelationsPage{
+		GroupRelations: grs,
 		PageMetadata: auth.PageMetadata{
 			Total:  uint64(len(orm.groups)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
 	}, nil
-
 }
 
 func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.OrgsPage, error) {

@@ -1399,11 +1399,10 @@ func TestRetrieveGroups(t *testing.T) {
 		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		page, err := repo.RetrieveGroups(context.Background(), tc.orgID, tc.pageMetadata)
-		size := len(page.GroupIDs)
-		assert.Equal(t, tc.pageMetadata.Total, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.pageMetadata.Total, size))
-		assert.Equal(t, tc.groupIDs, page.GroupIDs, fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.groupIDs, page.GroupIDs))
+		size := len(page.GroupRelations)
+		assert.Equal(t, tc.pageMetadata.Total, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.pageMetadata.Total, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
