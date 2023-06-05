@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
@@ -467,12 +468,6 @@ func TestRetrieveMemberships(t *testing.T) {
 	unknownID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	member := auth.Member{
-		ID:    memberID,
-		Email: email,
-		Role:  auth.EditorRole,
-	}
-
 	for i := uint64(0); i < n; i++ {
 		orgID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -488,7 +483,15 @@ func TestRetrieveMemberships(t *testing.T) {
 		err = repo.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = repo.AssignMembers(context.Background(), orgID, member)
+		memberRelation := auth.MemberRelation{
+			OrgID:     orgID,
+			MemberID:  memberID,
+			Role:      auth.EditorRole,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		err = repo.AssignMembers(context.Background(), memberRelation)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -610,67 +613,85 @@ func TestAssignMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var members []auth.Member
+	var memberRelations []auth.MemberRelation
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		email := fmt.Sprintf("member%d@email.com", i)
-		member := auth.Member{
-			ID:    memberID,
-			Email: email,
-			Role:  auth.EditorRole,
+		memberRelation := auth.MemberRelation{
+			OrgID:     orgID,
+			MemberID:  memberID,
+			Role:      auth.EditorRole,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
-		members = append(members, member)
+		memberRelations = append(memberRelations, memberRelation)
+	}
+
+	var invalidOrgIDmRel []auth.MemberRelation
+	for _, m := range memberRelations {
+		m.OrgID = invalidID
+		invalidOrgIDmRel = append(invalidOrgIDmRel, m)
+	}
+
+	var emptyOrgIDmRel []auth.MemberRelation
+	for _, m := range memberRelations {
+		m.OrgID = ""
+		emptyOrgIDmRel = append(emptyOrgIDmRel, m)
+	}
+
+	var noMemberIDmRel []auth.MemberRelation
+	for _, m := range memberRelations {
+		m.MemberID = ""
+		noMemberIDmRel = append(noMemberIDmRel, m)
+	}
+
+	var invalidMemberIDmRel []auth.MemberRelation
+	for _, m := range memberRelations {
+		m.MemberID = invalidID
+		invalidMemberIDmRel = append(invalidMemberIDmRel, m)
 	}
 
 	cases := []struct {
-		desc    string
-		orgID   string
-		members []auth.Member
-		err     error
+		desc            string
+		memberRelations []auth.MemberRelation
+		err             error
 	}{
 		{
-			desc:    "assign members to org",
-			orgID:   orgID,
-			members: members,
-			err:     nil,
+			desc:            "assign members to org",
+			memberRelations: memberRelations,
+			err:             nil,
 		},
 		{
-			desc:    "assign already assigned members to org",
-			orgID:   orgID,
-			members: members,
-			err:     auth.ErrOrgMemberAlreadyAssigned,
+			desc:            "assign already assigned members to org",
+			memberRelations: memberRelations,
+			err:             auth.ErrOrgMemberAlreadyAssigned,
 		},
 		{
-			desc:    "assign members to org with invalid org id",
-			orgID:   invalidID,
-			members: members,
-			err:     errors.ErrMalformedEntity,
+			desc:            "assign members to org with invalid org id",
+			memberRelations: invalidOrgIDmRel,
+			err:             errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "assign members to org without org id",
-			orgID:   "",
-			members: members,
-			err:     errors.ErrMalformedEntity,
+			desc:            "assign members to org without org id",
+			memberRelations: emptyOrgIDmRel,
+			err:             errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "assign members to org with empty members",
-			orgID:   orgID,
-			members: []auth.Member{},
-			err:     nil,
+			desc:            "assign members to org with empty member ids",
+			memberRelations: noMemberIDmRel,
+			err:             errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "assign members to org with invalid member id",
-			orgID:   orgID,
-			members: []auth.Member{{ID: invalidID}},
-			err:     errors.ErrMalformedEntity,
+			desc:            "assign members to org with invalid member ids",
+			memberRelations: invalidMemberIDmRel,
+			err:             errors.ErrMalformedEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.AssignMembers(context.Background(), tc.orgID, tc.members...)
+		err := repo.AssignMembers(context.Background(), tc.memberRelations...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -695,24 +716,25 @@ func TestUnassignMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var members []auth.Member
+	var memberRelations []auth.MemberRelation
 	var memberIDs []string
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		email := fmt.Sprintf("member%d@email.com", i)
-		member := auth.Member{
-			ID:    memberID,
-			Email: email,
-			Role:  auth.ViewerRole,
+		memberRelation := auth.MemberRelation{
+			OrgID:     orgID,
+			MemberID:  memberID,
+			Role:      auth.EditorRole,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
-		members = append(members, member)
+		memberRelations = append(memberRelations, memberRelation)
 		memberIDs = append(memberIDs, memberID)
 	}
 
-	err = repo.AssignMembers(context.Background(), orgID, members...)
+	err = repo.AssignMembers(context.Background(), memberRelations...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -786,12 +808,15 @@ func TestRetrieveRole(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	member := auth.Member{
-		ID:   memberID,
-		Role: auth.AdminRole,
+	memberRelation := auth.MemberRelation{
+		OrgID:     org.ID,
+		MemberID:  memberID,
+		Role:      auth.AdminRole,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	err = repo.AssignMembers(context.Background(), org.ID, member)
+	err = repo.AssignMembers(context.Background(), memberRelation)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -867,60 +892,97 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	member := auth.Member{
-		ID:   memberID,
-		Role: auth.AdminRole,
+	memberRelation := auth.MemberRelation{
+		OrgID:     org.ID,
+		MemberID:  memberID,
+		Role:      auth.EditorRole,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	err = repo.AssignMembers(context.Background(), org.ID, member)
+	err = repo.AssignMembers(context.Background(), memberRelation)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	updateMrel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	invalidOrgIDmRel := auth.MemberRelation{
+		OrgID:    invalidID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	unknownOrgIDmRel := auth.MemberRelation{
+		OrgID:    unknownID,
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	emptyOrgIDmRel := auth.MemberRelation{
+		OrgID:    "",
+		MemberID: memberID,
+		Role:     auth.ViewerRole,
+	}
+
+	invalidMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: invalidID,
+		Role:     auth.ViewerRole,
+	}
+
+	unknownMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: unknownID,
+		Role:     auth.ViewerRole,
+	}
+
+	emptyMemberIDmRel := auth.MemberRelation{
+		OrgID:    org.ID,
+		MemberID: "",
+		Role:     auth.ViewerRole,
+	}
+
 	cases := []struct {
-		desc   string
-		orgID  string
-		member auth.Member
-		err    error
+		desc           string
+		memberRelation auth.MemberRelation
+		err            error
 	}{
 		{
-			desc:   "update member role",
-			orgID:  org.ID,
-			member: member,
-			err:    nil,
+			desc:           "update member role",
+			memberRelation: updateMrel,
+			err:            nil,
 		}, {
-			desc:   "update role with invalid org id",
-			orgID:  invalidID,
-			member: member,
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with invalid org id",
+			memberRelation: invalidOrgIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with unknown org id",
-			orgID:  unknownID,
-			member: member,
-			err:    errors.ErrNotFound,
+			desc:           "update role with unknown org id",
+			memberRelation: unknownOrgIDmRel,
+			err:            errors.ErrNotFound,
 		}, {
-			desc:   "update role without org id",
-			orgID:  "",
-			member: member,
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role without org id",
+			memberRelation: emptyOrgIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with invalid member id",
-			orgID:  org.ID,
-			member: auth.Member{ID: invalidID},
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with invalid member id",
+			memberRelation: invalidMemberIDmRel,
+			err:            errors.ErrMalformedEntity,
 		}, {
-			desc:   "update role with unknown member id",
-			orgID:  org.ID,
-			member: auth.Member{ID: unknownID},
-			err:    errors.ErrNotFound,
+			desc:           "update role with unknown member id",
+			memberRelation: unknownMemberIDmRel,
+			err:            errors.ErrNotFound,
 		}, {
-			desc:   "update role with empty member",
-			orgID:  org.ID,
-			member: auth.Member{},
-			err:    errors.ErrMalformedEntity,
+			desc:           "update role with empty member",
+			memberRelation: emptyMemberIDmRel,
+			err:            errors.ErrMalformedEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdateMembers(context.Background(), tc.orgID, tc.member)
+		err := repo.UpdateMembers(context.Background(), tc.memberRelation)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -947,22 +1009,21 @@ func TestRetrieveMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var members []auth.Member
+	var memberRelations []auth.MemberRelation
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		email := fmt.Sprintf("member%d@email.com", i)
-		member := auth.Member{
-			ID:    memberID,
-			Email: email,
-			Role:  auth.EditorRole,
+		memberRelation := auth.MemberRelation{
+			OrgID:    orgID,
+			MemberID: memberID,
+			Role:     auth.EditorRole,
 		}
 
-		members = append(members, member)
+		memberRelations = append(memberRelations, memberRelation)
 	}
 
-	err = repo.AssignMembers(context.Background(), orgID, members...)
+	err = repo.AssignMembers(context.Background(), memberRelations...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1049,66 +1110,95 @@ func TestAssignGroups(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var groupIDs []string
+	var groupRelations []auth.GroupRelation
 	for i := uint64(0); i < n; i++ {
 		groupID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		groupIDs = append(groupIDs, groupID)
+		groupRelation := auth.GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		groupRelations = append(groupRelations, groupRelation)
+	}
+
+	var invalidOrgIDgRel []auth.GroupRelation
+	for _, g := range groupRelations {
+		g.OrgID = invalidID
+		invalidOrgIDgRel = append(invalidOrgIDgRel, g)
+	}
+
+	var emptyOrgIDgRel []auth.GroupRelation
+	for _, g := range groupRelations {
+		g.OrgID = ""
+		emptyOrgIDgRel = append(emptyOrgIDgRel, g)
+	}
+
+	var unknownOrgIDgRel []auth.GroupRelation
+	for _, g := range groupRelations {
+		g.OrgID = unknownID
+		unknownOrgIDgRel = append(unknownOrgIDgRel, g)
+	}
+
+	var emptyGroupIDgRel []auth.GroupRelation
+	for _, g := range groupRelations {
+		g.GroupID = ""
+		emptyGroupIDgRel = append(emptyGroupIDgRel, g)
+	}
+
+	var invalidGroupIDgRel []auth.GroupRelation
+	for _, g := range groupRelations {
+		g.GroupID = invalidID
+		invalidGroupIDgRel = append(invalidGroupIDgRel, g)
 	}
 
 	cases := []struct {
-		desc     string
-		orgID    string
-		groupIDs []string
-		err      error
+		desc           string
+		groupRelations []auth.GroupRelation
+		err            error
 	}{
 		{
-			desc:     "assign groups to org",
-			orgID:    orgID,
-			groupIDs: groupIDs,
-			err:      nil,
+			desc:           "assign groups to org",
+			groupRelations: groupRelations,
+			err:            nil,
 		},
 		{
-			desc:     "assign already assigned groups to org",
-			orgID:    orgID,
-			groupIDs: groupIDs,
-			err:      auth.ErrOrgMemberAlreadyAssigned,
+			desc:           "assign already assigned groups to org",
+			groupRelations: groupRelations,
+			err:            auth.ErrOrgMemberAlreadyAssigned,
 		},
 		{
-			desc:     "assign groups to org with invalid org id",
-			orgID:    invalidID,
-			groupIDs: groupIDs,
-			err:      errors.ErrMalformedEntity,
+			desc:           "assign groups to org with invalid org id",
+			groupRelations: invalidOrgIDgRel,
+			err:            errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "assign groups to org without org id",
-			orgID:    "",
-			groupIDs: groupIDs,
-			err:      errors.ErrMalformedEntity,
+			desc:           "assign groups to org without org id",
+			groupRelations: emptyOrgIDgRel,
+			err:            errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "assign groups to org with unknown org id",
-			orgID:    unknownID,
-			groupIDs: groupIDs,
-			err:      nil,
+			desc:           "assign groups to org with unknown org id",
+			groupRelations: unknownOrgIDgRel,
+			err:            nil,
 		},
 		{
-			desc:     "assign groups to org without group ids",
-			orgID:    orgID,
-			groupIDs: []string{},
-			err:      nil,
+			desc:           "assign groups to org without group ids",
+			groupRelations: emptyGroupIDgRel,
+			err:            errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "assign groups to org with invalid group id",
-			orgID:    orgID,
-			groupIDs: []string{invalidID},
-			err:      errors.ErrMalformedEntity,
+			desc:           "assign groups to org with invalid group id",
+			groupRelations: invalidGroupIDgRel,
+			err:            errors.ErrMalformedEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.AssignGroups(context.Background(), tc.orgID, tc.groupIDs...)
+		err := repo.AssignGroups(context.Background(), tc.groupRelations...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1135,15 +1225,22 @@ func TestUnassignGroups(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	var groupRelations []auth.GroupRelation
 	var groupIDs []string
 	for i := uint64(0); i < n; i++ {
 		groupID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
+		groupRelation := auth.GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		groupRelations = append(groupRelations, groupRelation)
 		groupIDs = append(groupIDs, groupID)
 	}
 
-	err = repo.AssignGroups(context.Background(), orgID, groupIDs...)
+	err = repo.AssignGroups(context.Background(), groupRelations...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1225,14 +1322,23 @@ func TestRetrieveGroups(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	var groupIDs []string
+	var groupRelations []auth.GroupRelation
 	for i := uint64(0); i < n; i++ {
 		groupID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+		groupRelation := auth.GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
 		groupIDs = append(groupIDs, groupID)
+		groupRelations = append(groupRelations, groupRelation)
 	}
 
-	err = repo.AssignGroups(context.Background(), orgID, groupIDs...)
+	err = repo.AssignGroups(context.Background(), groupRelations...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1328,7 +1434,13 @@ func TestRetrieveByGroupID(t *testing.T) {
 		err = repo.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = repo.AssignGroups(context.Background(), orgID, groupID)
+		groupRelation := auth.GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		err = repo.AssignGroups(context.Background(), groupRelation)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -1396,18 +1508,22 @@ func TestRetrieveAllMemberRelations(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	var memberRelations []auth.MemberRelation
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		member := auth.Member{
-			ID:   memberID,
-			Role: auth.EditorRole,
+		memberRelation := auth.MemberRelation{
+			OrgID:    org.ID,
+			MemberID: memberID,
+			Role:     auth.EditorRole,
 		}
 
-		err = repo.AssignMembers(context.Background(), org.ID, member)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		memberRelations = append(memberRelations, memberRelation)
 	}
+
+	err = repo.AssignMembers(context.Background(), memberRelations...)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc string
@@ -1452,13 +1568,24 @@ func TestRetrieveAllGroupRelations(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	var groupRelations []auth.GroupRelation
 	for i := uint64(0); i < n; i++ {
 		groupID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = repo.AssignGroups(context.Background(), org.ID, groupID)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		groupRelation := auth.GroupRelation{
+			OrgID:     org.ID,
+			GroupID:   groupID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		groupRelations = append(groupRelations, groupRelation)
+
 	}
+
+	err = repo.AssignGroups(context.Background(), groupRelations...)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc string

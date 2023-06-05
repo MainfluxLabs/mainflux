@@ -232,7 +232,7 @@ func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
-func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, error) {
+func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return Org{}, err
@@ -245,30 +245,33 @@ func (svc service) CreateOrg(ctx context.Context, token string, org Org) (Org, e
 
 	timestamp := getTimestmap()
 
-	g := Org{
+	org := Org{
 		ID:          id,
 		OwnerID:     user.ID,
-		Name:        org.Name,
-		Description: org.Description,
-		Metadata:    org.Metadata,
+		Name:        o.Name,
+		Description: o.Description,
+		Metadata:    o.Metadata,
 		UpdatedAt:   timestamp,
 		CreatedAt:   timestamp,
 	}
 
-	if err := svc.orgs.Save(ctx, g); err != nil {
+	if err := svc.orgs.Save(ctx, org); err != nil {
 		return Org{}, err
 	}
 
-	member := Member{
-		ID:   user.ID,
-		Role: OwnerRole,
+	mr := MemberRelation{
+		OrgID:     id,
+		MemberID:  user.ID,
+		Role:      OwnerRole,
+		CreatedAt: timestamp,
+		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, id, member); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
 		return Org{}, err
 	}
 
-	return g, nil
+	return org, nil
 }
 
 func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
@@ -320,21 +323,21 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 	return svc.orgs.Delete(ctx, user.ID, id)
 }
 
-func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, error) {
+func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return Org{}, err
 	}
 
-	if err := svc.canEditOrg(ctx, org.ID, user.ID); err != nil {
+	if err := svc.canEditOrg(ctx, o.ID, user.ID); err != nil {
 		return Org{}, err
 	}
 
-	g := Org{
-		ID:          org.ID,
+	org := Org{
+		ID:          o.ID,
 		OwnerID:     user.ID,
-		Name:        org.Name,
-		Description: org.Description,
+		Name:        o.Name,
+		Description: o.Description,
 		UpdatedAt:   getTimestmap(),
 	}
 
@@ -342,7 +345,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, org Org) (Org, e
 		return Org{}, err
 	}
 
-	return g, nil
+	return org, nil
 }
 
 func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
@@ -373,7 +376,7 @@ func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, 
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, Member{}); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, MemberRelation{}); err != nil {
 		return err
 	}
 
@@ -412,7 +415,21 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, orgID, mbs...); err != nil {
+	timestamp := getTimestmap()
+	var mrs []MemberRelation
+	for _, m := range mbs {
+		mr := MemberRelation{
+			OrgID:     orgID,
+			MemberID:  m.ID,
+			Role:      m.Role,
+			UpdatedAt: timestamp,
+			CreatedAt: timestamp,
+		}
+
+		mrs = append(mrs, mr)
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, mrs...); err != nil {
 		return err
 	}
 
@@ -485,7 +502,19 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 
 	}
 
-	if err := svc.orgs.UpdateMembers(ctx, orgID, mbs...); err != nil {
+	var mrs []MemberRelation
+	for _, m := range mbs {
+		mr := MemberRelation{
+			OrgID:     orgID,
+			MemberID:  m.ID,
+			Role:      m.Role,
+			UpdatedAt: getTimestmap(),
+		}
+
+		mrs = append(mrs, mr)
+	}
+
+	if err := svc.orgs.UpdateMembers(ctx, mrs...); err != nil {
 		return err
 	}
 
@@ -561,7 +590,20 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		return err
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, orgID, groupIDs...); err != nil {
+	timestamp := getTimestmap()
+	var grs []GroupRelation
+	for _, groupID := range groupIDs {
+		gr := GroupRelation{
+			OrgID:     orgID,
+			GroupID:   groupID,
+			CreatedAt: timestamp,
+			UpdatedAt: timestamp,
+		}
+
+		grs = append(grs, gr)
+	}
+
+	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
 		return err
 	}
 
@@ -681,20 +723,20 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	members, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	mrs, err := svc.orgs.RetrieveAllMemberRelations(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	groups, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	grs, err := svc.orgs.RetrieveAllGroupRelations(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	backup := Backup{
 		Orgs:            orgs,
-		MemberRelations: members,
-		GroupRelations:  groups,
+		MemberRelations: mrs,
+		GroupRelations:  grs,
 	}
 
 	return backup, nil
@@ -715,20 +757,12 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	for _, mr := range backup.MemberRelations {
-		member := Member{
-			ID:   mr.MemberID,
-			Role: mr.Role,
-		}
-		if err := svc.orgs.AssignMembers(ctx, mr.OrgID, member); err != nil {
-			return err
-		}
+	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
+		return err
 	}
 
-	for _, gr := range backup.GroupRelations {
-		if err := svc.orgs.AssignGroups(ctx, gr.OrgID, gr.GroupID); err != nil {
-			return err
-		}
+	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+		return err
 	}
 
 	return nil
