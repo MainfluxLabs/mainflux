@@ -46,20 +46,20 @@ func OrgRepositoryMiddleware(tracer opentracing.Tracer, gr auth.OrgRepository) a
 	}
 }
 
-func (orm orgRepositoryMiddleware) Save(ctx context.Context, g ...auth.Org) error {
+func (orm orgRepositoryMiddleware) Save(ctx context.Context, orgs ...auth.Org) error {
 	span := createSpan(ctx, orm.tracer, saveOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.Save(ctx, g...)
+	return orm.repo.Save(ctx, orgs...)
 }
 
-func (orm orgRepositoryMiddleware) Update(ctx context.Context, g auth.Org) error {
+func (orm orgRepositoryMiddleware) Update(ctx context.Context, org auth.Org) error {
 	span := createSpan(ctx, orm.tracer, updateOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.Update(ctx, g)
+	return orm.repo.Update(ctx, org)
 }
 
 func (orm orgRepositoryMiddleware) Delete(ctx context.Context, owner, orgID string) error {
@@ -110,12 +110,12 @@ func (orm orgRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memb
 	return orm.repo.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	span := createSpan(ctx, orm.tracer, assignOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignMembers(ctx, orgID, members...)
+	return orm.repo.AssignMembers(ctx, mrs...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error {
@@ -126,12 +126,12 @@ func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID st
 	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
 }
 
-func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	span := createSpan(ctx, orm.tracer, updateOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdateMembers(ctx, orgID, members...)
+	return orm.repo.UpdateMembers(ctx, mrs...)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
@@ -158,12 +158,12 @@ func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Contex
 	return orm.repo.RetrieveAllMemberRelations(ctx)
 }
 
-func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
 	span := createSpan(ctx, orm.tracer, assignOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignGroups(ctx, orgID, groupIDs...)
+	return orm.repo.AssignGroups(ctx, grs...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
