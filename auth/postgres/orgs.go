@@ -40,18 +40,18 @@ func NewOrgRepo(db Database) auth.OrgRepository {
 	}
 }
 
-func (or orgRepository) Save(ctx context.Context, o ...auth.Org) error {
+func (or orgRepository) Save(ctx context.Context, orgs ...auth.Org) error {
 	// For root org path is initialized with id
 	q := `INSERT INTO orgs (name, description, id, owner_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at)`
 
-	for _, org := range o {
-		dbg, err := toDBOrg(org)
+	for _, org := range orgs {
+		dbo, err := toDBOrg(org)
 		if err != nil {
 			return err
 		}
 
-		_, err = or.db.NamedExecContext(ctx, q, dbg)
+		_, err = or.db.NamedExecContext(ctx, q, dbo)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -74,16 +74,16 @@ func (or orgRepository) Save(ctx context.Context, o ...auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Update(ctx context.Context, o auth.Org) error {
+func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	q := `UPDATE orgs SET name = :name, description = :description, metadata = :metadata, updated_at = :updated_at WHERE id = :id
 		  RETURNING id, name, owner_id, description, metadata, created_at, updated_at`
 
-	dbu, err := toDBOrg(o)
+	dbo, err := toDBOrg(org)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
 
-	row, err := or.db.NamedQueryContext(ctx, q, dbu)
+	row, err := or.db.NamedQueryContext(ctx, q, dbo)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -109,12 +109,12 @@ func (or orgRepository) Delete(ctx context.Context, owner, orgID string) error {
 		ID:      orgID,
 		OwnerID: owner,
 	}
-	dbg, err := toDBOrg(org)
+	dbo, err := toDBOrg(org)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
 
-	res, err := or.db.NamedExecContext(ctx, qd, dbg)
+	res, err := or.db.NamedExecContext(ctx, qd, dbo)
 	if err != nil {
 		pqErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -144,18 +144,18 @@ func (or orgRepository) Delete(ctx context.Context, owner, orgID string) error {
 }
 
 func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
-	dbu := dbOrg{
+	dbo := dbOrg{
 		ID: id,
 	}
 	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM orgs WHERE id = $1`
-	if err := or.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
+	if err := or.db.QueryRowxContext(ctx, q, id).StructScan(&dbo); err != nil {
 		if err == sql.ErrNoRows {
 			return auth.Org{}, errors.Wrap(errors.ErrNotFound, err)
 
 		}
 		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
-	return toOrg(dbu)
+	return toOrg(dbo)
 }
 
 func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -166,12 +166,12 @@ func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 	return or.retrieve(ctx, ownerID, pm)
 }
 
-func (gr orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	return gr.retrieve(ctx, "", pm)
+func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	return or.retrieve(ctx, "", pm)
 }
 
-func (gr orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	orPage, err := gr.retrieve(ctx, "", auth.PageMetadata{})
+func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+	orPage, err := or.retrieve(ctx, "", auth.PageMetadata{})
 	if err != nil {
 		return nil, err
 	}
@@ -188,12 +188,12 @@ func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
 					  WHERE org_id = :org_id %s`, mq)
 
-	params, err := toDBOrgMemberPage("", orgID, pm)
+	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
 		return auth.OrgMembersPage{}, err
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
@@ -217,7 +217,7 @@ func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, member_relations ore
 					   WHERE ore.org_id = :org_id AND ore.org_id = o.id %s;`, mq)
 
-	total, err := total(ctx, or.db, cq, params)
+	total, err := total(ctx, or.db, cq, dbmp)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
@@ -262,12 +262,12 @@ func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 		WHERE ore.org_id = o.id and ore.member_id = :member_id
 		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
-	params, err := toDBOrgMemberPage(memberID, "", pm)
+	dbmp, err := toDBOrgMemberPage(memberID, "", pm)
 	if err != nil {
 		return auth.OrgsPage{}, err
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
@@ -289,7 +289,7 @@ func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations ore, orgs o
 		WHERE ore.org_id = o.id and ore.member_id = :member_id %s %s`, mq, nq)
 
-	total, err := total(ctx, or.db, cq, params)
+	total, err := total(ctx, or.db, cq, dbmp)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
@@ -322,7 +322,7 @@ func (or orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (or orgRepository) AssignMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (or orgRepository) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -331,17 +331,13 @@ func (or orgRepository) AssignMembers(ctx context.Context, orgID string, members
 	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, member := range members {
-		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
+	for _, mr := range mrs {
+		dbmr, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
 
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
-
-		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qIns, dbmr); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -375,12 +371,17 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		dbg, err := toDBMemberRelation(orgID, id, "")
+		mr := auth.MemberRelation{
+			OrgID:    orgID,
+			MemberID: id,
+		}
+
+		dbmr, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qDel, dbmr); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -403,18 +404,17 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	return nil
 }
 
-func (or orgRepository) UpdateMembers(ctx context.Context, orgID string, members ...auth.Member) error {
+func (or orgRepository) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
-	for _, member := range members {
-		dbg, err := toDBMemberRelation(orgID, member.ID, member.Role)
+	for _, mr := range mrs {
+		dbmr, err := toDBMemberRelation(mr)
 		if err != nil {
 			return errors.Wrap(errors.ErrUpdateEntity, err)
 		}
-		dbg.UpdatedAt = time.Now()
 
-		row, err := or.db.NamedExecContext(ctx, qUpd, dbg)
+		row, err := or.db.NamedExecContext(ctx, qUpd, dbmr)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -442,7 +442,7 @@ func (or orgRepository) UpdateMembers(ctx context.Context, orgID string, members
 	return nil
 }
 
-func (or orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
+func (or orgRepository) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -451,16 +451,13 @@ func (or orgRepository) AssignGroups(ctx context.Context, orgID string, groupIDs
 	qIns := `INSERT INTO group_relations (org_id, group_id, created_at, updated_at)
 			 VALUES(:org_id, :group_id, :created_at, :updated_at)`
 
-	for _, id := range groupIDs {
-		dbg, err := toDBGroupRelation(id, orgID)
+	for _, gr := range grs {
+		dbgr, err := toDBGroupRelation(gr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
 
-		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qIns, dbgr); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -494,12 +491,17 @@ func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 	qDel := `DELETE from group_relations WHERE org_id = :org_id AND group_id = :group_id`
 
 	for _, id := range groupIDs {
-		dbg, err := toDBGroupRelation(id, orgID)
+		gr := auth.GroupRelation{
+			OrgID:   orgID,
+			GroupID: id,
+		}
+
+		dbgr, err := toDBGroupRelation(gr)
 		if err != nil {
 			return errors.Wrap(auth.ErrAssignToOrg, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qDel, dbgr); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -531,12 +533,12 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, gre.updated_at FROM group_relations gre
 					  WHERE gre.org_id = :org_id %s`, mq)
 
-	params, err := toDBOrgMemberPage("", orgID, pm)
+	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
 		return auth.GroupRelationsPage{}, err
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
 	if err != nil {
 		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -555,7 +557,7 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, group_relations gre
 					   WHERE gre.org_id = :org_id AND gre.org_id = o.id %s;`, mq)
 
-	total, err := total(ctx, or.db, cq, params)
+	total, err := total(ctx, or.db, cq, dbmp)
 	if err != nil {
 		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -577,12 +579,13 @@ func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 		FROM group_relations gre, orgs o
 		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
 
-	params, err := toDBGroupRelation(groupID, "")
+	gr := auth.GroupRelation{GroupID: groupID}
+	dbgr, err := toDBGroupRelation(gr)
 	if err != nil {
 		return auth.OrgsPage{}, err
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	rows, err := or.db.NamedQueryContext(ctx, q, dbgr)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -590,21 +593,21 @@ func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 
 	var items []auth.Org
 	for rows.Next() {
-		dbg := dbOrg{}
-		if err := rows.StructScan(&dbg); err != nil {
+		dbo := dbOrg{}
+		if err := rows.StructScan(&dbo); err != nil {
 			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		gr, err := toOrg(dbg)
+		or, err := toOrg(dbo)
 		if err != nil {
 			return auth.OrgsPage{}, err
 		}
-		items = append(items, gr)
+		items = append(items, or)
 	}
 
 	cq := `SELECT COUNT(*) FROM group_relations gre, orgs o
 		WHERE gre.org_id = o.id and gre.group_id = :group_id;`
 
-	total, err := total(ctx, or.db, cq, params)
+	total, err := total(ctx, or.db, cq, dbgr)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -628,17 +631,17 @@ func (or orgRepository) RetrieveAllMemberRelations(ctx context.Context) ([]auth.
 	}
 	defer rows.Close()
 
-	var memberRelations []auth.MemberRelation
+	var mrs []auth.MemberRelation
 	for rows.Next() {
-		dbg := dbMemberRelation{}
-		if err := rows.StructScan(&dbg); err != nil {
+		dbmr := dbMemberRelation{}
+		if err := rows.StructScan(&dbmr); err != nil {
 			return []auth.MemberRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		memberRelations = append(memberRelations, toMemberRelation(dbg))
+		mrs = append(mrs, toMemberRelation(dbmr))
 	}
 
-	return memberRelations, nil
+	return mrs, nil
 }
 
 func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
@@ -650,17 +653,17 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	}
 	defer rows.Close()
 
-	var groupRelations []auth.GroupRelation
+	var grs []auth.GroupRelation
 	for rows.Next() {
-		dbg := dbGroupRelation{}
-		if err := rows.StructScan(&dbg); err != nil {
+		dbgr := dbGroupRelation{}
+		if err := rows.StructScan(&dbgr); err != nil {
 			return []auth.GroupRelation{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		groupRelations = append(groupRelations, toGroupRelation(dbg))
+		grs = append(grs, toGroupRelation(dbgr))
 	}
 
-	return groupRelations, nil
+	return grs, nil
 }
 
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
@@ -691,12 +694,12 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, whereq)
 
-	dbPage, err := toDBOrgsPage(ownerID, pm)
+	dbop, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, dbPage)
+	rows, err := or.db.NamedQueryContext(ctx, q, dbop)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -709,7 +712,7 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 
 	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereq)
 
-	total, err := total(ctx, or.db, cq, dbPage)
+	total, err := total(ctx, or.db, cq, dbop)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -818,21 +821,23 @@ type dbMemberRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBMemberRelation(orgID, memberID, role string) (dbMemberRelation, error) {
+func toDBMemberRelation(mr auth.MemberRelation) (dbMemberRelation, error) {
 	return dbMemberRelation{
-		OrgID:    orgID,
-		MemberID: memberID,
-		Role:     role,
+		OrgID:     mr.OrgID,
+		MemberID:  mr.MemberID,
+		Role:      mr.Role,
+		CreatedAt: mr.CreatedAt,
+		UpdatedAt: mr.UpdatedAt,
 	}, nil
 }
 
-func toMemberRelation(mRel dbMemberRelation) auth.MemberRelation {
+func toMemberRelation(mr dbMemberRelation) auth.MemberRelation {
 	return auth.MemberRelation{
-		OrgID:     mRel.OrgID,
-		MemberID:  mRel.MemberID,
-		Role:      mRel.Role,
-		CreatedAt: mRel.CreatedAt,
-		UpdatedAt: mRel.UpdatedAt,
+		OrgID:     mr.OrgID,
+		MemberID:  mr.MemberID,
+		Role:      mr.Role,
+		CreatedAt: mr.CreatedAt,
+		UpdatedAt: mr.UpdatedAt,
 	}
 }
 
@@ -843,19 +848,21 @@ type dbGroupRelation struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBGroupRelation(groupID, orgID string) (dbGroupRelation, error) {
+func toDBGroupRelation(gr auth.GroupRelation) (dbGroupRelation, error) {
 	return dbGroupRelation{
-		OrgID:   orgID,
-		GroupID: groupID,
+		OrgID:     gr.OrgID,
+		GroupID:   gr.GroupID,
+		CreatedAt: gr.CreatedAt,
+		UpdatedAt: gr.UpdatedAt,
 	}, nil
 }
 
-func toGroupRelation(grRel dbGroupRelation) auth.GroupRelation {
+func toGroupRelation(gr dbGroupRelation) auth.GroupRelation {
 	return auth.GroupRelation{
-		OrgID:     grRel.OrgID,
-		GroupID:   grRel.GroupID,
-		CreatedAt: grRel.CreatedAt,
-		UpdatedAt: grRel.UpdatedAt,
+		OrgID:     gr.OrgID,
+		GroupID:   gr.GroupID,
+		CreatedAt: gr.CreatedAt,
+		UpdatedAt: gr.UpdatedAt,
 	}
 }
 
@@ -889,11 +896,11 @@ func getNameQuery(name string) string {
 func (or orgRepository) processRows(rows *sqlx.Rows) ([]auth.Org, error) {
 	var items []auth.Org
 	for rows.Next() {
-		dbg := dbOrg{}
-		if err := rows.StructScan(&dbg); err != nil {
+		dbo := dbOrg{}
+		if err := rows.StructScan(&dbo); err != nil {
 			return items, err
 		}
-		org, err := toOrg(dbg)
+		org, err := toOrg(dbo)
 		if err != nil {
 			return items, err
 		}

@@ -45,7 +45,7 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
+func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
 	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
@@ -54,7 +54,7 @@ func (gr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscriptio
 		CreatedAt: sub.CreatedAt,
 	}
 
-	row, err := gr.db.NamedQueryContext(ctx, q, dbSub)
+	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
@@ -73,10 +73,10 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	return nil
 }
 
-func (gr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
+func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
 	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
 	exists := false
-	if err := gr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
+	if err := mr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
 		return errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
