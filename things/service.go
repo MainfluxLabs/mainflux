@@ -235,6 +235,8 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
+	thing.Owner = res.GetId()
+
 	return ts.things.Update(ctx, thing)
 }
 
