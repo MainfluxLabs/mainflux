@@ -231,6 +231,10 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
+	if err := ts.isThingOwner(ctx, res.GetId(), thing.ID); err != nil {
+		return err
+	}
+
 	thing.Owner = res.GetId()
 
 	return ts.things.Update(ctx, thing)
