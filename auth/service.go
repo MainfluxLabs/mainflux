@@ -689,6 +689,10 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
+	if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
+	}
+
 	if user.ID != memberID {
 		return OrgsPage{}, errors.ErrAuthorization
 	}
