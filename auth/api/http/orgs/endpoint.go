@@ -101,8 +101,10 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		pm := auth.PageMetadata{
-			Metadata: req.metadata,
 			Name:     req.name,
+			Metadata: req.metadata,
+			Offset:   req.offset,
+			Limit:    req.limit,
 		}
 
 		page, err := svc.ListOrgs(ctx, req.token, pm)
@@ -292,15 +294,17 @@ func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgsResponse(gp auth.OrgsPage) orgsPageRes {
+func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 	res := orgsPageRes{
 		pageRes: pageRes{
-			Total: gp.Total,
+			Total:  op.Total,
+			Limit:  op.Limit,
+			Offset: op.Offset,
 		},
 		Orgs: []viewOrgRes{},
 	}
 
-	for _, org := range gp.Orgs {
+	for _, org := range op.Orgs {
 		view := viewOrgRes{
 			ID:          org.ID,
 			OwnerID:     org.OwnerID,
