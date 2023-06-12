@@ -152,10 +152,22 @@ func decodeListOrgsRequest(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listOrgsReq{
 		token:    apiutil.ExtractBearerToken(r),
 		id:       bone.GetValue(r, orgIDKey),
 		name:     n,
+		offset:   o,
+		limit:    l,
 		metadata: m,
 	}
 

@@ -662,6 +662,11 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
+	var pg string
+	if pm.Limit != 0 {
+		pg = fmt.Sprintf("LIMIT %d OFFSET %d", pm.Limit, pm.Offset)
+	}
+
 	nq := getNameQuery(pm.Name)
 
 	var query []string
@@ -677,7 +682,7 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s;`, whereq)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereq, pg)
 
 	dbop, err := toDBOrgsPage(ownerID, pm)
 	if err != nil {
@@ -705,7 +710,9 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 	page := auth.OrgsPage{
 		Orgs: items,
 		PageMetadata: auth.PageMetadata{
-			Total: total,
+			Total:  total,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
 		},
 	}
 
