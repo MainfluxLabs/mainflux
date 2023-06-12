@@ -332,6 +332,28 @@ func TestRetrieveByOwner(t *testing.T) {
 			err:  nil,
 		},
 		{
+			desc:    "retrieve half of orgs by owner",
+			ownerID: ownerID,
+			pageMetadata: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n / 2,
+				Total:  n,
+			},
+			size: n / 2,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve last org by owner",
+			ownerID: ownerID,
+			pageMetadata: auth.PageMetadata{
+				Offset: n - 1,
+				Limit:  1,
+				Total:  n,
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
 			desc:    "retrieve orgs by owner filtered by name",
 			ownerID: ownerID,
 			pageMetadata: auth.PageMetadata{
