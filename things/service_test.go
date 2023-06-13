@@ -641,7 +641,7 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestViewChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService(map[string]string{token: email, token2: adminEmail})
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -655,6 +655,11 @@ func TestViewChannel(t *testing.T) {
 		"view existing channel": {
 			id:    ch.ID,
 			token: token,
+			err:   nil,
+		},
+		"view existing channel as admin": {
+			id:    ch.ID,
+			token: token2,
 			err:   nil,
 		},
 		"view channel with wrong credentials": {

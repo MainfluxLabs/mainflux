@@ -388,6 +388,10 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return channel, nil
+	}
+
 	if channel.Owner != res.GetId() {
 		return Channel{}, errors.ErrAuthorization
 	}
@@ -400,8 +404,9 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-
+	print("I'm herreee11 ")
 	if err := ts.authorize(ctx, res.Email); err == nil {
+		print("I'm herreee22 ")
 		return ts.channels.RetrieveByAdmin(ctx, pm)
 	}
 
