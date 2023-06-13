@@ -831,7 +831,7 @@ func TestListChannels(t *testing.T) {
 }
 
 func TestListChannelsByThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService(map[string]string{token: email, adminToken: adminEmail})
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -870,6 +870,16 @@ func TestListChannelsByThing(t *testing.T) {
 	}{
 		"list all channels by existing thing": {
 			token: token,
+			thID:  th.ID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n - chsDisconNum,
+			err:  nil,
+		},
+		"list all channels by existing thing as admin": {
+			token: adminToken,
 			thID:  th.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
