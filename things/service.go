@@ -404,9 +404,8 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	print("I'm herreee11 ")
+
 	if err := ts.authorize(ctx, res.Email); err == nil {
-		print("I'm herreee22 ")
 		return ts.channels.RetrieveByAdmin(ctx, pm)
 	}
 
