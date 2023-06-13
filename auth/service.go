@@ -359,7 +359,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 		return Org{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, id, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, id, user); err != nil {
 		return Org{}, err
 	}
 
@@ -532,7 +532,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return MembersPage{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
 		return MembersPage{}, err
 	}
 
@@ -638,7 +638,7 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, orgID, user.ID); err != nil {
+	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
 		return GroupsPage{}, err
 	}
 
@@ -712,7 +712,7 @@ func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) er
 		return err
 	}
 
-	if err := svc.canAccessOrg(ctx, org.ID, user.ID); err == nil {
+	if err := svc.canAccessOrg(ctx, org.ID, user); err == nil {
 		return nil
 	}
 
@@ -838,8 +838,13 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	return nil
 }
 
-func (svc service) canAccessOrg(ctx context.Context, orgID, userID string) error {
-	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
+	pr := AuthzReq{Email: user.Email}
+	if err := svc.Authorize(ctx, pr); err == nil {
+		return nil
+	}
+
+	role, err := svc.orgs.RetrieveRole(ctx, user.ID, orgID)
 	if err != nil {
 		return err
 	}
