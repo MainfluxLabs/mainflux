@@ -423,6 +423,10 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, err
 	}
 
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
+	}
+
 	if thing.Owner == res.GetId() {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 	}
