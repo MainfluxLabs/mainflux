@@ -183,7 +183,7 @@ func TestUpdateKey(t *testing.T) {
 }
 
 func TestViewThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService(map[string]string{token: email, adminToken: adminEmail})
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -196,6 +196,11 @@ func TestViewThing(t *testing.T) {
 		"view existing thing": {
 			id:    th.ID,
 			token: token,
+			err:   nil,
+		},
+		"view existing thing as admin": {
+			id:    th.ID,
+			token: adminToken,
 			err:   nil,
 		},
 		"view thing with wrong credentials": {

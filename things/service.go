@@ -262,6 +262,10 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return thing, nil
+	}
+
 	if thing.Owner == res.GetId() {
 		return thing, nil
 	}
