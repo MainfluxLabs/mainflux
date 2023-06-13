@@ -388,6 +388,10 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
+	if err := ts.authorize(ctx, res.Email); err == nil {
+		return channel, nil
+	}
+
 	if channel.Owner != res.GetId() {
 		return Channel{}, errors.ErrAuthorization
 	}
