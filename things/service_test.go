@@ -23,8 +23,8 @@ const (
 	wrongValue = "wrong-value"
 	adminEmail = "admin@example.com"
 	email      = "user@example.com"
-	email2     = "user2@example.com"
 	token      = "token"
+	adminToken = "adminToken"
 	token2     = "token2"
 	n          = uint64(102)
 	prefix     = "fe6b4e92-cc98-425e-b0aa-"
@@ -641,7 +641,7 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestViewChannel(t *testing.T) {
-	svc := newService(map[string]string{token: email, token2: adminEmail})
+	svc := newService(map[string]string{token: email, adminToken: adminEmail})
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -659,7 +659,7 @@ func TestViewChannel(t *testing.T) {
 		},
 		"view existing channel as admin": {
 			id:    ch.ID,
-			token: token2,
+			token: adminToken,
 			err:   nil,
 		},
 		"view channel with wrong credentials": {
