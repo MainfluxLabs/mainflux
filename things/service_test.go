@@ -24,7 +24,7 @@ const (
 	adminEmail = "admin@example.com"
 	email      = "user@example.com"
 	token      = "token"
-	adminToken = "admin-token"
+	adminToken = "adminToken"
 	token2     = "token2"
 	n          = uint64(102)
 	prefix     = "fe6b4e92-cc98-425e-b0aa-"
