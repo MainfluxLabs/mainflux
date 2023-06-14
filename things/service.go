@@ -702,6 +702,10 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMe
 		return GroupPage{}, err
 	}
 
+	if err := ts.authorize(ctx, user.Email); err == nil {
+		return ts.groups.RetrieveByAdmin(ctx, pm)
+	}
+
 	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)
 }
 

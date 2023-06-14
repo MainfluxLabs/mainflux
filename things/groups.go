@@ -100,6 +100,9 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
+	// RetrieveByAdmin retrieves all groups with pagination.
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (GroupPage, error)
+
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 }
