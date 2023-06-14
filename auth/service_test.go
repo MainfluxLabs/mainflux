@@ -22,33 +22,33 @@ import (
 )
 
 const (
-	secret        = "secret"
-	email         = "test@example.com"
-	sysAdminEmail = "admin@example.com"
-	ownerEmail    = "owner@test.com"
-	viewerEmail   = "viewer@test.com"
-	editorEmail   = "editor@test.com"
-	adminEmail    = "admin@test.com"
+	secret          = "secret"
+	email           = "test@example.com"
+	superAdminEmail = "admin@example.com"
+	ownerEmail      = "owner@test.com"
+	viewerEmail     = "viewer@test.com"
+	editorEmail     = "editor@test.com"
+	orgAdminEmail   = "admin@test.com"
 
-	id          = "testID"
-	ownerID     = "ownerID"
-	adminID     = "adminID"
-	editorID    = "editorID"
-	viewerID    = "viewerID"
-	sysAdminID  = "sysAdminID"
-	description = "description"
-	name        = "name"
-	invalid     = "invalid"
-	n           = 10
+	id           = "testID"
+	ownerID      = "ownerID"
+	orgAdminID   = "orgAdminID"
+	editorID     = "editorID"
+	viewerID     = "viewerID"
+	superAdminID = "superAdminID"
+	description  = "description"
+	name         = "name"
+	invalid      = "invalid"
+	n            = 10
 
 	loginDuration = 30 * time.Minute
 )
 
 var (
 	org           = auth.Org{Name: name, Description: description}
-	members       = []auth.Member{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
-	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
-	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
+	members       = []auth.Member{{Email: orgAdminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
+	usersByEmails = map[string]users.User{orgAdminEmail: {ID: orgAdminID, Email: orgAdminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
+	usersByIDs    = map[string]users.User{orgAdminID: {ID: orgAdminID, Email: orgAdminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
 	idProvider    = uuid.New()
 )
 
@@ -59,7 +59,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, idMockProvider, t, loginDuration, sysAdminEmail)
+	return auth.New(orgRepo, tc, uc, keyRepo, idMockProvider, t, loginDuration, superAdminEmail)
 }
 
 func createGroups() map[string]things.Group {
@@ -340,7 +340,7 @@ func TestIdentify(t *testing.T) {
 func TestAuthorize(t *testing.T) {
 	svc := newService()
 
-	pr := auth.AuthzReq{Email: sysAdminEmail}
+	pr := auth.AuthzReq{Email: superAdminEmail}
 	err := svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }
@@ -393,7 +393,7 @@ func TestListOrgs(t *testing.T) {
 
 	_, ownerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	for i := 0; i < n; i++ {
@@ -480,7 +480,7 @@ func TestRemoveOrg(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	res, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -566,7 +566,7 @@ func TestUpdateOrg(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	res, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -646,9 +646,9 @@ func TestViewOrg(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -758,7 +758,7 @@ func TestAssignMembers(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -854,7 +854,7 @@ func TestUnAssignMembers(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -943,7 +943,7 @@ func TestUpdateMembers(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -1025,9 +1025,9 @@ func TestListOrgMembers(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerLoginSecret, org)
@@ -1165,7 +1165,7 @@ func TestAssignGroups(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	var grIDs []string
@@ -1267,7 +1267,7 @@ func TestUnAssignGroups(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	var grIDs []string
@@ -1373,9 +1373,9 @@ func TestListOrgGroups(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	var grIDs []string
@@ -1531,9 +1531,9 @@ func TestListOrgMemberships(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, editorLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	_, adminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: orgAdminID, Subject: orgAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	for i := 0; i < n; i++ {
@@ -1572,7 +1572,7 @@ func TestListOrgMemberships(t *testing.T) {
 		{
 			desc:     "list member organisations as admin",
 			token:    adminLoginSecret,
-			memberID: adminID,
+			memberID: orgAdminID,
 			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -1674,7 +1674,7 @@ func TestBackup(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	var grIDs []string
@@ -1750,7 +1750,7 @@ func TestBackup(t *testing.T) {
 func TestRestore(t *testing.T) {
 	svc := newService()
 
-	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: sysAdminID, Subject: sysAdminEmail})
+	_, sysAdminLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: superAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerLoginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
