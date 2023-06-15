@@ -474,6 +474,11 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
+	var pg string
+	if pm.Limit != 0 {
+		pg = fmt.Sprintf("LIMIT %d OFFSET %d", pm.Limit, pm.Offset)
+	}
+
 	var query []string
 	if mq != "" {
 		query = append(query, mq)
@@ -482,7 +487,7 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s;`, whereq)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereq, pg)
 
 	dbPage, err := toDBGroupPage(ownerID, "", pm)
 	if err != nil {
