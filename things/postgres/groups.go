@@ -151,6 +151,15 @@ func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 	return nil
 }
 
+func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
+	gp, err := gr.retrieve(ctx, "", things.PageMetadata{})
+	if err != nil {
+		return nil, err
+	}
+
+	return gp.Groups, nil
+}
+
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	dbu := dbGroup{
 		ID: id,
@@ -221,15 +230,6 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, p
 
 func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
 	return gr.retrieve(ctx, "", pm)
-}
-
-func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	gp, err := gr.retrieve(ctx, "", things.PageMetadata{})
-	if err != nil {
-		return nil, err
-	}
-
-	return gp.Groups, nil
 }
 
 func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
