@@ -479,12 +479,25 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 		pg = fmt.Sprintf("LIMIT %d OFFSET %d", pm.Limit, pm.Offset)
 	}
 
+	_, name := getNameQuery(pm.Name)
+
 	var query []string
 	if mq != "" {
 		query = append(query, mq)
 	}
+
+	if name != "" {
+		nq := fmt.Sprintf("LOWER(name) LIKE '%s'", name)
+		query = append(query, nq)
+	}
+
 	if len(query) > 0 {
-		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
+		switch whereq {
+		case "":
+			whereq = fmt.Sprintf("WHERE %s", strings.Join(query, " AND "))
+		default:
+			whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
+		}
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereq, pg)
