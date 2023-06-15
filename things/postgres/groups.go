@@ -466,7 +466,7 @@ func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, id
 func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
 	var whereq string
 	if ownerID != "" {
-		whereq = "WHERE owner_id = :owner_id"
+		whereq = "owner_id = :owner_id"
 	}
 
 	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
@@ -492,12 +492,7 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 	}
 
 	if len(query) > 0 {
-		switch whereq {
-		case "":
-			whereq = fmt.Sprintf("WHERE %s", strings.Join(query, " AND "))
-		default:
-			whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
-		}
+		whereq = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereq, pg)
