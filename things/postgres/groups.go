@@ -464,58 +464,73 @@ func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, id
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
-	var whereq string
+	var ownq string
 	if ownerID != "" {
-		whereq = "owner_id = :owner_id"
+		ownq = "owner_id = :owner_id"
 	}
 
-	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
+	nq, name := getNameQuery(pm.Name)
+
+	meta, mq, err := getMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var pg string
-	if pm.Limit != 0 {
-		pg = fmt.Sprintf("LIMIT %d OFFSET %d", pm.Limit, pm.Offset)
+	var whereClause string
+	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
 	}
 
-	_, name := getNameQuery(pm.Name)
-
-	var query []string
 	if mq != "" {
 		query = append(query, mq)
 	}
 
-	if name != "" {
-		nq := fmt.Sprintf("LOWER(name) LIKE '%s'", name)
+	if nq != "" {
 		query = append(query, nq)
 	}
 
 	if len(query) > 0 {
-		whereq = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
+		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereq, pg)
-
-	dbPage, err := toDBGroupPage(ownerID, "", pm)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
 	}
 
-	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereClause, olq)
+
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"name":     name,
+		"metadata": meta,
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	items, err := gr.processRows(rows)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	items := []things.Group{}
+	for rows.Next() {
+		g := dbGroup{}
+		if err := rows.StructScan(&g); err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		gr, err := toGroup(g)
+		if err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereq)
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereClause)
 
-	total, err := total(ctx, gr.db, cq, dbPage)
+	total, err := total(ctx, gr.db, cq, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -534,13 +549,6 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 	return page, nil
 }
 
-type dbMember struct {
-	MemberID  string    `db:"member_id"`
-	GroupID   string    `db:"group_id"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-}
-
 type dbGroup struct {
 	ID          string     `db:"id"`
 	OwnerID     string     `db:"owner_id"`
@@ -549,15 +557,6 @@ type dbGroup struct {
 	Metadata    dbMetadata `db:"metadata"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
-}
-
-type dbGroupPage struct {
-	ID       string     `db:"id"`
-	OwnerID  string     `db:"owner_id"`
-	Metadata dbMetadata `db:"metadata"`
-	Total    uint64     `db:"total"`
-	Limit    uint64     `db:"limit"`
-	Offset   uint64     `db:"offset"`
 }
 
 type dbMemberPage struct {
@@ -577,17 +576,6 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 		Metadata:    dbMetadata(g.Metadata),
 		CreatedAt:   g.CreatedAt,
 		UpdatedAt:   g.UpdatedAt,
-	}, nil
-}
-
-func toDBGroupPage(ownerID, id string, pm things.PageMetadata) (dbGroupPage, error) {
-	return dbGroupPage{
-		OwnerID:  ownerID,
-		Metadata: dbMetadata(pm.Metadata),
-		ID:       id,
-		Total:    pm.Total,
-		Offset:   pm.Offset,
-		Limit:    pm.Limit,
 	}, nil
 }
 
