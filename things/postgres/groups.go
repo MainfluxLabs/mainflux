@@ -11,11 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
-
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
