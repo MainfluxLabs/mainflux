@@ -13,7 +13,6 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -517,11 +516,11 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 
 	items := []things.Group{}
 	for rows.Next() {
-		g := dbGroup{}
-		if err := rows.StructScan(&g); err != nil {
+		dbg := dbGroup{}
+		if err := rows.StructScan(&dbg); err != nil {
 			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		gr, err := toGroup(g)
+		gr, err := toGroup(dbg)
 		if err != nil {
 			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -648,20 +647,4 @@ func getGroupsMetadataQuery(db string, m things.GroupMetadata) (mb []byte, mq st
 		mb = b
 	}
 	return mb, mq, nil
-}
-
-func (gr groupRepository) processRows(rows *sqlx.Rows) ([]things.Group, error) {
-	var items []things.Group
-	for rows.Next() {
-		dbg := dbGroup{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return items, err
-		}
-		group, err := toGroup(dbg)
-		if err != nil {
-			return items, err
-		}
-		items = append(items, group)
-	}
-	return items, nil
 }
