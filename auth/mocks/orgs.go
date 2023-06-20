@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -112,7 +113,9 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	for _, org := range orm.orgs {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.members[memberID]; ok {
-				orgs = append(orgs, org)
+				if strings.Contains(org.Name, pm.Name) {
+					orgs = append(orgs, org)
+				}
 			}
 		}
 		i++
