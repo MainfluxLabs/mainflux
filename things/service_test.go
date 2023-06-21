@@ -22,6 +22,7 @@ const (
 	wrongID    = ""
 	wrongValue = "wrong-value"
 	adminEmail = "admin@example.com"
+	userEmail  = "user@example.com"
 	email      = "user@example.com"
 	token      = "token"
 	adminToken = "adminToken"
@@ -222,29 +223,42 @@ func TestViewThing(t *testing.T) {
 }
 
 func TestListThings(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService(map[string]string{token: email, adminToken: adminEmail, token2: userEmail})
 
 	m := make(map[string]interface{})
 	m["serial"] = "123456"
 	thingList[0].Metadata = m
 
-	var ths []things.Thing
+	var ths1 []things.Thing
 	for i := uint64(0); i < n; i++ {
 		th := thingList[i]
-		ths = append(ths, th)
+		ths1 = append(ths1, th)
 	}
 
-	_, err := svc.CreateThings(context.Background(), token, ths...)
+	var ths2 []things.Thing
+	for i := uint64(0); i < n; i++ {
+		th := thingList[i]
+		th.Owner = userEmail
+		th.Key = fmt.Sprintf("%s2%011d", prefix, i+1)
+		th.ID = fmt.Sprintf("%s2%012d", prefix, i+1)
+		ths2 = append(ths2, th)
+	}
+
+	_, err := svc.CreateThings(context.Background(), token, ths1...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateThings(context.Background(), token2, ths2...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
 		token        string
+		admin        bool
 		pageMetadata things.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list all things": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -252,8 +266,20 @@ func TestListThings(t *testing.T) {
 			size: n,
 			err:  nil,
 		},
+		"list all things as admin": {
+			token: adminToken,
+			admin: true,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n * 2,
+				Total:  n * 2,
+			},
+			size: n * 2,
+			err:  nil,
+		},
 		"list all things with no limit": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
@@ -262,6 +288,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list half": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
@@ -271,6 +298,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list last thing": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
@@ -280,6 +308,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list empty set": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
@@ -289,6 +318,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with wrong credentials": {
 			token: wrongValue,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  0,
@@ -298,6 +328,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with metadata": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -308,6 +339,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things sorted by name ascendent": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -319,6 +351,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things sorted by name descendent": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -331,7 +364,7 @@ func TestListThings(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := svc.ListThings(context.Background(), tc.token, tc.pageMetadata)
+		page, err := svc.ListThings(context.Background(), tc.token, tc.admin, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))

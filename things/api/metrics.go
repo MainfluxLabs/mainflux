@@ -66,13 +66,13 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.Page, error) {
+func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things").Add(1)
 		ms.latency.With("method", "list_things").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThings(ctx, token, pm)
+	return ms.svc.ListThings(ctx, token, admin, pm)
 }
 
 func (ms *metricsMiddleware) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {

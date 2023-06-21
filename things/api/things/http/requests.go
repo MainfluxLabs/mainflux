@@ -176,6 +176,7 @@ func (req viewResourceReq) validate() error {
 
 type listResourcesReq struct {
 	token        string
+	admin        bool
 	pageMetadata things.PageMetadata
 }
 

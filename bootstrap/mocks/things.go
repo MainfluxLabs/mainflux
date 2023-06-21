@@ -173,7 +173,7 @@ func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetadata) (things.Page, error) {
+func (svc *mainfluxThings) ListThings(context.Context, string, bool, things.PageMetadata) (things.Page, error) {
 	panic("not implemented")
 }
 

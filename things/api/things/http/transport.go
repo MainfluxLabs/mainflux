@@ -32,6 +32,7 @@ const (
 	metadataKey = "metadata"
 	disconnKey  = "disconnected"
 	groupIDKey  = "groupID"
+	adminKey    = "admin"
 	defOffset   = 0
 	defLimit    = 10
 )
@@ -367,6 +368,11 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	a, err := apiutil.ReadBoolQuery(r, adminKey, false)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listResourcesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
@@ -377,6 +383,7 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 			Dir:      d,
 			Metadata: m,
 		},
+		admin: a,
 	}
 
 	return req, nil

@@ -86,8 +86,8 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.Page, error) {
-	return es.svc.ListThings(ctx, token, pm)
+func (es eventStore) ListThings(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.Page, error) {
+	return es.svc.ListThings(ctx, token, admin, pm)
 }
 
 func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {

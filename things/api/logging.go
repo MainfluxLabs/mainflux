@@ -78,7 +78,7 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (_ things.Page, err error) {
+func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, admin bool, pm things.PageMetadata) (_ things.Page, err error) {
 	defer func(begin time.Time) {
 		nlog := ""
 		if pm.Name != "" {
@@ -92,7 +92,7 @@ func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm th
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListThings(ctx, token, pm)
+	return lm.svc.ListThings(ctx, token, admin, pm)
 }
 
 func (lm *loggingMiddleware) ListThingsByIDs(ctx context.Context, ids []string) (page things.Page, err error) {

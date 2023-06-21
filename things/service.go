@@ -32,7 +32,7 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error)
+	ListThings(ctx context.Context, token string, admin bool, pm PageMetadata) (Page, error)
 
 	// ListThingsByIDs retrieves data about subset of things that are identified
 	ListThingsByIDs(ctx context.Context, ids []string) (Page, error)
@@ -285,15 +285,16 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	return Thing{}, errors.ErrAuthorization
 }
 
-func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error) {
+func (ts *thingsService) ListThings(ctx context.Context, token string, admin bool, pm PageMetadata) (Page, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Page{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
-		return ts.things.RetrieveByAdmin(ctx, pm)
-
+	if admin {
+		if err := ts.authorize(ctx, res.Email); err == nil {
+			return ts.things.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
