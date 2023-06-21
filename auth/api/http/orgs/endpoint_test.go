@@ -76,9 +76,11 @@ func (tr testRequest) make() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
 	}
+
 	if tr.contentType != "" {
 		req.Header.Set("Content-Type", tr.contentType)
 	}
@@ -342,7 +344,7 @@ func TestUpdateOrg(t *testing.T) {
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "update org with invalid data format",
+			desc:   "update org with invalid request format",
 			req:    "{",
 			id:     or.ID,
 			ct:     contentType,
@@ -394,6 +396,9 @@ func TestDeleteOrg(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	unknownID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	cases := []struct {
 		desc   string
 		id     string
@@ -414,7 +419,7 @@ func TestDeleteOrg(t *testing.T) {
 		},
 		{
 			desc:   "delete non-existing org",
-			id:     id,
+			id:     unknownID,
 			token:  token,
 			status: http.StatusNotFound,
 		},
@@ -483,6 +488,10 @@ func TestListOrgs(t *testing.T) {
 		})
 	}
 
+	sort.Slice(orgs, func(i, j int) bool {
+		return orgs[i].ID < orgs[j].ID
+	})
+
 	cases := []struct {
 		desc   string
 		token  string
@@ -537,28 +546,28 @@ func TestListOrgs(t *testing.T) {
 			token:  token,
 			url:    fmt.Sprintf("%s/orgs?limit=%d", ts.URL, 5),
 			status: http.StatusOK,
-			res:    nil,
+			res:    orgs[:5],
 		},
 		{
 			desc:   "list orgs without limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?offset=%d", ts.URL, 5),
+			url:    fmt.Sprintf("%s/orgs?offset=%d", ts.URL, 0),
 			status: http.StatusOK,
-			res:    nil,
+			res:    orgs,
 		},
 		{
 			desc:   "list orgs with redundant query params",
 			token:  token,
 			url:    fmt.Sprintf("%s/orgs?offset=%d&limit=%d&value=something", ts.URL, 0, 5),
 			status: http.StatusOK,
-			res:    nil,
+			res:    orgs[:5],
 		},
 		{
 			desc:   "list orgs with default URL",
 			token:  token,
 			url:    fmt.Sprintf("%s/orgs", ts.URL),
 			status: http.StatusOK,
-			res:    nil,
+			res:    orgs,
 		},
 		{
 			desc:   "list orgs with invalid limit",
@@ -588,6 +597,7 @@ func TestListOrgs(t *testing.T) {
 		var data orgsPageRes
 		err = json.NewDecoder(res.Body).Decode(&data)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.res, data.Orgs, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Orgs))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
