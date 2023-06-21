@@ -12,12 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
-
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var _ auth.OrgRepository = (*orgRepository)(nil)
@@ -242,12 +240,12 @@ func toMember(dbmb dbMember) (auth.Member, error) {
 }
 
 func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	_, mq, err := getOrgsMetadataQuery("o", pm.Metadata)
+	meta, mq, err := getOrgsMetadataQuery("o", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
-	nq := getNameQuery(pm.Name)
+	nq, name := getNameQuery(pm.Name)
 
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
@@ -262,12 +260,15 @@ func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 		WHERE ore.org_id = o.id and ore.member_id = :member_id
 		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
-	dbmp, err := toDBOrgMemberPage(memberID, "", pm)
-	if err != nil {
-		return auth.OrgsPage{}, err
+	params := map[string]interface{}{
+		"member_id": memberID,
+		"name":      name,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+		"metadata":  meta,
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
+	rows, err := or.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
@@ -289,7 +290,7 @@ func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations ore, orgs o
 		WHERE ore.org_id = o.id and ore.member_id = :member_id %s %s`, mq, nq)
 
-	total, err := total(ctx, or.db, cq, dbmp)
+	total, err := total(ctx, or.db, cq, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
@@ -652,24 +653,18 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 }
 
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	var whereq string
-	if ownerID != "" {
-		whereq = "WHERE owner_id = :owner_id"
-	}
-
-	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	ownq := getOwnerQuery(ownerID)
+	nq, name := getNameQuery(pm.Name)
+	meta, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var pg string
-	if pm.Limit != 0 {
-		pg = fmt.Sprintf("LIMIT %d OFFSET %d", pm.Limit, pm.Offset)
+	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
 	}
 
-	nq := getNameQuery(pm.Name)
-
-	var query []string
 	if mq != "" {
 		query = append(query, mq)
 	}
@@ -678,31 +673,50 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 		query = append(query, nq)
 	}
 
+	var whereClause string
 	if len(query) > 0 {
-		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
+		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereq, pg)
-
-	dbop, err := toDBOrgsPage(ownerID, pm)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, dbop)
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
+
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"name":     name,
+		"metadata": meta,
+	}
+
+	rows, err := or.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	items, err := or.processRows(rows)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	var items []auth.Org
+	for rows.Next() {
+		dbor := dbOrg{}
+		if err := rows.StructScan(&dbor); err != nil {
+			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		or, err := toOrg(dbor)
+		if err != nil {
+			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		items = append(items, or)
 	}
 
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereq)
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereClause)
 
-	total, err := total(ctx, or.db, cq, dbop)
+	total, err := total(ctx, or.db, cq, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -727,13 +741,6 @@ type dbMember struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-type dbGroup struct {
-	GroupID   string    `db:"group_id"`
-	OrgID     string    `db:"org_id"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-}
-
 type dbOrg struct {
 	ID          string        `db:"id"`
 	OwnerID     string        `db:"owner_id"`
@@ -742,15 +749,6 @@ type dbOrg struct {
 	Metadata    dbOrgMetadata `db:"metadata"`
 	CreatedAt   time.Time     `db:"created_at"`
 	UpdatedAt   time.Time     `db:"updated_at"`
-}
-
-type dbOrgsPage struct {
-	ID       string        `db:"id"`
-	OwnerID  string        `db:"owner_id"`
-	Metadata dbOrgMetadata `db:"metadata"`
-	Total    uint64        `db:"total"`
-	Limit    uint64        `db:"limit"`
-	Offset   uint64        `db:"offset"`
 }
 
 type dbOrgMemberPage struct {
@@ -770,16 +768,6 @@ func toDBOrg(o auth.Org) (dbOrg, error) {
 		Metadata:    dbOrgMetadata(o.Metadata),
 		CreatedAt:   o.CreatedAt,
 		UpdatedAt:   o.UpdatedAt,
-	}, nil
-}
-
-func toDBOrgsPage(ownerID string, pm auth.PageMetadata) (dbOrgsPage, error) {
-	return dbOrgsPage{
-		Metadata: dbOrgMetadata(pm.Metadata),
-		OwnerID:  ownerID,
-		Total:    pm.Total,
-		Offset:   pm.Offset,
-		Limit:    pm.Limit,
 	}, nil
 }
 
@@ -874,31 +862,21 @@ func getOrgsMetadataQuery(db string, m auth.OrgMetadata) (mb []byte, mq string, 
 	return mb, mq, nil
 }
 
-func getNameQuery(name string) string {
+func getNameQuery(name string) (string, string) {
 	if name == "" {
-		return ""
+		return "", ""
 	}
 
 	name = fmt.Sprintf(`%%%s%%`, strings.ToLower(name))
-	nq := fmt.Sprintf("LOWER(name) LIKE '%s'", name)
-
-	return nq
+	nq := `LOWER(name) LIKE :name`
+	return nq, name
 }
 
-func (or orgRepository) processRows(rows *sqlx.Rows) ([]auth.Org, error) {
-	var items []auth.Org
-	for rows.Next() {
-		dbo := dbOrg{}
-		if err := rows.StructScan(&dbo); err != nil {
-			return items, err
-		}
-		org, err := toOrg(dbo)
-		if err != nil {
-			return items, err
-		}
-		items = append(items, org)
+func getOwnerQuery(owner string) string {
+	if owner == "" {
+		return ""
 	}
-	return items, nil
+	return "owner_id = :owner_id"
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
