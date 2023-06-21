@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -266,6 +267,7 @@ func TestViewOrg(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		var data orgRes
 		err = json.NewDecoder(res.Body).Decode(&data)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
 	}
@@ -1521,6 +1523,132 @@ func TestListGroups(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Groups, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Groups))
+
+	}
+}
+
+func TestBackup(t *testing.T) {
+	svc := newService()
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	o, err := svc.CreateOrg(context.Background(), adminToken, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var grIDs []string
+	for i := 0; i < 2; i++ {
+		groupID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		grIDs = append(grIDs, groupID)
+	}
+
+	err = svc.AssignGroups(context.Background(), adminToken, o.ID, grIDs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	members := []auth.Member{viewerMember, editorMember, adminMember}
+	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	or := []orgRes{
+		{
+			ID:          o.ID,
+			OwnerID:     o.OwnerID,
+			Name:        o.Name,
+			Description: o.Description,
+			Metadata:    o.Metadata,
+		},
+	}
+
+	m := []viewMemberRelations{
+		{
+			MemberID: id,
+			OrgID:    o.ID,
+		},
+		{
+			MemberID: adminID,
+			OrgID:    o.ID,
+		},
+		{
+			MemberID: editorID,
+			OrgID:    o.ID,
+		},
+		{
+			MemberID: viewerID,
+			OrgID:    o.ID,
+		},
+	}
+
+	g := []viewGroupRelations{
+		{
+			GroupID: grIDs[0],
+			OrgID:   o.ID,
+		},
+		{
+			GroupID: grIDs[1],
+			OrgID:   o.ID,
+		},
+	}
+
+	data := backupRes{or, m, g}
+
+	cases := []struct {
+		desc   string
+		token  string
+		res    backupRes
+		status int
+	}{
+		{
+			desc:   "restore from backup with invalid auth token",
+			token:  wrongValue,
+			res:    backupRes{},
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "restore from backup without auth token",
+			token:  "",
+			res:    backupRes{},
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "restore from backup with unauthorized credentials",
+			token:  viewerToken,
+			res:    backupRes{},
+			status: http.StatusForbidden,
+		},
+		{
+			desc:   "restore from backup",
+			token:  adminToken,
+			res:    data,
+			status: http.StatusOK,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodGet,
+			url:    fmt.Sprintf("%s/backup", ts.URL),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data backupRes
+		err = json.NewDecoder(res.Body).Decode(&data)
+
+		sort.Slice(data.MemberRelations, func(i, j int) bool {
+			return data.MemberRelations[i].MemberID < data.MemberRelations[j].MemberID
+		})
+
+		fmt.Printf("data: %+v\n", data.MemberRelations)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 
 	}
 }
