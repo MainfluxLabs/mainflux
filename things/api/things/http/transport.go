@@ -510,12 +510,18 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
+	n, err := apiutil.ReadStringQuery(r, nameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listGroupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
 			Offset:   o,
 			Limit:    l,
 			Metadata: m,
+			Name:     n,
 		},
 		id: bone.GetValue(r, groupIDKey),
 	}

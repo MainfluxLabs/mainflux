@@ -242,3 +242,7 @@ func (grm *groupRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) (
 
 	return groupRelations, nil
 }
+
+func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+	panic("not implemented")
+}

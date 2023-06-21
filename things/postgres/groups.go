@@ -11,12 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
-
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -152,29 +150,12 @@ func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 }
 
 func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups`
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	gp, err := gr.retrieve(ctx, "", things.PageMetadata{})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	groups := []things.Group{}
-	for rows.Next() {
-		dbg := dbGroup{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		gr, err := toGroup(dbg)
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		groups = append(groups, gr)
+		return nil, err
 	}
 
-	return groups, nil
+	return gp.Groups, nil
 }
 
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
@@ -238,58 +219,15 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string) 
 }
 
 func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
-	whereq := "WHERE owner_id = :owner_id"
-
-	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	if ownerID == "" {
+		return things.GroupPage{}, errors.ErrRetrieveEntity
 	}
 
-	var query []string
-	if mq != "" {
-		query = append(query, mq)
-	}
-	if len(query) > 0 {
-		whereq = fmt.Sprintf("%s AND %s", whereq, strings.Join(query, " AND "))
-	}
+	return gr.retrieve(ctx, ownerID, pm)
+}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s;`, whereq)
-
-	dbPage, err := toDBGroupPage(ownerID, "", pm)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, dbPage)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	items, err := gr.processRows(rows)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereq)
-
-	total, err := total(ctx, gr.db, cq, dbPage)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := things.GroupPage{
-		Groups: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-		},
-	}
-
-	return page, nil
+func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+	return gr.retrieve(ctx, "", pm)
 }
 
 func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
@@ -523,11 +461,90 @@ func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, id
 	return nil
 }
 
-type dbMember struct {
-	MemberID  string    `db:"member_id"`
-	GroupID   string    `db:"group_id"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+	var ownq string
+	if ownerID != "" {
+		ownq = "owner_id = :owner_id"
+	}
+
+	nq, name := getNameQuery(pm.Name)
+
+	meta, mq, err := getMetadataQuery(pm.Metadata)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	var whereClause string
+	var query []string
+	if ownq != "" {
+		query = append(query, ownq)
+	}
+
+	if mq != "" {
+		query = append(query, mq)
+	}
+
+	if nq != "" {
+		query = append(query, nq)
+	}
+
+	if len(query) > 0 {
+		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereClause, olq)
+
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"name":     name,
+		"metadata": meta,
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	items := []things.Group{}
+	for rows.Next() {
+		dbg := dbGroup{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		gr, err := toGroup(dbg)
+		if err != nil {
+			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		items = append(items, gr)
+	}
+
+	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereClause)
+
+	total, err := total(ctx, gr.db, cq, params)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := things.GroupPage{
+		Groups: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
+	}
+
+	return page, nil
 }
 
 type dbGroup struct {
@@ -538,15 +555,6 @@ type dbGroup struct {
 	Metadata    dbMetadata `db:"metadata"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
-}
-
-type dbGroupPage struct {
-	ID       string     `db:"id"`
-	OwnerID  string     `db:"owner_id"`
-	Metadata dbMetadata `db:"metadata"`
-	Total    uint64     `db:"total"`
-	Limit    uint64     `db:"limit"`
-	Offset   uint64     `db:"offset"`
 }
 
 type dbMemberPage struct {
@@ -566,17 +574,6 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 		Metadata:    dbMetadata(g.Metadata),
 		CreatedAt:   g.CreatedAt,
 		UpdatedAt:   g.UpdatedAt,
-	}, nil
-}
-
-func toDBGroupPage(ownerID, id string, pm things.PageMetadata) (dbGroupPage, error) {
-	return dbGroupPage{
-		OwnerID:  ownerID,
-		Metadata: dbMetadata(pm.Metadata),
-		ID:       id,
-		Total:    pm.Total,
-		Offset:   pm.Offset,
-		Limit:    pm.Limit,
 	}, nil
 }
 
@@ -649,20 +646,4 @@ func getGroupsMetadataQuery(db string, m things.GroupMetadata) (mb []byte, mq st
 		mb = b
 	}
 	return mb, mq, nil
-}
-
-func (gr groupRepository) processRows(rows *sqlx.Rows) ([]things.Group, error) {
-	var items []things.Group
-	for rows.Next() {
-		dbg := dbGroup{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return items, err
-		}
-		group, err := toGroup(dbg)
-		if err != nil {
-			return items, err
-		}
-		items = append(items, group)
-	}
-	return items, nil
 }
