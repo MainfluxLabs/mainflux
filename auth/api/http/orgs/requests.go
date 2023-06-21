@@ -49,6 +49,7 @@ type listOrgsReq struct {
 	name     string
 	offset   uint64
 	limit    uint64
+	admin    bool
 	metadata auth.OrgMetadata
 }
 
