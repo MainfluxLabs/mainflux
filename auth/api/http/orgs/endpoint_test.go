@@ -509,9 +509,9 @@ func TestListOrgs(t *testing.T) {
 		{
 			desc:   "list orgs filtering by name",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d&name=%s", ts.URL, n, 0, "org"),
+			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d&name=%s", ts.URL, n, 0, "1"),
 			status: http.StatusOK,
-			res:    orgs,
+			res:    orgs[1:2],
 		},
 		{
 			desc:   "list orgs with invalid auth token",
@@ -1655,7 +1655,6 @@ func TestBackup(t *testing.T) {
 			return data.MemberRelations[i].MemberID < data.MemberRelations[j].MemberID
 		})
 
-		fmt.Printf("data: %+v\n", data.MemberRelations)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))

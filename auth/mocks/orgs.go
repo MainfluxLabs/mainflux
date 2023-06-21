@@ -309,7 +309,10 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	orgs := make([]auth.Org, 0)
 	for _, k := range keys {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			orgs = append(orgs, orm.orgs[k])
+			// filter by name
+			if strings.Contains(orm.orgs[k].Name, pm.Name) {
+				orgs = append(orgs, orm.orgs[k])
+			}
 		}
 		i++
 	}
