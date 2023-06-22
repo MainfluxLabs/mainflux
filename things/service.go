@@ -59,7 +59,7 @@ type Service interface {
 
 	// ListChannels retrieves data about subset of channels that belongs to the
 	// user identified by the provided key.
-	ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error)
+	ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error)
 
 	// ListChannelsByThing retrieves data about subset of channels that have
 	// specified thing connected or not connected to them and belong to the user identified by
@@ -404,14 +404,16 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 	return channel, nil
 }
 
-func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
-		return ts.channels.RetrieveByAdmin(ctx, pm)
+	if admin {
+		if err := ts.authorize(ctx, res.Email); err == nil {
+			return ts.channels.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)

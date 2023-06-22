@@ -724,7 +724,7 @@ func TestViewChannel(t *testing.T) {
 }
 
 func TestListChannels(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService(map[string]string{token: email, adminToken: adminEmail})
 	meta := things.Metadata{}
 	meta["name"] = "test-channel"
 	channel.Metadata = meta
@@ -741,12 +741,24 @@ func TestListChannels(t *testing.T) {
 
 	cases := map[string]struct {
 		token        string
+		admin        bool
 		pageMetadata things.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list all channels": {
 			token: token,
+			admin: false,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		"list all channels as admin": {
+			token: adminToken,
+			admin: true,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -756,6 +768,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list all channels with no limit": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
@@ -764,6 +777,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list half": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
@@ -773,6 +787,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list last channel": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
@@ -782,6 +797,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list empty set": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
@@ -791,6 +807,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list with wrong credentials": {
 			token: wrongValue,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  0,
@@ -800,6 +817,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list with existing name": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -810,6 +828,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list with non-existent name": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -820,6 +839,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list all channels with metadata": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -830,6 +850,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list all channels sorted by name ascendent": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -841,6 +862,7 @@ func TestListChannels(t *testing.T) {
 		},
 		"list all channels sorted by name descendent": {
 			token: token,
+			admin: false,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -853,7 +875,7 @@ func TestListChannels(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := svc.ListChannels(context.Background(), tc.token, tc.pageMetadata)
+		page, err := svc.ListChannels(context.Background(), tc.token, tc.admin, tc.pageMetadata)
 		size := uint64(len(page.Channels))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
