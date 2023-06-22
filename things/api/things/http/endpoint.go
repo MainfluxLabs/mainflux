@@ -598,7 +598,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token,req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

@@ -359,6 +359,7 @@ func (req updateGroupReq) validate() error {
 type listGroupsReq struct {
 	token        string
 	id           string
+	admin        bool
 	pageMetadata things.PageMetadata
 }
 

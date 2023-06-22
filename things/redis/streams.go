@@ -268,8 +268,8 @@ func (es eventStore) CreateGroup(ctx context.Context, token string, group things
 	return es.svc.CreateGroup(ctx, token, group)
 }
 
-func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
-	return es.svc.ListGroups(ctx, token, pm)
+func (es eventStore) ListGroups(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroups(ctx, token, admin, pm)
 }
 
 func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {

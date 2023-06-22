@@ -108,7 +108,7 @@ type Service interface {
 	ViewGroup(ctx context.Context, token, id string) (Group, error)
 
 	// ListGroups retrieves groups.
-	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
+	ListGroups(ctx context.Context, token string, admin bool, pm PageMetadata) (GroupPage, error)
 
 	// ListGroupsByIDs retrieves groups by their IDs.
 	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
@@ -699,14 +699,16 @@ func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Gr
 	return group, nil
 }
 
-func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
+func (ts *thingsService) ListGroups(ctx context.Context, token string, admin bool, pm PageMetadata) (GroupPage, error) {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return GroupPage{}, err
 	}
 
-	if err := ts.authorize(ctx, user.Email); err == nil {
-		return ts.groups.RetrieveByAdmin(ctx, pm)
+	if admin {
+		if err := ts.authorize(ctx, user.Email); err == nil {
+			return ts.groups.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)

@@ -261,7 +261,7 @@ func (svc *mainfluxThings) CreateGroup(ctx context.Context, token string, group 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
