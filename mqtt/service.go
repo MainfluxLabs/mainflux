@@ -68,12 +68,7 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token, key
 		return Page{}, err
 	}
 
-	page, err := ms.subscriptions.RetrieveByChannelID(ctx, pm, chanID)
-	if err != nil {
-		return Page{}, err
-	}
-
-	return page, nil
+	return ms.subscriptions.RetrieveByChannelID(ctx, pm, chanID)
 }
 
 func (ms *mqttService) UpdateStatus(ctx context.Context, sub Subscription) error {
@@ -94,6 +89,9 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 				return errors.Wrap(errUserAccess, err)
 			}
 			return err
+		}
+		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Email: user.Email}); err == nil {
+			return nil
 		}
 		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
