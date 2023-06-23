@@ -331,6 +331,11 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			}
 			return err
 		}
+
+		if err := authorizeAdmin(ctx, user.Email); err == nil {
+			return nil
+		}
+
 		if _, err = things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
@@ -347,18 +352,9 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
-func authorizeAdmin(ctx context.Context, token string) error {
-	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		e, ok := status.FromError(err)
-		if ok && e.Code() == codes.PermissionDenied {
-			return errors.Wrap(errUserAccess, err)
-		}
-		return err
-	}
-
+func authorizeAdmin(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
-		Email: user.Email,
+		Email: email,
 	}
 
 	if _, err := auth.Authorize(ctx, req); err != nil {
@@ -366,4 +362,17 @@ func authorizeAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func identify(ctx context.Context, token string) (*mainflux.UserIdentity, error) {
+	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		e, ok := status.FromError(err)
+		if ok && e.Code() == codes.PermissionDenied {
+			return nil, errors.Wrap(errUserAccess, err)
+		}
+		return nil, err
+	}
+
+	return user, nil
 }

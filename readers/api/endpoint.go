@@ -18,10 +18,6 @@ func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		if err := authorizeAdmin(ctx, req.token); err == nil {
-			return listChannelMessagesForAdmin(ctx, svc, req)
-		}
-
 		if err := authorize(ctx, req.token, req.key, req.chanID); err != nil {
 			return nil, errors.Wrap(errors.ErrAuthorization, err)
 		}
@@ -46,8 +42,13 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
+		user, err := identify(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, req.token); err != nil {
+		if err := authorizeAdmin(ctx, user.Email); err != nil {
 			return nil, err
 		}
 
@@ -62,16 +63,4 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			Messages:     page.Messages,
 		}, nil
 	}
-}
-
-func listChannelMessagesForAdmin(ctx context.Context, svc readers.MessageRepository, req listChannelMessagesReq) (interface{}, error) {
-	page, err := svc.ListChannelMessages(req.chanID, req.pageMeta)
-	if err != nil {
-		return nil, err
-	}
-	return listMessagesRes{
-		PageMetadata: page.PageMetadata,
-		Total:        page.Total,
-		Messages:     page.Messages,
-	}, nil
 }
