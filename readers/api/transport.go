@@ -347,7 +347,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
-func authorizeAdmin(ctx context.Context, object, relation, token string) error {
+func authorizeAdmin(ctx context.Context, token string) error {
 	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		e, ok := status.FromError(err)
