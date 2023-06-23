@@ -146,7 +146,7 @@ func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o a
 	return lm.svc.ViewOrg(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
+func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, admin bool, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_orgs for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
@@ -156,7 +156,7 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListOrgs(ctx, token, pm)
+	return lm.svc.ListOrgs(ctx, token, admin, pm)
 }
 
 func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.MembersPage, err error) {

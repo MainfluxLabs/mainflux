@@ -126,7 +126,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListThings(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListThings(ctx, req.token, req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -311,7 +311,7 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListChannels(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListChannels(ctx, req.token, req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -598,7 +598,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token,req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

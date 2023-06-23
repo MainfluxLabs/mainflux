@@ -86,8 +86,8 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.Page, error) {
-	return es.svc.ListThings(ctx, token, pm)
+func (es eventStore) ListThings(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.Page, error) {
+	return es.svc.ListThings(ctx, token, admin, pm)
 }
 
 func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {
@@ -172,8 +172,8 @@ func (es eventStore) ViewChannel(ctx context.Context, token, id string) (things.
 	return es.svc.ViewChannel(ctx, token, id)
 }
 
-func (es eventStore) ListChannels(ctx context.Context, token string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return es.svc.ListChannels(ctx, token, pm)
+func (es eventStore) ListChannels(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.ChannelsPage, error) {
+	return es.svc.ListChannels(ctx, token, admin, pm)
 }
 
 func (es eventStore) ListChannelsByThing(ctx context.Context, token, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
@@ -268,8 +268,8 @@ func (es eventStore) CreateGroup(ctx context.Context, token string, group things
 	return es.svc.CreateGroup(ctx, token, group)
 }
 
-func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
-	return es.svc.ListGroups(ctx, token, pm)
+func (es eventStore) ListGroups(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroups(ctx, token, admin, pm)
 }
 
 func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {

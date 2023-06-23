@@ -107,7 +107,7 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:    req.limit,
 		}
 
-		page, err := svc.ListOrgs(ctx, req.token, pm)
+		page, err := svc.ListOrgs(ctx, req.token, req.admin, pm)
 		if err != nil {
 			return nil, err
 		}

@@ -24,6 +24,7 @@ const (
 	limitKey    = "limit"
 	metadataKey = "metadata"
 	nameKey     = "name"
+	adminKey    = "admin"
 	defOffset   = 0
 	defLimit    = 10
 	defLevel    = 1
@@ -162,6 +163,11 @@ func decodeListOrgsRequest(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
+	a, err := apiutil.ReadBoolQuery(r, adminKey, false)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listOrgsReq{
 		token:    apiutil.ExtractBearerToken(r),
 		id:       bone.GetValue(r, orgIDKey),
@@ -169,6 +175,7 @@ func decodeListOrgsRequest(_ context.Context, r *http.Request) (interface{}, err
 		offset:   o,
 		limit:    l,
 		metadata: m,
+		admin:    a,
 	}
 
 	return req, nil

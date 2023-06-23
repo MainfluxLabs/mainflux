@@ -310,7 +310,28 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, 
 }
 
 func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
-	panic("not implemented")
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	i := uint64(0)
+	var ths []things.Thing
+	for _, th := range trm.things {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+			ths = append(ths, th)
+		}
+		i++
+	}
+
+	page := things.Page{
+		Things: ths,
+		PageMetadata: things.PageMetadata{
+			Total:  trm.counter,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
 }
 
 type thingCacheMock struct {
