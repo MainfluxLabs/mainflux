@@ -90,9 +90,11 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 			}
 			return err
 		}
+
 		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Email: user.Email}); err == nil {
 			return nil
 		}
+
 		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
