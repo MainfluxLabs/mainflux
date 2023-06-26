@@ -16,8 +16,6 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -333,10 +331,6 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 		}
 
 		if _, err = things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 		return nil

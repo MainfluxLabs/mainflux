@@ -5,8 +5,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -93,10 +91,6 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 		}
 
 		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 		return nil
