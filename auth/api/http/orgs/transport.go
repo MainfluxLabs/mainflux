@@ -397,9 +397,12 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingMemberType,
-		err == apiutil.ErrNameSize:
+		err == apiutil.ErrNameSize,
+		err == apiutil.ErrInvalidMemberRole,
+		err == apiutil.ErrInvalidQueryParams:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication):
+	case errors.Contains(err, errors.ErrAuthentication),
+		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)

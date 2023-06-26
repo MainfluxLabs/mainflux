@@ -2,6 +2,8 @@ package mocks
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -81,13 +83,14 @@ func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth
 func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
+	keys := sortOrgsByID(orm.orgs)
 
 	i := uint64(0)
 	orgs := make([]auth.Org, 0)
-	for _, org := range orm.orgs {
+	for _, k := range keys {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			if org.OwnerID == ownerID {
-				orgs = append(orgs, org)
+			if orm.orgs[k].OwnerID == ownerID {
+				orgs = append(orgs, orm.orgs[k])
 			}
 		}
 		i++
@@ -112,7 +115,9 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	for _, org := range orm.orgs {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.members[memberID]; ok {
-				orgs = append(orgs, org)
+				if strings.Contains(org.Name, pm.Name) {
+					orgs = append(orgs, org)
+				}
 			}
 		}
 		i++
@@ -298,11 +303,16 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
+	keys := sortOrgsByID(orm.orgs)
+
 	i := uint64(0)
-	orgs := []auth.Org{}
-	for _, org := range orm.orgs {
+	orgs := make([]auth.Org, 0)
+	for _, k := range keys {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			orgs = append(orgs, org)
+			// filter by name
+			if strings.Contains(orm.orgs[k].Name, pm.Name) {
+				orgs = append(orgs, orm.orgs[k])
+			}
 		}
 		i++
 	}
@@ -349,4 +359,14 @@ func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]
 	}
 
 	return grs, nil
+}
+
+func sortOrgsByID(orgs map[string]auth.Org) []string {
+	var keys []string
+	for k := range orgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }
