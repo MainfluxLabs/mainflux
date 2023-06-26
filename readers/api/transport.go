@@ -325,10 +325,6 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	case token != "":
 		user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 
@@ -367,10 +363,6 @@ func authorizeAdmin(ctx context.Context, email string) error {
 func identify(ctx context.Context, token string) (*mainflux.UserIdentity, error) {
 	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		e, ok := status.FromError(err)
-		if ok && e.Code() == codes.PermissionDenied {
-			return nil, errors.Wrap(errUserAccess, err)
-		}
 		return nil, err
 	}
 

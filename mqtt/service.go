@@ -89,12 +89,9 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 	case token != "":
 		user, err := ms.auth.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
+
 		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			e, ok := status.FromError(err)
 			if ok && e.Code() == codes.PermissionDenied {
