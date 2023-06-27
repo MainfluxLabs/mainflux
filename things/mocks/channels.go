@@ -127,7 +127,32 @@ func (crm *channelRepositoryMock) RetrieveByOwner(_ context.Context, owner strin
 }
 
 func (crm *channelRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
-	panic("not implemented")
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	if pm.Limit < 0 {
+		return things.ChannelsPage{}, nil
+	}
+
+	i := uint64(0)
+	var chs []things.Channel
+	for _, ch := range crm.channels {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+			chs = append(chs, ch)
+		}
+		i++
+	}
+
+	page := things.ChannelsPage{
+		Channels: chs,
+		PageMetadata: things.PageMetadata{
+			Total:  crm.counter,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
 }
 
 func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {

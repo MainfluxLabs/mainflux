@@ -274,14 +274,16 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 	return org, nil
 }
 
-func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
+func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm PageMetadata) (OrgsPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return OrgsPage{}, err
 	}
 
-	if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
-		return svc.orgs.RetrieveByAdmin(ctx, pm)
+	if admin {
+		if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+			return svc.orgs.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return svc.orgs.RetrieveByOwner(ctx, user.ID, pm)

@@ -32,7 +32,7 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error)
+	ListThings(ctx context.Context, token string, admin bool, pm PageMetadata) (Page, error)
 
 	// ListThingsByIDs retrieves data about subset of things that are identified
 	ListThingsByIDs(ctx context.Context, ids []string) (Page, error)
@@ -59,7 +59,7 @@ type Service interface {
 
 	// ListChannels retrieves data about subset of channels that belongs to the
 	// user identified by the provided key.
-	ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error)
+	ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error)
 
 	// ListChannelsByThing retrieves data about subset of channels that have
 	// specified thing connected or not connected to them and belong to the user identified by
@@ -108,7 +108,7 @@ type Service interface {
 	ViewGroup(ctx context.Context, token, id string) (Group, error)
 
 	// ListGroups retrieves groups.
-	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
+	ListGroups(ctx context.Context, token string, admin bool, pm PageMetadata) (GroupPage, error)
 
 	// ListGroupsByIDs retrieves groups by their IDs.
 	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
@@ -285,15 +285,16 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	return Thing{}, errors.ErrAuthorization
 }
 
-func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (Page, error) {
+func (ts *thingsService) ListThings(ctx context.Context, token string, admin bool, pm PageMetadata) (Page, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Page{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
-		return ts.things.RetrieveByAdmin(ctx, pm)
-
+	if admin {
+		if err := ts.authorize(ctx, res.Email); err == nil {
+			return ts.things.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
@@ -403,14 +404,16 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 	return channel, nil
 }
 
-func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
-		return ts.channels.RetrieveByAdmin(ctx, pm)
+	if admin {
+		if err := ts.authorize(ctx, res.Email); err == nil {
+			return ts.channels.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
@@ -696,14 +699,16 @@ func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Gr
 	return group, nil
 }
 
-func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
+func (ts *thingsService) ListGroups(ctx context.Context, token string, admin bool, pm PageMetadata) (GroupPage, error) {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return GroupPage{}, err
 	}
 
-	if err := ts.authorize(ctx, user.Email); err == nil {
-		return ts.groups.RetrieveByAdmin(ctx, pm)
+	if admin {
+		if err := ts.authorize(ctx, user.Email); err == nil {
+			return ts.groups.RetrieveByAdmin(ctx, pm)
+		}
 	}
 
 	return ts.groups.RetrieveByOwner(ctx, user.GetId(), pm)

@@ -176,6 +176,7 @@ func (req viewResourceReq) validate() error {
 
 type listResourcesReq struct {
 	token        string
+	admin        bool
 	pageMetadata things.PageMetadata
 }
 
@@ -358,6 +359,7 @@ func (req updateGroupReq) validate() error {
 type listGroupsReq struct {
 	token        string
 	id           string
+	admin        bool
 	pageMetadata things.PageMetadata
 }
 

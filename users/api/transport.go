@@ -291,37 +291,6 @@ func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listMemberGroupReq{
-		token:    apiutil.ExtractBearerToken(r),
-		status:   s,
-		id:       bone.GetValue(r, "id"),
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
-	return req, nil
-}
-
 func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, error) {
 	req := changeUserStatusReq{
 		token: apiutil.ExtractBearerToken(r),
