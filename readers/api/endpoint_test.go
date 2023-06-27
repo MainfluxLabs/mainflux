@@ -30,7 +30,8 @@ import (
 const (
 	svcName       = "test-service"
 	thingToken    = "1"
-	email         = "admin@example.com"
+	userEmail     = "test@example.com"
+	adminEmail    = "admin@example.com"
 	invalid       = "invalid"
 	numOfMessages = 101
 	valueFields   = 5
@@ -50,7 +51,8 @@ var (
 
 	idProvider = uuid.New()
 
-	user = users.User{Email: email, Password: validPass}
+	user  = users.User{Email: userEmail, Password: validPass}
+	admin = users.User{Email: adminEmail, Password: validPass}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
@@ -86,11 +88,13 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() mainflux.AuthServiceClient {
-	return authmocks.NewAuthService(map[string]users.User{user.Email: user})
+	return authmocks.NewAuthService(map[string]users.User{user.Email: user, admin.Email: admin})
 }
 
 func TestListChannelMessages(t *testing.T) {
 	chanID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	chanID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -147,7 +151,11 @@ func TestListChannelMessages(t *testing.T) {
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	adminTok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
+
 	userToken := tok.GetValue()
+	adminToken := adminTok.GetValue()
 
 	repo := mocks.NewMessageRepository(chanID, fromSenml(messages))
 	ts := newServer(repo, thSvc, authSvc)
@@ -472,6 +480,23 @@ func TestListChannelMessages(t *testing.T) {
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
+		},
+		{
+			desc:   "read page as admin",
+			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read the page as a user who is not the owner of the channel",
+			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID2),
+			token:  userToken,
+			status: http.StatusForbidden,
+			res:    pageRes{},
 		},
 		{
 			desc:   "read page with negative offset as user",
@@ -816,12 +841,16 @@ func TestListAllMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsService(map[string]string{email: ""}, nil)
+	thSvc := thmocks.NewThingsService(map[string]string{userEmail: ""}, nil)
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	adminTok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
+
 	userToken := tok.GetValue()
+	adminToken := adminTok.GetValue()
 
 	repo := mocks.NewMessageRepository("", fromSenml(messages))
 	ts := newServer(repo, thSvc, authSvc)
@@ -837,9 +866,9 @@ func TestListAllMessages(t *testing.T) {
 		res    pageRes
 	}{
 		{
-			desc:   "read all messages page",
+			desc:   "read all messages page as admin",
 			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -847,9 +876,16 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		{
+			desc:   "read all messages page as user",
+			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
+			token:  userToken,
+			status: http.StatusForbidden,
+			res:    pageRes{},
+		},
+		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -859,7 +895,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -869,37 +905,37 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with negative offset",
 			url:    fmt.Sprintf("%s/messages?offset=-1&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with negative limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=-10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with zero limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=0", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer offset",
 			url:    fmt.Sprintf("%s/messages?offset=abc&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=abc", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with invalid channel id",
 			url:    fmt.Sprintf("%s/channels//messages?offset=0&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -911,13 +947,13 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with multiple offset",
 			url:    fmt.Sprintf("%s/messages?offset=0&offset=1&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with multiple limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=20&limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -929,7 +965,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with default offset",
 			url:    fmt.Sprintf("%s/messages?limit=10", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -939,7 +975,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with default limit",
 			url:    fmt.Sprintf("%s/messages?offset=0", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -949,7 +985,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with senml format",
 			url:    fmt.Sprintf("%s/messages?format=messages", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
@@ -959,7 +995,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with subtopic",
 			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -969,7 +1005,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with subtopic and protocol",
 			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -979,7 +1015,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with publisher",
 			url:    fmt.Sprintf("%s/messages?publisher=%s", ts.URL, pubID2),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -989,7 +1025,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with protocol",
 			url:    fmt.Sprintf("%s/messages?protocol=http", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -999,7 +1035,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with name",
 			url:    fmt.Sprintf("%s/messages?name=%s", ts.URL, msgName),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -1009,7 +1045,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value",
 			url:    fmt.Sprintf("%s/messages?v=%f", ts.URL, v),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1019,7 +1055,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and equal comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1029,7 +1065,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and lower-than comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1039,7 +1075,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and lower-than-or-equal comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1049,7 +1085,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and greater-than comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1059,7 +1095,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and greater-than-or-equal comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -1069,19 +1105,19 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with non-float value",
 			url:    fmt.Sprintf("%s/messages?v=ab01", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with value and wrong comparator",
 			url:    fmt.Sprintf("%s/messages?v=%f&comparator=wrong", ts.URL, v-1),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with boolean value",
 			url:    fmt.Sprintf("%s/messages?vb=true", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(boolMsgs)),
@@ -1091,13 +1127,13 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with non-boolean value",
 			url:    fmt.Sprintf("%s/messages?vb=yes", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with string value",
 			url:    fmt.Sprintf("%s/messages?vs=%s", ts.URL, vs),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(stringMsgs)),
@@ -1107,7 +1143,7 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with data value",
 			url:    fmt.Sprintf("%s/messages?vd=%s", ts.URL, vd),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(dataMsgs)),
@@ -1117,20 +1153,20 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with non-float from",
 			url:    fmt.Sprintf("%s/messages?from=ABCD", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 
 		{
 			desc:   "read page with non-float",
 			url:    fmt.Sprintf("%s/messages?to=ABCD", ts.URL),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with from/to ",
 			url:    fmt.Sprintf("%s/messages?from=%f&to=%f", ts.URL, messages[19].Time, messages[4].Time),
-			token:  userToken,
+			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages[5:20])),

@@ -4,12 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-)
-
-var (
-	errThingAccess = errors.New("thing has no permission")
-	errUserAccess  = errors.New("user has no permission")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -96,7 +90,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 		return nil
 	default:
 		if _, err := ms.things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
-			return errors.Wrap(errThingAccess, err)
+			return err
 		}
 		return nil
 	}

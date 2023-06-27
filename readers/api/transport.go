@@ -40,10 +40,8 @@ const (
 )
 
 var (
-	errThingAccess = errors.New("thing has no permission")
-	errUserAccess  = errors.New("user has no permission")
-	things         mainflux.ThingsServiceClient
-	auth           mainflux.AuthServiceClient
+	things mainflux.ThingsServiceClient
+	auth   mainflux.AuthServiceClient
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -336,7 +334,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 		return nil
 	default:
 		if _, err := things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
-			return errors.Wrap(errThingAccess, err)
+			return err
 		}
 		return nil
 	}
@@ -348,7 +346,7 @@ func authorizeAdmin(ctx context.Context, email string) error {
 	}
 
 	if _, err := auth.Authorize(ctx, req); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+		return err
 	}
 
 	return nil
