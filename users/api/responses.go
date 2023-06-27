@@ -167,6 +167,7 @@ func (res deleteRes) Empty() bool {
 
 type backupRes struct {
 	Users []users.User `json:"users"`
+	Admin users.User   `json:"admin"`
 }
 
 func (res backupRes) Code() int {

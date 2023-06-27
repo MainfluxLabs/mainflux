@@ -235,7 +235,7 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return backupRes{Users: users}, nil
+		return buildBackupResponse(users), nil
 	}
 }
 
@@ -272,5 +272,24 @@ func buildUsersResponse(up users.UserPage) userPageRes {
 		}
 		res.Users = append(res.Users, view)
 	}
+	return res
+}
+
+func buildBackupResponse(usr []users.User) backupRes {
+	var admin users.User
+	for i, u := range usr {
+		if u.Email == "admin@example.com" {
+			admin = u
+			usr = append(usr[:i], usr[i+1:]...)
+			break
+		}
+
+	}
+
+	res := backupRes{
+		Admin: admin,
+		Users: usr,
+	}
+
 	return res
 }
