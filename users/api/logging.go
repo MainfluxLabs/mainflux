@@ -232,11 +232,11 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) ([]users.
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) Restore(ctx context.Context, token string, users []users.User) error {
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore for token %s took %s to complete", token, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Restore(ctx, token, users)
+	return lm.svc.Restore(ctx, token, admin, users)
 }

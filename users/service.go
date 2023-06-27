@@ -100,7 +100,7 @@ type Service interface {
 	Backup(ctx context.Context, token string) ([]User, error)
 
 	// Restore restores users from backup. Only accessible by admin.
-	Restore(ctx context.Context, token string, users []User) error
+	Restore(ctx context.Context, token string, admin User, users []User) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -176,6 +176,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	if err := user.Validate(); err != nil {
 		return "", err
 	}
+
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
@@ -184,7 +185,10 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	if err != nil {
 		return "", err
 	}
-	user.ID = uid
+
+	if err := svc.authorize(ctx, user.Email); err != nil {
+		user.ID = uid
+	}
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
@@ -300,13 +304,17 @@ func (svc usersService) Backup(ctx context.Context, token string) ([]User, error
 	return svc.users.RetrieveAll(ctx)
 }
 
-func (svc usersService) Restore(ctx context.Context, token string, users []User) error {
+func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
 	if err := svc.authorize(ctx, user.email); err != nil {
+		return err
+	}
+
+	if err := svc.users.UpdateUser(ctx, admin); err != nil {
 		return err
 	}
 

@@ -246,7 +246,7 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Restore(ctx, req.token, req.Users)
+		err := svc.Restore(ctx, req.token, req.Admin, req.Users)
 		if err != nil {
 			return nil, err
 		}
