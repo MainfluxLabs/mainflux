@@ -186,9 +186,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 
-	if err := svc.authorize(ctx, user.Email); err != nil {
-		user.ID = uid
-	}
+	user.ID = uid
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
