@@ -89,7 +89,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	orgs := make([]auth.Org, 0)
 	for _, k := range keys {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			if orm.orgs[k].OwnerID == ownerID {
+			if orm.orgs[k].OwnerID == ownerID && strings.Contains(orm.orgs[k].Name, pm.Name) {
 				orgs = append(orgs, orm.orgs[k])
 			}
 		}
