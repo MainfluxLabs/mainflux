@@ -16,8 +16,6 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -42,10 +40,8 @@ const (
 )
 
 var (
-	errThingAccess = errors.New("thing has no permission")
-	errUserAccess  = errors.New("user has no permission")
-	things         mainflux.ThingsServiceClient
-	auth           mainflux.AuthServiceClient
+	things mainflux.ThingsServiceClient
+	auth   mainflux.AuthServiceClient
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -325,45 +321,42 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	case token != "":
 		user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
+
+		if err := authorizeAdmin(ctx, user.Email); err == nil {
+			return nil
+		}
+
 		if _, err = things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 		return nil
 	default:
 		if _, err := things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
-			return errors.Wrap(errThingAccess, err)
+			return err
 		}
 		return nil
 	}
 }
 
-func authorizeAdmin(ctx context.Context, object, relation, token string) error {
-	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		e, ok := status.FromError(err)
-		if ok && e.Code() == codes.PermissionDenied {
-			return errors.Wrap(errUserAccess, err)
-		}
-		return err
-	}
-
+func authorizeAdmin(ctx context.Context, email string) error {
 	req := &mainflux.AuthorizeReq{
-		Email: user.Email,
+		Email: email,
 	}
 
 	if _, err := auth.Authorize(ctx, req); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+		return err
 	}
 
 	return nil
+}
+
+func identify(ctx context.Context, token string) (*mainflux.UserIdentity, error) {
+	user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

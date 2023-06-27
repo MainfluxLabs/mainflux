@@ -4,14 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-)
-
-var (
-	errThingAccess = errors.New("thing has no permission")
-	errUserAccess  = errors.New("user has no permission")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -84,10 +76,6 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 	case token != "":
 		user, err := ms.auth.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 
@@ -96,16 +84,12 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 		}
 
 		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
-			e, ok := status.FromError(err)
-			if ok && e.Code() == codes.PermissionDenied {
-				return errors.Wrap(errUserAccess, err)
-			}
 			return err
 		}
 		return nil
 	default:
 		if _, err := ms.things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
-			return errors.Wrap(errThingAccess, err)
+			return err
 		}
 		return nil
 	}

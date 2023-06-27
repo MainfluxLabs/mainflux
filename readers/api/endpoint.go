@@ -42,8 +42,13 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
+		user, err := identify(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, "authorities", "member", req.token); err != nil {
+		if err := authorizeAdmin(ctx, user.Email); err != nil {
 			return nil, err
 		}
 
