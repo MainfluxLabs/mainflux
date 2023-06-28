@@ -155,31 +155,6 @@ func (req passwChangeReq) validate() error {
 	return nil
 }
 
-type listMemberGroupReq struct {
-	token    string
-	status   string
-	offset   uint64
-	limit    uint64
-	metadata users.Metadata
-	id       string
-}
-
-func (req listMemberGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-	if req.status != users.AllStatusKey &&
-		req.status != users.EnabledStatusKey &&
-		req.status != users.DisabledStatusKey {
-		return apiutil.ErrInvalidStatus
-	}
-	return nil
-}
-
 type changeUserStatusReq struct {
 	token string
 	id    string
