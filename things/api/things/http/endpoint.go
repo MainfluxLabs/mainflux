@@ -471,13 +471,7 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return backupRes{
-			Things:         backup.Things,
-			Channels:       backup.Channels,
-			Connections:    backup.Connections,
-			Groups:         backup.Groups,
-			GroupRelations: backup.GroupRelations,
-		}, nil
+		return buildBackupResponse(backup), nil
 	}
 }
 
@@ -598,7 +592,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token,req.admin, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token, req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -724,6 +718,72 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Key:      m.Key,
 		}
 		res.Members = append(res.Members, view)
+	}
+
+	return res
+}
+
+func buildBackupResponse(backup things.Backup) backupRes {
+	res := backupRes{
+		Things:         []viewBackupThingRes{},
+		Channels:       []viewBackupChannelRes{},
+		Connections:    []viewConnectionRes{},
+		Groups:         []viewGroupRes{},
+		GroupRelations: []viewGroupRelationRes{},
+	}
+
+	for _, thing := range backup.Things {
+		view := viewBackupThingRes{
+			ID:       thing.ID,
+			Name:     thing.Name,
+			Owner:    thing.Owner,
+			Key:      thing.Key,
+			Metadata: thing.Metadata,
+		}
+		res.Things = append(res.Things, view)
+	}
+
+	for _, channel := range backup.Channels {
+		view := viewBackupChannelRes{
+			ID:       channel.ID,
+			Name:     channel.Name,
+			Owner:    channel.Owner,
+			Metadata: channel.Metadata,
+		}
+		res.Channels = append(res.Channels, view)
+	}
+
+	for _, connection := range backup.Connections {
+		view := viewConnectionRes{
+			ChannelID:    connection.ChannelID,
+			ChannelOwner: connection.ChannelOwner,
+			ThingID:      connection.ThingID,
+			ThingOwner:   connection.ThingOwner,
+		}
+		res.Connections = append(res.Connections, view)
+	}
+
+	for _, group := range backup.Groups {
+		view := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		res.Groups = append(res.Groups, view)
+	}
+
+	for _, groupRelation := range backup.GroupRelations {
+		view := viewGroupRelationRes{
+			MemberID:  groupRelation.MemberID,
+			GroupID:   groupRelation.GroupID,
+			CreatedAt: groupRelation.CreatedAt,
+			UpdatedAt: groupRelation.UpdatedAt,
+		}
+		res.GroupRelations = append(res.GroupRelations, view)
 	}
 
 	return res

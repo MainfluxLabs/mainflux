@@ -488,7 +488,7 @@ func (cr channelRepository) retrieve(ctx context.Context, owner string, pm thing
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, name, owner, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"owner":    owner,

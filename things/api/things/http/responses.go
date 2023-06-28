@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var (
@@ -61,6 +60,7 @@ func (res shareThingRes) Empty() bool {
 type thingRes struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name,omitempty"`
+	Owner    string                 `json:"-"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
@@ -127,6 +127,7 @@ func (res thingsPageRes) Empty() bool {
 type channelRes struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name,omitempty"`
+	Owner    string                 `json:"-"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
 }
@@ -247,12 +248,41 @@ func (res disconnectThingRes) Empty() bool {
 	return true
 }
 
+type viewBackupThingRes struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Key      string                 `json:"key"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type viewBackupChannelRes struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type viewConnectionRes struct {
+	ChannelID    string `json:"channel_id"`
+	ChannelOwner string `json:"channel_owner"`
+	ThingID      string `json:"thing_id"`
+	ThingOwner   string `json:"thing_owner"`
+}
+
+type viewGroupRelationRes struct {
+	MemberID  string    `json:"member_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type backupRes struct {
-	Things         []things.Thing         `json:"things"`
-	Channels       []things.Channel       `json:"channels"`
-	Connections    []things.Connection    `json:"connections"`
-	Groups         []things.Group         `json:"groups"`
-	GroupRelations []things.GroupRelation `json:"group_relations"`
+	Things         []viewBackupThingRes   `json:"things"`
+	Channels       []viewBackupChannelRes `json:"channels"`
+	Connections    []viewConnectionRes    `json:"connections"`
+	Groups         []viewGroupRes         `json:"groups"`
+	GroupRelations []viewGroupRelationRes `json:"group_relations"`
 }
 
 func (res backupRes) Code() int {
