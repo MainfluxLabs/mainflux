@@ -165,7 +165,7 @@ func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id s
 	return ms.svc.DisableUser(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) Backup(ctx context.Context, token string) ([]users.User, error) {
+func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)
 		ms.latency.With("method", "backup").Observe(time.Since(begin).Seconds())

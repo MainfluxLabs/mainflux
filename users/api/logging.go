@@ -223,7 +223,7 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 	return lm.svc.DisableUser(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) Backup(ctx context.Context, token string) ([]users.User, error) {
+func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
