@@ -725,15 +725,15 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:         []viewBackupThingRes{},
-		Channels:       []viewBackupChannelRes{},
-		Connections:    []viewConnectionRes{},
+		Things:         []backupThingRes{},
+		Channels:       []backupChannelRes{},
+		Connections:    []backupConnectionRes{},
 		Groups:         []viewGroupRes{},
-		GroupRelations: []viewGroupRelationRes{},
+		GroupRelations: []backupGroupRelationRes{},
 	}
 
 	for _, thing := range backup.Things {
-		view := viewBackupThingRes{
+		view := backupThingRes{
 			ID:       thing.ID,
 			Name:     thing.Name,
 			Owner:    thing.Owner,
@@ -744,7 +744,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, channel := range backup.Channels {
-		view := viewBackupChannelRes{
+		view := backupChannelRes{
 			ID:       channel.ID,
 			Name:     channel.Name,
 			Owner:    channel.Owner,
@@ -754,7 +754,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, connection := range backup.Connections {
-		view := viewConnectionRes{
+		view := backupConnectionRes{
 			ChannelID:    connection.ChannelID,
 			ChannelOwner: connection.ChannelOwner,
 			ThingID:      connection.ThingID,
@@ -777,7 +777,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, groupRelation := range backup.GroupRelations {
-		view := viewGroupRelationRes{
+		view := backupGroupRelationRes{
 			MemberID:  groupRelation.MemberID,
 			GroupID:   groupRelation.GroupID,
 			CreatedAt: groupRelation.CreatedAt,

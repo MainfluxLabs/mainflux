@@ -248,7 +248,7 @@ func (res disconnectThingRes) Empty() bool {
 	return true
 }
 
-type viewBackupThingRes struct {
+type backupThingRes struct {
 	ID       string                 `json:"id"`
 	Owner    string                 `json:"owner,omitempty"`
 	Name     string                 `json:"name,omitempty"`
@@ -256,21 +256,21 @@ type viewBackupThingRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type viewBackupChannelRes struct {
+type backupChannelRes struct {
 	ID       string                 `json:"id"`
 	Owner    string                 `json:"owner,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type viewConnectionRes struct {
+type backupConnectionRes struct {
 	ChannelID    string `json:"channel_id"`
 	ChannelOwner string `json:"channel_owner"`
 	ThingID      string `json:"thing_id"`
 	ThingOwner   string `json:"thing_owner"`
 }
 
-type viewGroupRelationRes struct {
+type backupGroupRelationRes struct {
 	MemberID  string    `json:"member_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -278,11 +278,11 @@ type viewGroupRelationRes struct {
 }
 
 type backupRes struct {
-	Things         []viewBackupThingRes   `json:"things"`
-	Channels       []viewBackupChannelRes `json:"channels"`
-	Connections    []viewConnectionRes    `json:"connections"`
-	Groups         []viewGroupRes         `json:"groups"`
-	GroupRelations []viewGroupRelationRes `json:"group_relations"`
+	Things         []backupThingRes         `json:"things"`
+	Channels       []backupChannelRes       `json:"channels"`
+	Connections    []backupConnectionRes    `json:"connections"`
+	Groups         []viewGroupRes           `json:"groups"`
+	GroupRelations []backupGroupRelationRes `json:"group_relations"`
 }
 
 func (res backupRes) Code() int {

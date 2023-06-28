@@ -2596,9 +2596,9 @@ func TestBackup(t *testing.T) {
 		})
 	}
 
-	var thingsRes []viewBackupThingRes
+	var thingsRes []backupThingRes
 	for _, th := range ths {
-		thingsRes = append(thingsRes, viewBackupThingRes{
+		thingsRes = append(thingsRes, backupThingRes{
 			ID:       th.ID,
 			Owner:    th.Owner,
 			Name:     th.Name,
@@ -2607,9 +2607,9 @@ func TestBackup(t *testing.T) {
 		})
 	}
 
-	var channelsRes []viewBackupChannelRes
+	var channelsRes []backupChannelRes
 	for _, ch := range channels {
-		channelsRes = append(channelsRes, viewBackupChannelRes{
+		channelsRes = append(channelsRes, backupChannelRes{
 			ID:       ch.ID,
 			Owner:    ch.Owner,
 			Name:     ch.Name,
@@ -2628,17 +2628,17 @@ func TestBackup(t *testing.T) {
 		})
 	}
 
-	var groupRelationsRes []viewGroupRelationRes
+	var groupRelationsRes []backupGroupRelationRes
 	for _, gr := range groupRelations {
-		groupRelationsRes = append(groupRelationsRes, viewGroupRelationRes{
+		groupRelationsRes = append(groupRelationsRes, backupGroupRelationRes{
 			GroupID:  gr.GroupID,
 			MemberID: gr.MemberID,
 		})
 	}
 
-	var connectionsRes []viewConnectionRes
+	var connectionsRes []backupConnectionRes
 	for _, conn := range connections {
-		connectionsRes = append(connectionsRes, viewConnectionRes{
+		connectionsRes = append(connectionsRes, backupConnectionRes{
 			ChannelID:    conn.ChannelID,
 			ChannelOwner: conn.ChannelOwner,
 			ThingID:      conn.ThingID,
@@ -2873,7 +2873,7 @@ type channelsPageRes struct {
 	Limit    uint64       `json:"limit"`
 }
 
-type viewBackupThingRes struct {
+type backupThingRes struct {
 	ID       string                 `json:"id"`
 	Owner    string                 `json:"owner,omitempty"`
 	Name     string                 `json:"name,omitempty"`
@@ -2881,14 +2881,14 @@ type viewBackupThingRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type viewBackupChannelRes struct {
+type backupChannelRes struct {
 	ID       string                 `json:"id"`
 	Owner    string                 `json:"owner,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type viewConnectionRes struct {
+type backupConnectionRes struct {
 	ChannelID    string `json:"channel_id"`
 	ChannelOwner string `json:"channel_owner"`
 	ThingID      string `json:"thing_id"`
@@ -2903,7 +2903,7 @@ type viewGroupRes struct {
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type viewGroupRelationRes struct {
+type backupGroupRelationRes struct {
 	MemberID  string    `json:"member_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -2911,9 +2911,9 @@ type viewGroupRelationRes struct {
 }
 
 type backupRes struct {
-	Things         []viewBackupThingRes   `json:"things"`
-	Channels       []viewBackupChannelRes `json:"channels"`
-	Connections    []viewConnectionRes    `json:"connections"`
-	Groups         []viewGroupRes         `json:"groups"`
-	GroupRelations []viewGroupRelationRes `json:"group_relations"`
+	Things         []backupThingRes         `json:"things"`
+	Channels       []backupChannelRes       `json:"channels"`
+	Connections    []backupConnectionRes    `json:"connections"`
+	Groups         []viewGroupRes           `json:"groups"`
+	GroupRelations []backupGroupRelationRes `json:"group_relations"`
 }
