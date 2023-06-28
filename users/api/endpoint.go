@@ -230,12 +230,15 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		users, err := svc.Backup(ctx, req.token)
+		admin, users, err := svc.Backup(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}
 
-		return backupRes{Users: users}, nil
+		return backupRes{
+			Admin: admin,
+			Users: users,
+		}, nil
 	}
 }
 
@@ -246,7 +249,7 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Restore(ctx, req.token, req.Users)
+		err := svc.Restore(ctx, req.token, req.Admin, req.Users)
 		if err != nil {
 			return nil, err
 		}

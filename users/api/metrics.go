@@ -165,7 +165,7 @@ func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id s
 	return ms.svc.DisableUser(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) Backup(ctx context.Context, token string) ([]users.User, error) {
+func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)
 		ms.latency.With("method", "backup").Observe(time.Since(begin).Seconds())
@@ -174,11 +174,11 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) ([]users.
 	return ms.svc.Backup(ctx, token)
 }
 
-func (ms *metricsMiddleware) Restore(ctx context.Context, token string, users []users.User) error {
+func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "restore").Add(1)
 		ms.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Restore(ctx, token, users)
+	return ms.svc.Restore(ctx, token, admin, users)
 }

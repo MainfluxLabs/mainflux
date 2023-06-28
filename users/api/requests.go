@@ -209,6 +209,7 @@ func (req backupReq) validate() error {
 type restoreReq struct {
 	token string
 	Users []users.User `json:"users"`
+	Admin users.User   `json:"admin"`
 }
 
 func (req restoreReq) validate() error {

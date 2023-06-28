@@ -96,11 +96,11 @@ type Service interface {
 	// DisableUser logically disables the user identified with the provided ID
 	DisableUser(ctx context.Context, token, id string) error
 
-	// Backup returns all users. Only accessible by admin.
-	Backup(ctx context.Context, token string) ([]User, error)
+	// Backup returns admin and all users. Only accessible by admin.
+	Backup(ctx context.Context, token string) (User, []User, error)
 
 	// Restore restores users from backup. Only accessible by admin.
-	Restore(ctx context.Context, token string, users []User) error
+	Restore(ctx context.Context, token string, admin User, users []User) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -176,6 +176,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	if err := user.Validate(); err != nil {
 		return "", err
 	}
+
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
@@ -184,6 +185,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	if err != nil {
 		return "", err
 	}
+
 	user.ID = uid
 
 	hash, err := svc.hasher.Hash(user.Password)
@@ -287,26 +289,44 @@ func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) 
 	return users, nil
 }
 
-func (svc usersService) Backup(ctx context.Context, token string) ([]User, error) {
+func (svc usersService) Backup(ctx context.Context, token string) (User, []User, error) {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
-		return []User{}, err
+		return User{}, []User{}, err
 	}
 
 	if err := svc.authorize(ctx, user.email); err != nil {
-		return []User{}, err
+		return User{}, []User{}, err
 	}
 
-	return svc.users.RetrieveAll(ctx)
+	users, err := svc.users.RetrieveAll(ctx)
+	if err != nil {
+		return User{}, []User{}, err
+	}
+
+	var admin User
+	for i, u := range users {
+		if u.Email == user.email {
+			admin = u
+			users = append(users[:i], users[i+1:]...)
+			break
+		}
+	}
+
+	return admin, users, nil
 }
 
-func (svc usersService) Restore(ctx context.Context, token string, users []User) error {
+func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
 	if err := svc.authorize(ctx, user.email); err != nil {
+		return err
+	}
+
+	if err := svc.users.UpdateUser(ctx, admin); err != nil {
 		return err
 	}
 
