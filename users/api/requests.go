@@ -224,8 +224,12 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Users) == 0 || req.Admin.ID == "" {
+	if len(req.Users) == 0 {
 		return apiutil.ErrEmptyList
+	}
+
+	if req.Admin.ID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil
