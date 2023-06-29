@@ -2770,21 +2770,64 @@ func TestRestore(t *testing.T) {
 		})
 	}
 
-	type restoreReq struct {
-		Groups         []things.Group         `json:"groups"`
-		Things         []things.Thing         `json:"things"`
-		Channels       []things.Channel       `json:"channels"`
-		Connections    []things.Connection    `json:"connections"`
-		GroupRelations []things.GroupRelation `json:"group_relations"`
+	thr := []restoreThingReq{
+		{
+			ID:       testThing.ID,
+			Owner:    testThing.Owner,
+			Name:     testThing.Name,
+			Key:      testThing.Key,
+			Metadata: testThing.Metadata,
+		},
 	}
 
-	data := toJSON(restoreReq{
-		Groups:         groups,
-		Things:         []things.Thing{testThing},
-		Channels:       channels,
-		Connections:    connections,
-		GroupRelations: groupRelations,
-	})
+	var chr []restoreChannelReq
+	for _, ch := range channels {
+		chr = append(chr, restoreChannelReq{
+			ID:       ch.ID,
+			Owner:    ch.Owner,
+			Name:     ch.Name,
+			Metadata: ch.Metadata,
+		})
+	}
+
+	var cr []restoreConnectionReq
+	for _, conn := range connections {
+		cr = append(cr, restoreConnectionReq{
+			ChannelID:    conn.ChannelID,
+			ChannelOwner: conn.ChannelOwner,
+			ThingID:      conn.ThingID,
+			ThingOwner:   conn.ThingOwner,
+		})
+	}
+
+	var gr []restoreGroupReq
+	for _, group := range groups {
+		gr = append(gr, restoreGroupReq{
+			ID:          group.ID,
+			Name:        group.Name,
+			OwnerID:     group.OwnerID,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+		})
+	}
+
+	var grr []restoreGroupRelationReq
+	for _, groupRelation := range groupRelations {
+		grr = append(grr, restoreGroupRelationReq{
+			GroupID:  groupRelation.GroupID,
+			MemberID: groupRelation.MemberID,
+		})
+	}
+
+	resReq := restoreReq{
+		Things:         thr,
+		Channels:       chr,
+		Connections:    cr,
+		Groups:         gr,
+		GroupRelations: grr,
+	}
+
+	data := toJSON(resReq)
 	invalidData := toJSON(restoreReq{})
 	restoreURL := fmt.Sprintf("%s/restore", ts.URL)
 
@@ -2916,4 +2959,50 @@ type backupRes struct {
 	Connections    []backupConnectionRes    `json:"connections"`
 	Groups         []viewGroupRes           `json:"groups"`
 	GroupRelations []backupGroupRelationRes `json:"group_relations"`
+}
+
+type restoreThingReq struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner"`
+	Name     string                 `json:"name"`
+	Key      string                 `json:"key"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type restoreChannelReq struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner"`
+	Name     string                 `json:"name"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type restoreConnectionReq struct {
+	ChannelID    string `json:"channel_id"`
+	ChannelOwner string `json:"channel_owner"`
+	ThingID      string `json:"thing_id"`
+	ThingOwner   string `json:"thing_owner"`
+}
+
+type restoreGroupReq struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	OwnerID     string                 `json:"owner_id"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+type restoreGroupRelationReq struct {
+	MemberID  string    `json:"member_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+type restoreReq struct {
+	Things         []restoreThingReq         `json:"things"`
+	Channels       []restoreChannelReq       `json:"channels"`
+	Connections    []restoreConnectionReq    `json:"connections"`
+	Groups         []restoreGroupReq         `json:"groups"`
+	GroupRelations []restoreGroupRelationReq `json:"group_relations"`
 }

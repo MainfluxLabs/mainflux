@@ -482,13 +482,7 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		backup := things.Backup{
-			Things:         req.Things,
-			Channels:       req.Channels,
-			Connections:    req.Connections,
-			Groups:         req.Groups,
-			GroupRelations: req.GroupRelations,
-		}
+		backup := buildBackup(req)
 
 		if err := svc.Restore(ctx, req.token, backup); err != nil {
 			return nil, err
@@ -787,4 +781,62 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	return res
+}
+
+func buildBackup(req restoreReq) (backup things.Backup) {
+	for _, thing := range req.Things {
+		th := things.Thing{
+			ID:       thing.ID,
+			Owner:    thing.Owner,
+			Name:     thing.Name,
+			Key:      thing.Key,
+			Metadata: thing.Metadata,
+		}
+		backup.Things = append(backup.Things, th)
+	}
+
+	for _, channel := range req.Channels {
+		ch := things.Channel{
+			ID:       channel.ID,
+			Owner:    channel.Owner,
+			Name:     channel.Name,
+			Metadata: channel.Metadata,
+		}
+		backup.Channels = append(backup.Channels, ch)
+	}
+
+	for _, connection := range req.Connections {
+		conn := things.Connection{
+			ChannelID:    connection.ChannelID,
+			ChannelOwner: connection.ChannelOwner,
+			ThingID:      connection.ThingID,
+			ThingOwner:   connection.ThingOwner,
+		}
+		backup.Connections = append(backup.Connections, conn)
+	}
+
+	for _, group := range req.Groups {
+		gr := things.Group{
+			ID:          group.ID,
+			OwnerID:     group.OwnerID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		backup.Groups = append(backup.Groups, gr)
+	}
+
+	for _, grRelation := range req.GroupRelations {
+		gRel := things.GroupRelation{
+			MemberID:  grRelation.MemberID,
+			GroupID:   grRelation.GroupID,
+			CreatedAt: grRelation.CreatedAt,
+			UpdatedAt: grRelation.UpdatedAt,
+		}
+		backup.GroupRelations = append(backup.GroupRelations, gRel)
+	}
+
+	return backup
 }

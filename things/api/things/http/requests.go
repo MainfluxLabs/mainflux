@@ -4,6 +4,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -297,13 +299,52 @@ func (req backupReq) validate() error {
 	return nil
 }
 
+type restoreThingReq struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner"`
+	Name     string                 `json:"name"`
+	Key      string                 `json:"key"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type restoreChannelReq struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner"`
+	Name     string                 `json:"name"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type restoreConnectionReq struct {
+	ChannelID    string `json:"channel_id"`
+	ChannelOwner string `json:"channel_owner"`
+	ThingID      string `json:"thing_id"`
+	ThingOwner   string `json:"thing_owner"`
+}
+
+type restoreGroupReq struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	OwnerID     string                 `json:"owner_id"`
+	Description string                 `json:"description"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+type restoreGroupRelationReq struct {
+	MemberID  string    `json:"member_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type restoreReq struct {
 	token          string
-	Things         []things.Thing         `json:"things"`
-	Channels       []things.Channel       `json:"channels"`
-	Connections    []things.Connection    `json:"connections"`
-	Groups         []things.Group         `json:"groups"`
-	GroupRelations []things.GroupRelation `json:"group_relations"`
+	Things         []restoreThingReq         `json:"things"`
+	Channels       []restoreChannelReq       `json:"channels"`
+	Connections    []restoreConnectionReq    `json:"connections"`
+	Groups         []restoreGroupReq         `json:"groups"`
+	GroupRelations []restoreGroupRelationReq `json:"group_relations"`
 }
 
 func (req restoreReq) validate() error {
