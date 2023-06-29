@@ -235,10 +235,7 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return backupRes{
-			Admin: admin,
-			Users: users,
-		}, nil
+		return buildBackupResponse(admin, users), nil
 	}
 }
 
@@ -249,7 +246,9 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Restore(ctx, req.token, req.Admin, req.Users)
+		admin, users := buildBackup(req)
+
+		err := svc.Restore(ctx, req.token, admin, users)
 		if err != nil {
 			return nil, err
 		}
@@ -276,4 +275,54 @@ func buildUsersResponse(up users.UserPage) userPageRes {
 		res.Users = append(res.Users, view)
 	}
 	return res
+}
+
+func buildBackupResponse(admin users.User, users []users.User) backupRes {
+	res := backupRes{
+		Admin: backupUserRes{
+			ID:       admin.ID,
+			Email:    admin.Email,
+			Password: admin.Password,
+			Metadata: admin.Metadata,
+			Status:   admin.Status,
+		},
+		Users: []backupUserRes{},
+	}
+
+	for _, user := range users {
+		view := backupUserRes{
+			ID:       user.ID,
+			Email:    user.Email,
+			Password: user.Password,
+			Metadata: user.Metadata,
+			Status:   user.Status,
+		}
+		res.Users = append(res.Users, view)
+	}
+
+	return res
+}
+
+func buildBackup(req restoreReq) (users.User, []users.User) {
+	admin := users.User{
+		ID:       req.Admin.ID,
+		Email:    req.Admin.Email,
+		Password: req.Admin.Password,
+		Metadata: req.Admin.Metadata,
+		Status:   req.Admin.Status,
+	}
+
+	u := []users.User{}
+	for _, user := range req.Users {
+		view := users.User{
+			ID:       user.ID,
+			Email:    user.Email,
+			Password: user.Password,
+			Metadata: user.Metadata,
+			Status:   user.Status,
+		}
+		u = append(u, view)
+	}
+
+	return admin, u
 }

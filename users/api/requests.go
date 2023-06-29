@@ -206,10 +206,17 @@ func (req backupReq) validate() error {
 	return nil
 }
 
+type restoreUserReq struct {
+	ID       string                 `json:"id"`
+	Email    string                 `json:"email"`
+	Password string                 `json:"password"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Status   string
+}
 type restoreReq struct {
 	token string
-	Users []users.User `json:"users"`
-	Admin users.User   `json:"admin"`
+	Users []restoreUserReq `json:"users"`
+	Admin restoreUserReq   `json:"admin"`
 }
 
 func (req restoreReq) validate() error {
@@ -217,7 +224,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Users) == 0 {
+	if len(req.Users) == 0 || req.Admin.ID == "" {
 		return apiutil.ErrEmptyList
 	}
 
