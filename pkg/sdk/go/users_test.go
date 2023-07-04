@@ -15,7 +15,7 @@ import (
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
-	"github.com/MainfluxLabs/mainflux/users/api"
+	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -50,7 +50,7 @@ func newUserService() users.Service {
 
 func newUserServer(svc users.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := api.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

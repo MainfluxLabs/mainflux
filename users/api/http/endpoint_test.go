@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api_test
+package http_test
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
-	"github.com/MainfluxLabs/mainflux/users/api"
+	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +93,7 @@ func newService() users.Service {
 }
 
 func newServer(svc users.Service) *httptest.Server {
-	mux := api.MakeHandler(svc, mocktracer.New(), logger.NewMock())
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
 
@@ -483,7 +483,7 @@ func TestPasswordResetRequest(t *testing.T) {
 	expectedExisting := toJSON(struct {
 		Msg string `json:"msg"`
 	}{
-		api.MailSent,
+		httpapi.MailSent,
 	})
 
 	_, err := svc.SelfRegister(context.Background(), user)
