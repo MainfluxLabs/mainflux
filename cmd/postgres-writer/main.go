@@ -92,7 +92,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, cfg.port, logger)
+		return startHTTPServer(ctx, repo, cfg.port, logger)
 	})
 
 	g.Go(func() error {
@@ -162,10 +162,10 @@ func newService(db *sqlx.DB, logger logger.Logger) consumers.Consumer {
 	return svc
 }
 
-func startHTTPServer(ctx context.Context, port string, logger logger.Logger) error {
+func startHTTPServer(ctx context.Context, repo consumers.Consumer, port string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svcName)}
+	server := &http.Server{Addr: p, Handler: api.MakeHandler(repo, svcName, logger)}
 
 	logger.Info(fmt.Sprintf("Postgres writer service started, exposed port %s", port))
 	go func() {
