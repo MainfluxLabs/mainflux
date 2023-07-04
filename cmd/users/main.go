@@ -30,8 +30,8 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/users/api"
 	grpcapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
+	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -324,8 +324,8 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 	idProvider := uuid.New()
 
 	svc := users.New(userRepo, hasher, ac, emailer, idProvider, c.passRegex)
-	svc = api.LoggingMiddleware(svc, logger)
-	svc = api.MetricsMiddleware(
+	svc = httpapi.LoggingMiddleware(svc, logger)
+	svc = httpapi.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "users",
@@ -370,7 +370,7 @@ func createAdmin(svc users.Service, userRepo users.UserRepository, c config) err
 func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc users.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, tracer, logger)}
+	server := &http.Server{Addr: p, Handler: httpapi.MakeHandler(svc, tracer, logger)}
 
 	switch {
 	case certFile != "" || keyFile != "":
