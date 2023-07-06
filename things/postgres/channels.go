@@ -488,12 +488,13 @@ func (cr channelRepository) retrieve(ctx context.Context, owner string, includeO
 		olq = ""
 	}
 
-	var selectOwner string
-	if includeOwner {
-		selectOwner = "owner,"
+	var q string
+	switch includeOwner {
+	case true:
+		q = "SELECT * FROM channels"
+	default:
+		q = fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	}
-
-	q := fmt.Sprintf(`SELECT id, name, %s metadata FROM channels %s ORDER BY %s %s %s;`, selectOwner, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"owner":    owner,

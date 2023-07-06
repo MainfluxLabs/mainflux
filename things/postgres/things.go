@@ -400,12 +400,13 @@ func (tr thingRepository) retrieve(ctx context.Context, owner string, includeOwn
 		olq = ""
 	}
 
-	var selectOwner string
-	if includeOwner {
-		selectOwner = "owner,"
+	var q string
+	switch includeOwner {
+	case true:
+		q = "SELECT * FROM things;"
+	default:
+		q = fmt.Sprintf(`SELECT id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	}
-
-	q := fmt.Sprintf(`SELECT id, name, %s key, metadata FROM things %s ORDER BY %s %s %s;`, selectOwner, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"owner":    owner,
