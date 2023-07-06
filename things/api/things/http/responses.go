@@ -60,7 +60,6 @@ func (res shareThingRes) Empty() bool {
 type thingRes struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name,omitempty"`
-	Owner    string                 `json:"-"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
@@ -127,7 +126,6 @@ func (res thingsPageRes) Empty() bool {
 type channelRes struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name,omitempty"`
-	Owner    string                 `json:"-"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
 }
