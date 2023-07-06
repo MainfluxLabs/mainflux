@@ -81,7 +81,7 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 }
 
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET metadata = :metadata WHERE email = :email AND status = 'enabled'`
+	q := `UPDATE users SET id = :id, metadata = :metadata WHERE email = :email AND status = 'enabled'`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
