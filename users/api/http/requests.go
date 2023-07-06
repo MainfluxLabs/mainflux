@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
@@ -155,31 +155,6 @@ func (req passwChangeReq) validate() error {
 	return nil
 }
 
-type listMemberGroupReq struct {
-	token    string
-	status   string
-	offset   uint64
-	limit    uint64
-	metadata users.Metadata
-	id       string
-}
-
-func (req listMemberGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-	if req.status != users.AllStatusKey &&
-		req.status != users.EnabledStatusKey &&
-		req.status != users.DisabledStatusKey {
-		return apiutil.ErrInvalidStatus
-	}
-	return nil
-}
-
 type changeUserStatusReq struct {
 	token string
 	id    string
@@ -206,10 +181,17 @@ func (req backupReq) validate() error {
 	return nil
 }
 
+type restoreUserReq struct {
+	ID       string                 `json:"id"`
+	Email    string                 `json:"email"`
+	Password string                 `json:"password"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Status   string
+}
 type restoreReq struct {
 	token string
-	Users []users.User `json:"users"`
-	Admin users.User   `json:"admin"`
+	Users []restoreUserReq `json:"users"`
+	Admin restoreUserReq   `json:"admin"`
 }
 
 func (req restoreReq) validate() error {
@@ -219,6 +201,10 @@ func (req restoreReq) validate() error {
 
 	if len(req.Users) == 0 {
 		return apiutil.ErrEmptyList
+	}
+
+	if req.Admin.ID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil

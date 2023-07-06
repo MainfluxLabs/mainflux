@@ -1,14 +1,13 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package http
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/users"
 )
 
 var (
@@ -165,9 +164,17 @@ func (res deleteRes) Empty() bool {
 	return true
 }
 
+type backupUserRes struct {
+	ID       string                 `json:"id"`
+	Email    string                 `json:"email"`
+	Password string                 `json:"password"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Status   string                 `json:"status"`
+}
+
 type backupRes struct {
-	Users []users.User `json:"users"`
-	Admin users.User   `json:"admin"`
+	Users []backupUserRes `json:"users"`
+	Admin backupUserRes   `json:"admin"`
 }
 
 func (res backupRes) Code() int {
