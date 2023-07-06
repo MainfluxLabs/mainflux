@@ -3,7 +3,10 @@
 
 package readers
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 const (
 	// EqualKey represents the equal comparison operator key.
@@ -28,6 +31,9 @@ type MessageRepository interface {
 	ListChannelMessages(chanID string, pm PageMetadata) (MessagesPage, error)
 	// ListAllMessages retrieves all messages from database.
 	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
+
+	// Save persists the message to the database.
+	Save(ctx context.Context, messages ...BackupMessage) error
 }
 
 // Message represents any message format.
@@ -57,6 +63,23 @@ type PageMetadata struct {
 	From        float64 `json:"from,omitempty"`
 	To          float64 `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
+}
+
+type BackupMessage struct {
+	ID           string
+	Channel      string
+	Subtopic     string
+	Publisher    string
+	Protocol     string
+	Name         string
+	Unit         string
+	Value        float64
+	String_value string
+	Bool_value   bool
+	Data_value   []byte
+	Sum          float64
+	Time         float64
+	Update_time  float64
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation

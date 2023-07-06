@@ -43,6 +43,38 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	return repo.readAll(chanID, rpm)
 }
 
+func (repo mongoRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+	collection := repo.db.Collection(defCollection)
+
+	var documents []interface{}
+	for _, message := range messages {
+		document := bson.D{
+			{Key: "ID", Value: message.ID},
+			{Key: "Channel", Value: message.Channel},
+			{Key: "Subtopic", Value: message.Subtopic},
+			{Key: "Publisher", Value: message.Publisher},
+			{Key: "Protocol", Value: message.Protocol},
+			{Key: "Name", Value: message.Name},
+			{Key: "Unit", Value: message.Unit},
+			{Key: "Value", Value: message.Value},
+			{Key: "String_value", Value: message.String_value},
+			{Key: "Bool_value", Value: message.Bool_value},
+			{Key: "Data_value", Value: message.Data_value},
+			{Key: "Sum", Value: message.Sum},
+			{Key: "Time", Value: message.Time},
+			{Key: "Update_time", Value: message.Update_time},
+		}
+		documents = append(documents, document)
+	}
+
+	_, err := collection.InsertMany(ctx, documents)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"

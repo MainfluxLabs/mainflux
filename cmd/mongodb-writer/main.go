@@ -93,7 +93,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPService(ctx, repo, cfg.port, logger)
+		return startHTTPService(ctx, cfg.port, logger)
 	})
 
 	g.Go(func() error {
@@ -140,10 +140,10 @@ func makeMetrics() (*kitprometheus.Counter, *kitprometheus.Summary) {
 	return counter, latency
 }
 
-func startHTTPService(ctx context.Context, repo consumers.Consumer, port string, logger logger.Logger) error {
+func startHTTPService(ctx context.Context, port string, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(repo, svcName, logger)}
+	server := &http.Server{Addr: p, Handler: api.MakeHandler(svcName)}
 
 	logger.Info(fmt.Sprintf("MongoDB writer service started, exposed port %s", p))
 
