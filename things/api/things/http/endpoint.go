@@ -471,13 +471,7 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return backupRes{
-			Things:         backup.Things,
-			Channels:       backup.Channels,
-			Connections:    backup.Connections,
-			Groups:         backup.Groups,
-			GroupRelations: backup.GroupRelations,
-		}, nil
+		return buildBackupResponse(backup), nil
 	}
 }
 
@@ -488,13 +482,7 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		backup := things.Backup{
-			Things:         req.Things,
-			Channels:       req.Channels,
-			Connections:    req.Connections,
-			Groups:         req.Groups,
-			GroupRelations: req.GroupRelations,
-		}
+		backup := buildBackup(req)
 
 		if err := svc.Restore(ctx, req.token, backup); err != nil {
 			return nil, err
@@ -598,7 +586,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token,req.admin, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token, req.admin, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -727,4 +715,128 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 	}
 
 	return res
+}
+
+func buildBackupResponse(backup things.Backup) backupRes {
+	res := backupRes{
+		Things:         []backupThingRes{},
+		Channels:       []backupChannelRes{},
+		Connections:    []backupConnectionRes{},
+		Groups:         []viewGroupRes{},
+		GroupRelations: []backupGroupRelationRes{},
+	}
+
+	for _, thing := range backup.Things {
+		view := backupThingRes{
+			ID:       thing.ID,
+			Name:     thing.Name,
+			Owner:    thing.Owner,
+			Key:      thing.Key,
+			Metadata: thing.Metadata,
+		}
+		res.Things = append(res.Things, view)
+	}
+
+	for _, channel := range backup.Channels {
+		view := backupChannelRes{
+			ID:       channel.ID,
+			Name:     channel.Name,
+			Owner:    channel.Owner,
+			Metadata: channel.Metadata,
+		}
+		res.Channels = append(res.Channels, view)
+	}
+
+	for _, connection := range backup.Connections {
+		view := backupConnectionRes{
+			ChannelID:    connection.ChannelID,
+			ChannelOwner: connection.ChannelOwner,
+			ThingID:      connection.ThingID,
+			ThingOwner:   connection.ThingOwner,
+		}
+		res.Connections = append(res.Connections, view)
+	}
+
+	for _, group := range backup.Groups {
+		view := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		res.Groups = append(res.Groups, view)
+	}
+
+	for _, groupRelation := range backup.GroupRelations {
+		view := backupGroupRelationRes{
+			MemberID:  groupRelation.MemberID,
+			GroupID:   groupRelation.GroupID,
+			CreatedAt: groupRelation.CreatedAt,
+			UpdatedAt: groupRelation.UpdatedAt,
+		}
+		res.GroupRelations = append(res.GroupRelations, view)
+	}
+
+	return res
+}
+
+func buildBackup(req restoreReq) (backup things.Backup) {
+	for _, thing := range req.Things {
+		th := things.Thing{
+			ID:       thing.ID,
+			Owner:    thing.Owner,
+			Name:     thing.Name,
+			Key:      thing.Key,
+			Metadata: thing.Metadata,
+		}
+		backup.Things = append(backup.Things, th)
+	}
+
+	for _, channel := range req.Channels {
+		ch := things.Channel{
+			ID:       channel.ID,
+			Owner:    channel.Owner,
+			Name:     channel.Name,
+			Metadata: channel.Metadata,
+		}
+		backup.Channels = append(backup.Channels, ch)
+	}
+
+	for _, connection := range req.Connections {
+		conn := things.Connection{
+			ChannelID:    connection.ChannelID,
+			ChannelOwner: connection.ChannelOwner,
+			ThingID:      connection.ThingID,
+			ThingOwner:   connection.ThingOwner,
+		}
+		backup.Connections = append(backup.Connections, conn)
+	}
+
+	for _, group := range req.Groups {
+		gr := things.Group{
+			ID:          group.ID,
+			OwnerID:     group.OwnerID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		backup.Groups = append(backup.Groups, gr)
+	}
+
+	for _, grRelation := range req.GroupRelations {
+		gRel := things.GroupRelation{
+			MemberID:  grRelation.MemberID,
+			GroupID:   grRelation.GroupID,
+			CreatedAt: grRelation.CreatedAt,
+			UpdatedAt: grRelation.UpdatedAt,
+		}
+		backup.GroupRelations = append(backup.GroupRelations, gRel)
+	}
+
+	return backup
 }

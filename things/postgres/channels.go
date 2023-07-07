@@ -131,11 +131,11 @@ func (cr channelRepository) RetrieveByOwner(ctx context.Context, owner string, p
 		return things.ChannelsPage{}, errors.ErrRetrieveEntity
 	}
 
-	return cr.retrieve(ctx, owner, pm)
+	return cr.retrieve(ctx, owner, false, pm)
 }
 
 func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
-	chPage, err := cr.retrieve(ctx, "", things.PageMetadata{})
+	chPage, err := cr.retrieve(ctx, "", true, things.PageMetadata{})
 	if err != nil {
 		return []things.Channel{}, err
 	}
@@ -144,7 +144,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, 
 }
 
 func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return cr.retrieve(ctx, "", pm)
+	return cr.retrieve(ctx, "", false, pm)
 }
 
 func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
@@ -458,7 +458,7 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 	return connections, nil
 }
 
-func (cr channelRepository) retrieve(ctx context.Context, owner string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (cr channelRepository) retrieve(ctx context.Context, owner string, includeOwner bool, pm things.PageMetadata) (things.ChannelsPage, error) {
 	ownq := getOwnerQuery(owner)
 	nq, name := getNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
@@ -489,6 +489,10 @@ func (cr channelRepository) retrieve(ctx context.Context, owner string, pm thing
 	}
 
 	q := fmt.Sprintf(`SELECT id, name, metadata FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+
+	if includeOwner {
+		q = "SELECT id, name, owner, metadata FROM channels;"
+	}
 
 	params := map[string]interface{}{
 		"owner":    owner,

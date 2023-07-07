@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var (
@@ -247,12 +246,41 @@ func (res disconnectThingRes) Empty() bool {
 	return true
 }
 
+type backupThingRes struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Key      string                 `json:"key"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type backupChannelRes struct {
+	ID       string                 `json:"id"`
+	Owner    string                 `json:"owner,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type backupConnectionRes struct {
+	ChannelID    string `json:"channel_id"`
+	ChannelOwner string `json:"channel_owner"`
+	ThingID      string `json:"thing_id"`
+	ThingOwner   string `json:"thing_owner"`
+}
+
+type backupGroupRelationRes struct {
+	MemberID  string    `json:"member_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type backupRes struct {
-	Things         []things.Thing         `json:"things"`
-	Channels       []things.Channel       `json:"channels"`
-	Connections    []things.Connection    `json:"connections"`
-	Groups         []things.Group         `json:"groups"`
-	GroupRelations []things.GroupRelation `json:"group_relations"`
+	Things         []backupThingRes         `json:"things"`
+	Channels       []backupChannelRes       `json:"channels"`
+	Connections    []backupConnectionRes    `json:"connections"`
+	Groups         []viewGroupRes           `json:"groups"`
+	GroupRelations []backupGroupRelationRes `json:"group_relations"`
 }
 
 func (res backupRes) Code() int {
