@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
@@ -63,6 +64,12 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 	mux.Get("/messages", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
 		decodeListAllMessages,
+		encodeResponse,
+		opts...,
+	))
+	mux.Post("/restore", kithttp.NewServer(
+		restoreEndpoint(svc),
+		decodeRestore,
 		encodeResponse,
 		opts...,
 	))
@@ -268,6 +275,19 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
+func decodeRestore(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreMessagesReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
@@ -294,6 +314,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
+		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrInvalidComparator:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthentication),
@@ -301,7 +322,16 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, readers.ErrReadMessages):
+	case errors.Contains(err, errors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+	case errors.Contains(err, errors.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
+	case errors.Contains(err, errors.ErrScanMetadata):
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	case errors.Contains(err, readers.ErrReadMessages),
+		errors.Contains(err, errors.ErrCreateEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 
 	default:

@@ -4,6 +4,7 @@
 package timescale
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -43,6 +44,41 @@ func (tr timescaleRepository) ListAllMessages(rpm readers.PageMetadata) (readers
 
 func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return tr.readAll(chanID, rpm)
+}
+
+func (tr timescaleRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+	tx, err := tr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	q := fmt.Sprintf(`INSERT INTO %s (id, channel, subtopic, publisher, protocol, name,unit, value, bool_value, string_value, data_value, sum, time, update_time)
+	VALUES (:id, :channel, :subtopic, :publisher, :protocol, :name, :unit, :value, :bool_value, :string_value, :data_value, :sum, :time, :update_time);`, defTable)
+
+	for _, msg := range messages {
+		dbMsg := toDBMessage(msg)
+		if _, err := tx.NamedExecContext(ctx, q, dbMsg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	return nil
 }
 
 func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
@@ -211,4 +247,40 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	}
 	ret["payload"] = pld
 	return ret, nil
+}
+
+type dbMessage struct {
+	ID           string  `json:"id,omitempty"`
+	Channel      string  `json:"channel"`
+	Subtopic     string  `json:"subtopic"`
+	Publisher    string  `json:"publisher"`
+	Protocol     string  `json:"protocol"`
+	Name         string  `json:"name"`
+	Unit         string  `json:"unit,omitempty"`
+	Value        float64 `json:"value"`
+	String_value string  `json:"string_value,omitempty"`
+	Bool_value   bool    `json:"bool_value,omitempty"`
+	Data_value   []byte  `json:"data_value,omitempty"`
+	Sum          float64 `json:"sum,omitempty"`
+	Time         float64 `json:"time"`
+	Update_time  float64 `json:"update_time,omitempty"`
+}
+
+func toDBMessage(ms readers.BackupMessage) dbMessage {
+	return dbMessage{
+		ID:           ms.ID,
+		Channel:      ms.Channel,
+		Subtopic:     ms.Subtopic,
+		Publisher:    ms.Publisher,
+		Protocol:     ms.Protocol,
+		Name:         ms.Name,
+		Unit:         ms.Unit,
+		Value:        ms.Value,
+		String_value: ms.String_value,
+		Bool_value:   ms.Bool_value,
+		Data_value:   ms.Data_value,
+		Sum:          ms.Sum,
+		Time:         ms.Time,
+		Update_time:  ms.Update_time,
+	}
 }

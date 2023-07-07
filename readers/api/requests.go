@@ -76,3 +76,20 @@ func (req listAllMessagesReq) validate() error {
 
 	return nil
 }
+
+type restoreMessagesReq struct {
+	token    string
+	Messages []readers.BackupMessage `json:"messages"`
+}
+
+func (req restoreMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Messages) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}

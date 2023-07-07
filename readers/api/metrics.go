@@ -6,6 +6,7 @@
 package api
 
 import (
+	"context"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -45,4 +46,13 @@ func (mm *metricsMiddleware) ListAllMessages(rpm readers.PageMetadata) (readers.
 	}(time.Now())
 
 	return mm.svc.ListAllMessages(rpm)
+}
+
+func (mm *metricsMiddleware) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "save").Add(1)
+		mm.latency.With("method", "save").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Save(ctx, messages...)
 }

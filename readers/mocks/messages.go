@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 
@@ -37,6 +38,10 @@ func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm reader
 
 func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+	panic("not implemented")
 }
 
 func (repo *messageRepositoryMock) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {

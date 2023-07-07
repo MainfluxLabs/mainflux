@@ -64,3 +64,28 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}, nil
 	}
 }
+
+func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		user, err := identify(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if user is authorized to read all messages
+		if err := authorizeAdmin(ctx, user.Email); err != nil {
+			return nil, err
+		}
+
+		if err := svc.Save(ctx, req.Messages...); err != nil {
+			return nil, err
+		}
+
+		return restoreMessagesRes{}, nil
+	}
+}
