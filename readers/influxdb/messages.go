@@ -54,7 +54,7 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo *influxRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+func (repo *influxRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
 	return nil
 }
 

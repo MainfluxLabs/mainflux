@@ -47,7 +47,7 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr postgresRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+func (tr postgresRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
