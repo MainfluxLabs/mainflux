@@ -29,11 +29,12 @@ type MessageRepository interface {
 	// ListChannelMessages skips given number of messages for given channel and returns next
 	// limited number of messages.
 	ListChannelMessages(chanID string, pm PageMetadata) (MessagesPage, error)
+
 	// ListAllMessages retrieves all messages from database.
 	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
 
-	// Save persists the message to the database.
-	Save(ctx context.Context, messages ...BackupMessage) error
+	// Restore restores message database from a backup.
+	Restore(ctx context.Context, messages ...BackupMessage) error
 }
 
 // Message represents any message format.

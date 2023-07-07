@@ -43,7 +43,7 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo mongoRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+func (repo mongoRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
 	collection := repo.db.Collection(defCollection)
 
 	var documents []interface{}

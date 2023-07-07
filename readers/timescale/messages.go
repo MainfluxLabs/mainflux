@@ -46,7 +46,7 @@ func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr timescaleRepository) Save(ctx context.Context, messages ...readers.BackupMessage) error {
+func (tr timescaleRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
