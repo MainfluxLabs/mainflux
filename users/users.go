@@ -38,6 +38,7 @@ type User struct {
 	ID       string
 	Email    string
 	Password string
+	Role     string
 	Metadata Metadata
 	Status   string
 }
@@ -76,6 +77,18 @@ type UserRepository interface {
 
 	// RetrieveAll retrieves all users.
 	RetrieveAll(ctx context.Context) ([]User, error)
+
+	// SaveRole creates the user role.
+	SaveRole(ctx context.Context, id, role string) error
+
+	// RetrieveRole retrieves user role by its unique identifier ID.
+	RetrieveRole(ctx context.Context, id string) (string, error)
+
+	// UpdateRole updates the user role.
+	UpdateRole(ctx context.Context, id, role string) error
+
+	// RemoveRole remobves the user role.
+	RemoveRole(ctx context.Context, id string) error
 }
 
 func isEmail(email string) bool {

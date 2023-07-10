@@ -106,6 +106,7 @@ func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
 		return viewUserRes{
 			ID:       u.ID,
 			Email:    u.Email,
+			Role:     u.Role,
 			Metadata: u.Metadata,
 		}, nil
 	}
@@ -125,6 +126,7 @@ func viewProfileEndpoint(svc users.Service) endpoint.Endpoint {
 		return viewUserRes{
 			ID:       u.ID,
 			Email:    u.Email,
+			Role:     u.Role,
 			Metadata: u.Metadata,
 		}, nil
 	}
@@ -270,6 +272,7 @@ func buildUsersResponse(up users.UserPage) userPageRes {
 		view := viewUserRes{
 			ID:       user.ID,
 			Email:    user.Email,
+			Role:     user.Role,
 			Metadata: user.Metadata,
 		}
 		res.Users = append(res.Users, view)
@@ -294,6 +297,7 @@ func buildBackupResponse(admin users.User, users []users.User) backupRes {
 			ID:       user.ID,
 			Email:    user.Email,
 			Password: user.Password,
+			Role:     user.Role,
 			Metadata: user.Metadata,
 			Status:   user.Status,
 		}
@@ -318,6 +322,7 @@ func buildBackup(req restoreReq) (users.User, []users.User) {
 			ID:       user.ID,
 			Email:    user.Email,
 			Password: user.Password,
+			Role:     user.Role,
 			Metadata: user.Metadata,
 			Status:   user.Status,
 		}

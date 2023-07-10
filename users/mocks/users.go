@@ -184,3 +184,19 @@ func sortUsers(us map[string]users.User) []users.User {
 
 	return users
 }
+
+func (urm *userRepositoryMock) SaveRole(ctx context.Context, id, role string) error {
+	panic("not implemented")
+}
+
+func (urm *userRepositoryMock) RetrieveRole(ctx context.Context, id string) (string, error) {
+	panic("not implemented")
+}
+
+func (urm *userRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
+	panic("not implemented")
+}
+
+func (urm *userRepositoryMock) RemoveRole(ctx context.Context, id string) error {
+	panic("not implemented")
+}

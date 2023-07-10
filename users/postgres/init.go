@@ -91,6 +91,18 @@ func migrateDB(db *sqlx.DB) error {
 					status USER_STATUS NOT NULL DEFAULT 'enabled'`,
 				},
 			},
+			{
+				Id: "users_6",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS users_roles (
+					 role VARCHAR(12) CHECK (role IN ('super_admin', 'admin', 'enterprise', 'startup', 'maker', 'guest')),
+				         user_id UUID NOT NULL,
+				         PRIMARY KEY (user_id)
+					 FOREIGN KEY (user_id) REFERENCES users (id)
+				    )`,
+				},
+				Down: []string{"DROP TABLE users_roles"},
+			},
 		},
 	}
 

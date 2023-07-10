@@ -21,6 +21,10 @@ const (
 	retrieveAllOp     = "retrieve_all"
 	updatePasswordOp  = "update_password"
 	changeStatusOp    = "change_status"
+	removeRoleOp      = "remove_role"
+	updateRoleOp      = "update_role"
+	saveRoleOp        = "save_role"
+	retrieveRoleOp    = "retrieve_role"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -101,6 +105,38 @@ func (urm userRepositoryMiddleware) ChangeStatus(ctx context.Context, id, status
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return urm.repo.ChangeStatus(ctx, id, status)
+}
+
+func (urm userRepositoryMiddleware) SaveRole(ctx context.Context, id, role string) error {
+	span := createSpan(ctx, urm.tracer, saveRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.SaveRole(ctx, id, role)
+}
+
+func (urm userRepositoryMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
+	span := createSpan(ctx, urm.tracer, retrieveRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.RetrieveRole(ctx, id)
+}
+
+func (urm userRepositoryMiddleware) UpdateRole(ctx context.Context, id, role string) error {
+	span := createSpan(ctx, urm.tracer, updateRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.UpdateRole(ctx, id, role)
+}
+
+func (urm userRepositoryMiddleware) RemoveRole(ctx context.Context, id string) error {
+	span := createSpan(ctx, urm.tracer, removeRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.RemoveRole(ctx, id)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

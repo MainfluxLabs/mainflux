@@ -17,6 +17,12 @@ const (
 	EnabledStatusKey  = "enabled"
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
+	superAdminRole    = "super_admin"
+	adminRole         = "admin"
+	enterpriseRole    = "enterprise"
+	startupRole       = "startup"
+	makerRole         = "maker"
+	guestRole         = "guest"
 )
 
 var (
@@ -165,6 +171,11 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 	if err != nil {
 		return "", err
 	}
+
+	if err := svc.users.SaveRole(ctx, uid, user.Role); err != nil {
+		return "", err
+	}
+
 	return uid, nil
 }
 
@@ -207,6 +218,11 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	if err != nil {
 		return "", err
 	}
+
+	if err := svc.users.SaveRole(ctx, uid, user.Role); err != nil {
+		return "", err
+	}
+
 	return uid, nil
 }
 
@@ -231,10 +247,16 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 		return User{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	role, err := svc.users.RetrieveRole(ctx, id)
+	if err != nil {
+		return User{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
 	return User{
 		ID:       id,
 		Email:    dbUser.Email,
 		Password: "",
+		Role:     role,
 		Metadata: dbUser.Metadata,
 		Status:   dbUser.Status,
 	}, nil
@@ -251,9 +273,15 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 		return User{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
+	role, err := svc.users.RetrieveRole(ctx, ir.id)
+	if err != nil {
+		return User{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
 	return User{
 		ID:       dbUser.ID,
 		Email:    ir.email,
+		Role:     role,
 		Metadata: dbUser.Metadata,
 	}, nil
 }
@@ -268,12 +296,38 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	return svc.users.RetrieveByIDs(ctx, nil, pm)
+	up, err := svc.users.RetrieveByIDs(ctx, nil, pm)
+	if err != nil {
+		return UserPage{}, err
+	}
+
+	for i, u := range up.Users {
+		role, err := svc.users.RetrieveRole(ctx, u.ID)
+		if err != nil {
+			return UserPage{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+		up.Users[i].Role = role
+	}
+
+	return up, nil
 }
 
 func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
 	pm := PageMetadata{Status: EnabledStatusKey}
-	return svc.users.RetrieveByIDs(ctx, ids, pm)
+	up, err := svc.users.RetrieveByIDs(ctx, ids, pm)
+	if err != nil {
+		return UserPage{}, err
+	}
+
+	for i, u := range up.Users {
+		role, err := svc.users.RetrieveRole(ctx, u.ID)
+		if err != nil {
+			return UserPage{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+		up.Users[i].Role = role
+	}
+
+	return up, nil
 }
 
 func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) ([]User, error) {
@@ -283,6 +337,12 @@ func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) 
 		if err != nil {
 			return []User{}, err
 		}
+
+		role, err := svc.users.RetrieveRole(ctx, u.ID)
+		if err != nil {
+			return []User{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+		u.Role = role
 		users = append(users, u)
 	}
 
@@ -302,6 +362,14 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 	users, err := svc.users.RetrieveAll(ctx)
 	if err != nil {
 		return User{}, []User{}, err
+	}
+
+	for i, u := range users {
+		role, err := svc.users.RetrieveRole(ctx, u.ID)
+		if err != nil {
+			return User{}, []User{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+		users[i].Role = role
 	}
 
 	var admin User
@@ -335,6 +403,10 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		if err != nil {
 			return err
 		}
+		
+		if err := svc.users.SaveRole(ctx, user.ID, user.Role); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -348,8 +420,15 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 	user := User{
 		ID:       idn.id,
 		Email:    idn.email,
+		Role:     u.Role,
 		Metadata: u.Metadata,
 	}
+
+	err = svc.users.UpdateRole(ctx, user.ID, user.Role)
+	if err != nil {
+		return err
+	}
+
 	return svc.users.UpdateUser(ctx, user)
 }
 
