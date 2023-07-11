@@ -323,7 +323,7 @@ func (ur userRepository) UpdateRole(ctx context.Context, id, role string) error 
 }
 
 func (ur userRepository) RemoveRole(ctx context.Context, id string) error {
-	q := `DELETE FROM users_roles WHERE user_id = :id AND role = :role;`
+	q := `DELETE FROM users_roles WHERE user_id = :id;`
 	dbu := dbUser{ID: id}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
