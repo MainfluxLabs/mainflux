@@ -399,7 +399,7 @@ func TestRetrieveRole(t *testing.T) {
 	_, err = repo.Save(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), user.ID, "admin")
+	err = repo.SaveRole(context.Background(), user.ID, users.AdminRole)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -448,7 +448,7 @@ func TestUpdateRole(t *testing.T) {
 	_, err = repo.Save(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), user.ID, "admin")
+	err = repo.SaveRole(context.Background(), user.ID, users.AdminRole)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -502,7 +502,7 @@ func TestDeleteRole(t *testing.T) {
 	_, err = repo.Save(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), user.ID, "admin")
+	err = repo.SaveRole(context.Background(), user.ID, users.AdminRole)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -525,7 +525,6 @@ func TestDeleteRole(t *testing.T) {
 			id:   "",
 			err:  errors.ErrRemoveEntity,
 		},
-
 	}
 
 	for _, tc := range cases {

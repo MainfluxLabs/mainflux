@@ -424,12 +424,15 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 		Metadata: u.Metadata,
 	}
 
-	err = svc.users.UpdateRole(ctx, user.ID, user.Role)
-	if err != nil {
+	if err := svc.users.UpdateUser(ctx, user); err != nil {
 		return err
 	}
 
-	return svc.users.UpdateUser(ctx, user)
+	if err := svc.users.UpdateRole(ctx, user.ID, user.Role); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {

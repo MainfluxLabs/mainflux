@@ -160,6 +160,7 @@ func updateUserEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		user := users.User{
+			Role:     req.Role,
 			Metadata: req.Metadata,
 		}
 		err := svc.UpdateUser(ctx, req.token, user)
