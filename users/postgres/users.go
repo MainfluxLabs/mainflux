@@ -277,7 +277,7 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 }
 
 func (ur userRepository) SaveRole(ctx context.Context, id, role string) error {
-	q := `INSERT INTO users_roles (id, role) VALUES (:id, :role)`
+	q := `INSERT INTO users_roles (user_id, role) VALUES (:id, :role);`
 
 	dbu := dbUser{
 		ID:   id,
@@ -292,7 +292,7 @@ func (ur userRepository) SaveRole(ctx context.Context, id, role string) error {
 }
 
 func (ur userRepository) RetrieveRole(ctx context.Context, id string) (string, error) {
-	q := `SELECT role FROM users_roles WHERE id = $1`
+	q := `SELECT role FROM users_roles WHERE user_id = $1;`
 
 	dbu := dbUser{ID: id}
 
@@ -308,7 +308,7 @@ func (ur userRepository) RetrieveRole(ctx context.Context, id string) (string, e
 }
 
 func (ur userRepository) UpdateRole(ctx context.Context, id, role string) error {
-	q := `UPDATE users_roles SET role = :role WHERE id = :id;`
+	q := `UPDATE users_roles SET role = :role WHERE user_id = :id;`
 
 	dbu := dbUser{
 		ID:   id,
@@ -323,8 +323,7 @@ func (ur userRepository) UpdateRole(ctx context.Context, id, role string) error 
 }
 
 func (ur userRepository) RemoveRole(ctx context.Context, id string) error {
-	q := `DELETE FROM users_roles WHERE id = :id;`
-
+	q := `DELETE FROM users_roles WHERE user_id = :id AND role = :role;`
 	dbu := dbUser{ID: id}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {

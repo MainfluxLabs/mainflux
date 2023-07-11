@@ -17,12 +17,12 @@ const (
 	EnabledStatusKey  = "enabled"
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
-	superAdminRole    = "super_admin"
-	adminRole         = "admin"
-	enterpriseRole    = "enterprise"
-	startupRole       = "startup"
-	makerRole         = "maker"
-	guestRole         = "guest"
+	SuperAdminRole    = "super_admin"
+	AdminRole         = "admin"
+	EnterpriseRole    = "enterprise"
+	StartupRole       = "startup"
+	MakerRole         = "maker"
+	GuestRole         = "guest"
 )
 
 var (
@@ -403,7 +403,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		if err != nil {
 			return err
 		}
-		
+
 		if err := svc.users.SaveRole(ctx, user.ID, user.Role); err != nil {
 			return err
 		}

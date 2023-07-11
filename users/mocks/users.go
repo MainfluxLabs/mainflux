@@ -16,6 +16,7 @@ var (
 	_             users.UserRepository = (*userRepositoryMock)(nil)
 	mockUsers     map[string]users.User
 	mockUsersByID map[string]users.User
+	mockRoles     map[string]string
 )
 
 type userRepositoryMock struct {
@@ -26,6 +27,7 @@ type userRepositoryMock struct {
 func NewUserRepository() users.UserRepository {
 	mockUsers = make(map[string]users.User)
 	mockUsersByID = make(map[string]users.User)
+	mockRoles = make(map[string]string)
 	return &userRepositoryMock{}
 }
 
@@ -186,17 +188,51 @@ func sortUsers(us map[string]users.User) []users.User {
 }
 
 func (urm *userRepositoryMock) SaveRole(ctx context.Context, id, role string) error {
-	panic("not implemented")
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	if _, ok := mockUsersByID[id]; !ok {
+		return errors.ErrNotFound
+	}
+
+	mockRoles[id] = role
+
+	return nil
 }
 
 func (urm *userRepositoryMock) RetrieveRole(ctx context.Context, id string) (string, error) {
-	panic("not implemented")
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	if _, ok := mockUsersByID[id]; !ok {
+		return "", errors.ErrNotFound
+	}
+
+	return mockRoles[id], nil
 }
 
 func (urm *userRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
-	panic("not implemented")
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	if _, ok := mockUsersByID[id]; !ok {
+		return errors.ErrNotFound
+	}
+
+	mockRoles[id] = role
+
+	return nil
 }
 
 func (urm *userRepositoryMock) RemoveRole(ctx context.Context, id string) error {
-	panic("not implemented")
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	if _, ok := mockUsersByID[id]; !ok {
+		return errors.ErrNotFound
+	}
+
+	delete(mockRoles, id)
+
+	return nil
 }
