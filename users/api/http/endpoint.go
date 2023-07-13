@@ -16,7 +16,7 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.SelfRegister(ctx, req.user)
+		uid, err := svc.SelfRegister(ctx, req.role, req.user)
 		if err != nil {
 			return createUserRes{}, err
 		}
@@ -35,7 +35,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.Register(ctx, req.token, req.user)
+		uid, err := svc.Register(ctx, req.token, req.role, req.user)
 		if err != nil {
 			return createUserRes{}, err
 		}
@@ -106,7 +106,6 @@ func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
 		return viewUserRes{
 			ID:       u.ID,
 			Email:    u.Email,
-			Role:     u.Role,
 			Metadata: u.Metadata,
 		}, nil
 	}
@@ -126,7 +125,6 @@ func viewProfileEndpoint(svc users.Service) endpoint.Endpoint {
 		return viewUserRes{
 			ID:       u.ID,
 			Email:    u.Email,
-			Role:     u.Role,
 			Metadata: u.Metadata,
 		}, nil
 	}
@@ -160,7 +158,6 @@ func updateUserEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		user := users.User{
-			Role:     req.Role,
 			Metadata: req.Metadata,
 		}
 		err := svc.UpdateUser(ctx, req.token, user)
@@ -273,7 +270,6 @@ func buildUsersResponse(up users.UserPage) userPageRes {
 		view := viewUserRes{
 			ID:       user.ID,
 			Email:    user.Email,
-			Role:     user.Role,
 			Metadata: user.Metadata,
 		}
 		res.Users = append(res.Users, view)
@@ -298,7 +294,6 @@ func buildBackupResponse(admin users.User, users []users.User) backupRes {
 			ID:       user.ID,
 			Email:    user.Email,
 			Password: user.Password,
-			Role:     user.Role,
 			Metadata: user.Metadata,
 			Status:   user.Status,
 		}
@@ -323,7 +318,6 @@ func buildBackup(req restoreReq) (users.User, []users.User) {
 			ID:       user.ID,
 			Email:    user.Email,
 			Password: user.Password,
-			Role:     user.Role,
 			Metadata: user.Metadata,
 			Status:   user.Status,
 		}

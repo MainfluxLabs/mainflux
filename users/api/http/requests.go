@@ -23,6 +23,7 @@ func (req userReq) validate() error {
 }
 
 type selfRegisterUserReq struct {
+	role string
 	user users.User
 }
 
@@ -32,6 +33,7 @@ func (req selfRegisterUserReq) validate() error {
 
 type registerUserReq struct {
 	user  users.User
+	role  string
 	token string
 }
 

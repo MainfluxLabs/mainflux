@@ -87,7 +87,6 @@ func (res updateUserRes) Empty() bool {
 type viewUserRes struct {
 	ID       string                 `json:"id"`
 	Email    string                 `json:"email"`
-	Role     string                 `json:"role"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 

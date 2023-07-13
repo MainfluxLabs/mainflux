@@ -26,8 +26,9 @@ const (
 
 var (
 	userAdmin       = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Status: "enabled"}
+	superAdmin      = users.User{Email: "superAdmin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password", Status: "enabled"}
 	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Role: "maker", Metadata: map[string]interface{}{"role": "user"}}
+	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	user            = users.User{Email: "user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	host            = "example.com"
@@ -90,14 +91,14 @@ func TestSelfRegister(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.SelfRegister(context.Background(), tc.user)
+		_, err := svc.SelfRegister(context.Background(), users.GuestRole, tc.user)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
 func TestLogin(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	noAuthUser := users.User{
@@ -141,7 +142,7 @@ func TestLogin(t *testing.T) {
 
 func TestViewUser(t *testing.T) {
 	svc := newService()
-	id, err := svc.SelfRegister(context.Background(), user)
+	id, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -184,7 +185,7 @@ func TestViewUser(t *testing.T) {
 
 func TestViewProfile(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -219,7 +220,10 @@ func TestViewProfile(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), userAdmin)
+	_, err := svc.SelfRegister(context.Background(), users.SuperAdminRole, superAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	token, err := svc.Login(context.Background(), superAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
@@ -238,7 +242,7 @@ func TestListUsers(t *testing.T) {
 			Email:    email,
 			Password: "passpass",
 		}
-		_, err := svc.SelfRegister(context.Background(), user)
+		_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	totUser = totUser + nUsers
@@ -318,7 +322,7 @@ func TestListUsers(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
@@ -351,7 +355,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestGenerateResetToken(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -370,7 +374,7 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 
@@ -394,7 +398,7 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user})
@@ -418,7 +422,7 @@ func TestResetPassword(t *testing.T) {
 
 func TestSendPasswordReset(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.GuestRole, user)
 	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 

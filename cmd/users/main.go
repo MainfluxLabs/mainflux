@@ -359,7 +359,7 @@ func createAdmin(svc users.Service, userRepo users.UserRepository, c config) err
 	}
 
 	// Create an admin
-	_, err := svc.SelfRegister(context.Background(), user)
+	_, err := svc.SelfRegister(context.Background(), users.SuperAdminRole, user)
 	if err != nil {
 		return err
 	}

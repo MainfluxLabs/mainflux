@@ -52,12 +52,12 @@ type Service interface {
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
-	SelfRegister(ctx context.Context, user User) (string, error)
+	SelfRegister(ctx context.Context, role string, user User) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
-	Register(ctx context.Context, token string, user User) (string, error)
+	Register(ctx context.Context, token, role string, user User) (string, error)
 
 	// Login authenticates the user given its credentials. Successful
 	// authentication generates new access token. Failed invocations are
@@ -148,7 +148,7 @@ func New(users UserRepository, hasher Hasher, auth mainflux.AuthServiceClient, e
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
+func (svc usersService) SelfRegister(ctx context.Context, role string, user User) (string, error) {
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
@@ -172,14 +172,14 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 		return "", err
 	}
 
-	if err := svc.users.SaveRole(ctx, uid, user.Role); err != nil {
+	if err := svc.users.SaveRole(ctx, uid, role); err != nil {
 		return "", err
 	}
 
 	return uid, nil
 }
 
-func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
+func (svc usersService) Register(ctx context.Context, token, role string, user User) (string, error) {
 	if _, err := svc.identify(ctx, token); err != nil {
 		return "", err
 	}
@@ -219,7 +219,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 
-	if err := svc.users.SaveRole(ctx, uid, user.Role); err != nil {
+	if err := svc.users.SaveRole(ctx, uid, role); err != nil {
 		return "", err
 	}
 
@@ -247,16 +247,10 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 		return User{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	role, err := svc.users.RetrieveRole(ctx, id)
-	if err != nil {
-		return User{}, errors.Wrap(errors.ErrNotFound, err)
-	}
-
 	return User{
 		ID:       id,
 		Email:    dbUser.Email,
 		Password: "",
-		Role:     role,
 		Metadata: dbUser.Metadata,
 		Status:   dbUser.Status,
 	}, nil
@@ -273,15 +267,9 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 		return User{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	role, err := svc.users.RetrieveRole(ctx, ir.id)
-	if err != nil {
-		return User{}, errors.Wrap(errors.ErrNotFound, err)
-	}
-
 	return User{
 		ID:       dbUser.ID,
 		Email:    ir.email,
-		Role:     role,
 		Metadata: dbUser.Metadata,
 	}, nil
 }
@@ -292,42 +280,16 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, user.id); err != nil {
 		return UserPage{}, err
 	}
 
-	up, err := svc.users.RetrieveByIDs(ctx, nil, pm)
-	if err != nil {
-		return UserPage{}, err
-	}
-
-	for i, u := range up.Users {
-		role, err := svc.users.RetrieveRole(ctx, u.ID)
-		if err != nil {
-			return UserPage{}, errors.Wrap(errors.ErrNotFound, err)
-		}
-		up.Users[i].Role = role
-	}
-
-	return up, nil
+	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
 func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
 	pm := PageMetadata{Status: EnabledStatusKey}
-	up, err := svc.users.RetrieveByIDs(ctx, ids, pm)
-	if err != nil {
-		return UserPage{}, err
-	}
-
-	for i, u := range up.Users {
-		role, err := svc.users.RetrieveRole(ctx, u.ID)
-		if err != nil {
-			return UserPage{}, errors.Wrap(errors.ErrNotFound, err)
-		}
-		up.Users[i].Role = role
-	}
-
-	return up, nil
+	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
 func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) ([]User, error) {
@@ -337,12 +299,6 @@ func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) 
 		if err != nil {
 			return []User{}, err
 		}
-
-		role, err := svc.users.RetrieveRole(ctx, u.ID)
-		if err != nil {
-			return []User{}, errors.Wrap(errors.ErrNotFound, err)
-		}
-		u.Role = role
 		users = append(users, u)
 	}
 
@@ -355,21 +311,13 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, user.id); err != nil {
 		return User{}, []User{}, err
 	}
 
 	users, err := svc.users.RetrieveAll(ctx)
 	if err != nil {
 		return User{}, []User{}, err
-	}
-
-	for i, u := range users {
-		role, err := svc.users.RetrieveRole(ctx, u.ID)
-		if err != nil {
-			return User{}, []User{}, errors.Wrap(errors.ErrNotFound, err)
-		}
-		users[i].Role = role
 	}
 
 	var admin User
@@ -390,7 +338,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, user.id); err != nil {
 		return err
 	}
 
@@ -401,10 +349,6 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 	for _, user := range users {
 		_, err := svc.users.Save(ctx, user)
 		if err != nil {
-			return err
-		}
-
-		if err := svc.users.SaveRole(ctx, user.ID, user.Role); err != nil {
 			return err
 		}
 	}
@@ -420,19 +364,9 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 	user := User{
 		ID:       idn.id,
 		Email:    idn.email,
-		Role:     u.Role,
 		Metadata: u.Metadata,
 	}
-
-	if err := svc.users.UpdateUser(ctx, user); err != nil {
-		return err
-	}
-
-	if err := svc.users.UpdateRole(ctx, user.ID, user.Role); err != nil {
-		return err
-	}
-
-	return nil
+	return svc.users.UpdateUser(ctx, user)
 }
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
@@ -549,6 +483,19 @@ type userIdentity struct {
 	email string
 }
 
+func (svc usersService) authorize(ctx context.Context, id string) error {
+	role, err := svc.users.RetrieveRole(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if role != SuperAdminRole && role != AdminRole {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return nil
+}
+
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
 	identity, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
@@ -556,16 +503,4 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	}
 
 	return userIdentity{identity.Id, identity.Email}, nil
-}
-
-func (svc usersService) authorize(ctx context.Context, email string) error {
-	req := &mainflux.AuthorizeReq{
-		Email: email,
-	}
-
-	if _, err := svc.auth.Authorize(ctx, req); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
 }
