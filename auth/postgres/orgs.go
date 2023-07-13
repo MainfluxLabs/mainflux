@@ -244,14 +244,12 @@ func toMember(dbmb dbMember) (auth.Member, error) {
 
 func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
-	fmt.Printf("meta: %v, mq: %v\n", meta, mq)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
 	nq, name := dbutil.GetNameQuery(pm.Name)
 
-	fmt.Printf("nq: %v, name: %v\n", nq, name)
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
 	}
