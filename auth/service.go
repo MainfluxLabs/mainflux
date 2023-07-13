@@ -345,6 +345,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 		OwnerID:     user.ID,
 		Name:        o.Name,
 		Description: o.Description,
+		Metadata:    o.Metadata,
 		UpdatedAt:   getTimestmap(),
 	}
 

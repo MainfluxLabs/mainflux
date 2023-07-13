@@ -6,11 +6,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/jackc/pgerrcode"
@@ -231,7 +231,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 }
 
 func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
-	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
+	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
 	}
@@ -292,7 +292,7 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 }
 
 func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
-	_, mq, err := getGroupsMetadataQuery("groups", pm.Metadata)
+	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
 	}
@@ -467,9 +467,9 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 		ownq = "owner_id = :owner_id"
 	}
 
-	nq, name := getNameQuery(pm.Name)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 
-	meta, mq, err := getMetadataQuery(pm.Metadata)
+	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -630,20 +630,4 @@ func toGroupRelation(dbgr dbGroupRelation) (things.GroupRelation, error) {
 		CreatedAt: dbgr.CreatedAt,
 		UpdatedAt: dbgr.UpdatedAt,
 	}, nil
-}
-
-func getGroupsMetadataQuery(db string, m things.GroupMetadata) (mb []byte, mq string, err error) {
-	if len(m) > 0 {
-		mq = `metadata @> :metadata`
-		if db != "" {
-			mq = db + "." + mq
-		}
-
-		b, err := json.Marshal(m)
-		if err != nil {
-			return nil, "", errors.Wrap(err, errCreateMetadataQuery)
-		}
-		mb = b
-	}
-	return mb, mq, nil
 }

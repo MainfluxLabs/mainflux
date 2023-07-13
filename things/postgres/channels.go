@@ -11,12 +11,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+const ownerDbId = "owner"
 
 var _ things.ChannelRepository = (*channelRepository)(nil)
 
@@ -459,11 +462,11 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 }
 
 func (cr channelRepository) retrieve(ctx context.Context, owner string, includeOwner bool, pm things.PageMetadata) (things.ChannelsPage, error) {
-	ownq := getOwnerQuery(owner)
-	nq, name := getNameQuery(pm.Name)
+	ownq := dbutil.GetOwnerQuery(owner, ownerDbId)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
-	meta, mq, err := getMetadataQuery(pm.Metadata)
+	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -618,31 +621,6 @@ func toConnection(co dbConn) things.Connection {
 	}
 }
 
-func toDBConnection(co things.Connection) dbConn {
-	return dbConn{
-		ChannelID:    co.ChannelID,
-		ChannelOwner: co.ChannelOwner,
-		ThingID:      co.ThingID,
-		ThingOwner:   co.ThingOwner,
-	}
-}
-
-func getOwnerQuery(owner string) string {
-	if owner == "" {
-		return ""
-	}
-	return "owner = :owner"
-}
-
-func getNameQuery(name string) (string, string) {
-	if name == "" {
-		return "", ""
-	}
-	name = fmt.Sprintf(`%%%s%%`, strings.ToLower(name))
-	nq := `LOWER(name) LIKE :name`
-	return nq, name
-}
-
 func getOrderQuery(order string) string {
 	switch order {
 	case "name":
@@ -668,21 +646,6 @@ func getDirQuery(dir string) string {
 	default:
 		return "DESC"
 	}
-}
-
-func getMetadataQuery(m things.Metadata) ([]byte, string, error) {
-	mq := ""
-	mb := []byte("{}")
-	if len(m) > 0 {
-		mq = `metadata @> :metadata`
-
-		b, err := json.Marshal(m)
-		if err != nil {
-			return nil, "", err
-		}
-		mb = b
-	}
-	return mb, mq, nil
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
