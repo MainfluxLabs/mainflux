@@ -29,6 +29,7 @@ type grpcClient struct {
 	canAccessGroup endpoint.Endpoint
 	assign         endpoint.Endpoint
 	members        endpoint.Endpoint
+	saveRole       endpoint.Endpoint
 	timeout        time.Duration
 }
 
@@ -82,6 +83,14 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			encodeMembersRequest,
 			decodeMembersResponse,
 			mainflux.MembersRes{},
+		).Endpoint()),
+		saveRole: kitot.TraceClient(tracer, "save_role")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"SaveRole",
+			encodeSaveRoleRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -198,6 +207,27 @@ func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, 
 		Total:   mr.total,
 		Members: mr.members,
 	}, err
+}
+
+func (client grpcClient) SaveRole(ctx context.Context, req *mainflux.SaveRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.saveRole(ctx, saveRoleReq{ID: req.GetId(), Role: req.GetRole()})
+	if err != nil {
+		return &empty.Empty{}, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
+func encodeSaveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(saveRoleReq)
+	return &mainflux.SaveRoleReq{
+		Id:   req.ID,
+		Role: req.Role,
+	}, nil
 }
 
 func encodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

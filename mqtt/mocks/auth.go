@@ -88,3 +88,7 @@ func (svc authServiceMock) Members(ctx context.Context, req *mainflux.MembersReq
 func (svc authServiceMock) Assign(ctx context.Context, req *mainflux.Assignment, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) SaveRole(ctx context.Context, req *mainflux.SaveRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	panic("not implemented")
+}

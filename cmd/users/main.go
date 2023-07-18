@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -344,6 +345,10 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 		logger.Error("failed to create admin user: " + err.Error())
 		os.Exit(1)
 	}
+	if err := RegisterAdmin(userRepo, ac, c); err != nil {
+		logger.Error("failed to register admin user: " + err.Error())
+		os.Exit(1)
+	}
 
 	return svc
 }
@@ -359,7 +364,26 @@ func createAdmin(svc users.Service, userRepo users.UserRepository, c config) err
 	}
 
 	// Create an admin
-	_, err := svc.SelfRegister(context.Background(), users.SuperAdminRole, user)
+	_, err := svc.SelfRegister(context.Background(), user)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RegisterAdmin(userRepo users.UserRepository, ac mainflux.AuthServiceClient, c config) error {
+	u, err := userRepo.RetrieveByEmail(context.Background(), c.adminEmail)
+	if err != nil {
+		return err
+	}
+
+	req := mainflux.SaveRoleReq{
+		Id:   u.ID,
+		Role: auth.RoleRootAdmin,
+	}
+
+	_, err = ac.SaveRole(context.Background(), &req)
 	if err != nil {
 		return err
 	}

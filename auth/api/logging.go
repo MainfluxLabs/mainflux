@@ -327,3 +327,15 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup a
 
 	return lm.svc.Restore(ctx, token, backup)
 }
+
+func (lm *loggingMiddleware) SaveRole(ctx context.Context, id, role string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method save_role for id %s and role %s took %s to complete", id, role, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.SaveRole(ctx, id, role)
+}

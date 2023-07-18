@@ -81,6 +81,7 @@ type Service interface {
 
 	// OrgService implements orgs API, creating orgs, assigning members and groups
 	OrgService
+	RoleService
 }
 
 var _ Service = (*service)(nil)
@@ -90,6 +91,7 @@ type service struct {
 	users         mainflux.UsersServiceClient
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
+	roles         RoleRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
@@ -97,13 +99,14 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RoleRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
 		orgs:          orgs,
 		users:         uc,
 		keys:          keys,
+		roles:         roles,
 		idProvider:    idp,
 		loginDuration: duration,
 		adminEmail:    adminEmail,
@@ -776,6 +779,14 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 	}
 
 	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) SaveRole(ctx context.Context, id, role string) error {
+	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
 		return err
 	}
 

@@ -232,3 +232,12 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup a
 
 	return ms.svc.Restore(ctx, token, backup)
 }
+
+func (ms *metricsMiddleware) SaveRole(ctx context.Context, id, role string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "save_role").Add(1)
+		ms.latency.With("method", "save_role").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SaveRole(ctx, id, role)
+}

@@ -58,7 +58,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, idMockProvider, t, loginDuration, superAdminEmail)
+	return auth.New(orgRepo, tc, uc, keyRepo, nil, idMockProvider, t, loginDuration, superAdminEmail)
 }
 
 func createGroups() map[string]things.Group {

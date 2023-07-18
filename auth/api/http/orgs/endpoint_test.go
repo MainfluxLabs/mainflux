@@ -96,7 +96,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, groups)
 
-	return auth.New(repo, tc, uc, nil, idProvider, t, loginDuration, email)
+	return auth.New(repo, tc, uc, nil, nil, idProvider, t, loginDuration, email)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
