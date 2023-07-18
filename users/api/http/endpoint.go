@@ -16,7 +16,7 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.SelfRegister(ctx, req.role, req.user)
+		uid, err := svc.SelfRegister(ctx, req.user)
 		if err != nil {
 			return createUserRes{}, err
 		}
@@ -35,7 +35,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.Register(ctx, req.token, req.role, req.user)
+		uid, err := svc.Register(ctx, req.token, req.user)
 		if err != nil {
 			return createUserRes{}, err
 		}

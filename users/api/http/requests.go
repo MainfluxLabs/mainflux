@@ -23,7 +23,6 @@ func (req userReq) validate() error {
 }
 
 type selfRegisterUserReq struct {
-	role string
 	user users.User
 }
 
@@ -33,7 +32,6 @@ func (req selfRegisterUserReq) validate() error {
 
 type registerUserReq struct {
 	user  users.User
-	role  string
 	token string
 }
 
@@ -88,7 +86,6 @@ func (req listUsersReq) validate() error {
 
 type updateUserReq struct {
 	token    string
-	Role     string                 `json:"role,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -188,7 +185,6 @@ type restoreUserReq struct {
 	ID       string                 `json:"id"`
 	Email    string                 `json:"email"`
 	Password string                 `json:"password"`
-	Role     string                 `json:"role"`
 	Metadata map[string]interface{} `json:"metadata"`
 	Status   string
 }

@@ -231,7 +231,6 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 	user.Email = strings.TrimSpace(user.Email)
 	req := registerUserReq{
 		user:  user,
-		role:  users.GuestRole,
 		token: apiutil.ExtractBearerToken(r),
 	}
 
@@ -248,7 +247,7 @@ func decodeSelfRegisterUserReq(_ context.Context, r *http.Request) (interface{},
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return selfRegisterUserReq{user: user, role: users.GuestRole}, nil
+	return selfRegisterUserReq{user: user}, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {

@@ -43,6 +43,7 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 }
 
 func migrateDB(db *sqlx.DB) error {
+
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
@@ -89,18 +90,6 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS
 					status USER_STATUS NOT NULL DEFAULT 'enabled'`,
 				},
-			},
-			{
-				Id: "users_6",
-				Up: []string{
-					`CREATE TABLE IF NOT EXISTS users_roles (
-					 role VARCHAR(12) CHECK (role IN ('super_admin', 'admin', 'enterprise', 'startup', 'maker', 'guest')),
-				         user_id UUID NOT NULL,
-				         PRIMARY KEY (user_id),
-					 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE
-				    )`,
-				},
-				Down: []string{"DROP TABLE users_roles"},
 			},
 		},
 	}

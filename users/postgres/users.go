@@ -276,69 +276,12 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 	return nil
 }
 
-func (ur userRepository) SaveRole(ctx context.Context, id, role string) error {
-	q := `INSERT INTO users_roles (user_id, role) VALUES (:user_id, :role);`
-
-	dbur := toDBUsersRole(id, role)
-
-	if _, err := ur.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
-func (ur userRepository) RetrieveRole(ctx context.Context, id string) (string, error) {
-	q := `SELECT role FROM users_roles WHERE user_id = $1;`
-
-	dbur := dbUserRole{ID: id}
-
-	if err := ur.db.QueryRowxContext(ctx, q, id).StructScan(&dbur); err != nil {
-		if err == sql.ErrNoRows {
-			return "", errors.Wrap(errors.ErrNotFound, err)
-
-		}
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return dbur.Role, nil
-}
-
-func (ur userRepository) UpdateRole(ctx context.Context, id, role string) error {
-	q := `UPDATE users_roles SET role = :role WHERE user_id = :user_id;`
-
-	dbur := toDBUsersRole(id, role)
-
-	if _, err := ur.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
-func (ur userRepository) RemoveRole(ctx context.Context, id string) error {
-	q := `DELETE FROM users_roles WHERE user_id = :user_id;`
-
-	dbur := dbUserRole{ID: id}
-
-	if _, err := ur.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
-
-	return nil
-}
-
 type dbUser struct {
 	ID       string `db:"id"`
 	Email    string `db:"email"`
 	Password string `db:"password"`
 	Metadata []byte `db:"metadata"`
 	Status   string `db:"status"`
-}
-
-type dbUserRole struct {
-	ID   string `db:"user_id"`
-	Role string `db:"role"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {
@@ -358,13 +301,6 @@ func toDBUser(u users.User) (dbUser, error) {
 		Metadata: data,
 		Status:   u.Status,
 	}, nil
-}
-
-func toDBUsersRole(id, role string) dbUserRole {
-	return dbUserRole{
-		ID:   id,
-		Role: role,
-	}
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {

@@ -17,12 +17,6 @@ const (
 	EnabledStatusKey  = "enabled"
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
-	SuperAdminRole    = "super_admin"
-	AdminRole         = "admin"
-	EnterpriseRole    = "enterprise"
-	StartupRole       = "startup"
-	MakerRole         = "maker"
-	GuestRole         = "guest"
 )
 
 var (
@@ -52,12 +46,12 @@ type Service interface {
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
-	SelfRegister(ctx context.Context, role string, user User) (string, error)
+	SelfRegister(ctx context.Context, user User) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
-	Register(ctx context.Context, token, role string, user User) (string, error)
+	Register(ctx context.Context, token string, user User) (string, error)
 
 	// Login authenticates the user given its credentials. Successful
 	// authentication generates new access token. Failed invocations are
@@ -148,7 +142,7 @@ func New(users UserRepository, hasher Hasher, auth mainflux.AuthServiceClient, e
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, role string, user User) (string, error) {
+func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
@@ -171,15 +165,10 @@ func (svc usersService) SelfRegister(ctx context.Context, role string, user User
 	if err != nil {
 		return "", err
 	}
-
-	if err := svc.users.SaveRole(ctx, uid, role); err != nil {
-		return "", err
-	}
-
 	return uid, nil
 }
 
-func (svc usersService) Register(ctx context.Context, token, role string, user User) (string, error) {
+func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
 	if _, err := svc.identify(ctx, token); err != nil {
 		return "", err
 	}
@@ -218,11 +207,6 @@ func (svc usersService) Register(ctx context.Context, token, role string, user U
 	if err != nil {
 		return "", err
 	}
-
-	if err := svc.users.SaveRole(ctx, uid, role); err != nil {
-		return "", err
-	}
-
 	return uid, nil
 }
 
@@ -280,7 +264,7 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, user.id); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return UserPage{}, err
 	}
 
@@ -311,7 +295,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, err
 	}
 
-	if err := svc.authorize(ctx, user.id); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return User{}, []User{}, err
 	}
 
@@ -338,7 +322,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.authorize(ctx, user.id); err != nil {
+	if err := svc.authorize(ctx, user.email); err != nil {
 		return err
 	}
 
@@ -483,19 +467,6 @@ type userIdentity struct {
 	email string
 }
 
-func (svc usersService) authorize(ctx context.Context, id string) error {
-	role, err := svc.users.RetrieveRole(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if role != SuperAdminRole && role != AdminRole {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
-}
-
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
 	identity, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
@@ -503,4 +474,16 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	}
 
 	return userIdentity{identity.Id, identity.Email}, nil
+}
+
+func (svc usersService) authorize(ctx context.Context, email string) error {
+	req := &mainflux.AuthorizeReq{
+		Email: email,
+	}
+
+	if _, err := svc.auth.Authorize(ctx, req); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return nil
 }
