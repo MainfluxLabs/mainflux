@@ -7,7 +7,12 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-const saveRole = "save_role"
+const (
+	saveRole     = "save_role"
+	retrieveRole = "retrieve_role"
+	updateRole   = "update_role"
+	removeRole   = "remove_role"
+)
 
 var _ auth.RoleRepository = (*roleRepositoryMiddleware)(nil)
 
@@ -30,4 +35,28 @@ func (rrm roleRepositoryMiddleware) SaveRole(ctx context.Context, id, role strin
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rrm.repo.SaveRole(ctx, id, role)
+}
+
+func (rrm roleRepositoryMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
+	span := createSpan(ctx, rrm.tracer, retrieveRole)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rrm.repo.RetrieveRole(ctx, id)
+}
+
+func (rrm roleRepositoryMiddleware) UpdateRole(ctx context.Context, id, role string) error {
+	span := createSpan(ctx, rrm.tracer, updateRole)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rrm.repo.UpdateRole(ctx, id, role)
+}
+
+func (rrm roleRepositoryMiddleware) RemoveRole(ctx context.Context, id string) error {
+	span := createSpan(ctx, rrm.tracer, removeRole)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rrm.repo.RemoveRole(ctx, id)
 }
