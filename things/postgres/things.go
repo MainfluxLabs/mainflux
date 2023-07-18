@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/jackc/pgerrcode"
@@ -181,12 +182,12 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 		return things.Page{}, nil
 	}
 
-	nq, name := getNameQuery(pm.Name)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
 	idq := fmt.Sprintf("WHERE id IN ('%s') ", strings.Join(thingIDs, "','"))
 
-	m, mq, err := getMetadataQuery(pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -370,11 +371,11 @@ func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
 }
 
 func (tr thingRepository) retrieve(ctx context.Context, owner string, includeOwner bool, pm things.PageMetadata) (things.Page, error) {
-	ownq := getOwnerQuery(owner)
-	nq, name := getNameQuery(pm.Name)
+	ownq := dbutil.GetOwnerQuery(owner, ownerDbId)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
-	m, mq, err := getMetadataQuery(pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

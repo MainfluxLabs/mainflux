@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/jackc/pgerrcode"
@@ -138,7 +139,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	mq, mp, err := createMetadataQuery("", pm.Metadata)
+	mp, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -343,20 +344,6 @@ func createEmailQuery(entity string, email string) (string, string, error) {
 	// Create LIKE operator to search Users with email containing a given string
 	param := fmt.Sprintf(`%%%s%%`, email)
 	query := fmt.Sprintf("%semail LIKE :email", entity)
-
-	return query, param, nil
-}
-
-func createMetadataQuery(entity string, um users.Metadata) (string, []byte, error) {
-	if len(um) == 0 {
-		return "", nil, nil
-	}
-
-	param, err := json.Marshal(um)
-	if err != nil {
-		return "", nil, err
-	}
-	query := fmt.Sprintf("%smetadata @> :metadata", entity)
 
 	return query, param, nil
 }

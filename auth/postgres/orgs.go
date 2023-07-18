@@ -13,10 +13,13 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+const ownerDbId = "owner_id"
 
 var _ auth.OrgRepository = (*orgRepository)(nil)
 
@@ -178,7 +181,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 }
 
 func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
-	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
 	}
@@ -240,12 +243,12 @@ func toMember(dbmb dbMember) (auth.Member, error) {
 }
 
 func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	meta, mq, err := getOrgsMetadataQuery("o", pm.Metadata)
+	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
 	}
 
-	nq, name := getNameQuery(pm.Name)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 
 	if mq != "" {
 		mq = fmt.Sprintf("AND %s", mq)
@@ -526,7 +529,7 @@ func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 }
 
 func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
-	_, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.GroupRelationsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -653,9 +656,9 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 }
 
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	ownq := getOwnerQuery(ownerID)
-	nq, name := getNameQuery(pm.Name)
-	meta, mq, err := getOrgsMetadataQuery("orgs", pm.Metadata)
+	ownq := dbutil.GetOwnerQuery(ownerID, ownerDbId)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	meta, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -844,39 +847,6 @@ func toGroupRelation(gr dbGroupRelation) auth.GroupRelation {
 		CreatedAt: gr.CreatedAt,
 		UpdatedAt: gr.UpdatedAt,
 	}
-}
-
-func getOrgsMetadataQuery(db string, m auth.OrgMetadata) (mb []byte, mq string, err error) {
-	if len(m) > 0 {
-		mq = `metadata @> :metadata`
-		if db != "" {
-			mq = db + "." + mq
-		}
-
-		b, err := json.Marshal(m)
-		if err != nil {
-			return nil, "", errors.Wrap(err, errCreateMetadataQuery)
-		}
-		mb = b
-	}
-	return mb, mq, nil
-}
-
-func getNameQuery(name string) (string, string) {
-	if name == "" {
-		return "", ""
-	}
-
-	name = fmt.Sprintf(`%%%s%%`, strings.ToLower(name))
-	nq := `LOWER(name) LIKE :name`
-	return nq, name
-}
-
-func getOwnerQuery(owner string) string {
-	if owner == "" {
-		return ""
-	}
-	return "owner_id = :owner_id"
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
