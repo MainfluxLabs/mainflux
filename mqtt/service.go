@@ -79,7 +79,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 			return err
 		}
 
-		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Email: user.Email}); err == nil {
+		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token}); err == nil {
 			return nil
 		}
 

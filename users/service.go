@@ -259,12 +259,12 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
-	user, err := svc.identify(ctx, token)
+	_, err := svc.identify(ctx, token)
 	if err != nil {
 		return UserPage{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, token); err != nil {
 		return UserPage{}, err
 	}
 
@@ -295,7 +295,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, token); err != nil {
 		return User{}, []User{}, err
 	}
 
@@ -317,12 +317,12 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 }
 
 func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
-	user, err := svc.identify(ctx, token)
+	_, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.authorize(ctx, user.email); err != nil {
+	if err := svc.authorize(ctx, token); err != nil {
 		return err
 	}
 
@@ -476,9 +476,9 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	return userIdentity{identity.Id, identity.Email}, nil
 }
 
-func (svc usersService) authorize(ctx context.Context, email string) error {
+func (svc usersService) authorize(ctx context.Context, token string) error {
 	req := &mainflux.AuthorizeReq{
-		Email: email,
+		Token: token,
 	}
 
 	if _, err := svc.auth.Authorize(ctx, req); err != nil {

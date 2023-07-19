@@ -70,7 +70,7 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	if req.GetEmail() != "admin@example.com" {
+	if req.GetToken() != "token" {
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 

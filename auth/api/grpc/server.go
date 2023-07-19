@@ -154,7 +154,7 @@ func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.AuthorizeReq)
-	return authReq{Email: req.GetEmail()}, nil
+	return authReq{Token: req.GetToken()}, nil
 }
 
 func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

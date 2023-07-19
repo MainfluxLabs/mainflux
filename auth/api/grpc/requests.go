@@ -87,12 +87,12 @@ func (req membersReq) validate() error {
 }
 
 type authReq struct {
-	Email string
+	Token string
 }
 
 func (req authReq) validate() error {
-	if req.Email == "" {
-		return apiutil.ErrMissingEmail
+	if req.Token == "" {
+		return apiutil.ErrBearerToken
 	}
 
 	return nil

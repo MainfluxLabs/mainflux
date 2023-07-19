@@ -58,14 +58,14 @@ type Authn interface {
 // AuthReq represents an argument struct for making an authz related
 // function calls.
 type AuthzReq struct {
-	Email string
+	Token string
 }
 
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
 type Authz interface {
 	// Authorize indicates if user is admin.
-	Authorize(ctx context.Context, pr AuthzReq) error
+	Authorize(ctx context.Context, ar AuthzReq) error
 
 	// CanAccessGroup indicates if user can access group for a given token.
 	CanAccessGroup(ctx context.Context, token, groupID string) error
@@ -171,9 +171,14 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 	}
 }
 
-func (svc service) Authorize(ctx context.Context, pr AuthzReq) error {
-	if pr.Email != svc.adminEmail {
-		return errors.ErrAuthorization
+func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
+	user, err := svc.Identify(ctx, ar.Token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
+		return err
 	}
 
 	return nil
@@ -284,7 +289,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+		if err := svc.isAdmin(ctx, user.ID); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -694,7 +699,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -730,8 +735,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err != nil {
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
 		return Backup{}, err
 	}
 
@@ -765,8 +769,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err != nil {
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
 		return err
 	}
 
@@ -788,6 +791,19 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 func (svc service) SaveRole(ctx context.Context, id, role string) error {
 	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (svc service) isAdmin(ctx context.Context, id string) error {
+	role, err := svc.roles.RetrieveRole(ctx, id)
+	if err != nil {
+		return err
+	}
+	
+	if role != RoleAdmin && role != RoleRootAdmin {
+		return errors.ErrAuthorization
 	}
 
 	return nil
@@ -852,8 +868,7 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return nil
 	}
 

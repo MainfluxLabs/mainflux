@@ -55,10 +55,11 @@ func newService() auth.Service {
 	keyRepo := mocks.NewKeyRepository()
 	idMockProvider := uuid.NewMock()
 	orgRepo := mocks.NewOrgRepository()
+	roleRepo := mocks.NewRoleRepository()
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, nil, idMockProvider, t, loginDuration, superAdminEmail)
+	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, idMockProvider, t, loginDuration, superAdminEmail)
 }
 
 func createGroups() map[string]things.Group {
@@ -339,8 +340,14 @@ func TestIdentify(t *testing.T) {
 func TestAuthorize(t *testing.T) {
 	svc := newService()
 
-	pr := auth.AuthzReq{Email: superAdminEmail}
-	err := svc.Authorize(context.Background(), pr)
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.SaveRole(context.Background(), adminID, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
+	pr := auth.AuthzReq{Token: adminToken}
+	err = svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }
 
@@ -403,6 +410,9 @@ func TestListOrgs(t *testing.T) {
 		_, err := svc.CreateOrg(context.Background(), ownerToken, org)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	}
+
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
 		desc  string
@@ -662,6 +672,9 @@ func TestViewOrg(t *testing.T) {
 
 	err = svc.AssignMembers(context.Background(), ownerToken, or.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	orgRes := auth.Org{
 		ID:          or.ID,
@@ -1043,6 +1056,9 @@ func TestListOrgMembers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	var n uint64 = 4
 
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		token string
@@ -1398,6 +1414,9 @@ func TestListOrgGroups(t *testing.T) {
 	err = svc.AssignGroups(context.Background(), ownerToken, or.ID, grIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		token string
@@ -1556,6 +1575,9 @@ func TestListOrgMemberships(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	}
 
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
 	cases := []struct {
 		desc     string
 		token    string
@@ -1699,6 +1721,9 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignGroups(context.Background(), ownerToken, or.ID, grIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
 	cases := []struct {
 		desc                string
 		token               string
@@ -1760,6 +1785,9 @@ func TestRestore(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.SaveRole(context.Background(), superAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	var memberIDs []string
 	var groupIDs []string

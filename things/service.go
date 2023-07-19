@@ -262,7 +262,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
+	if err := ts.authorize(ctx, token); err == nil {
 		return thing, nil
 	}
 
@@ -292,7 +292,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, res.Email); err == nil {
+		if err := ts.authorize(ctx, token); err == nil {
 			return ts.things.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -393,7 +393,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
+	if err := ts.authorize(ctx, token); err == nil {
 		return channel, nil
 	}
 
@@ -411,7 +411,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, admin b
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, res.Email); err == nil {
+		if err := ts.authorize(ctx, token); err == nil {
 			return ts.channels.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -430,7 +430,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, err
 	}
 
-	if err := ts.authorize(ctx, res.Email); err == nil {
+	if err := ts.authorize(ctx, token); err == nil {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 	}
 
@@ -586,12 +586,12 @@ func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) 
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Backup{}, err
 	}
 
-	if err := ts.authorize(ctx, user.Email); err != nil {
+	if err := ts.authorize(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -630,12 +630,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
 	}
 
-	if err := ts.authorize(ctx, user.Email); err != nil {
+	if err := ts.authorize(ctx, token); err != nil {
 		return err
 	}
 
@@ -706,7 +706,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, user.Email); err == nil {
+		if err := ts.authorize(ctx, token); err == nil {
 			return ts.groups.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -807,9 +807,9 @@ func (ts *thingsService) ListMemberships(ctx context.Context, token string, memb
 	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (ts *thingsService) authorize(ctx context.Context, email string) error {
+func (ts *thingsService) authorize(ctx context.Context, token string) error {
 	req := &mainflux.AuthorizeReq{
-		Email: email,
+		Token: token,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
