@@ -1542,8 +1542,8 @@ func TestBackup(t *testing.T) {
 	svc := newService()
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	// _, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
-	// assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	ts := newServer(svc)
 	defer ts.Close()
@@ -1617,24 +1617,24 @@ func TestBackup(t *testing.T) {
 		res    backupRes
 		status int
 	}{
-		// {
-		// 	desc:   "restore from backup with invalid auth token",
-		// 	token:  wrongValue,
-		// 	res:    backupRes{},
-		// 	status: http.StatusUnauthorized,
-		// },
-		// {
-		// 	desc:   "restore from backup without auth token",
-		// 	token:  "",
-		// 	res:    backupRes{},
-		// 	status: http.StatusUnauthorized,
-		// },
-		// {
-		// 	desc:   "restore from backup with unauthorized credentials",
-		// 	token:  viewerToken,
-		// 	res:    backupRes{},
-		// 	status: http.StatusForbidden,
-		// },
+		{
+			desc:   "restore from backup with invalid auth token",
+			token:  wrongValue,
+			res:    backupRes{},
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "restore from backup without auth token",
+			token:  "",
+			res:    backupRes{},
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "restore from backup with unauthorized credentials",
+			token:  viewerToken,
+			res:    backupRes{},
+			status: http.StatusForbidden,
+		},
 		{
 			desc:   "restore from backup",
 			token:  adminToken,
