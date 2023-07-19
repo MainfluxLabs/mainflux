@@ -7,18 +7,18 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 )
 
-type roleRepositoryMock struct {
+type rolesRepositoryMock struct {
 	mu    sync.Mutex
 	roles map[string]string
 }
 
-func NewRoleRepository() auth.RoleRepository {
-	return &roleRepositoryMock{
+func NewRolesRepository() auth.RolesRepository {
+	return &rolesRepositoryMock{
 		roles: make(map[string]string),
 	}
 }
 
-func (rrm *roleRepositoryMock) SaveRole(ctx context.Context, id, role string) error {
+func (rrm *rolesRepositoryMock) SaveRole(ctx context.Context, id, role string) error {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
@@ -27,7 +27,7 @@ func (rrm *roleRepositoryMock) SaveRole(ctx context.Context, id, role string) er
 	return nil
 }
 
-func (rrm *roleRepositoryMock) RetrieveRole(ctx context.Context, id string) (string, error) {
+func (rrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, id string) (string, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
@@ -38,10 +38,10 @@ func (rrm *roleRepositoryMock) RetrieveRole(ctx context.Context, id string) (str
 	return "", nil
 }
 
-func (rrm *roleRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
+func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
 	panic("not implemented")
 }
 
-func (rrm *roleRepositoryMock) RemoveRole(ctx context.Context, id string) error {
+func (rrm *rolesRepositoryMock) RemoveRole(ctx context.Context, id string) error {
 	panic("not implemented")
 }

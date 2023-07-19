@@ -115,12 +115,12 @@ func (req accessGroupReq) validate() error {
 	return nil
 }
 
-type saveRoleReq struct {
+type assignRoleReq struct {
 	ID   string
 	Role string
 }
 
-func (req saveRoleReq) validate() error {
+func (req assignRoleReq) validate() error {
 	if req.Role == "" {
 		return errMissingRole
 	}

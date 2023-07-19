@@ -27,7 +27,7 @@ type grpcServer struct {
 	canAccessGroup kitgrpc.Handler
 	assign         kitgrpc.Handler
 	members        kitgrpc.Handler
-	saveRole       kitgrpc.Handler
+	assignRole     kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -63,9 +63,9 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			decodeMembersRequest,
 			encodeMembersResponse,
 		),
-		saveRole: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "save_role")(saveRoleEndpoint(svc)),
-			decodeSaveRoleRequest,
+		assignRole: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "create_role")(saveRoleEndpoint(svc)),
+			decodeAssignRoleRequest,
 			encodeEmptyResponse,
 		),
 	}
@@ -119,17 +119,17 @@ func (s *grpcServer) Members(ctx context.Context, req *mainflux.MembersReq) (*ma
 	return res.(*mainflux.MembersRes), nil
 }
 
-func (s *grpcServer) SaveRole(ctx context.Context, req *mainflux.SaveRoleReq) (*empty.Empty, error) {
-	_, res, err := s.saveRole.ServeGRPC(ctx, req)
+func (s *grpcServer) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq) (*empty.Empty, error) {
+	_, res, err := s.assignRole.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 	return res.(*empty.Empty), nil
 }
 
-func decodeSaveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.SaveRoleReq)
-	return saveRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
+func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.AssignRoleReq)
+	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
 }
 
 func decodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

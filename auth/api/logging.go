@@ -328,7 +328,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup a
 	return lm.svc.Restore(ctx, token, backup)
 }
 
-func (lm *loggingMiddleware) SaveRole(ctx context.Context, id, role string) (err error) {
+func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method save_role for id %s and role %s took %s to complete", id, role, time.Since(begin))
 		if err != nil {
@@ -337,5 +337,5 @@ func (lm *loggingMiddleware) SaveRole(ctx context.Context, id, role string) (err
 		}
 	}(time.Now())
 
-	return lm.svc.SaveRole(ctx, id, role)
+	return lm.svc.AssignRole(ctx, id, role)
 }

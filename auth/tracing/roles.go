@@ -14,22 +14,22 @@ const (
 	removeRole   = "remove_role"
 )
 
-var _ auth.RoleRepository = (*roleRepositoryMiddleware)(nil)
+var _ auth.RolesRepository = (*rolesRepositoryMiddleware)(nil)
 
-type roleRepositoryMiddleware struct {
+type rolesRepositoryMiddleware struct {
 	tracer opentracing.Tracer
-	repo   auth.RoleRepository
+	repo   auth.RolesRepository
 }
 
 // OrgRepositoryMiddleware tracks request and their latency, and adds spans to context.
-func RoleRepositoryMiddleware(tracer opentracing.Tracer, rr auth.RoleRepository) auth.RoleRepository {
-	return roleRepositoryMiddleware{
+func RolesRepositoryMiddleware(tracer opentracing.Tracer, rr auth.RolesRepository) auth.RolesRepository {
+	return rolesRepositoryMiddleware{
 		tracer: tracer,
 		repo:   rr,
 	}
 }
 
-func (rrm roleRepositoryMiddleware) SaveRole(ctx context.Context, id, role string) error {
+func (rrm rolesRepositoryMiddleware) SaveRole(ctx context.Context, id, role string) error {
 	span := createSpan(ctx, rrm.tracer, saveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -37,7 +37,7 @@ func (rrm roleRepositoryMiddleware) SaveRole(ctx context.Context, id, role strin
 	return rrm.repo.SaveRole(ctx, id, role)
 }
 
-func (rrm roleRepositoryMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
+func (rrm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
 	span := createSpan(ctx, rrm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -45,7 +45,7 @@ func (rrm roleRepositoryMiddleware) RetrieveRole(ctx context.Context, id string)
 	return rrm.repo.RetrieveRole(ctx, id)
 }
 
-func (rrm roleRepositoryMiddleware) UpdateRole(ctx context.Context, id, role string) error {
+func (rrm rolesRepositoryMiddleware) UpdateRole(ctx context.Context, id, role string) error {
 	span := createSpan(ctx, rrm.tracer, updateRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -53,7 +53,7 @@ func (rrm roleRepositoryMiddleware) UpdateRole(ctx context.Context, id, role str
 	return rrm.repo.UpdateRole(ctx, id, role)
 }
 
-func (rrm roleRepositoryMiddleware) RemoveRole(ctx context.Context, id string) error {
+func (rrm rolesRepositoryMiddleware) RemoveRole(ctx context.Context, id string) error {
 	span := createSpan(ctx, rrm.tracer, removeRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -72,13 +72,13 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func saveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(saveRoleReq)
+		req := request.(assignRoleReq)
 
 		if err := req.validate(); err != nil {
 			return emptyRes{}, err
 		}
 
-		err := svc.SaveRole(ctx, req.ID, req.Role)
+		err := svc.AssignRole(ctx, req.ID, req.Role)
 		if err != nil {
 			return emptyRes{}, err
 		}

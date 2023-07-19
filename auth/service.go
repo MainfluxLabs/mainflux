@@ -81,7 +81,7 @@ type Service interface {
 
 	// OrgService implements orgs API, creating orgs, assigning members and groups
 	OrgService
-	RoleService
+	RolesService
 }
 
 var _ Service = (*service)(nil)
@@ -91,15 +91,14 @@ type service struct {
 	users         mainflux.UsersServiceClient
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
-	roles         RoleRepository
+	roles         RolesRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
-	adminEmail    string
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RoleRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -109,7 +108,6 @@ func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 		roles:         roles,
 		idProvider:    idp,
 		loginDuration: duration,
-		adminEmail:    adminEmail,
 	}
 }
 
@@ -788,7 +786,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 	return nil
 }
 
-func (svc service) SaveRole(ctx context.Context, id, role string) error {
+func (svc service) AssignRole(ctx context.Context, id, role string) error {
 	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
 		return err
 	}
@@ -801,7 +799,7 @@ func (svc service) isAdmin(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if role != RoleAdmin && role != RoleRootAdmin {
 		return errors.ErrAuthorization
 	}

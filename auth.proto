@@ -27,7 +27,7 @@ service AuthService {
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Assign(Assignment) returns (google.protobuf.Empty) {}
     rpc Members(MembersReq) returns (MembersRes) {}
-    rpc SaveRole(SaveRoleReq) returns (google.protobuf.Empty) {}
+    rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
 }
 
 message AccessByKeyReq {
@@ -139,7 +139,7 @@ message GroupsRes {
     repeated Group groups = 1;
 }
 
-message SaveRoleReq {
+message AssignRoleReq {
     string id = 1;
     string role = 2;
 }

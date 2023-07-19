@@ -3,19 +3,18 @@ package auth
 import "context"
 
 const (
+	// RoleRootAdmin is the super admin role.
+	RoleRootAdmin = "root_admin"
 	// RoleAdmin is the admin role.
 	RoleAdmin = "admin"
-
-	// RoleSuperAdmin is the super admin role.
-	RoleRootAdmin = "root_admin"
 )
 
-type RoleService interface {
-	// SaveRole saves the user role.
-	SaveRole(ctx context.Context, id, role string) error
+type RolesService interface {
+	// AssignRole assigns the user role.
+	AssignRole(ctx context.Context, id, role string) error
 }
 
-type RoleRepository interface {
+type RolesRepository interface {
 	// SaveRole saves the user role.
 	SaveRole(ctx context.Context, id, role string) error
 	// RetrieveRole retrieves the user role.

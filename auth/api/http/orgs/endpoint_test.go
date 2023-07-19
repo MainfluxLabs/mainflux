@@ -90,14 +90,14 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	orgRepo := mocks.NewOrgRepository()
-	roleRepo := mocks.NewRoleRepository()
+	orgsRepo := mocks.NewOrgRepository()
+	rolesRepo := mocks.NewRolesRepository()
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsService(nil, groups)
 
-	return auth.New(orgRepo, tc, uc, nil, roleRepo, idProvider, t, loginDuration, email)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
@@ -727,7 +727,7 @@ func TestListMemberships(t *testing.T) {
 			desc:   "list memberships with invalid member id",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
-			status: http.StatusOK,
+			status: http.StatusForbidden,
 			res:    nil,
 		},
 		{
@@ -1566,7 +1566,7 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.SaveRole(context.Background(), adminToken, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	or := []orgRes{
@@ -1673,7 +1673,8 @@ func TestRestore(t *testing.T) {
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-
+	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()

@@ -378,12 +378,12 @@ func RegisterAdmin(userRepo users.UserRepository, ac mainflux.AuthServiceClient,
 		return err
 	}
 
-	req := mainflux.SaveRoleReq{
+	req := mainflux.AssignRoleReq{
 		Id:   u.ID,
 		Role: auth.RoleRootAdmin,
 	}
 
-	_, err = ac.SaveRole(context.Background(), &req)
+	_, err = ac.AssignRole(context.Background(), &req)
 	if err != nil {
 		return err
 	}
