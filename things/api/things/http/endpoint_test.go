@@ -40,7 +40,6 @@ const (
 	ascKey      = "asc"
 	descKey     = "desc"
 	prefix      = "fe6b4e92-cc98-425e-b0aa-"
-	adminID     = prefix + "000000000001"
 	n           = 101
 	noLimit     = -1
 )

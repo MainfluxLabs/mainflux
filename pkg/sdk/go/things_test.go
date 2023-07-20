@@ -32,7 +32,6 @@ const (
 	badID       = "999"
 	badKey      = "999"
 	emptyValue  = ""
-	adminID     = "1"
 )
 
 var (
