@@ -16,11 +16,14 @@ var _ mainflux.AuthServiceClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
 	users map[string]string
+	authz map[string]string
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(users map[string]string) mainflux.AuthServiceClient {
-	return &authServiceMock{users}
+func NewAuthService(adminID string, users map[string]string) mainflux.AuthServiceClient {
+	authz := make(map[string]string)
+	authz["root_admin"] = adminID
+	return &authServiceMock{users, authz}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
@@ -41,11 +44,20 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	if req.GetToken() != "token" {
-		return &empty.Empty{}, errors.ErrAuthorization
+	u, ok := svc.users[req.Token]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	return &empty.Empty{}, nil
+	if req.GetToken() == "token" {
+		return &empty.Empty{}, nil
+	}
+
+	if svc.authz["root_admin"] != u {
+		return &empty.Empty{}, nil
+	}
+
+	return &empty.Empty{}, errors.ErrAuthorization
 }
 
 func (svc authServiceMock) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {

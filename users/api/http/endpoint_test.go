@@ -87,7 +87,7 @@ func newService() users.Service {
 	usersRepo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 
-	auth := mocks.NewAuthService(map[string]users.User{admin.Email: admin})
+	auth := mocks.NewAuthService(admin.ID, map[string]users.User{admin.Email: admin})
 	email := mocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
@@ -204,7 +204,7 @@ func TestLogin(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService(map[string]users.User{})
+	auth := mocks.NewAuthService("", map[string]users.User{})
 
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
@@ -270,7 +270,7 @@ func TestUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService(map[string]users.User{})
+	auth := mocks.NewAuthService("", map[string]users.User{})
 
 	userID, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
@@ -534,7 +534,7 @@ func TestPasswordReset(t *testing.T) {
 		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
-	auth := mocks.NewAuthService(map[string]users.User{})
+	auth := mocks.NewAuthService("", map[string]users.User{})
 
 	id, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("register user got unexpected error: %s", err))
@@ -605,7 +605,7 @@ func TestPasswordChange(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService(map[string]users.User{})
+	auth := mocks.NewAuthService("", map[string]users.User{})
 
 	reqData := struct {
 		Token    string `json:"token,omitempty"`

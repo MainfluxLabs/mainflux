@@ -66,7 +66,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+	auth := mocks.NewAuthService("",tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

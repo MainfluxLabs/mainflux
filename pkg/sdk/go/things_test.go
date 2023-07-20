@@ -32,6 +32,7 @@ const (
 	badID       = "999"
 	badKey      = "999"
 	emptyValue  = ""
+	adminID     = "1"
 )
 
 var (
@@ -43,7 +44,7 @@ var (
 )
 
 func newThingsService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+	auth := mocks.NewAuthService(adminID, tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

@@ -60,9 +60,9 @@ const (
 )
 
 func newService(tokens map[string]string) (certs.Service, error) {
-	ac := thmocks.NewAuthService(map[string]string{token: email})
+	ac := thmocks.NewAuthService("", map[string]string{token: email})
 	server := newThingsServer(newThingsService(ac))
-	auth := thmocks.NewAuthService(tokens)
+	auth := thmocks.NewAuthService("", tokens)
 
 	config := mfsdk.Config{
 		ThingsURL: server.URL,

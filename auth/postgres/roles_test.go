@@ -17,7 +17,7 @@ const (
 	invalid  = "invalid"
 )
 
-func TestAssignRole(t *testing.T) {
+func TestSaveRole(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
@@ -74,7 +74,7 @@ func TestAssignRole(t *testing.T) {
 	}
 }
 
-func TestGetRole(t *testing.T) {
+func TestRetrieve(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
@@ -125,7 +125,7 @@ func TestUpdateRole(t *testing.T) {
 
 	userID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	
+
 	err = repo.SaveRole(context.Background(), userID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 

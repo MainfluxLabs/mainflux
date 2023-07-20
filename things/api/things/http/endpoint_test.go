@@ -40,6 +40,7 @@ const (
 	ascKey      = "asc"
 	descKey     = "desc"
 	prefix      = "fe6b4e92-cc98-425e-b0aa-"
+	adminID     = prefix + "000000000001"
 	n           = 101
 	noLimit     = -1
 )
@@ -87,7 +88,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+	auth := mocks.NewAuthService(adminID, tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

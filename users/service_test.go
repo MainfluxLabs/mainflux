@@ -41,7 +41,7 @@ func newService() users.Service {
 	hasher := mocks.NewHasher()
 
 	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
-	authSvc := mocks.NewAuthService(mockUsers)
+	authSvc := mocks.NewAuthService(userAdmin.ID, mockUsers)
 	e := mocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
@@ -225,7 +225,7 @@ func TestListUsers(t *testing.T) {
 	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	page, err := svc.ListUsers(context.Background(), "token", users.PageMetadata{})
+	page, err := svc.ListUsers(context.Background(), token, users.PageMetadata{})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	totUser := page.Total
@@ -242,7 +242,6 @@ func TestListUsers(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	totUser = totUser + nUsers
-
 
 	cases := map[string]struct {
 		token  string
@@ -273,7 +272,7 @@ func TestListUsers(t *testing.T) {
 			err:   errors.ErrAuthorization,
 		},
 		"list users with offset and limit": {
-			token:  "token",
+			token:  token,
 			offset: 1,
 			limit:  totUser,
 			size:   totUser - 1,
@@ -398,7 +397,7 @@ func TestResetPassword(t *testing.T) {
 	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user})
+	authSvc := mocks.NewAuthService("", map[string]users.User{user.Email: user})
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
