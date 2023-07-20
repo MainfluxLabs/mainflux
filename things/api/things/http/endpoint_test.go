@@ -88,7 +88,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(adminID, tokens)
+	auth := mocks.NewAuthService(tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

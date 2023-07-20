@@ -27,7 +27,7 @@ const (
 
 func newService() notifiers.Service {
 	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
-	auth := thmocks.NewAuthService("", map[string]string{exampleUser1: exampleUser1, exampleUser2: exampleUser2, invalidUser: invalidUser})
+	auth := thmocks.NewAuthService(map[string]string{exampleUser1: exampleUser1, exampleUser2: exampleUser2, invalidUser: invalidUser})
 	notifier := mocks.NewNotifier()
 	idp := uuid.NewMock()
 	from := "exampleFrom"

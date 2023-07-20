@@ -208,7 +208,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestAdd(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -333,7 +333,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -430,7 +430,7 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -524,7 +524,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 func TestUpdateCert(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -619,7 +619,7 @@ func TestUpdateCert(t *testing.T) {
 }
 
 func TestUpdateConnections(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -732,7 +732,7 @@ func TestList(t *testing.T) {
 	var active, inactive []config
 	list := make([]config, configNum)
 
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -975,7 +975,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -1037,7 +1037,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestBootstrap(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
@@ -1165,7 +1165,7 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestChangeState(t *testing.T) {
-	auth := thmocks.NewAuthService("", map[string]string{validToken: email})
+	auth := thmocks.NewAuthService(map[string]string{validToken: email})
 
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)

@@ -44,7 +44,7 @@ var (
 )
 
 func newThingsService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(adminID, tokens)
+	auth := mocks.NewAuthService(tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

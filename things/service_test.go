@@ -29,7 +29,6 @@ const (
 	token2     = "token2"
 	n          = uint64(102)
 	prefix     = "fe6b4e92-cc98-425e-b0aa-"
-	adminID    = prefix + "000000000001"
 )
 
 var (
@@ -41,7 +40,7 @@ var (
 )
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(adminID, tokens)
+	auth := mocks.NewAuthService(tokens)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
@@ -1515,7 +1514,7 @@ func TestBackup(t *testing.T) {
 }
 
 func TestRestore(t *testing.T) {
-	svc := newService(map[string]string{token: adminID})
+	svc := newService(map[string]string{token: adminEmail})
 	idProvider := uuid.New()
 
 	thkey, err := idProvider.ID()

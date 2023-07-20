@@ -68,7 +68,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService(tokens map[string]string) notifiers.Service {
-	auth := thmocks.NewAuthService("", tokens)
+	auth := thmocks.NewAuthService(tokens)
 	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
 	idp := uuid.NewMock()
 	notif := mocks.NewNotifier()
