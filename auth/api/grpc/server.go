@@ -64,7 +64,7 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			encodeMembersResponse,
 		),
 		assignRole: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "create_role")(saveRoleEndpoint(svc)),
+			kitot.TraceServer(tracer, "assign_role")(assignRoleEndpoint(svc)),
 			decodeAssignRoleRequest,
 			encodeEmptyResponse,
 		),

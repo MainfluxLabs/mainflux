@@ -70,7 +70,7 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func saveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(assignRoleReq)
 
