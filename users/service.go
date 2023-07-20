@@ -53,6 +53,11 @@ type Service interface {
 	// for admin.
 	Register(ctx context.Context, token string, user User) (string, error)
 
+	// RegisterAdmin creates new root admin account. In case of the failed registration, a
+	// non-nil error value is returned. The user registration is only allowed
+	// for root admin.
+	RegisterAdmin(ctx context.Context, user User) error
+
 	// Login authenticates the user given its credentials. Successful
 	// authentication generates new access token. Failed invocations are
 	// identified by the non-nil error values in the response.
@@ -166,6 +171,47 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 		return "", err
 	}
 	return uid, nil
+}
+
+func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
+	if _, err := svc.users.RetrieveByEmail(context.Background(), user.Email); err == nil {
+		return nil
+	}
+
+	if !svc.passRegex.MatchString(user.Password) {
+		return ErrPasswordFormat
+	}
+
+	uid, err := svc.idProvider.ID()
+	if err != nil {
+		return err
+	}
+	user.ID = uid
+
+	hash, err := svc.hasher.Hash(user.Password)
+	if err != nil {
+		return errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	user.Password = hash
+
+	user.Status = EnabledStatusKey
+
+	_, err = svc.users.Save(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	req := mainflux.AssignRoleReq{
+		Id:   user.ID,
+		Role: auth.RoleRootAdmin,
+	}
+
+	_, err = svc.auth.AssignRole(ctx, &req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {

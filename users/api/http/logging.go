@@ -40,6 +40,20 @@ func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User) 
 	return lm.svc.SelfRegister(ctx, user)
 }
 
+func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method register_admin for user %s took %s to complete", user.Email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+
+	}(time.Now())
+
+	return lm.svc.RegisterAdmin(ctx, user)
+}
+
 func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (uid string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method register for user %s took %s to complete", user.Email, time.Since(begin))

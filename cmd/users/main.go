@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -341,38 +340,21 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	if err := createAdmin(svc, userRepo, ac, c); err != nil {
-		logger.Error("failed to create admin user: " + err.Error())
+	if err := createAdmin(svc, c); err != nil {
+		logger.Error("failed to create root_admin user: " + err.Error())
 		os.Exit(1)
 	}
 
 	return svc
 }
 
-func createAdmin(svc users.Service, userRepo users.UserRepository, ac mainflux.AuthServiceClient, c config) error {
+func createAdmin(svc users.Service, c config) error {
 	user := users.User{
 		Email:    c.adminEmail,
 		Password: c.adminPassword,
 	}
 
-	if _, err := userRepo.RetrieveByEmail(context.Background(), user.Email); err == nil {
-		return nil
-	}
-
-	// Create an admin
-	_, err := svc.SelfRegister(context.Background(), user)
-	if err != nil {
-		return err
-	}
-
-	req := mainflux.AssignRoleReq{
-		Id:   user.ID,
-		Role: auth.RoleRootAdmin,
-	}
-
-	// Assign root_admin role
-	_, err = ac.AssignRole(context.Background(), &req)
-	if err != nil {
+	if err := svc.RegisterAdmin(context.Background(), user); err != nil {
 		return err
 	}
 

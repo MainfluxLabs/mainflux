@@ -39,6 +39,15 @@ func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User) 
 	return ms.svc.SelfRegister(ctx, user)
 }
 
+func (ms *metricsMiddleware) RegisterAdmin(ctx context.Context, user users.User) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "register_admin").Add(1)
+		ms.latency.With("method", "register_admin").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RegisterAdmin(ctx, user)
+}
+
 func (ms *metricsMiddleware) Register(ctx context.Context, token string, user users.User) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "register").Add(1)
