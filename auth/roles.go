@@ -9,11 +9,6 @@ const (
 	RoleAdmin = "admin"
 )
 
-type RolesService interface {
-	// AssignRole assigns the user role.
-	AssignRole(ctx context.Context, id, role string) error
-}
-
 type RolesRepository interface {
 	// SaveRole saves the user role.
 	SaveRole(ctx context.Context, id, role string) error

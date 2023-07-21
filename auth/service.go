@@ -35,6 +35,11 @@ var (
 	errUnknownSubject = errors.New("unknown subject")
 )
 
+type Roles interface {
+	// AssignRole assigns a role to a user.
+	AssignRole(ctx context.Context, id, role string) error
+}
+
 // Authn specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // Token is a string value of the actual Key and is used to authenticate
@@ -57,8 +62,7 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
-// AuthReq represents an argument struct for making an authz related
-// function calls.
+// AuthzReq represents an argument struct for making an authz related function calls.
 type AuthzReq struct {
 	Token   string
 	Object  string
@@ -83,10 +87,9 @@ type Authz interface {
 type Service interface {
 	Authn
 	Authz
-
+	Roles
 	// OrgService implements orgs API, creating orgs, assigning members and groups
 	OrgService
-	RolesService
 }
 
 var _ Service = (*service)(nil)
@@ -273,7 +276,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.Authorize(ctx, AuthzReq{Subject: rootSubject, Token: token, Action: "1"}); err == nil {
+		if err := svc.Authorize(ctx, AuthzReq{Subject: rootSubject, Token: token, Action: ""}); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
