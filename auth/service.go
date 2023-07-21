@@ -88,8 +88,7 @@ type Service interface {
 	Authn
 	Authz
 	Roles
-	// OrgService implements orgs API, creating orgs, assigning members and groups
-	OrgsService
+	Orgs
 }
 
 var _ Service = (*service)(nil)
