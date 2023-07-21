@@ -122,9 +122,9 @@ type Backup struct {
 	GroupRelations  []GroupRelation
 }
 
-// OrgService specifies an API that must be fullfiled by the domain service
+// OrgsService specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
-type OrgService interface {
+type OrgsService interface {
 	// CreateOrg creates new org.
 	CreateOrg(ctx context.Context, token string, org Org) (Org, error)
 

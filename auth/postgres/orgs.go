@@ -28,9 +28,8 @@ type orgRepository struct {
 }
 
 var (
-	errCreateMetadataQuery = errors.New("failed to create query for metadata")
-	errGetTotal            = errors.New("failed to get total number of groups")
-	membersIDFkey          = "member_relations_org_id_fkey"
+	errGetTotal   = errors.New("failed to get total number of groups")
+	membersIDFkey = "member_relations_org_id_fkey"
 )
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
