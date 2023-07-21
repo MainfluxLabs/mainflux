@@ -72,7 +72,10 @@ message IssueReq {
 }
 
 message AuthorizeReq {
-    string token = 1;
+    string token   = 1;
+    string object  = 2;
+    string subject = 3;
+    string action  = 4;
 }
 
 message AuthorizeRes {

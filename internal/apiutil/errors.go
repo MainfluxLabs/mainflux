@@ -18,6 +18,9 @@ var (
 	// ErrMissingID indicates missing entity ID.
 	ErrMissingID = errors.New("missing entity id")
 
+	// ErrMissingRole indicates missing role.
+	ErrMissingRole = errors.New("missing role")
+
 	// ErrInvalidAuthKey indicates invalid auth key.
 	ErrInvalidAuthKey = errors.New("invalid auth key")
 

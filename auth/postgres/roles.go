@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -14,8 +13,7 @@ type rolesRepository struct {
 	db Database
 }
 
-// NewRolesRepo instantiates a PostgreSQL implementation of roles
-// repository.
+// NewRolesRepo instantiates a PostgreSQL implementation of roles repository.
 func NewRolesRepo(db Database) auth.RolesRepository {
 	return &rolesRepository{
 		db: db,
@@ -35,19 +33,24 @@ func (rr rolesRepository) SaveRole(ctx context.Context, userID, role string) err
 }
 
 func (rr rolesRepository) RetrieveRole(ctx context.Context, userID string) (string, error) {
-	q := `SELECT role FROM users_roles WHERE user_id = $1;`
+	q := `SELECT role FROM users_roles WHERE user_id = :user_id;`
 
-	dbur := dbUserRole{UserID: userID}
+	params := map[string]interface{}{"user_id": userID}
 
-	if err := rr.db.QueryRowxContext(ctx, q, userID).StructScan(&dbur); err != nil {
-		if err == sql.ErrNoRows {
-			return "", errors.Wrap(errors.ErrNotFound, err)
-
-		}
+	rows, err := rr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
 		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
+	defer rows.Close()
 
-	return dbur.Role, nil
+	var role string
+	for rows.Next() {
+		if err := rows.Scan(&role); err != nil {
+			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+	}
+
+	return role, nil
 }
 
 func (rr rolesRepository) UpdateRole(ctx context.Context, userID, role string) error {

@@ -17,6 +17,7 @@ const (
 	AdminRole        = "admin"
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
+	rootSubject      = "root"
 )
 
 var (
@@ -26,11 +27,12 @@ var (
 	// ErrFailedToRetrieveMembership failed to retrieve memberships
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
 
-	errIssueUser = errors.New("failed to issue new login key")
-	errIssueTmp  = errors.New("failed to issue new temporary key")
-	errRevoke    = errors.New("failed to remove key")
-	errRetrieve  = errors.New("failed to retrieve key data")
-	errIdentify  = errors.New("failed to validate token")
+	errIssueUser      = errors.New("failed to issue new login key")
+	errIssueTmp       = errors.New("failed to issue new temporary key")
+	errRevoke         = errors.New("failed to remove key")
+	errRetrieve       = errors.New("failed to retrieve key data")
+	errIdentify       = errors.New("failed to validate token")
+	errUnknownSubject = errors.New("unknown subject")
 )
 
 // Authn specifies an API that must be fullfiled by the domain service
@@ -58,7 +60,10 @@ type Authn interface {
 // AuthReq represents an argument struct for making an authz related
 // function calls.
 type AuthzReq struct {
-	Token string
+	Token   string
+	Object  string
+	Subject string
+	Action  string
 }
 
 // Authz represents a authorization service. It exposes
@@ -146,40 +151,21 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 }
 
 func (svc service) Identify(ctx context.Context, token string) (Identity, error) {
-	key, err := svc.tokenizer.Parse(token)
-	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
-		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
-	}
-	if err != nil {
-		return Identity{}, errors.Wrap(errIdentify, err)
-	}
-
-	switch key.Type {
-	case RecoveryKey, LoginKey:
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
-	case APIKey:
-		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
-		if err != nil {
-			return Identity{}, errors.ErrAuthentication
-		}
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
-	default:
-		return Identity{}, errors.ErrAuthentication
-	}
+	return svc.identify(ctx, token)
 }
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
-	user, err := svc.Identify(ctx, ar.Token)
+	user, err := svc.identify(ctx, ar.Token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.isAdmin(ctx, user.ID); err != nil {
-		return err
+	switch ar.Subject {
+	case rootSubject:
+		return svc.rootSubject(ctx, user.ID)
+	default:
+		return errUnknownSubject
 	}
-
-	return nil
 }
 
 func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) {
@@ -287,7 +273,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.isAdmin(ctx, user.ID); err == nil {
+		if err := svc.Authorize(ctx, AuthzReq{Subject: rootSubject, Token: token, Action: "1"}); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -808,6 +794,10 @@ func (svc service) isAdmin(ctx context.Context, id string) error {
 	return nil
 }
 
+func (svc service) rootSubject(ctx context.Context, userID string) error {
+	return svc.isAdmin(ctx, userID)
+}
+
 func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
@@ -881,4 +871,28 @@ func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity
 	}
 
 	return nil
+}
+
+func (svc service) identify(ctx context.Context, token string) (Identity, error) {
+	key, err := svc.tokenizer.Parse(token)
+	if err == ErrAPIKeyExpired {
+		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
+		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+	}
+	if err != nil {
+		return Identity{}, errors.Wrap(errIdentify, err)
+	}
+
+	switch key.Type {
+	case RecoveryKey, LoginKey:
+		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+	case APIKey:
+		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
+		if err != nil {
+			return Identity{}, errors.ErrAuthentication
+		}
+		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+	default:
+		return Identity{}, errors.ErrAuthentication
+	}
 }

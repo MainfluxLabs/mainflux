@@ -102,7 +102,7 @@ func TestRetrieve(t *testing.T) {
 			desc: "retrieve role for non existing user",
 			id:   unknownUid,
 			role: "",
-			err:  errors.ErrNotFound,
+			err:  nil,
 		},
 		{
 			desc: "retrieve role for invalid user id",

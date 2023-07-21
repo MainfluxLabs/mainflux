@@ -147,7 +147,7 @@ func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeR
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.authorize(ctx, authReq{Token: req.GetToken()})
+	res, err := client.authorize(ctx, authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()})
 	if err != nil {
 		return &empty.Empty{}, err
 	}
@@ -159,7 +159,10 @@ func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeR
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authReq)
 	return &mainflux.AuthorizeReq{
-		Token: req.Token,
+		Token:   req.Token,
+		Object:  req.Object,
+		Subject: req.Subject,
+		Action:  req.Action,
 	}, nil
 }
 

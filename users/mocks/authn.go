@@ -22,7 +22,7 @@ type authServiceMock struct {
 // NewAuthService creates mock of users service.
 func NewAuthService(adminID string, users map[string]user.User) mainflux.AuthServiceClient {
 	authz := make(map[string]string)
-	authz["root_admin"] = adminID
+	authz["root"] = adminID
 
 	mockUsers = users
 	if mockUsersByID == nil {
@@ -60,7 +60,7 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	if svc.authz["root_admin"] != u.ID {
+	if svc.authz["root"] != u.ID {
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 

@@ -4,13 +4,9 @@
 package grpc
 
 import (
-	"errors"
-
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
-
-var errMissingRole = errors.New("missing role")
 
 type identityReq struct {
 	token string
@@ -87,7 +83,10 @@ func (req membersReq) validate() error {
 }
 
 type authReq struct {
-	Token string
+	Token   string
+	Object  string
+	Subject string
+	Action  string
 }
 
 func (req authReq) validate() error {
@@ -122,7 +121,11 @@ type assignRoleReq struct {
 
 func (req assignRoleReq) validate() error {
 	if req.Role == "" {
-		return errMissingRole
+		return apiutil.ErrMissingRole
+	}
+
+	if req.ID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil

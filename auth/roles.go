@@ -4,7 +4,7 @@ import "context"
 
 const (
 	// RoleRootAdmin is the super admin role.
-	RoleRootAdmin = "root_admin"
+	RoleRootAdmin = "root"
 	// RoleAdmin is the admin role.
 	RoleAdmin = "admin"
 )

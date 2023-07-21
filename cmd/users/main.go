@@ -341,7 +341,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 		}, []string{"method"}),
 	)
 	if err := createAdmin(svc, c); err != nil {
-		logger.Error("failed to create root_admin user: " + err.Error())
+		logger.Error("failed to create root user: " + err.Error())
 		os.Exit(1)
 	}
 

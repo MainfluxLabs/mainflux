@@ -108,7 +108,7 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "auth_4",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS users_roles (
-					 role VARCHAR(12) CHECK (role IN ('root_admin', 'admin')),
+					 role VARCHAR(12) CHECK (role IN ('root', 'admin')),
 				         user_id UUID NOT NULL,
 				         PRIMARY KEY (user_id)
 				    )`,

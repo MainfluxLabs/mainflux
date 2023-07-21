@@ -62,10 +62,18 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err := svc.Authorize(ctx, auth.AuthzReq{Token: req.Token})
+		ar := auth.AuthzReq{
+			Token:   req.Token,
+			Object:  req.Object,
+			Subject: req.Subject,
+			Action:  req.Action,
+		}
+
+		err := svc.Authorize(ctx, ar)
 		if err != nil {
 			return emptyRes{}, err
 		}
+		
 		return emptyRes{}, nil
 	}
 }
@@ -82,6 +90,7 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err != nil {
 			return emptyRes{}, err
 		}
+
 		return emptyRes{}, nil
 	}
 }
