@@ -21,6 +21,9 @@ var (
 	// ErrMissingRole indicates missing role.
 	ErrMissingRole = errors.New("missing role")
 
+	// ErrMissingSubject indicates missing subject.
+	ErrMissingSubject = errors.New("missing subject")
+
 	// ErrInvalidAuthKey indicates invalid auth key.
 	ErrInvalidAuthKey = errors.New("invalid auth key")
 

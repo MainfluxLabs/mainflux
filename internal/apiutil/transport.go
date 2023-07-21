@@ -22,6 +22,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 		case errors.Contains(err, ErrBearerToken),
 			errors.Contains(err, ErrMissingID),
 			errors.Contains(err, ErrMissingRole),
+			errors.Contains(err, ErrMissingSubject),
 			errors.Contains(err, ErrBearerKey),
 			errors.Contains(err, ErrInvalidAuthKey),
 			errors.Contains(err, ErrInvalidIDFormat),

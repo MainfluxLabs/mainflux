@@ -94,6 +94,10 @@ func (req authReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	if req.Subject == "" {
+		return apiutil.ErrMissingSubject
+	}
+
 	return nil
 }
 
