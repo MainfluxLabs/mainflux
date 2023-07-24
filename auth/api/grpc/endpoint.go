@@ -73,7 +73,7 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err != nil {
 			return emptyRes{}, err
 		}
-		
+
 		return emptyRes{}, nil
 	}
 }
@@ -86,8 +86,7 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err := svc.AssignRole(ctx, req.ID, req.Role)
-		if err != nil {
+		if err := svc.AssignRole(ctx, req.ID, req.Role); err != nil {
 			return emptyRes{}, err
 		}
 

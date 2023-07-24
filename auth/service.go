@@ -164,7 +164,7 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 
 	switch ar.Subject {
 	case rootSubject:
-		return svc.rootSubject(ctx, user.ID)
+		return svc.canAccessRoot(ctx, user.ID)
 	default:
 		return errUnknownSubject
 	}
@@ -275,7 +275,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.Authorize(ctx, AuthzReq{Subject: rootSubject, Token: token, Action: ""}); err == nil {
+		if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -686,7 +686,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.isAdmin(ctx, user.ID); err == nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -722,7 +722,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	if err := svc.isAdmin(ctx, user.ID); err != nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
 		return Backup{}, err
 	}
 
@@ -756,7 +756,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.isAdmin(ctx, user.ID); err != nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
 		return err
 	}
 
@@ -783,7 +783,7 @@ func (svc service) AssignRole(ctx context.Context, id, role string) error {
 	return nil
 }
 
-func (svc service) isAdmin(ctx context.Context, id string) error {
+func (svc service) canAccessRoot(ctx context.Context, id string) error {
 	role, err := svc.roles.RetrieveRole(ctx, id)
 	if err != nil {
 		return err
@@ -794,10 +794,6 @@ func (svc service) isAdmin(ctx context.Context, id string) error {
 	}
 
 	return nil
-}
-
-func (svc service) rootSubject(ctx context.Context, userID string) error {
-	return svc.isAdmin(ctx, userID)
 }
 
 func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
@@ -859,7 +855,7 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	if err := svc.isAdmin(ctx, user.ID); err == nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 		return nil
 	}
 

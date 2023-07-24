@@ -17,6 +17,7 @@ const (
 	EnabledStatusKey  = "enabled"
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
+	rootSubject       = "root"
 )
 
 var (
@@ -305,12 +306,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
-	_, err := svc.identify(ctx, token)
-	if err != nil {
-		return UserPage{}, err
-	}
-
-	if err := svc.authorize(ctx, token); err != nil {
+	if err := svc.authorize(ctx, rootSubject, token); err != nil {
 		return UserPage{}, err
 	}
 
@@ -341,7 +337,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, err
 	}
 
-	if err := svc.authorize(ctx, token); err != nil {
+	if err := svc.authorize(ctx, rootSubject, token); err != nil {
 		return User{}, []User{}, err
 	}
 
@@ -368,7 +364,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.authorize(ctx, token); err != nil {
+	if err := svc.authorize(ctx, rootSubject, token); err != nil {
 		return err
 	}
 
@@ -522,9 +518,10 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	return userIdentity{identity.Id, identity.Email}, nil
 }
 
-func (svc usersService) authorize(ctx context.Context, token string) error {
+func (svc usersService) authorize(ctx context.Context, subject, token string) error {
 	req := &mainflux.AuthorizeReq{
-		Token: token,
+		Token:   token,
+		Subject: subject,
 	}
 
 	if _, err := svc.auth.Authorize(ctx, req); err != nil {

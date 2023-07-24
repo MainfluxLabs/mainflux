@@ -43,7 +43,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, req.token); err != nil {
+		if err := authorizeAdmin(ctx, rootSubject, req.token); err != nil {
 			return nil, err
 		}
 
@@ -68,7 +68,7 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, req.token); err != nil {
+		if err := authorizeAdmin(ctx, rootSubject, req.token); err != nil {
 			return nil, err
 		}
 

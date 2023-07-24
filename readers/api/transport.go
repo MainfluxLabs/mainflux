@@ -38,6 +38,7 @@ const (
 	defLimit       = 10
 	defOffset      = 0
 	defFormat      = "messages"
+	rootSubject    = "root"
 )
 
 var (
@@ -354,7 +355,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			return err
 		}
 
-		if err := authorizeAdmin(ctx, token); err == nil {
+		if err := authorizeAdmin(ctx, rootSubject, token); err == nil {
 			return nil
 		}
 
@@ -370,9 +371,10 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
-func authorizeAdmin(ctx context.Context, token string) error {
+func authorizeAdmin(ctx context.Context, subject, token string) error {
 	req := &mainflux.AuthorizeReq{
-		Token: token,
+		Token:   token,
+		Subject: subject,
 	}
 
 	if _, err := auth.Authorize(ctx, req); err != nil {
