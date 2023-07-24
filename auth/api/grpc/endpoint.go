@@ -50,6 +50,7 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 			id:    id.ID,
 			email: id.Email,
 		}
+		
 		return ret, nil
 	}
 }
@@ -69,8 +70,7 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 			Action:  req.Action,
 		}
 
-		err := svc.Authorize(ctx, ar)
-		if err != nil {
+		if err := svc.Authorize(ctx, ar); err != nil {
 			return emptyRes{}, err
 		}
 
@@ -104,6 +104,7 @@ func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err := svc.CanAccessGroup(ctx, req.Token, req.GroupID); err != nil {
 			return emptyRes{}, err
 		}
+
 		return emptyRes{}, nil
 	}
 }
@@ -121,12 +122,11 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err = svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID)
-		if err != nil {
+		if err := svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID); err != nil {
 			return emptyRes{}, err
 		}
-		return emptyRes{}, nil
 
+		return emptyRes{}, nil
 	}
 }
 
