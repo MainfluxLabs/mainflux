@@ -18,6 +18,9 @@ const (
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
 	rootSubject      = "root"
+	groupSubject     = "group"
+	RPolicy          = "r"
+	RwPolicy         = "rw"
 )
 
 var (
@@ -73,11 +76,8 @@ type AuthzReq struct {
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
 type Authz interface {
-	// Authorize indicates if user is admin.
 	Authorize(ctx context.Context, ar AuthzReq) error
-
-	// CanAccessGroup indicates if user can access group for a given token.
-	CanAccessGroup(ctx context.Context, token, groupID string) error
+	AddPolicy(ctx context.Context, token, groupID, policy string) error
 }
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -165,6 +165,8 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
 	case rootSubject:
 		return svc.canAccessRoot(ctx, user.ID)
+	case groupSubject:
+		return svc.canAccessGroup(ctx, user.ID, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
 	}
@@ -605,6 +607,17 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		grs = append(grs, gr)
 	}
 
+	mp, err := svc.ListOrgMembers(ctx, token, orgID, PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, member := range mp.Members {
+		if err := svc.orgs.SavePolicy(ctx, member.ID, RwPolicy, groupIDs...); err != nil {
+			return err
+		}
+	}
+
 	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
 		return err
 	}
@@ -697,23 +710,35 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CanAccessGroup(ctx context.Context, token, groupID string) error {
+func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
+	gp := GroupsPolicy{
+		MemberID: userID,
+		GroupID:  Object,
+	}
+
+	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	if policy != action && policy != RwPolicy {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	// Retrieve org where group is assigned
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
+	if err := svc.orgs.SavePolicy(ctx, user.ID, policy, groupID); err != nil {
 		return err
 	}
 
-	if err := svc.canAccessOrg(ctx, org.ID, user); err == nil {
-		return nil
-	}
-
-	return errors.ErrAuthorization
+	return nil
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {

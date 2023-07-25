@@ -12,7 +12,11 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 )
 
-const rootSubject = "root"
+const (
+	rootSubject  = "root"
+	groupSubject = "group"
+	readAction   = "r"
+)
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -278,7 +282,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	}
 
 	for _, group := range mpg.Groups {
-		_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: group.ID})
+		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: group.ID, Action: readAction})
 		if err == nil {
 			return thing, nil
 		}
@@ -446,7 +450,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 	}
 
 	for _, group := range mpg.Groups {
-		_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: group.ID})
+		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: group.ID, Action: readAction})
 		if err == nil {
 			return ts.channels.RetrieveConns(ctx, thID, pm)
 		}
@@ -757,7 +761,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: id})
+	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: id, Action: readAction})
 	if user.GetId() != gr.OwnerID && err != nil {
 		return Group{}, err
 	}

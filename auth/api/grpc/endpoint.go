@@ -50,7 +50,7 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 			id:    id.ID,
 			email: id.Email,
 		}
-		
+
 		return ret, nil
 	}
 }
@@ -96,12 +96,12 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(accessGroupReq)
+		req := request.(addPolicyReq)
 		if err := req.validate(); err != nil {
 			return emptyRes{}, err
 		}
 
-		if err := svc.CanAccessGroup(ctx, req.Token, req.GroupID); err != nil {
+		if err := svc.AddPolicy(ctx, req.Token, req.GroupID, req.Policy); err != nil {
 			return emptyRes{}, err
 		}
 

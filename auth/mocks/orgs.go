@@ -361,6 +361,22 @@ func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]
 	return grs, nil
 }
 
+func (orm *orgRepositoryMock) SavePolicy(ctx context.Context, memberID string, policy string, groupIDs ...string) error {
+	panic("not implemented")
+}
+
+func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+	panic("not implemented")
+}
+
+func (orm *orgRepositoryMock) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	panic("not implemented")
+}
+
+func (orm *orgRepositoryMock) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	panic("not implemented")
+}
+
 func sortOrgsByID(orgs map[string]auth.Org) []string {
 	var keys []string
 	for k := range orgs {

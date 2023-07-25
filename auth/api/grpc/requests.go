@@ -101,18 +101,23 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type accessGroupReq struct {
+type addPolicyReq struct {
 	Token   string
 	GroupID string
+	Policy  string
 }
 
-func (req accessGroupReq) validate() error {
+func (req addPolicyReq) validate() error {
 	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}
 
 	if req.GroupID == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.Policy != auth.RPolicy && req.Policy != auth.RwPolicy && req.Policy != "" {
+		return apiutil.ErrInvalidPolicy
 	}
 
 	return nil

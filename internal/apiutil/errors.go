@@ -107,4 +107,7 @@ var (
 
 	// ErrMalformedEntity indicates a malformed entity specification.
 	ErrMalformedEntity = errors.New("malformed entity specification")
+
+	// ErrInvalidPolicy indicates an invalid policy.
+	ErrInvalidPolicy = errors.New("invalid policy")
 )

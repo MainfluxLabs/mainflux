@@ -1618,25 +1618,25 @@ func TestBackup(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "restore from backup with invalid auth token",
+			desc:   "backup with invalid auth token",
 			token:  wrongValue,
 			res:    backupRes{},
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "restore from backup without auth token",
+			desc:   "backup without auth token",
 			token:  "",
 			res:    backupRes{},
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "restore from backup with unauthorized credentials",
+			desc:   "backup with unauthorized credentials",
 			token:  viewerToken,
 			res:    backupRes{},
 			status: http.StatusForbidden,
 		},
 		{
-			desc:   "restore from backup",
+			desc:   "backup with admin credentials",
 			token:  adminToken,
 			res:    data,
 			status: http.StatusOK,
