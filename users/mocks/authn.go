@@ -20,7 +20,10 @@ type authServiceMock struct {
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(users map[string]user.User) mainflux.AuthServiceClient {
+func NewAuthService(adminID string, users map[string]user.User) mainflux.AuthServiceClient {
+	authz := make(map[string]string)
+	authz["root"] = adminID
+
 	mockUsers = users
 	if mockUsersByID == nil {
 		mockUsersByID = make(map[string]user.User)
@@ -28,7 +31,10 @@ func NewAuthService(users map[string]user.User) mainflux.AuthServiceClient {
 	for _, u := range users {
 		mockUsersByID[u.ID] = u
 	}
-	return &authServiceMock{}
+
+	return &authServiceMock{
+		authz: authz,
+	}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
@@ -49,7 +55,12 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	if req.GetEmail() != "admin@example.com" {
+	u, ok := mockUsers[req.Token]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
+	}
+
+	if svc.authz["root"] != u.ID {
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 
@@ -65,5 +76,9 @@ func (svc authServiceMock) Assign(ctx context.Context, req *mainflux.Assignment,
 }
 
 func (svc authServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) AssignRole(ctx context.Context, in *mainflux.AssignRoleReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

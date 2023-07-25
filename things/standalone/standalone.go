@@ -60,3 +60,7 @@ func (repo singleUserRepo) Members(ctx context.Context, req *mainflux.MembersReq
 func (repo singleUserRepo) Assign(ctx context.Context, req *mainflux.Assignment, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	return &empty.Empty{}, errUnsupported
 }
+
+func (repo singleUserRepo) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	return &empty.Empty{}, errUnsupported
+}

@@ -29,6 +29,7 @@ type grpcClient struct {
 	canAccessGroup endpoint.Endpoint
 	assign         endpoint.Endpoint
 	members        endpoint.Endpoint
+	assignRole     endpoint.Endpoint
 	timeout        time.Duration
 }
 
@@ -82,6 +83,14 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			encodeMembersRequest,
 			decodeMembersResponse,
 			mainflux.MembersRes{},
+		).Endpoint()),
+		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"AssignRole",
+			encodeAssignRoleRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -138,7 +147,7 @@ func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeR
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.authorize(ctx, authReq{Email: req.GetEmail()})
+	res, err := client.authorize(ctx, authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()})
 	if err != nil {
 		return &empty.Empty{}, err
 	}
@@ -150,7 +159,10 @@ func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeR
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authReq)
 	return &mainflux.AuthorizeReq{
-		Email: req.Email,
+		Token:   req.Token,
+		Object:  req.Object,
+		Subject: req.Subject,
+		Action:  req.Action,
 	}, nil
 }
 
@@ -200,6 +212,27 @@ func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, 
 	}, err
 }
 
+func (client grpcClient) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.assignRole(ctx, assignRoleReq{ID: req.GetId(), Role: req.GetRole()})
+	if err != nil {
+		return &empty.Empty{}, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
+func encodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(assignRoleReq)
+	return &mainflux.AssignRoleReq{
+		Id:   req.ID,
+		Role: req.Role,
+	}, nil
+}
+
 func encodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(membersReq)
 	return &mainflux.MembersReq{
@@ -245,7 +278,7 @@ func encodeAssignRequest(_ context.Context, grpcRes interface{}) (interface{}, e
 func decodeAssignResponse(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authReq)
 	return &mainflux.AuthorizeReq{
-		Email: req.Email,
+		Token: req.Token,
 	}, nil
 }
 

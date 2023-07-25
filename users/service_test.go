@@ -41,7 +41,7 @@ func newService() users.Service {
 	hasher := mocks.NewHasher()
 
 	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
-	authSvc := mocks.NewAuthService(mockUsers)
+	authSvc := mocks.NewAuthService(userAdmin.ID, mockUsers)
 	e := mocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
@@ -397,7 +397,7 @@ func TestResetPassword(t *testing.T) {
 	_, err := svc.SelfRegister(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	authSvc := mocks.NewAuthService(map[string]users.User{user.Email: user})
+	authSvc := mocks.NewAuthService("", map[string]users.User{user.Email: user})
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))

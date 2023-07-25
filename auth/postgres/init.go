@@ -104,6 +104,19 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS group_relations`,
 				},
 			},
+			{
+				Id: "auth_4",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS users_roles (
+					 role VARCHAR(12) CHECK (role IN ('root', 'admin')),
+				         user_id UUID NOT NULL,
+				         PRIMARY KEY (user_id)
+				    )`,
+				},
+				Down: []string{
+					"DROP TABLE users_roles",
+				},
+			},
 		},
 	}
 

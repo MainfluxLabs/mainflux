@@ -17,6 +17,7 @@ const (
 	AdminRole        = "admin"
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
+	rootSubject      = "root"
 )
 
 var (
@@ -26,12 +27,18 @@ var (
 	// ErrFailedToRetrieveMembership failed to retrieve memberships
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
 
-	errIssueUser = errors.New("failed to issue new login key")
-	errIssueTmp  = errors.New("failed to issue new temporary key")
-	errRevoke    = errors.New("failed to remove key")
-	errRetrieve  = errors.New("failed to retrieve key data")
-	errIdentify  = errors.New("failed to validate token")
+	errIssueUser      = errors.New("failed to issue new login key")
+	errIssueTmp       = errors.New("failed to issue new temporary key")
+	errRevoke         = errors.New("failed to remove key")
+	errRetrieve       = errors.New("failed to retrieve key data")
+	errIdentify       = errors.New("failed to validate token")
+	errUnknownSubject = errors.New("unknown subject")
 )
+
+type Roles interface {
+	// AssignRole assigns a role to a user.
+	AssignRole(ctx context.Context, id, role string) error
+}
 
 // Authn specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -55,17 +62,19 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
-// AuthReq represents an argument struct for making an authz related
-// function calls.
+// AuthzReq represents an argument struct for making an authz related function calls.
 type AuthzReq struct {
-	Email string
+	Token   string
+	Object  string
+	Subject string
+	Action  string
 }
 
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
 type Authz interface {
 	// Authorize indicates if user is admin.
-	Authorize(ctx context.Context, pr AuthzReq) error
+	Authorize(ctx context.Context, ar AuthzReq) error
 
 	// CanAccessGroup indicates if user can access group for a given token.
 	CanAccessGroup(ctx context.Context, token, groupID string) error
@@ -78,9 +87,8 @@ type Authz interface {
 type Service interface {
 	Authn
 	Authz
-
-	// OrgService implements orgs API, creating orgs, assigning members and groups
-	OrgService
+	Roles
+	Orgs
 }
 
 var _ Service = (*service)(nil)
@@ -90,23 +98,23 @@ type service struct {
 	users         mainflux.UsersServiceClient
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
+	roles         RolesRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
-	adminEmail    string
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration, adminEmail string) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
 		orgs:          orgs,
 		users:         uc,
 		keys:          keys,
+		roles:         roles,
 		idProvider:    idp,
 		loginDuration: duration,
-		adminEmail:    adminEmail,
 	}
 }
 
@@ -145,35 +153,21 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 }
 
 func (svc service) Identify(ctx context.Context, token string) (Identity, error) {
-	key, err := svc.tokenizer.Parse(token)
-	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
-		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
-	}
-	if err != nil {
-		return Identity{}, errors.Wrap(errIdentify, err)
-	}
-
-	switch key.Type {
-	case RecoveryKey, LoginKey:
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
-	case APIKey:
-		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
-		if err != nil {
-			return Identity{}, errors.ErrAuthentication
-		}
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
-	default:
-		return Identity{}, errors.ErrAuthentication
-	}
+	return svc.identify(ctx, token)
 }
 
-func (svc service) Authorize(ctx context.Context, pr AuthzReq) error {
-	if pr.Email != svc.adminEmail {
-		return errors.ErrAuthorization
+func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
+	user, err := svc.identify(ctx, ar.Token)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	switch ar.Subject {
+	case rootSubject:
+		return svc.canAccessRoot(ctx, user.ID)
+	default:
+		return errUnknownSubject
+	}
 }
 
 func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) {
@@ -281,7 +275,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+		if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -692,7 +686,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.Authorize(ctx, AuthzReq{Email: user.Email}); err == nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -728,8 +722,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err != nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
 		return Backup{}, err
 	}
 
@@ -763,8 +756,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err != nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
 		return err
 	}
 
@@ -778,6 +770,27 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 
 	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (svc service) AssignRole(ctx context.Context, id, role string) error {
+	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) canAccessRoot(ctx context.Context, id string) error {
+	role, err := svc.roles.RetrieveRole(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if role != RoleAdmin && role != RoleRootAdmin {
+		return errors.ErrAuthorization
 	}
 
 	return nil
@@ -842,8 +855,7 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	pr := AuthzReq{Email: user.Email}
-	if err := svc.Authorize(ctx, pr); err == nil {
+	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
 		return nil
 	}
 
@@ -857,4 +869,28 @@ func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity
 	}
 
 	return nil
+}
+
+func (svc service) identify(ctx context.Context, token string) (Identity, error) {
+	key, err := svc.tokenizer.Parse(token)
+	if err == ErrAPIKeyExpired {
+		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
+		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+	}
+	if err != nil {
+		return Identity{}, errors.Wrap(errIdentify, err)
+	}
+
+	switch key.Type {
+	case RecoveryKey, LoginKey:
+		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+	case APIKey:
+		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
+		if err != nil {
+			return Identity{}, errors.ErrAuthentication
+		}
+		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+	default:
+		return Identity{}, errors.ErrAuthentication
+	}
 }

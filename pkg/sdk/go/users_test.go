@@ -41,7 +41,7 @@ func newUserService() users.Service {
 	id, _ := idProvider.ID()
 	admin.ID = id
 
-	auth := mocks.NewAuthService(map[string]users.User{adminEmail: admin})
+	auth := mocks.NewAuthService("", map[string]users.User{adminEmail: admin})
 
 	emailer := mocks.NewEmailer()
 

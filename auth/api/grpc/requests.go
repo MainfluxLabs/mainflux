@@ -83,12 +83,19 @@ func (req membersReq) validate() error {
 }
 
 type authReq struct {
-	Email string
+	Token   string
+	Object  string
+	Subject string
+	Action  string
 }
 
 func (req authReq) validate() error {
-	if req.Email == "" {
-		return apiutil.ErrMissingEmail
+	if req.Token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.Subject == "" {
+		return apiutil.ErrMissingSubject
 	}
 
 	return nil
@@ -105,6 +112,23 @@ func (req accessGroupReq) validate() error {
 	}
 
 	if req.GroupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type assignRoleReq struct {
+	ID   string
+	Role string
+}
+
+func (req assignRoleReq) validate() error {
+	if req.Role == "" {
+		return apiutil.ErrMissingRole
+	}
+
+	if req.ID == "" {
 		return apiutil.ErrMissingID
 	}
 

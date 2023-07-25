@@ -50,6 +50,7 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 			id:    id.ID,
 			email: id.Email,
 		}
+		
 		return ret, nil
 	}
 }
@@ -62,10 +63,33 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err := svc.Authorize(ctx, auth.AuthzReq{Email: req.Email})
-		if err != nil {
+		ar := auth.AuthzReq{
+			Token:   req.Token,
+			Object:  req.Object,
+			Subject: req.Subject,
+			Action:  req.Action,
+		}
+
+		if err := svc.Authorize(ctx, ar); err != nil {
 			return emptyRes{}, err
 		}
+
+		return emptyRes{}, nil
+	}
+}
+
+func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(assignRoleReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.AssignRole(ctx, req.ID, req.Role); err != nil {
+			return emptyRes{}, err
+		}
+
 		return emptyRes{}, nil
 	}
 }
@@ -80,6 +104,7 @@ func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err := svc.CanAccessGroup(ctx, req.Token, req.GroupID); err != nil {
 			return emptyRes{}, err
 		}
+
 		return emptyRes{}, nil
 	}
 }
@@ -97,12 +122,11 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err = svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID)
-		if err != nil {
+		if err := svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID); err != nil {
 			return emptyRes{}, err
 		}
-		return emptyRes{}, nil
 
+		return emptyRes{}, nil
 	}
 }
 

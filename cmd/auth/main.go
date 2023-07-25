@@ -147,7 +147,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration, cfg.adminEmail)
+	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
@@ -307,17 +307,20 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration, adminEmail string) auth.Service {
+func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
 	database := postgres.NewDatabase(db)
 	keysRepo := tracing.New(postgres.New(database), tracer)
 
+	rolesRepo := postgres.NewRolesRepo(db)
+	rolesRepo = tracing.RolesRepositoryMiddleware(tracer, rolesRepo)
+
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, idProvider, t, duration, adminEmail)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, idProvider, t, duration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

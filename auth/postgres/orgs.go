@@ -27,11 +27,7 @@ type orgRepository struct {
 	db Database
 }
 
-var (
-	errCreateMetadataQuery = errors.New("failed to create query for metadata")
-	errGetTotal            = errors.New("failed to get total number of groups")
-	membersIDFkey          = "member_relations_org_id_fkey"
-)
+var membersIDFkey = "member_relations_org_id_fkey"
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
 // repository.
@@ -852,13 +848,13 @@ func toGroupRelation(gr dbGroupRelation) auth.GroupRelation {
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return 0, errors.Wrap(errGetTotal, err)
+		return 0, err
 	}
 	defer rows.Close()
 	total := uint64(0)
 	if rows.Next() {
 		if err := rows.Scan(&total); err != nil {
-			return 0, errors.Wrap(errGetTotal, err)
+			return 0, err
 		}
 	}
 	return total, nil

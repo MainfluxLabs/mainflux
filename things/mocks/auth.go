@@ -41,11 +41,15 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	if req.GetEmail() != "admin@example.com" {
-		return &empty.Empty{}, errors.ErrAuthorization
+	if req.GetToken() == "adminToken" {
+		return &empty.Empty{}, nil
 	}
 
-	return &empty.Empty{}, nil
+	if req.GetToken() == "token" {
+		return &empty.Empty{}, nil
+	}
+
+	return &empty.Empty{}, errors.ErrAuthorization
 }
 
 func (svc authServiceMock) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {
@@ -57,5 +61,9 @@ func (svc authServiceMock) Assign(ctx context.Context, req *mainflux.Assignment,
 }
 
 func (svc authServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

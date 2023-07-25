@@ -340,27 +340,21 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	if err := createAdmin(svc, userRepo, c); err != nil {
-		logger.Error("failed to create admin user: " + err.Error())
+	if err := createAdmin(svc, c); err != nil {
+		logger.Error("failed to create root user: " + err.Error())
 		os.Exit(1)
 	}
 
 	return svc
 }
 
-func createAdmin(svc users.Service, userRepo users.UserRepository, c config) error {
+func createAdmin(svc users.Service, c config) error {
 	user := users.User{
 		Email:    c.adminEmail,
 		Password: c.adminPassword,
 	}
 
-	if _, err := userRepo.RetrieveByEmail(context.Background(), user.Email); err == nil {
-		return nil
-	}
-
-	// Create an admin
-	_, err := svc.SelfRegister(context.Background(), user)
-	if err != nil {
+	if err := svc.RegisterAdmin(context.Background(), user); err != nil {
 		return err
 	}
 
