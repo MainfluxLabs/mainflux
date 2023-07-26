@@ -15,7 +15,7 @@ import (
 const (
 	rootSubject  = "root"
 	groupSubject = "group"
-	readAction   = "r"
+	readAction   = "read"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
