@@ -170,7 +170,7 @@ func (client grpcClient) AddPolicy(ctx context.Context, req *mainflux.PolicyReq,
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.addPolicy(ctx, policyReq{Token: req.GetToken(), GroupID: req.GetGroupID(), Policy: req.GetPolicy()})
+	res, err := client.addPolicy(ctx, policyReq{Token: req.GetToken(), Object: req.GetObject(), Policy: req.GetPolicy()})
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +182,9 @@ func (client grpcClient) AddPolicy(ctx context.Context, req *mainflux.PolicyReq,
 func encodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(policyReq)
 	return &mainflux.PolicyReq{
-		Token:   req.Token,
-		GroupID: req.GroupID,
-		Policy:  req.Policy,
+		Token:  req.Token,
+		Object: req.Object,
+		Policy: req.Policy,
 	}, nil
 }
 

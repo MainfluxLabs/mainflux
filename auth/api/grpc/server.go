@@ -164,7 +164,7 @@ func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, e
 
 func decodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.PolicyReq)
-	return policyReq{Token: req.GetToken(), GroupID: req.GetGroupID(), Policy: req.GetPolicy()}, nil
+	return policyReq{Token: req.GetToken(), Object: req.GetObject(), Policy: req.GetPolicy()}, nil
 }
 
 func decodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

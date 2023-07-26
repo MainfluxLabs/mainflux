@@ -84,8 +84,10 @@ message AuthorizeRes {
 
 message PolicyReq {
     string token    = 1;
-    string groupID  = 2;
-    string policy   = 3;
+    string policy   = 2;
+    string subject  = 3;
+    string object   = 4;
+    string action   = 5;
 }
 
 message Assignment {

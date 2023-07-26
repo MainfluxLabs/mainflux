@@ -101,7 +101,7 @@ func addPolicyEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		if err := svc.AddPolicy(ctx, req.Token, req.GroupID, req.Policy); err != nil {
+		if err := svc.AddPolicy(ctx, req.Token, req.Object, req.Policy); err != nil {
 			return emptyRes{}, err
 		}
 

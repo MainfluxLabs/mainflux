@@ -103,8 +103,10 @@ func (req authReq) validate() error {
 
 type policyReq struct {
 	Token   string
-	GroupID string
 	Policy  string
+	Subject string
+	Object  string
+	Action  string
 }
 
 func (req policyReq) validate() error {
@@ -112,7 +114,7 @@ func (req policyReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.GroupID == "" {
+	if req.Object == "" {
 		return apiutil.ErrMissingID
 	}
 
