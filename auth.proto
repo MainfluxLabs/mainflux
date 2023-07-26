@@ -87,7 +87,6 @@ message PolicyReq {
     string policy   = 2;
     string subject  = 3;
     string object   = 4;
-    string action   = 5;
 }
 
 message Assignment {
