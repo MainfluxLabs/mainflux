@@ -49,7 +49,7 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			encodeEmptyResponse,
 		),
 		addPolicy: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "add_policy")(accessGroupEndpoint(svc)),
+			kitot.TraceServer(tracer, "add_policy")(addPolicyEndpoint(svc)),
 			decodeAddPolicyRequest,
 			encodeEmptyResponse,
 		),
@@ -95,7 +95,7 @@ func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) 
 	return res.(*empty.Empty), nil
 }
 
-func (s *grpcServer) AddPolicy(ctx context.Context, req *mainflux.AddPolicyReq) (*empty.Empty, error) {
+func (s *grpcServer) AddPolicy(ctx context.Context, req *mainflux.PolicyReq) (*empty.Empty, error) {
 	_, res, err := s.addPolicy.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -163,8 +163,8 @@ func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, e
 }
 
 func decodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AddPolicyReq)
-	return addPolicyReq{Token: req.GetToken(), GroupID: req.GetGroupID(), Policy: req.GetPolicy()}, nil
+	req := grpcReq.(*mainflux.PolicyReq)
+	return policyReq{Token: req.GetToken(), GroupID: req.GetGroupID(), Policy: req.GetPolicy()}, nil
 }
 
 func decodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

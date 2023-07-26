@@ -101,13 +101,13 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type addPolicyReq struct {
+type policyReq struct {
 	Token   string
 	GroupID string
 	Policy  string
 }
 
-func (req addPolicyReq) validate() error {
+func (req policyReq) validate() error {
 	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}

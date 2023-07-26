@@ -75,7 +75,7 @@ func (svc authServiceMock) Assign(ctx context.Context, req *mainflux.Assignment,
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AddPolicy(ctx context.Context, in *mainflux.AddPolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) AddPolicy(ctx context.Context, in *mainflux.PolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
 

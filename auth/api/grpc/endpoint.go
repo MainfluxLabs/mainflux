@@ -94,9 +94,9 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func accessGroupEndpoint(svc auth.Service) endpoint.Endpoint {
+func addPolicyEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(addPolicyReq)
+		req := request.(policyReq)
 		if err := req.validate(); err != nil {
 			return emptyRes{}, err
 		}

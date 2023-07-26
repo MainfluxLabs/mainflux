@@ -49,7 +49,7 @@ func (repo singleUserRepo) Authorize(ctx context.Context, req *mainflux.Authoriz
 	return &empty.Empty{}, errUnsupported
 }
 
-func (repo singleUserRepo) AddPolicy(ctx context.Context, in *mainflux.AddPolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
+func (repo singleUserRepo) AddPolicy(ctx context.Context, in *mainflux.PolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
 	return &empty.Empty{}, errUnsupported
 }
 

@@ -21,8 +21,8 @@ const (
 	orgsTable            = "orgs"
 	memberRelationsTable = "member_relations"
 	groupRelationsTable  = "group_relations"
-	rwPolicy             = "rw"
-	rPolicy              = "r"
+	rwPolicy             = "read_write"
+	rPolicy              = "read"
 )
 
 func TestSave(t *testing.T) {

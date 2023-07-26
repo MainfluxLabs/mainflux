@@ -77,7 +77,7 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 	return &empty.Empty{}, nil
 }
 
-func (svc authServiceMock) AddPolicy(ctx context.Context, req *mainflux.AddPolicyReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) AddPolicy(ctx context.Context, req *mainflux.PolicyReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
 

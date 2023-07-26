@@ -19,8 +19,8 @@ const (
 	EditorRole       = "editor"
 	rootSubject      = "root"
 	groupSubject     = "group"
-	RPolicy          = "r"
-	RwPolicy         = "rw"
+	RPolicy          = "read"
+	RwPolicy         = "read_write"
 )
 
 var (
