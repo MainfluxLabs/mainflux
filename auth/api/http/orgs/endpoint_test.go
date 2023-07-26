@@ -1609,6 +1609,10 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
+	sort.Slice(g, func(i, j int) bool {
+		return g[i].GroupID < g[j].GroupID
+	})
+
 	data := backupRes{or, m, g}
 
 	cases := []struct {
@@ -1618,25 +1622,25 @@ func TestBackup(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "restore from backup with invalid auth token",
+			desc:   "backup with invalid auth token",
 			token:  wrongValue,
 			res:    backupRes{},
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "restore from backup without auth token",
+			desc:   "backup without auth token",
 			token:  "",
 			res:    backupRes{},
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "restore from backup with unauthorized credentials",
+			desc:   "backup with unauthorized credentials",
 			token:  viewerToken,
 			res:    backupRes{},
 			status: http.StatusForbidden,
 		},
 		{
-			desc:   "restore from backup",
+			desc:   "backup with admin credentials",
 			token:  adminToken,
 			res:    data,
 			status: http.StatusOK,
@@ -1657,6 +1661,10 @@ func TestBackup(t *testing.T) {
 
 		sort.Slice(data.MemberRelations, func(i, j int) bool {
 			return data.MemberRelations[i].MemberID < data.MemberRelations[j].MemberID
+		})
+
+		sort.Slice(data.GroupRelations, func(i, j int) bool {
+			return data.GroupRelations[i].GroupID < data.GroupRelations[j].GroupID
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
