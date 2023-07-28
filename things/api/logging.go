@@ -385,7 +385,7 @@ func (lm *loggingMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []str
 
 func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (mp things.MemberPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_member for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
