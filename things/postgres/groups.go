@@ -291,68 +291,25 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
-	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
-	}
+func (gr groupRepository) RetrieveMembership(ctx context.Context, memberID string) (string, error) {
+	q := `SELECT group_id FROM group_relations WHERE member_id = :member_id;`
 
-	if mq != "" {
-		mq = fmt.Sprintf("AND %s", mq)
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT g.id, g.owner_id, g.name, g.description, g.metadata
-		FROM group_relations gr, groups g
-		WHERE gr.group_id = g.id and gr.member_id = :member_id
-		%s ORDER BY id %s;`, mq, olq)
-
-	params, err := toDBMemberPage(memberID, "", pm)
-	if err != nil {
-		return things.GroupPage{}, err
-	}
+	params := map[string]interface{}{"member_id": memberID}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []things.Group
+	var groupID string
 	for rows.Next() {
-		dbg := dbGroup{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
+		if err := rows.Scan(&groupID); err != nil {
+			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		gr, err := toGroup(dbg)
-		if err != nil {
-			return things.GroupPage{}, err
-		}
-		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr, groups g
-		WHERE gr.group_id = g.id and gr.member_id = :member_id %s `, mq)
-
-	total, err := total(ctx, gr.db, cq, params)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(things.ErrFailedToRetrieveMembership, err)
-	}
-
-	page := things.GroupPage{
-		Groups: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return groupID, nil
 }
 
 func (gr groupRepository) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {

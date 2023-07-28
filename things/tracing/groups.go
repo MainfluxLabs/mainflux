@@ -15,7 +15,7 @@ const (
 	retrieveGroupByIDOp         = "retrieve_group_by_id"
 	retrieveGroupByIDsOp        = "retrieve_group_by_ids"
 	retrieveByOwnerOp           = "retrieve_by_owner"
-	retrieveMembershipsOp       = "retrieve_memberships"
+	retrieveMembershipOp        = "retrieve_membership"
 	retrieveMembersOp           = "retrieve_members"
 	assignMemberOp              = "assign_member"
 	unassignMemberOp            = "unassign_member"
@@ -77,7 +77,6 @@ func (grm groupRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm thi
 	return grm.repo.RetrieveByAdmin(ctx, pm)
 }
 
-
 func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupByIDOp)
 	defer span.Finish()
@@ -101,12 +100,12 @@ func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerI
 	return grm.repo.RetrieveByOwner(ctx, ownerID, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveMembershipsOp)
+func (grm groupRepositoryMiddleware) RetrieveMembership(ctx context.Context, memberID string) (string, error) {
+	span := createSpan(ctx, grm.tracer, retrieveMembershipOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveMemberships(ctx, memberID, pm)
+	return grm.repo.RetrieveMembership(ctx, memberID)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveMembers(ctx context.Context, groupID string, pm things.PageMetadata) (things.MemberPage, error) {

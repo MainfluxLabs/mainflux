@@ -385,7 +385,7 @@ func (lm *loggingMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []str
 
 func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (mp things.MemberPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_member for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -396,9 +396,9 @@ func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID str
 	return lm.svc.ListMembers(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) ListMemberships(ctx context.Context, token, memberID string, pm things.PageMetadata) (g things.GroupPage, err error) {
+func (lm *loggingMiddleware) ViewMembership(ctx context.Context, token, memberID string) (gr things.Group, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_memberships for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method view_membership for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -406,7 +406,7 @@ func (lm *loggingMiddleware) ListMemberships(ctx context.Context, token, memberI
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListMemberships(ctx, token, memberID, pm)
+	return lm.svc.ViewMembership(ctx, token, memberID)
 }
 
 func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) (err error) {
