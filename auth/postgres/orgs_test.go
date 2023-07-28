@@ -21,8 +21,6 @@ const (
 	orgsTable            = "orgs"
 	memberRelationsTable = "member_relations"
 	groupRelationsTable  = "group_relations"
-	rwPolicy             = "read_write"
-	rPolicy              = "read"
 )
 
 func TestSave(t *testing.T) {
@@ -1649,28 +1647,28 @@ func TestSavePolicy(t *testing.T) {
 		{
 			desc:     "save policy",
 			memberID: memberID,
-			policy:   rwPolicy,
+			policy:   auth.RwPolicy,
 			groupID:  groupID,
 			err:      nil,
 		},
 		{
 			desc:     "save policy without group id",
 			memberID: memberID,
-			policy:   rwPolicy,
+			policy:   auth.RwPolicy,
 			groupID:  "",
 			err:      errors.ErrMalformedEntity,
 		},
 		{
 			desc:     "save policy without member id",
 			memberID: "",
-			policy:   rwPolicy,
+			policy:   auth.RwPolicy,
 			groupID:  groupID,
 			err:      errors.ErrMalformedEntity,
 		},
 		{
 			desc:     "save existing policy",
 			memberID: memberID,
-			policy:   rwPolicy,
+			policy:   auth.RwPolicy,
 			groupID:  groupID,
 			err:      errors.ErrConflict,
 		},
@@ -1696,11 +1694,11 @@ func TestRetrievePolicy(t *testing.T) {
 
 	gp := auth.GroupsPolicy{
 		GroupID:  groupID,
-		Policy:   rwPolicy,
+		Policy:   auth.RwPolicy,
 		MemberID: memberID,
 	}
 
-	err = repo.SavePolicy(context.Background(), memberID, rwPolicy, groupID)
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1712,7 +1710,7 @@ func TestRetrievePolicy(t *testing.T) {
 		{
 			desc:   "retrieve policy",
 			gp:     gp,
-			policy: rwPolicy,
+			policy: auth.RwPolicy,
 			err:    nil,
 		},
 		{
@@ -1756,11 +1754,11 @@ func TestRemovePolicy(t *testing.T) {
 
 	gp := auth.GroupsPolicy{
 		GroupID:  groupID,
-		Policy:   rwPolicy,
+		Policy:   auth.RwPolicy,
 		MemberID: memberID,
 	}
 
-	err = repo.SavePolicy(context.Background(), memberID, rwPolicy, groupID)
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1809,7 +1807,7 @@ func TestUpdatePolicy(t *testing.T) {
 	memberID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	err = repo.SavePolicy(context.Background(), memberID, rwPolicy, groupID)
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1823,7 +1821,7 @@ func TestUpdatePolicy(t *testing.T) {
 			gp: auth.GroupsPolicy{
 				GroupID:  "",
 				MemberID: memberID,
-				Policy:   rPolicy,
+				Policy:   auth.RPolicy,
 			},
 			policy: "",
 			err:    errors.ErrMalformedEntity,
@@ -1833,7 +1831,7 @@ func TestUpdatePolicy(t *testing.T) {
 			gp: auth.GroupsPolicy{
 				GroupID:  groupID,
 				MemberID: "",
-				Policy:   rPolicy,
+				Policy:   auth.RPolicy,
 			},
 			policy: "",
 			err:    errors.ErrMalformedEntity,
@@ -1843,9 +1841,9 @@ func TestUpdatePolicy(t *testing.T) {
 			gp: auth.GroupsPolicy{
 				GroupID:  groupID,
 				MemberID: memberID,
-				Policy:   rPolicy,
+				Policy:   auth.RPolicy,
 			},
-			policy: rPolicy,
+			policy: auth.RPolicy,
 			err:    nil,
 		},
 	}

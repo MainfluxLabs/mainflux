@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
+	auths "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -38,7 +39,6 @@ const (
 	defLimit       = 10
 	defOffset      = 0
 	defFormat      = "messages"
-	rootSubject    = "root"
 )
 
 var (
@@ -355,7 +355,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			return err
 		}
 
-		if err := authorizeAdmin(ctx, rootSubject, token); err == nil {
+		if err := authorizeAdmin(ctx, auths.RootSubject, token); err == nil {
 			return nil
 		}
 

@@ -7,15 +7,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
 	"github.com/MainfluxLabs/mainflux"
-)
-
-const (
-	rootSubject  = "root"
-	groupSubject = "group"
-	readAction   = "read"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -268,7 +263,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return thing, nil
 	}
 
@@ -282,7 +277,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	}
 
 	for _, group := range mpg.Groups {
-		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: group.ID, Action: readAction})
+		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: group.ID, Action: auth.ReadAction})
 		if err == nil {
 			return thing, nil
 		}
@@ -298,7 +293,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.things.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -399,7 +394,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return channel, nil
 	}
 
@@ -417,7 +412,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, admin b
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.channels.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -436,7 +431,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 	}
 
@@ -450,7 +445,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 	}
 
 	for _, group := range mpg.Groups {
-		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: group.ID, Action: readAction})
+		_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: group.ID, Action: auth.ReadAction})
 		if err == nil {
 			return ts.channels.RetrieveConns(ctx, thID, pm)
 		}
@@ -597,7 +592,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err != nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -641,7 +636,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err != nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return err
 	}
 
@@ -712,7 +707,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.groups.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -761,7 +756,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: groupSubject, Object: id, Action: readAction})
+	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction})
 	if user.GetId() != gr.OwnerID && err != nil {
 		return Group{}, err
 	}

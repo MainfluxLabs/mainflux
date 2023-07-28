@@ -17,8 +17,10 @@ const (
 	AdminRole        = "admin"
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
-	rootSubject      = "root"
-	groupSubject     = "group"
+	RootSubject      = "root"
+	GroupSubject     = "group"
+	ReadAction       = "read"
+	WriteAction      = "read_write"
 	RPolicy          = "read"
 	RwPolicy         = "read_write"
 )
@@ -163,9 +165,9 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	}
 
 	switch ar.Subject {
-	case rootSubject:
+	case RootSubject:
 		return svc.canAccessRoot(ctx, user.ID)
-	case groupSubject:
+	case GroupSubject:
 		return svc.canAccessGroup(ctx, user.ID, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
@@ -721,7 +723,16 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 		return err
 	}
 
-	if policy != action && policy != RwPolicy {
+	switch action {
+	case ReadAction:
+		if policy != RwPolicy && policy != RPolicy {
+			return errors.ErrAuthorization
+		}
+	case WriteAction:
+		if policy != RwPolicy {
+			return errors.ErrAuthorization
+		}
+	default:
 		return errors.ErrAuthorization
 	}
 

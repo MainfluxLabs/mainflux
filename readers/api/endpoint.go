@@ -6,6 +6,7 @@ package api
 import (
 	"context"
 
+	auths "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -43,7 +44,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, rootSubject, req.token); err != nil {
+		if err := authorizeAdmin(ctx, auths.RootSubject, req.token); err != nil {
 			return nil, err
 		}
 
@@ -68,7 +69,7 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, rootSubject, req.token); err != nil {
+		if err := authorizeAdmin(ctx, auths.RootSubject, req.token); err != nil {
 			return nil, err
 		}
 
