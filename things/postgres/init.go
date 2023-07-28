@@ -113,7 +113,7 @@ func migrateDB(db *sqlx.DB) error {
 						UNIQUE (owner_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_relations (
-						member_id   UUID NOT NULL,
+						member_id   UUID UNIQUE NOT NULL,
 						group_id    UUID NOT NULL,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,

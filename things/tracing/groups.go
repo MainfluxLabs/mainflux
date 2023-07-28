@@ -124,18 +124,18 @@ func (grm groupRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Conte
 	return grm.repo.RetrieveAllGroupRelations(ctx)
 }
 
-func (grm groupRepositoryMiddleware) AssignMember(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm groupRepositoryMiddleware) AssignMember(ctx context.Context, groupID string, memberID string) error {
 	span := createSpan(ctx, grm.tracer, assignMemberOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.AssignMember(ctx, groupID, memberIDs...)
+	return grm.repo.AssignMember(ctx, groupID, memberID)
 }
 
-func (grm groupRepositoryMiddleware) UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm groupRepositoryMiddleware) UnassignMember(ctx context.Context, groupID string, memberID string) error {
 	span := createSpan(ctx, grm.tracer, unassignMemberOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.UnassignMember(ctx, groupID, memberIDs...)
+	return grm.repo.UnassignMember(ctx, groupID, memberID)
 }

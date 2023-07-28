@@ -209,14 +209,14 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Post("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
-		decodeAssignRequest,
+		decodememberRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
-		decodeUnassignRequest,
+		decodememberRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -229,7 +229,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:memberID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_membership")(viewMembershipEndpoint(svc)),
+		kitot.TraceServer(tracer, "view_membership")(viewMembershipEndpoint(svc)),
 		decodeViewMembershipRequest,
 		encodeResponse,
 		opts...,
@@ -567,25 +567,10 @@ func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := assignReq{
+func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := memberReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := unassignReq{
-		assignReq{
-			token:   apiutil.ExtractBearerToken(r),
-			groupID: bone.GetValue(r, groupIDKey),
-		},
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

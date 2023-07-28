@@ -125,10 +125,10 @@ type Service interface {
 	RemoveGroup(ctx context.Context, token, id string) error
 
 	// Assign adds a member with memberID into the group identified by groupID.
-	Assign(ctx context.Context, token, groupID string, memberIDs ...string) error
+	Assign(ctx context.Context, token, groupID string, memberID string) error
 
 	// Unassign removes member with memberID from group identified by groupID.
-	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
+	Unassign(ctx context.Context, token, groupID string, memberID string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -759,24 +759,24 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 	return gr, nil
 }
 
-func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberID string) error {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return err
 	}
 
-	if err := ts.groups.AssignMember(ctx, groupID, memberIDs...); err != nil {
+	if err := ts.groups.AssignMember(ctx, groupID, memberID); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberID string) error {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return err
 	}
 
-	return ts.groups.UnassignMember(ctx, groupID, memberIDs...)
+	return ts.groups.UnassignMember(ctx, groupID, memberID)
 }
 
 func getTimestmap() time.Time {
@@ -800,9 +800,14 @@ func (ts *thingsService) ViewMembership(ctx context.Context, token string, membe
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
+
 	groupID, err := ts.groups.RetrieveMembership(ctx, memberID)
 	if err != nil {
 		return Group{}, err
+	}
+
+	if groupID == "" {
+		return Group{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	group, err := ts.groups.RetrieveByID(ctx, groupID)

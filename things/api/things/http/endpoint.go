@@ -643,12 +643,12 @@ func viewMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 
 func assignEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignReq)
+		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Assign(ctx, req.token, req.groupID, req.Members...); err != nil {
+		if err := svc.Assign(ctx, req.token, req.groupID, req.MemberID); err != nil {
 			return nil, err
 		}
 
@@ -658,12 +658,12 @@ func assignEndpoint(svc things.Service) endpoint.Endpoint {
 
 func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(unassignReq)
+		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Unassign(ctx, req.token, req.groupID, req.Members...); err != nil {
+		if err := svc.Unassign(ctx, req.token, req.groupID, req.MemberID); err != nil {
 			return nil, err
 		}
 

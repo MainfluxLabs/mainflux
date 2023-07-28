@@ -288,12 +288,12 @@ func (es eventStore) ViewGroup(ctx context.Context, token, id string) (things.Gr
 	return es.svc.ViewGroup(ctx, token, id)
 }
 
-func (es eventStore) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
-	return es.svc.Assign(ctx, token, groupID, memberIDs...)
+func (es eventStore) Assign(ctx context.Context, token string, groupID string, memberID string) error {
+	return es.svc.Assign(ctx, token, groupID, memberID)
 }
 
-func (es eventStore) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
-	return es.svc.Unassign(ctx, token, groupID, memberIDs...)
+func (es eventStore) Unassign(ctx context.Context, token string, groupID string, memberID string) error {
+	return es.svc.Unassign(ctx, token, groupID, memberID)
 }
 
 func (es eventStore) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {

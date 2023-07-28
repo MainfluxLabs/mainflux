@@ -122,27 +122,26 @@ func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID str
 	}, nil
 }
 
-func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID string, memberID string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[groupID]; !ok {
 		return errors.ErrNotFound
 	}
-	for _, memberID := range memberIDs {
-		for typ, m := range grm.members[groupID] {
-			_, ok := m[memberID]
-			if !ok {
-				return errors.ErrNotFound
-			}
-			delete(grm.members[groupID][typ], memberID)
-			delete(grm.memberships, memberID)
-		}
 
+	for typ, m := range grm.members[groupID] {
+		_, ok := m[memberID]
+		if !ok {
+			return errors.ErrNotFound
+		}
+		delete(grm.members[groupID][typ], memberID)
+		delete(grm.memberships, memberID)
 	}
+
 	return nil
 }
 
-func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string, memberIDs ...string) error {
+func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string, memberID string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[groupID]; !ok {
@@ -153,17 +152,16 @@ func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string
 		grm.members[groupID] = make(map[string]map[string]string)
 	}
 
-	for _, memberID := range memberIDs {
-		if _, ok := grm.members[groupID][groupID]; !ok {
-			grm.members[groupID][groupID] = make(map[string]string)
-		}
-		if _, ok := grm.memberships[memberID]; !ok {
-			grm.memberships[memberID] = groupID
-		}
-
-		grm.members[groupID][groupID][memberID] = memberID
+	if _, ok := grm.members[groupID][groupID]; !ok {
+		grm.members[groupID][groupID] = make(map[string]string)
+	}
+	if _, ok := grm.memberships[memberID]; !ok {
 		grm.memberships[memberID] = groupID
 	}
+
+	grm.members[groupID][groupID][memberID] = memberID
+	grm.memberships[memberID] = groupID
+
 	return nil
 
 }
