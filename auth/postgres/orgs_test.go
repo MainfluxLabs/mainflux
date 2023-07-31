@@ -1624,3 +1624,232 @@ func TestRetrieveAllGroupRelations(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
+
+func TestSavePolicy(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	groupID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc     string
+		memberID string
+		policy   string
+		groupID  string
+		err      error
+	}{
+		{
+			desc:     "save policy",
+			memberID: memberID,
+			policy:   auth.RwPolicy,
+			groupID:  groupID,
+			err:      nil,
+		},
+		{
+			desc:     "save policy without group id",
+			memberID: memberID,
+			policy:   auth.RwPolicy,
+			groupID:  "",
+			err:      errors.ErrMalformedEntity,
+		},
+		{
+			desc:     "save policy without member id",
+			memberID: "",
+			policy:   auth.RwPolicy,
+			groupID:  groupID,
+			err:      errors.ErrMalformedEntity,
+		},
+		{
+			desc:     "save existing policy",
+			memberID: memberID,
+			policy:   auth.RwPolicy,
+			groupID:  groupID,
+			err:      errors.ErrConflict,
+		},
+	}
+
+	for _, tc := range cases {
+		err := repo.SavePolicy(context.Background(), tc.memberID, tc.policy, tc.groupID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrievePolicy(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	groupID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gp := auth.GroupsPolicy{
+		GroupID:  groupID,
+		Policy:   auth.RwPolicy,
+		MemberID: memberID,
+	}
+
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc   string
+		gp     auth.GroupsPolicy
+		policy string
+		err    error
+	}{
+		{
+			desc:   "retrieve policy",
+			gp:     gp,
+			policy: auth.RwPolicy,
+			err:    nil,
+		},
+		{
+			desc: "retrieve policy without group id",
+			gp: auth.GroupsPolicy{
+				GroupID:  "",
+				MemberID: memberID,
+			},
+			policy: "",
+			err:    errors.ErrRetrieveEntity,
+		},
+		{
+			desc: "retrieve policy without member id",
+			gp: auth.GroupsPolicy{
+				GroupID:  groupID,
+				MemberID: "",
+			},
+			policy: "",
+			err:    errors.ErrRetrieveEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		policy, err := repo.RetrievePolicy(context.Background(), tc.gp)
+		assert.Equal(t, tc.policy, policy, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.policy, policy))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemovePolicy(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	groupID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gp := auth.GroupsPolicy{
+		GroupID:  groupID,
+		Policy:   auth.RwPolicy,
+		MemberID: memberID,
+	}
+
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc string
+		gp   auth.GroupsPolicy
+		err  error
+	}{
+		{
+			desc: "remove policy without group id",
+			gp: auth.GroupsPolicy{
+				GroupID:  "",
+				MemberID: memberID,
+			},
+			err: errors.ErrRemoveEntity,
+		},
+		{
+			desc: "remove policy without member id",
+			gp: auth.GroupsPolicy{
+				GroupID:  groupID,
+				MemberID: "",
+			},
+			err: errors.ErrRemoveEntity,
+		},
+		{
+			desc: "remove policy",
+			gp:   gp,
+			err:  nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := repo.RemovePolicy(context.Background(), tc.gp)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestUpdatePolicy(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	groupID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc   string
+		gp     auth.GroupsPolicy
+		policy string
+		err    error
+	}{
+		{
+			desc: "update policy without group id",
+			gp: auth.GroupsPolicy{
+				GroupID:  "",
+				MemberID: memberID,
+				Policy:   auth.RPolicy,
+			},
+			policy: "",
+			err:    errors.ErrMalformedEntity,
+		},
+		{
+			desc: "update policy without member id",
+			gp: auth.GroupsPolicy{
+				GroupID:  groupID,
+				MemberID: "",
+				Policy:   auth.RPolicy,
+			},
+			policy: "",
+			err:    errors.ErrMalformedEntity,
+		},
+		{
+			desc: "update policy",
+			gp: auth.GroupsPolicy{
+				GroupID:  groupID,
+				MemberID: memberID,
+				Policy:   auth.RPolicy,
+			},
+			policy: auth.RPolicy,
+			err:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := repo.UpdatePolicy(context.Background(), tc.gp)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}

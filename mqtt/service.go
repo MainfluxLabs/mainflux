@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
 )
-
-const rootSubject = "root"
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -81,7 +80,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 			return err
 		}
 
-		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: rootSubject}); err == nil {
+		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err == nil {
 			return nil
 		}
 

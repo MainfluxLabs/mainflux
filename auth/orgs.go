@@ -95,6 +95,12 @@ type GroupRelationsPage struct {
 	GroupRelations []GroupRelation
 }
 
+type GroupsPolicy struct {
+	GroupID  string
+	MemberID string
+	Policy   string
+}
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -235,4 +241,16 @@ type OrgRepository interface {
 
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
+
+	// SavePolicy saves group policy for a user.
+	SavePolicy(ctx context.Context, memberID, policy string, groupID ...string) error
+
+	// RetrievePolicy retrieves group policy for a user.
+	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
+
+	// RemovePolicy removes group policy for a user.
+	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
+
+	// UpdatePolicy updates group policy for a user.
+	UpdatePolicy(ctx context.Context, gp GroupsPolicy) error
 }
