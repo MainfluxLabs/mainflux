@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
-	auths "github.com/MainfluxLabs/mainflux/auth"
+	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -42,14 +42,14 @@ const (
 )
 
 var (
-	things mainflux.ThingsServiceClient
-	auth   mainflux.AuthServiceClient
+	thingc mainflux.ThingsServiceClient
+	authc  mainflux.AuthServiceClient
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
-	things = tc
-	auth = ac
+	thingc = tc
+	authc = ac
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
@@ -350,21 +350,21 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		user, err := auth.Identify(ctx, &mainflux.Token{Value: token})
+		user, err := authc.Identify(ctx, &mainflux.Token{Value: token})
 		if err != nil {
 			return err
 		}
 
-		if err := authorizeAdmin(ctx, auths.RootSubject, token); err == nil {
+		if err := authorizeAdmin(ctx, auth.RootSubject, token); err == nil {
 			return nil
 		}
 
-		if _, err = things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
+		if _, err = thingc.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil
 	default:
-		if _, err := things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
+		if _, err := thingc.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil
@@ -377,7 +377,7 @@ func authorizeAdmin(ctx context.Context, subject, token string) error {
 		Subject: subject,
 	}
 
-	if _, err := auth.Authorize(ctx, req); err != nil {
+	if _, err := authc.Authorize(ctx, req); err != nil {
 		return err
 	}
 
