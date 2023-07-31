@@ -113,7 +113,7 @@ func migrateDB(db *sqlx.DB) error {
 						UNIQUE (owner_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_relations (
-						member_id   UUID UNIQUE NOT NULL,
+						member_id   UUID NOT NULL,
 						group_id    UUID NOT NULL,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
@@ -124,6 +124,12 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{
 					"DROP TABLE groups",
 					"DROP TABLE group_relations",
+				},
+			},
+			{
+				Id: "things_6",
+				Up: []string{
+					`ALTER TABLE group_relations ADD CONSTRAINT member_id_unique UNIQUE (member_id);`,
 				},
 			},
 		},
