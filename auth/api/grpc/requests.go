@@ -106,7 +106,6 @@ type policyReq struct {
 	Policy  string
 	Subject string
 	Object  string
-	Action  string
 }
 
 func (req policyReq) validate() error {
@@ -116,6 +115,10 @@ func (req policyReq) validate() error {
 
 	if req.Object == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.Subject == "" {
+		return apiutil.ErrMissingSubject
 	}
 
 	if req.Policy != auth.RPolicy && req.Policy != auth.RwPolicy && req.Policy != "" {
