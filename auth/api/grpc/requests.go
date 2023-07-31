@@ -94,8 +94,8 @@ func (req authReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Subject == "" {
-		return apiutil.ErrMissingSubject
+	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
+		return apiutil.ErrInvalidSubject
 	}
 
 	return nil
@@ -114,11 +114,11 @@ func (req policyReq) validate() error {
 	}
 
 	if req.Object == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingObject
 	}
 
-	if req.Subject == "" {
-		return apiutil.ErrMissingSubject
+	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
+		return apiutil.ErrInvalidSubject
 	}
 
 	if req.Policy != auth.RPolicy && req.Policy != auth.RwPolicy && req.Policy != "" {
