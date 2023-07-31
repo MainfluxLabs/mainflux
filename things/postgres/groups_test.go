@@ -20,6 +20,7 @@ const (
 	groupName    = "Mainflux"
 	description  = "description"
 	n            = uint64(5)
+	invalid      = "invalid"
 )
 
 var (
@@ -650,14 +651,25 @@ func TestRetrieveMembership(t *testing.T) {
 		"retrieve membership for non-existing member": {
 			memberID: unknownID,
 			groupID:  "",
-			err:      errors.ErrNotFound,
+			err:      nil,
+		},
+
+		"retrieve membership for invalid member id": {
+			memberID: invalid,
+			groupID:  "",
+			err:      things.ErrFailedToRetrieveMembership,
+		},
+		"retrieve membership without member id": {
+			memberID: "",
+			groupID:  "",
+			err:      things.ErrFailedToRetrieveMembership,
 		},
 	}
 
 	for desc, tc := range cases {
 		grID, err := groupRepo.RetrieveMembership(context.Background(), tc.memberID)
 		assert.Equal(t, tc.groupID, grID, fmt.Sprintf("%s: expected group id %s got %s\n", desc, tc.groupID, grID))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 
 }

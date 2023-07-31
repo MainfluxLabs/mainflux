@@ -298,14 +298,14 @@ func (gr groupRepository) RetrieveMembership(ctx context.Context, memberID strin
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(things.ErrFailedToRetrieveMembership, err)
 	}
 	defer rows.Close()
 
 	var groupID string
 	for rows.Next() {
 		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+			return "", errors.Wrap(things.ErrFailedToRetrieveMembership, err)
 		}
 	}
 
