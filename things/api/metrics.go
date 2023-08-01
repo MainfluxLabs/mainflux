@@ -300,20 +300,20 @@ func (ms *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) 
 	return ms.svc.RemoveGroup(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) Assign(ctx context.Context, token, groupID string, memberID string) error {
+func (ms *metricsMiddleware) Assign(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign").Add(1)
 		ms.latency.With("method", "assign").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Assign(ctx, token, groupID, memberID)
+	return ms.svc.Assign(ctx, token, groupID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) Unassign(ctx context.Context, token, groupID string, memberID string) error {
+func (ms *metricsMiddleware) Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "unassign").Add(1)
 		ms.latency.With("method", "unassign").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Unassign(ctx, token, groupID, memberID)
+	return ms.svc.Unassign(ctx, token, groupID, memberIDs...)
 }

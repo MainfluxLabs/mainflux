@@ -281,11 +281,11 @@ func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Assign(ctx context.Context, token string, groupID string, memberID string) error {
+func (svc *mainfluxThings) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID string, memberID string) error {
+func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }
 

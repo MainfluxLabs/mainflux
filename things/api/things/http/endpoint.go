@@ -648,7 +648,7 @@ func assignEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Assign(ctx, req.token, req.groupID, req.MemberID); err != nil {
+		if err := svc.Assign(ctx, req.token, req.groupID, req.Members...); err != nil {
 			return nil, err
 		}
 
@@ -663,7 +663,7 @@ func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Unassign(ctx, req.token, req.groupID, req.MemberID); err != nil {
+		if err := svc.Unassign(ctx, req.token, req.groupID, req.Members...); err != nil {
 			return nil, err
 		}
 

@@ -92,10 +92,10 @@ type GroupRepository interface {
 	RetrieveMembers(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)
 
 	// AssignMember adds a member to group.
-	AssignMember(ctx context.Context, groupID string, memberID string) error
+	AssignMember(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UnassignMember removes a member from a group
-	UnassignMember(ctx context.Context, groupID string, memberID string) error
+	UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)

@@ -338,7 +338,7 @@ func (gr groupRepository) RetrieveAllGroupRelations(ctx context.Context) ([]thin
 	return grRel, nil
 }
 
-func (gr groupRepository) AssignMember(ctx context.Context, groupID string, id string) error {
+func (gr groupRepository) AssignMember(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrAssignToGroup, err)
@@ -347,29 +347,31 @@ func (gr groupRepository) AssignMember(ctx context.Context, groupID string, id s
 	qIns := `INSERT INTO group_relations (group_id, member_id, created_at, updated_at)
 		VALUES(:group_id, :member_id, :created_at, :updated_at)`
 
-	dbg, err := toDBGroupRelation(id, groupID)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-	created := time.Now()
-	dbg.CreatedAt = created
-	dbg.UpdatedAt = created
-
-	if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
-		tx.Rollback()
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(things.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
-			}
+	for _, id := range ids {
+		dbg, err := toDBGroupRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignToGroup, err)
 		}
+		created := time.Now()
+		dbg.CreatedAt = created
+		dbg.UpdatedAt = created
 
-		return errors.Wrap(things.ErrAssignToGroup, err)
+		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(things.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -379,7 +381,7 @@ func (gr groupRepository) AssignMember(ctx context.Context, groupID string, id s
 	return nil
 }
 
-func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, id string) error {
+func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrAssignToGroup, err)
@@ -387,24 +389,26 @@ func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, id
 
 	qDel := `DELETE from group_relations WHERE group_id = :group_id AND member_id = :member_id`
 
-	dbg, err := toDBGroupRelation(id, groupID)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
-		tx.Rollback()
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(errors.ErrConflict, err)
-			}
+	for _, id := range ids {
+		dbg, err := toDBGroupRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignToGroup, err)
 		}
 
-		return errors.Wrap(things.ErrAssignToGroup, err)
+		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

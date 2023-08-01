@@ -120,32 +120,35 @@ func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID str
 	}, nil
 }
 
-func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID string, memberID string) error {
+func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	if _, ok := grm.groups[groupID]; !ok {
 		return errors.ErrNotFound
 	}
 
-	members, ok := grm.members[groupID]
-	if !ok {
-		return errors.ErrNotFound
-	}
+	for _, memberID := range memberIDs {
+		members, ok := grm.members[groupID]
+		if !ok {
+			return errors.ErrNotFound
+		}
 
-	for i, member := range members {
-		if member == memberID {
-			grm.members[groupID] = append(members[:i], members[i+1:]...)
-			delete(grm.membership, memberID)
-			break
+		for i, member := range members {
+			if member == memberID {
+				grm.members[groupID] = append(members[:i], members[i+1:]...)
+				delete(grm.membership, memberID)
+				break
+			}
 		}
 	}
 
 	return nil
 }
 
-func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string, memberID string) error {
+func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string, memberIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
+
 	if _, ok := grm.groups[groupID]; !ok {
 		return errors.ErrNotFound
 	}
@@ -154,8 +157,10 @@ func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string
 		grm.members[groupID] = []string{}
 	}
 
-	grm.members[groupID] = append(grm.members[groupID], memberID)
-	grm.membership[memberID] = groupID
+	for _, memberID := range memberIDs {
+		grm.members[groupID] = append(grm.members[groupID], memberID)
+		grm.membership[memberID] = groupID
+	}
 
 	return nil
 }

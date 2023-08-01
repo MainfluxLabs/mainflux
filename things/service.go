@@ -124,10 +124,10 @@ type Service interface {
 	RemoveGroup(ctx context.Context, token, id string) error
 
 	// Assign adds a member with memberID into the group identified by groupID.
-	Assign(ctx context.Context, token, groupID string, memberID string) error
+	Assign(ctx context.Context, token, groupID string, memberIDs ...string) error
 
 	// Unassign removes member with memberID from group identified by groupID.
-	Unassign(ctx context.Context, token, groupID string, memberID string) error
+	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -758,24 +758,24 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 	return gr, nil
 }
 
-func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberID string) error {
+func (ts *thingsService) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return err
 	}
 
-	if err := ts.groups.AssignMember(ctx, groupID, memberID); err != nil {
+	if err := ts.groups.AssignMember(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberID string) error {
+func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return err
 	}
 
-	return ts.groups.UnassignMember(ctx, groupID, memberID)
+	return ts.groups.UnassignMember(ctx, groupID, memberIDs...)
 }
 
 func getTimestmap() time.Time {
