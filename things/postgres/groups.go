@@ -241,10 +241,22 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
-	FROM group_relations gr, things t
-	WHERE gr.group_id = :group_id and gr.member_id = t.id
-	%s %s;`, mq, olq)
+	var q, qc string
+	switch pm.Unassigned {
+	case true:
+		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+			FROM  things t
+			WHERE t.id NOT IN (SELECT gr.member_id FROM group_relations gr WHERE gr.group_id = :group_id)
+			%s %s;`, mq, olq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM things t
+			WHERE t.id NOT IN (SELECT gr.member_id FROM group_relations gr WHERE gr.group_id = :group_id) %s;`, mq)
+	default:
+		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+			FROM group_relations gr, things t
+			WHERE gr.group_id = :group_id and gr.member_id = t.id
+			%s %s;`, mq, olq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr WHERE gr.group_id = :group_id %s;`, mq)
+	}
 
 	params, err := toDBMemberPage("", groupID, pm)
 	if err != nil {
@@ -272,9 +284,7 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 		items = append(items, th)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr WHERE gr.group_id = :group_id %s;`, mq)
-
-	total, err := total(ctx, gr.db, cq, params)
+	total, err := total(ctx, gr.db, qc, params)
 	if err != nil {
 		return things.MemberPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
 	}
