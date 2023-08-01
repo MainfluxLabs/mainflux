@@ -23,14 +23,14 @@ const (
 var _ mainflux.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue          endpoint.Endpoint
-	identify       endpoint.Endpoint
-	authorize      endpoint.Endpoint
-	canAccessGroup endpoint.Endpoint
-	assign         endpoint.Endpoint
-	members        endpoint.Endpoint
-	assignRole     endpoint.Endpoint
-	timeout        time.Duration
+	issue      endpoint.Endpoint
+	identify   endpoint.Endpoint
+	authorize  endpoint.Endpoint
+	addPolicy  endpoint.Endpoint
+	assign     endpoint.Endpoint
+	members    endpoint.Endpoint
+	assignRole endpoint.Endpoint
+	timeout    time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -60,11 +60,11 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
-		canAccessGroup: kitot.TraceClient(tracer, "can_access_group")(kitgrpc.NewClient(
+		addPolicy: kitot.TraceClient(tracer, "add_policy")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"CanAccessGroup",
-			encodeAccessGroupRequest,
+			"AddPolicy",
+			encodeAddPolicyRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -166,11 +166,11 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	}, nil
 }
 
-func (client grpcClient) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) AddPolicy(ctx context.Context, req *mainflux.PolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.canAccessGroup(ctx, accessGroupReq{Token: req.GetToken(), GroupID: req.GetGroupID()})
+	res, err := client.addPolicy(ctx, policyReq{Token: req.GetToken(), Object: req.GetObject(), Policy: req.GetPolicy()})
 	if err != nil {
 		return nil, err
 	}
@@ -179,11 +179,12 @@ func (client grpcClient) CanAccessGroup(ctx context.Context, req *mainflux.Acces
 	return &empty.Empty{}, er.err
 }
 
-func encodeAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(accessGroupReq)
-	return &mainflux.AccessGroupReq{
-		Token:   req.Token,
-		GroupID: req.GroupID,
+func encodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(policyReq)
+	return &mainflux.PolicyReq{
+		Token:  req.Token,
+		Object: req.Object,
+		Policy: req.Policy,
 	}, nil
 }
 

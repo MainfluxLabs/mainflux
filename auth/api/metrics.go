@@ -206,13 +206,13 @@ func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID s
 	return ms.svc.ListOrgGroups(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID string) error {
+func (ms *metricsMiddleware) AddPolicy(ctx context.Context, token, groupID, policy string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "can_access_group").Add(1)
-		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "add_policy").Add(1)
+		ms.latency.With("method", "add_policy").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CanAccessGroup(ctx, token, groupID)
+	return ms.svc.AddPolicy(ctx, token, groupID, policy)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Backup, error) {

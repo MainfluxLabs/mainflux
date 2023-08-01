@@ -38,7 +38,6 @@ const (
 	description     = "description"
 	name            = "name"
 	invalid         = "invalid"
-	rootSubject     = "root"
 	n               = 10
 
 	loginDuration = 30 * time.Minute
@@ -347,7 +346,7 @@ func TestAuthorize(t *testing.T) {
 	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
-	pr := auth.AuthzReq{Token: adminToken, Subject: rootSubject}
+	pr := auth.AuthzReq{Token: adminToken, Subject: auth.RootSubject}
 	err = svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }

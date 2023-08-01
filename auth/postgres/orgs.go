@@ -651,6 +651,125 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	return grs, nil
 }
 
+func (or orgRepository) SavePolicy(ctx context.Context, memberID, policy string, groupIDs ...string) error {
+	tx, err := or.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(auth.ErrAssignToOrg, err)
+	}
+
+	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
+
+	for _, id := range groupIDs {
+		gp := auth.GroupsPolicy{
+			MemberID: memberID,
+			GroupID:  id,
+			Policy:   policy,
+		}
+
+		dbgp, err := toDBGroupPolicy(gp)
+		if err != nil {
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+
+		if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				}
+			}
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+
+		if err = tx.Commit(); err != nil {
+			return errors.Wrap(errors.ErrCreateEntity, err)
+		}
+	}
+
+	return nil
+}
+
+func (or orgRepository) RetrievePolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
+	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
+
+	params := map[string]interface{}{
+		"member_id": gp.MemberID,
+		"group_id":  gp.GroupID,
+	}
+
+	rows, err := or.db.NamedQueryContext(ctc, q, params)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var policy string
+	for rows.Next() {
+		if err := rows.Scan(&policy); err != nil {
+			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+	}
+
+	return policy, nil
+}
+
+func (or orgRepository) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
+
+	dbgp := dbGroupPolicy{
+		MemberID: gp.MemberID,
+		GroupID:  gp.GroupID,
+	}
+
+	if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
+
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (or orgRepository) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
+
+	dbgp, err := toDBGroupPolicy(gp)
+	if err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	row, err := or.db.NamedExecContext(ctx, q, dbgp)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	cnt, err := row.RowsAffected()
+	if err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	if cnt != 1 {
+		return errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	return nil
+}
+
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	ownq := dbutil.GetOwnerQuery(ownerID, ownerDbId)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -843,6 +962,20 @@ func toGroupRelation(gr dbGroupRelation) auth.GroupRelation {
 		CreatedAt: gr.CreatedAt,
 		UpdatedAt: gr.UpdatedAt,
 	}
+}
+
+type dbGroupPolicy struct {
+	MemberID string `db:"member_id"`
+	GroupID  string `db:"group_id"`
+	Policy   string `db:"policy"`
+}
+
+func toDBGroupPolicy(gp auth.GroupsPolicy) (dbGroupPolicy, error) {
+	return dbGroupPolicy{
+		MemberID: gp.MemberID,
+		GroupID:  gp.GroupID,
+		Policy:   gp.Policy,
+	}, nil
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {

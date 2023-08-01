@@ -29,6 +29,10 @@ const (
 	retrieveAll                = "retrieve_all_orgs"
 	retrieveAllMemberRelations = "retrieve_all_member_elations"
 	retrieveAllGroupRelations  = "retrieve_all_group_relations"
+	savePolicy                 = "save_policy"
+	removePolicy               = "remove_policy"
+	retrievePolicy             = "retrieve_policy"
+	updatePolicy               = "update_policy"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -196,4 +200,36 @@ func (orm orgRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveAllGroupRelations(ctx)
+}
+
+func (orm orgRepositoryMiddleware) SavePolicy(ctx context.Context, memberID, policy string, groupIDs ...string) error {
+	span := createSpan(ctx, orm.tracer, savePolicy)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.SavePolicy(ctx, memberID, policy, groupIDs...)
+}
+
+func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+	span := createSpan(ctx, orm.tracer, retrievePolicy)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrievePolicy(ctx, gp)
+}
+
+func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	span := createSpan(ctx, orm.tracer, updatePolicy)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.UpdatePolicy(ctx, gp)
+}
+
+func (orm orgRepositoryMiddleware) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+	span := createSpan(ctx, orm.tracer, removePolicy)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RemovePolicy(ctx, gp)
 }
