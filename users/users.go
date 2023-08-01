@@ -40,6 +40,7 @@ type User struct {
 	Password string
 	Metadata Metadata
 	Status   string
+	Role     string
 }
 
 // Validate returns an error if user representation is invalid.

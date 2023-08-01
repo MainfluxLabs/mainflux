@@ -88,6 +88,7 @@ type viewUserRes struct {
 	ID       string                 `json:"id"`
 	Email    string                 `json:"email"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Role     string                 `json:"role,omitempty"`
 }
 
 func (res viewUserRes) Code() int {

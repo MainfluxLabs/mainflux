@@ -298,11 +298,19 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 		return User{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return User{
+	u := User{
 		ID:       dbUser.ID,
 		Email:    ir.email,
 		Metadata: dbUser.Metadata,
-	}, nil
+	}
+
+	if err := svc.authorize(ctx, rootSubject, token); err != nil {
+		return u, nil
+	}
+
+	u.Role = rootSubject
+
+	return u, nil
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
