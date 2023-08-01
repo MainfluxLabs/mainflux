@@ -79,3 +79,4 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *mainflux.G
 
 	return &mainflux.GroupsRes{Groups: groups}, nil
 }
+

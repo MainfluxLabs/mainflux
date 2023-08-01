@@ -126,6 +126,12 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE group_relations",
 				},
 			},
+			{
+				Id: "things_6",
+				Up: []string{
+					`ALTER TABLE group_relations ADD CONSTRAINT member_id_unique UNIQUE (member_id);`,
+				},
+			},
 		},
 	}
 
