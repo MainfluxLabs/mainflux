@@ -23,19 +23,20 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	nameKey     = "name"
-	orderKey    = "order"
-	dirKey      = "dir"
-	metadataKey = "metadata"
-	disconnKey  = "disconnected"
-	groupIDKey  = "groupID"
-	memberIDKey = "memberID"
-	adminKey    = "admin"
-	defOffset   = 0
-	defLimit    = 10
+	contentType   = "application/json"
+	offsetKey     = "offset"
+	limitKey      = "limit"
+	nameKey       = "name"
+	orderKey      = "order"
+	dirKey        = "dir"
+	metadataKey   = "metadata"
+	disconnKey    = "disconnected"
+	groupIDKey    = "groupID"
+	memberIDKey   = "memberID"
+	unassignedKey = "unassigned"
+	adminKey      = "admin"
+	defOffset     = 0
+	defLimit      = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -479,12 +480,18 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	u, err := apiutil.ReadBoolQuery(r, unassignedKey, false)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listMembersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, groupIDKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		token:      apiutil.ExtractBearerToken(r),
+		id:         bone.GetValue(r, groupIDKey),
+		unassigned: u,
+		offset:     o,
+		limit:      l,
+		metadata:   m,
 	}
 	return req, nil
 }

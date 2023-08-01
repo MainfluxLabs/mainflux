@@ -140,6 +140,7 @@ type PageMetadata struct {
 	Dir          string                 `json:"dir,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 	Disconnected bool                   // Used for connected or disconnected lists
+	Unassigned   bool                   // Used for assigned or unassigned lists
 }
 
 type Backup struct {

@@ -602,9 +602,10 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		pm := things.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
+			Offset:     req.offset,
+			Limit:      req.limit,
+			Metadata:   req.metadata,
+			Unassigned: req.unassigned,
 		}
 		page, err := svc.ListMembers(ctx, req.token, req.id, pm)
 		if err != nil {
