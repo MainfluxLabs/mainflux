@@ -19,20 +19,18 @@ type groupRepositoryMock struct {
 	// Map of groups, group id as a key.
 	// groups      map[GroupID]auth.Group
 	groups map[string]things.Group
-	// Map of group memberships where member id is a key and group id is a value.
-	memberships map[string]string
-	// Map of group members where member id is a key
-	// is an element in the map members where group id is a key.
-	// members     map[type][GroupID]map[MemberID]MemberID
-	members map[string]map[string]map[string]string
+	// Map of group membership where member id is a key and group id is a value.
+	membership map[string]string
+	// Map of group member where group id is a key and member ids are values.
+	members map[string][]string
 }
 
 // NewGroupRepository creates in-memory user repository
 func NewGroupRepository() things.GroupRepository {
 	return &groupRepositoryMock{
-		groups:      make(map[string]things.Group),
-		memberships: make(map[string]string),
-		members:     make(map[string]map[string]map[string]string),
+		groups:     make(map[string]things.Group),
+		membership: make(map[string]string),
+		members:    make(map[string][]string),
 	}
 }
 
@@ -129,13 +127,17 @@ func (grm *groupRepositoryMock) UnassignMember(ctx context.Context, groupID stri
 		return errors.ErrNotFound
 	}
 
-	for typ, m := range grm.members[groupID] {
-		_, ok := m[memberID]
-		if !ok {
-			return errors.ErrNotFound
+	members, ok := grm.members[groupID]
+	if !ok {
+		return errors.ErrNotFound
+	}
+
+	for i, member := range members {
+		if member == memberID {
+			grm.members[groupID] = append(members[:i], members[i+1:]...)
+			delete(grm.membership, memberID)
+			break
 		}
-		delete(grm.members[groupID][typ], memberID)
-		delete(grm.memberships, memberID)
 	}
 
 	return nil
@@ -149,28 +151,20 @@ func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string
 	}
 
 	if _, ok := grm.members[groupID]; !ok {
-		grm.members[groupID] = make(map[string]map[string]string)
+		grm.members[groupID] = []string{}
 	}
 
-	if _, ok := grm.members[groupID][groupID]; !ok {
-		grm.members[groupID][groupID] = make(map[string]string)
-	}
-	if _, ok := grm.memberships[memberID]; !ok {
-		grm.memberships[memberID] = groupID
-	}
-
-	grm.members[groupID][groupID][memberID] = memberID
-	grm.memberships[memberID] = groupID
+	grm.members[groupID] = append(grm.members[groupID], memberID)
+	grm.membership[memberID] = groupID
 
 	return nil
-
 }
 
 func (grm *groupRepositoryMock) RetrieveMembership(ctx context.Context, memberID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
-	groupID, ok := grm.memberships[memberID]
+	groupID, ok := grm.membership[memberID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -189,13 +183,14 @@ func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID str
 	first := uint64(pm.Offset)
 	last := first + uint64(pm.Limit)
 
-	i := uint64(0)
-	for _, g := range members {
-		if i >= first && i < last {
-			items = append(items, things.Thing{ID: g[groupID]})
-		}
-		i++
+	if last > uint64(len(members)) {
+		last = uint64(len(members))
 	}
+
+	for i := first; i < last; i++ {
+		items = append(items, things.Thing{ID: members[i]})
+	}
+
 	return things.MemberPage{
 		Members: items,
 		PageMetadata: things.PageMetadata{
@@ -209,14 +204,12 @@ func (grm *groupRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) (
 	defer grm.mu.Unlock()
 
 	var groupRelations []things.GroupRelation
-	for _, group := range grm.groups {
-		if members, ok := grm.members[group.ID]; ok {
-			for _, memberID := range members[group.ID] {
-				groupRelations = append(groupRelations, things.GroupRelation{
-					GroupID:  group.ID,
-					MemberID: memberID,
-				})
-			}
+	for groupID, members := range grm.members {
+		for _, memberID := range members {
+			groupRelations = append(groupRelations, things.GroupRelation{
+				GroupID:  groupID,
+				MemberID: memberID,
+			})
 		}
 	}
 
