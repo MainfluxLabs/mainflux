@@ -282,13 +282,13 @@ func (ms *metricsMiddleware) ListMembers(ctx context.Context, token, groupID str
 	return ms.svc.ListMembers(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) ListMemberships(ctx context.Context, token, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (ms *metricsMiddleware) ViewMembership(ctx context.Context, token, memberID string) (things.Group, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_memberships").Add(1)
-		ms.latency.With("method", "list_memberships").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_membership").Add(1)
+		ms.latency.With("method", "view_membership").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListMemberships(ctx, token, memberID, pm)
+	return ms.svc.ViewMembership(ctx, token, memberID)
 }
 
 func (ms *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) error {

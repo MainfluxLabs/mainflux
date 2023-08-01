@@ -20,6 +20,7 @@ const (
 	groupName    = "Mainflux"
 	description  = "description"
 	n            = uint64(5)
+	invalid      = "invalid"
 )
 
 var (
@@ -608,4 +609,67 @@ func cleanUp(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("clean relations unexpected error: %s", err))
 	_, err = db.Exec("delete from groups")
 	require.Nil(t, err, fmt.Sprintf("clean groups unexpected error: %s", err))
+}
+
+func TestRetrieveMembership(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	unknownID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	creationTime := time.Now().UTC()
+	group := things.Group{
+		ID:        generateGroupID(t),
+		Name:      groupName + "Updated",
+		OwnerID:   uid,
+		CreatedAt: creationTime,
+		UpdatedAt: creationTime,
+	}
+
+	group, err = groupRepo.Save(context.Background(), group)
+	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
+
+	err = groupRepo.AssignMember(context.Background(), group.ID, memberID)
+	require.Nil(t, err, fmt.Sprintf("member assign unexpected error: %s", err))
+
+	cases := map[string]struct {
+		memberID string
+		groupID  string
+		err      error
+	}{
+		"retrieve membership": {
+			memberID: memberID,
+			groupID:  group.ID,
+			err:      nil,
+		},
+		"retrieve membership for non-existing member": {
+			memberID: unknownID,
+			groupID:  "",
+			err:      nil,
+		},
+
+		"retrieve membership for invalid member id": {
+			memberID: invalid,
+			groupID:  "",
+			err:      things.ErrFailedToRetrieveMembership,
+		},
+		"retrieve membership without member id": {
+			memberID: "",
+			groupID:  "",
+			err:      things.ErrFailedToRetrieveMembership,
+		},
+	}
+
+	for desc, tc := range cases {
+		grID, err := groupRepo.RetrieveMembership(context.Background(), tc.memberID)
+		assert.Equal(t, tc.groupID, grID, fmt.Sprintf("%s: expected group id %s got %s\n", desc, tc.groupID, grID))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+
 }

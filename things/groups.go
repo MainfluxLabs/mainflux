@@ -85,8 +85,8 @@ type GroupRepository interface {
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveMemberships retrieves list of groups that member belongs to
-	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (GroupPage, error)
+	// RetrieveMembership retrieves group that member belongs to
+	RetrieveMembership(ctx context.Context, memberID string) (string, error)
 
 	// RetrieveMembers retrieves everything that is assigned to a group identified by groupID.
 	RetrieveMembers(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)

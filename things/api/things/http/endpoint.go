@@ -615,31 +615,35 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listMemberships(svc things.Service) endpoint.Endpoint {
+func viewMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		pm := things.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
-		}
-
-		page, err := svc.ListMemberships(ctx, req.token, req.id, pm)
+		group, err := svc.ViewMembership(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupsResponse(page), nil
+		groupRes := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+
+		return groupRes, nil
 	}
 }
 
 func assignEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(assignReq)
+		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -654,7 +658,7 @@ func assignEndpoint(svc things.Service) endpoint.Endpoint {
 
 func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(unassignReq)
+		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
