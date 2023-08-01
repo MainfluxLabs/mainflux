@@ -706,7 +706,7 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Limit:  mp.Limit,
 			Name:   mp.Name,
 		},
-		Members: []thingRes{},
+		Things: []thingRes{},
 	}
 
 	for _, m := range mp.Members {
@@ -716,7 +716,7 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Name:     m.Name,
 			Key:      m.Key,
 		}
-		res.Members = append(res.Members, view)
+		res.Things = append(res.Things, view)
 	}
 
 	return res
