@@ -728,6 +728,17 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return err
 	}
 
+	members, err := ts.groups.RetrieveMembers(ctx, id, PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, member := range members.Members {
+		if err := ts.groups.UnassignMember(ctx, id, member.ID); err != nil {
+			return err
+		}
+	}
+
 	return ts.groups.Remove(ctx, id)
 }
 
