@@ -720,23 +720,40 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 }
 
 func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return err
 	}
 
-	if _, err := ts.groups.RetrieveByID(ctx, id); err != nil {
+	gr, err := ts.groups.RetrieveByID(ctx, id)
+	if err != nil {
 		return err
+	}
+
+	if gr.OwnerID != user.GetId() {
+		return errors.ErrAuthorization
 	}
 
 	return ts.groups.Remove(ctx, id)
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return Group{}, err
 	}
 
+	gr, err := ts.groups.RetrieveByID(ctx, group.ID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	if gr.OwnerID != user.GetId() {
+		return Group{}, errors.ErrAuthorization
+	}
+
 	group.UpdatedAt = getTimestmap()
+
 	return ts.groups.Update(ctx, group)
 }
 
