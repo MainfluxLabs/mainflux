@@ -31,6 +31,7 @@ const (
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
 	admin     = users.User{Email: adminEmail, Password: validPass}
+	user      = users.User{Email: userEmail, Password: validPass}
 )
 
 func newUserService() users.Service {
@@ -41,7 +42,7 @@ func newUserService() users.Service {
 	id, _ := idProvider.ID()
 	admin.ID = id
 
-	auth := mocks.NewAuthService(id, map[string]users.User{adminEmail: admin})
+	auth := mocks.NewAuthService(id, map[string]users.User{adminEmail: admin, userEmail: user})
 
 	emailer := mocks.NewEmailer()
 

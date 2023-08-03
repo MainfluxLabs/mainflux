@@ -37,10 +37,9 @@ var (
 )
 
 func newService() users.Service {
-	userRepo := mocks.NewUserRepository(map[string]users.User{})
 	hasher := mocks.NewHasher()
-
 	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
+	userRepo := mocks.NewUserRepository(mockUsers)
 	authSvc := mocks.NewAuthService(userAdmin.ID, mockUsers)
 	e := mocks.NewEmailer()
 
