@@ -7,12 +7,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 
 	"github.com/MainfluxLabs/mainflux"
 )
-
-const rootSubject = "root"
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -118,8 +117,8 @@ type Service interface {
 	// ListMembers retrieves everything that is assigned to a group identified by groupID.
 	ListMembers(ctx context.Context, token string, groupID string, pm PageMetadata) (MemberPage, error)
 
-	// ListMemberships retrieves all groups for member that is identified with memberID belongs to.
-	ListMemberships(ctx context.Context, token, memberID string, pm PageMetadata) (GroupPage, error)
+	// ViewMembership retrieves group that member belongs to.
+	ViewMembership(ctx context.Context, token, memberID string) (Group, error)
 
 	// RemoveGroup removes the group identified with the provided ID.
 	RemoveGroup(ctx context.Context, token, id string) error
@@ -141,6 +140,7 @@ type PageMetadata struct {
 	Dir          string                 `json:"dir,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 	Disconnected bool                   // Used for connected or disconnected lists
+	Unassigned   bool                   // Used for assigned or unassigned lists
 }
 
 type Backup struct {
@@ -264,7 +264,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return thing, nil
 	}
 
@@ -272,16 +272,13 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return thing, nil
 	}
 
-	mpg, err := ts.groups.RetrieveMemberships(ctx, id, PageMetadata{Limit: 1000})
+	groupID, err := ts.groups.RetrieveMembership(ctx, id)
 	if err != nil {
 		return Thing{}, errors.ErrAuthorization
 	}
 
-	for _, group := range mpg.Groups {
-		_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: group.ID})
-		if err == nil {
-			return thing, nil
-		}
+	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
+		return thing, nil
 	}
 
 	return Thing{}, errors.ErrAuthorization
@@ -294,7 +291,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.things.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -395,7 +392,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return channel, nil
 	}
 
@@ -413,7 +410,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, admin b
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.channels.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -432,7 +429,7 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ChannelsPage{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err == nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 	}
 
@@ -440,16 +437,13 @@ func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID st
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
 	}
 
-	mpg, err := ts.groups.RetrieveMemberships(ctx, thID, PageMetadata{Limit: 0})
+	groupID, err := ts.groups.RetrieveMembership(ctx, thID)
 	if err != nil {
 		return ChannelsPage{}, err
 	}
 
-	for _, group := range mpg.Groups {
-		_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: group.ID})
-		if err == nil {
-			return ts.channels.RetrieveConns(ctx, thID, pm)
-		}
+	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
+		return ts.channels.RetrieveConns(ctx, thID, pm)
 	}
 
 	return ChannelsPage{}, errors.ErrAuthorization
@@ -593,7 +587,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err != nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -637,7 +631,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if err := ts.authorize(ctx, rootSubject, token); err != nil {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return err
 	}
 
@@ -708,7 +702,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, admin boo
 	}
 
 	if admin {
-		if err := ts.authorize(ctx, rootSubject, token); err == nil {
+		if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 			return ts.groups.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -726,23 +720,40 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 }
 
 func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return err
 	}
 
-	if _, err := ts.groups.RetrieveByID(ctx, id); err != nil {
+	gr, err := ts.groups.RetrieveByID(ctx, id)
+	if err != nil {
 		return err
+	}
+
+	if gr.OwnerID != user.GetId() {
+		return errors.ErrAuthorization
 	}
 
 	return ts.groups.Remove(ctx, id)
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return Group{}, err
 	}
 
+	gr, err := ts.groups.RetrieveByID(ctx, group.ID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	if gr.OwnerID != user.GetId() {
+		return Group{}, errors.ErrAuthorization
+	}
+
 	group.UpdatedAt = getTimestmap()
+
 	return ts.groups.Update(ctx, group)
 }
 
@@ -757,7 +768,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
-	_, err = ts.auth.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: id})
+	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction})
 	if user.GetId() != gr.OwnerID && err != nil {
 		return Group{}, err
 	}
@@ -802,11 +813,26 @@ func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID 
 	return mp, nil
 }
 
-func (ts *thingsService) ListMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (GroupPage, error) {
+func (ts *thingsService) ViewMembership(ctx context.Context, token string, memberID string) (Group, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
-		return GroupPage{}, err
+		return Group{}, err
 	}
-	return ts.groups.RetrieveMemberships(ctx, memberID, pm)
+
+	groupID, err := ts.groups.RetrieveMembership(ctx, memberID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	if groupID == "" {
+		return Group{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
 }
 
 func (ts *thingsService) authorize(ctx context.Context, subject, token string) error {

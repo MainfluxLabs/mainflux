@@ -122,10 +122,12 @@ func viewProfileEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
+
 		return viewUserRes{
 			ID:       u.ID,
 			Email:    u.Email,
 			Metadata: u.Metadata,
+			Role:     u.Role,
 		}, nil
 	}
 }

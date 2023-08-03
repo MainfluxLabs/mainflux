@@ -296,6 +296,6 @@ func (es eventStore) Unassign(ctx context.Context, token string, groupID string,
 	return es.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
 
-func (es eventStore) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
-	return es.svc.ListMemberships(ctx, token, memberID, pm)
+func (es eventStore) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {
+	return es.svc.ViewMembership(ctx, token, memberID)
 }

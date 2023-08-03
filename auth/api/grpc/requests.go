@@ -94,25 +94,35 @@ func (req authReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Subject == "" {
-		return apiutil.ErrMissingSubject
+	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
+		return apiutil.ErrInvalidSubject
 	}
 
 	return nil
 }
 
-type accessGroupReq struct {
+type policyReq struct {
 	Token   string
-	GroupID string
+	Policy  string
+	Subject string
+	Object  string
 }
 
-func (req accessGroupReq) validate() error {
+func (req policyReq) validate() error {
 	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.GroupID == "" {
-		return apiutil.ErrMissingID
+	if req.Object == "" {
+		return apiutil.ErrMissingObject
+	}
+
+	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
+		return apiutil.ErrInvalidSubject
+	}
+
+	if req.Policy != auth.RPolicy && req.Policy != auth.RwPolicy && req.Policy != "" {
+		return apiutil.ErrInvalidPolicy
 	}
 
 	return nil

@@ -289,6 +289,6 @@ func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID s
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListMemberships(ctx context.Context, token string, memberID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {
 	panic("not implemented")
 }

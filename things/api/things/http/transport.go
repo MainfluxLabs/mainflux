@@ -23,18 +23,20 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	nameKey     = "name"
-	orderKey    = "order"
-	dirKey      = "dir"
-	metadataKey = "metadata"
-	disconnKey  = "disconnected"
-	groupIDKey  = "groupID"
-	adminKey    = "admin"
-	defOffset   = 0
-	defLimit    = 10
+	contentType   = "application/json"
+	offsetKey     = "offset"
+	limitKey      = "limit"
+	nameKey       = "name"
+	orderKey      = "order"
+	dirKey        = "dir"
+	metadataKey   = "metadata"
+	disconnKey    = "disconnected"
+	groupIDKey    = "groupID"
+	memberIDKey   = "memberID"
+	unassignedKey = "unassigned"
+	adminKey      = "admin"
+	defOffset     = 0
+	defLimit      = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -208,14 +210,14 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Post("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
-		decodeAssignRequest,
+		decodememberRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
-		decodeUnassignRequest,
+		decodememberRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -228,8 +230,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:memberID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
-		decodeListMembershipsRequest,
+		kitot.TraceServer(tracer, "view_membership")(viewMembershipEndpoint(svc)),
+		decodeViewMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -478,12 +480,18 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	u, err := apiutil.ReadBoolQuery(r, unassignedKey, false)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listMembersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, groupIDKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		token:      apiutil.ExtractBearerToken(r),
+		id:         bone.GetValue(r, groupIDKey),
+		unassigned: u,
+		offset:     o,
+		limit:      l,
+		metadata:   m,
 	}
 	return req, nil
 }
@@ -566,8 +574,8 @@ func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := assignReq{
+func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := memberReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
@@ -579,43 +587,10 @@ func decodeAssignRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeUnassignRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := unassignReq{
-		assignReq{
-			token:   apiutil.ExtractBearerToken(r),
-			groupID: bone.GetValue(r, groupIDKey),
-		},
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
+func decodeViewMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, "memberID"),
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, memberIDKey),
 	}
 
 	return req, nil

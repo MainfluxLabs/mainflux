@@ -21,8 +21,14 @@ var (
 	// ErrMissingRole indicates missing role.
 	ErrMissingRole = errors.New("missing role")
 
-	// ErrMissingSubject indicates missing subject.
-	ErrMissingSubject = errors.New("missing subject")
+	// ErrMissingObject indicates missing object.
+	ErrMissingObject = errors.New("missing object")
+
+	// ErrMissingSubject indicates invalid subject.
+	ErrInvalidSubject = errors.New("invalid subject")
+
+	// ErrInvalidAction indicates invalid action.
+	ErrInvalidAction = errors.New("invalid action")
 
 	// ErrInvalidAuthKey indicates invalid auth key.
 	ErrInvalidAuthKey = errors.New("invalid auth key")
@@ -107,4 +113,7 @@ var (
 
 	// ErrMalformedEntity indicates a malformed entity specification.
 	ErrMalformedEntity = errors.New("malformed entity specification")
+
+	// ErrInvalidPolicy indicates an invalid policy.
+	ErrInvalidPolicy = errors.New("invalid policy")
 )

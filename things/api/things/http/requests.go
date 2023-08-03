@@ -417,11 +417,12 @@ func (req listGroupsReq) validate() error {
 }
 
 type listMembersReq struct {
-	token    string
-	id       string
-	offset   uint64
-	limit    uint64
-	metadata things.GroupMetadata
+	token      string
+	id         string
+	unassigned bool
+	offset     uint64
+	limit      uint64
+	metadata   things.GroupMetadata
 }
 
 func (req listMembersReq) validate() error {
@@ -436,33 +437,13 @@ func (req listMembersReq) validate() error {
 	return nil
 }
 
-type assignReq struct {
+type memberReq struct {
 	token   string
 	groupID string
 	Members []string `json:"members"`
 }
 
-func (req assignReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.Members) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type unassignReq struct {
-	assignReq
-}
-
-func (req unassignReq) validate() error {
+func (req memberReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
