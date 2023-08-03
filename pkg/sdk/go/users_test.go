@@ -34,14 +34,14 @@ var (
 )
 
 func newUserService() users.Service {
-	usersRepo := mocks.NewUserRepository()
+	usersRepo := mocks.NewUserRepository(map[string]users.User{adminEmail: admin})
 	hasher := mocks.NewHasher()
 
 	idProvider := uuid.New()
 	id, _ := idProvider.ID()
 	admin.ID = id
 
-	auth := mocks.NewAuthService("", map[string]users.User{adminEmail: admin})
+	auth := mocks.NewAuthService(id, map[string]users.User{adminEmail: admin})
 
 	emailer := mocks.NewEmailer()
 

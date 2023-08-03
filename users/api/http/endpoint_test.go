@@ -84,7 +84,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() users.Service {
-	usersRepo := mocks.NewUserRepository()
+	usersRepo := mocks.NewUserRepository(map[string]users.User{admin.Email: admin})
 	hasher := mocks.NewHasher()
 
 	auth := mocks.NewAuthService(admin.ID, map[string]users.User{admin.Email: admin})
