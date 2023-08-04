@@ -129,15 +129,15 @@ func TestRegisterUser(t *testing.T) {
 	svc := newUserService()
 	ts := newUserServer(svc)
 	defer ts.Close()
+
 	sdkConf := sdk.Config{
 		UsersURL:        ts.URL,
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-
-	sdkUser := sdk.User{Email: "user_register@example.com", Password: validPass}
-
+	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+
 	cases := []struct {
 		desc string
 		user sdk.User
