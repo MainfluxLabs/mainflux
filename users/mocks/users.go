@@ -10,35 +10,43 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	user "github.com/MainfluxLabs/mainflux/users"
 )
 
-var (
-	_             users.UserRepository = (*userRepositoryMock)(nil)
-	mockUsers     map[string]users.User
-	mockUsersByID map[string]users.User
-)
+var _ users.UserRepository = (*userRepositoryMock)(nil)
 
 type userRepositoryMock struct {
-	mu sync.Mutex
+	mu           sync.Mutex
+	usersByID    map[string]users.User
+	usersByEmail map[string]users.User
 }
 
 // NewUserRepository creates in-memory user repository
-func NewUserRepository() users.UserRepository {
-	mockUsers = make(map[string]users.User)
-	mockUsersByID = make(map[string]users.User)
-	return &userRepositoryMock{}
+func NewUserRepository(users []user.User) users.UserRepository {
+	usersByEmail := make(map[string]user.User)
+	usersByID := make(map[string]user.User)
+
+	for _, u := range users {
+		usersByEmail[u.Email] = u
+		usersByID[u.ID] = u
+	}
+
+	return &userRepositoryMock{
+		usersByEmail: usersByEmail,
+		usersByID:    usersByID,
+	}
 }
 
 func (urm *userRepositoryMock) Save(ctx context.Context, user users.User) (string, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := mockUsers[user.Email]; ok {
+	if _, ok := urm.usersByEmail[user.Email]; ok {
 		return "", errors.ErrConflict
 	}
 
-	mockUsers[user.Email] = user
-	mockUsersByID[user.ID] = user
+	urm.usersByEmail[user.Email] = user
+	urm.usersByID[user.ID] = user
 	return user.ID, nil
 }
 
@@ -46,12 +54,12 @@ func (urm *userRepositoryMock) Update(ctx context.Context, user users.User) erro
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := mockUsers[user.Email]; !ok {
+	if _, ok := urm.usersByEmail[user.Email]; !ok {
 		return errors.ErrNotFound
 	}
 
-	mockUsers[user.Email] = user
-	mockUsersByID[user.ID] = user
+	urm.usersByEmail[user.Email] = user
+	urm.usersByID[user.ID] = user
 	return nil
 }
 
@@ -59,12 +67,12 @@ func (urm *userRepositoryMock) UpdateUser(ctx context.Context, user users.User) 
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := mockUsers[user.Email]; !ok {
+	if _, ok := urm.usersByEmail[user.Email]; !ok {
 		return errors.ErrNotFound
 	}
 
-	mockUsers[user.Email] = user
-	mockUsersByID[user.ID] = user
+	urm.usersByEmail[user.Email] = user
+	urm.usersByID[user.ID] = user
 	return nil
 }
 
@@ -72,7 +80,7 @@ func (urm *userRepositoryMock) RetrieveByEmail(ctx context.Context, email string
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	val, ok := mockUsers[email]
+	val, ok := urm.usersByEmail[email]
 	if !ok {
 		return users.User{}, errors.ErrNotFound
 	}
@@ -84,7 +92,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	val, ok := mockUsersByID[id]
+	val, ok := urm.usersByID[id]
 	if !ok {
 		return users.User{}, errors.ErrNotFound
 	}
@@ -100,7 +108,7 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 	i := uint64(0)
 
 	if pm.Email != "" {
-		val, ok := mockUsers[pm.Email]
+		val, ok := urm.usersByEmail[pm.Email]
 		if !ok {
 			return users.UserPage{}, errors.ErrNotFound
 		}
@@ -111,7 +119,7 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 		return up, nil
 	}
 
-	sortedUsers := sortUsers(mockUsers)
+	sortedUsers := sortUsers(urm.usersByEmail)
 	for _, u := range sortedUsers {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
 			switch pm.Status {
@@ -139,7 +147,7 @@ func (urm *userRepositoryMock) RetrieveAll(ctx context.Context) ([]users.User, e
 	defer urm.mu.Unlock()
 
 	var users []users.User
-	for _, user := range mockUsers {
+	for _, user := range urm.usersByEmail {
 		users = append(users, user)
 	}
 
@@ -150,7 +158,7 @@ func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := mockUsers[token]; !ok {
+	if _, ok := urm.usersByEmail[token]; !ok {
 		return errors.ErrNotFound
 	}
 	return nil
@@ -160,13 +168,13 @@ func (urm *userRepositoryMock) ChangeStatus(ctx context.Context, id, status stri
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	user, ok := mockUsersByID[id]
+	user, ok := urm.usersByID[id]
 	if !ok {
 		return errors.ErrNotFound
 	}
 	user.Status = status
-	mockUsersByID[id] = user
-	mockUsers[user.Email] = user
+	urm.usersByID[id] = user
+	urm.usersByEmail[user.Email] = user
 	return nil
 }
 

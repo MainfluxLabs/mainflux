@@ -26,23 +26,22 @@ const (
 	invalidEmail = "userexample.com"
 	userEmail    = "user@example.com"
 	validPass    = "validPass"
+	registerUser = "register@example.com"
 )
 
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
-	admin     = users.User{Email: adminEmail, Password: validPass}
+	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
+	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	usersList = []users.User{admin, user}
 )
 
 func newUserService() users.Service {
-	usersRepo := mocks.NewUserRepository()
+	usersRepo := mocks.NewUserRepository(usersList)
 	hasher := mocks.NewHasher()
-
 	idProvider := uuid.New()
-	id, _ := idProvider.ID()
-	admin.ID = id
-
-	auth := mocks.NewAuthService("", map[string]users.User{adminEmail: admin})
-
+	admin.ID, _ = idProvider.ID()
+	auth := mocks.NewAuthService(admin.ID, usersList)
 	emailer := mocks.NewEmailer()
 
 	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
@@ -64,7 +63,7 @@ func TestCreateUser(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	sdkUser := sdk.User{Email: "new-user@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 
 	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
@@ -96,13 +95,13 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			desc:  "create user with empty password",
-			user:  sdk.User{Email: "user2@example.com", Password: ""},
+			user:  sdk.User{Email: registerUser, Password: ""},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc:  "create user without password",
-			user:  sdk.User{Email: "user2@example.com"},
+			user:  sdk.User{Email: registerUser},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -130,15 +129,15 @@ func TestRegisterUser(t *testing.T) {
 	svc := newUserService()
 	ts := newUserServer(svc)
 	defer ts.Close()
+
 	sdkConf := sdk.Config{
 		UsersURL:        ts.URL,
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-
-	sdkUser := sdk.User{Email: "user@example.com", Password: "password"}
-
+	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+
 	cases := []struct {
 		desc string
 		user sdk.User
@@ -161,12 +160,12 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user with empty password",
-			user: sdk.User{Email: "user2@example.com", Password: ""},
+			user: sdk.User{Email: registerUser, Password: ""},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc: "register user without password",
-			user: sdk.User{Email: "user2@example.com"},
+			user: sdk.User{Email: registerUser},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -198,14 +197,9 @@ func TestCreateToken(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	sdkUser := sdk.User{Email: "user@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: userEmail, Password: validPass}
 
-	token, err := svc.Login(context.Background(), admin)
-	require.Nil(t, err, fmt.Sprintf("unexpected error admin login: %s", err))
-	_, err = mainfluxSDK.CreateUser(token, sdkUser)
-	require.Nil(t, err, fmt.Sprintf("unexpected error creating use: %s", err))
-
-	token, err = svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	token, err := svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	cases := []struct {
@@ -222,7 +216,7 @@ func TestCreateToken(t *testing.T) {
 		},
 		{
 			desc:  "create token for non existing user",
-			user:  sdk.User{Email: "user2@example.com", Password: "password"},
+			user:  sdk.User{Email: registerUser, Password: "password"},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 		},

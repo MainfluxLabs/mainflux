@@ -53,7 +53,8 @@ var (
 	idProvider = uuid.New()
 
 	user  = users.User{Email: userEmail, Password: validPass}
-	admin = users.User{ID: adminID, Email: adminEmail, Password: validPass}
+	admin = users.User{ID: adminID, Email: adminEmail, Password: validPass, Status: "enabled"}
+	usersList   = []users.User{user, admin}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
@@ -89,7 +90,7 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() mainflux.AuthServiceClient {
-	return authmocks.NewAuthService(admin.ID, map[string]users.User{user.Email: user, admin.Email: admin})
+	return authmocks.NewAuthService(admin.ID, usersList)
 }
 
 func TestListChannelMessages(t *testing.T) {

@@ -25,11 +25,12 @@ const (
 )
 
 var (
-	userAdmin       = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Status: "enabled"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password"}
 	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	user            = users.User{Email: "user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
+	usersList       = []users.User{admin, user, unauthUser}
 	host            = "example.com"
 
 	idProvider = uuid.New()
@@ -37,11 +38,9 @@ var (
 )
 
 func newService() users.Service {
-	userRepo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
-
-	mockUsers := map[string]users.User{userAdmin.Email: userAdmin, unauthUser.Email: unauthUser}
-	authSvc := mocks.NewAuthService(userAdmin.ID, mockUsers)
+	userRepo := mocks.NewUserRepository(usersList)
+	authSvc := mocks.NewAuthService(admin.ID, usersList)
 	e := mocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
@@ -68,14 +67,14 @@ func TestSelfRegister(t *testing.T) {
 		},
 		{
 			desc:  "register new user",
-			user:  user,
-			token: userAdmin.Email,
+			user:  nonExistingUser,
+			token: admin.Email,
 			err:   nil,
 		},
 		{
 			desc:  "register existing user",
 			user:  user,
-			token: userAdmin.Email,
+			token: admin.Email,
 			err:   errors.ErrConflict,
 		},
 		{
@@ -84,7 +83,7 @@ func TestSelfRegister(t *testing.T) {
 				Email:    user.Email,
 				Password: "weak",
 			},
-			token: userAdmin.Email,
+			token: admin.Email,
 			err:   users.ErrPasswordFormat,
 		},
 	}
@@ -97,8 +96,6 @@ func TestSelfRegister(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	noAuthUser := users.User{
 		Email:    "email@test.com",
@@ -141,8 +138,6 @@ func TestLogin(t *testing.T) {
 
 func TestViewUser(t *testing.T) {
 	svc := newService()
-	id, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -159,13 +154,13 @@ func TestViewUser(t *testing.T) {
 		"view user with authorized token": {
 			user:   u,
 			token:  token,
-			userID: id,
+			userID: user.ID,
 			err:    nil,
 		},
 		"view user with empty token": {
 			user:   users.User{},
 			token:  "",
-			userID: id,
+			userID: user.ID,
 			err:    errors.ErrAuthentication,
 		},
 		"view user with valid token and invalid user id": {
@@ -184,8 +179,6 @@ func TestViewUser(t *testing.T) {
 
 func TestViewProfile(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -219,7 +212,7 @@ func TestViewProfile(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), userAdmin)
+	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
@@ -318,9 +311,6 @@ func TestListUsers(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -351,8 +341,6 @@ func TestUpdateUser(t *testing.T) {
 
 func TestGenerateResetToken(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
 		email string
@@ -370,8 +358,6 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 
 	cases := map[string]struct {
@@ -394,10 +380,7 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	authSvc := mocks.NewAuthService("", map[string]users.User{user.Email: user})
+	authSvc := mocks.NewAuthService("", []users.User{user})
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
@@ -418,8 +401,6 @@ func TestResetPassword(t *testing.T) {
 
 func TestSendPasswordReset(t *testing.T) {
 	svc := newService()
-	_, err := svc.SelfRegister(context.Background(), user)
-	require.Nil(t, err, fmt.Sprintf("register user error: %s", err))
 	token, _ := svc.Login(context.Background(), user)
 
 	cases := map[string]struct {
