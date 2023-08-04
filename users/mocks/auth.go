@@ -5,7 +5,6 @@ package mocks
 
 import (
 	"context"
-
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -22,9 +21,14 @@ type authServiceMock struct {
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(adminID string, users map[string]user.User) mainflux.AuthServiceClient {
+func NewAuthService(adminID string, usr []user.User) mainflux.AuthServiceClient {
+	users := make(map[string]users.User)
 	authz := make(map[string]string)
 	authz["root"] = adminID
+
+	for _, u := range usr {
+		users[u.Email] = u
+	}
 
 	return &authServiceMock{
 		authz: authz,
