@@ -26,13 +26,14 @@ const (
 	invalidEmail = "userexample.com"
 	userEmail    = "user@example.com"
 	validPass    = "validPass"
+	registerUser = "register@example.com"
 )
 
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
 	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
 	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
-	usersList       = []users.User{admin, user}
+	usersList = []users.User{admin, user}
 )
 
 func newUserService() users.Service {
@@ -62,7 +63,7 @@ func TestCreateUser(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	sdkUser := sdk.User{Email: "new-user@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 
 	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
@@ -94,13 +95,13 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			desc:  "create user with empty password",
-			user:  sdk.User{Email: "user2@example.com", Password: ""},
+			user:  sdk.User{Email: registerUser, Password: ""},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc:  "create user without password",
-			user:  sdk.User{Email: "user2@example.com"},
+			user:  sdk.User{Email: registerUser},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -134,7 +135,7 @@ func TestRegisterUser(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	sdkUser := sdk.User{Email: "user1@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: "user_register@example.com", Password: validPass}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	cases := []struct {
@@ -159,12 +160,12 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user with empty password",
-			user: sdk.User{Email: "user2@example.com", Password: ""},
+			user: sdk.User{Email: registerUser, Password: ""},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc: "register user without password",
-			user: sdk.User{Email: "user2@example.com"},
+			user: sdk.User{Email: registerUser},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -215,7 +216,7 @@ func TestCreateToken(t *testing.T) {
 		},
 		{
 			desc:  "create token for non existing user",
-			user:  sdk.User{Email: "user2@example.com", Password: "password"},
+			user:  sdk.User{Email: registerUser, Password: "password"},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 		},
