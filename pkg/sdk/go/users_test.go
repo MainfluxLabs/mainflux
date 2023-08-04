@@ -30,20 +30,17 @@ const (
 
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
-	admin     = users.User{Email: adminEmail, Password: validPass}
-	user      = users.User{Email: userEmail, Password: validPass}
+	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
+	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	usr       = []users.User{admin, user}
 )
 
 func newUserService() users.Service {
-	usersRepo := mocks.NewUserRepository(map[string]users.User{adminEmail: admin})
+	usersRepo := mocks.NewUserRepository(usr)
 	hasher := mocks.NewHasher()
-
 	idProvider := uuid.New()
-	id, _ := idProvider.ID()
-	admin.ID = id
-
-	auth := mocks.NewAuthService(id, map[string]users.User{adminEmail: admin, userEmail: user})
-
+	admin.ID, _ = idProvider.ID()
+	auth := mocks.NewAuthService(admin.ID, usr)
 	emailer := mocks.NewEmailer()
 
 	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
@@ -137,7 +134,7 @@ func TestRegisterUser(t *testing.T) {
 		TLSVerification: false,
 	}
 
-	sdkUser := sdk.User{Email: "user@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: "user1@example.com", Password: "password"}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	cases := []struct {
@@ -199,14 +196,9 @@ func TestCreateToken(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	sdkUser := sdk.User{Email: "user@example.com", Password: "password"}
+	sdkUser := sdk.User{Email: userEmail, Password: validPass}
 
-	token, err := svc.Login(context.Background(), admin)
-	require.Nil(t, err, fmt.Sprintf("unexpected error admin login: %s", err))
-	_, err = mainfluxSDK.CreateUser(token, sdkUser)
-	require.Nil(t, err, fmt.Sprintf("unexpected error creating use: %s", err))
-
-	token, err = svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	token, err := svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	cases := []struct {
