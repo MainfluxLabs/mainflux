@@ -5,10 +5,10 @@ package mocks
 
 import (
 	"context"
+
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
-	user "github.com/MainfluxLabs/mainflux/users"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
@@ -16,35 +16,34 @@ import (
 var _ mainflux.AuthServiceClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	authz map[string]string
-	users map[string]users.User
+	roles        map[string]string
+	usersByEmail map[string]users.User
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(adminID string, usr []user.User) mainflux.AuthServiceClient {
-	users := make(map[string]users.User)
-	authz := make(map[string]string)
-	authz["root"] = adminID
+func NewAuthService(adminID string, userList []users.User) mainflux.AuthServiceClient {
+	usersByEmail := make(map[string]users.User)
+	roles := map[string]string{"root": adminID}
 
-	for _, u := range usr {
-		users[u.Email] = u
+	for _, user := range userList {
+		usersByEmail[user.Email] = user
 	}
 
 	return &authServiceMock{
-		authz: authz,
-		users: users,
+		roles:        roles,
+		usersByEmail: usersByEmail,
 	}
 }
 
 func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
-	if u, ok := svc.users[in.Value]; ok {
+	if u, ok := svc.usersByEmail[in.Value]; ok {
 		return &mainflux.UserIdentity{Id: u.ID, Email: u.Email}, nil
 	}
 	return nil, errors.ErrAuthentication
 }
 
 func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opts ...grpc.CallOption) (*mainflux.Token, error) {
-	if u, ok := svc.users[in.GetEmail()]; ok {
+	if u, ok := svc.usersByEmail[in.GetEmail()]; ok {
 		switch in.Type {
 		default:
 			return &mainflux.Token{Value: u.Email}, nil
@@ -54,12 +53,12 @@ func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opt
 }
 
 func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	u, ok := svc.users[req.Token]
+	u, ok := svc.usersByEmail[req.Token]
 	if !ok {
 		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	if svc.authz["root"] != u.ID {
+	if svc.roles["root"] != u.ID {
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 
