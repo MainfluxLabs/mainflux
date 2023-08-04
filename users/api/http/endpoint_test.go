@@ -45,7 +45,7 @@ var (
 	user               = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
 	admin              = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
 	newUser            = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
-	usersList               = []users.User{admin, user}
+	usersList          = []users.User{admin, user}
 	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
 	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword       = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
