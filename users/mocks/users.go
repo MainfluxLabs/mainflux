@@ -22,21 +22,18 @@ type userRepositoryMock struct {
 }
 
 // NewUserRepository creates in-memory user repository
-func NewUserRepository(usr []user.User) users.UserRepository {
-	users := make(map[string]users.User)
-	mockUsersByID := make(map[string]user.User)
+func NewUserRepository(users []user.User) users.UserRepository {
+	usersByEmail := make(map[string]user.User)
+	usersByID := make(map[string]user.User)
 
-	for _, u := range usr {
-		mockUsersByID[u.ID] = u
-	}
-
-	for _, u := range usr {
-		users[u.Email] = u
+	for _, u := range users {
+		usersByEmail[u.Email] = u
+		usersByID[u.ID] = u
 	}
 
 	return &userRepositoryMock{
-		usersByEmail: users,
-		usersByID:    mockUsersByID,
+		usersByEmail: usersByEmail,
+		usersByID:    usersByID,
 	}
 }
 
