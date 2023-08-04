@@ -30,7 +30,7 @@ var (
 	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	usr             = []users.User{admin, user, unauthUser}
+	usersList       = []users.User{admin, user, unauthUser}
 	host            = "example.com"
 
 	idProvider = uuid.New()
@@ -39,8 +39,8 @@ var (
 
 func newService() users.Service {
 	hasher := mocks.NewHasher()
-	userRepo := mocks.NewUserRepository(usr)
-	authSvc := mocks.NewAuthService(admin.ID, usr)
+	userRepo := mocks.NewUserRepository(usersList)
+	authSvc := mocks.NewAuthService(admin.ID, usersList)
 	e := mocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)

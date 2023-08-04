@@ -45,7 +45,7 @@ var (
 	user               = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
 	admin              = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
 	newUser            = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
-	usr                = []users.User{admin, user}
+	usersList               = []users.User{admin, user}
 	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
 	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword       = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
@@ -85,9 +85,9 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() users.Service {
-	usersRepo := mocks.NewUserRepository(usr)
+	usersRepo := mocks.NewUserRepository(usersList)
 	hasher := mocks.NewHasher()
-	auth := mocks.NewAuthService(admin.ID, usr)
+	auth := mocks.NewAuthService(admin.ID, usersList)
 	email := mocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
@@ -198,7 +198,7 @@ func TestLogin(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usr)
+	auth := mocks.NewAuthService("", usersList)
 
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
@@ -261,7 +261,7 @@ func TestUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usr)
+	auth := mocks.NewAuthService("", usersList)
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
@@ -315,10 +315,10 @@ func TestListUsers(t *testing.T) {
 			Password: "password",
 			Status:   "enabled",
 		}
-		usr, err := svc.Register(context.Background(), token, user)
+		usersList, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, viewUserRes{usr, email})
+		data = append(data, viewUserRes{usersList, email})
 	}
 
 	sort.Slice(data, func(i, j int) bool {
@@ -519,7 +519,7 @@ func TestPasswordReset(t *testing.T) {
 		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
-	auth := mocks.NewAuthService("", usr)
+	auth := mocks.NewAuthService("", usersList)
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
@@ -587,7 +587,7 @@ func TestPasswordChange(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usr)
+	auth := mocks.NewAuthService("", usersList)
 
 	reqData := struct {
 		Token    string `json:"token,omitempty"`
