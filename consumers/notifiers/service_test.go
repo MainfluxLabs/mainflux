@@ -129,7 +129,7 @@ func TestViewSubscription(t *testing.T) {
 
 func TestListSubscriptions(t *testing.T) {
 	svc := newService()
-	sub := notifiers.Subscription{Contact: userEmail, OwnerID: userEmail}
+	sub := notifiers.Subscription{Contact: userEmail, OwnerID: user.ID}
 	topic := "topic.subtopic"
 	var subs []notifiers.Subscription
 	for i := 0; i < total; i++ {
@@ -139,9 +139,8 @@ func TestListSubscriptions(t *testing.T) {
 			tmp.Contact = otherUserEmail
 			tmp.OwnerID = otherUser.ID
 			token = otherUserEmail
-		} else {
-			tmp.OwnerID = user.ID
 		}
+
 		tmp.Topic = fmt.Sprintf("%s.%d", topic, i)
 		id, err := svc.CreateSubscription(context.Background(), token, tmp)
 		require.Nil(t, err, "Saving a Subscription must succeed")
