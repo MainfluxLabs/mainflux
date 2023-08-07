@@ -10,20 +10,25 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux"
+	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	"github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"google.golang.org/grpc"
 )
 
 const (
-	port  = 8080
-	token = "token"
-	wrong = "wrong"
-	email = "john.doe@email.com"
+	port     = 8080
+	wrong    = "wrong"
+	email    = "user@example.com"
+	token    = email
+	password = "password"
 )
+
+var usersList = []users.User{{Email: email, Password: password}}
 
 var svc things.Service
 
@@ -42,7 +47,7 @@ func startServer() {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+	auth := authmocks.NewAuthService("", usersList)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)

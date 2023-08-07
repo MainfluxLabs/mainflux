@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
+	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -22,7 +23,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
-	authmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,9 +52,9 @@ var (
 
 	idProvider = uuid.New()
 
-	user  = users.User{Email: userEmail, Password: validPass}
-	admin = users.User{ID: adminID, Email: adminEmail, Password: validPass, Status: "enabled"}
-	usersList   = []users.User{user, admin}
+	user      = users.User{Email: userEmail, Password: validPass}
+	admin     = users.User{ID: adminID, Email: adminEmail, Password: validPass, Status: "enabled"}
+	usersList = []users.User{user, admin}
 )
 
 func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {

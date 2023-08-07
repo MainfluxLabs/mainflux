@@ -11,24 +11,27 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	wrongID    = ""
-	wrongValue = "wrong-value"
-	adminEmail = "admin@example.com"
-	userEmail  = "user@example.com"
-	email      = "user@example.com"
-	token      = "token"
-	adminToken = "adminToken"
-	token2     = "token2"
-	n          = uint64(102)
-	prefix     = "fe6b4e92-cc98-425e-b0aa-"
+	wrongID        = ""
+	wrongValue     = "wrong-value"
+	adminEmail     = "admin@example.com"
+	userEmail      = "user@example.com"
+	otherUserEmail = "other.user@example.com"
+	adminToken     = adminEmail
+	token          = userEmail
+	otherToken     = otherUserEmail
+	password       = "password"
+	n              = uint64(102)
+	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 )
 
 var (
@@ -37,10 +40,14 @@ var (
 	channel   = things.Channel{Name: "test"}
 	thsExtID  = []things.Thing{{ID: prefix + "000000000001", Name: "a"}, {ID: prefix + "000000000002", Name: "b"}}
 	chsExtID  = []things.Channel{{ID: prefix + "000000000001", Name: "a"}, {ID: prefix + "000000000002", Name: "b"}}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
+	otherUser = users.User{Email: otherUserEmail, Password: password}
+	admin     = users.User{Email: adminEmail, Password: password}
+	usersList = []users.User{admin, user, otherUser}
 )
 
-func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+func newService() things.Service {
+	auth := authmock.NewAuthService(admin.ID, usersList)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
@@ -61,7 +68,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestCreateThings(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	cases := []struct {
 		desc   string
@@ -102,7 +109,7 @@ func TestCreateThings(t *testing.T) {
 }
 
 func TestUpdateThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -142,7 +149,7 @@ func TestUpdateThing(t *testing.T) {
 
 func TestUpdateKey(t *testing.T) {
 	key := "new-key"
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -184,7 +191,7 @@ func TestUpdateKey(t *testing.T) {
 }
 
 func TestViewThing(t *testing.T) {
-	svc := newService(map[string]string{token: email, adminToken: adminEmail})
+	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -223,7 +230,7 @@ func TestViewThing(t *testing.T) {
 }
 
 func TestListThings(t *testing.T) {
-	svc := newService(map[string]string{token: email, adminToken: adminEmail, token2: userEmail})
+	svc := newService()
 
 	m := make(map[string]interface{})
 	m["serial"] = "123456"
@@ -246,7 +253,7 @@ func TestListThings(t *testing.T) {
 
 	_, err := svc.CreateThings(context.Background(), token, ths1...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	_, err = svc.CreateThings(context.Background(), token2, ths2...)
+	_, err = svc.CreateThings(context.Background(), otherToken, ths2...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -375,7 +382,7 @@ func TestListThings(t *testing.T) {
 }
 
 func TestListThingsByChannel(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -555,7 +562,7 @@ func TestListThingsByChannel(t *testing.T) {
 }
 
 func TestRemoveThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
@@ -599,7 +606,7 @@ func TestRemoveThing(t *testing.T) {
 }
 
 func TestCreateChannels(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	cases := []struct {
 		desc     string
@@ -640,7 +647,7 @@ func TestCreateChannels(t *testing.T) {
 }
 
 func TestUpdateChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -679,7 +686,7 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestViewChannel(t *testing.T) {
-	svc := newService(map[string]string{token: email, adminToken: adminEmail})
+	svc := newService()
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -724,7 +731,7 @@ func TestViewChannel(t *testing.T) {
 }
 
 func TestListChannels(t *testing.T) {
-	svc := newService(map[string]string{token: email, adminToken: adminEmail})
+	svc := newService()
 	meta := things.Metadata{}
 	meta["name"] = "test-channel"
 	channel.Metadata = meta
@@ -886,7 +893,7 @@ func TestListChannels(t *testing.T) {
 }
 
 func TestListChannelsByThing(t *testing.T) {
-	svc := newService(map[string]string{token: email, adminToken: adminEmail})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1087,7 +1094,7 @@ func TestListChannelsByThing(t *testing.T) {
 }
 
 func TestRemoveChannel(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -1131,7 +1138,7 @@ func TestRemoveChannel(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1184,7 +1191,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1247,7 +1254,7 @@ func TestDisconnect(t *testing.T) {
 }
 
 func TestCanAccessByKey(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1290,7 +1297,7 @@ func TestCanAccessByKey(t *testing.T) {
 }
 
 func TestCanAccessByID(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0], thingList[1])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1335,12 +1342,11 @@ func TestCanAccessByID(t *testing.T) {
 }
 
 func TestIsChannelOwner(t *testing.T) {
-	svc := newService(map[string]string{token: email, token2: "john.doe@email.net"})
-
+	svc := newService()
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ownedCh := chs[0]
-	chs, err = svc.CreateChannels(context.Background(), token2, channel)
+	chs, err = svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	nonOwnedCh := chs[0]
 
@@ -1363,13 +1369,13 @@ func TestIsChannelOwner(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		err := svc.IsChannelOwner(context.Background(), email, tc.channel)
+		err := svc.IsChannelOwner(context.Background(), user.ID, tc.channel)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
 func TestIdentify(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1400,7 +1406,7 @@ func TestIdentify(t *testing.T) {
 }
 
 func TestBackup(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 
 	var groups []things.Group
 	for i := uint64(0); i < 10; i++ {
@@ -1480,7 +1486,7 @@ func TestBackup(t *testing.T) {
 		err    error
 	}{
 		"list backups": {
-			token:  token,
+			token:  adminToken,
 			backup: backup,
 			err:    nil,
 		},
@@ -1514,7 +1520,7 @@ func TestBackup(t *testing.T) {
 }
 
 func TestRestore(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	idProvider := uuid.New()
 
 	thkey, err := idProvider.ID()
@@ -1594,7 +1600,7 @@ func TestRestore(t *testing.T) {
 		err    error
 	}{
 		"Restore backup": {
-			token:  token,
+			token:  adminToken,
 			backup: backup,
 			err:    nil,
 		},

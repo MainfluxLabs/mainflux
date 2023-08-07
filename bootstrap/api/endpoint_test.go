@@ -25,19 +25,21 @@ import (
 	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
+	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	validToken     = "validToken"
-	invalidToken   = "invalidToken"
 	email          = "test@example.com"
+	validToken     = email
+	invalidToken   = "invalidToken"
+	password       = "password"
 	unknown        = "unknown"
 	channelsNum    = 3
 	contentType    = "application/json"
@@ -87,6 +89,7 @@ var (
 	extSecKeyRes  = toJSON(apiutil.ErrorRes{Err: bootstrap.ErrExternalKeySecure.Error()})
 	missingIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
 	missingKeyRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerKey.Error()})
+	usersList     = []users.User{{Email: email, Password: password}}
 )
 
 type testRequest struct {
@@ -208,8 +211,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestAdd(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -333,8 +335,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -430,8 +431,7 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -524,8 +524,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 func TestUpdateCert(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -619,8 +618,7 @@ func TestUpdateCert(t *testing.T) {
 }
 
 func TestUpdateConnections(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -732,7 +730,7 @@ func TestList(t *testing.T) {
 	var active, inactive []config
 	list := make([]config, configNum)
 
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -975,8 +973,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -1037,8 +1034,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestBootstrap(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -1165,8 +1161,7 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestChangeState(t *testing.T) {
-	auth := thmocks.NewAuthService(map[string]string{validToken: email})
-
+	auth := authmocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)

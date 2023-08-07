@@ -12,11 +12,12 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
-	"github.com/MainfluxLabs/mainflux/users/mocks"
+	umocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,18 +32,19 @@ const (
 
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
-	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
-	usersList = []users.User{admin, user}
+	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass}
+	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass}
+	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass}
+	usersList = []users.User{admin, user, otherUser}
 )
 
 func newUserService() users.Service {
-	usersRepo := mocks.NewUserRepository(usersList)
-	hasher := mocks.NewHasher()
+	usersRepo := umocks.NewUserRepository(usersList)
+	hasher := umocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList)
-	emailer := mocks.NewEmailer()
+	emailer := umocks.NewEmailer()
 
 	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
 }

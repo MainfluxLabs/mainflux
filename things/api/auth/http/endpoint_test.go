@@ -14,10 +14,12 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	"github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,8 +28,9 @@ import (
 const (
 	contentType = "application/json"
 	email       = "user@example.com"
-	token       = "token"
+	token       = email
 	wrong       = "wrong_value"
+	password    = "password"
 )
 
 var (
@@ -39,6 +42,7 @@ var (
 		Name:     "test_chan",
 		Metadata: map[string]interface{}{"test": "data"},
 	}
+	usersList = []users.User{{Email: email, Password: password}}
 )
 
 type testRequest struct {
@@ -66,7 +70,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
+	auth := authmocks.NewAuthService("", usersList)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
 	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
