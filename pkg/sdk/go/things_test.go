@@ -10,13 +10,13 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	authapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	"github.com/MainfluxLabs/mainflux/things/mocks"
+	thingsmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,13 +44,13 @@ var (
 )
 
 func newThingsService() things.Service {
-	auth := authmocks.NewAuthService("", usersList)
-	conns := make(chan mocks.Connection)
-	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := mocks.NewGroupRepository()
-	chanCache := mocks.NewChannelCache()
-	thingCache := mocks.NewThingCache()
+	auth := mocks.NewAuthService("", usersList)
+	conns := make(chan thingsmocks.Connection)
+	thingsRepo := thingsmocks.NewThingRepository(conns)
+	channelsRepo := thingsmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thingsmocks.NewGroupRepository()
+	chanCache := thingsmocks.NewChannelCache()
+	thingCache := thingsmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
