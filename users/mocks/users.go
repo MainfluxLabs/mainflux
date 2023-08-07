@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
-	user "github.com/MainfluxLabs/mainflux/users"
 )
 
 var _ users.UserRepository = (*userRepositoryMock)(nil)
@@ -22,11 +21,11 @@ type userRepositoryMock struct {
 }
 
 // NewUserRepository creates in-memory user repository
-func NewUserRepository(users []user.User) users.UserRepository {
-	usersByEmail := make(map[string]user.User)
-	usersByID := make(map[string]user.User)
+func NewUserRepository(us []users.User) users.UserRepository {
+	usersByEmail := make(map[string]users.User)
+	usersByID := make(map[string]users.User)
 
-	for _, u := range users {
+	for _, u := range us {
 		usersByEmail[u.Email] = u
 		usersByID[u.ID] = u
 	}
@@ -37,42 +36,42 @@ func NewUserRepository(users []user.User) users.UserRepository {
 	}
 }
 
-func (urm *userRepositoryMock) Save(ctx context.Context, user users.User) (string, error) {
+func (urm *userRepositoryMock) Save(ctx context.Context, u users.User) (string, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := urm.usersByEmail[user.Email]; ok {
+	if _, ok := urm.usersByEmail[u.Email]; ok {
 		return "", errors.ErrConflict
 	}
 
-	urm.usersByEmail[user.Email] = user
-	urm.usersByID[user.ID] = user
-	return user.ID, nil
+	urm.usersByEmail[u.Email] = u
+	urm.usersByID[u.ID] = u
+	return u.ID, nil
 }
 
-func (urm *userRepositoryMock) Update(ctx context.Context, user users.User) error {
+func (urm *userRepositoryMock) Update(ctx context.Context, u users.User) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := urm.usersByEmail[user.Email]; !ok {
+	if _, ok := urm.usersByEmail[u.Email]; !ok {
 		return errors.ErrNotFound
 	}
 
-	urm.usersByEmail[user.Email] = user
-	urm.usersByID[user.ID] = user
+	urm.usersByEmail[u.Email] = u
+	urm.usersByID[u.ID] = u
 	return nil
 }
 
-func (urm *userRepositoryMock) UpdateUser(ctx context.Context, user users.User) error {
+func (urm *userRepositoryMock) UpdateUser(ctx context.Context, u users.User) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := urm.usersByEmail[user.Email]; !ok {
+	if _, ok := urm.usersByEmail[u.Email]; !ok {
 		return errors.ErrNotFound
 	}
 
-	urm.usersByEmail[user.Email] = user
-	urm.usersByID[user.ID] = user
+	urm.usersByEmail[u.Email] = u
+	urm.usersByID[u.ID] = u
 	return nil
 }
 
@@ -147,8 +146,8 @@ func (urm *userRepositoryMock) RetrieveAll(ctx context.Context) ([]users.User, e
 	defer urm.mu.Unlock()
 
 	var users []users.User
-	for _, user := range urm.usersByEmail {
-		users = append(users, user)
+	for _, u := range urm.usersByEmail {
+		users = append(users, u)
 	}
 
 	return users, nil
@@ -168,13 +167,13 @@ func (urm *userRepositoryMock) ChangeStatus(ctx context.Context, id, status stri
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	user, ok := urm.usersByID[id]
+	u, ok := urm.usersByID[id]
 	if !ok {
 		return errors.ErrNotFound
 	}
-	user.Status = status
-	urm.usersByID[id] = user
-	urm.usersByEmail[user.Email] = user
+	u.Status = status
+	urm.usersByID[id] = u
+	urm.usersByEmail[u.Email] = u
 	return nil
 }
 
