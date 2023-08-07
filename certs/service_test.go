@@ -20,10 +20,10 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	bsmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/certs"
-	"github.com/MainfluxLabs/mainflux/certs/mocks"
+	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
@@ -64,7 +64,7 @@ const (
 var usersList = []users.User{{Email: email, Password: password}}
 
 func newService() (certs.Service, error) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ac := auth
 	server := newThingsServer(newThingsService(ac))
 	config := mfsdk.Config{
@@ -72,7 +72,7 @@ func newService() (certs.Service, error) {
 	}
 
 	sdk := mfsdk.NewSDK(config)
-	repo := mocks.NewCertsRepository()
+	repo := ctmocks.NewCertsRepository()
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
 	if err != nil {
@@ -98,7 +98,7 @@ func newService() (certs.Service, error) {
 		SignRSABits:    cfgSignRSABits,
 	}
 
-	pki := mocks.NewPkiAgent(tlsCert, caCert, cfgSignRSABits, cfgSignHoursValid, authTimeout)
+	pki := ctmocks.NewPkiAgent(tlsCert, caCert, cfgSignRSABits, cfgSignHoursValid, authTimeout)
 
 	return certs.New(auth, repo, sdk, c, pki), nil
 }

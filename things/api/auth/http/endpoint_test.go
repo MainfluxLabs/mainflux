@@ -14,11 +14,11 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
-	"github.com/MainfluxLabs/mainflux/things/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -70,13 +70,13 @@ func toJSON(data interface{}) string {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := authmocks.NewAuthService("", usersList)
-	conns := make(chan mocks.Connection)
-	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := mocks.NewGroupRepository()
-	chanCache := mocks.NewChannelCache()
-	thingCache := mocks.NewThingCache()
+	auth := mocks.NewAuthService("", usersList)
+	conns := make(chan thmocks.Connection)
+	thingsRepo := thmocks.NewThingRepository(conns)
+	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thmocks.NewGroupRepository()
+	chanCache := thmocks.NewChannelCache()
+	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)

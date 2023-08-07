@@ -16,7 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 	authapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	thingsmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,12 +45,12 @@ var (
 
 func newThingsService() things.Service {
 	auth := mocks.NewAuthService("", usersList)
-	conns := make(chan thingsmocks.Connection)
-	thingsRepo := thingsmocks.NewThingRepository(conns)
-	channelsRepo := thingsmocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := thingsmocks.NewGroupRepository()
-	chanCache := thingsmocks.NewChannelCache()
-	thingCache := thingsmocks.NewThingCache()
+	conns := make(chan thmocks.Connection)
+	thingsRepo := thmocks.NewThingRepository(conns)
+	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thmocks.NewGroupRepository()
+	chanCache := thmocks.NewChannelCache()
+	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)

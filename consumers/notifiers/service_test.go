@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
+	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
@@ -34,9 +34,9 @@ var (
 )
 
 func newService() notifiers.Service {
-	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
-	auth := authmocks.NewAuthService("", usersList)
-	notifier := mocks.NewNotifier()
+	repo := ntmocks.NewRepo(make(map[string]notifiers.Subscription))
+	auth := mocks.NewAuthService("", usersList)
+	notifier := ntmocks.NewNotifier()
 	idp := uuid.NewMock()
 	from := "exampleFrom"
 	return notifiers.New(auth, repo, idp, notifier, from)

@@ -16,11 +16,11 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
+	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -71,10 +71,10 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() notifiers.Service {
-	auth := authmocks.NewAuthService("", usersList)
-	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
+	auth := mocks.NewAuthService("", usersList)
+	repo := ntmocks.NewRepo(make(map[string]notifiers.Subscription))
 	idp := uuid.NewMock()
-	notif := mocks.NewNotifier()
+	notif := ntmocks.NewNotifier()
 	from := "exampleFrom"
 	return notifiers.New(auth, repo, idp, notif, from)
 }

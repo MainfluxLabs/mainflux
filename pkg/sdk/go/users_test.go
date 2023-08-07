@@ -17,7 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
-	usersmocks "github.com/MainfluxLabs/mainflux/users/mocks"
+	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,12 +39,12 @@ var (
 )
 
 func newUserService() users.Service {
-	usersRepo := usersmocks.NewUserRepository(usersList)
-	hasher := usersmocks.NewHasher()
+	usersRepo := usmocks.NewUserRepository(usersList)
+	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList)
-	emailer := usersmocks.NewEmailer()
+	emailer := usmocks.NewEmailer()
 
 	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
 }

@@ -20,11 +20,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
-	"github.com/MainfluxLabs/mainflux/users/mocks"
+	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -86,10 +86,10 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() users.Service {
-	usersRepo := mocks.NewUserRepository(usersList)
-	hasher := mocks.NewHasher()
-	auth := authmocks.NewAuthService(admin.ID, usersList)
-	email := mocks.NewEmailer()
+	usersRepo := usmocks.NewUserRepository(usersList)
+	hasher := usmocks.NewHasher()
+	auth := mocks.NewAuthService(admin.ID, usersList)
+	email := usmocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
 
@@ -199,7 +199,7 @@ func TestLogin(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
@@ -262,7 +262,7 @@ func TestUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
@@ -520,7 +520,7 @@ func TestPasswordReset(t *testing.T) {
 		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 
 	tkn, err := auth.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
@@ -588,7 +588,7 @@ func TestPasswordChange(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 
 	reqData := struct {
 		Token    string `json:"token,omitempty"`

@@ -22,10 +22,10 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
 	bsapi "github.com/MainfluxLabs/mainflux/bootstrap/api"
-	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
+	btmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
@@ -167,7 +167,7 @@ func dec(in []byte) ([]byte, error) {
 }
 
 func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
-	things := mocks.NewConfigsRepository()
+	things := btmocks.NewConfigsRepository()
 	config := mfsdk.Config{
 		ThingsURL: url,
 	}
@@ -190,7 +190,7 @@ func generateChannels() map[string]things.Channel {
 }
 
 func newThingsService(auth mainflux.AuthServiceClient) things.Service {
-	return mocks.NewThingsService(map[string]things.Thing{}, generateChannels(), auth)
+	return btmocks.NewThingsService(map[string]things.Thing{}, generateChannels(), auth)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
@@ -211,7 +211,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestAdd(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -335,7 +335,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -431,7 +431,7 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -524,7 +524,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 func TestUpdateCert(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -618,7 +618,7 @@ func TestUpdateCert(t *testing.T) {
 }
 
 func TestUpdateConnections(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -730,7 +730,7 @@ func TestList(t *testing.T) {
 	var active, inactive []config
 	list := make([]config, configNum)
 
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -973,7 +973,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -1034,7 +1034,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestBootstrap(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)
@@ -1161,7 +1161,7 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestChangeState(t *testing.T) {
-	auth := authmocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList)
 	ts := newThingsServer(newThingsService(auth))
 	svc := newService(auth, ts.URL)
 	bs := newBootstrapServer(svc)

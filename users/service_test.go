@@ -11,10 +11,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	authmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
-	"github.com/MainfluxLabs/mainflux/users/mocks"
+	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,10 +38,10 @@ var (
 )
 
 func newService() users.Service {
-	hasher := mocks.NewHasher()
-	userRepo := mocks.NewUserRepository(usersList)
-	authSvc := authmocks.NewAuthService(admin.ID, usersList)
-	e := mocks.NewEmailer()
+	hasher := usmocks.NewHasher()
+	userRepo := usmocks.NewUserRepository(usersList)
+	authSvc := mocks.NewAuthService(admin.ID, usersList)
+	e := usmocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
 }
@@ -380,7 +380,7 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	authSvc := authmocks.NewAuthService("", []users.User{user})
+	authSvc := mocks.NewAuthService("", []users.User{user})
 
 	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
