@@ -20,13 +20,14 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	bsmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/certs"
-	"github.com/MainfluxLabs/mainflux/certs/mocks"
+	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,8 @@ import (
 const (
 	wrongValue = "wrong-value"
 	email      = "user@example.com"
-	token      = "token"
+	token      = email
+	password   = "password"
 	thingsNum  = 1
 	thingKey   = "thingKey"
 	thingID    = "1"
@@ -59,17 +61,18 @@ const (
 	cfgSignRSABits    = 2048
 )
 
-func newService(tokens map[string]string) (certs.Service, error) {
-	ac := thmocks.NewAuthService(map[string]string{token: email})
-	server := newThingsServer(newThingsService(ac))
-	auth := thmocks.NewAuthService(tokens)
+var usersList = []users.User{{Email: email, Password: password}}
 
+func newService() (certs.Service, error) {
+	auth := mocks.NewAuthService("", usersList)
+	ac := auth
+	server := newThingsServer(newThingsService(ac))
 	config := mfsdk.Config{
 		ThingsURL: server.URL,
 	}
 
 	sdk := mfsdk.NewSDK(config)
-	repo := mocks.NewCertsRepository()
+	repo := ctmocks.NewCertsRepository()
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
 	if err != nil {
@@ -95,7 +98,7 @@ func newService(tokens map[string]string) (certs.Service, error) {
 		SignRSABits:    cfgSignRSABits,
 	}
 
-	pki := mocks.NewPkiAgent(tlsCert, caCert, cfgSignRSABits, cfgSignHoursValid, authTimeout)
+	pki := ctmocks.NewPkiAgent(tlsCert, caCert, cfgSignRSABits, cfgSignHoursValid, authTimeout)
 
 	return certs.New(auth, repo, sdk, c, pki), nil
 }
@@ -115,7 +118,7 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 }
 
 func TestIssueCert(t *testing.T) {
-	svc, err := newService(map[string]string{token: email})
+	svc, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	cases := []struct {
@@ -186,7 +189,7 @@ func TestIssueCert(t *testing.T) {
 }
 
 func TestRevokeCert(t *testing.T) {
-	svc, err := newService(map[string]string{token: email})
+	svc, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	_, err = svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)
@@ -226,7 +229,7 @@ func TestRevokeCert(t *testing.T) {
 }
 
 func TestListCerts(t *testing.T) {
-	svc, err := newService(map[string]string{token: email})
+	svc, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	for i := 0; i < certNum; i++ {
@@ -290,7 +293,7 @@ func TestListCerts(t *testing.T) {
 }
 
 func TestListSerials(t *testing.T) {
-	svc, err := newService(map[string]string{token: email})
+	svc, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	var issuedCerts []certs.Cert
@@ -362,7 +365,7 @@ func TestListSerials(t *testing.T) {
 }
 
 func TestViewCert(t *testing.T) {
-	svc, err := newService(map[string]string{token: email})
+	svc, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	ic, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)

@@ -19,29 +19,35 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	"github.com/MainfluxLabs/mainflux/things/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	contentType = "application/json"
-	email       = "user@example.com"
-	adminEmail  = "admin@example.com"
-	token       = "token"
-	wrongValue  = "wrong_value"
-	wrongID     = 0
-	maxNameSize = 1024
-	nameKey     = "name"
-	ascKey      = "asc"
-	descKey     = "desc"
-	prefix      = "fe6b4e92-cc98-425e-b0aa-"
-	n           = 101
-	noLimit     = -1
+	contentType    = "application/json"
+	email          = "user@example.com"
+	adminEmail     = "admin@example.com"
+	otherUserEmail = "other_user@example.com"
+	token          = email
+	adminToken     = adminEmail
+	otherToken     = otherUserEmail
+	wrongValue     = "wrong_value"
+	wrongID        = 0
+	password       = "password"
+	maxNameSize    = 1024
+	nameKey        = "name"
+	ascKey         = "asc"
+	descKey        = "desc"
+	prefix         = "fe6b4e92-cc98-425e-b0aa-"
+	n              = 101
+	noLimit        = -1
 )
 
 var (
@@ -61,6 +67,10 @@ var (
 		Limit:  5,
 		Offset: 0,
 	}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
+	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
+	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password}
+	usersList = []users.User{admin, user, otherUser}
 )
 
 type testRequest struct {
@@ -86,14 +96,14 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 
-func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
-	conns := make(chan mocks.Connection)
-	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := mocks.NewGroupRepository()
-	chanCache := mocks.NewChannelCache()
-	thingCache := mocks.NewThingCache()
+func newService() things.Service {
+	auth := mocks.NewAuthService(admin.ID, usersList)
+	conns := make(chan thmocks.Connection)
+	thingsRepo := thmocks.NewThingRepository(conns)
+	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thmocks.NewGroupRepository()
+	chanCache := thmocks.NewChannelCache()
+	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
@@ -111,7 +121,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestCreateThings(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -219,7 +229,7 @@ func TestCreateThings(t *testing.T) {
 }
 
 func TestUpdateThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -337,7 +347,7 @@ func TestUpdateThing(t *testing.T) {
 }
 
 func TestUpdateKey(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -459,7 +469,7 @@ func TestUpdateKey(t *testing.T) {
 }
 
 func TestViewThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -536,7 +546,7 @@ func TestViewThing(t *testing.T) {
 }
 
 func TestListThings(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -751,7 +761,7 @@ func TestListThings(t *testing.T) {
 }
 
 func TestSearchThings(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -947,7 +957,7 @@ func TestSearchThings(t *testing.T) {
 }
 
 func TestListThingsByChannel(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1137,7 +1147,7 @@ func TestListThingsByChannel(t *testing.T) {
 }
 
 func TestRemoveThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1191,7 +1201,7 @@ func TestRemoveThing(t *testing.T) {
 }
 
 func TestCreateChannels(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1290,7 +1300,7 @@ func TestCreateChannels(t *testing.T) {
 }
 
 func TestUpdateChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1410,7 +1420,7 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestViewChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1491,7 +1501,7 @@ func TestViewChannel(t *testing.T) {
 }
 
 func TestListChannels(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1712,7 +1722,7 @@ func TestListChannels(t *testing.T) {
 }
 
 func TestListChannelsByThing(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1898,7 +1908,7 @@ func TestListChannelsByThing(t *testing.T) {
 }
 
 func TestRemoveChannel(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -1957,12 +1967,7 @@ func TestRemoveChannel(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	otherToken := "other_token"
-	otherEmail := "other_user@example.com"
-	svc := newService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -2052,12 +2057,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestCreateConnections(t *testing.T) {
-	otherToken := "other_token"
-	otherEmail := "other_user@example.com"
-	svc := newService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -2241,12 +2241,7 @@ func TestCreateConnections(t *testing.T) {
 }
 
 func TestDisconnectList(t *testing.T) {
-	otherToken := "other_token"
-	otherEmail := "other_user@example.com"
-	svc := newService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -2433,12 +2428,7 @@ func TestDisconnectList(t *testing.T) {
 }
 
 func TestDisconnnect(t *testing.T) {
-	otherToken := "other_token"
-	otherEmail := "other_user@example.com"
-	svc := newService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -2536,7 +2526,7 @@ func TestDisconnnect(t *testing.T) {
 }
 
 func TestBackup(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
@@ -2665,7 +2655,7 @@ func TestBackup(t *testing.T) {
 	}{
 		{
 			desc:   "backup all things channels and connections",
-			auth:   token,
+			auth:   adminToken,
 			status: http.StatusOK,
 			url:    backupURL,
 			res:    backup,
@@ -2707,7 +2697,7 @@ func TestBackup(t *testing.T) {
 }
 
 func TestRestore(t *testing.T) {
-	svc := newService(map[string]string{token: adminEmail})
+	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 	idProvider := uuid.New()
@@ -2841,7 +2831,7 @@ func TestRestore(t *testing.T) {
 	}{
 		{
 			desc:        "restore all things channels and connections",
-			auth:        token,
+			auth:        adminToken,
 			status:      http.StatusCreated,
 			url:         restoreURL,
 			req:         data,

@@ -14,14 +14,15 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
-	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
+	btmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/bootstrap/redis/producer"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-redis/redis/v8"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,8 @@ import (
 const (
 	streamID      = "mainflux.bootstrap"
 	email         = "user@example.com"
-	validToken    = "validToken"
+	validToken    = email
+	password      = "password"
 	channelsNum   = 3
 	defaultTimout = 5
 
@@ -61,10 +63,11 @@ var (
 		Channels:    []bootstrap.Channel{channel},
 		Content:     "config",
 	}
+	usersList = []users.User{{Email: email, Password: password}}
 )
 
 func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
-	configs := mocks.NewConfigsRepository()
+	configs := btmocks.NewConfigsRepository()
 	config := mfsdk.Config{
 		ThingsURL: url,
 	}
@@ -84,7 +87,7 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 		}
 	}
 
-	return mocks.NewThingsService(map[string]things.Thing{}, channels, auth)
+	return btmocks.NewThingsService(map[string]things.Thing{}, channels, auth)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
@@ -94,7 +97,7 @@ func newThingsServer(svc things.Service) *httptest.Server {
 }
 func TestAdd(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -106,7 +109,7 @@ func TestAdd(t *testing.T) {
 	}
 
 	invalidConfig := config
-	invalidConfig.Channels = []bootstrap.Channel{bootstrap.Channel{ID: "empty"}}
+	invalidConfig.Channels = []bootstrap.Channel{{ID: "empty"}}
 
 	cases := []struct {
 		desc   string
@@ -122,7 +125,7 @@ func TestAdd(t *testing.T) {
 			err:    nil,
 			event: map[string]interface{}{
 				"thing_id":    "1",
-				"owner":       email,
+				"owner":       usersList[0].ID,
 				"name":        config.Name,
 				"channels":    strings.Join(channels, ", "),
 				"external_id": config.ExternalID,
@@ -163,7 +166,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 
@@ -182,7 +185,7 @@ func TestView(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -257,7 +260,7 @@ func TestUpdate(t *testing.T) {
 func TestUpdateConnections(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -319,7 +322,7 @@ func TestUpdateConnections(t *testing.T) {
 	}
 }
 func TestList(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 
@@ -340,7 +343,7 @@ func TestList(t *testing.T) {
 func TestRemove(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -403,7 +406,7 @@ func TestRemove(t *testing.T) {
 func TestBootstrap(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)
@@ -472,7 +475,7 @@ func TestBootstrap(t *testing.T) {
 func TestChangeState(t *testing.T) {
 	redisClient.FlushAll(context.Background()).Err()
 
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
 	svc = producer.NewEventStoreMiddleware(svc, redisClient)

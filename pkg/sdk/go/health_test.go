@@ -15,7 +15,7 @@ const (
 )
 
 func TestHealth(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 

@@ -10,12 +10,13 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	authapi "github.com/MainfluxLabs/mainflux/things/api/auth/http"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	"github.com/MainfluxLabs/mainflux/things/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,8 +27,8 @@ const (
 	email       = "user@example.com"
 	adminEmail  = "admin@example.com"
 	otherEmail  = "other_user@example.com"
-	token       = "token"
-	otherToken  = "other_token"
+	token       = email
+	otherToken  = otherEmail
 	wrongValue  = "wrong_value"
 	badID       = "999"
 	badKey      = "999"
@@ -42,14 +43,14 @@ var (
 	emptyThing = sdk.Thing{}
 )
 
-func newThingsService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
-	conns := make(chan mocks.Connection)
-	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := mocks.NewGroupRepository()
-	chanCache := mocks.NewChannelCache()
-	thingCache := mocks.NewThingCache()
+func newThingsService() things.Service {
+	auth := mocks.NewAuthService("", usersList)
+	conns := make(chan thmocks.Connection)
+	thingsRepo := thmocks.NewThingRepository(conns)
+	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thmocks.NewGroupRepository()
+	chanCache := thmocks.NewChannelCache()
+	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
@@ -68,7 +69,7 @@ func newAuthServer(svc things.Service) *httptest.Server {
 }
 
 func TestCreateThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
@@ -125,7 +126,7 @@ func TestCreateThing(t *testing.T) {
 }
 
 func TestCreateThings(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
@@ -211,7 +212,7 @@ func TestCreateThings(t *testing.T) {
 }
 
 func TestThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
@@ -264,7 +265,7 @@ func TestThing(t *testing.T) {
 }
 
 func TestThings(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -365,7 +366,7 @@ func TestThings(t *testing.T) {
 }
 
 func TestThingsByChannel(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -503,7 +504,7 @@ func TestThingsByChannel(t *testing.T) {
 }
 
 func TestUpdateThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -582,7 +583,7 @@ func TestUpdateThing(t *testing.T) {
 }
 
 func TestDeleteThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -646,7 +647,7 @@ func TestDeleteThing(t *testing.T) {
 }
 
 func TestIdentifyThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	as := newAuthServer(svc)
 	defer ts.Close()
@@ -704,10 +705,7 @@ func TestIdentifyThing(t *testing.T) {
 }
 
 func TestConnectThing(t *testing.T) {
-	svc := newThingsService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newThingsService()
 
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -805,10 +803,7 @@ func TestConnectThing(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	svc := newThingsService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newThingsService()
 
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -907,10 +902,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestDisconnectThing(t *testing.T) {
-	svc := newThingsService(map[string]string{
-		token:      email,
-		otherToken: otherEmail,
-	})
+	svc := newThingsService()
 
 	ts := newThingsServer(svc)
 	defer ts.Close()

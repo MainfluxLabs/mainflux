@@ -9,26 +9,34 @@ import (
 	"testing"
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
+	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	total        = 100
-	exampleUser1 = "email1@example.com"
-	exampleUser2 = "email2@example.com"
-	invalidUser  = "invalid@example.com"
+	total          = 100
+	userEmail      = "user@example.com"
+	otherUserEmail = "otherUser@example.com"
+	invalidUser    = "invalid@example.com"
+	password       = "password"
+)
+
+var (
+	user      = users.User{Email: userEmail, Password: password}
+	otherUser = users.User{Email: otherUserEmail, Password: password}
+	usersList = []users.User{user, otherUser}
 )
 
 func newService() notifiers.Service {
-	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
-	auth := thmocks.NewAuthService(map[string]string{exampleUser1: exampleUser1, exampleUser2: exampleUser2, invalidUser: invalidUser})
-	notifier := mocks.NewNotifier()
+	repo := ntmocks.NewRepo(make(map[string]notifiers.Subscription))
+	auth := mocks.NewAuthService("", usersList)
+	notifier := ntmocks.NewNotifier()
 	idp := uuid.NewMock()
 	from := "exampleFrom"
 	return notifiers.New(auth, repo, idp, notifier, from)
@@ -46,22 +54,22 @@ func TestCreateSubscription(t *testing.T) {
 	}{
 		{
 			desc:  "test success",
-			token: exampleUser1,
-			sub:   notifiers.Subscription{Contact: exampleUser1, Topic: "valid.topic"},
+			token: userEmail,
+			sub:   notifiers.Subscription{Contact: user.Email, Topic: "valid.topic"},
 			id:    uuid.Prefix + fmt.Sprintf("%012d", 1),
 			err:   nil,
 		},
 		{
 			desc:  "test already existing",
-			token: exampleUser1,
-			sub:   notifiers.Subscription{Contact: exampleUser1, Topic: "valid.topic"},
+			token: userEmail,
+			sub:   notifiers.Subscription{Contact: userEmail, Topic: "valid.topic"},
 			id:    "",
 			err:   errors.ErrConflict,
 		},
 		{
 			desc:  "test with empty token",
 			token: "",
-			sub:   notifiers.Subscription{Contact: exampleUser1, Topic: "valid.topic"},
+			sub:   notifiers.Subscription{Contact: userEmail, Topic: "valid.topic"},
 			id:    "",
 			err:   errors.ErrAuthentication,
 		},
@@ -76,11 +84,11 @@ func TestCreateSubscription(t *testing.T) {
 
 func TestViewSubscription(t *testing.T) {
 	svc := newService()
-	sub := notifiers.Subscription{Contact: exampleUser1, Topic: "valid.topic"}
-	id, err := svc.CreateSubscription(context.Background(), exampleUser1, sub)
+	sub := notifiers.Subscription{Contact: userEmail, Topic: "valid.topic"}
+	id, err := svc.CreateSubscription(context.Background(), userEmail, sub)
 	require.Nil(t, err, "Saving a Subscription must succeed")
 	sub.ID = id
-	sub.OwnerID = exampleUser1
+	sub.OwnerID = usersList[0].ID
 
 	cases := []struct {
 		desc  string
@@ -91,14 +99,14 @@ func TestViewSubscription(t *testing.T) {
 	}{
 		{
 			desc:  "test success",
-			token: exampleUser1,
+			token: userEmail,
 			id:    id,
 			sub:   sub,
 			err:   nil,
 		},
 		{
 			desc:  "test not existing",
-			token: exampleUser1,
+			token: userEmail,
 			id:    "not_exist",
 			sub:   notifiers.Subscription{},
 			err:   errors.ErrNotFound,
@@ -121,17 +129,18 @@ func TestViewSubscription(t *testing.T) {
 
 func TestListSubscriptions(t *testing.T) {
 	svc := newService()
-	sub := notifiers.Subscription{Contact: exampleUser1, OwnerID: exampleUser1}
+	sub := notifiers.Subscription{Contact: userEmail, OwnerID: user.ID}
 	topic := "topic.subtopic"
 	var subs []notifiers.Subscription
 	for i := 0; i < total; i++ {
 		tmp := sub
-		token := exampleUser1
+		token := userEmail
 		if i%2 == 0 {
-			tmp.Contact = exampleUser2
-			tmp.OwnerID = exampleUser2
-			token = exampleUser2
+			tmp.Contact = otherUserEmail
+			tmp.OwnerID = otherUser.ID
+			token = otherUserEmail
 		}
+
 		tmp.Topic = fmt.Sprintf("%s.%d", topic, i)
 		id, err := svc.CreateSubscription(context.Background(), token, tmp)
 		require.Nil(t, err, "Saving a Subscription must succeed")
@@ -153,7 +162,7 @@ func TestListSubscriptions(t *testing.T) {
 	}{
 		{
 			desc:  "test success",
-			token: exampleUser1,
+			token: userEmail,
 			pageMeta: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  3,
@@ -170,7 +179,7 @@ func TestListSubscriptions(t *testing.T) {
 		},
 		{
 			desc:  "test not existing",
-			token: exampleUser1,
+			token: userEmail,
 			pageMeta: notifiers.PageMetadata{
 				Limit:   10,
 				Contact: "empty@example.com",
@@ -191,7 +200,7 @@ func TestListSubscriptions(t *testing.T) {
 		},
 		{
 			desc:  "test with topic",
-			token: exampleUser1,
+			token: userEmail,
 			pageMeta: notifiers.PageMetadata{
 				Limit: 10,
 				Topic: fmt.Sprintf("%s.%d", topic, 4),
@@ -208,17 +217,17 @@ func TestListSubscriptions(t *testing.T) {
 		},
 		{
 			desc:  "test with contact and offset",
-			token: exampleUser1,
+			token: userEmail,
 			pageMeta: notifiers.PageMetadata{
 				Offset:  10,
 				Limit:   10,
-				Contact: exampleUser2,
+				Contact: otherUserEmail,
 			},
 			page: notifiers.Page{
 				PageMetadata: notifiers.PageMetadata{
 					Offset:  10,
 					Limit:   10,
-					Contact: exampleUser2,
+					Contact: otherUserEmail,
 				},
 				Subscriptions: offsetSubs,
 				Total:         uint(total / 2),
@@ -236,11 +245,11 @@ func TestListSubscriptions(t *testing.T) {
 
 func TestRemoveSubscription(t *testing.T) {
 	svc := newService()
-	sub := notifiers.Subscription{Contact: exampleUser1, Topic: "valid.topic"}
-	id, err := svc.CreateSubscription(context.Background(), exampleUser1, sub)
+	sub := notifiers.Subscription{Contact: userEmail, Topic: "valid.topic"}
+	id, err := svc.CreateSubscription(context.Background(), userEmail, sub)
 	require.Nil(t, err, "Saving a Subscription must succeed")
 	sub.ID = id
-	sub.OwnerID = exampleUser1
+	sub.OwnerID = userEmail
 
 	cases := []struct {
 		desc  string
@@ -250,13 +259,13 @@ func TestRemoveSubscription(t *testing.T) {
 	}{
 		{
 			desc:  "test success",
-			token: exampleUser1,
+			token: userEmail,
 			id:    id,
 			err:   nil,
 		},
 		{
 			desc:  "test not existing",
-			token: exampleUser1,
+			token: userEmail,
 			id:    "not_exist",
 			err:   nil,
 		},
@@ -277,8 +286,8 @@ func TestRemoveSubscription(t *testing.T) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 	sub := notifiers.Subscription{
-		Contact: exampleUser1,
-		OwnerID: exampleUser1,
+		Contact: userEmail,
+		OwnerID: userEmail,
 		Topic:   "topic.subtopic",
 	}
 	for i := 0; i < total; i++ {
@@ -287,13 +296,13 @@ func TestConsume(t *testing.T) {
 		if i%2 == 0 {
 			tmp.Topic = fmt.Sprintf("%s-2", sub.Topic)
 		}
-		_, err := svc.CreateSubscription(context.Background(), exampleUser1, tmp)
+		_, err := svc.CreateSubscription(context.Background(), userEmail, tmp)
 		require.Nil(t, err, "Saving a Subscription must succeed")
 	}
 
 	sub.Contact = invalidUser
 	sub.Topic = fmt.Sprintf("%s-2", sub.Topic)
-	_, err := svc.CreateSubscription(context.Background(), exampleUser1, sub)
+	_, err := svc.CreateSubscription(context.Background(), userEmail, sub)
 	require.Nil(t, err, "Saving a Subscription must succeed")
 
 	msg := messaging.Message{

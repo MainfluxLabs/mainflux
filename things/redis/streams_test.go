@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/things/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/MainfluxLabs/mainflux/things/redis"
+	"github.com/MainfluxLabs/mainflux/users"
 	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +27,8 @@ const (
 	streamID        = "mainflux.things"
 	email           = "user@example.com"
 	adminEmail      = "admin@example.com"
-	token           = "token"
+	password        = "password"
+	token           = email
 	thingPrefix     = "thing."
 	thingCreate     = thingPrefix + "create"
 	thingUpdate     = thingPrefix + "update"
@@ -39,14 +42,20 @@ const (
 	channelRemove = channelPrefix + "remove"
 )
 
+var (
+	user      = users.User{Email: email, Password: password}
+	admin     = users.User{Email: adminEmail, Password: password}
+	usersList = []users.User{admin, user}
+)
+
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService(tokens)
-	conns := make(chan mocks.Connection)
-	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
-	groupsRepo := mocks.NewGroupRepository()
-	chanCache := mocks.NewChannelCache()
-	thingCache := mocks.NewThingCache()
+	auth := mocks.NewAuthService("", usersList)
+	conns := make(chan thmocks.Connection)
+	thingsRepo := thmocks.NewThingRepository(conns)
+	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	groupsRepo := thmocks.NewGroupRepository()
+	chanCache := thmocks.NewChannelCache()
+	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
 	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
@@ -76,7 +85,7 @@ func TestCreateThings(t *testing.T) {
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
-				"owner":     email,
+				"owner":     user.ID,
 				"metadata":  "{\"test\":\"test\"}",
 				"operation": thingCreate,
 			},
@@ -303,7 +312,7 @@ func TestCreateChannels(t *testing.T) {
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
-				"owner":     email,
+				"owner":     user.ID,
 				"operation": channelCreate,
 			},
 		},
