@@ -58,7 +58,12 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	if svc.roles["root"] != u.ID {
+	switch req.Subject {
+	case "root":
+		if svc.roles["root"] != u.ID {
+			return &empty.Empty{}, errors.ErrAuthorization
+		}
+	default:
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 
