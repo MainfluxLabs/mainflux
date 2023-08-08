@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 type rolesRepositoryMock struct {
@@ -39,9 +40,27 @@ func (rrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, id string) (st
 }
 
 func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
-	panic("not implemented")
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	if _, ok := rrm.roles[id]; !ok {
+		return errors.ErrNotFound
+	}
+
+	rrm.roles[id] = role
+
+	return nil
 }
 
 func (rrm *rolesRepositoryMock) RemoveRole(ctx context.Context, id string) error {
-	panic("not implemented")
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	if _, ok := rrm.roles[id]; !ok {
+		return errors.ErrNotFound
+	}
+
+	delete(rrm.roles, id)
+
+	return nil
 }
