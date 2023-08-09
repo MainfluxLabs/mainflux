@@ -20,10 +20,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
-	"github.com/MainfluxLabs/mainflux/users/mocks"
+	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,10 +86,10 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() users.Service {
-	usersRepo := mocks.NewUserRepository(usersList)
-	hasher := mocks.NewHasher()
+	usersRepo := usmocks.NewUserRepository(usersList)
+	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList)
-	email := mocks.NewEmailer()
+	email := usmocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
 

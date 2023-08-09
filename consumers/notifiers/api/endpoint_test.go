@@ -16,12 +16,13 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
+	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,8 @@ const (
 	email       = "user@example.com"
 	contact1    = "email1@example.com"
 	contact2    = "email2@example.com"
-	token       = "token"
+	password    = "password"
+	token       = email
 	wrongValue  = "wrong_value"
 	topic       = "topic"
 )
@@ -42,6 +44,7 @@ var (
 	unauthRes     = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	invalidRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidQueryParams.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	usersList     = []users.User{{Email: email, Password: password}}
 )
 
 type testRequest struct {
@@ -67,11 +70,11 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 
-func newService(tokens map[string]string) notifiers.Service {
-	auth := thmocks.NewAuthService(tokens)
-	repo := mocks.NewRepo(make(map[string]notifiers.Subscription))
+func newService() notifiers.Service {
+	auth := mocks.NewAuthService("", usersList)
+	repo := ntmocks.NewRepo(make(map[string]notifiers.Subscription))
 	idp := uuid.NewMock()
-	notif := mocks.NewNotifier()
+	notif := ntmocks.NewNotifier()
 	from := "exampleFrom"
 	return notifiers.New(auth, repo, idp, notif, from)
 }
@@ -88,7 +91,7 @@ func toJSON(data interface{}) string {
 }
 
 func TestCreate(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ss := newServer(svc)
 	defer ss.Close()
 
@@ -195,7 +198,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ss := newServer(svc)
 	defer ss.Close()
 
@@ -207,7 +210,7 @@ func TestView(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got an error creating id: %s", err))
 	sr := subRes{
 		ID:      id,
-		OwnerID: email,
+		OwnerID: usersList[0].ID,
 		Contact: sub.Contact,
 		Topic:   sub.Topic,
 	}
@@ -268,7 +271,7 @@ func TestView(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ss := newServer(svc)
 	defer ss.Close()
 
@@ -286,7 +289,7 @@ func TestList(t *testing.T) {
 		id, err := svc.CreateSubscription(context.Background(), token, sub)
 		sr := subRes{
 			ID:      id,
-			OwnerID: email,
+			OwnerID: usersList[0].ID,
 			Contact: sub.Contact,
 			Topic:   sub.Topic,
 		}
@@ -388,7 +391,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	svc := newService(map[string]string{token: email})
+	svc := newService()
 	ss := newServer(svc)
 	defer ss.Close()
 

@@ -17,13 +17,14 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/bootstrap"
-	"github.com/MainfluxLabs/mainflux/bootstrap/mocks"
+	btmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
-	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/gofrs/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -31,10 +32,11 @@ import (
 )
 
 const (
-	validToken   = "validToken"
 	invalidToken = "invalidToken"
 	email        = "test@example.com"
+	validToken   = email
 	unknown      = "unknown"
+	password     = "password"
 	channelsNum  = 3
 )
 
@@ -53,10 +55,11 @@ var (
 		Channels:    []bootstrap.Channel{channel},
 		Content:     "config",
 	}
+	usersList = []users.User{{Email: email, Password: password}}
 )
 
 func newService(auth mainflux.AuthServiceClient, url string) bootstrap.Service {
-	things := mocks.NewConfigsRepository()
+	things := btmocks.NewConfigsRepository()
 	config := mfsdk.Config{
 		ThingsURL: url,
 	}
@@ -76,7 +79,7 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 		}
 	}
 
-	return mocks.NewThingsService(map[string]things.Thing{}, channels, auth)
+	return btmocks.NewThingsService(map[string]things.Thing{}, channels, auth)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
@@ -101,7 +104,7 @@ func enc(in []byte) ([]byte, error) {
 }
 
 func TestAdd(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -153,7 +156,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestView(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -194,7 +197,7 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -246,7 +249,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateCert(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -304,7 +307,7 @@ func TestUpdateCert(t *testing.T) {
 }
 
 func TestUpdateConnections(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -378,7 +381,7 @@ func TestUpdateConnections(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -486,7 +489,7 @@ func TestList(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -533,7 +536,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestBootstrap(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -594,7 +597,7 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestChangeState(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -653,7 +656,7 @@ func TestChangeState(t *testing.T) {
 }
 
 func TestUpdateChannelHandler(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -690,7 +693,7 @@ func TestUpdateChannelHandler(t *testing.T) {
 }
 
 func TestRemoveChannelHandler(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -722,7 +725,7 @@ func TestRemoveChannelHandler(t *testing.T) {
 }
 
 func TestRemoveCoinfigHandler(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)
@@ -754,7 +757,7 @@ func TestRemoveCoinfigHandler(t *testing.T) {
 }
 
 func TestDisconnectThingsHandler(t *testing.T) {
-	users := thmocks.NewAuthService(map[string]string{validToken: email})
+	users := mocks.NewAuthService("", usersList)
 
 	server := newThingsServer(newThingsService(users))
 	svc := newService(users, server.URL)

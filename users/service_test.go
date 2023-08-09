@@ -11,10 +11,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
-
-	"github.com/MainfluxLabs/mainflux/users/mocks"
+	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,10 +38,10 @@ var (
 )
 
 func newService() users.Service {
-	hasher := mocks.NewHasher()
-	userRepo := mocks.NewUserRepository(usersList)
+	hasher := usmocks.NewHasher()
+	userRepo := usmocks.NewUserRepository(usersList)
 	authSvc := mocks.NewAuthService(admin.ID, usersList)
-	e := mocks.NewEmailer()
+	e := usmocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
 }

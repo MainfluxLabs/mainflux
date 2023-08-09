@@ -23,7 +23,7 @@ var (
 )
 
 func TestCreateChannel(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
@@ -96,7 +96,7 @@ func TestCreateChannel(t *testing.T) {
 }
 
 func TestCreateChannels(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
@@ -160,7 +160,7 @@ func TestCreateChannels(t *testing.T) {
 }
 
 func TestChannel(t *testing.T) {
-	svc := newThingsService(map[string]string{token: adminEmail})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -212,7 +212,7 @@ func TestChannel(t *testing.T) {
 }
 
 func TestChannels(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -312,7 +312,7 @@ func TestChannels(t *testing.T) {
 }
 
 func TestChannelsByThing(t *testing.T) {
-	svc := newThingsService(map[string]string{token: email})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -444,7 +444,7 @@ func TestChannelsByThing(t *testing.T) {
 }
 
 func TestUpdateChannel(t *testing.T) {
-	svc := newThingsService(map[string]string{token: adminEmail})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -502,7 +502,7 @@ func TestUpdateChannel(t *testing.T) {
 }
 
 func TestDeleteChannel(t *testing.T) {
-	svc := newThingsService(map[string]string{token: adminEmail})
+	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 	sdkConf := sdk.Config{
