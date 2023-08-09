@@ -183,17 +183,27 @@ func TestViewProfile(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	u := user
 	u.Password = ""
 
 	cases := map[string]struct {
 		user  users.User
 		token string
+		role string
 		err   error
 	}{
 		"valid token's user info": {
 			user:  u,
 			token: token,
+			err:   nil,
+		},
+		"valid token's admin info": {
+			user:  u,
+			token: adminToken,
+			role: "root",
 			err:   nil,
 		},
 		"invalid token's user info": {
@@ -204,7 +214,8 @@ func TestViewProfile(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewProfile(context.Background(), tc.token)
+		p, err := svc.ViewProfile(context.Background(), tc.token)
+		assert.Equal(t, tc.role, p.Role, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.role, p.Role))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
