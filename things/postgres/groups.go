@@ -17,10 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var (
-	errCreateMetadataQuery = errors.New("failed to create query for metadata")
-	groupIDFkeyy           = "group_relations_group_id_fkey"
-)
+var groupIDFkeyy = "group_relations_group_id_fkey"
 
 var _ things.GroupRepository = (*groupRepository)(nil)
 
@@ -301,6 +298,60 @@ func (gr groupRepository) RetrieveMembers(ctx context.Context, groupID string, p
 	return page, nil
 }
 
+func (gr groupRepository) RetrieveChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveMembers, err)
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
+		FROM group_relations gr, channels c
+		WHERE gr.group_id = :group_id  and gr.channel_id = c.id %s %s;`, mq, olq)
+
+	params := map[string]interface{}{"group_id": groupID}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveChannels, err)
+	}
+	defer rows.Close()
+
+	var items []things.Channel
+	for rows.Next() {
+		dbch := dbChannel{}
+		if err := rows.StructScan(&dbch); err != nil {
+			return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveChannels, err)
+		}
+
+		ch := toChannel(dbch)
+
+		items = append(items, ch)
+	}
+
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr WHERE gr.group_id = :group_id %s;`, mq)
+
+	total, err := total(ctx, gr.db, qc, params)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveChannels, err)
+	}
+
+	page := things.GroupChannelsPage{
+		Channels: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 func (gr groupRepository) RetrieveMembership(ctx context.Context, memberID string) (string, error) {
 	q := `SELECT group_id FROM group_relations WHERE member_id = :member_id;`
 
@@ -349,83 +400,19 @@ func (gr groupRepository) RetrieveAllGroupRelations(ctx context.Context) ([]thin
 }
 
 func (gr groupRepository) AssignMember(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	qIns := `INSERT INTO group_relations (group_id, member_id, created_at, updated_at)
-		VALUES(:group_id, :member_id, :created_at, :updated_at)`
-
-	for _, id := range ids {
-		dbg, err := toDBGroupRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-		created := time.Now()
-		dbg.CreatedAt = created
-		dbg.UpdatedAt = created
-
-		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	return nil
+	return gr.assign(ctx, groupID, false, ids...)
 }
 
 func (gr groupRepository) UnassignMember(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
+	return gr.unassign(ctx, groupID, false, ids...)
+}
 
-	qDel := `DELETE from group_relations WHERE group_id = :group_id AND member_id = :member_id`
+func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids ...string) error {
+	return gr.assign(ctx, groupID, true, ids...)
+}
 
-	for _, id := range ids {
-		dbg, err := toDBGroupRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	return nil
+func (gr groupRepository) UnassignChannel(ctx context.Context, groupID string, ids ...string) error {
+	return gr.unassign(ctx, groupID, true, ids...)
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
@@ -514,6 +501,111 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 	return page, nil
 }
 
+func (gr groupRepository) assign(ctx context.Context, groupID string, channel bool, ids ...string) error {
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrAssignToGroup, err)
+	}
+
+	qIns := `INSERT INTO group_relations (group_id, member_id, created_at, updated_at)
+		VALUES(:group_id, :member_id, :created_at, :updated_at)`
+
+	if channel {
+		qIns = `INSERT INTO group_relations (group_id, channel_id, created_at, updated_at)
+			VALUES(:group_id, :channel_id, :created_at, :updated_at)`
+	}
+
+	for _, id := range ids {
+		dbg, err := toDBGroupRelation(id, "", groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
+
+		if channel {
+			dbg, err = toDBGroupRelation("", id, groupID)
+			if err != nil {
+				return errors.Wrap(things.ErrAssignToGroup, err)
+			}
+		}
+
+		created := time.Now()
+		dbg.CreatedAt = created
+		dbg.UpdatedAt = created
+
+		if _, err := tx.NamedExecContext(ctx, qIns, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(things.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrAssignToGroup, err)
+	}
+
+	return nil
+
+}
+
+func (gr groupRepository) unassign(ctx context.Context, groupID string, channel bool, ids ...string) error {
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrAssignToGroup, err)
+	}
+
+	qDel := `DELETE from group_relations WHERE group_id = :group_id AND member_id = :member_id`
+
+	if channel {
+		qDel = `DELETE from group_relations WHERE group_id = :group_id AND channel_id = :channel_id`
+	}
+
+	for _, id := range ids {
+		dbg, err := toDBGroupRelation(id, "", groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
+
+		if channel {
+			dbg, err = toDBGroupRelation("", id, groupID)
+			if err != nil {
+				return errors.Wrap(things.ErrAssignToGroup, err)
+			}
+		}
+
+		if _, err := tx.NamedExecContext(ctx, qDel, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignToGroup, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrAssignToGroup, err)
+	}
+
+	return nil
+}
+
 type dbGroup struct {
 	ID          string     `db:"id"`
 	OwnerID     string     `db:"owner_id"`
@@ -569,11 +661,12 @@ func toGroup(dbu dbGroup) (things.Group, error) {
 type dbGroupRelation struct {
 	GroupID   sql.NullString `db:"group_id"`
 	MemberID  sql.NullString `db:"member_id"`
+	ChannelID sql.NullString `db:"channel_id"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
 }
 
-func toDBGroupRelation(memberID, groupID string) (dbGroupRelation, error) {
+func toDBGroupRelation(memberID, channelID, groupID string) (dbGroupRelation, error) {
 	var grID sql.NullString
 	if groupID != "" {
 		grID = sql.NullString{String: groupID, Valid: true}
@@ -584,9 +677,15 @@ func toDBGroupRelation(memberID, groupID string) (dbGroupRelation, error) {
 		mID = sql.NullString{String: memberID, Valid: true}
 	}
 
+	var chID sql.NullString
+	if channelID != "" {
+		chID = sql.NullString{String: channelID, Valid: true}
+	}
+
 	return dbGroupRelation{
-		GroupID:  grID,
-		MemberID: mID,
+		GroupID:   grID,
+		MemberID:  mID,
+		ChannelID: chID,
 	}, nil
 }
 
@@ -594,6 +693,7 @@ func toGroupRelation(dbgr dbGroupRelation) (things.GroupRelation, error) {
 	return things.GroupRelation{
 		GroupID:   dbgr.GroupID.String,
 		MemberID:  dbgr.MemberID.String,
+		ChannelID: dbgr.ChannelID.String,
 		CreatedAt: dbgr.CreatedAt,
 		UpdatedAt: dbgr.UpdatedAt,
 	}, nil

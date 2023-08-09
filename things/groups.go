@@ -21,6 +21,9 @@ var (
 
 	// ErrFailedToRetrieveMembership failed to retrieve memberships
 	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
+
+	// ErrFailedToRetrieveChannels failed to retrieve channels
+	ErrFailedToRetrieveChannels = errors.New("failed to retrieve channels")
 )
 
 // Identity contains ID and Email.
@@ -47,6 +50,7 @@ type Group struct {
 type GroupRelation struct {
 	MemberID  string
 	GroupID   string
+	ChannelID string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -63,6 +67,11 @@ type GroupPage struct {
 type MemberPage struct {
 	PageMetadata
 	Members []Thing
+}
+
+type GroupChannelsPage struct {
+	PageMetadata
+	Channels []Channel
 }
 
 // GroupRepository specifies a group persistence API.
@@ -91,11 +100,20 @@ type GroupRepository interface {
 	// RetrieveMembers retrieves everything that is assigned to a group identified by groupID.
 	RetrieveMembers(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)
 
+	// RetrieveChannels retrieves page of channels that are assigned to a group identified by groupID.
+	RetrieveChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+
 	// AssignMember adds a member to group.
 	AssignMember(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UnassignMember removes a member from a group
 	UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error
+
+	// AssignChannel assigns a channel to a group
+	AssignChannel(ctx context.Context, groupID string, ids ...string) error
+
+	// UnassignChannel unassigns a channel from a group
+	UnassignChannel(ctx context.Context, groupID string, ids ...string) error
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)

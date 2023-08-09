@@ -447,3 +447,42 @@ func (lm *loggingMiddleware) Unassign(ctx context.Context, token, groupID string
 
 	return lm.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
+
+func (lm *loggingMiddleware) AssignChannels(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign_channels for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignChannels(ctx, token, groupID, channelIDs...)
+}
+
+func (lm *loggingMiddleware) UnassignChannels(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_channels for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignChannels(ctx, token, groupID, channelIDs...)
+}
+
+func (lm *loggingMiddleware) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (gchp things.GroupChannelsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_group_channels for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupChannels(ctx, token, groupID, pm)
+}

@@ -292,3 +292,15 @@ func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID s
 func (svc *mainfluxThings) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {
 	panic("not implemented")
 }
+
+func (svc *mainfluxThings) AssignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) UnassignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	panic("not implemented")
+}

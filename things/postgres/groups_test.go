@@ -557,6 +557,153 @@ func TestUnassign(t *testing.T) {
 	assert.True(t, mp.Total == 1, fmt.Sprintf("retrieve members of a group: expected %d got %d\n", 1, mp.Total))
 }
 
+func TestAssignChannel(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	creationTime := time.Now().UTC()
+	group := things.Group{
+		ID:        generateGroupID(t),
+		Name:      groupName + "Updated",
+		OwnerID:   uid,
+		CreatedAt: creationTime,
+		UpdatedAt: creationTime,
+	}
+
+	group, err = groupRepo.Save(context.Background(), group)
+	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
+
+	chID1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	chID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	channelIDs := []string{chID1, chID2}
+
+	cases := map[string]struct {
+		groupID    string
+		channelIDs []string
+		err        error
+	}{
+
+		"assign channels": {
+			groupID:    group.ID,
+			channelIDs: channelIDs,
+			err:        nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := groupRepo.AssignChannel(context.Background(), tc.groupID, tc.channelIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestUnassignChannel(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	creationTime := time.Now().UTC()
+	group := things.Group{
+		ID:        generateGroupID(t),
+		Name:      groupName + "Updated",
+		OwnerID:   uid,
+		CreatedAt: creationTime,
+		UpdatedAt: creationTime,
+	}
+
+	group, err = groupRepo.Save(context.Background(), group)
+	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
+
+	chID1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	chID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	channelIDs := []string{chID1, chID2}
+
+	err = groupRepo.AssignChannel(context.Background(), group.ID, channelIDs...)
+	require.Nil(t, err, fmt.Sprintf("assign channels unexpected error: %s", err))
+
+	cases := map[string]struct {
+		groupID    string
+		channelIDs []string
+		err        error
+	}{
+		"unassign channels": {
+			groupID:    group.ID,
+			channelIDs: channelIDs,
+			err:        nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := groupRepo.UnassignChannel(context.Background(), tc.groupID, tc.channelIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestRetrieveChannels(t *testing.T) {
+	t.Cleanup(func() { cleanUp(t) })
+	dbMiddleware := postgres.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	creationTime := time.Now().UTC()
+	group := things.Group{
+		ID:        generateGroupID(t),
+		Name:      groupName + "Updated",
+		OwnerID:   uid,
+		CreatedAt: creationTime,
+		UpdatedAt: creationTime,
+	}
+
+	group, err = groupRepo.Save(context.Background(), group)
+	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
+
+	chID1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	chID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	channelIDs := []string{chID1, chID2}
+
+	err = groupRepo.AssignChannel(context.Background(), group.ID, channelIDs...)
+	require.Nil(t, err, fmt.Sprintf("assign channels unexpected error: %s", err))
+
+	cases := map[string]struct {
+		pagemeta  things.PageMetadata
+		groupID    string
+		channelIDs []string
+		err        error
+	}{
+		"unassign channels": {
+			pagemeta: things.PageMetadata{
+				Offset: 0,
+				Limit:  10,
+			},
+			groupID:    group.ID,
+			channelIDs: channelIDs,
+			err:        nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		chs, err := groupRepo.RetrieveChannels(context.Background(), tc.groupID, tc.pagemeta)
+		assert.Equal(t, tc.channelIDs, chs.Channels, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.channelIDs, chs.Channels))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
 func TestRetrieveAllGroupRelations(t *testing.T) {
 	t.Cleanup(func() { cleanUp(t) })
 	dbMiddleware := postgres.NewDatabase(db)

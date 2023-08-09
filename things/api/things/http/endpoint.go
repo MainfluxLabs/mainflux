@@ -672,6 +672,58 @@ func unassignEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func assignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(memberReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.AssignChannels(ctx, req.token, req.groupID, req.Channels...); err != nil {
+			return nil, err
+		}
+
+		return assignRes{}, nil
+	}
+}
+
+func unassignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(memberReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UnassignChannels(ctx, req.token, req.groupID, req.Channels...); err != nil {
+			return nil, err
+		}
+
+		return unassignRes{}, nil
+	}
+}
+
+func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		pm := things.PageMetadata{
+			Offset:     req.offset,
+			Limit:      req.limit,
+			Metadata:   req.metadata,
+			Unassigned: req.unassigned,
+		}
+
+		gchsp, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupChannelsResponse(gchsp), nil
+	}
+}
+
 func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	res := groupPageRes{
 		pageRes: pageRes{
@@ -717,6 +769,29 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 			Key:      m.Key,
 		}
 		res.Things = append(res.Things, view)
+	}
+
+	return res
+}
+
+func buildGroupChannelsResponse(gchsp things.GroupChannelsPage) groupChannelsPageRes {
+	res := groupChannelsPageRes{
+		pageRes: pageRes{
+			Total:  gchsp.Total,
+			Offset: gchsp.Offset,
+			Limit:  gchsp.Limit,
+			Name:   gchsp.Name,
+		},
+		Channels: []channelRes{},
+	}
+
+	for _, ch := range gchsp.Channels {
+		view := channelRes{
+			ID:       ch.ID,
+			Name:     ch.Name,
+			Metadata: ch.Metadata,
+		}
+		res.Channels = append(res.Channels, view)
 	}
 
 	return res

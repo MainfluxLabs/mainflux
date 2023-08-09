@@ -335,6 +335,23 @@ func (res memberPageRes) Empty() bool {
 	return false
 }
 
+type groupChannelsPageRes struct {
+	pageRes
+	Channels []channelRes `json:"channels"`
+}
+
+func (res groupChannelsPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res groupChannelsPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res groupChannelsPageRes) Empty() bool {
+	return false
+}
+
 type viewGroupRes struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`

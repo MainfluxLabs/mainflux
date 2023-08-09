@@ -126,6 +126,15 @@ type Service interface {
 	// Assign adds a member with memberID into the group identified by groupID.
 	Assign(ctx context.Context, token, groupID string, memberIDs ...string) error
 
+	// AssignChannels adds channels to the group identified by groupID.
+	AssignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error
+
+	// UnassignChannels removes channels from the group identified by groupID.
+	UnassignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error
+
+	// ListChannels retrieves page of channels that are assigned to a group identified by groupID.
+	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+
 	// Unassign removes member with memberID from group identified by groupID.
 	Unassign(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
@@ -799,6 +808,50 @@ func (ts *thingsService) Assign(ctx context.Context, token string, groupID strin
 	return nil
 }
 
+func (ts *thingsService) AssignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if user.GetId() != group.OwnerID {
+		return errors.ErrAuthorization
+	}
+
+	if err := ts.groups.AssignChannel(ctx, groupID, channelIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ts *thingsService) UnassignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if user.GetId() != group.OwnerID {
+		return errors.ErrAuthorization
+	}
+
+	if err := ts.groups.UnassignChannel(ctx, groupID, channelIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ts *thingsService) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return err
@@ -822,6 +875,29 @@ func (ts *thingsService) ListMembers(ctx context.Context, token string, groupID 
 	}
 
 	return mp, nil
+}
+
+func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error) {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return GroupChannelsPage{}, err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return GroupChannelsPage{}, err
+	}
+
+	if user.GetId() != group.OwnerID {
+		return GroupChannelsPage{}, errors.ErrAuthorization
+	}
+
+	gchp, err := ts.groups.RetrieveChannels(ctx, groupID, pm)
+	if err != nil {
+		return GroupChannelsPage{}, err
+	}
+
+	return gchp, nil
 }
 
 func (ts *thingsService) ViewMembership(ctx context.Context, token string, memberID string) (Group, error) {
@@ -870,4 +946,13 @@ func (ts *thingsService) isThingOwner(ctx context.Context, owner string, thingID
 	}
 
 	return nil
+}
+
+func containsItem(slice []string, target string) bool {
+	for _, item := range slice {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }

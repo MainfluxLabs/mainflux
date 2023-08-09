@@ -222,6 +222,27 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Post("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_channels")(assignChannelsEndpoint(svc)),
+		decodememberRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Delete("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_channels")(unassignChannelsEndpoint(svc)),
+		decodememberRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_channels")(listGroupChannelsEndpoint(svc)),
+		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
 		decodeListMembersRequest,

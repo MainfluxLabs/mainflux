@@ -296,6 +296,18 @@ func (es eventStore) Unassign(ctx context.Context, token string, groupID string,
 	return es.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
 
+func (es eventStore) AssignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	return es.svc.Assign(ctx, token, groupID, channelIDs...)
+}
+
+func (es eventStore) UnassignChannels(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	return es.svc.Unassign(ctx, token, groupID, channelIDs...)
+}
+
+func (es eventStore) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	return es.svc.ListGroupChannels(ctx, token, groupID, pm)
+}
+
 func (es eventStore) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {
 	return es.svc.ViewMembership(ctx, token, memberID)
 }

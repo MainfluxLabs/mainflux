@@ -317,3 +317,30 @@ func (ms *metricsMiddleware) Unassign(ctx context.Context, token, groupID string
 
 	return ms.svc.Unassign(ctx, token, groupID, memberIDs...)
 }
+
+func (ms *metricsMiddleware) AssignChannels(ctx context.Context, token, groupID string, channelIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_channels").Add(1)
+		ms.latency.With("method", "assign_channels").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignChannels(ctx, token, groupID, channelIDs...)
+}
+
+func (ms *metricsMiddleware) UnassignChannels(ctx context.Context, token, groupID string, channelIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_channels").Add(1)
+		ms.latency.With("method", "unassign_channels").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignChannels(ctx, token, groupID, channelIDs...)
+}
+
+func (ms *metricsMiddleware) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_group_channels").Add(1)
+		ms.latency.With("method", "list_group_channels").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupChannels(ctx, token, groupID, pm)
+}

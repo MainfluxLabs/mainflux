@@ -165,6 +165,14 @@ func (grm *groupRepositoryMock) AssignMember(ctx context.Context, groupID string
 	return nil
 }
 
+func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
+func (grm *groupRepositoryMock) UnassignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
 func (grm *groupRepositoryMock) RetrieveMembership(ctx context.Context, memberID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -202,6 +210,10 @@ func (grm *groupRepositoryMock) RetrieveMembers(ctx context.Context, groupID str
 			Total: uint64(len(items)),
 		},
 	}, nil
+}
+
+func (grm *groupRepositoryMock) RetrieveChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	panic("not implemented")
 }
 
 func (grm *groupRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]things.GroupRelation, error) {
