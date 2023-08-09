@@ -83,12 +83,12 @@ func TestListChannelMessagesSenML(t *testing.T) {
 	stringMsgs := []senml.Message{}
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
-	now := time.Now().UnixNano()
+	now := time.Now().Unix()
 
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = float64(now)/float64(1e9) - float64(i)
+		msg.Time = float64(now) - float64(i)
 
 		count := i % valueFields
 		switch count {
