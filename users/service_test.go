@@ -25,12 +25,13 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Role: "root"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
 	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
 	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password"}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
+	otherUser       = users.User{Email: "otheruser@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
-	usersList       = []users.User{admin, user, unauthUser}
+	usersList       = []users.User{admin, user, otherUser, unauthUser}
 	host            = "example.com"
 
 	idProvider = uuid.New()
@@ -134,11 +135,8 @@ func TestLogin(t *testing.T) {
 func TestViewUser(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), user)
+	token, err := svc.Login(context.Background(), otherUser)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	u := user
-	u.Password = ""
 
 	cases := map[string]struct {
 		user   users.User
@@ -147,9 +145,9 @@ func TestViewUser(t *testing.T) {
 		err    error
 	}{
 		"view user with authorized token": {
-			user:   u,
+			user:   otherUser,
 			token:  token,
-			userID: user.ID,
+			userID: otherUser.ID,
 			err:    nil,
 		},
 		"view user with empty token": {
@@ -176,15 +174,11 @@ func TestViewUser(t *testing.T) {
 func TestViewProfile(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), user)
+	token, err := svc.Login(context.Background(), otherUser)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	adminToken, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	u := user
-	a := admin
-	u.Password = ""
-	a.Password = ""
 
 	cases := map[string]struct {
 		user  users.User
@@ -192,12 +186,12 @@ func TestViewProfile(t *testing.T) {
 		err   error
 	}{
 		"valid token's user info": {
-			user:  u,
+			user:  otherUser,
 			token: token,
 			err:   nil,
 		},
 		"valid token's admin info": {
-			user:  a,
+			user:  admin,
 			token: adminToken,
 			err:   nil,
 		},
