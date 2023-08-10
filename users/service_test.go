@@ -25,12 +25,13 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password"}
-	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	usersList       = []users.User{admin, user, unauthUser}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
+	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef"}
+	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
+	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
+	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
 
 	idProvider = uuid.New()
@@ -73,14 +74,14 @@ func TestSelfRegister(t *testing.T) {
 		},
 		{
 			desc:  "register existing user",
-			user:  user,
+			user:  registerUser,
 			token: admin.Email,
 			err:   errors.ErrConflict,
 		},
 		{
 			desc: "register new user with weak password",
 			user: users.User{
-				Email:    user.Email,
+				Email:    registerUser.Email,
 				Password: "weak",
 			},
 			token: admin.Email,
@@ -97,35 +98,30 @@ func TestSelfRegister(t *testing.T) {
 func TestLogin(t *testing.T) {
 	svc := newService()
 
-	noAuthUser := users.User{
-		Email:    "email@test.com",
-		Password: "12345678",
-	}
-
 	cases := map[string]struct {
 		user users.User
 		err  error
 	}{
 		"login with good credentials": {
-			user: user,
+			user: registerUser,
 			err:  nil,
 		},
 		"login with wrong e-mail": {
 			user: users.User{
 				Email:    wrong,
-				Password: user.Password,
+				Password: registerUser.Password,
 			},
 			err: errors.ErrAuthentication,
 		},
 		"login with wrong password": {
 			user: users.User{
-				Email:    user.Email,
+				Email:    registerUser.Email,
 				Password: wrong,
 			},
 			err: errors.ErrAuthentication,
 		},
 		"login failed auth": {
-			user: noAuthUser,
+			user: nonExistingUser,
 			err:  errors.ErrAuthentication,
 		},
 	}
@@ -142,9 +138,6 @@ func TestViewUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	u := user
-	u.Password = ""
-
 	cases := map[string]struct {
 		user   users.User
 		token  string
@@ -152,7 +145,7 @@ func TestViewUser(t *testing.T) {
 		err    error
 	}{
 		"view user with authorized token": {
-			user:   u,
+			user:   user,
 			token:  token,
 			userID: user.ID,
 			err:    nil,
@@ -160,7 +153,7 @@ func TestViewUser(t *testing.T) {
 		"view user with empty token": {
 			user:   users.User{},
 			token:  "",
-			userID: user.ID,
+			userID: registerUser.ID,
 			err:    errors.ErrAuthentication,
 		},
 		"view user with valid token and invalid user id": {
@@ -172,7 +165,8 @@ func TestViewUser(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewUser(context.Background(), tc.token, tc.userID)
+		user, err := svc.ViewUser(context.Background(), tc.token, tc.userID)
+		assert.Equal(t, tc.user, user, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.user, user))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -183,8 +177,8 @@ func TestViewProfile(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	u := user
-	u.Password = ""
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
 		user  users.User
@@ -192,8 +186,13 @@ func TestViewProfile(t *testing.T) {
 		err   error
 	}{
 		"valid token's user info": {
-			user:  u,
+			user:  user,
 			token: token,
+			err:   nil,
+		},
+		"valid token's admin info": {
+			user:  admin,
+			token: adminToken,
 			err:   nil,
 		},
 		"invalid token's user info": {
@@ -204,7 +203,8 @@ func TestViewProfile(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewProfile(context.Background(), tc.token)
+		u, err := svc.ViewProfile(context.Background(), tc.token)
+		assert.Equal(t, tc.user, u, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.user, u))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -311,10 +311,10 @@ func TestListUsers(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), user)
+	token, err := svc.Login(context.Background(), registerUser)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	user.Metadata = map[string]interface{}{"role": "test"}
+	registerUser.Metadata = map[string]interface{}{"meta": "test"}
 
 	cases := map[string]struct {
 		user  users.User
@@ -322,12 +322,12 @@ func TestUpdateUser(t *testing.T) {
 		err   error
 	}{
 		"update user with valid token": {
-			user:  user,
+			user:  registerUser,
 			token: token,
 			err:   nil,
 		},
 		"update user with invalid token": {
-			user:  user,
+			user:  registerUser,
 			token: "non-existent",
 			err:   errors.ErrAuthentication,
 		},
@@ -346,7 +346,7 @@ func TestGenerateResetToken(t *testing.T) {
 		email string
 		err   error
 	}{
-		"valid user reset token":  {user.Email, nil},
+		"valid user reset token":  {registerUser.Email, nil},
 		"invalid user rest token": {nonExistingUser.Email, errors.ErrNotFound},
 	}
 
@@ -358,7 +358,7 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	token, _ := svc.Login(context.Background(), user)
+	token, _ := svc.Login(context.Background(), registerUser)
 
 	cases := map[string]struct {
 		token       string
@@ -366,9 +366,9 @@ func TestChangePassword(t *testing.T) {
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {token, "newpassword", user.Password, nil},
+		"valid user change password ":                    {token, "newpassword", registerUser.Password, nil},
 		"valid user change password with wrong password": {token, "newpassword", "wrongpassword", errors.ErrAuthentication},
-		"valid user change password invalid token":       {"", "newpassword", user.Password, errors.ErrAuthentication},
+		"valid user change password invalid token":       {"", "newpassword", registerUser.Password, errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {
@@ -380,16 +380,16 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	authSvc := mocks.NewAuthService("", []users.User{user})
+	authSvc := mocks.NewAuthService("", []users.User{registerUser})
 
-	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 2})
+	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken.GetValue(), user.Email, nil},
+		"valid user reset password ":   {resetToken.GetValue(), registerUser.Email, nil},
 		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
 	}
 
@@ -401,14 +401,14 @@ func TestResetPassword(t *testing.T) {
 
 func TestSendPasswordReset(t *testing.T) {
 	svc := newService()
-	token, _ := svc.Login(context.Background(), user)
+	token, _ := svc.Login(context.Background(), registerUser)
 
 	cases := map[string]struct {
 		token string
 		email string
 		err   error
 	}{
-		"valid user reset password ": {token, user.Email, nil},
+		"valid user reset password ": {token, registerUser.Email, nil},
 	}
 
 	for desc, tc := range cases {
