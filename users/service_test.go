@@ -25,11 +25,11 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password"}
-	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password", Metadata: map[string]interface{}{"role": "user"}}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: "password", Role: "root"}
+	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
+	selfRegister    = users.User{Email: "selfRegister@example.com", Password: "password"}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
+	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
 	usersList       = []users.User{admin, user, unauthUser}
 	host            = "example.com"
 
@@ -97,11 +97,6 @@ func TestSelfRegister(t *testing.T) {
 func TestLogin(t *testing.T) {
 	svc := newService()
 
-	noAuthUser := users.User{
-		Email:    "email@test.com",
-		Password: "12345678",
-	}
-
 	cases := map[string]struct {
 		user users.User
 		err  error
@@ -125,7 +120,7 @@ func TestLogin(t *testing.T) {
 			err: errors.ErrAuthentication,
 		},
 		"login failed auth": {
-			user: noAuthUser,
+			user: nonExistingUser,
 			err:  errors.ErrAuthentication,
 		},
 	}
@@ -172,7 +167,8 @@ func TestViewUser(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewUser(context.Background(), tc.token, tc.userID)
+		user, err := svc.ViewUser(context.Background(), tc.token, tc.userID)
+		assert.Equal(t, tc.user, user, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.user, user))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -185,14 +181,14 @@ func TestViewProfile(t *testing.T) {
 
 	adminToken, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	u := user
+	a := admin
 	u.Password = ""
+	a.Password = ""
 
 	cases := map[string]struct {
 		user  users.User
 		token string
-		role string
 		err   error
 	}{
 		"valid token's user info": {
@@ -201,9 +197,8 @@ func TestViewProfile(t *testing.T) {
 			err:   nil,
 		},
 		"valid token's admin info": {
-			user:  u,
+			user:  a,
 			token: adminToken,
-			role: "root",
 			err:   nil,
 		},
 		"invalid token's user info": {
@@ -214,8 +209,8 @@ func TestViewProfile(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		p, err := svc.ViewProfile(context.Background(), tc.token)
-		assert.Equal(t, tc.role, p.Role, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.role, p.Role))
+		u, err := svc.ViewProfile(context.Background(), tc.token)
+		assert.Equal(t, tc.user, u, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.user, u))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -325,7 +320,7 @@ func TestUpdateUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	user.Metadata = map[string]interface{}{"role": "test"}
+	user.Metadata = map[string]interface{}{"meta": "test"}
 
 	cases := map[string]struct {
 		user  users.User
