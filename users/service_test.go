@@ -26,7 +26,7 @@ const (
 
 var (
 	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
+	unauthUser      = users.User{Email: "unauthUser@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef"}
 	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
 	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
