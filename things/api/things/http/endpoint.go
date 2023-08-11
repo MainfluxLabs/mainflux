@@ -594,7 +594,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		return buildGroupsResponse(page), nil
 	}
 }
-func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
+func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
@@ -607,23 +607,47 @@ func listMembersEndpoint(svc things.Service) endpoint.Endpoint {
 			Metadata:   req.metadata,
 			Unassigned: req.unassigned,
 		}
-		page, err := svc.ListMembers(ctx, req.token, req.id, pm)
+
+		page, err := svc.ListGroupThings(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildUsersResponse(page), nil
+		return buildGroupThingsResponse(page), nil
 	}
 }
 
-func viewMembershipEndpoint(svc things.Service) endpoint.Endpoint {
+func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		group, err := svc.ViewMembership(ctx, req.token, req.id)
+		pm := things.PageMetadata{
+			Offset:     req.offset,
+			Limit:      req.limit,
+			Metadata:   req.metadata,
+			Unassigned: req.unassigned,
+		}
+
+		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupChannelsResponse(page), nil
+	}
+}
+
+func viewThingMembershipEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		group, err := svc.ViewThingMembership(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -642,14 +666,14 @@ func viewMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func assignEndpoint(svc things.Service) endpoint.Endpoint {
+func assignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Assign(ctx, req.token, req.groupID, req.Members...); err != nil {
+		if err := svc.AssignThing(ctx, req.token, req.groupID, req.Things...); err != nil {
 			return nil, err
 		}
 
@@ -657,14 +681,14 @@ func assignEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func unassignEndpoint(svc things.Service) endpoint.Endpoint {
+func unassignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(memberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Unassign(ctx, req.token, req.groupID, req.Members...); err != nil {
+		if err := svc.UnassignThing(ctx, req.token, req.groupID, req.Things...); err != nil {
 			return nil, err
 		}
 
@@ -679,7 +703,7 @@ func assignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.AssignChannels(ctx, req.token, req.groupID, req.Channels...); err != nil {
+		if err := svc.AssignChannel(ctx, req.token, req.groupID, req.Channels...); err != nil {
 			return nil, err
 		}
 
@@ -694,33 +718,11 @@ func unassignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.UnassignChannels(ctx, req.token, req.groupID, req.Channels...); err != nil {
+		if err := svc.UnassignChannel(ctx, req.token, req.groupID, req.Channels...); err != nil {
 			return nil, err
 		}
 
 		return unassignRes{}, nil
-	}
-}
-
-func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-		pm := things.PageMetadata{
-			Offset:     req.offset,
-			Limit:      req.limit,
-			Metadata:   req.metadata,
-			Unassigned: req.unassigned,
-		}
-
-		gchsp, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildGroupChannelsResponse(gchsp), nil
 	}
 }
 
@@ -750,23 +752,23 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	return res
 }
 
-func buildUsersResponse(mp things.MemberPage) memberPageRes {
-	res := memberPageRes{
+func buildGroupThingsResponse(tp things.GroupThingsPage) groupThingsPageRes {
+	res := groupThingsPageRes{
 		pageRes: pageRes{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
-			Name:   mp.Name,
+			Total:  tp.Total,
+			Offset: tp.Offset,
+			Limit:  tp.Limit,
+			Name:   tp.Name,
 		},
 		Things: []thingRes{},
 	}
 
-	for _, m := range mp.Members {
+	for _, t := range tp.Things {
 		view := thingRes{
-			ID:       m.ID,
-			Metadata: m.Metadata,
-			Name:     m.Name,
-			Key:      m.Key,
+			ID:       t.ID,
+			Metadata: t.Metadata,
+			Name:     t.Name,
+			Key:      t.Key,
 		}
 		res.Things = append(res.Things, view)
 	}
@@ -774,22 +776,22 @@ func buildUsersResponse(mp things.MemberPage) memberPageRes {
 	return res
 }
 
-func buildGroupChannelsResponse(gchsp things.GroupChannelsPage) groupChannelsPageRes {
+func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRes {
 	res := groupChannelsPageRes{
 		pageRes: pageRes{
-			Total:  gchsp.Total,
-			Offset: gchsp.Offset,
-			Limit:  gchsp.Limit,
-			Name:   gchsp.Name,
+			Total:  cp.Total,
+			Offset: cp.Offset,
+			Limit:  cp.Limit,
+			Name:   cp.Name,
 		},
 		Channels: []channelRes{},
 	}
 
-	for _, ch := range gchsp.Channels {
+	for _, c := range cp.Channels {
 		view := channelRes{
-			ID:       ch.ID,
-			Name:     ch.Name,
-			Metadata: ch.Metadata,
+			ID:       c.ID,
+			Metadata: c.Metadata,
+			Name:     c.Name,
 		}
 		res.Channels = append(res.Channels, view)
 	}
@@ -852,7 +854,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 
 	for _, groupRelation := range backup.GroupRelations {
 		view := backupGroupRelationRes{
-			MemberID:  groupRelation.MemberID,
+			MemberID:  groupRelation.ThingID,
 			GroupID:   groupRelation.GroupID,
 			CreatedAt: groupRelation.CreatedAt,
 			UpdatedAt: groupRelation.UpdatedAt,
@@ -909,8 +911,8 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	}
 
 	for _, grRelation := range req.GroupRelations {
-		gRel := things.GroupRelation{
-			MemberID:  grRelation.MemberID,
+		gRel := things.GroupThingRelation{
+			ThingID:   grRelation.MemberID,
 			GroupID:   grRelation.GroupID,
 			CreatedAt: grRelation.CreatedAt,
 			UpdatedAt: grRelation.UpdatedAt,

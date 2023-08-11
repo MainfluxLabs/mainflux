@@ -383,9 +383,9 @@ func (lm *loggingMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []str
 	return lm.svc.ListGroupsByIDs(ctx, groupIDs)
 }
 
-func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (mp things.MemberPage, err error) {
+func (lm *loggingMiddleware) ListGroupThings(ctx context.Context, token, groupID string, pm things.PageMetadata) (mp things.GroupThingsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_group_things for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -393,12 +393,12 @@ func (lm *loggingMiddleware) ListMembers(ctx context.Context, token, groupID str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListMembers(ctx, token, groupID, pm)
+	return lm.svc.ListGroupThings(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) ViewMembership(ctx context.Context, token, memberID string) (gr things.Group, err error) {
+func (lm *loggingMiddleware) ViewThingMembership(ctx context.Context, token, thingID string) (gr things.Group, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_membership for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method view_thing_membership for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -406,7 +406,7 @@ func (lm *loggingMiddleware) ViewMembership(ctx context.Context, token, memberID
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewMembership(ctx, token, memberID)
+	return lm.svc.ViewThingMembership(ctx, token, thingID)
 }
 
 func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) (err error) {
@@ -422,9 +422,9 @@ func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) 
 	return lm.svc.RemoveGroup(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) Assign(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method assign_thing for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -432,12 +432,12 @@ func (lm *loggingMiddleware) Assign(ctx context.Context, token, groupID string, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Assign(ctx, token, groupID, memberIDs...)
+	return lm.svc.AssignThing(ctx, token, groupID, thingIDs...)
 }
 
-func (lm *loggingMiddleware) Unassign(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) UnassignThing(ctx context.Context, token, groupID string, thingIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_thing for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -445,12 +445,12 @@ func (lm *loggingMiddleware) Unassign(ctx context.Context, token, groupID string
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Unassign(ctx, token, groupID, memberIDs...)
+	return lm.svc.UnassignThing(ctx, token, groupID, thingIDs...)
 }
 
-func (lm *loggingMiddleware) AssignChannels(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
+func (lm *loggingMiddleware) AssignChannel(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_channels for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method assign_channel for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -458,12 +458,12 @@ func (lm *loggingMiddleware) AssignChannels(ctx context.Context, token, groupID 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.AssignChannels(ctx, token, groupID, channelIDs...)
+	return lm.svc.AssignChannel(ctx, token, groupID, channelIDs...)
 }
 
-func (lm *loggingMiddleware) UnassignChannels(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
+func (lm *loggingMiddleware) UnassignChannel(ctx context.Context, token, groupID string, channelIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_channels for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_channel for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -471,7 +471,7 @@ func (lm *loggingMiddleware) UnassignChannels(ctx context.Context, token, groupI
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UnassignChannels(ctx, token, groupID, channelIDs...)
+	return lm.svc.UnassignChannel(ctx, token, groupID, channelIDs...)
 }
 
 func (lm *loggingMiddleware) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (gchp things.GroupChannelsPage, err error) {

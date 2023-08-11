@@ -440,7 +440,7 @@ func (req listMembersReq) validate() error {
 type memberReq struct {
 	token    string
 	groupID  string
-	Members  []string `json:"members"`
+	Things   []string `json:"things"`
 	Channels []string `json:"channels"`
 }
 
@@ -453,7 +453,7 @@ func (req memberReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 && len(req.Channels) == 0 {
+	if len(req.Things) == 0 && len(req.Channels) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

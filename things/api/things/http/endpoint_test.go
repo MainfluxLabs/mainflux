@@ -2547,15 +2547,15 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for _, gr := range groups {
-		err = svc.Assign(context.Background(), token, gr.ID, ths[0].ID)
+		err = svc.AssignThing(context.Background(), token, gr.ID, ths[0].ID)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
-	var groupRelations []things.GroupRelation
+	var groupRelations []things.GroupThingRelation
 	for _, group := range groups {
-		grRel := things.GroupRelation{
-			GroupID:  group.ID,
-			MemberID: ths[0].ID,
+		grRel := things.GroupThingRelation{
+			GroupID: group.ID,
+			ThingID: ths[0].ID,
 		}
 		groupRelations = append(groupRelations, grRel)
 	}
@@ -2622,7 +2622,7 @@ func TestBackup(t *testing.T) {
 	for _, gr := range groupRelations {
 		groupRelationsRes = append(groupRelationsRes, backupGroupRelationRes{
 			GroupID:  gr.GroupID,
-			MemberID: gr.MemberID,
+			MemberID: gr.ThingID,
 		})
 	}
 
@@ -2727,11 +2727,11 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var groupRelations []things.GroupRelation
+	var groupRelations []things.GroupThingRelation
 	for _, gr := range groups {
-		grRel := things.GroupRelation{
-			GroupID:  gr.ID,
-			MemberID: testThing.ID,
+		grRel := things.GroupThingRelation{
+			GroupID: gr.ID,
+			ThingID: testThing.ID,
 		}
 		groupRelations = append(groupRelations, grRel)
 	}
@@ -2805,7 +2805,7 @@ func TestRestore(t *testing.T) {
 	for _, groupRelation := range groupRelations {
 		grr = append(grr, restoreGroupRelationReq{
 			GroupID:  groupRelation.GroupID,
-			MemberID: groupRelation.MemberID,
+			MemberID: groupRelation.ThingID,
 		})
 	}
 

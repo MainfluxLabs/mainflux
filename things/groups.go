@@ -16,14 +16,20 @@ var (
 	// ErrMemberAlreadyAssigned indicates that members is already assigned.
 	ErrMemberAlreadyAssigned = errors.New("member is already assigned")
 
-	// ErrFailedToRetrieveMembers failed to retrieve group members.
-	ErrFailedToRetrieveMembers = errors.New("failed to retrieve group members")
+	// ErrFailedToRetrieveThings indicates failure to retrieve group things.
+	ErrFailedToRetrieveThings = errors.New("failed to retrieve group things")
 
-	// ErrFailedToRetrieveMembership failed to retrieve memberships
-	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
+	// ErrFailedToRetrieveThingMembership indicates failure to retrieve thing memberships.
+	ErrFailedToRetrieveThingMembership = errors.New("failed to retrieve thing memberships")
 
-	// ErrFailedToRetrieveChannels failed to retrieve channels
-	ErrFailedToRetrieveChannels = errors.New("failed to retrieve channels")
+	// ErrFailedToRetrieveChannelMembership indicates failure to retrieve channel memberships.
+	ErrFailedToRetrieveChannelMembership = errors.New("failed to retrieve channel memberships")
+
+	// ErrFailedToRetrieveGroupChannels indicates failure to retrieve group channels.
+	ErrFailedToRetrieveGroupChannels = errors.New("failed to retrieve group channels")
+
+	// ErrFailedToRetrieveGroupThings indicates failure to retrieve group things.
+	ErrFailedToRetrieveGroupThings = errors.New("failed to retrieve group things")
 )
 
 // Identity contains ID and Email.
@@ -46,9 +52,16 @@ type Group struct {
 	UpdatedAt   time.Time
 }
 
-// GroupRelation represents a relation between a group and a member.
-type GroupRelation struct {
-	MemberID  string
+// GroupThingRelation represents a relation between a group and a thing.
+type GroupThingRelation struct {
+	GroupID   string
+	ThingID   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// GroupChannelRelation represents a relation between a group and a channel.
+type GroupChannelRelation struct {
 	GroupID   string
 	ChannelID string
 	CreatedAt time.Time
@@ -62,11 +75,11 @@ type GroupPage struct {
 	Groups []Group
 }
 
-// MemberPage contains page related metadata as well as list of members that
+// GroupThingsPage contains page related metadata as well as list of members that
 // belong to this page.
-type MemberPage struct {
+type GroupThingsPage struct {
 	PageMetadata
-	Members []Thing
+	Things []Thing
 }
 
 type GroupChannelsPage struct {
@@ -94,20 +107,23 @@ type GroupRepository interface {
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveMembership retrieves group that member belongs to
-	RetrieveMembership(ctx context.Context, memberID string) (string, error)
+	// RetrieveThingMembership retrieves group that thing belongs to.
+	RetrieveThingMembership(ctx context.Context, thingID string) (string, error)
 
-	// RetrieveMembers retrieves everything that is assigned to a group identified by groupID.
-	RetrieveMembers(ctx context.Context, groupID string, pm PageMetadata) (MemberPage, error)
+	// RetrieveChannelMembership retrieves group that channel belongs to.
+	RetrieveChannelMembership(ctx context.Context, channelID string) (string, error)
 
-	// RetrieveChannels retrieves page of channels that are assigned to a group identified by groupID.
-	RetrieveChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
+	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
-	// AssignMember adds a member to group.
-	AssignMember(ctx context.Context, groupID string, memberIDs ...string) error
+	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
+	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
-	// UnassignMember removes a member from a group
-	UnassignMember(ctx context.Context, groupID string, memberIDs ...string) error
+	// AssignThing adds a thing to a group
+	AssignThing(ctx context.Context, groupID string, thingIDs ...string) error
+
+	// UnassignThing removes a thing from a group
+	UnassignThing(ctx context.Context, groupID string, thingIDs ...string) error
 
 	// AssignChannel assigns a channel to a group
 	AssignChannel(ctx context.Context, groupID string, ids ...string) error
@@ -121,6 +137,6 @@ type GroupRepository interface {
 	// RetrieveByAdmin retrieves all groups with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveAllGroupRelations retrieves all group relations.
-	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
+	// RetrieveAllThingRelations retrieves all thing relations.
+	RetrieveAllThingRelations(ctx context.Context) ([]GroupThingRelation, error)
 }

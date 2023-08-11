@@ -22,7 +22,8 @@ var (
 	_ mainflux.Response = (*disconnectRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
-	_ mainflux.Response = (*memberPageRes)(nil)
+	_ mainflux.Response = (*groupThingsPageRes)(nil)
+	_ mainflux.Response = (*groupChannelsPageRes)(nil)
 	_ mainflux.Response = (*groupRes)(nil)
 	_ mainflux.Response = (*removeRes)(nil)
 	_ mainflux.Response = (*assignRes)(nil)
@@ -318,20 +319,20 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type memberPageRes struct {
+type groupThingsPageRes struct {
 	pageRes
 	Things []thingRes `json:"things"`
 }
 
-func (res memberPageRes) Code() int {
+func (res groupThingsPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res memberPageRes) Headers() map[string]string {
+func (res groupThingsPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res memberPageRes) Empty() bool {
+func (res groupThingsPageRes) Empty() bool {
 	return false
 }
 
