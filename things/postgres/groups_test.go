@@ -785,7 +785,7 @@ func TestRetrieveAllGroupRelations(t *testing.T) {
 }
 
 func cleanUp(t *testing.T) {
-	_, err := db.Exec("delete from thing_relations")
+	_, err := db.Exec("delete from group_relations")
 	require.Nil(t, err, fmt.Sprintf("clean relations unexpected error: %s", err))
 	_, err = db.Exec("delete from channel_relations")
 	require.Nil(t, err, fmt.Sprintf("clean relations unexpected error: %s", err))
