@@ -3,9 +3,9 @@
 
 package sdk
 
-type assignRequest struct {
-	Type    string   `json:"type,omitempty"`
-	Members []string `json:"members"`
+type memberReq struct {
+	Things   []string `json:"things"`
+	Channels []string `json:"channels"`
 }
 
 // UserPasswordReq contains old and new passwords

@@ -193,14 +193,23 @@ type SDK interface {
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
 
-	// Assign assigns member of member type (thing or user) to a group.
-	Assign(memberIDs []string, memberType, groupID string, token string) error
+	// AssignThing assigns thing to a group.
+	AssignThing(thingIDs []string, groupID string, token string) error
 
-	// Unassign removes member from a group.
-	Unassign(token, groupID string, memberIDs ...string) error
+	// UnassignThing removes thing from a group.
+	UnassignThing(token, groupID string, thingIDs ...string) error
 
-	// Members lists members of a group.
-	Members(groupID, token string, offset, limit uint64) (MembersPage, error)
+	// AssignChannel assigns channel to a group.
+	AssignChannel(channelIDs []string, groupID string, token string) error
+
+	// UnassignChannel removes channel from a group.
+	UnassignChannel(token, groupID string, channelIDs ...string) error
+
+	// ListGroupThings lists things that are members of specified group.
+	ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error)
+
+	// ListGroupChannels lists channels that are members of specified group.
+	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
 
 	// Memberships lists groups for user.
 	Memberships(userID, token string, offset, limit uint64) (GroupsPage, error)

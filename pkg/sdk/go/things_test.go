@@ -41,6 +41,7 @@ var (
 	th1        = sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
 	th2        = sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
 	emptyThing = sdk.Thing{}
+	group      = sdk.Group{Name: "test_group", Metadata: metadata}
 )
 
 func newThingsService() things.Service {
@@ -377,6 +378,9 @@ func TestThingsByChannel(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	gr, err := mainfluxSDK.CreateGroup(group, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	ch := sdk.Channel{Name: "test_channel"}
 	cid, err := mainfluxSDK.CreateChannel(ch, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -408,6 +412,13 @@ func TestThingsByChannel(t *testing.T) {
 			ChannelIDs: []string{cid},
 			ThingIDs:   []string{tid},
 		}
+
+		err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 		err = mainfluxSDK.Connect(conIDs, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
@@ -716,6 +727,10 @@ func TestConnectThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+
+	gr, err := mainfluxSDK.CreateGroup(group, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingID, err := mainfluxSDK.CreateThing(th1, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -723,6 +738,12 @@ func TestConnectThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chanID2, err := mainfluxSDK.CreateChannel(ch3, otherToken)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignThing([]string{thingID}, gr, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignChannel([]string{chanID1, chanID2}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -814,6 +835,10 @@ func TestConnect(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+
+	gr, err := mainfluxSDK.CreateGroup(group, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingID, err := mainfluxSDK.CreateThing(th1, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -821,6 +846,12 @@ func TestConnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chanID2, err := mainfluxSDK.CreateChannel(ch3, otherToken)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignThing([]string{thingID}, gr, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignChannel([]string{chanID1, chanID2}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -914,10 +945,19 @@ func TestDisconnectThing(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	gr, err := mainfluxSDK.CreateGroup(group, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingID, err := mainfluxSDK.CreateThing(th1, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chanID1, err := mainfluxSDK.CreateChannel(ch2, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignThing([]string{thingID}, gr, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignChannel([]string{chanID1}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	conIDs := sdk.ConnectionIDs{
