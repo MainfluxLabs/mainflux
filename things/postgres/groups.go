@@ -435,19 +435,165 @@ func (gr groupRepository) RetrieveAllThingRelations(ctx context.Context) ([]thin
 }
 
 func (gr groupRepository) AssignThing(ctx context.Context, groupID string, ids ...string) error {
-	return gr.assign(ctx, groupID, false, ids...)
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrAssignGroupThing, err)
+	}
+
+	qIns := `INSERT INTO thing_relations (group_id, thing_id, created_at, updated_at)
+		VALUES(:group_id, :thing_id, :created_at, :updated_at)`
+
+	for _, id := range ids {
+		created := time.Now()
+
+		dbt, err := toDBThingRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignGroupThing, err)
+		}
+		dbt.CreatedAt = created
+		dbt.UpdatedAt = created
+
+		if _, err := tx.NamedExecContext(ctx, qIns, dbt); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(things.ErrThingAlreadyAssigned, errors.New(pgErr.Detail))
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignGroupThing, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrAssignGroupThing, err)
+	}
+
+	return nil
 }
 
 func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids ...string) error {
-	return gr.unassign(ctx, groupID, false, ids...)
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrUnassignGroupThing, err)
+	}
+
+	qDel := `DELETE from thing_relations WHERE group_id = :group_id AND thing_id = :thing_id`
+
+	for _, id := range ids {
+		dbt, err := toDBThingRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrUnassignGroupThing, err)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, qDel, dbt); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(things.ErrUnassignGroupThing, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrUnassignGroupThing, err)
+	}
+
+	return nil
 }
 
 func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids ...string) error {
-	return gr.assign(ctx, groupID, true, ids...)
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrAssignGroupChannel, err)
+	}
+
+	qIns := `INSERT INTO channel_relations (group_id, channel_id, created_at, updated_at)
+			VALUES(:group_id, :channel_id, :created_at, :updated_at)`
+
+	for _, id := range ids {
+		created := time.Now()
+
+		dbc, err := toDBChannelRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrAssignGroupChannel, err)
+		}
+		dbc.CreatedAt = created
+		dbc.UpdatedAt = created
+
+		if _, err := tx.NamedExecContext(ctx, qIns, dbc); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(things.ErrChannelAlreadyAssigned, errors.New(pgErr.Detail))
+				}
+			}
+
+			return errors.Wrap(things.ErrAssignGroupChannel, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrAssignGroupChannel, err)
+	}
+
+	return nil
 }
 
 func (gr groupRepository) UnassignChannel(ctx context.Context, groupID string, ids ...string) error {
-	return gr.unassign(ctx, groupID, true, ids...)
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(things.ErrUnassignGroupChannel, err)
+	}
+
+	qDel := `DELETE from channel_relations WHERE group_id = :group_id AND channel_id = :channel_id`
+
+	for _, id := range ids {
+		dbc, err := toDBChannelRelation(id, groupID)
+		if err != nil {
+			return errors.Wrap(things.ErrUnassignGroupChannel, err)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, qDel, dbc); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(things.ErrUnassignGroupChannel, err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(things.ErrUnassignGroupChannel, err)
+	}
+
+	return nil
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
@@ -534,125 +680,6 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 	}
 
 	return page, nil
-}
-
-func (gr groupRepository) assign(ctx context.Context, groupID string, channel bool, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	qIns := `INSERT INTO thing_relations (group_id, thing_id, created_at, updated_at)
-		VALUES(:group_id, :thing_id, :created_at, :updated_at)`
-
-	if channel {
-		qIns = `INSERT INTO channel_relations (group_id, channel_id, created_at, updated_at)
-			VALUES(:group_id, :channel_id, :created_at, :updated_at)`
-	}
-
-	for _, id := range ids {
-		created := time.Now()
-
-		dbt, err := toDBThingRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-		dbt.CreatedAt = created
-		dbt.UpdatedAt = created
-
-		dbc, err := toDBChannelRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-		dbc.CreatedAt = created
-		dbc.UpdatedAt = created
-
-		var dbRelation interface{}
-		switch channel {
-		case true:
-			dbRelation = dbc
-		default:
-			dbRelation = dbt
-		}
-
-		if _, err := tx.NamedExecContext(ctx, qIns, dbRelation); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrMemberAlreadyAssigned, errors.New(pgErr.Detail))
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	return nil
-
-}
-
-func (gr groupRepository) unassign(ctx context.Context, groupID string, channel bool, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	qDel := `DELETE from thing_relations WHERE group_id = :group_id AND thing_id = :thing_id`
-
-	if channel {
-		qDel = `DELETE from channel_relations WHERE group_id = :group_id AND channel_id = :channel_id`
-	}
-
-	for _, id := range ids {
-		dbt, err := toDBThingRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-
-		dbc, err := toDBChannelRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-
-		var dbRelation interface{}
-		switch channel {
-		case true:
-			dbRelation = dbc
-		default:
-			dbRelation = dbt
-		}
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dbRelation); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignToGroup, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignToGroup, err)
-	}
-
-	return nil
 }
 
 type dbGroup struct {

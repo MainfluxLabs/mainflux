@@ -116,6 +116,9 @@ type Service interface {
 	// ListGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
+	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
+	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+
 	// ViewThingMembership retrieves group that thing belongs to.
 	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
 
@@ -125,17 +128,14 @@ type Service interface {
 	// AssignThing adds a thing with thingID into the group identified by groupID.
 	AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
 
+	// UnassignThing removes thing with thingID from group identified by groupID.
+	UnassignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
+
 	// AssignChannel adds channel to the group identified by groupID.
 	AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error
 
 	// UnassignChannel removes channels from the group identified by groupID.
 	UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error
-
-	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
-
-	// UnassignThing removes thing with thingID from group identified by groupID.
-	UnassignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -152,11 +152,11 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Things         []Thing
-	Channels       []Channel
-	Connections    []Connection
-	Groups         []Group
-	GroupRelations []GroupThingRelation
+	Things              []Thing
+	Channels            []Channel
+	Connections         []Connection
+	Groups              []Group
+	GroupThingRelations []GroupThingRelation
 }
 
 var _ Service = (*thingsService)(nil)
@@ -492,6 +492,34 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 		}
 	}
 
+	var chGroupIDs []string
+	for _, chID := range chIDs {
+		cgrID, err := ts.groups.RetrieveChannelMembership(ctx, chID)
+		if err != nil {
+			return err
+		}
+
+		chGroupIDs = append(chGroupIDs, cgrID)
+	}
+
+	var thGroupIDs []string
+	for _, thID := range thIDs {
+		tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
+		if err != nil {
+			return err
+		}
+
+		for _, chGroupID := range chGroupIDs {
+			for _, thGroupID := range thGroupIDs {
+				if chGroupID != thGroupID {
+					return errors.ErrGroupMismatch
+				}
+			}
+		}
+
+		thGroupIDs = append(thGroupIDs, tgrID)
+	}
+
 	return ts.channels.Connect(ctx, res.GetId(), chIDs, thIDs)
 }
 
@@ -604,7 +632,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupRelations, err := ts.groups.RetrieveAllThingRelations(ctx)
+	groupThingRelations, err := ts.groups.RetrieveAllThingRelations(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -625,11 +653,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:         things,
-		Channels:       channels,
-		Connections:    connections,
-		Groups:         groups,
-		GroupRelations: groupRelations,
+		Things:              things,
+		Channels:            channels,
+		Connections:         connections,
+		Groups:              groups,
+		GroupThingRelations: groupThingRelations,
 	}, nil
 }
 
@@ -650,8 +678,8 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		}
 	}
 
-	for _, grRel := range backup.GroupRelations {
-		err = ts.groups.AssignThing(ctx, grRel.GroupID, grRel.ThingID)
+	for _, gts := range backup.GroupThingRelations {
+		err = ts.groups.AssignThing(ctx, gts.GroupID, gts.ThingID)
 		if err != nil {
 			return err
 		}

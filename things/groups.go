@@ -7,29 +7,38 @@ import (
 )
 
 var (
-	// ErrAssignToGroup indicates failure to assign member to a group.
-	ErrAssignToGroup = errors.New("failed to assign member to a group")
+	// ErrAssignGroupThing indicates failure to assign thing to a group.
+	ErrAssignGroupThing = errors.New("failed to assign thing to a group")
+
+	// ErrUnassignGroupThing indicates failure to unassign thing from a group.
+	ErrUnassignGroupThing = errors.New("failed to unassign thing from a group")
+
+	// ErrAssignGroupChannel indicates failure to assign channel to a group.
+	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
+
+	// ErrUnassignGroupChannel indicates failure to unassign channel from a group.
+	ErrUnassignGroupChannel = errors.New("failed to unassign channel from a group")
 
 	// ErrGroupNotEmpty indicates group is not empty, can't be deleted.
 	ErrGroupNotEmpty = errors.New("group is not empty")
 
-	// ErrMemberAlreadyAssigned indicates that members is already assigned.
-	ErrMemberAlreadyAssigned = errors.New("member is already assigned")
+	// ErrThingAlreadyAssigned indicates that thing is already assigned.
+	ErrThingAlreadyAssigned = errors.New("thing is already assigned")
 
-	// ErrFailedToRetrieveThings indicates failure to retrieve group things.
-	ErrFailedToRetrieveThings = errors.New("failed to retrieve group things")
+	// ErrChannelAlreadyAssigned indicates that thing is already assigned.
+	ErrChannelAlreadyAssigned = errors.New("channel is already assigned")
 
-	// ErrFailedToRetrieveThingMembership indicates failure to retrieve thing memberships.
-	ErrFailedToRetrieveThingMembership = errors.New("failed to retrieve thing memberships")
-
-	// ErrFailedToRetrieveChannelMembership indicates failure to retrieve channel memberships.
-	ErrFailedToRetrieveChannelMembership = errors.New("failed to retrieve channel memberships")
+	// ErrFailedToRetrieveGroupThings indicates failure to retrieve group things.
+	ErrFailedToRetrieveGroupThings = errors.New("failed to retrieve group things")
 
 	// ErrFailedToRetrieveGroupChannels indicates failure to retrieve group channels.
 	ErrFailedToRetrieveGroupChannels = errors.New("failed to retrieve group channels")
 
-	// ErrFailedToRetrieveGroupThings indicates failure to retrieve group things.
-	ErrFailedToRetrieveGroupThings = errors.New("failed to retrieve group things")
+	// ErrFailedToRetrieveThingMembership indicates failure to retrieve thing membership
+	ErrFailedToRetrieveThingMembership = errors.New("failed to retrieve thing membership")
+
+	// ErrFailedToRetrieveChannelMembership indicates failure to retrieve channel membership
+	ErrFailedToRetrieveChannelMembership = errors.New("failed to retrieve channel membership")
 )
 
 // Identity contains ID and Email.
