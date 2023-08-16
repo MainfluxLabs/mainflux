@@ -21,16 +21,23 @@ type groupRepositoryMock struct {
 	groups map[string]things.Group
 	// Map of group thing membership where thing id is a key and group id is a value.
 	thingMembership map[string]string
-	// Map of group member where group id is a key and member ids are values.
+	// Map of group channel membership where channel id is a key and group id is a value.
+	channelMembership map[string]string
+
+	// Map of group thing where group id is a key and thing ids are values.
 	things map[string][]string
+	// Map of group channel where group id is a key and channel ids are values.
+	channels map[string][]string
 }
 
 // NewGroupRepository creates in-memory user repository
 func NewGroupRepository() things.GroupRepository {
 	return &groupRepositoryMock{
-		groups:          make(map[string]things.Group),
-		thingMembership: make(map[string]string),
-		things:          make(map[string][]string),
+		groups:            make(map[string]things.Group),
+		thingMembership:   make(map[string]string),
+		channelMembership: make(map[string]string),
+		things:            make(map[string][]string),
+		channels:          make(map[string][]string),
 	}
 }
 
@@ -166,11 +173,45 @@ func (grm *groupRepositoryMock) AssignThing(ctx context.Context, groupID string,
 }
 
 func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	panic("not implemented")
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	if _, ok := grm.groups[groupID]; !ok {
+		return errors.ErrNotFound
+	}
+
+	for _, channelID := range channelIDs {
+		grm.channels[groupID] = append(grm.channels[groupID], channelID)
+		grm.channelMembership[channelID] = groupID
+	}
+
+	return nil
 }
 
 func (grm *groupRepositoryMock) UnassignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	panic("not implemented")
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	if _, ok := grm.groups[groupID]; !ok {
+		return errors.ErrNotFound
+	}
+
+	for _, channelID := range channelIDs {
+		channels, ok := grm.channels[groupID]
+		if !ok {
+			return errors.ErrNotFound
+		}
+
+		for i, member := range channels {
+			if member == channelID {
+				grm.channels[groupID] = append(channels[:i], channels[i+1:]...)
+				delete(grm.channelMembership, channelID)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
@@ -185,7 +226,15 @@ func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thi
 }
 
 func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	panic("not implemented")
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	groupID, ok := grm.channelMembership[channelID]
+	if !ok {
+		return "", errors.ErrNotFound
+	}
+
+	return groupID, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {

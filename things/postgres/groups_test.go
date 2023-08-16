@@ -506,7 +506,7 @@ func TestAssignThing(t *testing.T) {
 	assert.True(t, thp.Total == 1, fmt.Sprintf("retrieve things of a group: expected %d got %d\n", 1, thp.Total))
 
 	err = groupRepo.AssignThing(context.Background(), group.ID, thid)
-	assert.True(t, errors.Contains(err, things.ErrMemberAlreadyAssigned), fmt.Sprintf("assign thing again: expected %v got %v\n", things.ErrMemberAlreadyAssigned, err))
+	assert.True(t, errors.Contains(err, things.ErrThingAlreadyAssigned), fmt.Sprintf("assign thing again: expected %v got %v\n", things.ErrThingAlreadyAssigned, err))
 }
 
 func TestUnassignThing(t *testing.T) {
@@ -822,29 +822,29 @@ func TestRetrieveThingMembership(t *testing.T) {
 
 	cases := map[string]struct {
 		thingID string
-		groupID  string
-		err      error
+		groupID string
+		err     error
 	}{
 		"retrieve thing membership": {
 			thingID: thingID,
-			groupID:  group.ID,
-			err:      nil,
+			groupID: group.ID,
+			err:     nil,
 		},
 		"retrieve membership for non-existing thing": {
 			thingID: unknownID,
-			groupID:  "",
-			err:      nil,
+			groupID: "",
+			err:     nil,
 		},
 
 		"retrieve membership for invalid thing id": {
 			thingID: invalid,
-			groupID:  "",
-			err:      things.ErrFailedToRetrieveThingMembership,
+			groupID: "",
+			err:     things.ErrFailedToRetrieveThingMembership,
 		},
 		"retrieve membership without thing id": {
 			thingID: "",
-			groupID:  "",
-			err:      things.ErrFailedToRetrieveThingMembership,
+			groupID: "",
+			err:     things.ErrFailedToRetrieveThingMembership,
 		},
 	}
 

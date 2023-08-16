@@ -251,8 +251,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:memberID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_membership")(viewThingMembershipEndpoint(svc)),
-		decodeViewMembershipRequest,
+		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
+		decodeViewThingMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -608,7 +608,7 @@ func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeViewMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, memberIDKey),
