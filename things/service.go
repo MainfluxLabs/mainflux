@@ -499,6 +499,10 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 			return err
 		}
 
+		if cgrID == "" {
+			return errors.ErrNotFound
+		}
+
 		chGroupIDs = append(chGroupIDs, cgrID)
 	}
 
@@ -509,15 +513,19 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 			return err
 		}
 
-		for _, chGroupID := range chGroupIDs {
-			for _, thGroupID := range thGroupIDs {
-				if chGroupID != thGroupID {
-					return errors.ErrGroupMismatch
-				}
-			}
+		if tgrID == "" {
+			return errors.ErrNotFound
 		}
 
 		thGroupIDs = append(thGroupIDs, tgrID)
+	}
+
+	for _, chGroupID := range chGroupIDs {
+		for _, thGroupID := range thGroupIDs {
+			if chGroupID != thGroupID {
+				return errors.ErrGroupMismatch
+			}
+		}
 	}
 
 	return ts.channels.Connect(ctx, res.GetId(), chIDs, thIDs)

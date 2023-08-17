@@ -82,7 +82,7 @@ var cmdGroups = []cobra.Command{
 	},
 	{
 		Use:   "assign <thing_ids> <group_id> <user_auth_token>",
-		Short: "Assign thing",
+		Short: "Assign things",
 		Long: `Assign things to a group.
 				thing_ids - '["thing_id",...]`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -104,7 +104,7 @@ var cmdGroups = []cobra.Command{
 	},
 	{
 		Use:   "unassign <thing_ids> <group_id> <user_auth_token>",
-		Short: "Unassign thing",
+		Short: "Unassign things",
 		Long: `Unassign things from a group
 				thing_ids - '["things_id",...]`,
 		Run: func(cmd *cobra.Command, args []string) {
