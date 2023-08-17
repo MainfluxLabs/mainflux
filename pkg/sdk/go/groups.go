@@ -375,10 +375,10 @@ func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64
 		return Groups{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var tp Groups
-	if err := json.Unmarshal(body, &tp); err != nil {
+	var gs Groups
+	if err := json.Unmarshal(body, &gs); err != nil {
 		return Groups{}, err
 	}
 
-	return tp, nil
+	return gs, nil
 }
