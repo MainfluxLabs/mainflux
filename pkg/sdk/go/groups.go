@@ -353,31 +353,31 @@ func (sdk mfSDK) UpdateGroup(t Group, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64) (Groups, error) {
+func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d", sdk.thingsURL, thingsEndpoint, thingID, groupsEndpoint, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return Groups{}, err
+		return Group{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return Groups{}, err
+		return Group{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return Groups{}, err
+		return Group{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Groups{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Group{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var gs Groups
+	var gs Group
 	if err := json.Unmarshal(body, &gs); err != nil {
-		return Groups{}, err
+		return Group{}, err
 	}
 
 	return gs, nil
