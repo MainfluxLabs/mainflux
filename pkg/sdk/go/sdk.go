@@ -211,8 +211,8 @@ type SDK interface {
 	// ListGroupChannels lists channels that are members of specified group.
 	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
 
-	// Memberships lists groups for user.
-	Memberships(userID, token string, offset, limit uint64) (GroupsPage, error)
+	// ViewThingMembership lists groups that specified thing is member of.
+	ViewThingMembership(thingID, token string, offset, limit uint64) (Groups, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error

@@ -353,31 +353,31 @@ func (sdk mfSDK) UpdateGroup(t Group, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) Memberships(memberID, token string, offset, limit uint64) (GroupsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d&", sdk.thingsURL, thingsEndpoint, memberID, groupsEndpoint, offset, limit)
+func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64) (Groups, error) {
+	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d", sdk.thingsURL, thingsEndpoint, thingID, groupsEndpoint, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return GroupsPage{}, err
+		return Groups{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return GroupsPage{}, err
+		return Groups{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return GroupsPage{}, err
+		return Groups{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Groups{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var tp GroupsPage
+	var tp Groups
 	if err := json.Unmarshal(body, &tp); err != nil {
-		return GroupsPage{}, err
+		return Groups{}, err
 	}
 
 	return tp, nil
