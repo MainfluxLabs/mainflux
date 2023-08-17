@@ -104,9 +104,11 @@ type PageMetadata struct {
 type Group struct {
 	ID          string                 `json:"id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
+	OwnerID     string                 `json:"owner_id,omitempty"`
 	Description string                 `json:"description,omitempty"`
-	ParentID    string                 `json:"parent_id,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt   time.Time              `json:"created_at,omitempty"`
+	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
 }
 
 // Thing represents mainflux thing.
@@ -212,7 +214,7 @@ type SDK interface {
 	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
 
 	// ViewThingMembership lists groups that specified thing is member of.
-	ViewThingMembership(thingID, token string, offset, limit uint64) (Groups, error)
+	ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
