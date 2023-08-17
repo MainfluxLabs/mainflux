@@ -277,11 +277,11 @@ type backupGroupThingRelationRes struct {
 }
 
 type backupRes struct {
-	Things         []backupThingRes              `json:"things"`
-	Channels       []backupChannelRes            `json:"channels"`
-	Connections    []backupConnectionRes         `json:"connections"`
-	Groups         []viewGroupRes                `json:"groups"`
-	GroupRelations []backupGroupThingRelationRes `json:"group_thing_relations"`
+	Things              []backupThingRes              `json:"things"`
+	Channels            []backupChannelRes            `json:"channels"`
+	Connections         []backupConnectionRes         `json:"connections"`
+	Groups              []viewGroupRes                `json:"groups"`
+	GroupThingRelations []backupGroupThingRelationRes `json:"group_thing_relations"`
 }
 
 func (res backupRes) Code() int {

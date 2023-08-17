@@ -83,7 +83,7 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "assign <thing_ids> <group_id> <user_auth_token>",
 		Short: "Assign thing",
-		Long: `Assign thing to a group.
+		Long: `Assign things to a group.
 				thing_ids - '["thing_id",...]`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {

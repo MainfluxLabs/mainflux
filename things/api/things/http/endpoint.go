@@ -801,11 +801,11 @@ func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRe
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:         []backupThingRes{},
-		Channels:       []backupChannelRes{},
-		Connections:    []backupConnectionRes{},
-		Groups:         []viewGroupRes{},
-		GroupRelations: []backupGroupThingRelationRes{},
+		Things:              []backupThingRes{},
+		Channels:            []backupChannelRes{},
+		Connections:         []backupConnectionRes{},
+		Groups:              []viewGroupRes{},
+		GroupThingRelations: []backupGroupThingRelationRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -859,7 +859,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			CreatedAt: gts.CreatedAt,
 			UpdatedAt: gts.UpdatedAt,
 		}
-		res.GroupRelations = append(res.GroupRelations, view)
+		res.GroupThingRelations = append(res.GroupThingRelations, view)
 	}
 
 	return res

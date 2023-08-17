@@ -2614,15 +2614,15 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
-	var groupRelations []things.GroupThingRelation
+	var gts []things.GroupThingRelation
 	for _, group := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: group.ID,
 			ThingID: ths[0].ID,
 		}
-		groupRelations = append(groupRelations, grRel)
+		gts = append(gts, grRel)
 	}
-	groupRelations = append(groupRelations, things.GroupThingRelation{
+	gts = append(gts, things.GroupThingRelation{
 		GroupID: groups[0].ID,
 		ThingID: ths[0].ID,
 	})
@@ -2691,7 +2691,7 @@ func TestBackup(t *testing.T) {
 	}
 
 	var groupThingRelationsRes []backupGroupThingRelationRes
-	for _, gr := range groupRelations {
+	for _, gr := range gts {
 		groupThingRelationsRes = append(groupThingRelationsRes, backupGroupThingRelationRes{
 			GroupID: gr.GroupID,
 			ThingID: gr.ThingID,
@@ -2799,13 +2799,13 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var groupRelations []things.GroupThingRelation
+	var gts []things.GroupThingRelation
 	for _, gr := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: gr.ID,
 			ThingID: testThing.ID,
 		}
-		groupRelations = append(groupRelations, grRel)
+		gts = append(gts, grRel)
 	}
 
 	channels := []things.Channel{}
@@ -2873,20 +2873,20 @@ func TestRestore(t *testing.T) {
 		})
 	}
 
-	var grr []restoreGroupRelationReq
-	for _, groupRelation := range groupRelations {
-		grr = append(grr, restoreGroupRelationReq{
-			GroupID:  groupRelation.GroupID,
-			MemberID: groupRelation.ThingID,
+	var gtsr []restoreGroupThingRelationReq
+	for _, gt := range gts {
+		gtsr = append(gtsr, restoreGroupThingRelationReq{
+			GroupID: gt.GroupID,
+			ThingID: gt.ThingID,
 		})
 	}
 
 	resReq := restoreReq{
-		Things:         thr,
-		Channels:       chr,
-		Connections:    cr,
-		Groups:         gr,
-		GroupRelations: grr,
+		Things:              thr,
+		Channels:            chr,
+		Connections:         cr,
+		Groups:              gr,
+		GroupThingRelations: gtsr,
 	}
 
 	data := toJSON(resReq)
@@ -3055,16 +3055,16 @@ type restoreGroupReq struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type restoreGroupRelationReq struct {
-	MemberID  string    `json:"member_id"`
+type restoreGroupThingRelationReq struct {
+	ThingID   string    `json:"thing_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 type restoreReq struct {
-	Things         []restoreThingReq         `json:"things"`
-	Channels       []restoreChannelReq       `json:"channels"`
-	Connections    []restoreConnectionReq    `json:"connections"`
-	Groups         []restoreGroupReq         `json:"groups"`
-	GroupRelations []restoreGroupRelationReq `json:"group_relations"`
+	Things              []restoreThingReq              `json:"things"`
+	Channels            []restoreChannelReq            `json:"channels"`
+	Connections         []restoreConnectionReq         `json:"connections"`
+	Groups              []restoreGroupReq              `json:"groups"`
+	GroupThingRelations []restoreGroupThingRelationReq `json:"group_thing_relations"`
 }

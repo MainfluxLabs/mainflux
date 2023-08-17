@@ -1580,12 +1580,12 @@ func TestBackup(t *testing.T) {
 		thingsSize := len(backup.Things)
 		channelsSize := len(backup.Channels)
 		connectionsSize := len(backup.Connections)
-		groupRelationsSize := len(backup.GroupThingRelations)
+		groupThingRelationsSize := len(backup.GroupThingRelations)
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
-		assert.Equal(t, len(tc.backup.GroupThingRelations), groupRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupThingRelations), groupRelationsSize))
+		assert.Equal(t, len(tc.backup.GroupThingRelations), groupThingRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupThingRelations), groupThingRelationsSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}
@@ -1659,10 +1659,10 @@ func TestRestore(t *testing.T) {
 	}
 
 	backup := things.Backup{
-		Groups:         groups,
-		Things:         ths,
-		Channels:       chs,
-		Connections:    connections,
+		Groups:              groups,
+		Things:              ths,
+		Channels:            chs,
+		Connections:         connections,
 		GroupThingRelations: gts,
 	}
 

@@ -273,17 +273,17 @@ func (grm *groupRepositoryMock) RetrieveAllThingRelations(ctx context.Context) (
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
-	var groupRelations []things.GroupThingRelation
-	for groupID, ths := range grm.things {
-		for _, memberID := range ths {
-			groupRelations = append(groupRelations, things.GroupThingRelation{
-				GroupID: groupID,
-				ThingID: memberID,
+	var gts []things.GroupThingRelation
+	for grID, thIDs := range grm.things {
+		for _, thID := range thIDs {
+			gts = append(gts, things.GroupThingRelation{
+				GroupID: grID,
+				ThingID: thID,
 			})
 		}
 	}
 
-	return groupRelations, nil
+	return gts, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {

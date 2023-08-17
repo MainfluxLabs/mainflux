@@ -32,7 +32,7 @@ const (
 	metadataKey   = "metadata"
 	disconnKey    = "disconnected"
 	groupIDKey    = "groupID"
-	memberIDKey   = "memberID"
+	thingIDKey    = "thingID"
 	unassignedKey = "unassigned"
 	adminKey      = "admin"
 	defOffset     = 0
@@ -250,7 +250,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/things/:memberID/groups", kithttp.NewServer(
+	r.Get("/things/:thingID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
 		decodeViewThingMembershipRequest,
 		encodeResponse,
@@ -611,7 +611,7 @@ func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error
 func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, memberIDKey),
+		id:    bone.GetValue(r, thingIDKey),
 	}
 
 	return req, nil
