@@ -141,9 +141,9 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "members <group_id> <user_auth_token>",
-		Short: "Members list",
-		Long:  `Lists all members of a group.`,
+		Use:   "things <group_id> <user_auth_token>",
+		Short: "Things list",
+		Long:  `Lists all things of a group.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -158,15 +158,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "membership <member_id> <user_auth_token>",
-		Short: "Membership list",
-		Long:  `List member group's membership`,
+		Use:   "membership <thing_id> <user_auth_token>",
+		Short: "Thing membership list",
+		Long:  `List thing group's membership`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.Memberships(args[0], args[1], uint64(Offset), uint64(Limit))
+			up, err := sdk.ViewThingMembership(args[0], args[1], uint64(Offset), uint64(Limit))
 			if err != nil {
 				logError(err)
 				return
