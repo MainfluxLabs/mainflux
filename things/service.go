@@ -919,6 +919,22 @@ func (ts *thingsService) UnassignChannel(ctx context.Context, token string, grou
 		return errors.ErrAuthorization
 	}
 
+	var thingIDs []string
+	for _, chID := range channelIDs {
+		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), chID, PageMetadata{})
+		if err != nil {
+			return err
+		}
+
+		for _, th := range tp.Things {
+			thingIDs = append(thingIDs, th.ID)
+		}
+	}
+
+	if err := ts.channels.Disconnect(ctx, user.GetId(), channelIDs, thingIDs); err != nil {
+		return err
+	}
+
 	if err := ts.groups.UnassignChannel(ctx, groupID, channelIDs...); err != nil {
 		return err
 	}
@@ -927,7 +943,33 @@ func (ts *thingsService) UnassignChannel(ctx context.Context, token string, grou
 }
 
 func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if user.GetId() != group.OwnerID {
+		return errors.ErrAuthorization
+	}
+
+	var chIDs []string
+	for _, thingID := range thingIDs {
+		cp, err := ts.channels.RetrieveByThing(ctx, user.GetId(), thingID, PageMetadata{})
+		if err != nil {
+			return err
+		}
+
+		for _, ch := range cp.Channels {
+			chIDs = append(chIDs, ch.ID)
+		}
+	}
+
+	if err := ts.channels.Disconnect(ctx, user.GetId(), chIDs, thingIDs); err != nil {
 		return err
 	}
 
