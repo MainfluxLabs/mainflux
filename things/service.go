@@ -686,8 +686,8 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		}
 	}
 
-	for _, gts := range backup.GroupThingRelations {
-		err = ts.groups.AssignThing(ctx, gts.GroupID, gts.ThingID)
+	for _, gtr := range backup.GroupThingRelations {
+		err = ts.groups.AssignThing(ctx, gtr.GroupID, gtr.ThingID)
 		if err != nil {
 			return err
 		}

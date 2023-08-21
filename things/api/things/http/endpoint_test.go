@@ -2614,15 +2614,15 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
-	var gts []things.GroupThingRelation
+	var gtr []things.GroupThingRelation
 	for _, group := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: group.ID,
 			ThingID: ths[0].ID,
 		}
-		gts = append(gts, grRel)
+		gtr = append(gtr, grRel)
 	}
-	gts = append(gts, things.GroupThingRelation{
+	gtr = append(gtr, things.GroupThingRelation{
 		GroupID: groups[0].ID,
 		ThingID: ths[0].ID,
 	})
@@ -2691,10 +2691,10 @@ func TestBackup(t *testing.T) {
 	}
 
 	var groupThingRelationsRes []backupGroupThingRelationRes
-	for _, gr := range gts {
+	for _, r := range gtr {
 		groupThingRelationsRes = append(groupThingRelationsRes, backupGroupThingRelationRes{
-			GroupID: gr.GroupID,
-			ThingID: gr.ThingID,
+			GroupID: r.GroupID,
+			ThingID: r.ThingID,
 		})
 	}
 
@@ -2799,13 +2799,13 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var gts []things.GroupThingRelation
+	var gtr []things.GroupThingRelation
 	for _, gr := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: gr.ID,
 			ThingID: testThing.ID,
 		}
-		gts = append(gts, grRel)
+		gtr = append(gtr, grRel)
 	}
 
 	channels := []things.Channel{}
@@ -2873,9 +2873,9 @@ func TestRestore(t *testing.T) {
 		})
 	}
 
-	var gtsr []restoreGroupThingRelationReq
-	for _, gt := range gts {
-		gtsr = append(gtsr, restoreGroupThingRelationReq{
+	var gtrr []restoreGroupThingRelationReq
+	for _, gt := range gtr {
+		gtrr = append(gtrr, restoreGroupThingRelationReq{
 			GroupID: gt.GroupID,
 			ThingID: gt.ThingID,
 		})
@@ -2886,7 +2886,7 @@ func TestRestore(t *testing.T) {
 		Channels:            chr,
 		Connections:         cr,
 		Groups:              gr,
-		GroupThingRelations: gtsr,
+		GroupThingRelations: gtrr,
 	}
 
 	data := toJSON(resReq)

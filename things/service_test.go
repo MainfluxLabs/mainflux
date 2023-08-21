@@ -1520,19 +1520,19 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	}
 
-	gts := []things.GroupThingRelation{}
+	gtr := []things.GroupThingRelation{}
 	for _, group := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: group.ID,
 			ThingID: ths[0].ID,
 		}
-		gts = append(gts, grRel)
+		gtr = append(gtr, grRel)
 	}
 	grRel1 := things.GroupThingRelation{
 		GroupID: groups[0].ID,
 		ThingID: ths[0].ID,
 	}
-	gts = append(gts, grRel1)
+	gtr = append(gtr, grRel1)
 
 	connections := []things.Connection{}
 	for _, ch := range chsc {
@@ -1549,7 +1549,7 @@ func TestBackup(t *testing.T) {
 		Things:              ths,
 		Channels:            chsc,
 		Connections:         connections,
-		GroupThingRelations: gts,
+		GroupThingRelations: gtr,
 	}
 
 	cases := map[string]struct {
@@ -1614,13 +1614,13 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var gts []things.GroupThingRelation
+	var gtr []things.GroupThingRelation
 	for _, group := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: group.ID,
 			ThingID: thID,
 		}
-		gts = append(gts, grRel)
+		gtr = append(gtr, grRel)
 	}
 
 	ths := []things.Thing{
@@ -1663,7 +1663,7 @@ func TestRestore(t *testing.T) {
 		Things:              ths,
 		Channels:            chs,
 		Connections:         connections,
-		GroupThingRelations: gts,
+		GroupThingRelations: gtr,
 	}
 
 	cases := map[string]struct {

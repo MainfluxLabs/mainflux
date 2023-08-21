@@ -852,12 +852,12 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		res.Groups = append(res.Groups, view)
 	}
 
-	for _, gts := range backup.GroupThingRelations {
+	for _, gtr := range backup.GroupThingRelations {
 		view := backupGroupThingRelationRes{
-			ThingID:   gts.ThingID,
-			GroupID:   gts.GroupID,
-			CreatedAt: gts.CreatedAt,
-			UpdatedAt: gts.UpdatedAt,
+			ThingID:   gtr.ThingID,
+			GroupID:   gtr.GroupID,
+			CreatedAt: gtr.CreatedAt,
+			UpdatedAt: gtr.UpdatedAt,
 		}
 		res.GroupThingRelations = append(res.GroupThingRelations, view)
 	}
@@ -910,12 +910,12 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 		backup.Groups = append(backup.Groups, gr)
 	}
 
-	for _, gts := range req.GroupThingRelations {
+	for _, gtr := range req.GroupThingRelations {
 		gRel := things.GroupThingRelation{
-			ThingID:   gts.ThingID,
-			GroupID:   gts.GroupID,
-			CreatedAt: gts.CreatedAt,
-			UpdatedAt: gts.UpdatedAt,
+			ThingID:   gtr.ThingID,
+			GroupID:   gtr.GroupID,
+			CreatedAt: gtr.CreatedAt,
+			UpdatedAt: gtr.UpdatedAt,
 		}
 		backup.GroupThingRelations = append(backup.GroupThingRelations, gRel)
 	}

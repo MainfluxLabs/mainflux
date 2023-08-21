@@ -160,7 +160,7 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "membership <thing_id> <user_auth_token>",
 		Short: "Thing membership",
-		Long:  `List thing group membership`,
+		Long:  `View thing group membership`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
