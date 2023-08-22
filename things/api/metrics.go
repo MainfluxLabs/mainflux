@@ -291,15 +291,6 @@ func (ms *metricsMiddleware) ViewThingMembership(ctx context.Context, token, thi
 	return ms.svc.ViewThingMembership(ctx, token, thingID)
 }
 
-func (ms *metricsMiddleware) ViewChannelMembership(ctx context.Context, token, channelID string) (things.Group, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "view_channel_membership").Add(1)
-		ms.latency.With("method", "view_channel_membership").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ViewChannelMembership(ctx, token, channelID)
-}
-
 func (ms *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_group").Add(1)
@@ -352,4 +343,13 @@ func (ms *metricsMiddleware) ListGroupChannels(ctx context.Context, token, group
 	}(time.Now())
 
 	return ms.svc.ListGroupChannels(ctx, token, groupID, pm)
+}
+
+func (ms *metricsMiddleware) ViewChannelMembership(ctx context.Context, token, channelID string) (things.Group, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_channel_membership").Add(1)
+		ms.latency.With("method", "view_channel_membership").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewChannelMembership(ctx, token, channelID)
 }

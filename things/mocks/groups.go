@@ -211,6 +211,23 @@ func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID
 	}, nil
 }
 
+func (grm *groupRepositoryMock) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var gtr []things.GroupThingRelation
+	for grID, thIDs := range grm.things {
+		for _, thID := range thIDs {
+			gtr = append(gtr, things.GroupThingRelation{
+				GroupID: grID,
+				ThingID: thID,
+			})
+		}
+	}
+
+	return gtr, nil
+}
+
 func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -267,23 +284,6 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 
 func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	panic("not implemented")
-}
-
-func (grm *groupRepositoryMock) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	var gtr []things.GroupThingRelation
-	for grID, thIDs := range grm.things {
-		for _, thID := range thIDs {
-			gtr = append(gtr, things.GroupThingRelation{
-				GroupID: grID,
-				ThingID: thID,
-			})
-		}
-	}
-
-	return gtr, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
