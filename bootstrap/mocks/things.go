@@ -253,10 +253,6 @@ func findIndex(list []string, val string) int {
 	return -1
 }
 
-func (svc *mainfluxThings) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
-	panic("not implemented")
-}
-
 func (svc *mainfluxThings) CreateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
 	panic("not implemented")
 }
@@ -312,4 +308,3 @@ func (svc *mainfluxThings) ViewChannelMembership(ctx context.Context, token stri
 func (svc *mainfluxThings) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	panic("not implemented")
 }
-
