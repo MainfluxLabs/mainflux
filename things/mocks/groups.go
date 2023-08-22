@@ -172,6 +172,45 @@ func (grm *groupRepositoryMock) AssignThing(ctx context.Context, groupID string,
 	return nil
 }
 
+func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	groupID, ok := grm.thingMembership[thingID]
+	if !ok {
+		return "", errors.ErrNotFound
+	}
+	return groupID, nil
+}
+
+func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+	var items []things.Thing
+	ths, ok := grm.things[groupID]
+	if !ok {
+		return things.GroupThingsPage{}, errors.ErrNotFound
+	}
+
+	first := uint64(pm.Offset)
+	last := first + uint64(pm.Limit)
+
+	if last > uint64(len(ths)) {
+		last = uint64(len(ths))
+	}
+
+	for i := first; i < last; i++ {
+		items = append(items, things.Thing{ID: ths[i]})
+	}
+
+	return things.GroupThingsPage{
+		Things: items,
+		PageMetadata: things.PageMetadata{
+			Total: uint64(len(items)),
+		},
+	}, nil
+}
+
 func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -214,17 +253,6 @@ func (grm *groupRepositoryMock) UnassignChannel(ctx context.Context, groupID str
 	return nil
 }
 
-func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	groupID, ok := grm.thingMembership[thingID]
-	if !ok {
-		return "", errors.ErrNotFound
-	}
-	return groupID, nil
-}
-
 func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -235,34 +263,6 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 	}
 
 	return groupID, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-	var items []things.Thing
-	ths, ok := grm.things[groupID]
-	if !ok {
-		return things.GroupThingsPage{}, errors.ErrNotFound
-	}
-
-	first := uint64(pm.Offset)
-	last := first + uint64(pm.Limit)
-
-	if last > uint64(len(ths)) {
-		last = uint64(len(ths))
-	}
-
-	for i := first; i < last; i++ {
-		items = append(items, things.Thing{ID: ths[i]})
-	}
-
-	return things.GroupThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total: uint64(len(items)),
-		},
-	}, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {

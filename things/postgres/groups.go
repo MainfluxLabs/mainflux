@@ -298,74 +298,6 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
-	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	var q, qc string
-	switch pm.Unassigned {
-	case true:
-		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
-			FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id)
-			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id) %s;`, mq)
-	default:
-		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
-			FROM channel_relations gr, channels c
-			WHERE gr.group_id = :group_id and gr.channel_id = c.id
-			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channel_relations gr WHERE gr.group_id = :group_id %s;`, mq)
-	}
-
-	params, err := toDBGroupThingsPage("", groupID, pm)
-	if err != nil {
-		return things.GroupChannelsPage{}, err
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
-	}
-	defer rows.Close()
-
-	var items []things.Channel
-	for rows.Next() {
-		dbch := dbChannel{}
-		if err := rows.StructScan(&dbch); err != nil {
-			return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
-		}
-
-		ch := toChannel(dbch)
-
-		items = append(items, ch)
-	}
-
-	total, err := total(ctx, gr.db, qc, params)
-	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
-	}
-
-	page := things.GroupChannelsPage{
-		Channels: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
 func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
 	q := `SELECT group_id FROM group_relations WHERE member_id = :member_id;`
 
@@ -381,27 +313,6 @@ func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID s
 	for rows.Next() {
 		if err := rows.Scan(&groupID); err != nil {
 			return "", errors.Wrap(things.ErrFailedToRetrieveThingMembership, err)
-		}
-	}
-
-	return groupID, nil
-}
-
-func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	q := `SELECT group_id FROM channel_relations WHERE channel_id = :channel_id;`
-
-	params := map[string]interface{}{"channel_id": channelID}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
-	}
-	defer rows.Close()
-
-	var groupID string
-	for rows.Next() {
-		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
 		}
 	}
 
@@ -513,6 +424,95 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 	}
 
 	return nil
+}
+
+func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	var q, qc string
+	switch pm.Unassigned {
+	case true:
+		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
+			FROM channels c
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id)
+			%s %s;`, mq, olq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id) %s;`, mq)
+	default:
+		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
+			FROM channel_relations gr, channels c
+			WHERE gr.group_id = :group_id and gr.channel_id = c.id
+			%s %s;`, mq, olq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channel_relations gr WHERE gr.group_id = :group_id %s;`, mq)
+	}
+
+	params, err := toDBGroupThingsPage("", groupID, pm)
+	if err != nil {
+		return things.GroupChannelsPage{}, err
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+	}
+	defer rows.Close()
+
+	var items []things.Channel
+	for rows.Next() {
+		dbch := dbChannel{}
+		if err := rows.StructScan(&dbch); err != nil {
+			return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+		}
+
+		ch := toChannel(dbch)
+
+		items = append(items, ch)
+	}
+
+	total, err := total(ctx, gr.db, qc, params)
+	if err != nil {
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+	}
+
+	page := things.GroupChannelsPage{
+		Channels: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
+func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
+	q := `SELECT group_id FROM channel_relations WHERE channel_id = :channel_id;`
+
+	params := map[string]interface{}{"channel_id": channelID}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
+	}
+	defer rows.Close()
+
+	var groupID string
+	for rows.Next() {
+		if err := rows.Scan(&groupID); err != nil {
+			return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
+		}
+	}
+
+	return groupID, nil
 }
 
 func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids ...string) error {

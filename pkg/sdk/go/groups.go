@@ -127,6 +127,36 @@ func (sdk mfSDK) UnassignThing(token, groupID string, thingIDs ...string) error 
 	return nil
 }
 
+func (sdk mfSDK) ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error) {
+	url := fmt.Sprintf("%s/%s/%s/things?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return GroupThingsPage{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return GroupThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var gtp GroupThingsPage
+	if err := json.Unmarshal(body, &gtp); err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	return gtp, nil
+}
+
 func (sdk mfSDK) AssignChannel(channelIDs []string, groupID string, token string) error {
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/channels", sdk.thingsURL, groupsEndpoint, groupID)
@@ -185,36 +215,6 @@ func (sdk mfSDK) UnassignChannel(token, groupID string, thingIDs ...string) erro
 	}
 
 	return nil
-}
-
-func (sdk mfSDK) ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/things?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return GroupThingsPage{}, err
-	}
-
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return GroupThingsPage{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return GroupThingsPage{}, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return GroupThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
-	}
-
-	var gtp GroupThingsPage
-	if err := json.Unmarshal(body, &gtp); err != nil {
-		return GroupThingsPage{}, err
-	}
-
-	return gtp, nil
 }
 
 func (sdk mfSDK) ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error) {
