@@ -119,12 +119,6 @@ type Service interface {
 	// ViewThingMembership retrieves group that thing belongs to.
 	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
 
-	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
-
-	// ViewChannelMembership retrieves group that channel belongs to.
-	ViewChannelMembership(ctx context.Context, token, channelID string) (Group, error)
-
 	// RemoveGroup removes the group identified with the provided ID.
 	RemoveGroup(ctx context.Context, token, id string) error
 
@@ -133,6 +127,12 @@ type Service interface {
 
 	// UnassignThing removes thing with thingID from group identified by groupID.
 	UnassignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
+
+	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
+	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+
+	// ViewChannelMembership retrieves group that channel belongs to.
+	ViewChannelMembership(ctx context.Context, token, channelID string) (Group, error)
 
 	// AssignChannel adds channel to the group identified by groupID.
 	AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error
