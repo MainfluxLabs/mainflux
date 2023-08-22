@@ -201,23 +201,11 @@ type SDK interface {
 	// UnassignThing removes thing from a group.
 	UnassignThing(token, groupID string, thingIDs ...string) error
 
-	// AssignChannel assigns channel to a group.
-	AssignChannel(channelIDs []string, groupID string, token string) error
-
-	// UnassignChannel removes channel from a group.
-	UnassignChannel(token, groupID string, channelIDs ...string) error
-
 	// ListGroupThings lists things that are members of specified group.
 	ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error)
 
-	// ListGroupChannels lists channels that are members of specified group.
-	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
-
 	// ViewThingMembership retrieves a group that the specified thing is a member of.
 	ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error)
-
-	// ViewChannelMembership retrieves a group that the specified channel is a member of.
-	ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
@@ -249,6 +237,18 @@ type SDK interface {
 
 	// DeleteChannel removes existing channel.
 	DeleteChannel(id, token string) error
+
+	// AssignChannel assigns channel to a group.
+	AssignChannel(channelIDs []string, groupID string, token string) error
+
+	// UnassignChannel removes channel from a group.
+	UnassignChannel(token, groupID string, channelIDs ...string) error
+
+	// ListGroupChannels lists channels that are members of specified group.
+	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
+
+	// ViewChannelMembership retrieves a group that the specified channel is a member of.
+	ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error)
 
 	// SendMessage send message to specified channel.
 	SendMessage(chanID, msg, token string) error
