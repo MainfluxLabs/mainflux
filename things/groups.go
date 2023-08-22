@@ -119,20 +119,20 @@ type GroupRepository interface {
 	// RetrieveThingMembership retrieves group that thing belongs to.
 	RetrieveThingMembership(ctx context.Context, thingID string) (string, error)
 
-	// RetrieveChannelMembership retrieves group that channel belongs to.
-	RetrieveChannelMembership(ctx context.Context, channelID string) (string, error)
-
 	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
-
-	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
 	// AssignThing adds a thing to a group
 	AssignThing(ctx context.Context, groupID string, thingIDs ...string) error
 
 	// UnassignThing removes a thing from a group
 	UnassignThing(ctx context.Context, groupID string, thingIDs ...string) error
+
+	// RetrieveChannelMembership retrieves group that channel belongs to.
+	RetrieveChannelMembership(ctx context.Context, channelID string) (string, error)
+
+	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
+	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
 	// AssignChannel assigns a channel to a group
 	AssignChannel(ctx context.Context, groupID string, ids ...string) error
