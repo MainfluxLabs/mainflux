@@ -409,6 +409,19 @@ func (lm *loggingMiddleware) ViewThingMembership(ctx context.Context, token, thi
 	return lm.svc.ViewThingMembership(ctx, token, thingID)
 }
 
+func (lm *loggingMiddleware) ViewChannelMembership(ctx context.Context, token, channelID string) (gr things.Group, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_channel_membership for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewChannelMembership(ctx, token, channelID)
+}
+
 func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_group for token %s took %s to complete", token, time.Since(begin))

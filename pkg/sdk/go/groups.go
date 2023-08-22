@@ -375,10 +375,40 @@ func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64
 		return Group{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var gs Group
-	if err := json.Unmarshal(body, &gs); err != nil {
+	var g Group
+	if err := json.Unmarshal(body, &g); err != nil {
 		return Group{}, err
 	}
 
-	return gs, nil
+	return g, nil
+}
+
+func (sdk mfSDK) ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error) {
+	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d", sdk.thingsURL, channelsEndpoint, channelID, groupsEndpoint, offset, limit)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return Group{}, err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return Group{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return Group{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return Group{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var g Group
+	if err := json.Unmarshal(body, &g); err != nil {
+		return Group{}, err
+	}
+
+	return g, nil
 }

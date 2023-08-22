@@ -301,6 +301,10 @@ func (svc *mainfluxThings) ViewThingMembership(ctx context.Context, token string
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ViewChannelMembership(ctx context.Context, token string, channelID string) (things.Group, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	panic("not implemented")
 }

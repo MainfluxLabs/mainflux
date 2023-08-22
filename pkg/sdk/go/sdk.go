@@ -216,6 +216,9 @@ type SDK interface {
 	// ViewThingMembership lists groups that specified thing is member of.
 	ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error)
 
+	// ViewChannelMembership lists groups that specified channel is member of.
+	ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error)
+
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
 

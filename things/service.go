@@ -116,11 +116,14 @@ type Service interface {
 	// ListGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
+	// ViewThingMembership retrieves group that thing belongs to.
+	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
+
 	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
 	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
-	// ViewThingMembership retrieves group that thing belongs to.
-	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
+	// ViewChannelMembership retrieves group that channel belongs to.
+	ViewChannelMembership(ctx context.Context, token, channelID string) (Group, error)
 
 	// RemoveGroup removes the group identified with the provided ID.
 	RemoveGroup(ctx context.Context, token, id string) error
@@ -1022,6 +1025,28 @@ func (ts *thingsService) ViewThingMembership(ctx context.Context, token string, 
 	}
 
 	groupID, err := ts.groups.RetrieveThingMembership(ctx, thingID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	if groupID == "" {
+		return Group{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
+}
+
+func (ts *thingsService) ViewChannelMembership(ctx context.Context, token string, channelID string) (Group, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return Group{}, err
+	}
+
+	groupID, err := ts.groups.RetrieveChannelMembership(ctx, channelID)
 	if err != nil {
 		return Group{}, err
 	}

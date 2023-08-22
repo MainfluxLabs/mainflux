@@ -311,3 +311,7 @@ func (es eventStore) ListGroupChannels(ctx context.Context, token, groupID strin
 func (es eventStore) ViewThingMembership(ctx context.Context, token string, thingID string) (things.Group, error) {
 	return es.svc.ViewThingMembership(ctx, token, thingID)
 }
+
+func (es eventStore) ViewChannelMembership(ctx context.Context, token string, channelID string) (things.Group, error) {
+	return es.svc.ViewChannelMembership(ctx, token, channelID)
+}

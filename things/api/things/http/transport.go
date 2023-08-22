@@ -33,6 +33,7 @@ const (
 	disconnKey    = "disconnected"
 	groupIDKey    = "groupID"
 	thingIDKey    = "thingID"
+	channelIDKey  = "channelID"
 	unassignedKey = "unassigned"
 	adminKey      = "admin"
 	defOffset     = 0
@@ -253,6 +254,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	r.Get("/things/:thingID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
 		decodeViewThingMembershipRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/channels/:channelID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_channel_membership")(viewChannelMembershipEndpoint(svc)),
+		decodeViewChannelMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -612,6 +620,15 @@ func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (inter
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, thingIDKey),
+	}
+
+	return req, nil
+}
+
+func decodeViewChannelMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listMembersReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, channelIDKey),
 	}
 
 	return req, nil

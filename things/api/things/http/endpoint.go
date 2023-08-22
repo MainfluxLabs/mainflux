@@ -666,6 +666,32 @@ func viewThingMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func viewChannelMembershipEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		group, err := svc.ViewChannelMembership(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		groupRes := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+
+		return groupRes, nil
+	}
+}
+
 func assignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(memberReq)
