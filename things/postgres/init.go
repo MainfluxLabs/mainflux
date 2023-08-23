@@ -120,19 +120,19 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (group_id) REFERENCES groups (id),
 						PRIMARY KEY (member_id, group_id)
 				        )`,
-					`CREATE TABLE IF NOT EXISTS channel_relations (
+					`CREATE TABLE IF NOT EXISTS group_channels (
 					       channel_id  UUID UNIQUE NOT NULL,
 					       group_id    UUID NOT NULL,
 					       created_at  TIMESTAMPTZ,
 					       updated_at  TIMESTAMPTZ,
-					       FOREIGN KEY (group_id) REFERENCES groups (id),
+					       FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
 					       PRIMARY KEY (channel_id, group_id)
 			                )`,
-			 	},
+				},
 				Down: []string{
 					"DROP TABLE groups",
 					"DROP TABLE group_relations",
-					"DROP TABLE channel_relations",
+					"DROP TABLE group_channels",
 				},
 			},
 			{

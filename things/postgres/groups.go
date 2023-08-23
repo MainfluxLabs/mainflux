@@ -442,16 +442,16 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	case true:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr WHERE gr.group_id = :group_id)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM channel_relations gr WHERE gr.group_id = :group_id) %s;`, mq)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr WHERE gr.group_id = :group_id) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
-			FROM channel_relations gr, channels c
+			FROM group_channels gr, channels c
 			WHERE gr.group_id = :group_id and gr.channel_id = c.id
 			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channel_relations gr WHERE gr.group_id = :group_id %s;`, mq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_channels gr WHERE gr.group_id = :group_id %s;`, mq)
 	}
 
 	params, err := toDBGroupThingsPage("", groupID, pm)
@@ -495,7 +495,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 }
 
 func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	q := `SELECT group_id FROM channel_relations WHERE channel_id = :channel_id;`
+	q := `SELECT group_id FROM group_channels WHERE channel_id = :channel_id;`
 
 	params := map[string]interface{}{"channel_id": channelID}
 
@@ -521,20 +521,20 @@ func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids
 		return errors.Wrap(things.ErrAssignGroupChannel, err)
 	}
 
-	qIns := `INSERT INTO channel_relations (group_id, channel_id, created_at, updated_at)
+	qIns := `INSERT INTO group_channels (group_id, channel_id, created_at, updated_at)
 			VALUES(:group_id, :channel_id, :created_at, :updated_at)`
 
 	for _, id := range ids {
 		created := time.Now()
 
-		dbc, err := toDBChannelRelation(id, groupID)
+		dgc, err := todbGroupChannels(id, groupID)
 		if err != nil {
 			return errors.Wrap(things.ErrAssignGroupChannel, err)
 		}
-		dbc.CreatedAt = created
-		dbc.UpdatedAt = created
+		dgc.CreatedAt = created
+		dgc.UpdatedAt = created
 
-		if _, err := tx.NamedExecContext(ctx, qIns, dbc); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qIns, dgc); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -565,15 +565,15 @@ func (gr groupRepository) UnassignChannel(ctx context.Context, groupID string, i
 		return errors.Wrap(things.ErrUnassignGroupChannel, err)
 	}
 
-	qDel := `DELETE from channel_relations WHERE group_id = :group_id AND channel_id = :channel_id`
+	qDel := `DELETE from group_channels WHERE group_id = :group_id AND channel_id = :channel_id`
 
 	for _, id := range ids {
-		dbc, err := toDBChannelRelation(id, groupID)
+		dgc, err := todbGroupChannels(id, groupID)
 		if err != nil {
 			return errors.Wrap(things.ErrUnassignGroupChannel, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, qDel, dbc); err != nil {
+		if _, err := tx.NamedExecContext(ctx, qDel, dgc); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -767,14 +767,14 @@ func toThingRelation(dbgr dbThingRelation) (things.GroupThingRelation, error) {
 	}, nil
 }
 
-type dbChannelRelation struct {
+type dbGroupChannels struct {
 	GroupID   sql.NullString `db:"group_id"`
 	ChannelID sql.NullString `db:"channel_id"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
 }
 
-func toDBChannelRelation(channelID, groupID string) (dbChannelRelation, error) {
+func todbGroupChannels(channelID, groupID string) (dbGroupChannels, error) {
 	var grID sql.NullString
 	if groupID != "" {
 		grID = sql.NullString{String: groupID, Valid: true}
@@ -785,7 +785,7 @@ func toDBChannelRelation(channelID, groupID string) (dbChannelRelation, error) {
 		chID = sql.NullString{String: channelID, Valid: true}
 	}
 
-	return dbChannelRelation{
+	return dbGroupChannels{
 		GroupID:   grID,
 		ChannelID: chID,
 	}, nil
