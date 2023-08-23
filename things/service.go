@@ -786,26 +786,12 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return err
 	}
 
-	chs, err := ts.groups.RetrieveGroupChannels(ctx, id, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
 	var thIDs []string
 	for _, th := range thp.Things {
 		thIDs = append(thIDs, th.ID)
 	}
 
-	var chIDs []string
-	for _, ch := range chs.Channels {
-		chIDs = append(chIDs, ch.ID)
-	}
-
 	if err := ts.groups.UnassignThing(ctx, id, thIDs...); err != nil {
-		return err
-	}
-
-	if err := ts.groups.UnassignChannel(ctx, id, chIDs...); err != nil {
 		return err
 	}
 
