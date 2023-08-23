@@ -112,14 +112,6 @@ func (grm groupRepositoryMiddleware) RetrieveThingMembership(ctx context.Context
 	return grm.repo.RetrieveThingMembership(ctx, thingID)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	span := createSpan(ctx, grm.tracer, retrieveChannelMembershipOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveChannelMembership(ctx, channelID)
-}
-
 func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupThingsOp)
 	defer span.Finish()
@@ -150,6 +142,14 @@ func (grm groupRepositoryMiddleware) UnassignThing(ctx context.Context, groupID 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.UnassignThing(ctx, groupID, thingIDs...)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
+	span := createSpan(ctx, grm.tracer, retrieveChannelMembershipOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveChannelMembership(ctx, channelID)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {

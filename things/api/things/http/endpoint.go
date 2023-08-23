@@ -617,29 +617,6 @@ func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		pm := things.PageMetadata{
-			Offset:     req.offset,
-			Limit:      req.limit,
-			Metadata:   req.metadata,
-			Unassigned: req.unassigned,
-		}
-
-		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildGroupChannelsResponse(page), nil
-	}
-}
-
 func viewThingMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
@@ -648,32 +625,6 @@ func viewThingMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		group, err := svc.ViewThingMembership(ctx, req.token, req.id)
-		if err != nil {
-			return nil, err
-		}
-
-		groupRes := viewGroupRes{
-			ID:          group.ID,
-			Name:        group.Name,
-			Description: group.Description,
-			Metadata:    group.Metadata,
-			OwnerID:     group.OwnerID,
-			CreatedAt:   group.CreatedAt,
-			UpdatedAt:   group.UpdatedAt,
-		}
-
-		return groupRes, nil
-	}
-}
-
-func viewChannelMembershipEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		group, err := svc.ViewChannelMembership(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -719,6 +670,55 @@ func unassignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return unassignRes{}, nil
+	}
+}
+
+func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		pm := things.PageMetadata{
+			Offset:     req.offset,
+			Limit:      req.limit,
+			Metadata:   req.metadata,
+			Unassigned: req.unassigned,
+		}
+
+		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupChannelsResponse(page), nil
+	}
+}
+
+func viewChannelMembershipEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		group, err := svc.ViewChannelMembership(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		groupRes := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OwnerID:     group.OwnerID,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+
+		return groupRes, nil
 	}
 }
 

@@ -13,29 +13,29 @@ var (
 	// ErrUnassignGroupThing indicates failure to unassign thing from a group.
 	ErrUnassignGroupThing = errors.New("failed to unassign thing from a group")
 
-	// ErrAssignGroupChannel indicates failure to assign channel to a group.
-	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
-
-	// ErrUnassignGroupChannel indicates failure to unassign channel from a group.
-	ErrUnassignGroupChannel = errors.New("failed to unassign channel from a group")
-
 	// ErrGroupNotEmpty indicates group is not empty, can't be deleted.
 	ErrGroupNotEmpty = errors.New("group is not empty")
 
 	// ErrThingAlreadyAssigned indicates that thing is already assigned.
 	ErrThingAlreadyAssigned = errors.New("thing is already assigned")
 
-	// ErrChannelAlreadyAssigned indicates that thing is already assigned.
-	ErrChannelAlreadyAssigned = errors.New("channel is already assigned")
-
 	// ErrFailedToRetrieveGroupThings indicates failure to retrieve group things.
 	ErrFailedToRetrieveGroupThings = errors.New("failed to retrieve group things")
 
-	// ErrFailedToRetrieveGroupChannels indicates failure to retrieve group channels.
-	ErrFailedToRetrieveGroupChannels = errors.New("failed to retrieve group channels")
-
 	// ErrFailedToRetrieveThingMembership indicates failure to retrieve thing membership
 	ErrFailedToRetrieveThingMembership = errors.New("failed to retrieve thing membership")
+
+	// ErrAssignGroupChannel indicates failure to assign channel to a group.
+	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
+
+	// ErrUnassignGroupChannel indicates failure to unassign channel from a group.
+	ErrUnassignGroupChannel = errors.New("failed to unassign channel from a group")
+
+	// ErrChannelAlreadyAssigned indicates that thing is already assigned.
+	ErrChannelAlreadyAssigned = errors.New("channel is already assigned")
+
+	// ErrFailedToRetrieveGroupChannels indicates failure to retrieve group channels.
+	ErrFailedToRetrieveGroupChannels = errors.New("failed to retrieve group channels")
 
 	// ErrFailedToRetrieveChannelMembership indicates failure to retrieve channel membership
 	ErrFailedToRetrieveChannelMembership = errors.New("failed to retrieve channel membership")

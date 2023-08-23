@@ -21,11 +21,10 @@ type groupRepositoryMock struct {
 	groups map[string]things.Group
 	// Map of group thing membership where thing id is a key and group id is a value.
 	thingMembership map[string]string
-	// Map of group channel membership where channel id is a key and group id is a value.
-	channelMembership map[string]string
-
 	// Map of group thing where group id is a key and thing ids are values.
 	things map[string][]string
+	// Map of group channel membership where channel id is a key and group id is a value.
+	channelMembership map[string]string
 	// Map of group channel where group id is a key and channel ids are values.
 	channels map[string][]string
 }
@@ -35,8 +34,8 @@ func NewGroupRepository() things.GroupRepository {
 	return &groupRepositoryMock{
 		groups:            make(map[string]things.Group),
 		thingMembership:   make(map[string]string),
-		channelMembership: make(map[string]string),
 		things:            make(map[string][]string),
+		channelMembership: make(map[string]string),
 		channels:          make(map[string][]string),
 	}
 }

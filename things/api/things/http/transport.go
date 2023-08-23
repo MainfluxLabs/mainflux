@@ -223,6 +223,20 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/groups/:groupID/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_things")(listGroupThingsEndpoint(svc)),
+		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/things/:thingID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
+		decodeViewThingMembershipRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/groups/:groupID/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_channels")(assignChannelsEndpoint(svc)),
 		decodememberRequest,
@@ -237,23 +251,9 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_things")(listGroupThingsEndpoint(svc)),
-		decodeListMembersRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	r.Get("/groups/:groupID/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_group_channels")(listGroupChannelsEndpoint(svc)),
 		decodeListMembersRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Get("/things/:thingID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
-		decodeViewThingMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
