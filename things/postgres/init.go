@@ -119,7 +119,7 @@ func migrateDB(db *sqlx.DB) error {
 						updated_at  TIMESTAMPTZ,
 						FOREIGN KEY (group_id) REFERENCES groups (id),
 						PRIMARY KEY (member_id, group_id)
-				   )`,
+				        )`,
 					`CREATE TABLE IF NOT EXISTS channel_relations (
 					       channel_id  UUID UNIQUE NOT NULL,
 					       group_id    UUID NOT NULL,
@@ -127,8 +127,8 @@ func migrateDB(db *sqlx.DB) error {
 					       updated_at  TIMESTAMPTZ,
 					       FOREIGN KEY (group_id) REFERENCES groups (id),
 					       PRIMARY KEY (channel_id, group_id)
-			 )`,
-				},
+			                )`,
+			 	},
 				Down: []string{
 					"DROP TABLE groups",
 					"DROP TABLE group_relations",
