@@ -437,14 +437,13 @@ func (req listMembersReq) validate() error {
 	return nil
 }
 
-type memberReq struct {
-	token    string
-	groupID  string
-	Things   []string `json:"things"`
-	Channels []string `json:"channels"`
+type thingMembersReq struct {
+	token   string
+	groupID string
+	Things  []string `json:"things"`
 }
 
-func (req memberReq) validate() error {
+func (req thingMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -453,7 +452,29 @@ func (req memberReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Things) == 0 && len(req.Channels) == 0 {
+	if len(req.Things) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type channelMembersReq struct {
+	token    string
+	groupID  string
+	Channels []string `json:"channels"`
+}
+
+func (req channelMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Channels) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

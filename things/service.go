@@ -990,7 +990,7 @@ func (ts *thingsService) ListGroupThings(ctx context.Context, token string, grou
 
 	gthp, err := ts.groups.RetrieveGroupThings(ctx, groupID, pm)
 	if err != nil {
-		return GroupThingsPage{}, errors.Wrap(ErrFailedToRetrieveGroupThings, err)
+		return GroupThingsPage{}, errors.Wrap(ErrRetrieveGroupThings, err)
 	}
 
 	return gthp, nil

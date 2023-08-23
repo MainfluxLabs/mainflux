@@ -645,7 +645,7 @@ func viewThingMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 
 func assignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(memberReq)
+		req := request.(thingMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -660,7 +660,7 @@ func assignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func unassignThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(memberReq)
+		req := request.(thingMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -724,7 +724,7 @@ func viewChannelMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 
 func assignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(memberReq)
+		req := request.(channelMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -739,7 +739,7 @@ func assignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func unassignChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(memberReq)
+		req := request.(channelMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

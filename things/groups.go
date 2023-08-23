@@ -19,11 +19,11 @@ var (
 	// ErrThingAlreadyAssigned indicates that thing is already assigned.
 	ErrThingAlreadyAssigned = errors.New("thing is already assigned")
 
-	// ErrFailedToRetrieveGroupThings indicates failure to retrieve group things.
-	ErrFailedToRetrieveGroupThings = errors.New("failed to retrieve group things")
+	// ErrRetrieveGroupThings indicates failure to retrieve group things.
+	ErrRetrieveGroupThings = errors.New("failed to retrieve group things")
 
-	// ErrFailedToRetrieveThingMembership indicates failure to retrieve thing membership
-	ErrFailedToRetrieveThingMembership = errors.New("failed to retrieve thing membership")
+	// ErrRetrieveThingMembership indicates failure to retrieve thing membership
+	ErrRetrieveThingMembership = errors.New("failed to retrieve thing membership")
 
 	// ErrAssignGroupChannel indicates failure to assign channel to a group.
 	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
@@ -34,11 +34,11 @@ var (
 	// ErrChannelAlreadyAssigned indicates that thing is already assigned.
 	ErrChannelAlreadyAssigned = errors.New("channel is already assigned")
 
-	// ErrFailedToRetrieveGroupChannels indicates failure to retrieve group channels.
-	ErrFailedToRetrieveGroupChannels = errors.New("failed to retrieve group channels")
+	// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
+	ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
 
-	// ErrFailedToRetrieveChannelMembership indicates failure to retrieve channel membership
-	ErrFailedToRetrieveChannelMembership = errors.New("failed to retrieve channel membership")
+	// ErrRetrieveChannelMembership indicates failure to retrieve channel membership
+	ErrRetrieveChannelMembership = errors.New("failed to retrieve channel membership")
 )
 
 // Identity contains ID and Email.

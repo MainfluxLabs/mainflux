@@ -719,7 +719,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 			},
 			groupID:  "",
 			channels: nil,
-			err:      things.ErrFailedToRetrieveGroupChannels,
+			err:      things.ErrRetrieveGroupChannels,
 		},
 		"retrieve last channel": {
 			pagemeta: things.PageMetadata{
@@ -839,12 +839,12 @@ func TestRetrieveThingMembership(t *testing.T) {
 		"retrieve membership for invalid thing id": {
 			thingID: invalid,
 			groupID: "",
-			err:     things.ErrFailedToRetrieveThingMembership,
+			err:     things.ErrRetrieveThingMembership,
 		},
 		"retrieve membership without thing id": {
 			thingID: "",
 			groupID: "",
-			err:     things.ErrFailedToRetrieveThingMembership,
+			err:     things.ErrRetrieveThingMembership,
 		},
 	}
 

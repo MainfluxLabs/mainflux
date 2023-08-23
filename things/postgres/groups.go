@@ -230,7 +230,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupThings, err)
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
@@ -262,7 +262,7 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupThings, err)
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 	defer rows.Close()
 
@@ -270,7 +270,7 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	for rows.Next() {
 		dbmem := dbThing{}
 		if err := rows.StructScan(&dbmem); err != nil {
-			return things.GroupThingsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupThings, err)
+			return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 		}
 
 		th, err := toThing(dbmem)
@@ -283,7 +283,7 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 
 	total, err := total(ctx, gr.db, qc, params)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupThings, err)
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 
 	page := things.GroupThingsPage{
@@ -305,14 +305,14 @@ func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID s
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return "", errors.Wrap(things.ErrFailedToRetrieveThingMembership, err)
+		return "", errors.Wrap(things.ErrRetrieveThingMembership, err)
 	}
 	defer rows.Close()
 
 	var groupID string
 	for rows.Next() {
 		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(things.ErrFailedToRetrieveThingMembership, err)
+			return "", errors.Wrap(things.ErrRetrieveThingMembership, err)
 		}
 	}
 
@@ -429,7 +429,7 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
@@ -461,7 +461,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 	defer rows.Close()
 
@@ -469,7 +469,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	for rows.Next() {
 		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+			return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 		}
 
 		ch := toChannel(dbch)
@@ -479,7 +479,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 
 	total, err := total(ctx, gr.db, qc, params)
 	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrFailedToRetrieveGroupChannels, err)
+		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
 	page := things.GroupChannelsPage{
@@ -501,14 +501,14 @@ func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channel
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
+		return "", errors.Wrap(things.ErrRetrieveChannelMembership, err)
 	}
 	defer rows.Close()
 
 	var groupID string
 	for rows.Next() {
 		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(things.ErrFailedToRetrieveChannelMembership, err)
+			return "", errors.Wrap(things.ErrRetrieveChannelMembership, err)
 		}
 	}
 
