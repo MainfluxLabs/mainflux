@@ -253,7 +253,7 @@ func findIndex(list []string, val string) int {
 	return -1
 }
 
-func (svc *mainfluxThings) ListMembers(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.MemberPage, error) {
+func (svc *mainfluxThings) ListGroupThings(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -281,14 +281,30 @@ func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Assign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) AssignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Unassign(ctx context.Context, token string, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) UnassignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewMembership(ctx context.Context, token string, memberID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewThingMembership(ctx context.Context, token string, thingID string) (things.Group, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ViewChannelMembership(ctx context.Context, token string, channelID string) (things.Group, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	panic("not implemented")
 }

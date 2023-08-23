@@ -81,32 +81,10 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "assign <member_ids> <member_type> <group_id> <user_auth_token>",
-		Short: "Assign member",
-		Long: `Assign members to a group.
-				member_ids - '["member_id",...]`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 4 {
-				logUsage(cmd.Use)
-				return
-			}
-			var ids []string
-			if err := json.Unmarshal([]byte(args[0]), &ids); err != nil {
-				logError(err)
-				return
-			}
-			if err := sdk.Assign(ids, args[1], args[2], args[3]); err != nil {
-				logError(err)
-				return
-			}
-			logOK()
-		},
-	},
-	{
-		Use:   "unassign <member_ids> <group_id> <user_auth_token>",
-		Short: "Unassign member",
-		Long: `Unassign members from a group
-				member_ids - '["member_id",...]`,
+		Use:   "assign <thing_ids> <group_id> <user_auth_token>",
+		Short: "Assign things",
+		Long: `Assign things to a group.
+				thing_ids - '["thing_id",...]`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -117,7 +95,29 @@ var cmdGroups = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.Unassign(args[2], args[1], ids...); err != nil {
+			if err := sdk.AssignThing(ids, args[1], args[2]); err != nil {
+				logError(err)
+				return
+			}
+			logOK()
+		},
+	},
+	{
+		Use:   "unassign <thing_ids> <group_id> <user_auth_token>",
+		Short: "Unassign things",
+		Long: `Unassign things from a group
+				thing_ids - '["things_id",...]`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+			var ids []string
+			if err := json.Unmarshal([]byte(args[0]), &ids); err != nil {
+				logError(err)
+				return
+			}
+			if err := sdk.UnassignThing(args[2], args[1], ids...); err != nil {
 				logError(err)
 				return
 			}
@@ -141,15 +141,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "members <group_id> <user_auth_token>",
-		Short: "Members list",
-		Long:  `Lists all members of a group.`,
+		Use:   "things <group_id> <user_auth_token>",
+		Short: "Group things list",
+		Long:  `Lists all things of a group.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.Members(args[0], args[1], uint64(Offset), uint64(Limit))
+			up, err := sdk.ListGroupThings(args[0], args[1], uint64(Offset), uint64(Limit))
 			if err != nil {
 				logError(err)
 				return
@@ -158,15 +158,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "membership <member_id> <user_auth_token>",
-		Short: "Membership list",
-		Long:  `List member group's membership`,
+		Use:   "membership <thing_id> <user_auth_token>",
+		Short: "Thing membership",
+		Long:  `View thing group membership`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.Memberships(args[0], args[1], uint64(Offset), uint64(Limit))
+			up, err := sdk.ViewThingMembership(args[0], args[1], uint64(Offset), uint64(Limit))
 			if err != nil {
 				logError(err)
 				return

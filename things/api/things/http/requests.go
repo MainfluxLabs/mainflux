@@ -331,20 +331,20 @@ type restoreGroupReq struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type restoreGroupRelationReq struct {
-	MemberID  string    `json:"member_id"`
+type restoreGroupThingRelationReq struct {
+	ThingID   string    `json:"thing_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type restoreReq struct {
-	token          string
-	Things         []restoreThingReq         `json:"things"`
-	Channels       []restoreChannelReq       `json:"channels"`
-	Connections    []restoreConnectionReq    `json:"connections"`
-	Groups         []restoreGroupReq         `json:"groups"`
-	GroupRelations []restoreGroupRelationReq `json:"group_relations"`
+	token               string
+	Things              []restoreThingReq              `json:"things"`
+	Channels            []restoreChannelReq            `json:"channels"`
+	Connections         []restoreConnectionReq         `json:"connections"`
+	Groups              []restoreGroupReq              `json:"groups"`
+	GroupThingRelations []restoreGroupThingRelationReq `json:"group_thing_relations"`
 }
 
 func (req restoreReq) validate() error {
@@ -352,7 +352,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 && len(req.GroupRelations) == 0 {
+	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 && len(req.GroupThingRelations) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -437,13 +437,13 @@ func (req listMembersReq) validate() error {
 	return nil
 }
 
-type memberReq struct {
+type thingMembersReq struct {
 	token   string
 	groupID string
-	Members []string `json:"members"`
+	Things  []string `json:"things"`
 }
 
-func (req memberReq) validate() error {
+func (req thingMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -452,7 +452,29 @@ func (req memberReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 {
+	if len(req.Things) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type channelMembersReq struct {
+	token    string
+	groupID  string
+	Channels []string `json:"channels"`
+}
+
+func (req channelMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Channels) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -322,8 +322,14 @@ func TestChannelsByThing(t *testing.T) {
 	}
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	gr, err := mainfluxSDK.CreateGroup(group, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	th := sdk.Thing{Name: "test_device"}
 	tid, err := mainfluxSDK.CreateThing(th, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var n = 100
@@ -342,6 +348,9 @@ func TestChannelsByThing(t *testing.T) {
 		if i == n+1-chsDiscoNum {
 			break
 		}
+
+		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		conIDs := sdk.ConnectionIDs{
 			ChannelIDs: []string{cid},

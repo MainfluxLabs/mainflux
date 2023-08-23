@@ -43,6 +43,7 @@ var (
 		Metadata: map[string]interface{}{"test": "data"},
 	}
 	usersList = []users.User{{Email: email, Password: password}}
+	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
 type testRequest struct {
@@ -161,6 +162,15 @@ func TestCanAccessByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create channel: %s", err))
 	ch := chs[0]
 
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("failed to connect thing and channel: %s", err))
 
@@ -244,6 +254,15 @@ func TestCanAccessByID(t *testing.T) {
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("failed to create channel: %s", err))
 	ch := chs[0]
+
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("failed to connect thing and channel: %s", err))

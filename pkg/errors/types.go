@@ -33,4 +33,7 @@ var (
 
 	// ErrScanMetadata indicates problem with metadata in db.
 	ErrScanMetadata = New("failed to scan metadata in db")
+
+	// ErrGroupMismatch indicates that entites are not in the same group.
+	ErrGroupMismatch = New("group membership mismatch")
 )

@@ -71,6 +71,7 @@ var (
 	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
 	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password}
 	usersList = []users.User{admin, user, otherUser}
+	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
 type testRequest struct {
@@ -966,6 +967,7 @@ func TestListThingsByChannel(t *testing.T) {
 	ch := chs[0]
 
 	data := []thingRes{}
+	thIDs := []string{}
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
@@ -973,8 +975,6 @@ func TestListThingsByChannel(t *testing.T) {
 		ths, err := svc.CreateThings(context.Background(), token, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
-		err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		data = append(data, thingRes{
 			ID:       th.ID,
@@ -982,7 +982,21 @@ func TestListThingsByChannel(t *testing.T) {
 			Key:      th.Key,
 			Metadata: th.Metadata,
 		})
+		thIDs = append(thIDs, th.ID)
 	}
+
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.Connect(context.Background(), token, []string{ch.ID}, thIDs)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingURL := fmt.Sprintf("%s/channels", ts.URL)
 
 	// Wait for things and channels to connect.
@@ -1729,6 +1743,11 @@ func TestListChannelsByThing(t *testing.T) {
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	channels := []channelRes{}
 	for i := 0; i < n; i++ {
@@ -1738,6 +1757,8 @@ func TestListChannelsByThing(t *testing.T) {
 		chs, err := svc.CreateChannels(context.Background(), token, channel1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		ch := chs[0]
+		err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -1978,6 +1999,15 @@ func TestConnect(t *testing.T) {
 	chs, _ = svc.CreateChannels(context.Background(), otherToken, channel)
 	ch2 := chs[0]
 
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th1.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch1.ID, ch2.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc    string
 		chanID  string
@@ -2080,6 +2110,18 @@ func TestCreateConnections(t *testing.T) {
 	for _, ch := range chs {
 		chIDs2 = append(chIDs2, ch.ID)
 	}
+
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs1...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc        string
@@ -2266,6 +2308,15 @@ func TestDisconnectList(t *testing.T) {
 		chIDs2 = append(chIDs2, ch.ID)
 	}
 
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs1...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	err = svc.Connect(context.Background(), token, chIDs1, thIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -2440,6 +2491,18 @@ func TestDisconnnect(t *testing.T) {
 	chs, _ = svc.CreateChannels(context.Background(), otherToken, channel)
 	ch2 := chs[0]
 
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th1.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch1.ID, ch2.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.Connect(context.Background(), token, []string{ch1.ID}, []string{th1.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc    string
 		chanID  string
@@ -2547,18 +2610,22 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for _, gr := range groups {
-		err = svc.Assign(context.Background(), token, gr.ID, ths[0].ID)
+		err = svc.AssignThing(context.Background(), token, gr.ID, ths[0].ID)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
-	var groupRelations []things.GroupRelation
+	var gtr []things.GroupThingRelation
 	for _, group := range groups {
-		grRel := things.GroupRelation{
-			GroupID:  group.ID,
-			MemberID: ths[0].ID,
+		grRel := things.GroupThingRelation{
+			GroupID: group.ID,
+			ThingID: ths[0].ID,
 		}
-		groupRelations = append(groupRelations, grRel)
+		gtr = append(gtr, grRel)
 	}
+	gtr = append(gtr, things.GroupThingRelation{
+		GroupID: groups[0].ID,
+		ThingID: ths[0].ID,
+	})
 
 	channels := []things.Channel{}
 	for i := 0; i < 10; i++ {
@@ -2571,20 +2638,25 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		ch := chs[0]
 
-		svc.Connect(context.Background(), token, []string{ch.ID}, []string{ths[0].ID})
-
 		channels = append(channels, ch)
 	}
 
+	err = svc.AssignThing(context.Background(), token, groups[0].ID, ths[0].ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, groups[0].ID, channels[0].ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.Connect(context.Background(), token, []string{channels[0].ID}, []string{ths[0].ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	connections := []things.Connection{}
-	for _, ch := range channels {
-		connections = append(connections, things.Connection{
-			ChannelID:    ch.ID,
-			ChannelOwner: ch.Owner,
-			ThingID:      ths[0].ID,
-			ThingOwner:   ths[0].Owner,
-		})
-	}
+	connections = append(connections, things.Connection{
+		ChannelID:    channels[0].ID,
+		ChannelOwner: channels[0].Owner,
+		ThingID:      ths[0].ID,
+		ThingOwner:   ths[0].Owner,
+	})
 
 	var thingsRes []backupThingRes
 	for _, th := range ths {
@@ -2618,11 +2690,11 @@ func TestBackup(t *testing.T) {
 		})
 	}
 
-	var groupRelationsRes []backupGroupRelationRes
-	for _, gr := range groupRelations {
-		groupRelationsRes = append(groupRelationsRes, backupGroupRelationRes{
-			GroupID:  gr.GroupID,
-			MemberID: gr.MemberID,
+	var groupThingRelationsRes []backupGroupThingRelationRes
+	for _, r := range gtr {
+		groupThingRelationsRes = append(groupThingRelationsRes, backupGroupThingRelationRes{
+			GroupID: r.GroupID,
+			ThingID: r.ThingID,
 		})
 	}
 
@@ -2637,11 +2709,11 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := backupRes{
-		Groups:         groupsRes,
-		Things:         thingsRes,
-		Channels:       channelsRes,
-		Connections:    connectionsRes,
-		GroupRelations: groupRelationsRes,
+		Groups:              groupsRes,
+		Things:              thingsRes,
+		Channels:            channelsRes,
+		Connections:         connectionsRes,
+		GroupThingRelations: groupThingRelationsRes,
 	}
 
 	backupURL := fmt.Sprintf("%s/backup", ts.URL)
@@ -2692,7 +2764,7 @@ func TestBackup(t *testing.T) {
 		assert.ElementsMatch(t, tc.res.Connections, body.Connections, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Connections, body.Connections))
 		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
 		assert.ElementsMatch(t, tc.res.Groups, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Groups, body.Groups))
-		assert.ElementsMatch(t, tc.res.GroupRelations, body.GroupRelations, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.GroupRelations, body.GroupRelations))
+		assert.ElementsMatch(t, tc.res.GroupThingRelations, body.GroupThingRelations, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.GroupThingRelations, body.GroupThingRelations))
 	}
 }
 
@@ -2727,13 +2799,13 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var groupRelations []things.GroupRelation
+	var gtr []things.GroupThingRelation
 	for _, gr := range groups {
-		grRel := things.GroupRelation{
-			GroupID:  gr.ID,
-			MemberID: testThing.ID,
+		grRel := things.GroupThingRelation{
+			GroupID: gr.ID,
+			ThingID: testThing.ID,
 		}
-		groupRelations = append(groupRelations, grRel)
+		gtr = append(gtr, grRel)
 	}
 
 	channels := []things.Channel{}
@@ -2801,20 +2873,20 @@ func TestRestore(t *testing.T) {
 		})
 	}
 
-	var grr []restoreGroupRelationReq
-	for _, groupRelation := range groupRelations {
-		grr = append(grr, restoreGroupRelationReq{
-			GroupID:  groupRelation.GroupID,
-			MemberID: groupRelation.MemberID,
+	var gtrr []restoreGroupThingRelationReq
+	for _, gt := range gtr {
+		gtrr = append(gtrr, restoreGroupThingRelationReq{
+			GroupID: gt.GroupID,
+			ThingID: gt.ThingID,
 		})
 	}
 
 	resReq := restoreReq{
-		Things:         thr,
-		Channels:       chr,
-		Connections:    cr,
-		Groups:         gr,
-		GroupRelations: grr,
+		Things:              thr,
+		Channels:            chr,
+		Connections:         cr,
+		Groups:              gr,
+		GroupThingRelations: gtrr,
 	}
 
 	data := toJSON(resReq)
@@ -2936,19 +3008,19 @@ type viewGroupRes struct {
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type backupGroupRelationRes struct {
-	MemberID  string    `json:"member_id"`
+type backupGroupThingRelationRes struct {
+	ThingID   string    `json:"thing_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type backupRes struct {
-	Things         []backupThingRes         `json:"things"`
-	Channels       []backupChannelRes       `json:"channels"`
-	Connections    []backupConnectionRes    `json:"connections"`
-	Groups         []viewGroupRes           `json:"groups"`
-	GroupRelations []backupGroupRelationRes `json:"group_relations"`
+	Things              []backupThingRes              `json:"things"`
+	Channels            []backupChannelRes            `json:"channels"`
+	Connections         []backupConnectionRes         `json:"connections"`
+	Groups              []viewGroupRes                `json:"groups"`
+	GroupThingRelations []backupGroupThingRelationRes `json:"group_thing_relations"`
 }
 
 type restoreThingReq struct {
@@ -2983,16 +3055,16 @@ type restoreGroupReq struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type restoreGroupRelationReq struct {
-	MemberID  string    `json:"member_id"`
+type restoreGroupThingRelationReq struct {
+	ThingID   string    `json:"thing_id"`
 	GroupID   string    `json:"group_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 type restoreReq struct {
-	Things         []restoreThingReq         `json:"things"`
-	Channels       []restoreChannelReq       `json:"channels"`
-	Connections    []restoreConnectionReq    `json:"connections"`
-	Groups         []restoreGroupReq         `json:"groups"`
-	GroupRelations []restoreGroupRelationReq `json:"group_relations"`
+	Things              []restoreThingReq              `json:"things"`
+	Channels            []restoreChannelReq            `json:"channels"`
+	Connections         []restoreConnectionReq         `json:"connections"`
+	Groups              []restoreGroupReq              `json:"groups"`
+	GroupThingRelations []restoreGroupThingRelationReq `json:"group_thing_relations"`
 }

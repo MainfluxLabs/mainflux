@@ -32,7 +32,8 @@ const (
 	metadataKey   = "metadata"
 	disconnKey    = "disconnected"
 	groupIDKey    = "groupID"
-	memberIDKey   = "memberID"
+	thingIDKey    = "thingID"
+	channelIDKey  = "channelID"
 	unassignedKey = "unassigned"
 	adminKey      = "admin"
 	defOffset     = 0
@@ -208,30 +209,58 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
-		decodememberRequest,
+	r.Post("/groups/:groupID/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_things")(assignThingsEndpoint(svc)),
+		decodeThingMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign")(unassignEndpoint(svc)),
-		decodememberRequest,
+	r.Delete("/groups/:groupID/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_things")(unassignThingsEndpoint(svc)),
+		decodeThingMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
+	r.Get("/groups/:groupID/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_things")(listGroupThingsEndpoint(svc)),
 		decodeListMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/things/:memberID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_membership")(viewMembershipEndpoint(svc)),
-		decodeViewMembershipRequest,
+	r.Get("/things/:thingID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
+		decodeViewThingMembershipRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_channels")(assignChannelsEndpoint(svc)),
+		decodeChannelMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Delete("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_channels")(unassignChannelsEndpoint(svc)),
+		decodeChannelMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:groupID/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_channels")(listGroupChannelsEndpoint(svc)),
+		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/channels/:channelID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_channel_membership")(viewChannelMembershipEndpoint(svc)),
+		decodeViewChannelMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -574,8 +603,8 @@ func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := memberReq{
+func decodeThingMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := thingMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
@@ -587,10 +616,32 @@ func decodememberRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeViewMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeChannelMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := channelMembersReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, memberIDKey),
+		id:    bone.GetValue(r, thingIDKey),
+	}
+
+	return req, nil
+}
+
+func decodeViewChannelMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listMembersReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, channelIDKey),
 	}
 
 	return req, nil

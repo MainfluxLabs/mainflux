@@ -25,6 +25,7 @@ const wrongID = ""
 var (
 	thing   = things.Thing{Name: "test_app", Metadata: map[string]interface{}{"test": "test"}}
 	channel = things.Channel{Name: "test", Metadata: map[string]interface{}{"test": "test"}}
+	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
 func TestCanAccessByKey(t *testing.T) {
@@ -36,6 +37,15 @@ func TestCanAccessByKey(t *testing.T) {
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th1.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th1.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -98,6 +108,15 @@ func TestCanAccessByID(t *testing.T) {
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
+	gr, err := svc.CreateGroup(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, ths[0].ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	svc.Connect(context.Background(), token, []string{ch.ID}, []string{th2.ID})
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)
