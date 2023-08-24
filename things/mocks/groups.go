@@ -73,10 +73,7 @@ func (grm *groupRepositoryMock) Remove(ctx context.Context, id string) error {
 	if _, ok := grm.groups[id]; !ok {
 		return errors.ErrNotFound
 	}
-
-	if len(grm.things[id]) > 0 {
-		return things.ErrGroupNotEmpty
-	}
+	
 	// This is not quite exact, it should go in depth
 	delete(grm.groups, id)
 

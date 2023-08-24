@@ -125,10 +125,6 @@ func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
-				switch pqErr.ConstraintName {
-				case groupIDFkeyy:
-					return errors.Wrap(things.ErrGroupNotEmpty, err)
-				}
 				return errors.Wrap(errors.ErrConflict, err)
 			}
 		}

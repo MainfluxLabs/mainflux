@@ -13,9 +13,6 @@ var (
 	// ErrUnassignGroupThing indicates failure to unassign thing from a group.
 	ErrUnassignGroupThing = errors.New("failed to unassign thing from a group")
 
-	// ErrGroupNotEmpty indicates group is not empty, can't be deleted.
-	ErrGroupNotEmpty = errors.New("group is not empty")
-
 	// ErrThingAlreadyAssigned indicates that thing is already assigned.
 	ErrThingAlreadyAssigned = errors.New("thing is already assigned")
 
