@@ -129,25 +129,27 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_6",
 				Up: []string{
-					`ALTER TABLE group_relations ADD CONSTRAINT member_id_unique UNIQUE (member_id);`,
-					`ALTER TABLE group_relations ADD CONSTRAINT group_id_fkey
-					 FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
-				},
-			},
-			{
-				Id: "things_7",
-				Up: []string{
+					`DROP TABLE group_relations`,
+					`CREATE TABLE IF NOT EXISTS group_things (
+                                                thing_id    UUID UNIQUE NOT NULL,
+                                                group_id    UUID NOT NULL,
+                                                created_at  TIMESTAMPTZ,
+                                                updated_at  TIMESTAMPTZ,
+                                                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+                                                PRIMARY KEY (thing_id, group_id)
+                                        )`,
 					`CREATE TABLE IF NOT EXISTS group_channels (
-						channel_id  UUID UNIQUE NOT NULL,
-						group_id    UUID NOT NULL,
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						PRIMARY KEY (channel_id, group_id)
-					)`,
+                                                channel_id  UUID UNIQUE NOT NULL,
+                                                group_id    UUID NOT NULL,
+                                                created_at  TIMESTAMPTZ,
+                                                updated_at  TIMESTAMPTZ,
+                                                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+                                                PRIMARY KEY (channel_id, group_id)
+                                        )`,
 				},
 				Down: []string{
 					"DROP TABLE group_channels",
+					"DROP TABLE group_things",
 				},
 			},
 		},

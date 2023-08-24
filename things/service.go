@@ -781,20 +781,6 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return errors.ErrAuthorization
 	}
 
-	thp, err := ts.groups.RetrieveGroupThings(ctx, id, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	var thIDs []string
-	for _, th := range thp.Things {
-		thIDs = append(thIDs, th.ID)
-	}
-
-	if err := ts.groups.UnassignThing(ctx, id, thIDs...); err != nil {
-		return err
-	}
-
 	return ts.groups.Remove(ctx, id)
 }
 
