@@ -234,7 +234,6 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 	if len(ths) == 0 {
 		return Thing{}, errors.ErrCreateEntity
 	}
-
 	return ths[0], nil
 }
 

@@ -139,8 +139,8 @@ func (grm *groupRepositoryMock) UnassignThing(ctx context.Context, groupID strin
 			return errors.ErrNotFound
 		}
 
-		for i, member := range things {
-			if member == thingID {
+		for i, th := range things {
+			if th == thingID {
 				grm.things[groupID] = append(things[:i], things[i+1:]...)
 				delete(grm.thingMembership, thingID)
 				break
@@ -257,8 +257,8 @@ func (grm *groupRepositoryMock) UnassignChannel(ctx context.Context, groupID str
 			return errors.ErrNotFound
 		}
 
-		for i, member := range channels {
-			if member == channelID {
+		for i, ch := range channels {
+			if ch == channelID {
 				grm.channels[groupID] = append(channels[:i], channels[i+1:]...)
 				delete(grm.channelMembership, channelID)
 				break

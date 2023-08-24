@@ -3,11 +3,11 @@
 
 package sdk
 
-type thingMembersReq struct {
+type groupThingsReq struct {
 	Things []string `json:"things"`
 }
 
-type channelMembersReq struct {
+type groupChannelsReq struct {
 	Channels []string `json:"channels"`
 }
 

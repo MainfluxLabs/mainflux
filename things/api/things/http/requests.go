@@ -437,13 +437,13 @@ func (req listMembersReq) validate() error {
 	return nil
 }
 
-type thingMembersReq struct {
+type groupThingsReq struct {
 	token   string
 	groupID string
 	Things  []string `json:"things"`
 }
 
-func (req thingMembersReq) validate() error {
+func (req groupThingsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -459,13 +459,13 @@ func (req thingMembersReq) validate() error {
 	return nil
 }
 
-type channelMembersReq struct {
+type groupChannelsReq struct {
 	token    string
 	groupID  string
 	Channels []string `json:"channels"`
 }
 
-func (req channelMembersReq) validate() error {
+func (req groupChannelsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

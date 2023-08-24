@@ -71,7 +71,7 @@ func (sdk mfSDK) AssignThing(memberIDs []string, groupID string, token string) e
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/things", sdk.thingsURL, groupsEndpoint, groupID)
 	ids = append(ids, memberIDs...)
-	assignThingReq := thingMembersReq{
+	assignThingReq := groupThingsReq{
 		Things: ids,
 	}
 
@@ -101,7 +101,7 @@ func (sdk mfSDK) UnassignThing(token, groupID string, thingIDs ...string) error 
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/things", sdk.thingsURL, groupsEndpoint, groupID)
 	ids = append(ids, thingIDs...)
-	unassignThingReq := thingMembersReq{
+	unassignThingReq := groupThingsReq{
 		Things: ids,
 	}
 
@@ -161,7 +161,7 @@ func (sdk mfSDK) AssignChannel(channelIDs []string, groupID string, token string
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/channels", sdk.thingsURL, groupsEndpoint, groupID)
 	ids = append(ids, channelIDs...)
-	assignChannelReq := channelMembersReq{
+	assignChannelReq := groupChannelsReq{
 		Channels: ids,
 	}
 
@@ -191,7 +191,7 @@ func (sdk mfSDK) UnassignChannel(token, groupID string, thingIDs ...string) erro
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/channels", sdk.thingsURL, groupsEndpoint, groupID)
 	ids = append(ids, thingIDs...)
-	unassignChannelReq := channelMembersReq{
+	unassignChannelReq := groupChannelsReq{
 		Channels: ids,
 	}
 

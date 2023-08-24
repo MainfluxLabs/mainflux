@@ -211,14 +211,14 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Post("/groups/:groupID/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_things")(assignThingsEndpoint(svc)),
-		decodeThingMembersRequest,
+		decodeGroupThingsRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/groups/:groupID/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_things")(unassignThingsEndpoint(svc)),
-		decodeThingMembersRequest,
+		decodeGroupThingsRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -239,14 +239,14 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Post("/groups/:groupID/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_channels")(assignChannelsEndpoint(svc)),
-		decodeChannelMembersRequest,
+		decodeGroupChannelsRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/groups/:groupID/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_channels")(unassignChannelsEndpoint(svc)),
-		decodeChannelMembersRequest,
+		decodeGroupChannelsRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -603,8 +603,8 @@ func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeThingMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := thingMembersReq{
+func decodeGroupThingsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := groupThingsReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
@@ -616,8 +616,8 @@ func decodeThingMembersRequest(_ context.Context, r *http.Request) (interface{},
 	return req, nil
 }
 
-func decodeChannelMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := channelMembersReq{
+func decodeGroupChannelsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := groupChannelsReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
