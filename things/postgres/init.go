@@ -136,7 +136,8 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_7",
 				Up: []string{
-					`ALTER TABLE group_relations ADD CONSTRAINT group_id_fkey FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
+					`ALTER TABLE group_relations ADD CONSTRAINT group_id_fkey 
+					 FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
 				},
 			},
 			{
