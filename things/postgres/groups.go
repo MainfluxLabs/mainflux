@@ -17,7 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var groupIDFkeyy = "group_things_group_id_fkey"
+var groupIDFkey = "group_things_group_id_fkey"
 
 var _ things.GroupRepository = (*groupRepository)(nil)
 
