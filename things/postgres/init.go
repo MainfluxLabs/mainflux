@@ -124,7 +124,6 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{
 					"DROP TABLE groups",
 					"DROP TABLE group_relations",
-					"DROP TABLE group_channels",
 				},
 			},
 			{
@@ -146,6 +145,9 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
 						PRIMARY KEY (channel_id, group_id)
 					)`,
+				},
+				Down: []string{
+					"DROP TABLE group_channels",
 				},
 			},
 		},
