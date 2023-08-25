@@ -160,20 +160,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Put("/channels/:chanId/things/:thingId", kithttp.NewServer(
-		kitot.TraceServer(tracer, "connect_thing")(connectThingEndpoint(svc)),
-		decodeConnectThing,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Delete("/channels/:chanId/things/:thingId", kithttp.NewServer(
-		kitot.TraceServer(tracer, "disconnect_thing")(disconnectThingEndpoint(svc)),
-		decodeConnectThing,
-		encodeResponse,
-		opts...,
-	))
-
 	r.Post("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_group")(createGroupEndpoint(svc)),
 		decodeGroupCreate,
@@ -465,16 +451,6 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 			Order:        or,
 			Dir:          d,
 		},
-	}
-
-	return req, nil
-}
-
-func decodeConnectThing(_ context.Context, r *http.Request) (interface{}, error) {
-	req := connectThingReq{
-		token:   apiutil.ExtractBearerToken(r),
-		chanID:  bone.GetValue(r, "chanId"),
-		thingID: bone.GetValue(r, "thingId"),
 	}
 
 	return req, nil

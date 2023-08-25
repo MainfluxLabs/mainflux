@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	thingsEndpoint   = "things"
-	connectEndpoint  = "connect"
-	identifyEndpoint = "identify"
+	thingsEndpoint     = "things"
+	connectEndpoint    = "connect"
+	disconnectEndpoint = "disconnect"
+	identifyEndpoint   = "identify"
 )
 
 type identifyThingReq struct {
@@ -276,9 +277,14 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) error {
-	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, chanID, thingsEndpoint, thingID)
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) error {
+	data, err := json.Marshal(connIDs)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, disconnectEndpoint)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -288,7 +294,7 @@ func (sdk mfSDK) DisconnectThing(thingID, chanID, token string) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK {
 		return errors.Wrap(ErrFailedDisconnect, errors.New(resp.Status))
 	}
 
