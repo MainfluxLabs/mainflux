@@ -30,7 +30,7 @@ const (
 	token       = email
 	otherToken  = otherEmail
 	wrongValue  = "wrong_value"
-	badID       = "999"
+	wrongID     = "999"
 	badKey      = "999"
 	emptyValue  = ""
 )
@@ -872,13 +872,13 @@ func TestConnect(t *testing.T) {
 		{
 			desc:    "connect existing things to non-existing channels",
 			thingID: thingID,
-			chanID:  badID,
+			chanID:  wrongID,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
 			desc:    "connect non-existing things to existing channels",
-			thingID: badID,
+			thingID: wrongID,
 			chanID:  chanID1,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
@@ -984,13 +984,13 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:    "disconnect existing thing from non-existing channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{badID}, ThingIDs: []string{thingID}},
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:    "disconnect non-existing thing from existing channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{badID}},
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},

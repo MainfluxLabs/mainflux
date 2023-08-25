@@ -229,31 +229,25 @@ func (bs bootstrapService) UpdateConnections(ctx context.Context, token, id stri
 		disconnect = remove
 	}
 
-	for _, c := range disconnect {
-		connIDs := mfsdk.ConnectionIDs{
-			ChannelIDs: []string{c},
-			ThingIDs:   []string{id},
-		}
-
-		if err := bs.sdk.Disconnect(connIDs, token); err != nil {
-			if errors.Contains(err, mfsdk.ErrFailedDisconnect) {
-				continue
-			}
-			return ErrThings
-		}
+	connIDs := mfsdk.ConnectionIDs{
+		ChannelIDs: disconnect,
+		ThingIDs:   []string{id},
 	}
 
-	for _, c := range connect {
-		conIDs := mfsdk.ConnectionIDs{
-			ChannelIDs: []string{c},
-			ThingIDs:   []string{id},
+	if err := bs.sdk.Disconnect(connIDs, token); err != nil && !errors.Contains(err, mfsdk.ErrFailedDisconnect) {
+		return ErrThings
+	}
+
+	conIDs := mfsdk.ConnectionIDs{
+		ChannelIDs: connect,
+		ThingIDs:   []string{id},
+	}
+
+	if err := bs.sdk.Connect(conIDs, token); err != nil {
+		if errors.Contains(err, mfsdk.ErrFailedConnect) {
+			return errors.ErrMalformedEntity
 		}
-		if err := bs.sdk.Connect(conIDs, token); err != nil {
-			if errors.Contains(err, mfsdk.ErrFailedConnect) {
-				return errors.ErrMalformedEntity
-			}
-			return ErrThings
-		}
+		return ErrThings
 	}
 
 	return bs.configs.UpdateConnections(owner, id, channels, connections)
@@ -315,31 +309,30 @@ func (bs bootstrapService) ChangeState(ctx context.Context, token, id string, st
 		return nil
 	}
 
+	var chIDs []string
+	for _, c := range cfg.Channels {
+		chIDs = append(chIDs, c.ID)
+	}
+
 	switch state {
 	case Active:
-		for _, c := range cfg.Channels {
-			conIDs := mfsdk.ConnectionIDs{
-				ChannelIDs: []string{c.ID},
-				ThingIDs:   []string{cfg.ThingID},
-			}
-			if err := bs.sdk.Connect(conIDs, token); err != nil {
-				return ErrThings
-			}
+		conIDs := mfsdk.ConnectionIDs{
+			ChannelIDs: chIDs,
+			ThingIDs:   []string{cfg.ThingID},
+		}
+		if err := bs.sdk.Connect(conIDs, token); err != nil {
+			return ErrThings
 		}
 	case Inactive:
-		for _, c := range cfg.Channels {
-			connIDs := mfsdk.ConnectionIDs{
-				ChannelIDs: []string{c.ID},
-				ThingIDs:   []string{cfg.ThingID},
-			}
-
-			if err := bs.sdk.Disconnect(connIDs, token); err != nil {
-				if errors.Contains(err, mfsdk.ErrFailedDisconnect) {
-					continue
-				}
-				return ErrThings
-			}
+		connIDs := mfsdk.ConnectionIDs{
+			ChannelIDs: chIDs,
+			ThingIDs:   []string{cfg.ThingID},
 		}
+
+		if err := bs.sdk.Disconnect(connIDs, token); err != nil && !errors.Contains(err, mfsdk.ErrFailedDisconnect) {
+			return ErrThings
+		}
+
 	}
 	if err := bs.configs.ChangeState(owner, id, state); err != nil {
 		return errors.Wrap(errChangeState, err)
