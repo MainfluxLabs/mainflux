@@ -235,7 +235,7 @@ func (bs bootstrapService) UpdateConnections(ctx context.Context, token, id stri
 	}
 
 	if err := bs.sdk.Disconnect(connIDs, token); err != nil && !errors.Contains(err, mfsdk.ErrFailedDisconnect) {
-		return ErrThings
+		return errors.Wrap(ErrThings, err)
 	}
 
 	conIDs := mfsdk.ConnectionIDs{
@@ -243,11 +243,8 @@ func (bs bootstrapService) UpdateConnections(ctx context.Context, token, id stri
 		ThingIDs:   []string{id},
 	}
 
-	if err := bs.sdk.Connect(conIDs, token); err != nil {
-		if errors.Contains(err, mfsdk.ErrFailedConnect) {
-			return errors.ErrMalformedEntity
-		}
-		return ErrThings
+	if err := bs.sdk.Connect(conIDs, token); err != nil && !errors.Contains(err, mfsdk.ErrFailedConnect) {
+		return errors.Wrap(ErrThings, err)
 	}
 
 	return bs.configs.UpdateConnections(owner, id, channels, connections)
@@ -321,7 +318,7 @@ func (bs bootstrapService) ChangeState(ctx context.Context, token, id string, st
 			ThingIDs:   []string{cfg.ThingID},
 		}
 		if err := bs.sdk.Connect(conIDs, token); err != nil {
-			return ErrThings
+			return errors.Wrap(ErrThings, err)
 		}
 	case Inactive:
 		connIDs := mfsdk.ConnectionIDs{
@@ -330,7 +327,7 @@ func (bs bootstrapService) ChangeState(ctx context.Context, token, id string, st
 		}
 
 		if err := bs.sdk.Disconnect(connIDs, token); err != nil && !errors.Contains(err, mfsdk.ErrFailedDisconnect) {
-			return ErrThings
+			return errors.Wrap(ErrThings, err)
 		}
 
 	}
