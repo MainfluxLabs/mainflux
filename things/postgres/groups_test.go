@@ -275,7 +275,7 @@ func TestGroupRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("thing assign got unexpected error: %s", err))
 
 	err = groupRepo.Remove(context.Background(), group1.ID)
-	assert.True(t, errors.Contains(err, things.ErrGroupNotEmpty), fmt.Sprintf("delete non empty group: expected %v got %v\n", things.ErrGroupNotEmpty, err))
+	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty group: expected %v got %v\n", nil, err))
 
 	err = groupRepo.Remove(context.Background(), group2.ID)
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
@@ -785,7 +785,7 @@ func TestRetrieveAllGroupRelations(t *testing.T) {
 }
 
 func cleanUp(t *testing.T) {
-	_, err := db.Exec("delete from group_relations")
+	_, err := db.Exec("delete from group_things")
 	require.Nil(t, err, fmt.Sprintf("clean relations unexpected error: %s", err))
 	_, err = db.Exec("delete from group_channels")
 	require.Nil(t, err, fmt.Sprintf("clean relations unexpected error: %s", err))

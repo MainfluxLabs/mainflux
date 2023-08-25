@@ -17,8 +17,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var groupIDFkeyy = "group_relations_group_id_fkey"
-
 var _ things.GroupRepository = (*groupRepository)(nil)
 
 type groupRepository struct {
@@ -125,10 +123,6 @@ func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
-				switch pqErr.ConstraintName {
-				case groupIDFkeyy:
-					return errors.Wrap(things.ErrGroupNotEmpty, err)
-				}
 				return errors.Wrap(errors.ErrConflict, err)
 			}
 		}
@@ -243,16 +237,16 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	case true:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM  things t
-			WHERE t.id NOT IN (SELECT gr.member_id FROM group_relations gr WHERE gr.group_id = :group_id)
+			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr WHERE gr.group_id = :group_id)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM things t
-			WHERE t.id NOT IN (SELECT gr.member_id FROM group_relations gr WHERE gr.group_id = :group_id) %s;`, mq)
+			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr WHERE gr.group_id = :group_id) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
-			FROM group_relations gr, things t
-			WHERE gr.group_id = :group_id and gr.member_id = t.id
+			FROM group_things gr, things t
+			WHERE gr.group_id = :group_id and gr.thing_id = t.id
 			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_relations gr WHERE gr.group_id = :group_id %s;`, mq)
+		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr WHERE gr.group_id = :group_id %s;`, mq)
 	}
 
 	params, err := toDBGroupThingsPage("", groupID, pm)
@@ -299,9 +293,9 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 }
 
 func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
-	q := `SELECT group_id FROM group_relations WHERE member_id = :member_id;`
+	q := `SELECT group_id FROM group_things WHERE thing_id = :thing_id;`
 
-	params := map[string]interface{}{"member_id": thingID}
+	params := map[string]interface{}{"thing_id": thingID}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
@@ -320,7 +314,7 @@ func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID s
 }
 
 func (gr groupRepository) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
-	q := `SELECT group_id, member_id, created_at, updated_at FROM group_relations`
+	q := `SELECT group_id, thing_id, created_at, updated_at FROM group_things`
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -351,8 +345,8 @@ func (gr groupRepository) AssignThing(ctx context.Context, groupID string, ids .
 		return errors.Wrap(things.ErrAssignGroupThing, err)
 	}
 
-	qIns := `INSERT INTO group_relations (group_id, member_id, created_at, updated_at)
-		VALUES(:group_id, :member_id, :created_at, :updated_at)`
+	qIns := `INSERT INTO group_things (group_id, thing_id, created_at, updated_at)
+		VALUES(:group_id, :thing_id, :created_at, :updated_at)`
 
 	for _, id := range ids {
 		created := time.Now()
@@ -395,7 +389,7 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 		return errors.Wrap(things.ErrUnassignGroupThing, err)
 	}
 
-	qDel := `DELETE from group_relations WHERE group_id = :group_id AND member_id = :member_id`
+	qDel := `DELETE from group_things WHERE group_id = :group_id AND thing_id = :thing_id`
 
 	for _, id := range ids {
 		dbt, err := toDBThingRelation(id, groupID)
@@ -694,7 +688,7 @@ type dbGroup struct {
 
 type dbGroupThingsPage struct {
 	GroupID  string     `db:"group_id"`
-	ThingID  string     `db:"member_id"`
+	ThingID  string     `db:"thing_id"`
 	Metadata dbMetadata `db:"metadata"`
 	Limit    uint64     `db:"limit"`
 	Offset   uint64     `db:"offset"`
@@ -736,7 +730,7 @@ func toGroup(dbu dbGroup) (things.Group, error) {
 
 type dbThingRelation struct {
 	GroupID   sql.NullString `db:"group_id"`
-	ThingID   sql.NullString `db:"member_id"`
+	ThingID   sql.NullString `db:"thing_id"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
 }

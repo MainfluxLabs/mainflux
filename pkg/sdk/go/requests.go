@@ -3,8 +3,11 @@
 
 package sdk
 
-type memberReq struct {
-	Things   []string `json:"things"`
+type groupThingsReq struct {
+	Things []string `json:"things"`
+}
+
+type groupChannelsReq struct {
 	Channels []string `json:"channels"`
 }
 
