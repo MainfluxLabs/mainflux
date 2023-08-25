@@ -17,8 +17,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var groupIDFkey = "group_things_group_id_fkey"
-
 var _ things.GroupRepository = (*groupRepository)(nil)
 
 type groupRepository struct {
