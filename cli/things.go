@@ -162,14 +162,19 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "disconnect <thing_id> <channel_id> <user_auth_token>",
 		Short: "Disconnect thing",
-		Long:  `Disconnect thing to the channel`,
+		Long:  `Disconnect thing from the channel`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			if err := sdk.DisconnectThing(args[0], args[1], args[2]); err != nil {
+			connIDs := mfxsdk.ConnectionIDs{
+				ChannelIDs: []string{args[1]},
+				ThingIDs:   []string{args[0]},
+			}
+
+			if err := sdk.Disconnect(connIDs, args[2]); err != nil {
 				logError(err)
 				return
 			}

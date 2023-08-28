@@ -16,9 +16,7 @@ var (
 	_ mainflux.Response = (*thingsPageRes)(nil)
 	_ mainflux.Response = (*viewChannelRes)(nil)
 	_ mainflux.Response = (*channelsPageRes)(nil)
-	_ mainflux.Response = (*connectThingRes)(nil)
 	_ mainflux.Response = (*connectRes)(nil)
-	_ mainflux.Response = (*disconnectThingRes)(nil)
 	_ mainflux.Response = (*disconnectRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
@@ -189,22 +187,6 @@ func (res channelsPageRes) Empty() bool {
 	return false
 }
 
-type connectThingRes struct{}
-
-func (res connectThingRes) Code() int {
-	return http.StatusOK
-}
-
-func (res connectThingRes) Headers() map[string]string {
-	return map[string]string{
-		"Warning-Deprecated": "This endpoint will be depreciated in v1.0.0. It will be replaced with the bulk endpoint found at /connect.",
-	}
-}
-
-func (res connectThingRes) Empty() bool {
-	return true
-}
-
 type connectRes struct{}
 
 func (res connectRes) Code() int {
@@ -230,20 +212,6 @@ func (res disconnectRes) Headers() map[string]string {
 }
 
 func (res disconnectRes) Empty() bool {
-	return true
-}
-
-type disconnectThingRes struct{}
-
-func (res disconnectThingRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res disconnectThingRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res disconnectThingRes) Empty() bool {
 	return true
 }
 

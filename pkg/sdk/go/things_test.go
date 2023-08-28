@@ -30,7 +30,7 @@ const (
 	token       = email
 	otherToken  = otherEmail
 	wrongValue  = "wrong_value"
-	badID       = "999"
+	wrongID     = "999"
 	badKey      = "999"
 	emptyValue  = ""
 )
@@ -872,13 +872,13 @@ func TestConnect(t *testing.T) {
 		{
 			desc:    "connect existing things to non-existing channels",
 			thingID: thingID,
-			chanID:  badID,
+			chanID:  wrongID,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
 			desc:    "connect non-existing things to existing channels",
-			thingID: badID,
+			thingID: wrongID,
 			chanID:  chanID1,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
@@ -932,7 +932,7 @@ func TestConnect(t *testing.T) {
 	}
 }
 
-func TestDisconnectThing(t *testing.T) {
+func TestDisconnect(t *testing.T) {
 	svc := newThingsService()
 
 	ts := newThingsServer(svc)
@@ -960,11 +960,11 @@ func TestDisconnectThing(t *testing.T) {
 	err = mainfluxSDK.AssignChannel([]string{chanID1}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	conIDs := sdk.ConnectionIDs{
+	connIDs := sdk.ConnectionIDs{
 		ChannelIDs: []string{chanID1},
 		ThingIDs:   []string{thingID},
 	}
-	err = mainfluxSDK.Connect(conIDs, token)
+	err = mainfluxSDK.Connect(connIDs, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chanID2, err := mainfluxSDK.CreateChannel(ch2, otherToken)
@@ -972,71 +972,62 @@ func TestDisconnectThing(t *testing.T) {
 
 	cases := []struct {
 		desc    string
-		thingID string
-		chanID  string
+		connIDs sdk.ConnectionIDs
 		token   string
 		err     error
 	}{
 		{
 			desc:    "disconnect connected thing from channel",
-			thingID: thingID,
-			chanID:  chanID1,
+			connIDs: connIDs,
 			token:   token,
 			err:     nil,
 		},
 		{
 			desc:    "disconnect existing thing from non-existing channel",
-			thingID: thingID,
-			chanID:  "9",
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:    "disconnect non-existing thing from existing channel",
-			thingID: "9",
-			chanID:  chanID1,
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:    "disconnect existing thing from channel with invalid ID",
-			thingID: thingID,
-			chanID:  "",
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{""}, ThingIDs: []string{thingID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:    "disconnect thing with invalid ID from existing channel",
-			thingID: "",
-			chanID:  chanID1,
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{""}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:    "disconnect existing thing from existing channel with invalid token",
-			thingID: thingID,
-			chanID:  chanID1,
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
 			token:   wrongValue,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:    "disconnect existing thing from existing channel with empty token",
-			thingID: thingID,
-			chanID:  chanID1,
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
 			token:   "",
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:    "disconnect owner's thing from someone elses channel",
-			thingID: thingID,
-			chanID:  chanID2,
+			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID2}, ThingIDs: []string{thingID}},
 			token:   token,
 			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DisconnectThing(tc.thingID, tc.chanID, tc.token)
+		err := mainfluxSDK.Disconnect(tc.connIDs, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

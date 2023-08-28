@@ -403,49 +403,6 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels/{chanId}/things/{thingId}:
-    put:
-      summary: Connects the thing to the channel
-      description: |
-        Creates connection between a thing and a channel. Once connected to
-        the channel, things are allowed to exchange messages through it.
-      tags:
-        - channels
-      parameters:
-        - $ref: "#/components/parameters/ChanId"
-        - $ref: "#/components/parameters/ThingId"
-      responses:
-        '200':
-          description: Thing connected.
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Channel or thing does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    delete:
-      summary: Disconnects the thing from the channel
-      description: |
-        Removes connection between a thing and a channel. Once connection is
-        removed, thing can no longer exchange messages through the channel.
-      tags:
-        - channels
-      parameters:
-        - $ref: "#/components/parameters/ChanId"
-        - $ref: "#/components/parameters/ThingId"
-      responses:
-        '204':
-          description: Thing disconnected.
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Channel or thing does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
   /groups:
     post:
       summary: Creates new group

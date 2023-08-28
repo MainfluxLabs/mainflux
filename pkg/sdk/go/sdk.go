@@ -213,8 +213,8 @@ type SDK interface {
 	// Connect bulk connects things to channels specified by id.
 	Connect(conns ConnectionIDs, token string) error
 
-	// DisconnectThing disconnect thing from specified channel by id.
-	DisconnectThing(thingID, chanID, token string) error
+	// Disconnect disconnect things from channels specified by id.
+	Disconnect(conns ConnectionIDs, token string) error
 
 	// CreateChannel creates new channel and returns its id.
 	CreateChannel(channel Channel, token string) (string, error)

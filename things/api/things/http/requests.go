@@ -240,24 +240,6 @@ func (req listByConnectionReq) validate() error {
 	return nil
 }
 
-type connectThingReq struct {
-	token   string
-	chanID  string
-	thingID string
-}
-
-func (req connectThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.chanID == "" || req.thingID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 type connectReq struct {
 	token      string
 	ChannelIDs []string `json:"channel_ids,omitempty"`
