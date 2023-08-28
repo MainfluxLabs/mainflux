@@ -148,8 +148,8 @@ var cmdThings = []cobra.Command{
 			}
 
 			connIDs := mfxsdk.ConnectionIDs{
-				ChannelIDs: []string{args[1]},
-				ThingIDs:   []string{args[0]},
+				ChannelID: args[1],
+				ThingIDs:  []string{args[0]},
 			}
 			if err := sdk.Connect(connIDs, args[2]); err != nil {
 				logError(err)
@@ -169,7 +169,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			connIDs := mfxsdk.ConnectionIDs{
+			connIDs := mfxsdk.DisonnectionIDs{
 				ChannelIDs: []string{args[1]},
 				ThingIDs:   []string{args[0]},
 			}

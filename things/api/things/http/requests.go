@@ -241,12 +241,40 @@ func (req listByConnectionReq) validate() error {
 }
 
 type connectReq struct {
+	token     string
+	ChannelID string   `json:"channel_id,omitempty"`
+	ThingIDs  []string `json:"thing_ids,omitempty"`
+}
+
+func (req connectReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.ThingIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	if req.ChannelID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	for _, thingID := range req.ThingIDs {
+		if thingID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
+type disconnectReq struct {
 	token      string
 	ChannelIDs []string `json:"channel_ids,omitempty"`
 	ThingIDs   []string `json:"thing_ids,omitempty"`
 }
 
-func (req connectReq) validate() error {
+func (req disconnectReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

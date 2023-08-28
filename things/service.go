@@ -70,8 +70,8 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveChannel(ctx context.Context, token, id string) error
 
-	// Connect adds things to the channels list of connected things.
-	Connect(ctx context.Context, token string, chIDs, thIDs []string) error
+	// Connect adds things to the channel list of connected things.
+	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
 	// Disconnect removes things from the channels list of connected
 	// things.
@@ -476,7 +476,7 @@ func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) er
 	return ts.channels.Remove(ctx, res.GetId(), id)
 }
 
-func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs []string) error {
+func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
@@ -488,27 +488,20 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 		}
 	}
 
-	for _, chID := range chIDs {
-		if err := ts.IsChannelOwner(ctx, res.GetId(), chID); err != nil {
-			return err
-		}
+	if err := ts.IsChannelOwner(ctx, res.GetId(), chID); err != nil {
+		return err
 	}
 
-	var chGroupIDs []string
-	for _, chID := range chIDs {
-		cgrID, err := ts.groups.RetrieveChannelMembership(ctx, chID)
-		if err != nil {
-			return err
-		}
-
-		if cgrID == "" {
-			return errors.ErrNotFound
-		}
-
-		chGroupIDs = append(chGroupIDs, cgrID)
+	cgrID, err := ts.groups.RetrieveChannelMembership(ctx, chID)
+	if err != nil {
+		return err
 	}
 
-	var thGroupIDs []string
+	if cgrID == "" {
+		return errors.ErrNotFound
+	}
+
+	var tgrIDs []string
 	for _, thID := range thIDs {
 		tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
 		if err != nil {
@@ -519,18 +512,16 @@ func (ts *thingsService) Connect(ctx context.Context, token string, chIDs, thIDs
 			return errors.ErrNotFound
 		}
 
-		thGroupIDs = append(thGroupIDs, tgrID)
+		tgrIDs = append(tgrIDs, tgrID)
 	}
 
-	for _, chGroupID := range chGroupIDs {
-		for _, thGroupID := range thGroupIDs {
-			if chGroupID != thGroupID {
-				return errors.ErrGroupMismatch
-			}
+	for _, tgrID := range tgrIDs {
+		if cgrID != tgrID {
+			return errors.ErrGroupMismatch
 		}
 	}
 
-	return ts.channels.Connect(ctx, res.GetId(), chIDs, thIDs)
+	return ts.channels.Connect(ctx, res.GetId(), chID, thIDs)
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
@@ -706,7 +697,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	}
 
 	for _, conn := range backup.Connections {
-		err = ts.channels.Connect(ctx, conn.ThingOwner, []string{conn.ChannelID}, []string{conn.ThingID})
+		err = ts.channels.Connect(ctx, conn.ThingOwner, conn.ChannelID, []string{conn.ThingID})
 		if err != nil {
 			return err
 		}

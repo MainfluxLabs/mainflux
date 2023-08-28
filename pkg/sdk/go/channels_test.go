@@ -332,8 +332,7 @@ func TestChannelsByThing(t *testing.T) {
 	err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var n = 100
-	var chsDiscoNum = 1
+	var n = 101
 	var channels []sdk.Channel
 	for i := 1; i < n+1; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
@@ -344,21 +343,18 @@ func TestChannelsByThing(t *testing.T) {
 
 		channels = append(channels, ch)
 
-		// Don't connect last Channel
-		if i == n+1-chsDiscoNum {
-			break
-		}
-
 		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		conIDs := sdk.ConnectionIDs{
-			ChannelIDs: []string{cid},
-			ThingIDs:   []string{tid},
-		}
-		err = mainfluxSDK.Connect(conIDs, token)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
+
+	connIDs := sdk.ConnectionIDs{
+		ChannelID: channels[0].ID,
+		ThingIDs:  []string{tid},
+	}
+
+	err = mainfluxSDK.Connect(connIDs, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc         string
@@ -371,16 +367,16 @@ func TestChannelsByThing(t *testing.T) {
 		response     []sdk.Channel
 	}{
 		{
-			desc:     "get a list of channels by thing",
+			desc:     "view channel by thing",
 			thing:    tid,
 			token:    token,
 			offset:   offset,
 			limit:    limit,
 			err:      nil,
-			response: channels[0:limit],
+			response: channels[0:1],
 		},
 		{
-			desc:     "get a list of channels by thing with invalid token",
+			desc:     "view channel by thing with invalid token",
 			thing:    tid,
 			token:    wrongValue,
 			offset:   offset,
@@ -389,7 +385,7 @@ func TestChannelsByThing(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of channels by thing with empty token",
+			desc:     "view channel by thing with empty token",
 			thing:    tid,
 			token:    "",
 			offset:   offset,
@@ -398,7 +394,7 @@ func TestChannelsByThing(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of channels by thing with zero limit",
+			desc:     "view channel by thing with zero limit",
 			thing:    tid,
 			token:    token,
 			offset:   offset,
@@ -407,7 +403,7 @@ func TestChannelsByThing(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of channels by thing with limit greater than max",
+			desc:     "view channel by thing with limit greater than max",
 			thing:    tid,
 			token:    token,
 			offset:   offset,
@@ -416,7 +412,7 @@ func TestChannelsByThing(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of channels by thing with offset greater than max",
+			desc:     "view channel by thing with offset greater than max",
 			thing:    tid,
 			token:    token,
 			offset:   110,
@@ -425,7 +421,7 @@ func TestChannelsByThing(t *testing.T) {
 			response: []sdk.Channel{},
 		},
 		{
-			desc:     "get a list of channels by thing with invalid args (zero limit) and invalid token",
+			desc:     "view channel by thing with invalid args (zero limit) and invalid token",
 			thing:    tid,
 			token:    wrongValue,
 			offset:   offset,
@@ -438,10 +434,10 @@ func TestChannelsByThing(t *testing.T) {
 			thing:        tid,
 			token:        token,
 			offset:       offset,
-			limit:        100,
+			limit:        10,
 			disconnected: true,
 			err:          nil,
-			response:     []sdk.Channel{channels[n-chsDiscoNum]},
+			response:     channels[1:10],
 		},
 	}
 

@@ -210,11 +210,11 @@ type SDK interface {
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
 
-	// Connect bulk connects things to channels specified by id.
+	// Connect bulk connects things to channel specified by id.
 	Connect(conns ConnectionIDs, token string) error
 
 	// Disconnect disconnect things from channels specified by id.
-	Disconnect(conns ConnectionIDs, token string) error
+	Disconnect(conns DisonnectionIDs, token string) error
 
 	// CreateChannel creates new channel and returns its id.
 	CreateChannel(channel Channel, token string) (string, error)

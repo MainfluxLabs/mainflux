@@ -20,8 +20,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/docker/docker/pkg/namesgenerator"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/docker/docker/pkg/namesgenerator"
 )
 
 const (
@@ -125,34 +125,31 @@ func Provision(conf Config) {
 
 	//  Create things and channels
 	things := make([]sdk.Thing, conf.Num)
-	channels := make([]sdk.Channel, conf.Num)
-	cIDs := []string{}
 	tIDs := []string{}
 
 	fmt.Println("# List of things that can be connected to MQTT broker")
 
 	for i := 0; i < conf.Num; i++ {
 		things[i] = sdk.Thing{Name: fmt.Sprintf("%s-thing-%d", conf.Prefix, i)}
-		channels[i] = sdk.Channel{Name: fmt.Sprintf("%s-channel-%d", conf.Prefix, i)}
 	}
+
+	channel := []sdk.Channel{{Name: fmt.Sprintf("%s-channel", conf.Prefix)}}
 
 	things, err = s.CreateThings(things, token)
 	if err != nil {
 		log.Fatalf("Failed to create the things: %s", err.Error())
 	}
 
-	channels, err = s.CreateChannels(channels, token)
+	channel, err = s.CreateChannels(channel, token)
 	if err != nil {
-		log.Fatalf("Failed to create the chennels: %s", err.Error())
+		log.Fatalf("Failed to create the chennel: %s", err.Error())
 	}
 
 	for _, t := range things {
 		tIDs = append(tIDs, t.ID)
 	}
 
-	for _, c := range channels {
-		cIDs = append(cIDs, c.ID)
-	}
+	cID := channel[0].ID
 
 	for i := 0; i < conf.Num; i++ {
 		cert := ""
@@ -224,15 +221,15 @@ func Provision(conf Config) {
 	fmt.Printf("# List of channels that things can publish to\n" +
 		"# each channel is connected to each thing from things list\n")
 	for i := 0; i < conf.Num; i++ {
-		fmt.Printf("[[channels]]\nchannel_id = \"%s\"\n\n", cIDs[i])
+		fmt.Printf("[[channel]]\nchannel_id = \"%s\"\n\n", cID)
 	}
 
 	conIDs := sdk.ConnectionIDs{
-		ChannelIDs: cIDs,
-		ThingIDs:   tIDs,
+		ChannelID: cID,
+		ThingIDs:  tIDs,
 	}
 	if err := s.Connect(conIDs, token); err != nil {
-		log.Fatalf("Failed to connect things %s to channels %s: %s", conIDs.ThingIDs, conIDs.ChannelIDs, err)
+		log.Fatalf("Failed to connect things %s to channel %s: %s", conIDs.ThingIDs, conIDs.ChannelID, err)
 	}
 }
 

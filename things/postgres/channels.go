@@ -314,7 +314,7 @@ func (cr channelRepository) Remove(ctx context.Context, owner, id string) error 
 	return nil
 }
 
-func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, thIDs []string) error {
+func (cr channelRepository) Connect(ctx context.Context, owner, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -323,29 +323,27 @@ func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, th
 	q := `INSERT INTO connections (channel_id, channel_owner, thing_id, thing_owner)
 	      VALUES (:channel, :owner, :thing, :owner);`
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			dbco := dbConnection{
-				Channel: chID,
-				Thing:   thID,
-				Owner:   owner,
-			}
+	for _, thID := range thIDs {
+		dbco := dbConnection{
+			Channel: chID,
+			Thing:   thID,
+			Owner:   owner,
+		}
 
-			_, err := tx.NamedExecContext(ctx, q, dbco)
-			if err != nil {
-				tx.Rollback()
-				pgErr, ok := err.(*pgconn.PgError)
-				if ok {
-					switch pgErr.Code {
-					case pgerrcode.ForeignKeyViolation:
-						return errors.ErrNotFound
-					case pgerrcode.UniqueViolation:
-						return errors.ErrConflict
-					}
+		_, err := tx.NamedExecContext(ctx, q, dbco)
+		if err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.ForeignKeyViolation:
+					return errors.ErrNotFound
+				case pgerrcode.UniqueViolation:
+					return errors.ErrConflict
 				}
-
-				return errors.Wrap(things.ErrConnect, err)
 			}
+
+			return errors.Wrap(things.ErrConnect, err)
 		}
 	}
 

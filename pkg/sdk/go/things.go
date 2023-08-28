@@ -277,8 +277,8 @@ func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) Disconnect(connIDs ConnectionIDs, token string) error {
-	data, err := json.Marshal(connIDs)
+func (sdk mfSDK) Disconnect(disconnIDs DisonnectionIDs, token string) error {
+	data, err := json.Marshal(disconnIDs)
 	if err != nil {
 		return err
 	}

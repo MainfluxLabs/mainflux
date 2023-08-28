@@ -102,6 +102,12 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_5",
 				Up: []string{
+					`ALTER TABLE IF EXISTS connections ADD CONSTRAINT unique_thing_id_constraint UNIQUE (thing_id);`,
+				},
+			},
+			{
+				Id: "things_6",
+				Up: []string{
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID NOT NULL,
@@ -127,7 +133,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_6",
+				Id: "things_7",
 				Up: []string{
 					`DROP TABLE group_relations`,
 					`CREATE TABLE IF NOT EXISTS group_things (

@@ -404,7 +404,7 @@ func connectEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Connect(ctx, cr.token, cr.ChannelIDs, cr.ThingIDs); err != nil {
+		if err := svc.Connect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 
@@ -414,7 +414,7 @@ func connectEndpoint(svc things.Service) endpoint.Endpoint {
 
 func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectReq)
+		cr := request.(disconnectReq)
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}

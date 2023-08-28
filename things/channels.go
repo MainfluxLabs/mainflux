@@ -61,8 +61,8 @@ type ChannelRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, owner, id string) error
 
-	// Connect adds things to the channels list of connected things.
-	Connect(ctx context.Context, owner string, chIDs, thIDs []string) error
+	// Connect adds things to the channel list of connected things.
+	Connect(ctx context.Context, owner, chID string, thIDs []string) error
 
 	// Disconnect removes things from the channels list of connected
 	// things.

@@ -101,12 +101,12 @@ func (crm channelRepositoryMiddleware) Remove(ctx context.Context, owner, id str
 	return crm.repo.Remove(ctx, owner, id)
 }
 
-func (crm channelRepositoryMiddleware) Connect(ctx context.Context, owner string, chIDs, thIDs []string) error {
+func (crm channelRepositoryMiddleware) Connect(ctx context.Context, owner, chID string, thIDs []string) error {
 	span := createSpan(ctx, crm.tracer, connectOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Connect(ctx, owner, chIDs, thIDs)
+	return crm.repo.Connect(ctx, owner, chID, thIDs)
 }
 
 func (crm channelRepositoryMiddleware) Disconnect(ctx context.Context, owner string, chIDs, thIDs []string) error {

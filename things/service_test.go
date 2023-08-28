@@ -404,7 +404,7 @@ func TestListThingsByChannel(t *testing.T) {
 	for _, thID := range thsc {
 		thIDs = append(thIDs, thID.ID)
 	}
-	chIDs := []string{chs[0].ID}
+	chID := chs[0].ID
 
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -412,10 +412,10 @@ func TestListThingsByChannel(t *testing.T) {
 	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs...)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chIDs, thIDs[0:n-thsDisconNum])
+	err = svc.Connect(context.Background(), token, chID, thIDs[0:n-thsDisconNum])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	// Wait for things and channels to connect
@@ -909,8 +909,7 @@ func TestListChannelsByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
-	chsDisconNum := uint64(4)
-
+	chsDisconNum := uint64(101)
 	var chs []things.Channel
 	for i := uint64(0); i < n; i++ {
 		ch := channel
@@ -936,7 +935,7 @@ func TestListChannelsByThing(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chIDs[0:n-chsDisconNum], thIDs)
+	err = svc.Connect(context.Background(), token, chIDs[n-1], thIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	// Wait for things and channels to connect.
@@ -949,7 +948,7 @@ func TestListChannelsByThing(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"list all channels by existing thing": {
+		"view channel by existing thing": {
 			token: token,
 			thID:  th.ID,
 			pageMetadata: things.PageMetadata{
@@ -959,7 +958,7 @@ func TestListChannelsByThing(t *testing.T) {
 			size: n - chsDisconNum,
 			err:  nil,
 		},
-		"list all channels by existing thing as admin": {
+		"view channel by existing thing as admin": {
 			token: adminToken,
 			thID:  th.ID,
 			pageMetadata: things.PageMetadata{
@@ -969,46 +968,7 @@ func TestListChannelsByThing(t *testing.T) {
 			size: n - chsDisconNum,
 			err:  nil,
 		},
-		"list all channels by existing thing with no limit": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Limit: 0,
-			},
-			size: n - chsDisconNum,
-			err:  nil,
-		},
-		"list half of channels by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: (n - chsDisconNum) / 2,
-				Limit:  n,
-			},
-			size: (n - chsDisconNum) / 2,
-			err:  nil,
-		},
-		"list last channel by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: n - 1 - chsDisconNum,
-				Limit:  n,
-			},
-			size: 1,
-			err:  nil,
-		},
-		"list empty set of channels by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: n + 1,
-				Limit:  n,
-			},
-			size: 0,
-			err:  nil,
-		},
-		"list channels by existing thing with wrong credentials": {
+		"view channel by existing thing with wrong credentials": {
 			token: wrongValue,
 			thID:  th.ID,
 			pageMetadata: things.PageMetadata{
@@ -1018,7 +978,7 @@ func TestListChannelsByThing(t *testing.T) {
 			size: 0,
 			err:  errors.ErrAuthentication,
 		},
-		"list channels by non-existent thing": {
+		"view channel by non-existent thing": {
 			token: token,
 			thID:  "non-existent",
 			pageMetadata: things.PageMetadata{
@@ -1033,7 +993,7 @@ func TestListChannelsByThing(t *testing.T) {
 			thID:  th.ID,
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
-				Limit:        n,
+				Limit:        chsDisconNum,
 				Disconnected: true,
 			},
 			size: chsDisconNum,
@@ -1049,18 +1009,6 @@ func TestListChannelsByThing(t *testing.T) {
 			size: chsDisconNum,
 			err:  nil,
 		},
-		"list all channels by thing sorted by name ascendent": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Order:  "name",
-				Dir:    "asc",
-			},
-			size: n - chsDisconNum,
-			err:  nil,
-		},
 		"list all non-connected channels by thing sorted by name ascendent": {
 			token: token,
 			thID:  th.ID,
@@ -1074,18 +1022,6 @@ func TestListChannelsByThing(t *testing.T) {
 			size: chsDisconNum,
 			err:  nil,
 		},
-		"list all channels by thing sorted by name descendent": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Order:  "name",
-				Dir:    "desc",
-			},
-			size: n - chsDisconNum,
-			err:  nil,
-		},
 		"list all non-connected channels by thing sorted by name descendent": {
 			token: token,
 			thID:  th.ID,
@@ -1097,6 +1033,17 @@ func TestListChannelsByThing(t *testing.T) {
 				Dir:          "desc",
 			},
 			size: chsDisconNum,
+			err:  nil,
+		},
+		"list empty set of non-connected channels by existing thing": {
+			token: token,
+			thID:  th.ID,
+			pageMetadata: things.PageMetadata{
+				Offset:       n + 1,
+				Limit:        n,
+				Disconnected: true,
+			},
+			size: 0,
 			err:  nil,
 		},
 	}
@@ -1213,7 +1160,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.Connect(context.Background(), tc.token, []string{tc.chanID}, []string{tc.thingID})
+		err := svc.Connect(context.Background(), tc.token, tc.chanID, []string{tc.thingID})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1238,7 +1185,7 @@ func TestDisconnect(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -1310,7 +1257,7 @@ func TestCanAccessByKey(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, chs[0].ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{chs[0].ID}, []string{ths[0].ID})
+	err = svc.Connect(context.Background(), token, chs[0].ID, []string{ths[0].ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
@@ -1366,7 +1313,7 @@ func TestCanAccessByID(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
@@ -1509,7 +1456,7 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, groups[0].ID, chIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chIDs[0:10], thIDs)
+	err = svc.Connect(context.Background(), token, chIDs[0], thIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	// Wait for things and channels to connect.
@@ -1535,14 +1482,12 @@ func TestBackup(t *testing.T) {
 	gtr = append(gtr, grRel1)
 
 	connections := []things.Connection{}
-	for _, ch := range chsc {
-		connections = append(connections, things.Connection{
-			ChannelID:    ch.ID,
-			ChannelOwner: ths[0].Owner,
-			ThingID:      ths[0].ID,
-			ThingOwner:   ths[0].Owner,
-		})
-	}
+	connections = append(connections, things.Connection{
+		ChannelID:    chIDs[0],
+		ChannelOwner: ths[0].Owner,
+		ThingID:      ths[0].ID,
+		ThingOwner:   ths[0].Owner,
+	})
 
 	backup := things.Backup{
 		Groups:              groups,
@@ -1647,16 +1592,14 @@ func TestRestore(t *testing.T) {
 	}
 
 	var connections []things.Connection
-	for _, ch := range chs {
-		conn := things.Connection{
-			ChannelID:    ch.ID,
-			ChannelOwner: ch.Owner,
-			ThingID:      ths[0].ID,
-			ThingOwner:   ths[0].Owner,
-		}
-
-		connections = append(connections, conn)
+	conn := things.Connection{
+		ChannelID:    chs[0].ID,
+		ChannelOwner: chs[0].Owner,
+		ThingID:      ths[0].ID,
+		ThingOwner:   ths[0].Owner,
 	}
+
+	connections = append(connections, conn)
 
 	backup := things.Backup{
 		Groups:              groups,
