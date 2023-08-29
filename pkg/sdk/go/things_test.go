@@ -387,7 +387,7 @@ func TestThingsByChannel(t *testing.T) {
 
 	var n = 10
 	var thsDiscoNum = 1
-	var things []sdk.Thing
+	var ths []sdk.Thing
 	for i := 1; i < n+1; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
@@ -400,7 +400,7 @@ func TestThingsByChannel(t *testing.T) {
 		tid, err := mainfluxSDK.CreateThing(th, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		things = append(things, th)
+		ths = append(ths, th)
 
 		// Don't connect last Thing
 		if i == n+1-thsDiscoNum {
@@ -440,7 +440,7 @@ func TestThingsByChannel(t *testing.T) {
 			offset:   offset,
 			limit:    limit,
 			err:      nil,
-			response: things[0:limit],
+			response: ths[0:limit],
 		},
 		{
 			desc:     "get a list of things by channel with invalid token",
@@ -504,7 +504,7 @@ func TestThingsByChannel(t *testing.T) {
 			limit:        100,
 			disconnected: true,
 			err:          nil,
-			response:     []sdk.Thing{things[n-thsDiscoNum]},
+			response:     []sdk.Thing{ths[n-thsDiscoNum]},
 		},
 	}
 	for _, tc := range cases {
@@ -972,55 +972,55 @@ func TestDisconnect(t *testing.T) {
 
 	cases := []struct {
 		desc       string
-		disconnIDs sdk.DisonnectionIDs
+		disconnIDs sdk.DisconnectionIDs
 		token      string
 		err        error
 	}{
 		{
 			desc:       "disconnect connected thing from channel",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        nil,
 		},
 		{
 			desc:       "disconnect existing thing from non-existing channel",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:       "disconnect non-existing thing from existing channel",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:       "disconnect existing thing from channel with invalid ID",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{""}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{""}, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:       "disconnect thing with invalid ID from existing channel",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{""}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{""}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:       "disconnect existing thing from existing channel with invalid token",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
 			token:      wrongValue,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:       "disconnect existing thing from existing channel with empty token",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
 			token:      "",
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:       "disconnect owner's thing from someone elses channel",
-			disconnIDs: sdk.DisonnectionIDs{ChannelIDs: []string{chanID2}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID2}, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},

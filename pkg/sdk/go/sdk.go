@@ -214,7 +214,7 @@ type SDK interface {
 	Connect(conns ConnectionIDs, token string) error
 
 	// Disconnect disconnect things from channels specified by id.
-	Disconnect(conns DisonnectionIDs, token string) error
+	Disconnect(conns DisconnectionIDs, token string) error
 
 	// CreateChannel creates new channel and returns its id.
 	CreateChannel(channel Channel, token string) (string, error)

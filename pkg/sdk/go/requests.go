@@ -23,8 +23,8 @@ type ConnectionIDs struct {
 	ThingIDs  []string `json:"thing_ids"`
 }
 
-// DisonnectionIDs contains ID lists of things and channels to be disconnected
-type DisonnectionIDs struct {
+// DisconnectionIDs contains ID lists of things and channels to be disconnected
+type DisconnectionIDs struct {
 	ChannelIDs []string `json:"channel_ids"`
 	ThingIDs   []string `json:"thing_ids"`
 }

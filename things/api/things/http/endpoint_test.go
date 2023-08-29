@@ -1834,8 +1834,8 @@ func TestListChannelsByThing(t *testing.T) {
 			desc:   "get channel by thing with no limit provided",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d", channelURL, th.ID, 1),
-			res:    channels[1:1],
+			url:    fmt.Sprintf("%s/%s/channels?offset=%d", channelURL, th.ID, 0),
+			res:    channels[0:1],
 		},
 		{
 			desc:   "get channel by thing with redundant query params",
@@ -1890,7 +1890,7 @@ func TestListChannelsByThing(t *testing.T) {
 			desc:   "get a list of disconnected channels with no limit",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d&disconnected=true", channelURL, th.ID, noLimit),
+			url:    fmt.Sprintf("%s/%s/channels?limit=%d&offset=%d&disconnected=true", channelURL, th.ID, 0, noLimit),
 			res:    channels[1:],
 		},
 		{

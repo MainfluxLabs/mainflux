@@ -229,7 +229,7 @@ func (bs bootstrapService) UpdateConnections(ctx context.Context, token, id stri
 		disconnect = remove
 	}
 
-	disconnIDs := mfsdk.DisonnectionIDs{
+	disconnIDs := mfsdk.DisconnectionIDs{
 		ChannelIDs: disconnect,
 		ThingIDs:   []string{id},
 	}
@@ -321,7 +321,7 @@ func (bs bootstrapService) ChangeState(ctx context.Context, token, id string, st
 			return errors.Wrap(ErrThings, err)
 		}
 	case Inactive:
-		disconnIDs := mfsdk.DisonnectionIDs{
+		disconnIDs := mfsdk.DisconnectionIDs{
 			ChannelIDs: chIDs,
 			ThingIDs:   []string{cfg.ThingID},
 		}

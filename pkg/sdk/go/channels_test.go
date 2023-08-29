@@ -345,7 +345,6 @@ func TestChannelsByThing(t *testing.T) {
 
 		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	}
 
 	connIDs := sdk.ConnectionIDs{
