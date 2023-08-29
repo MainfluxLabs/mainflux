@@ -64,9 +64,8 @@ type ChannelRepository interface {
 	// Connect adds things to the channel list of connected things.
 	Connect(ctx context.Context, owner, chID string, thIDs []string) error
 
-	// Disconnect removes things from the channels list of connected
-	// things.
-	Disconnect(ctx context.Context, owner string, chIDs, thIDs []string) error
+	// Disconnect removes things from the channel list of connected things.
+	Disconnect(ctx context.Context, owner, chID string, thIDs []string) error
 
 	// HasThing determines whether the thing with the provided access key, is
 	// "connected" to the specified channel. If that's the case, it returns

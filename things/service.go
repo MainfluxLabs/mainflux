@@ -73,9 +73,8 @@ type Service interface {
 	// Connect adds things to the channel list of connected things.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// Disconnect removes things from the channels list of connected
-	// things.
-	Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error
+	// Disconnect removes things from the channels list of connected things.
+	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
 	// CanAccessByKey determines whether the channel can be accessed using the
 	// provided key and returns thing's id if access is allowed.
@@ -524,21 +523,19 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 	return ts.channels.Connect(ctx, res.GetId(), chID, thIDs)
 }
 
-func (ts *thingsService) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
+func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			if err := ts.channelCache.Disconnect(ctx, chID, thID); err != nil {
-				return err
-			}
+	for _, thID := range thIDs {
+		if err := ts.channelCache.Disconnect(ctx, chID, thID); err != nil {
+			return err
 		}
 	}
 
-	return ts.channels.Disconnect(ctx, res.GetId(), chIDs, thIDs)
+	return ts.channels.Disconnect(ctx, res.GetId(), chID, thIDs)
 }
 
 func (ts *thingsService) CanAccessByKey(ctx context.Context, chanID, thingKey string) (string, error) {
@@ -896,8 +893,10 @@ func (ts *thingsService) UnassignChannel(ctx context.Context, token string, grou
 		}
 	}
 
-	if err := ts.channels.Disconnect(ctx, user.GetId(), channelIDs, thingIDs); err != nil {
-		return err
+	for _, chID := range channelIDs {
+		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+			return err
+		}
 	}
 
 	if err := ts.groups.UnassignChannel(ctx, groupID, channelIDs...); err != nil {
@@ -934,8 +933,10 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 		}
 	}
 
-	if err := ts.channels.Disconnect(ctx, user.GetId(), chIDs, thingIDs); err != nil {
-		return err
+	for _, chID := range chIDs {
+		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+			return err
+		}
 	}
 
 	return ts.groups.UnassignThing(ctx, groupID, thingIDs...)

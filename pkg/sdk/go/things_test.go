@@ -972,55 +972,55 @@ func TestDisconnect(t *testing.T) {
 
 	cases := []struct {
 		desc       string
-		disconnIDs sdk.DisconnectionIDs
+		disconnIDs sdk.ConnectionIDs
 		token      string
 		err        error
 	}{
 		{
 			desc:       "disconnect connected thing from channel",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        nil,
 		},
 		{
 			desc:       "disconnect existing thing from non-existing channel",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: wrongID, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:       "disconnect non-existing thing from existing channel",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{wrongID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
 			desc:       "disconnect existing thing from channel with invalid ID",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{""}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: "", ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:       "disconnect thing with invalid ID from existing channel",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{""}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{""}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:       "disconnect existing thing from existing channel with invalid token",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
 			token:      wrongValue,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:       "disconnect existing thing from existing channel with empty token",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
 			token:      "",
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
 			desc:       "disconnect owner's thing from someone elses channel",
-			disconnIDs: sdk.DisconnectionIDs{ChannelIDs: []string{chanID2}, ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID2, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},

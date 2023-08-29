@@ -165,13 +165,13 @@ func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, th
 	return ms.svc.Connect(ctx, token, chID, thIDs)
 }
 
-func (ms *metricsMiddleware) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
+func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disconnect").Add(1)
 		ms.latency.With("method", "disconnect").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Disconnect(ctx, token, chIDs, thIDs)
+	return ms.svc.Disconnect(ctx, token, chID, thIDs)
 }
 
 func (ms *metricsMiddleware) CanAccessByKey(ctx context.Context, id, key string) (string, error) {

@@ -88,7 +88,7 @@ func (svc *mainfluxThings) Connect(_ context.Context, owner, chID string, thIDs 
 	return nil
 }
 
-func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, thIDs []string) error {
+func (svc *mainfluxThings) Disconnect(_ context.Context, owner, chID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -97,29 +97,28 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, th
 		return errors.ErrAuthentication
 	}
 
-	for _, chID := range chIDs {
-		if svc.channels[chID].Owner != userID.Email {
-			return errors.ErrAuthentication
-		}
-
-		ids := svc.connections[chID]
-		var count int
-		var newConns []string
-		for _, thID := range thIDs {
-			for _, id := range ids {
-				if id == thID {
-					count++
-					continue
-				}
-				newConns = append(newConns, id)
-			}
-
-			if len(newConns)-len(ids) != count {
-				return errors.ErrNotFound
-			}
-			svc.connections[chID] = newConns
-		}
+	if svc.channels[chID].Owner != userID.Email {
+		return errors.ErrAuthentication
 	}
+
+	ids := svc.connections[chID]
+	var count int
+	var newConns []string
+	for _, thID := range thIDs {
+		for _, id := range ids {
+			if id == thID {
+				count++
+				continue
+			}
+			newConns = append(newConns, id)
+		}
+
+		if len(newConns)-len(ids) != count {
+			return errors.ErrNotFound
+		}
+		svc.connections[chID] = newConns
+	}
+
 	return nil
 }
 

@@ -169,12 +169,12 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			connIDs := mfxsdk.DisconnectionIDs{
-				ChannelIDs: []string{args[1]},
-				ThingIDs:   []string{args[0]},
+			disconnIDs := mfxsdk.ConnectionIDs{
+				ChannelID: args[1],
+				ThingIDs:  []string{args[0]},
 			}
 
-			if err := sdk.Disconnect(connIDs, args[2]); err != nil {
+			if err := sdk.Disconnect(disconnIDs, args[2]); err != nil {
 				logError(err)
 				return
 			}

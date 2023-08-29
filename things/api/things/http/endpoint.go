@@ -398,7 +398,7 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 
 func connectEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectReq)
+		cr := request.(connectionsReq)
 
 		if err := cr.validate(); err != nil {
 			return nil, err
@@ -414,12 +414,12 @@ func connectEndpoint(svc things.Service) endpoint.Endpoint {
 
 func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(disconnectReq)
+		cr := request.(connectionsReq)
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Disconnect(ctx, cr.token, cr.ChannelIDs, cr.ThingIDs); err != nil {
+		if err := svc.Disconnect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 

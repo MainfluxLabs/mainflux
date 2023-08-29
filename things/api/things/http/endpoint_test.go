@@ -1890,7 +1890,7 @@ func TestListChannelsByThing(t *testing.T) {
 			desc:   "get a list of disconnected channels with no limit",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d&offset=%d&disconnected=true", channelURL, th.ID, 0, noLimit),
+			url:    fmt.Sprintf("%s/%s/channels?limit=%d&offset=%d&disconnected=true", channelURL, th.ID, noLimit, 0),
 			res:    channels[1:],
 		},
 		{
@@ -2286,17 +2286,11 @@ func TestDisconnect(t *testing.T) {
 
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chIDs1 := []string{}
-	for _, ch := range chs {
-		chIDs1 = append(chIDs1, ch.ID)
-	}
+	chID := chs[0].ID
 
-	chs, err = svc.CreateChannels(context.Background(), otherToken, channel)
+	usrCh, err := svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chIDs2 := []string{}
-	for _, ch := range chs {
-		chIDs2 = append(chIDs2, ch.ID)
-	}
+	usrChID := usrCh[0].ID
 
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -2304,15 +2298,15 @@ func TestDisconnect(t *testing.T) {
 	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs1...)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chIDs1[0], thIDs)
+	err = svc.Connect(context.Background(), token, chID, thIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
 		desc        string
-		channelIDs  []string
+		channelID   string
 		thingIDs    []string
 		auth        string
 		contentType string
@@ -2321,7 +2315,7 @@ func TestDisconnect(t *testing.T) {
 	}{
 		{
 			desc:        "disconnect existing things from existing channels",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2329,7 +2323,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from non-existent channels",
-			channelIDs:  []string{strconv.FormatUint(wrongID, 10)},
+			channelID:   strconv.FormatUint(wrongID, 10),
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2337,7 +2331,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect non-existing things from existing channels",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    []string{strconv.FormatUint(wrongID, 10)},
 			auth:        token,
 			contentType: contentType,
@@ -2345,7 +2339,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from channel with invalid id",
-			channelIDs:  []string{"invalid"},
+			channelID:   "invalid",
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2353,7 +2347,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect things with invalid id from existing channels",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    []string{"invalid"},
 			auth:        token,
 			contentType: contentType,
@@ -2361,7 +2355,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from empty channel ids",
-			channelIDs:  []string{""},
+			channelID:   "",
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2369,7 +2363,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty things id from existing channels",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    []string{""},
 			auth:        token,
 			contentType: contentType,
@@ -2377,7 +2371,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from existing channels with invalid token",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    thIDs,
 			auth:        wrongValue,
 			contentType: contentType,
@@ -2385,7 +2379,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from existing channels with empty token",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    thIDs,
 			auth:        "",
 			contentType: contentType,
@@ -2393,7 +2387,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect things from channels of other user",
-			channelIDs:  chIDs2,
+			channelID:   usrChID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2401,7 +2395,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect with invalid content type",
-			channelIDs:  chIDs2,
+			channelID:   chID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: "invalid",
@@ -2416,7 +2410,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect valid thing ids from empty channel ids",
-			channelIDs:  []string{},
+			channelID:   "",
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2424,7 +2418,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty thing ids from valid channel ids",
-			channelIDs:  chIDs1,
+			channelID:   chID,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2432,7 +2426,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty thing ids from empty channel ids",
-			channelIDs:  []string{},
+			channelID:   "",
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2442,10 +2436,10 @@ func TestDisconnect(t *testing.T) {
 
 	for _, tc := range cases {
 		data := struct {
-			ChannelIDs []string `json:"channel_ids"`
-			ThingIDs   []string `json:"thing_ids"`
+			ChannelID string   `json:"channel_id"`
+			ThingIDs  []string `json:"thing_ids"`
 		}{
-			tc.channelIDs,
+			tc.channelID,
 			tc.thingIDs,
 		}
 		body := toJSON(data)

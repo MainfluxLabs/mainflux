@@ -219,24 +219,22 @@ func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []st
 	return nil
 }
 
-func (es eventStore) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
-	if err := es.svc.Disconnect(ctx, token, chIDs, thIDs); err != nil {
+func (es eventStore) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
+	if err := es.svc.Disconnect(ctx, token, chID, thIDs); err != nil {
 		return err
 	}
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			event := disconnectThingEvent{
-				chanID:  chID,
-				thingID: thID,
-			}
-			record := &redis.XAddArgs{
-				Stream:       streamID,
-				MaxLenApprox: streamLen,
-				Values:       event.Encode(),
-			}
-			es.client.XAdd(ctx, record).Err()
+	for _, thID := range thIDs {
+		event := disconnectThingEvent{
+			chanID:  chID,
+			thingID: thID,
 		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
 	}
 
 	return nil

@@ -22,9 +22,3 @@ type ConnectionIDs struct {
 	ChannelID string   `json:"channel_id"`
 	ThingIDs  []string `json:"thing_ids"`
 }
-
-// DisconnectionIDs contains ID lists of things and channels to be disconnected
-type DisconnectionIDs struct {
-	ChannelIDs []string `json:"channel_ids"`
-	ThingIDs   []string `json:"thing_ids"`
-}

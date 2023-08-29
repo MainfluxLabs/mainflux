@@ -354,7 +354,7 @@ func (cr channelRepository) Connect(ctx context.Context, owner, chID string, thI
 	return nil
 }
 
-func (cr channelRepository) Disconnect(ctx context.Context, owner string, chIDs, thIDs []string) error {
+func (cr channelRepository) Disconnect(ctx context.Context, owner, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -364,37 +364,35 @@ func (cr channelRepository) Disconnect(ctx context.Context, owner string, chIDs,
 	      WHERE channel_id = :channel AND channel_owner = :owner
 	      AND thing_id = :thing AND thing_owner = :owner`
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			dbco := dbConnection{
-				Channel: chID,
-				Thing:   thID,
-				Owner:   owner,
-			}
+	for _, thID := range thIDs {
+		dbco := dbConnection{
+			Channel: chID,
+			Thing:   thID,
+			Owner:   owner,
+		}
 
-			res, err := tx.NamedExecContext(ctx, q, dbco)
-			if err != nil {
-				tx.Rollback()
-				pgErr, ok := err.(*pgconn.PgError)
-				if ok {
-					switch pgErr.Code {
-					case pgerrcode.ForeignKeyViolation:
-						return errors.ErrNotFound
-					case pgerrcode.UniqueViolation:
-						return errors.ErrConflict
-					}
+		res, err := tx.NamedExecContext(ctx, q, dbco)
+		if err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.ForeignKeyViolation:
+					return errors.ErrNotFound
+				case pgerrcode.UniqueViolation:
+					return errors.ErrConflict
 				}
-				return errors.Wrap(things.ErrDisconnect, err)
 			}
+			return errors.Wrap(things.ErrDisconnect, err)
+		}
 
-			cnt, err := res.RowsAffected()
-			if err != nil {
-				return errors.Wrap(things.ErrDisconnect, err)
-			}
+		cnt, err := res.RowsAffected()
+		if err != nil {
+			return errors.Wrap(things.ErrDisconnect, err)
+		}
 
-			if cnt == 0 {
-				return errors.ErrNotFound
-			}
+		if cnt == 0 {
+			return errors.ErrNotFound
 		}
 	}
 
