@@ -70,10 +70,10 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveChannel(ctx context.Context, token, id string) error
 
-	// Connect adds a connected things list to a channel.
+	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// Disconnect removes a connected things list from a channel.
+	// Disconnect disconnects a list of things from a channel.
 	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
 	// CanAccessByKey determines whether the channel can be accessed using the
@@ -927,7 +927,7 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 			return err
 		}
 
-		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
+		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, []string{thingID}); err != nil {
 			return err
 		}
 	}
