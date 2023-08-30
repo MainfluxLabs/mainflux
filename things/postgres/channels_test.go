@@ -532,7 +532,7 @@ func TestConnect(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "connect existing user, channel and thing",
+			desc:  "connect existing channel and thing",
 			owner: email,
 			chID:  chID,
 			thID:  thID,

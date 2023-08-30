@@ -61,7 +61,7 @@ type Service interface {
 	// user identified by the provided key.
 	ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error)
 
-	// View0ChannelByThing retrieves data about channel that have
+	// ViewChannelByThing retrieves data about channel that have
 	// specified thing connected or not connected to it and belong to the user identified by
 	// the provided key.
 	ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error)
@@ -70,10 +70,10 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveChannel(ctx context.Context, token, id string) error
 
-	// Connect adds things to the channel list of connected things.
+	// Connect adds a connected things list to a channel.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// Disconnect removes things from the channel list of connected things.
+	// Disconnect removes a connected things list from a channel.
 	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
 	// CanAccessByKey determines whether the channel can be accessed using the
@@ -452,14 +452,7 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 	}
 
 	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
-		chp, err := ts.channels.RetrieveConns(ctx, thID, PageMetadata{})
-		if err != nil {
-			return Channel{}, err
-		}
-
-		if len(chp.Channels) > 0 {
-			return chp.Channels[0], nil
-		}
+		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
 	return Channel{}, errors.ErrAuthorization
@@ -928,18 +921,13 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 		return errors.ErrAuthorization
 	}
 
-	var chIDs []string
 	for _, thingID := range thingIDs {
 		ch, err := ts.channels.RetrieveByThing(ctx, user.GetId(), thingID)
 		if err != nil {
 			return err
 		}
 
-		chIDs = append(chIDs, ch.ID)
-	}
-
-	for _, chID := range chIDs {
-		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
 			return err
 		}
 	}

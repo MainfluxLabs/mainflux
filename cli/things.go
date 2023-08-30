@@ -185,7 +185,7 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "connections <thing_id> <user_auth_token>",
 		Short: "Connected list",
-		Long:  `List Channel connected to Thing`,
+		Long:  `Retrieve Channel connected to Thing`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
