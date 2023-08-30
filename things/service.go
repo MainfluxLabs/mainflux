@@ -927,8 +927,10 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 			return err
 		}
 
-		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, []string{thingID}); err != nil {
-			return err
+		if ch.ID != "" {
+			if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, []string{thingID}); err != nil {
+				return err
+			}
 		}
 	}
 
