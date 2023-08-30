@@ -192,7 +192,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			cl, err := sdk.ViewChannelByThing(args[0], args[1])
+			cl, err := sdk.ViewChannelByThing(args[1], args[0])
 			if err != nil {
 				logError(err)
 				return
