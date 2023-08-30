@@ -185,33 +185,14 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "connections <thing_id> <user_auth_token>",
 		Short: "Connected list",
-		Long:  `List of Channels connected to Thing`,
+		Long:  `List Channel connected to Thing`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			cl, err := sdk.ChannelsByThing(args[1], args[0], uint64(Offset), uint64(Limit), true)
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(cl)
-		},
-	},
-	{
-		Use:   "not-connected <thing_id> <user_auth_token>",
-		Short: "Not-connected list",
-		Long:  `List of Channels not connected to a Thing`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			cl, err := sdk.ChannelsByThing(args[1], args[0], uint64(Offset), uint64(Limit), false)
+			cl, err := sdk.ViewChannelByThing(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return

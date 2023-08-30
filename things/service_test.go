@@ -902,160 +902,80 @@ func TestListChannels(t *testing.T) {
 	}
 }
 
-func TestListChannelsByThing(t *testing.T) {
+func TestViewChannelByThing(t *testing.T) {
 	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
-	chsDisconNum := uint64(101)
-	var chs []things.Channel
-	for i := uint64(0); i < n; i++ {
-		ch := channel
-		ch.Name = fmt.Sprintf("name-%d", i)
-		chs = append(chs, ch)
-	}
+	ch := channel
+	ch.Name = "test-channel"
 
-	chsc, err := svc.CreateChannels(context.Background(), token, chs...)
+	chs, err := svc.CreateChannels(context.Background(), token, ch)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var chIDs []string
-	for _, chID := range chsc {
-		chIDs = append(chIDs, chID.ID)
-	}
-	thIDs := []string{ths[0].ID}
+	thID := []string{th.ID}
 
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
+	err = svc.AssignThing(context.Background(), token, gr.ID, thID...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chIDs...)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, chs[0].ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chIDs[n-1], thIDs)
+	err = svc.Connect(context.Background(), token, chs[0].ID, thID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	connCh := chs[0]
 
 	// Wait for things and channels to connect.
 	time.Sleep(time.Second)
 
 	cases := map[string]struct {
-		token        string
-		thID         string
-		pageMetadata things.PageMetadata
-		size         uint64
-		err          error
+		token   string
+		thID    string
+		channel things.Channel
+		err     error
 	}{
 		"view channel by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n - chsDisconNum,
-			err:  nil,
+			token:   token,
+			thID:    th.ID,
+			channel: connCh,
+			err:     nil,
 		},
 		"view channel by existing thing as admin": {
-			token: adminToken,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n - chsDisconNum,
-			err:  nil,
+			token:   adminToken,
+			thID:    th.ID,
+			channel: connCh,
+			err:     nil,
 		},
 		"view channel by existing thing with wrong credentials": {
-			token: wrongValue,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  0,
-			},
-			size: 0,
-			err:  errors.ErrAuthentication,
+			token:   wrongValue,
+			thID:    th.ID,
+			channel: things.Channel{},
+			err:     errors.ErrAuthentication,
 		},
 		"view channel by non-existent thing": {
-			token: token,
-			thID:  "non-existent",
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
-			err:  errors.ErrNotFound,
+			token:   token,
+			thID:    "non-existent",
+			channel: things.Channel{},
+			err:     errors.ErrNotFound,
 		},
-		"list all non-connected channels by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        chsDisconNum,
-				Disconnected: true,
-			},
-			size: chsDisconNum,
-			err:  nil,
-		},
-		"list all non-connected channels by existing thing with no limit": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Limit:        0,
-				Disconnected: true,
-			},
-			size: chsDisconNum,
-			err:  nil,
-		},
-		"list all non-connected channels by thing sorted by name ascendent": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "asc",
-			},
-			size: chsDisconNum,
-			err:  nil,
-		},
-		"list all non-connected channels by thing sorted by name descendent": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "desc",
-			},
-			size: chsDisconNum,
-			err:  nil,
-		},
-		"list empty set of non-connected channels by existing thing": {
-			token: token,
-			thID:  th.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       n + 1,
-				Limit:        n,
-				Disconnected: true,
-			},
-			size: 0,
-			err:  nil,
+		"view channel by existent thing with invalid token": {
+			token:   wrongValue,
+			thID:    th.ID,
+			channel: things.Channel{},
+			err:     errors.ErrAuthentication,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := svc.ListChannelsByThing(context.Background(), tc.token, tc.thID, tc.pageMetadata)
-		size := uint64(len(page.Channels))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
+		ch, err := svc.ViewChannelByThing(context.Background(), tc.token, tc.thID)
+		assert.Equal(t, tc.channel, ch, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channel, ch))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-
-		// Check if Channels by Thing list have been sorted properly
-		testSortChannels(t, tc.pageMetadata, page.Channels)
 	}
 }
 

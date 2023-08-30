@@ -1735,7 +1735,7 @@ func TestListChannels(t *testing.T) {
 	}
 }
 
-func TestListChannelsByThing(t *testing.T) {
+func TestViewChannelByThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -1749,27 +1749,22 @@ func TestListChannelsByThing(t *testing.T) {
 	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	channels := []channelRes{}
-	var chIDs []string
-	for i := 0; i < n; i++ {
-		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		channel1 := channel
-		channel1.ID = id
-		chs, err := svc.CreateChannels(context.Background(), token, channel1)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		ch := chs[0]
-		err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	channel1 := channel
 
-		channels = append(channels, channelRes{
-			ID:       ch.ID,
-			Name:     ch.Name,
-			Metadata: ch.Metadata,
-		})
-		chIDs = append(chIDs, ch.ID)
+	chs, err := svc.CreateChannels(context.Background(), token, channel1)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	ch := chs[0]
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	chRes := channelRes{
+		ID:       ch.ID,
+		Name:     ch.Name,
+		Metadata: ch.Metadata,
 	}
 
-	err = svc.Connect(context.Background(), token, chIDs[0], []string{th.ID})
+	err = svc.Connect(context.Background(), token, chs[0].ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	channelURL := fmt.Sprintf("%s/things", ts.URL)
@@ -1779,231 +1774,42 @@ func TestListChannelsByThing(t *testing.T) {
 		auth   string
 		status int
 		url    string
-		res    []channelRes
+		res    channelRes
 	}{
 		{
-			desc:   "get channel by thing",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 0, 1),
-			res:    channels[0:1],
-		},
-		{
-			desc:   "get channel by thing with invalid token",
-			auth:   wrongValue,
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 0, 1),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with empty token",
-			auth:   "",
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 0, 1),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with negative offset",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, -2, 5),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with negative limit",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 2, -5),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with zero limit",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 1, 0),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with no offset provided",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d", channelURL, th.ID, 5),
-			res:    channels[0:1],
-		},
-		{
-			desc:   "get channel by thing with no limit provided",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d", channelURL, th.ID, 0),
-			res:    channels[0:1],
-		},
-		{
-			desc:   "get channel by thing with redundant query params",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&value=something", channelURL, th.ID, 0, 5),
-			res:    channels[0:1],
-		},
-		{
-			desc:   "get channel by thing with limit greater than max",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d", channelURL, th.ID, 0, 110),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with default URL",
+			desc:   "view channel by thing",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/channels", channelURL, th.ID),
-			res:    channels[0:1],
+			res:    chRes,
 		},
 		{
-			desc:   "get channel by thing with invalid number of params",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s", channelURL, th.ID, "?offset=4&limit=4&limit=5&offset=5"),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with invalid offset",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s", channelURL, th.ID, "?offset=e&limit=5"),
-			res:    nil,
-		},
-		{
-			desc:   "get channel by thing with invalid limit",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s", channelURL, th.ID, "?offset=5&limit=e"),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 0, 5),
-			res:    channels[1:5],
-		},
-		{
-			desc:   "get a list of disconnected channels with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d&offset=%d&disconnected=true", channelURL, th.ID, noLimit, 0),
-			res:    channels[1:],
-		},
-		{
-			desc:   "get a list of disconnected channels with invalid token",
+			desc:   "view channel by thing with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 0, 1),
-			res:    nil,
+			url:    fmt.Sprintf("%s/%s/channels", channelURL, th.ID),
+			res:    channelRes{},
 		},
 		{
-			desc:   "get a list of disconnected channels by thing with empty token",
+			desc:   "view channel by thing with empty token",
 			auth:   "",
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 0, 1),
-			res:    nil,
+			url:    fmt.Sprintf("%s/%s/channels", channelURL, th.ID),
+			res:    channelRes{},
 		},
 		{
-			desc:   "get a list of disconnected channels with negative offset",
+			desc:   "view channel by thing without thing id",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, -2, 5),
-			res:    nil,
+			url:    fmt.Sprintf("%s/%s/channels", channelURL, ""),
+			res:    channelRes{},
 		},
 		{
-			desc:   "get a list of disconnected channels with negative limit",
+			desc:   "view channel by thing with wrong thing id",
 			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 2, -5),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels with zero limit",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 1, 0),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with no offset provided",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?limit=%d&disconnected=true", channelURL, th.ID, 5),
-			res:    channels[1:5],
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with no limit provided",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&disconnected=true", channelURL, th.ID, 1),
-			res:    channels[1:11],
-		},
-		{
-			desc:   "get a ist of disconnected channels by thing with redundant query params",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&value=something&disconnected=true", channelURL, th.ID, 0, 5),
-			res:    channels[1:5],
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with limit greater than max",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&disconnected=true", channelURL, th.ID, 0, 110),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with invalid number of params",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s&disconnected=true", channelURL, th.ID, "?offset=4&limit=4&limit=5&offset=5"),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with invalid offset",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s&s", channelURL, th.ID, "?offset=e&limit=5&disconnected=true"),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing with invalid limit",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels%s&disconnected=true", channelURL, th.ID, "?offset=5&limit=e"),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing sorted by name ascendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&order=%s&dir=%s&disconnected=true", channelURL, th.ID, 0, 6, nameKey, ascKey),
-			res:    channels[1:6],
-		},
-		{
-			desc:   "get a list of disconnected channelss by thing sorted by name descendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&order=%s&dir=%s&disconnected=true", channelURL, th.ID, 0, 6, nameKey, descKey),
-			res:    channels[1:6],
-		},
-		{
-			desc:   "get a list of disconnected channels by thing sorted with invalid order",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&order=%s&dir=%s&disconnected=true", channelURL, th.ID, 0, 6, "wrong", ascKey),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of disconnected channels by thing sorted by name with invalid direction",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels?offset=%d&limit=%d&order=%s&dir=%s&disconnected=true", channelURL, th.ID, 0, 6, nameKey, "wrong"),
-			res:    nil,
+			status: http.StatusNotFound,
+			url:    fmt.Sprintf("%s/%s/channels", channelURL, wrongValue),
+			res:    channelRes{},
 		},
 	}
 
@@ -2016,10 +1822,10 @@ func TestListChannelsByThing(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body channelsPageRes
+		var body channelRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body.Channels, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Channels))
+		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
 	}
 }
 

@@ -84,8 +84,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:id/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_channels_by_thing")(listChannelsByThingEndpoint(svc)),
-		decodeListByConnection,
+		kitot.TraceServer(tracer, "view_channel_by_thing")(viewChannelByThingEndpoint(svc)),
+		decodeView,
 		encodeResponse,
 		opts...,
 	))

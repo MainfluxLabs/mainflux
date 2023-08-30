@@ -189,16 +189,16 @@ func (lm *loggingMiddleware) ListChannels(ctx context.Context, token string, adm
 	return lm.svc.ListChannels(ctx, token, admin, pm)
 }
 
-func (lm *loggingMiddleware) ListChannelsByThing(ctx context.Context, token, thID string, pm things.PageMetadata) (_ things.ChannelsPage, err error) {
+func (lm *loggingMiddleware) ViewChannelByThing(ctx context.Context, token, thID string) (_ things.Channel, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_channels_by_thing for thing %s took %s to complete", thID, time.Since(begin))
+		message := fmt.Sprintf("Method view_channel_by_thing for thing %s took %s to complete", thID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListChannelsByThing(ctx, token, thID, pm)
+	return lm.svc.ViewChannelByThing(ctx, token, thID)
 }
 
 func (lm *loggingMiddleware) RemoveChannel(ctx context.Context, token, id string) (err error) {

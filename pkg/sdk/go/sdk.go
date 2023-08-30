@@ -225,9 +225,8 @@ type SDK interface {
 	// Channels returns page of channels.
 	Channels(token string, pm PageMetadata) (ChannelsPage, error)
 
-	// ChannelsByThing returns page of channels that are connected or not connected
-	// to specified thing.
-	ChannelsByThing(token, thingID string, offset, limit uint64, connected bool) (ChannelsPage, error)
+	// ViewChannelByThing returns channel that are connected to specified thing.
+	ViewChannelByThing(token, thingID string) (Channel, error)
 
 	// Channel returns channel data by id.
 	Channel(id, token string) (Channel, error)

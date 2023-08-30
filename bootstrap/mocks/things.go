@@ -175,7 +175,7 @@ func (svc *mainfluxThings) ListThings(context.Context, string, bool, things.Page
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannelsByThing(context.Context, string, string, things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ViewChannelByThing(context.Context, string, string) (things.Channel, error) {
 	panic("not implemented")
 }
 

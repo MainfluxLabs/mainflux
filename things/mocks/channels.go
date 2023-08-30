@@ -155,57 +155,19 @@ func (crm *channelRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things
 	return page, nil
 }
 
-func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	if pm.Limit < 0 {
-		return things.ChannelsPage{}, nil
-	}
+func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string) (things.Channel, error) {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
 
-	first := uint64(pm.Offset) + 1
-	last := first + uint64(pm.Limit)
-
-	var chs []things.Channel
-
-	// Append connected or not connected channels
-	switch pm.Disconnected {
-	case false:
+	for _, ch := range crm.channels {
 		for _, co := range crm.cconns[thID] {
-			id := parseID(co.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				chs = append(chs, co)
-			}
-		}
-	default:
-		for _, ch := range crm.channels {
-			conn := false
-			id := parseID(ch.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				for _, co := range crm.cconns[thID] {
-					if ch.ID == co.ID {
-						conn = true
-					}
-				}
-
-				// Append if not found in connections list
-				if !conn {
-					chs = append(chs, ch)
-				}
+			if ch.ID == co.ID {
+				return ch, nil
 			}
 		}
 	}
 
-	// Sort Channels by Thing list
-	chs = sortChannels(pm, chs)
-
-	page := things.ChannelsPage{
-		Channels: chs,
-		PageMetadata: things.PageMetadata{
-			Total:  crm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return things.Channel{}, errors.ErrNotFound
 }
 
 func (crm *channelRepositoryMock) RetrieveConns(_ context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {

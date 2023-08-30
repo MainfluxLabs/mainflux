@@ -8,12 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChannelsSave(t *testing.T) {
@@ -383,28 +382,14 @@ func TestRetrieveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thID = ths[0].ID
 
-	n := uint64(101)
-
-	var chs []things.Channel
-	for i := uint64(0); i < n; i++ {
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		ch := things.Channel{
-			ID:    chID,
-			Owner: email,
-		}
-		chs = append(chs, ch)
-	}
-
-	_, err = chanRepo.Save(context.Background(), chs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	ch := things.Channel{
-		ID:    chID,
-		Owner: email,
+		ID:       chID,
+		Owner:    email,
+		Metadata: things.Metadata{},
 	}
+
 	_, err = chanRepo.Save(context.Background(), ch)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -415,110 +400,41 @@ func TestRetrieveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		owner        string
-		thID         string
-		pageMetadata things.PageMetadata
-		size         uint64
-		err          error
+		owner   string
+		thID    string
+		channel things.Channel
+		err     error
 	}{
 		"retrieve channel by thing with existing owner": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 1,
-		},
-		"retrieve channel by thing with existing owner with no limit": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Limit: 0,
-			},
-			size: 1,
+			owner:   email,
+			thID:    thID,
+			channel: ch,
+			err:     nil,
 		},
 		"retrieve channel by thing with non-existing owner": {
-			owner: wrongValue,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
-				Limit:  n,
-			},
-			size: 0,
+			owner:   wrongValue,
+			thID:    thID,
+			channel: things.Channel{},
+			err:     nil,
 		},
 		"retrieve channel by non-existent thing": {
-			owner: email,
-			thID:  nonexistentThingID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
+			owner:   email,
+			thID:    nonexistentThingID,
+			channel: things.Channel{},
+			err:     nil,
 		},
 		"retrieve channel with malformed UUID": {
-			owner: email,
-			thID:  wrongValue,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
-			err:  errors.ErrNotFound,
-		},
-		"retrieve all non connected channels by thing with existing owner": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        0,
-				Disconnected: true,
-			},
-			size: n,
-		},
-		"retrieve all non connected channels by thing without limit": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Limit:        0,
-				Disconnected: true,
-			},
-			size: n,
-		},
-		"retrieve all non-connected channels by thing sorted by name ascendent": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "asc",
-			},
-			size: n,
-		},
-		"retrieve all non-connected channels by thing sorted by name descendent": {
-			owner: email,
-			thID:  thID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "desc",
-			},
-			size: n,
+			owner:   email,
+			thID:    wrongValue,
+			channel: things.Channel{},
+			err:     errors.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := chanRepo.RetrieveByThing(context.Background(), tc.owner, tc.thID, tc.pageMetadata)
-		size := uint64(len(page.Channels))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		ch, err := chanRepo.RetrieveByThing(context.Background(), tc.owner, tc.thID)
+		assert.Equal(t, tc.channel, ch, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channel, ch))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-
-		// Check if Channels by Thing list have been sorted properly
-		testSortChannels(t, tc.pageMetadata, page.Channels)
 	}
 }
 
@@ -566,16 +482,28 @@ func TestConnect(t *testing.T) {
 
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thID1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thkey, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thkey1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	th := things.Thing{
-		ID:       thID,
-		Owner:    email,
-		Key:      thkey,
-		Metadata: things.Metadata{},
-	}
-	ths, err := thingRepo.Save(context.Background(), th)
+	th := []things.Thing{
+		{
+			ID:       thID,
+			Owner:    email,
+			Key:      thkey,
+			Metadata: things.Metadata{},
+		},
+		{
+			ID:       thID1,
+			Owner:    email,
+			Key:      thkey1,
+			Metadata: things.Metadata{},
+		}}
+
+	ths, err := thingRepo.Save(context.Background(), th...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	thID = ths[0].ID
 
@@ -604,27 +532,6 @@ func TestConnect(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "connect with non-existing user",
-			owner: wrongValue,
-			chID:  chID,
-			thID:  thID,
-			err:   errors.ErrNotFound,
-		},
-		{
-			desc:  "connect non-existing channel",
-			owner: email,
-			chID:  nonexistentChanID,
-			thID:  thID,
-			err:   errors.ErrNotFound,
-		},
-		{
-			desc:  "connect non-existing thing",
-			owner: email,
-			chID:  chID,
-			thID:  nonexistentThingID,
-			err:   errors.ErrNotFound,
-		},
-		{
 			desc:  "connect existing user, channel and thing",
 			owner: email,
 			chID:  chID,
@@ -637,6 +544,27 @@ func TestConnect(t *testing.T) {
 			chID:  chID,
 			thID:  thID,
 			err:   errors.ErrConflict,
+		},
+		{
+			desc:  "connect with non-existing user",
+			owner: wrongValue,
+			chID:  chID,
+			thID:  thID1,
+			err:   errors.ErrNotFound,
+		},
+		{
+			desc:  "connect non-existing channel",
+			owner: email,
+			chID:  nonexistentChanID,
+			thID:  thID1,
+			err:   errors.ErrNotFound,
+		},
+		{
+			desc:  "connect non-existing thing",
+			owner: email,
+			chID:  chID,
+			thID:  nonexistentThingID,
+			err:   errors.ErrNotFound,
 		},
 	}
 

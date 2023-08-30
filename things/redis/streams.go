@@ -176,8 +176,8 @@ func (es eventStore) ListChannels(ctx context.Context, token string, admin bool,
 	return es.svc.ListChannels(ctx, token, admin, pm)
 }
 
-func (es eventStore) ListChannelsByThing(ctx context.Context, token, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return es.svc.ListChannelsByThing(ctx, token, thID, pm)
+func (es eventStore) ViewChannelByThing(ctx context.Context, token, thID string) (things.Channel, error) {
+	return es.svc.ViewChannelByThing(ctx, token, thID)
 }
 
 func (es eventStore) RemoveChannel(ctx context.Context, token, id string) error {

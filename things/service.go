@@ -61,10 +61,10 @@ type Service interface {
 	// user identified by the provided key.
 	ListChannels(ctx context.Context, token string, admin bool, pm PageMetadata) (ChannelsPage, error)
 
-	// ListChannelsByThing retrieves data about subset of channels that have
-	// specified thing connected or not connected to them and belong to the user identified by
+	// View0ChannelByThing retrieves data about channel that have
+	// specified thing connected or not connected to it and belong to the user identified by
 	// the provided key.
-	ListChannelsByThing(ctx context.Context, token, thID string, pm PageMetadata) (ChannelsPage, error)
+	ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error)
 
 	// RemoveChannel removes the thing identified by the provided ID, that
 	// belongs to the user identified by the provided key.
@@ -73,7 +73,7 @@ type Service interface {
 	// Connect adds things to the channel list of connected things.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// Disconnect removes things from the channels list of connected things.
+	// Disconnect removes things from the channel list of connected things.
 	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
 	// CanAccessByKey determines whether the channel can be accessed using the
@@ -427,35 +427,42 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, admin b
 	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
 }
 
-func (ts *thingsService) ListChannelsByThing(ctx context.Context, token, thID string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error) {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	thing, err := ts.things.RetrieveByID(ctx, thID)
 	if err != nil {
-		return ChannelsPage{}, err
+		return Channel{}, err
 	}
 
 	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
-		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
+		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
 	if thing.Owner == res.GetId() {
-		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID, pm)
+		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
 	groupID, err := ts.groups.RetrieveThingMembership(ctx, thID)
 	if err != nil {
-		return ChannelsPage{}, err
+		return Channel{}, err
 	}
 
 	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
-		return ts.channels.RetrieveConns(ctx, thID, pm)
+		chp, err := ts.channels.RetrieveConns(ctx, thID, PageMetadata{})
+		if err != nil {
+			return Channel{}, err
+		}
+
+		if len(chp.Channels) > 0 {
+			return chp.Channels[0], nil
+		}
 	}
 
-	return ChannelsPage{}, errors.ErrAuthorization
+	return Channel{}, errors.ErrAuthorization
 }
 
 func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) error {
@@ -923,14 +930,12 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 
 	var chIDs []string
 	for _, thingID := range thingIDs {
-		cp, err := ts.channels.RetrieveByThing(ctx, user.GetId(), thingID, PageMetadata{})
+		ch, err := ts.channels.RetrieveByThing(ctx, user.GetId(), thingID)
 		if err != nil {
 			return err
 		}
 
-		for _, ch := range cp.Channels {
-			chIDs = append(chIDs, ch.ID)
-		}
+		chIDs = append(chIDs, ch.ID)
 	}
 
 	for _, chID := range chIDs {
