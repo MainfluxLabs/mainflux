@@ -397,7 +397,7 @@ func connectEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return connectRes{}, nil
+		return connectionsRes{}, nil
 	}
 }
 
@@ -412,7 +412,7 @@ func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return disconnectRes{}, nil
+		return connectionsRes{}, nil
 	}
 }
 

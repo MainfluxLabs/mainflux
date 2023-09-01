@@ -16,8 +16,7 @@ var (
 	_ mainflux.Response = (*thingsPageRes)(nil)
 	_ mainflux.Response = (*viewChannelRes)(nil)
 	_ mainflux.Response = (*channelsPageRes)(nil)
-	_ mainflux.Response = (*connectRes)(nil)
-	_ mainflux.Response = (*disconnectRes)(nil)
+	_ mainflux.Response = (*connectionsRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*groupThingsPageRes)(nil)
@@ -187,31 +186,17 @@ func (res channelsPageRes) Empty() bool {
 	return false
 }
 
-type connectRes struct{}
+type connectionsRes struct{}
 
-func (res connectRes) Code() int {
+func (res connectionsRes) Code() int {
 	return http.StatusOK
 }
 
-func (res connectRes) Headers() map[string]string {
+func (res connectionsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res connectRes) Empty() bool {
-	return true
-}
-
-type disconnectRes struct{}
-
-func (res disconnectRes) Code() int {
-	return http.StatusOK
-}
-
-func (res disconnectRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res disconnectRes) Empty() bool {
+func (res connectionsRes) Empty() bool {
 	return true
 }
 
