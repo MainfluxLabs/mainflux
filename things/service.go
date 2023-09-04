@@ -768,6 +768,32 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return errors.ErrAuthorization
 	}
 
+	cp, err := ts.groups.RetrieveGroupChannels(ctx, id, PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	var chIDs []string
+	for _, ch := range cp.Channels {
+		chIDs = append(chIDs, ch.ID)
+	}
+
+	var thingIDs []string
+	for _, chID := range chIDs {
+		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), chID, PageMetadata{})
+		if err != nil {
+			return err
+		}
+
+		for _, th := range tp.Things {
+			thingIDs = append(thingIDs, th.ID)
+		}
+
+		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+			return err
+		}
+	}
+
 	return ts.groups.Remove(ctx, id)
 }
 
