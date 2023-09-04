@@ -154,8 +154,9 @@ func TestSingleChannelRetrieval(t *testing.T) {
 		Owner: email,
 		Key:   thkey,
 	}
-	_, err = thingRepo.Save(context.Background(), th)
+	ths, err := thingRepo.Save(context.Background(), th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th = ths[0]
 
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -376,11 +377,12 @@ func TestRetrieveByThing(t *testing.T) {
 
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	_, err = thingRepo.Save(context.Background(), things.Thing{
+	th, err := thingRepo.Save(context.Background(), things.Thing{
 		ID:    thID,
 		Owner: email,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thID = th[0].ID
 
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -589,8 +591,9 @@ func TestDisconnect(t *testing.T) {
 		Key:      thkey,
 		Metadata: map[string]interface{}{},
 	}
-	_, err = thingRepo.Save(context.Background(), th)
+	ths, err := thingRepo.Save(context.Background(), th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	thID = ths[0].ID
 
 	chanRepo := postgres.NewChannelRepository(dbMiddleware)
 	chID, err := idProvider.ID()
