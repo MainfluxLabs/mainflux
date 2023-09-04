@@ -1743,6 +1743,7 @@ func TestViewChannelByThing(t *testing.T) {
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
+
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -1764,7 +1765,7 @@ func TestViewChannelByThing(t *testing.T) {
 		Metadata: ch.Metadata,
 	}
 
-	err = svc.Connect(context.Background(), token, chs[0].ID, []string{th.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	channelURL := fmt.Sprintf("%s/things", ts.URL)
@@ -1895,6 +1896,7 @@ func TestConnect(t *testing.T) {
 
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	thIDs := []string{}
 	for _, th := range ths {
 		thIDs = append(thIDs, th.ID)
@@ -1902,10 +1904,11 @@ func TestConnect(t *testing.T) {
 
 	chs1, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chID1 := chs1[0].ID
+	ch1 := chs1[0]
+
 	chs2, err := svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chID2 := chs2[0].ID
+	ch2 := chs2[0]
 
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1913,10 +1916,10 @@ func TestConnect(t *testing.T) {
 	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chID1)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch1.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chID2)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch2.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -1930,7 +1933,7 @@ func TestConnect(t *testing.T) {
 	}{
 		{
 			desc:        "connect existing things to existing channel",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -1946,7 +1949,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect non-existing things to existing channel",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    []string{strconv.FormatUint(wrongID, 10)},
 			auth:        token,
 			contentType: contentType,
@@ -1962,7 +1965,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect things with invalid id to existing channel",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    []string{"invalid"},
 			auth:        token,
 			contentType: contentType,
@@ -1978,7 +1981,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect empty things id to existing channel",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    []string{""},
 			auth:        token,
 			contentType: contentType,
@@ -1986,7 +1989,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect existing things to existing channel with invalid token",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    thIDs,
 			auth:        wrongValue,
 			contentType: contentType,
@@ -1994,7 +1997,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect existing things to existing channel with empty token",
-			channelID:   chID1,
+			channelID:   ch1.ID,
 			thingIDs:    thIDs,
 			auth:        "",
 			contentType: contentType,
@@ -2002,7 +2005,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect things from owner to channel of other user",
-			channelID:   chID2,
+			channelID:   ch2.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2010,7 +2013,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect with invalid content type",
-			channelID:   chID2,
+			channelID:   ch2.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: "invalid",
@@ -2033,7 +2036,7 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect valid channel id with empty thing ids",
-			channelID:   chID2,
+			channelID:   ch2.ID,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2092,11 +2095,11 @@ func TestDisconnect(t *testing.T) {
 
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chID := chs[0].ID
+	ch := chs[0]
 
-	usrCh, err := svc.CreateChannels(context.Background(), otherToken, channel)
+	uCh, err := svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	usrChID := usrCh[0].ID
+	usrCh := uCh[0]
 
 	gr, err := svc.CreateGroup(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -2104,10 +2107,10 @@ func TestDisconnect(t *testing.T) {
 	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, chID)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, chID, thIDs)
+	err = svc.Connect(context.Background(), token, ch.ID, thIDs)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -2121,7 +2124,7 @@ func TestDisconnect(t *testing.T) {
 	}{
 		{
 			desc:        "disconnect existing things from existing channels",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2137,7 +2140,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect non-existing things from existing channels",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    []string{strconv.FormatUint(wrongID, 10)},
 			auth:        token,
 			contentType: contentType,
@@ -2153,7 +2156,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect things with invalid id from existing channels",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    []string{"invalid"},
 			auth:        token,
 			contentType: contentType,
@@ -2169,7 +2172,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty things id from existing channels",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    []string{""},
 			auth:        token,
 			contentType: contentType,
@@ -2177,7 +2180,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from existing channels with invalid token",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    thIDs,
 			auth:        wrongValue,
 			contentType: contentType,
@@ -2185,7 +2188,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from existing channels with empty token",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    thIDs,
 			auth:        "",
 			contentType: contentType,
@@ -2193,7 +2196,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect things from channels of other user",
-			channelID:   usrChID,
+			channelID:   usrCh.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
@@ -2201,7 +2204,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect with invalid content type",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: "invalid",
@@ -2224,7 +2227,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty thing ids from valid channel ids",
-			channelID:   chID,
+			channelID:   ch.ID,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2285,12 +2288,14 @@ func TestBackup(t *testing.T) {
 
 		groups = append(groups, grp)
 	}
+	gr := groups[0]
 
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th := ths[0]
 
 	for _, gr := range groups {
-		err = svc.AssignThing(context.Background(), token, gr.ID, ths[0].ID)
+		err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -2298,13 +2303,13 @@ func TestBackup(t *testing.T) {
 	for _, group := range groups {
 		grRel := things.GroupThingRelation{
 			GroupID: group.ID,
-			ThingID: ths[0].ID,
+			ThingID: th.ID,
 		}
 		gtr = append(gtr, grRel)
 	}
 	gtr = append(gtr, things.GroupThingRelation{
-		GroupID: groups[0].ID,
-		ThingID: ths[0].ID,
+		GroupID: gr.ID,
+		ThingID: th.ID,
 	})
 
 	channels := []things.Channel{}
@@ -2320,22 +2325,23 @@ func TestBackup(t *testing.T) {
 
 		channels = append(channels, ch)
 	}
+	ch := channels[0]
 
-	err = svc.AssignThing(context.Background(), token, groups[0].ID, ths[0].ID)
+	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.AssignChannel(context.Background(), token, groups[0].ID, channels[0].ID)
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, channels[0].ID, []string{ths[0].ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
-		ChannelID:    channels[0].ID,
-		ChannelOwner: channels[0].Owner,
-		ThingID:      ths[0].ID,
-		ThingOwner:   ths[0].Owner,
+		ChannelID:    ch.ID,
+		ChannelOwner: ch.Owner,
+		ThingID:      th.ID,
+		ThingOwner:   th.Owner,
 	})
 
 	var thingsRes []backupThingRes
@@ -2501,10 +2507,11 @@ func TestRestore(t *testing.T) {
 			Metadata: map[string]interface{}{"test": "data"},
 		})
 	}
+	ch := channels[0]
 
 	connections := things.Connection{
-		ChannelID:    channels[0].ID,
-		ChannelOwner: channels[0].Owner,
+		ChannelID:    ch.ID,
+		ChannelOwner: ch.Owner,
 		ThingID:      testThing.ID,
 		ThingOwner:   testThing.Owner,
 	}

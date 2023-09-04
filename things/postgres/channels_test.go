@@ -154,17 +154,18 @@ func TestSingleChannelRetrieval(t *testing.T) {
 		Owner: email,
 		Key:   thkey,
 	}
-	ths, _ := thingRepo.Save(context.Background(), th)
-	th.ID = ths[0].ID
+	_, err = thingRepo.Save(context.Background(), th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	ch := things.Channel{
+	c := things.Channel{
 		ID:    chID,
 		Owner: email,
 	}
-	chs, _ := chanRepo.Save(context.Background(), ch)
-	ch.ID = chs[0].ID
+	chs, err := chanRepo.Save(context.Background(), c)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	ch := chs[0]
 
 	err = chanRepo.Connect(context.Background(), email, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -375,12 +376,11 @@ func TestRetrieveByThing(t *testing.T) {
 
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	ths, err := thingRepo.Save(context.Background(), things.Thing{
+	_, err = thingRepo.Save(context.Background(), things.Thing{
 		ID:    thID,
 		Owner: email,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	thID = ths[0].ID
 
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -589,9 +589,8 @@ func TestDisconnect(t *testing.T) {
 		Key:      thkey,
 		Metadata: map[string]interface{}{},
 	}
-	ths, err := thingRepo.Save(context.Background(), th)
+	_, err = thingRepo.Save(context.Background(), th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thID = ths[0].ID
 
 	chanRepo := postgres.NewChannelRepository(dbMiddleware)
 	chID, err := idProvider.ID()
@@ -601,8 +600,9 @@ func TestDisconnect(t *testing.T) {
 		Owner: email,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chID = chs[0].ID
-	chanRepo.Connect(context.Background(), email, chID, []string{thID})
+	ch := chs[0]
+	err = chanRepo.Connect(context.Background(), email, ch.ID, []string{thID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonexistentThingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -688,7 +688,8 @@ func TestHasThing(t *testing.T) {
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	chID = chs[0].ID
-	chanRepo.Connect(context.Background(), email, chID, []string{thID})
+	err = chanRepo.Connect(context.Background(), email, chID, []string{thID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonexistentChanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
