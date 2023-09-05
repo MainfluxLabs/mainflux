@@ -46,7 +46,7 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveThing(ctx context.Context, token, id string) error
 
-	// CreateChannels adds channels to the user identifi<ed by the provided key.
+	// CreateChannels adds channels to the user identified by the provided key.
 	CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error)
 
 	// UpdateChannel updates the channel identified by the provided ID, that
