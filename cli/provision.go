@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/docker/docker/pkg/namesgenerator"
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/spf13/cobra"
 )
 
@@ -108,7 +108,7 @@ var cmdProvision = []cobra.Command{
 						Connect both things to one of the channels, \
 						and only on thing to other channel.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			numThings := 2
+			numThings := 3
 			numChan := 2
 			things := []mfxsdk.Thing{}
 			channels := []mfxsdk.Channel{}
@@ -168,10 +168,9 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			// Connect things to channels - first thing to both channels, second only to first
 			conIDs := mfxsdk.ConnectionIDs{
-				ChannelIDs: []string{channels[0].ID, channels[1].ID},
-				ThingIDs:   []string{things[0].ID},
+				ChannelID: channels[0].ID,
+				ThingIDs:  []string{things[0].ID, things[1].ID},
 			}
 			if err := sdk.Connect(conIDs, ut); err != nil {
 				logError(err)
@@ -179,8 +178,8 @@ var cmdProvision = []cobra.Command{
 			}
 
 			conIDs = mfxsdk.ConnectionIDs{
-				ChannelIDs: []string{channels[0].ID},
-				ThingIDs:   []string{things[1].ID},
+				ChannelID: channels[1].ID,
+				ThingIDs:  []string{things[2].ID},
 			}
 			if err := sdk.Connect(conIDs, ut); err != nil {
 				logError(err)
@@ -331,7 +330,7 @@ func connectionsFromFile(path string) (mfxsdk.ConnectionIDs, error) {
 			}
 
 			connections.ThingIDs = append(connections.ThingIDs, l[0])
-			connections.ChannelIDs = append(connections.ChannelIDs, l[1])
+			connections.ChannelID = l[1]
 		}
 	case jsonExt:
 		err := json.NewDecoder(file).Decode(&connections)

@@ -49,9 +49,9 @@ type ChannelRepository interface {
 	// RetrieveByOwner retrieves the subset of channels owned by the specified user.
 	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ChannelsPage, error)
 
-	// RetrieveByThing retrieves the subset of channels owned by the specified
-	// user and have specified thing connected or not connected to them.
-	RetrieveByThing(ctx context.Context, owner, thID string, pm PageMetadata) (ChannelsPage, error)
+	// RetrieveByThing retrieves the channel owned by the specified
+	// user and have specified thing connected to it.
+	RetrieveByThing(ctx context.Context, owner, thID string) (Channel, error)
 
 	// RetrieveConns retrieves the subset of channels connected to the specified
 	// thing.
@@ -61,12 +61,11 @@ type ChannelRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, owner, id string) error
 
-	// Connect adds things to the channels list of connected things.
-	Connect(ctx context.Context, owner string, chIDs, thIDs []string) error
+	// Connect connects a list of things to a channel.
+	Connect(ctx context.Context, owner, chID string, thIDs []string) error
 
-	// Disconnect removes things from the channels list of connected
-	// things.
-	Disconnect(ctx context.Context, owner string, chIDs, thIDs []string) error
+	// Disconnect disconnects a list of things from a channel.
+	Disconnect(ctx context.Context, owner, chID string, thIDs []string) error
 
 	// HasThing determines whether the thing with the provided access key, is
 	// "connected" to the specified channel. If that's the case, it returns

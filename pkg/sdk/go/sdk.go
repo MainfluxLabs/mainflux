@@ -210,10 +210,10 @@ type SDK interface {
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
 
-	// Connect bulk connects things to channels specified by id.
+	// Connect connects a list of things to a channel.
 	Connect(conns ConnectionIDs, token string) error
 
-	// Disconnect disconnect things from channels specified by id.
+	// Disconnect disconnects a list of things from a channel.
 	Disconnect(conns ConnectionIDs, token string) error
 
 	// CreateChannel creates new channel and returns its id.
@@ -225,9 +225,8 @@ type SDK interface {
 	// Channels returns page of channels.
 	Channels(token string, pm PageMetadata) (ChannelsPage, error)
 
-	// ChannelsByThing returns page of channels that are connected or not connected
-	// to specified thing.
-	ChannelsByThing(token, thingID string, offset, limit uint64, connected bool) (ChannelsPage, error)
+	// ViewChannelByThing returns channel that are connected to specified thing.
+	ViewChannelByThing(token, thingID string) (Channel, error)
 
 	// Channel returns channel data by id.
 	Channel(id, token string) (Channel, error)

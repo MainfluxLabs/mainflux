@@ -71,7 +71,7 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, owner, id string) (thing
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (svc *mainfluxThings) Connect(_ context.Context, owner string, chIDs, thIDs []string) error {
+func (svc *mainfluxThings) Connect(_ context.Context, owner, chID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -79,17 +79,16 @@ func (svc *mainfluxThings) Connect(_ context.Context, owner string, chIDs, thIDs
 	if err != nil {
 		return errors.ErrAuthentication
 	}
-	for _, chID := range chIDs {
-		if svc.channels[chID].Owner != userID.Email {
-			return errors.ErrAuthentication
-		}
-		svc.connections[chID] = append(svc.connections[chID], thIDs...)
+
+	if svc.channels[chID].Owner != userID.Email {
+		return errors.ErrAuthentication
 	}
+	svc.connections[chID] = append(svc.connections[chID], thIDs...)
 
 	return nil
 }
 
-func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, thIDs []string) error {
+func (svc *mainfluxThings) Disconnect(_ context.Context, owner, chID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -98,29 +97,28 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner string, chIDs, th
 		return errors.ErrAuthentication
 	}
 
-	for _, chID := range chIDs {
-		if svc.channels[chID].Owner != userID.Email {
-			return errors.ErrAuthentication
-		}
-
-		ids := svc.connections[chID]
-		var count int
-		var newConns []string
-		for _, thID := range thIDs {
-			for _, id := range ids {
-				if id == thID {
-					count++
-					continue
-				}
-				newConns = append(newConns, id)
-			}
-
-			if len(newConns)-len(ids) != count {
-				return errors.ErrNotFound
-			}
-			svc.connections[chID] = newConns
-		}
+	if svc.channels[chID].Owner != userID.Email {
+		return errors.ErrAuthentication
 	}
+
+	ids := svc.connections[chID]
+	var count int
+	var newConns []string
+	for _, thID := range thIDs {
+		for _, id := range ids {
+			if id == thID {
+				count++
+				continue
+			}
+			newConns = append(newConns, id)
+		}
+
+		if len(newConns)-len(ids) != count {
+			return errors.ErrNotFound
+		}
+		svc.connections[chID] = newConns
+	}
+
 	return nil
 }
 
@@ -177,7 +175,7 @@ func (svc *mainfluxThings) ListThings(context.Context, string, bool, things.Page
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannelsByThing(context.Context, string, string, things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ViewChannelByThing(context.Context, string, string) (things.Channel, error) {
 	panic("not implemented")
 }
 

@@ -46,7 +46,7 @@ func TestCanAccessByKey(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th1.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th1.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)
@@ -117,7 +117,8 @@ func TestCanAccessByID(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	svc.Connect(context.Background(), token, []string{ch.ID}, []string{th2.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th2.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(usersAddr, grpc.WithInsecure())

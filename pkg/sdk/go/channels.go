@@ -96,34 +96,34 @@ func (sdk mfSDK) Channels(token string, pm PageMetadata) (ChannelsPage, error) {
 	return cp, nil
 }
 
-func (sdk mfSDK) ChannelsByThing(token, thingID string, offset, limit uint64, disconn bool) (ChannelsPage, error) {
-	url := fmt.Sprintf("%s/things/%s/channels?offset=%d&limit=%d&disconnected=%t", sdk.thingsURL, thingID, offset, limit, disconn)
+func (sdk mfSDK) ViewChannelByThing(token, thingID string) (Channel, error) {
+	url := fmt.Sprintf("%s/things/%s/channels", sdk.thingsURL, thingID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return ChannelsPage{}, err
+		return Channel{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return ChannelsPage{}, err
+		return Channel{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ChannelsPage{}, err
+		return Channel{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Channel{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var cp ChannelsPage
-	if err := json.Unmarshal(body, &cp); err != nil {
-		return ChannelsPage{}, err
+	var ch Channel
+	if err := json.Unmarshal(body, &ch); err != nil {
+		return Channel{}, err
 	}
 
-	return cp, nil
+	return ch, nil
 }
 
 func (sdk mfSDK) Channel(id, token string) (Channel, error) {

@@ -171,7 +171,7 @@ func TestCanAccessByKey(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("failed to connect thing and channel: %s", err))
 
 	data := toJSON(canAccessByKeyReq{
@@ -264,7 +264,7 @@ func TestCanAccessByID(t *testing.T) {
 	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.Connect(context.Background(), token, []string{ch.ID}, []string{th.ID})
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("failed to connect thing and channel: %s", err))
 
 	data := toJSON(canAccessByIDReq{

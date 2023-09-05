@@ -150,90 +150,40 @@ func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageM
 	return cr.retrieve(ctx, "", false, pm)
 }
 
-func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	oq := getConnOrderQuery(pm.Order, "ch")
-	dq := getDirQuery(pm.Dir)
-
+func (cr channelRepository) RetrieveByThing(ctx context.Context, owner, thID string) (things.Channel, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(thID); err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return things.Channel{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	var q, qc string
-	switch pm.Disconnected {
-	case true:
-		q = fmt.Sprintf(`SELECT id, name, metadata
-		        FROM channels ch
-		        WHERE ch.owner = :owner AND ch.id NOT IN
-		        (SELECT id FROM channels ch
-		          INNER JOIN connections conn
-		          ON ch.id = conn.channel_id
-		          WHERE ch.owner = :owner AND conn.thing_id = :thing)
-		        ORDER BY %s %s %s;`, oq, dq, olq)
-
-		qc = `SELECT COUNT(*)
-		        FROM channels ch
-		        WHERE ch.owner = $1 AND ch.id NOT IN
-		        (SELECT id FROM channels ch
-		          INNER JOIN connections conn
-		          ON ch.id = conn.channel_id
-		          WHERE ch.owner = $1 AND conn.thing_id = $2);`
-	default:
-		q = fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
+	var q string
+	q = fmt.Sprintf(`SELECT id, name, metadata FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
-		        WHERE ch.owner = :owner AND conn.thing_id = :thing
-		        ORDER BY %s %s %s;`, oq, dq, olq)
-
-		qc = `SELECT COUNT(*)
-		        FROM channels ch
-		        INNER JOIN connections conn
-		        ON ch.id = conn.channel_id
-		        WHERE ch.owner = $1 AND conn.thing_id = $2`
-	}
+		        WHERE ch.owner = :owner AND conn.thing_id = :thing;`)
 
 	params := map[string]interface{}{
-		"owner":  owner,
-		"thing":  thID,
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
+		"owner": owner,
+		"thing": thID,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	items := []things.Channel{}
+	var item things.Channel
 	for rows.Next() {
 		dbch := dbChannel{Owner: owner}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		ch := toChannel(dbch)
-		items = append(items, ch)
+		item = toChannel(dbch)
 	}
 
-	var total uint64
-	if err := cr.db.GetContext(ctx, &total, qc, owner, thID); err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return things.ChannelsPage{
-		Channels: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}, nil
+	return item, nil
 }
 
 func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
@@ -314,7 +264,7 @@ func (cr channelRepository) Remove(ctx context.Context, owner, id string) error 
 	return nil
 }
 
-func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, thIDs []string) error {
+func (cr channelRepository) Connect(ctx context.Context, owner, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -323,29 +273,27 @@ func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, th
 	q := `INSERT INTO connections (channel_id, channel_owner, thing_id, thing_owner)
 	      VALUES (:channel, :owner, :thing, :owner);`
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			dbco := dbConnection{
-				Channel: chID,
-				Thing:   thID,
-				Owner:   owner,
-			}
+	for _, thID := range thIDs {
+		dbco := dbConnection{
+			Channel: chID,
+			Thing:   thID,
+			Owner:   owner,
+		}
 
-			_, err := tx.NamedExecContext(ctx, q, dbco)
-			if err != nil {
-				tx.Rollback()
-				pgErr, ok := err.(*pgconn.PgError)
-				if ok {
-					switch pgErr.Code {
-					case pgerrcode.ForeignKeyViolation:
-						return errors.ErrNotFound
-					case pgerrcode.UniqueViolation:
-						return errors.ErrConflict
-					}
+		_, err := tx.NamedExecContext(ctx, q, dbco)
+		if err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.ForeignKeyViolation:
+					return errors.ErrNotFound
+				case pgerrcode.UniqueViolation:
+					return errors.ErrConflict
 				}
-
-				return errors.Wrap(things.ErrConnect, err)
 			}
+
+			return errors.Wrap(things.ErrConnect, err)
 		}
 	}
 
@@ -356,7 +304,7 @@ func (cr channelRepository) Connect(ctx context.Context, owner string, chIDs, th
 	return nil
 }
 
-func (cr channelRepository) Disconnect(ctx context.Context, owner string, chIDs, thIDs []string) error {
+func (cr channelRepository) Disconnect(ctx context.Context, owner, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -366,37 +314,35 @@ func (cr channelRepository) Disconnect(ctx context.Context, owner string, chIDs,
 	      WHERE channel_id = :channel AND channel_owner = :owner
 	      AND thing_id = :thing AND thing_owner = :owner`
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			dbco := dbConnection{
-				Channel: chID,
-				Thing:   thID,
-				Owner:   owner,
-			}
+	for _, thID := range thIDs {
+		dbco := dbConnection{
+			Channel: chID,
+			Thing:   thID,
+			Owner:   owner,
+		}
 
-			res, err := tx.NamedExecContext(ctx, q, dbco)
-			if err != nil {
-				tx.Rollback()
-				pgErr, ok := err.(*pgconn.PgError)
-				if ok {
-					switch pgErr.Code {
-					case pgerrcode.ForeignKeyViolation:
-						return errors.ErrNotFound
-					case pgerrcode.UniqueViolation:
-						return errors.ErrConflict
-					}
+		res, err := tx.NamedExecContext(ctx, q, dbco)
+		if err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.ForeignKeyViolation:
+					return errors.ErrNotFound
+				case pgerrcode.UniqueViolation:
+					return errors.ErrConflict
 				}
-				return errors.Wrap(things.ErrDisconnect, err)
 			}
+			return errors.Wrap(things.ErrDisconnect, err)
+		}
 
-			cnt, err := res.RowsAffected()
-			if err != nil {
-				return errors.Wrap(things.ErrDisconnect, err)
-			}
+		cnt, err := res.RowsAffected()
+		if err != nil {
+			return errors.Wrap(things.ErrDisconnect, err)
+		}
 
-			if cnt == 0 {
-				return errors.ErrNotFound
-			}
+		if cnt == 0 {
+			return errors.ErrNotFound
 		}
 	}
 

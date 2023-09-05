@@ -148,8 +148,8 @@ var cmdThings = []cobra.Command{
 			}
 
 			connIDs := mfxsdk.ConnectionIDs{
-				ChannelIDs: []string{args[1]},
-				ThingIDs:   []string{args[0]},
+				ChannelID: args[1],
+				ThingIDs:  []string{args[0]},
 			}
 			if err := sdk.Connect(connIDs, args[2]); err != nil {
 				logError(err)
@@ -169,12 +169,12 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			connIDs := mfxsdk.ConnectionIDs{
-				ChannelIDs: []string{args[1]},
-				ThingIDs:   []string{args[0]},
+			disconnIDs := mfxsdk.ConnectionIDs{
+				ChannelID: args[1],
+				ThingIDs:  []string{args[0]},
 			}
 
-			if err := sdk.Disconnect(connIDs, args[2]); err != nil {
+			if err := sdk.Disconnect(disconnIDs, args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -185,33 +185,14 @@ var cmdThings = []cobra.Command{
 	{
 		Use:   "connections <thing_id> <user_auth_token>",
 		Short: "Connected list",
-		Long:  `List of Channels connected to Thing`,
+		Long:  `Retrieve Channel connected to Thing`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			cl, err := sdk.ChannelsByThing(args[1], args[0], uint64(Offset), uint64(Limit), true)
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(cl)
-		},
-	},
-	{
-		Use:   "not-connected <thing_id> <user_auth_token>",
-		Short: "Not-connected list",
-		Long:  `List of Channels not connected to a Thing`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			cl, err := sdk.ChannelsByThing(args[1], args[0], uint64(Offset), uint64(Limit), false)
+			cl, err := sdk.ViewChannelByThing(args[1], args[0])
 			if err != nil {
 				logError(err)
 				return

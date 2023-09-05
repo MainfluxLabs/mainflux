@@ -14,6 +14,8 @@ import (
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 )
 
+const name = "name"
+
 var (
 	ch1          = sdk.Channel{Name: "test1"}
 	ch2          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
@@ -311,7 +313,7 @@ func TestChannels(t *testing.T) {
 	}
 }
 
-func TestChannelsByThing(t *testing.T) {
+func TestViewChannelByThing(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -325,130 +327,81 @@ func TestChannelsByThing(t *testing.T) {
 	gr, err := mainfluxSDK.CreateGroup(group, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: "test_device"}
+	th := sdk.Thing{Name: name}
 	tid, err := mainfluxSDK.CreateThing(th, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var n = 100
-	var chsDiscoNum = 1
-	var channels []sdk.Channel
-	for i := 1; i < n+1; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
-		name := fmt.Sprintf("test-%d", i)
-		ch := sdk.Channel{ID: id, Name: name}
-		cid, err := mainfluxSDK.CreateChannel(ch, token)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	ch := sdk.Channel{Name: name}
+	cid, err := mainfluxSDK.CreateChannel(ch, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		channels = append(channels, ch)
+	err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		// Don't connect last Channel
-		if i == n+1-chsDiscoNum {
-			break
-		}
-
-		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-		conIDs := sdk.ConnectionIDs{
-			ChannelIDs: []string{cid},
-			ThingIDs:   []string{tid},
-		}
-		err = mainfluxSDK.Connect(conIDs, token)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	connIDs := sdk.ConnectionIDs{
+		ChannelID: cid,
+		ThingIDs:  []string{tid},
 	}
 
+	resChan := sdk.Channel{
+		ID:   cid,
+		Name: name,
+	}
+
+	err = mainfluxSDK.Connect(connIDs, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
-		desc         string
-		thing        string
-		token        string
-		offset       uint64
-		limit        uint64
-		disconnected bool
-		err          error
-		response     []sdk.Channel
+		desc     string
+		thing    string
+		token    string
+		err      error
+		response sdk.Channel
 	}{
 		{
-			desc:     "get a list of channels by thing",
+			desc:     "view channel by thing",
 			thing:    tid,
 			token:    token,
-			offset:   offset,
-			limit:    limit,
 			err:      nil,
-			response: channels[0:limit],
+			response: resChan,
 		},
 		{
-			desc:     "get a list of channels by thing with invalid token",
+			desc:     "view channel by thing with invalid token",
 			thing:    tid,
 			token:    wrongValue,
-			offset:   offset,
-			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: nil,
+			response: sdk.Channel{},
 		},
 		{
-			desc:     "get a list of channels by thing with empty token",
+			desc:     "view channel by thing with empty token",
 			thing:    tid,
 			token:    "",
-			offset:   offset,
-			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: nil,
+			response: sdk.Channel{},
 		},
 		{
-			desc:     "get a list of channels by thing with zero limit",
-			thing:    tid,
+			desc:     "view channel by thing with empty thing id",
+			thing:    "",
 			token:    token,
-			offset:   offset,
-			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
-			response: nil,
+			response: sdk.Channel{},
 		},
 		{
-			desc:     "get a list of channels by thing with limit greater than max",
-			thing:    tid,
+			desc:     "view channel by thing with unknown thing id",
+			thing:    wrongID,
 			token:    token,
-			offset:   offset,
-			limit:    110,
-			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
-			response: nil,
-		},
-		{
-			desc:     "get a list of channels by thing with offset greater than max",
-			thing:    tid,
-			token:    token,
-			offset:   110,
-			limit:    limit,
-			err:      nil,
-			response: []sdk.Channel{},
-		},
-		{
-			desc:     "get a list of channels by thing with invalid args (zero limit) and invalid token",
-			thing:    tid,
-			token:    wrongValue,
-			offset:   offset,
-			limit:    0,
-			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
-			response: nil,
-		},
-		{
-			desc:         "get a list of not connected channels by thing",
-			thing:        tid,
-			token:        token,
-			offset:       offset,
-			limit:        100,
-			disconnected: true,
-			err:          nil,
-			response:     []sdk.Channel{channels[n-chsDiscoNum]},
+			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
+			response: sdk.Channel{},
 		},
 	}
 
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ChannelsByThing(tc.token, tc.thing, tc.offset, tc.limit, tc.disconnected)
+		ch, err := mainfluxSDK.ViewChannelByThing(tc.token, tc.thing)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, page.Channels, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Channels))
+		assert.Equal(t, tc.response, ch, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, ch))
 	}
 }
 
