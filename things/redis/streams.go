@@ -176,8 +176,8 @@ func (es eventStore) ListChannels(ctx context.Context, token string, admin bool,
 	return es.svc.ListChannels(ctx, token, admin, pm)
 }
 
-func (es eventStore) ListChannelsByThing(ctx context.Context, token, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return es.svc.ListChannelsByThing(ctx, token, thID, pm)
+func (es eventStore) ViewChannelByThing(ctx context.Context, token, thID string) (things.Channel, error) {
+	return es.svc.ViewChannelByThing(ctx, token, thID)
 }
 
 func (es eventStore) RemoveChannel(ctx context.Context, token, id string) error {
@@ -198,47 +198,43 @@ func (es eventStore) RemoveChannel(ctx context.Context, token, id string) error 
 	return nil
 }
 
-func (es eventStore) Connect(ctx context.Context, token string, chIDs, thIDs []string) error {
-	if err := es.svc.Connect(ctx, token, chIDs, thIDs); err != nil {
+func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []string) error {
+	if err := es.svc.Connect(ctx, token, chID, thIDs); err != nil {
 		return err
 	}
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			event := connectThingEvent{
-				chanID:  chID,
-				thingID: thID,
-			}
-			record := &redis.XAddArgs{
-				Stream:       streamID,
-				MaxLenApprox: streamLen,
-				Values:       event.Encode(),
-			}
-			es.client.XAdd(ctx, record).Err()
+	for _, thID := range thIDs {
+		event := connectThingEvent{
+			chanID:  chID,
+			thingID: thID,
 		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
 	}
 
 	return nil
 }
 
-func (es eventStore) Disconnect(ctx context.Context, token string, chIDs, thIDs []string) error {
-	if err := es.svc.Disconnect(ctx, token, chIDs, thIDs); err != nil {
+func (es eventStore) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
+	if err := es.svc.Disconnect(ctx, token, chID, thIDs); err != nil {
 		return err
 	}
 
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			event := disconnectThingEvent{
-				chanID:  chID,
-				thingID: thID,
-			}
-			record := &redis.XAddArgs{
-				Stream:       streamID,
-				MaxLenApprox: streamLen,
-				Values:       event.Encode(),
-			}
-			es.client.XAdd(ctx, record).Err()
+	for _, thID := range thIDs {
+		event := disconnectThingEvent{
+			chanID:  chID,
+			thingID: thID,
 		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
 	}
 
 	return nil

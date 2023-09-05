@@ -20,8 +20,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/docker/docker/pkg/namesgenerator"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/docker/docker/pkg/namesgenerator"
 )
 
 const (
@@ -227,12 +227,14 @@ func Provision(conf Config) {
 		fmt.Printf("[[channels]]\nchannel_id = \"%s\"\n\n", cIDs[i])
 	}
 
-	conIDs := sdk.ConnectionIDs{
-		ChannelIDs: cIDs,
-		ThingIDs:   tIDs,
-	}
-	if err := s.Connect(conIDs, token); err != nil {
-		log.Fatalf("Failed to connect things %s to channels %s: %s", conIDs.ThingIDs, conIDs.ChannelIDs, err)
+	for _, cID := range cIDs {
+		conIDs := sdk.ConnectionIDs{
+			ChannelID: cID,
+			ThingIDs:  tIDs,
+		}
+		if err := s.Connect(conIDs, token); err != nil {
+			log.Fatalf("Failed to connect things %s to channel %s: %s", conIDs.ThingIDs, conIDs.ChannelID, err)
+		}
 	}
 }
 

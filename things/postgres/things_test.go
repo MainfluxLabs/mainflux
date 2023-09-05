@@ -656,7 +656,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			break
 		}
 
-		err = channelRepo.Connect(context.Background(), email, []string{chID}, []string{thID})
+		err = channelRepo.Connect(context.Background(), email, chID, []string{thID})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 

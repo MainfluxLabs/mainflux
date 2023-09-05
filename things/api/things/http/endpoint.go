@@ -342,35 +342,24 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listChannelsByThingEndpoint(svc things.Service) endpoint.Endpoint {
+func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listByConnectionReq)
+		req := request.(viewResourceReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListChannelsByThing(ctx, req.token, req.id, req.pageMetadata)
+		ch, err := svc.ViewChannelByThing(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
-		res := channelsPageRes{
-			pageRes: pageRes{
-				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
-			},
-			Channels: []viewChannelRes{},
-		}
-		for _, channel := range page.Channels {
-			view := viewChannelRes{
-				ID:       channel.ID,
-				Owner:    channel.Owner,
-				Name:     channel.Name,
-				Metadata: channel.Metadata,
-			}
-			res.Channels = append(res.Channels, view)
+		res := viewChannelRes{
+			ID:       ch.ID,
+			Owner:    ch.Owner,
+			Name:     ch.Name,
+			Metadata: ch.Metadata,
 		}
 
 		return res, nil
@@ -398,32 +387,32 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 
 func connectEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectReq)
+		cr := request.(connectionsReq)
 
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Connect(ctx, cr.token, cr.ChannelIDs, cr.ThingIDs); err != nil {
+		if err := svc.Connect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 
-		return connectRes{}, nil
+		return connectionsRes{}, nil
 	}
 }
 
 func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectReq)
+		cr := request.(connectionsReq)
 		if err := cr.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.Disconnect(ctx, cr.token, cr.ChannelIDs, cr.ThingIDs); err != nil {
+		if err := svc.Disconnect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 
-		return disconnectRes{}, nil
+		return connectionsRes{}, nil
 	}
 }
 
