@@ -46,7 +46,7 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveThing(ctx context.Context, token, id string) error
 
-	// CreateChannels adds channels to the user identified by the provided key.
+	// CreateChannels adds channels to the user identifi<ed by the provided key.
 	CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error)
 
 	// UpdateChannel updates the channel identified by the provided ID, that
@@ -773,23 +773,18 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return err
 	}
 
-	var chIDs []string
 	for _, ch := range cp.Channels {
-		chIDs = append(chIDs, ch.ID)
-	}
-
-	var thingIDs []string
-	for _, chID := range chIDs {
-		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), chID, PageMetadata{})
+		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), ch.ID, PageMetadata{})
 		if err != nil {
 			return err
 		}
 
+		var thingIDs []string
 		for _, th := range tp.Things {
 			thingIDs = append(thingIDs, th.ID)
 		}
 
-		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
 			return err
 		}
 	}
@@ -907,19 +902,17 @@ func (ts *thingsService) UnassignChannel(ctx context.Context, token string, grou
 		return errors.ErrAuthorization
 	}
 
-	var thingIDs []string
 	for _, chID := range channelIDs {
 		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), chID, PageMetadata{})
 		if err != nil {
 			return err
 		}
 
+		var thingIDs []string
 		for _, th := range tp.Things {
 			thingIDs = append(thingIDs, th.ID)
 		}
-	}
 
-	for _, chID := range channelIDs {
 		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
 			return err
 		}
