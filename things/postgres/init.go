@@ -152,6 +152,12 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE group_things",
 				},
 			},
+			{
+				Id: "things_7",
+				Up: []string{
+					`ALTER TABLE IF EXISTS connections ADD CONSTRAINT unique_thing_id_constraint UNIQUE (thing_id);`,
+				},
+			},
 		},
 	}
 

@@ -387,7 +387,7 @@ func TestThingsByChannel(t *testing.T) {
 
 	var n = 10
 	var thsDiscoNum = 1
-	var things []sdk.Thing
+	var ths []sdk.Thing
 	for i := 1; i < n+1; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
@@ -400,7 +400,7 @@ func TestThingsByChannel(t *testing.T) {
 		tid, err := mainfluxSDK.CreateThing(th, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		things = append(things, th)
+		ths = append(ths, th)
 
 		// Don't connect last Thing
 		if i == n+1-thsDiscoNum {
@@ -408,9 +408,9 @@ func TestThingsByChannel(t *testing.T) {
 		}
 
 		// Don't connect last 2 Channels
-		conIDs := sdk.ConnectionIDs{
-			ChannelIDs: []string{cid},
-			ThingIDs:   []string{tid},
+		connIDs := sdk.ConnectionIDs{
+			ChannelID: cid,
+			ThingIDs:  []string{tid},
 		}
 
 		err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
@@ -419,7 +419,7 @@ func TestThingsByChannel(t *testing.T) {
 		err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		err = mainfluxSDK.Connect(conIDs, token)
+		err = mainfluxSDK.Connect(connIDs, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -440,7 +440,7 @@ func TestThingsByChannel(t *testing.T) {
 			offset:   offset,
 			limit:    limit,
 			err:      nil,
-			response: things[0:limit],
+			response: ths[0:limit],
 		},
 		{
 			desc:     "get a list of things by channel with invalid token",
@@ -504,7 +504,7 @@ func TestThingsByChannel(t *testing.T) {
 			limit:        100,
 			disconnected: true,
 			err:          nil,
-			response:     []sdk.Thing{things[n-thsDiscoNum]},
+			response:     []sdk.Thing{ths[n-thsDiscoNum]},
 		},
 	}
 	for _, tc := range cases {
@@ -814,11 +814,11 @@ func TestConnectThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		conIDs := sdk.ConnectionIDs{
-			ChannelIDs: []string{tc.chanID},
-			ThingIDs:   []string{tc.thingID},
+		connIDs := sdk.ConnectionIDs{
+			ChannelID: tc.chanID,
+			ThingIDs:  []string{tc.thingID},
 		}
-		err := mainfluxSDK.Connect(conIDs, tc.token)
+		err := mainfluxSDK.Connect(connIDs, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -923,7 +923,7 @@ func TestConnect(t *testing.T) {
 
 	for _, tc := range cases {
 		connIDs := sdk.ConnectionIDs{
-			[]string{tc.thingID},
+			tc.thingID,
 			[]string{tc.chanID},
 		}
 
@@ -961,8 +961,8 @@ func TestDisconnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
-		ChannelIDs: []string{chanID1},
-		ThingIDs:   []string{thingID},
+		ChannelID: chanID1,
+		ThingIDs:  []string{thingID},
 	}
 	err = mainfluxSDK.Connect(connIDs, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -971,63 +971,63 @@ func TestDisconnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		connIDs sdk.ConnectionIDs
-		token   string
-		err     error
+		desc       string
+		disconnIDs sdk.ConnectionIDs
+		token      string
+		err        error
 	}{
 		{
-			desc:    "disconnect connected thing from channel",
-			connIDs: connIDs,
-			token:   token,
-			err:     nil,
+			desc:       "disconnect connected thing from channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			token:      token,
+			err:        nil,
 		},
 		{
-			desc:    "disconnect existing thing from non-existing channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{wrongID}, ThingIDs: []string{thingID}},
-			token:   token,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
+			desc:       "disconnect existing thing from non-existing channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: wrongID, ThingIDs: []string{thingID}},
+			token:      token,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
-			desc:    "disconnect non-existing thing from existing channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{wrongID}},
-			token:   token,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
+			desc:       "disconnect non-existing thing from existing channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{wrongID}},
+			token:      token,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
-			desc:    "disconnect existing thing from channel with invalid ID",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{""}, ThingIDs: []string{thingID}},
-			token:   token,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
+			desc:       "disconnect existing thing from channel with invalid ID",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: "", ThingIDs: []string{thingID}},
+			token:      token,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
-			desc:    "disconnect thing with invalid ID from existing channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{""}},
-			token:   token,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
+			desc:       "disconnect thing with invalid ID from existing channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{""}},
+			token:      token,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
-			desc:    "disconnect existing thing from existing channel with invalid token",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
+			desc:       "disconnect existing thing from existing channel with invalid token",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			token:      wrongValue,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "disconnect existing thing from existing channel with empty token",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID1}, ThingIDs: []string{thingID}},
-			token:   "",
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
+			desc:       "disconnect existing thing from existing channel with empty token",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			token:      "",
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "disconnect owner's thing from someone elses channel",
-			connIDs: sdk.ConnectionIDs{ChannelIDs: []string{chanID2}, ThingIDs: []string{thingID}},
-			token:   token,
-			err:     createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
+			desc:       "disconnect owner's thing from someone elses channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID2, ThingIDs: []string{thingID}},
+			token:      token,
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.Disconnect(tc.connIDs, tc.token)
+		err := mainfluxSDK.Disconnect(tc.disconnIDs, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

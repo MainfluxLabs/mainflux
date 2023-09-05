@@ -155,57 +155,19 @@ func (crm *channelRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things
 	return page, nil
 }
 
-func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	if pm.Limit < 0 {
-		return things.ChannelsPage{}, nil
-	}
+func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string) (things.Channel, error) {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
 
-	first := uint64(pm.Offset) + 1
-	last := first + uint64(pm.Limit)
-
-	var chs []things.Channel
-
-	// Append connected or not connected channels
-	switch pm.Disconnected {
-	case false:
+	for _, ch := range crm.channels {
 		for _, co := range crm.cconns[thID] {
-			id := parseID(co.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				chs = append(chs, co)
-			}
-		}
-	default:
-		for _, ch := range crm.channels {
-			conn := false
-			id := parseID(ch.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				for _, co := range crm.cconns[thID] {
-					if ch.ID == co.ID {
-						conn = true
-					}
-				}
-
-				// Append if not found in connections list
-				if !conn {
-					chs = append(chs, ch)
-				}
+			if ch.ID == co.ID {
+				return ch, nil
 			}
 		}
 	}
 
-	// Sort Channels by Thing list
-	chs = sortChannels(pm, chs)
-
-	page := things.ChannelsPage{
-		Channels: chs,
-		PageMetadata: things.PageMetadata{
-			Total:  crm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return things.Channel{}, errors.ErrNotFound
 }
 
 func (crm *channelRepositoryMock) RetrieveConns(_ context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
@@ -232,51 +194,50 @@ func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) er
 	return nil
 }
 
-func (crm *channelRepositoryMock) Connect(_ context.Context, owner string, chIDs, thIDs []string) error {
-	for _, chID := range chIDs {
-		ch, err := crm.RetrieveByID(context.Background(), chID)
+func (crm *channelRepositoryMock) Connect(_ context.Context, owner, chID string, thIDs []string) error {
+	ch, err := crm.RetrieveByID(context.Background(), chID)
+	if err != nil {
+		return err
+	}
+
+	for _, thID := range thIDs {
+		if _, ok := crm.cconns[thID]; ok {
+			return errors.ErrConflict
+		}
+		th, err := crm.things.RetrieveByID(context.Background(), thID)
 		if err != nil {
 			return err
 		}
-
-		for _, thID := range thIDs {
-			th, err := crm.things.RetrieveByID(context.Background(), thID)
-			if err != nil {
-				return err
-			}
-			crm.tconns <- Connection{
-				chanID:    chID,
-				thing:     th,
-				connected: true,
-			}
-			if _, ok := crm.cconns[thID]; !ok {
-				crm.cconns[thID] = make(map[string]things.Channel)
-			}
-			crm.cconns[thID][chID] = ch
+		crm.tconns <- Connection{
+			chanID:    chID,
+			thing:     th,
+			connected: true,
 		}
+		if _, ok := crm.cconns[thID]; !ok {
+			crm.cconns[thID] = make(map[string]things.Channel)
+		}
+		crm.cconns[thID][chID] = ch
 	}
 
 	return nil
 }
 
-func (crm *channelRepositoryMock) Disconnect(_ context.Context, owner string, chIDs, thIDs []string) error {
-	for _, chID := range chIDs {
-		for _, thID := range thIDs {
-			if _, ok := crm.cconns[thID]; !ok {
-				return errors.ErrNotFound
-			}
-
-			if _, ok := crm.cconns[thID][chID]; !ok {
-				return errors.ErrNotFound
-			}
-
-			crm.tconns <- Connection{
-				chanID:    chID,
-				thing:     things.Thing{ID: thID, Owner: owner},
-				connected: false,
-			}
-			delete(crm.cconns[thID], chID)
+func (crm *channelRepositoryMock) Disconnect(_ context.Context, owner, chID string, thIDs []string) error {
+	for _, thID := range thIDs {
+		if _, ok := crm.cconns[thID]; !ok {
+			return errors.ErrNotFound
 		}
+
+		if _, ok := crm.cconns[thID][chID]; !ok {
+			return errors.ErrNotFound
+		}
+
+		crm.tconns <- Connection{
+			chanID:    chID,
+			thing:     things.Thing{ID: thID, Owner: owner},
+			connected: false,
+		}
+		delete(crm.cconns[thID], chID)
 	}
 
 	return nil

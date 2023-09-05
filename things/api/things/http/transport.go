@@ -84,8 +84,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:id/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_channels_by_thing")(listChannelsByThingEndpoint(svc)),
-		decodeListByConnection,
+		kitot.TraceServer(tracer, "view_channel_by_thing")(viewChannelByThingEndpoint(svc)),
+		decodeView,
 		encodeResponse,
 		opts...,
 	))
@@ -148,14 +148,14 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Post("/connect", kithttp.NewServer(
 		kitot.TraceServer(tracer, "connect")(connectEndpoint(svc)),
-		decodeConnectList,
+		decodeConnectionsList,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/disconnect", kithttp.NewServer(
 		kitot.TraceServer(tracer, "disconnect")(disconnectEndpoint(svc)),
-		decodeConnectList,
+		decodeConnectionsList,
 		encodeResponse,
 		opts...,
 	))
@@ -456,12 +456,12 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeConnectList(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeConnectionsList(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := connectReq{token: apiutil.ExtractBearerToken(r)}
+	req := connectionsReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
