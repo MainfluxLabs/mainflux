@@ -367,11 +367,6 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 }
 
 func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
-	_, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
 	if err := svc.authorize(ctx, rootSubject, token); err != nil {
 		return err
 	}
@@ -381,8 +376,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 	}
 
 	for _, user := range users {
-		_, err := svc.users.Save(ctx, user)
-		if err != nil {
+		if _, err := svc.users.Save(ctx, user); err != nil {
 			return err
 		}
 	}

@@ -628,11 +628,6 @@ func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) 
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Backup{}, err
-	}
-
 	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return Backup{}, err
 	}
@@ -672,42 +667,32 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	_, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
 	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
 		return err
 	}
 
 	for _, group := range backup.Groups {
-		_, err = ts.groups.Save(ctx, group)
-		if err != nil {
+		if _, err := ts.groups.Save(ctx, group); err != nil {
 			return err
 		}
 	}
 
 	for _, gtr := range backup.GroupThingRelations {
-		err = ts.groups.AssignThing(ctx, gtr.GroupID, gtr.ThingID)
-		if err != nil {
+		if err := ts.groups.AssignThing(ctx, gtr.GroupID, gtr.ThingID); err != nil {
 			return err
 		}
 	}
 
-	_, err = ts.things.Save(ctx, backup.Things...)
-	if err != nil {
+	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
 		return err
 	}
 
-	_, err = ts.channels.Save(ctx, backup.Channels...)
-	if err != nil {
+	if _, err := ts.channels.Save(ctx, backup.Channels...); err != nil {
 		return err
 	}
 
 	for _, conn := range backup.Connections {
-		err = ts.channels.Connect(ctx, conn.ThingOwner, []string{conn.ChannelID}, []string{conn.ThingID})
-		if err != nil {
+		if err := ts.channels.Connect(ctx, conn.ThingOwner, []string{conn.ChannelID}, []string{conn.ThingID}); err != nil {
 			return err
 		}
 	}
