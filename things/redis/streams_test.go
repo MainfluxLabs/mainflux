@@ -224,8 +224,9 @@ func TestListThingsByChannel(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -471,8 +472,9 @@ func TestListChannelsByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -561,8 +563,9 @@ func TestConnectEvent(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -637,8 +640,9 @@ func TestDisconnectEvent(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

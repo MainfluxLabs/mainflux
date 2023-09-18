@@ -449,25 +449,44 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createGroupReq)
+		req := request.(createGroupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		group := things.Group{
-			Name:        req.Name,
-			Description: req.Description,
-			Metadata:    req.Metadata,
+		grs := []things.Group{}
+		for _, gReq := range req.Groups {
+			group := things.Group{
+				Name:        gReq.Name,
+				Description: gReq.Description,
+				Metadata:    gReq.Metadata,
+			}
+			grs = append(grs, group)
 		}
 
-		group, err := svc.CreateGroup(ctx, req.token, group)
+		groups, err := svc.CreateGroups(ctx, req.token, grs...)
 		if err != nil {
 			return nil, err
 		}
 
-		return groupRes{created: true, id: group.ID}, nil
+		res := groupsRes{
+			Groups:  []groupRes{},
+			created: true,
+		}
+
+		for _, gr := range groups {
+			gRes := groupRes{
+				ID:          gr.ID,
+				Name:        gr.Name,
+				Description: gr.Description,
+				Metadata:    gr.Metadata,
+			}
+			res.Groups = append(res.Groups, gRes)
+		}
+
+		return res, nil
 	}
 }
 

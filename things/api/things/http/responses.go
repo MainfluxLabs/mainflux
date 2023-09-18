@@ -4,7 +4,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -21,7 +20,7 @@ var (
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*groupThingsPageRes)(nil)
 	_ mainflux.Response = (*groupChannelsPageRes)(nil)
-	_ mainflux.Response = (*groupRes)(nil)
+	_ mainflux.Response = (*groupsRes)(nil)
 	_ mainflux.Response = (*removeRes)(nil)
 	_ mainflux.Response = (*assignRes)(nil)
 	_ mainflux.Response = (*unassignRes)(nil)
@@ -329,11 +328,19 @@ func (res viewGroupRes) Empty() bool {
 }
 
 type groupRes struct {
-	id      string
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	created     bool
+}
+
+type groupsRes struct {
+	Groups  []groupRes `json:"groups"`
 	created bool
 }
 
-func (res groupRes) Code() int {
+func (res groupsRes) Code() int {
 	if res.created {
 		return http.StatusCreated
 	}
@@ -341,18 +348,12 @@ func (res groupRes) Code() int {
 	return http.StatusOK
 }
 
-func (res groupRes) Headers() map[string]string {
-	if res.created {
-		return map[string]string{
-			"Location": fmt.Sprintf("/groups/%s", res.id),
-		}
-	}
-
+func (res groupsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res groupRes) Empty() bool {
-	return true
+func (res groupsRes) Empty() bool {
+	return false
 }
 
 type groupPageRes struct {

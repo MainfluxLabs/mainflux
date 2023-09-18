@@ -228,13 +228,13 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup t
 	return ms.svc.Restore(ctx, token, backup)
 }
 
-func (ms *metricsMiddleware) CreateGroup(ctx context.Context, token string, g things.Group) (things.Group, error) {
+func (ms *metricsMiddleware) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_group").Add(1)
-		ms.latency.With("method", "create_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_groups").Add(1)
+		ms.latency.With("method", "create_groups").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateGroup(ctx, token, g)
+	return ms.svc.CreateGroups(ctx, token, grs...)
 }
 
 func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, g things.Group) (things.Group, error) {

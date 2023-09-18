@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -23,29 +22,52 @@ const (
 )
 
 func (sdk mfSDK) CreateGroup(g Group, token string) (string, error) {
-	data, err := json.Marshal(g)
+	groups, err := sdk.CreateGroups([]Group{g}, token)
 	if err != nil {
 		return "", err
 	}
 
+	if len(groups) < 1 {
+		return "", nil
+	}
+
+	return groups[0].ID, nil
+}
+
+func (sdk mfSDK) CreateGroups(groups []Group, token string) ([]Group, error) {
+	data, err := json.Marshal(groups)
+	if err != nil {
+		return []Group{}, err
+	}
+
 	url := fmt.Sprintf("%s/%s", sdk.thingsURL, groupsEndpoint)
+
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
-		return "", err
+		return []Group{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return "", err
+		return []Group{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return []Group{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", groupsEndpoint))
-	return id, nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []Group{}, err
+	}
+
+	var cgr createGroupsRes
+	if err := json.Unmarshal(body, &cgr); err != nil {
+		return []Group{}, err
+	}
+
+	return cgr.Groups, nil
 }
 
 func (sdk mfSDK) DeleteGroup(id, token string) error {

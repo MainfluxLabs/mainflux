@@ -22,6 +22,10 @@ type createChannelsRes struct {
 	Channels []Channel `json:"channels"`
 }
 
+type createGroupsRes struct {
+	Groups []Group `json:"groups"`
+}
+
 type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`

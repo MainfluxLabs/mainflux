@@ -341,18 +341,29 @@ func (req restoreReq) validate() error {
 }
 
 type createGroupReq struct {
-	token       string
 	Name        string                 `json:"name,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func (req createGroupReq) validate() error {
+type createGroupsReq struct {
+	token  string
+	Groups []createGroupReq
+}
+
+func (req createGroupsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if len(req.Name) > maxNameSize || req.Name == "" {
-		return apiutil.ErrNameSize
+
+	if len(req.Groups) <= 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, group := range req.Groups {
+		if len(group.Name) > maxNameSize {
+			return apiutil.ErrNameSize
+		}
 	}
 
 	return nil
