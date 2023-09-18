@@ -161,8 +161,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Post("/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_group")(createGroupEndpoint(svc)),
-		decodeGroupCreate,
+		kitot.TraceServer(tracer, "create_groups")(createGroupsEndpoint(svc)),
+		decodeGroupsCreation,
 		encodeResponse,
 		opts...,
 	))
@@ -501,13 +501,13 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeGroupCreate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupsCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createGroupReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	req := createGroupsReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req.Groups); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

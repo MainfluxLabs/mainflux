@@ -318,9 +318,9 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup t
 	return lm.svc.Restore(ctx, token, backup)
 }
 
-func (lm *loggingMiddleware) CreateGroup(ctx context.Context, token string, gr things.Group) (g things.Group, err error) {
+func (lm *loggingMiddleware) CreateGroups(ctx context.Context, token string, grs ...things.Group) (saved []things.Group, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_group for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method create_groups for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -328,7 +328,7 @@ func (lm *loggingMiddleware) CreateGroup(ctx context.Context, token string, gr t
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateGroup(ctx, token, gr)
+	return lm.svc.CreateGroups(ctx, token, grs...)
 }
 
 func (lm *loggingMiddleware) UpdateGroup(ctx context.Context, token string, gr things.Group) (g things.Group, err error) {

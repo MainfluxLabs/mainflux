@@ -37,8 +37,10 @@ func TestCanAccessByKey(t *testing.T) {
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, th1.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -108,8 +110,10 @@ func TestCanAccessByID(t *testing.T) {
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
-	gr, err := svc.CreateGroup(context.Background(), token, group)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	err = svc.AssignThing(context.Background(), token, gr.ID, ths[0].ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

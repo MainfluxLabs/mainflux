@@ -97,8 +97,8 @@ type Service interface {
 	// Restore adds things, channels and connections from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
-	// CreateGroup creates new  group.
-	CreateGroup(ctx context.Context, token string, g Group) (Group, error)
+	// CreateGroups adds groups to the user identified by the provided key.
+	CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error)
 
 	// UpdateGroup updates the group identified by the provided ID.
 	UpdateGroup(ctx context.Context, token string, g Group) (Group, error)
@@ -205,7 +205,6 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 	return ths, nil
 }
 
-// createThing saves the Thing and adds identity as an owner(Read, Write, Delete policies) of the Thing.
 func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *mainflux.UserIdentity) (Thing, error) {
 	thing.Owner = identity.GetId()
 
@@ -688,23 +687,38 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	return nil
 }
 
-func (ts *thingsService) CreateGroup(ctx context.Context, token string, group Group) (Group, error) {
+func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
-		return Group{}, errors.Wrap(errors.ErrAuthentication, err)
+		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
+	owner := user.GetId()
+	timestamp := getTimestmap()
+
+	grs := []Group{}
+	for _, group := range groups {
+		group.OwnerID = owner
+		group.CreatedAt = timestamp
+		group.UpdatedAt = timestamp
+
+		gr, err := ts.createGroup(ctx, group)
+		if err != nil {
+			return []Group{}, err
+		}
+
+		grs = append(grs, gr)
+	}
+
+	return grs, nil
+}
+
+func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, error) {
 	id, err := ts.idProvider.ID()
 	if err != nil {
 		return Group{}, err
 	}
-
-	timestamp := getTimestmap()
-	group.UpdatedAt = timestamp
-	group.CreatedAt = timestamp
-
 	group.ID = id
-	group.OwnerID = user.Id
 
 	group, err = ts.groups.Save(ctx, group)
 	if err != nil {
@@ -992,7 +1006,7 @@ func (ts *thingsService) ViewThingMembership(ctx context.Context, token string, 
 	}
 
 	if groupID == "" {
-		return Group{}, errors.Wrap(errors.ErrNotFound, err)
+		return Group{}, nil
 	}
 
 	group, err := ts.groups.RetrieveByID(ctx, groupID)
