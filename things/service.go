@@ -701,11 +701,12 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 		group.OwnerID = owner
 		group.CreatedAt = timestamp
 		group.UpdatedAt = timestamp
-		gr, err := ts.createGroup(ctx, group)
 
+		gr, err := ts.createGroup(ctx, group)
 		if err != nil {
 			return []Group{}, err
 		}
+
 		grs = append(grs, gr)
 	}
 
