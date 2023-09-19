@@ -52,8 +52,8 @@ const (
 	defJaegerURL         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
-	defAuthGRPCTimeout   = "1s"
 	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 
 	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
 	envPort              = "MF_TIMESCALE_READER_PORT"
