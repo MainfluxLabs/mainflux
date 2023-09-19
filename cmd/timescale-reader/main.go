@@ -52,6 +52,8 @@ const (
 	defJaegerURL         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCTimeout   = "1s"
+	defAuthGRPCURL       = "localhost:8181"
 
 	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
 	envPort              = "MF_TIMESCALE_READER_PORT"
@@ -69,19 +71,21 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel             string
-	port                 string
-	clientTLS            bool
-	caCerts              string
-	dbConfig             timescale.Config
-	jaegerURL            string
-	thingsGRPCURL        string
-	authGRPCURL         string
-	thingsGRPCTimeout    time.Duration
-	authGRPCTimeout time.Duration
+	logLevel          string
+	port              string
+	clientTLS         bool
+	caCerts           string
+	dbConfig          timescale.Config
+	jaegerURL         string
+	thingsGRPCURL     string
+	authGRPCURL       string
+	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 }
 
 func main() {
@@ -154,6 +158,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		port:              mainflux.Env(envPort, defPort),
@@ -163,6 +172,8 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout:   authGRPCTimeout,
 	}
 }
 
