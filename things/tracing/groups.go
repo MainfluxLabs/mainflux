@@ -8,22 +8,23 @@ import (
 )
 
 const (
-	saveGroupOp                 = "save_group"
-	updateGroupOp               = "update_group"
-	removeGroupOp               = "remove_group"
-	retrieveAllOp               = "retrieve_all"
-	retrieveGroupByIDOp         = "retrieve_group_by_id"
-	retrieveGroupByIDsOp        = "retrieve_group_by_ids"
-	retrieveByOwnerOp           = "retrieve_by_owner"
-	retrieveThingMembershipOp   = "retrieve_thing_membership"
-	retrieveChannelMembershipOp = "retrieve_channel_membership"
-	retrieveGroupThingsOp       = "retrieve_group_things"
-	retrieveGroupChannelsOp     = "retrieve_group_channels"
-	assignThingOp               = "assign_thing"
-	unassignThingOp             = "unassign_thing"
-	assignChannelOp             = "assign_channel"
-	unassignChannelOp           = "unassign_channel"
-	retrieveAllThingRelationsOp = "retrieve_all_thing_relations"
+	saveGroupOp                    = "save_group"
+	updateGroupOp                  = "update_group"
+	removeGroupOp                  = "remove_group"
+	retrieveAllOp                  = "retrieve_all"
+	retrieveGroupByIDOp            = "retrieve_group_by_id"
+	retrieveGroupByIDsOp           = "retrieve_group_by_ids"
+	retrieveByOwnerOp              = "retrieve_by_owner"
+	retrieveThingMembershipOp      = "retrieve_thing_membership"
+	retrieveChannelMembershipOp    = "retrieve_channel_membership"
+	retrieveGroupThingsOp          = "retrieve_group_things"
+	retrieveGroupThingsByChannelOp = "retrieve_group_things_by_channel"
+	retrieveGroupChannelsOp        = "retrieve_group_channels"
+	assignThingOp                  = "assign_thing"
+	unassignThingOp                = "unassign_thing"
+	assignChannelOp                = "assign_channel"
+	unassignChannelOp              = "unassign_channel"
+	retrieveAllThingRelationsOp    = "retrieve_all_thing_relations"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -118,6 +119,14 @@ func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, gr
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveGroupThings(ctx, groupID, pm)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveGroupThingsByChannelOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveGroupThingsByChannel(ctx, groupID, channelID, pm)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {

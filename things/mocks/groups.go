@@ -290,6 +290,10 @@ func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, group
 	panic("not implemented")
 }
 
+func (grm *groupRepositoryMock) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	panic("not implemented")
+}
+
 func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }

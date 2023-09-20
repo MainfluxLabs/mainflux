@@ -282,6 +282,15 @@ func (ms *metricsMiddleware) ListGroupThings(ctx context.Context, token, groupID
 	return ms.svc.ListGroupThings(ctx, token, groupID, pm)
 }
 
+func (ms *metricsMiddleware) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_group_things_by_channel").Add(1)
+		ms.latency.With("method", "list_group_things_by_channel").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupThingsByChannel(ctx, token, grID, chID, pm)
+}
+
 func (ms *metricsMiddleware) ViewThingMembership(ctx context.Context, token, thingID string) (things.Group, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_thing_membership").Add(1)

@@ -396,6 +396,19 @@ func (lm *loggingMiddleware) ListGroupThings(ctx context.Context, token, groupID
 	return lm.svc.ListGroupThings(ctx, token, groupID, pm)
 }
 
+func (lm *loggingMiddleware) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (tp things.GroupThingsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_group_things_by_channel for token %s, group %s and channel %s took %s to complete", token, grID, chID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupThingsByChannel(ctx, token, grID, chID, pm)
+}
+
 func (lm *loggingMiddleware) ViewThingMembership(ctx context.Context, token, thingID string) (gr things.Group, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_thing_membership for token %s took %s to complete", token, time.Since(begin))

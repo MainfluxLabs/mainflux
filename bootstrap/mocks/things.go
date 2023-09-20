@@ -255,6 +255,10 @@ func (svc *mainfluxThings) ListGroupThings(ctx context.Context, token, groupID s
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CreateGroups(ctx context.Context, token string, groups ...things.Group) ([]things.Group, error) {
 	panic("not implemented")
 }

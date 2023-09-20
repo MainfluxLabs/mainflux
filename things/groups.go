@@ -19,6 +19,9 @@ var (
 	// ErrRetrieveGroupThings indicates failure to retrieve group things.
 	ErrRetrieveGroupThings = errors.New("failed to retrieve group things")
 
+	// ErrRetrieveGroupThingsByChannel indicates failure to retrieve group things by channel.
+	ErrRetrieveGroupThingsByChannel = errors.New("failed to retrieve group things by channel")
+
 	// ErrRetrieveThingMembership indicates failure to retrieve thing membership
 	ErrRetrieveThingMembership = errors.New("failed to retrieve thing membership")
 
@@ -118,6 +121,9 @@ type GroupRepository interface {
 
 	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
+
+	// RetrieveGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
+	RetrieveGroupThingsByChannel(ctx context.Context, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
 
 	// AssignThing adds a thing to a group
 	AssignThing(ctx context.Context, groupID string, thingIDs ...string) error
