@@ -496,26 +496,17 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 	}
 
 	if cgrID == "" {
-		return errors.ErrNotFound
+		return errors.ErrAuthorization
 	}
 
-	var tgrIDs []string
 	for _, thID := range thIDs {
 		tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
 		if err != nil {
 			return err
 		}
 
-		if tgrID == "" {
-			return errors.ErrNotFound
-		}
-
-		tgrIDs = append(tgrIDs, tgrID)
-	}
-
-	for _, tgrID := range tgrIDs {
-		if cgrID != tgrID {
-			return errors.ErrGroupMismatch
+		if tgrID != cgrID {
+			return errors.ErrAuthorization
 		}
 	}
 
