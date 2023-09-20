@@ -311,7 +311,8 @@ func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, grou
 
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr, things t, group_channels gc
 		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
-		NOT IN (SELECT ct.thing_id FROM connections ct) %s;`, mq)
+		NOT IN (SELECT ct.thing_id FROM connections ct)
+		%s;`, mq)
 
 	params := map[string]interface{}{
 		"group_id":   groupID,
