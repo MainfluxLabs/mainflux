@@ -986,8 +986,9 @@ func (ts *thingsService) ListGroupThingsByChannel(ctx context.Context, token, gr
 		return GroupThingsPage{}, err
 	}
 
-	if user.GetId() != group.OwnerID {
-		return GroupThingsPage{}, errors.ErrAuthorization
+	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: grID, Action: auth.ReadAction})
+	if user.GetId() != group.OwnerID && err != nil {
+		return GroupThingsPage{}, err
 	}
 
 	return ts.groups.RetrieveGroupThingsByChannel(ctx, grID, chID, pm)
