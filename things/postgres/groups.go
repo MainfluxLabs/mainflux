@@ -306,12 +306,12 @@ func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, grou
 	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 		FROM group_things gr, things t, group_channels gc
 		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
-		NOT IN (SELECT c.thing_id FROM connections c WHERE c.channel_id = :channel_id)
+		NOT IN (SELECT c.thing_id FROM connections c)
 		%s %s;`, mq, olq)
 
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr, things t, group_channels gc
 		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
-		NOT IN (SELECT ct.thing_id FROM connections ct WHERE ct.channel_id = :channel_id) %s;`, mq)
+		NOT IN (SELECT ct.thing_id FROM connections ct) %s;`, mq)
 
 	params := map[string]interface{}{
 		"group_id":   groupID,
