@@ -495,33 +495,22 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		return err
 	}
 
-	if cgrID != "" {
-		var tgrIDs []string
-		for _, thID := range thIDs {
-			tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
-			if err != nil {
-				return err
-			}
-
-			if tgrID != "" {
-				tgrIDs = append(tgrIDs, tgrID)
-			}
-		}
-
-		for _, tgrID := range tgrIDs {
-			if cgrID != tgrID {
-				return errors.ErrGroupMismatch
-			}
-		}
-
-		if len(tgrIDs) > 0 {
-			return ts.channels.Connect(ctx, res.GetId(), chID, thIDs)
-		}
-
+	if cgrID == "" {
 		return errors.ErrAuthorization
 	}
 
-	return nil
+	for _, thID := range thIDs {
+		tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
+		if err != nil {
+			return err
+		}
+
+		if tgrID != cgrID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return ts.channels.Connect(ctx, res.GetId(), chID, thIDs)
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
