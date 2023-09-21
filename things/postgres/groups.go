@@ -237,10 +237,10 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	case true:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM  things t
-			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr WHERE gr.group_id = :group_id)
+			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM things t
-			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr WHERE gr.group_id = :group_id) %s;`, mq)
+			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM group_things gr, things t
@@ -503,10 +503,10 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	case true:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr WHERE gr.group_id = :group_id)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr WHERE gr.group_id = :group_id) %s;`, mq)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM group_channels gr, channels c

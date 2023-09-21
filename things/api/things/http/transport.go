@@ -246,7 +246,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/groups/:groupID/channels/:channelID/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_group_things_by_channel")(listGroupThingsByChannelEndpoint(svc)),
-		listGroupThingsByChannel,
+		decodeListGroupThingsByChannel,
 		encodeResponse,
 		opts...,
 	))
@@ -463,7 +463,7 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func listGroupThingsByChannel(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupThingsByChannel(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
