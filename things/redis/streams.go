@@ -260,6 +260,10 @@ func (es eventStore) ListGroupThings(ctx context.Context, token, groupID string,
 	return es.svc.ListGroupThings(ctx, token, groupID, pm)
 }
 
+func (es eventStore) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	return es.svc.ListGroupThingsByChannel(ctx, token, grID, chID, pm)
+}
+
 func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
 	return es.svc.CreateGroups(ctx, token, grs...)
 }

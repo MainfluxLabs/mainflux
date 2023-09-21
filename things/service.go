@@ -115,6 +115,9 @@ type Service interface {
 	// ListGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
+	// ListGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
+	ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
+
 	// ViewThingMembership retrieves group that thing belongs to.
 	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
 
@@ -961,6 +964,25 @@ func (ts *thingsService) ListGroupThings(ctx context.Context, token string, grou
 	}
 
 	return gthp, nil
+}
+
+func (ts *thingsService) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm PageMetadata) (GroupThingsPage, error) {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, grID)
+	if err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: grID, Action: auth.ReadAction})
+	if user.GetId() != group.OwnerID && err != nil {
+		return GroupThingsPage{}, err
+	}
+
+	return ts.groups.RetrieveGroupThingsByChannel(ctx, grID, chID, pm)
 }
 
 func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error) {

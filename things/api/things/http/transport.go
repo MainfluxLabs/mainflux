@@ -244,6 +244,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/groups/:groupID/channels/:channelID/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_things_by_channel")(listGroupThingsByChannelEndpoint(svc)),
+		listGroupThingsByChannel,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/channels/:channelID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_channel_membership")(viewChannelMembershipEndpoint(svc)),
 		decodeViewChannelMembershipRequest,
@@ -450,6 +457,30 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 			Disconnected: c,
 			Order:        or,
 			Dir:          d,
+		},
+	}
+
+	return req, nil
+}
+
+func listGroupThingsByChannel(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listGroupThingsByChannelReq{
+		token:     apiutil.ExtractBearerToken(r),
+		groupID:   bone.GetValue(r, groupIDKey),
+		channelID: bone.GetValue(r, channelIDKey),
+		pageMetadata: things.PageMetadata{
+			Offset: o,
+			Limit:  l,
 		},
 	}
 

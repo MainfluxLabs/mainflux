@@ -672,6 +672,22 @@ func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func listGroupThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listGroupThingsByChannelReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		
+		page, err := svc.ListGroupThingsByChannel(ctx, req.token, req.groupID, req.channelID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupThingsResponse(page), nil
+	}
+}
+
 func viewChannelMembershipEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)

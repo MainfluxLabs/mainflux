@@ -473,6 +473,25 @@ func (req groupChannelsReq) validate() error {
 	return nil
 }
 
+type listGroupThingsByChannelReq struct {
+	token        string
+	groupID      string
+	channelID    string
+	pageMetadata things.PageMetadata
+}
+
+func (req listGroupThingsByChannelReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.channelID == "" || req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type groupReq struct {
 	token string
 	id    string

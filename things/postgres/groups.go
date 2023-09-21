@@ -292,6 +292,73 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	return page, nil
 }
 
+func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
+	if err != nil {
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
+	}
+
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+		FROM group_things gr, things t, group_channels gc
+		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
+		NOT IN (SELECT c.thing_id FROM connections c)
+		%s %s;`, mq, olq)
+
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr, things t, group_channels gc
+		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
+		NOT IN (SELECT ct.thing_id FROM connections ct)
+		%s;`, mq)
+
+	params := map[string]interface{}{
+		"group_id":   groupID,
+		"channel_id": channelID,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
+	}
+	defer rows.Close()
+
+	var items []things.Thing
+	for rows.Next() {
+		dbt := dbThing{}
+		if err := rows.StructScan(&dbt); err != nil {
+			return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
+		}
+
+		th, err := toThing(dbt)
+		if err != nil {
+			return things.GroupThingsPage{}, err
+		}
+
+		items = append(items, th)
+	}
+
+	total, err := total(ctx, gr.db, qc, params)
+	if err != nil {
+		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
+	}
+
+	page := things.GroupThingsPage{
+		Things: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
 	q := `SELECT group_id FROM group_things WHERE thing_id = :thing_id;`
 
