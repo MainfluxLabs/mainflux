@@ -637,6 +637,23 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 		return err
 	}
 
+	mp, err := svc.ListOrgMembers(ctx, token, orgID, PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, member := range mp.Members {
+		gPolicy := GroupsPolicy{
+			MemberID: member.ID,
+		}
+		for _, gid := range groupIDs {
+			gPolicy.GroupID = gid
+			if err := svc.orgs.RemovePolicy(ctx, gPolicy); err != nil {
+				return err
+			}
+		}
+	}
+
 	if err := svc.orgs.UnassignGroups(ctx, orgID, groupIDs...); err != nil {
 		return err
 	}
