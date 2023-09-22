@@ -21,6 +21,7 @@ const (
 	description  = "description"
 	n            = uint64(5)
 	invalid      = "invalid"
+	channelName  = "channel"
 )
 
 var (
@@ -187,12 +188,12 @@ func TestGroupUpdate(t *testing.T) {
 			desc: "update group for existing id",
 			groupUpdate: things.Group{
 				ID:        groupID,
-				Name:      groupName + "Updated",
+				Name:      groupName,
 				UpdatedAt: updateTime,
 				Metadata:  things.GroupMetadata{"admin": "false"},
 			},
 			groupExpected: things.Group{
-				Name:      groupName + "Updated",
+				Name:      groupName,
 				UpdatedAt: updateTime,
 				Metadata:  things.GroupMetadata{"admin": "false"},
 				CreatedAt: retrieved.CreatedAt,
@@ -481,7 +482,7 @@ func TestAssignThing(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -520,7 +521,7 @@ func TestUnassignThing(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -571,7 +572,7 @@ func TestRetrieveGroupThings(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -689,7 +690,7 @@ func TestAssignChannel(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -735,7 +736,7 @@ func TestUnassignChannel(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -786,7 +787,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -806,19 +807,19 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	channels := []things.Channel{
 		{
 			ID:       chID1,
-			Name:     "channel1",
+			Name:     channelName,
 			Owner:    uid,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID2,
-			Name:     "channel2",
+			Name:     channelName,
 			Owner:    uid,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID3,
-			Name:     "channel3",
+			Name:     channelName,
 			Owner:    uid,
 			Metadata: map[string]interface{}{},
 		},
@@ -903,7 +904,7 @@ func TestRetrieveAllGroupRelations(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -963,7 +964,7 @@ func TestRetrieveThingMembership(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateGroupID(t),
-		Name:      groupName + "Updated",
+		Name:      groupName,
 		OwnerID:   uid,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
