@@ -221,7 +221,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return gr.retrieve(ctx, "", pm)
 }
 
-func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (gr groupRepository) RetrieveGroupThings(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
@@ -237,10 +237,12 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	case true:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM  things t
-			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr)
+			WHERE t.owner = :owner_id
+			AND t.id NOT IN (SELECT gr.thing_id FROM group_things gr)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM things t
-			WHERE t.id NOT IN (SELECT gr.thing_id FROM group_things gr) %s;`, mq)
+			WHERE t.owner = :owner_id
+			AND t.id NOT IN (SELECT gr.thing_id FROM group_things gr) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM group_things gr, things t
@@ -249,9 +251,12 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr WHERE gr.group_id = :group_id %s;`, mq)
 	}
 
-	params, err := toDBGroupThingsPage("", groupID, pm)
-	if err != nil {
-		return things.GroupThingsPage{}, err
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"group_id": groupID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"metadata": pm.Metadata,
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
@@ -487,7 +492,7 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 	return nil
 }
 
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
@@ -503,10 +508,12 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	case true:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
+			WHERE c.owner = :owner_id
+			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
+			WHERE c.owner = :owner_id
+			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM group_channels gr, channels c
@@ -515,9 +522,12 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_channels gr WHERE gr.group_id = :group_id %s;`, mq)
 	}
 
-	params, err := toDBGroupThingsPage("", groupID, pm)
-	if err != nil {
-		return things.GroupChannelsPage{}, err
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"group_id": groupID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"metadata": pm.Metadata,
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
@@ -753,14 +763,6 @@ type dbGroup struct {
 	UpdatedAt   time.Time  `db:"updated_at"`
 }
 
-type dbGroupThingsPage struct {
-	GroupID  string     `db:"group_id"`
-	ThingID  string     `db:"thing_id"`
-	Metadata dbMetadata `db:"metadata"`
-	Limit    uint64     `db:"limit"`
-	Offset   uint64     `db:"offset"`
-}
-
 func toDBGroup(g things.Group) (dbGroup, error) {
 	return dbGroup{
 		ID:          g.ID,
@@ -770,16 +772,6 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 		Metadata:    dbMetadata(g.Metadata),
 		CreatedAt:   g.CreatedAt,
 		UpdatedAt:   g.UpdatedAt,
-	}, nil
-}
-
-func toDBGroupThingsPage(thingID, groupID string, pm things.PageMetadata) (dbGroupThingsPage, error) {
-	return dbGroupThingsPage{
-		GroupID:  groupID,
-		ThingID:  thingID,
-		Metadata: dbMetadata(pm.Metadata),
-		Offset:   pm.Offset,
-		Limit:    pm.Limit,
 	}, nil
 }
 

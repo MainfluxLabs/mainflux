@@ -761,7 +761,7 @@ func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) erro
 		return errors.ErrAuthorization
 	}
 
-	cp, err := ts.groups.RetrieveGroupChannels(ctx, id, PageMetadata{})
+	cp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), id, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -954,11 +954,12 @@ func getTimestmap() time.Time {
 }
 
 func (ts *thingsService) ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (GroupThingsPage, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
 		return GroupThingsPage{}, err
 	}
 
-	gthp, err := ts.groups.RetrieveGroupThings(ctx, groupID, pm)
+	gthp, err := ts.groups.RetrieveGroupThings(ctx, user.GetId(), groupID, pm)
 	if err != nil {
 		return GroupThingsPage{}, errors.Wrap(ErrRetrieveGroupThings, err)
 	}
@@ -1000,7 +1001,7 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 		return GroupChannelsPage{}, errors.ErrAuthorization
 	}
 
-	gchp, err := ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
+	gchp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), groupID, pm)
 	if err != nil {
 		return GroupChannelsPage{}, err
 	}
