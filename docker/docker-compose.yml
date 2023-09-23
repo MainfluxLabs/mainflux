@@ -387,7 +387,7 @@ services:
     ports:
       - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
     volumes:
-      - mainfluxlabs-influxdb-volume:/var/lib/influxdb
+      - mainfluxlabs-influxdb-volume:/var/lib/influxdb2
 
   influxdb-writer:
     image: ${MF_RELEASE_PREFIX}/influxdb-writer:${MF_RELEASE_TAG}
