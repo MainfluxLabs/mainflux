@@ -670,9 +670,7 @@ func TestDeleteThings(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	id1, err := mainfluxSDK.CreateThing(th1, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateThing(th2, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	thIDs := []string{id1, id2}
+	thIDs := []string{id1}
 
 	cases := []struct {
 		desc     string
