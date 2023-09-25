@@ -100,6 +100,17 @@ func (rte removeThingEvent) Encode() map[string]interface{} {
 	}
 }
 
+type removeThingsEvent struct {
+	ids []string
+}
+
+func (rte removeThingsEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"ids":       rte.ids,
+		"operation": thingRemove,
+	}
+}
+
 type createChannelEvent struct {
 	id       string
 	owner    string

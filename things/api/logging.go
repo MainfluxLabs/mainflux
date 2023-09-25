@@ -133,6 +133,19 @@ func (lm *loggingMiddleware) RemoveThing(ctx context.Context, token, id string) 
 	return lm.svc.RemoveThing(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_things for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveThings(ctx, token, ids...)
+}
+
 func (lm *loggingMiddleware) CreateChannels(ctx context.Context, token string, channels ...things.Channel) (saved []things.Channel, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_channels for token %s and channels %s took %s to complete", token, saved, time.Since(begin))

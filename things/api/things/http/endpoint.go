@@ -213,6 +213,27 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeThingsReq)
+
+		err := req.validate()
+		if err == errors.ErrNotFound {
+			return removeRes{}, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveThings(ctx, req.token, req.ThingIDs...); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
 func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createChannelsReq)
@@ -678,7 +699,7 @@ func listGroupThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		
+
 		page, err := svc.ListGroupThingsByChannel(ctx, req.token, req.groupID, req.channelID, req.pageMetadata)
 		if err != nil {
 			return nil, err

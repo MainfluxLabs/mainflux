@@ -46,6 +46,10 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveThing(ctx context.Context, token, id string) error
 
+	// RemoveThings removes the things identified with the provided IDs, that
+	// belongs to the user identified by the provided key.
+	RemoveThings(ctx context.Context, token string, ids ...string) error
+
 	// CreateChannels adds channels to the user identified by the provided key.
 	CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error)
 
@@ -342,6 +346,31 @@ func (ts *thingsService) RemoveThing(ctx context.Context, token, id string) erro
 	}
 
 	return ts.things.Remove(ctx, res.GetId(), id)
+}
+
+func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	for _, id := range ids {
+		if _, err = ts.things.RetrieveByID(ctx, id); err != nil {
+			return err
+		}
+	}
+
+	for _, id := range ids {
+		if err := ts.thingCache.Remove(ctx, id); err != nil {
+			return err
+		}
+	}
+
+	if err := ts.things.Remove(ctx, res.GetId(), ids...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error) {

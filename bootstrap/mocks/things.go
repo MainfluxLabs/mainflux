@@ -140,19 +140,27 @@ func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) erro
 	}
 
 	delete(svc.things, id)
-	conns := make(map[string][]string)
-	for k, v := range svc.connections {
-		i := findIndex(v, id)
-		if i != -1 {
-			var tmp []string
-			if i != len(v)-2 {
-				tmp = v[i+1:]
-			}
-			conns[k] = append(v[:i], tmp...)
-		}
+
+	return nil
+}
+
+func (svc *mainfluxThings) RemoveThings(_ context.Context, owner string, ids ...string) error {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	if err != nil {
+		return errors.ErrAuthentication
 	}
 
-	svc.connections = conns
+	for _, id := range ids {
+		if t, ok := svc.things[id]; !ok || t.Owner != userID.Email {
+			return errors.ErrNotFound
+		}
+
+		delete(svc.things, id)
+	}
+
 	return nil
 }
 
