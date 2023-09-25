@@ -571,7 +571,7 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 }
 
-func TestRemoveThing(t *testing.T) {
+func TestRemoveThings(t *testing.T) {
 	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -610,56 +610,7 @@ func TestRemoveThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveThing(context.Background(), tc.token, tc.id)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
-func TestRemoveThings(t *testing.T) {
-	svc := newService()
-
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0:10]...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	var thIDs []string
-	for _, th := range ths {
-		thIDs = append(thIDs, th.ID)
-	}
-
-	cases := []struct {
-		desc  string
-		ids   []string
-		token string
-		err   error
-	}{
-		{
-			desc:  "remove things with wrong credentials",
-			ids:   thIDs,
-			token: wrongValue,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "remove existing things",
-			ids:   thIDs,
-			token: token,
-			err:   nil,
-		},
-		{
-			desc:  "remove removed things",
-			ids:   thIDs,
-			token: token,
-			err:   errors.ErrNotFound,
-		},
-		{
-			desc:  "remove non-existing things",
-			ids:   []string{wrongID},
-			token: token,
-			err:   errors.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.RemoveThings(context.Background(), tc.token, tc.ids...)
+		err := svc.RemoveThings(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

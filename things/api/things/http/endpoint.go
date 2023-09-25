@@ -205,7 +205,7 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveThing(ctx, req.token, req.id); err != nil {
+		if err := svc.RemoveThings(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
 

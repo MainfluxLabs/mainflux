@@ -126,24 +126,6 @@ func (svc *mainfluxThings) ListThingsByIDs(ctx context.Context, thingIDs []strin
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) error {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
-	if err != nil {
-		return errors.ErrAuthentication
-	}
-
-	if t, ok := svc.things[id]; !ok || t.Owner != userID.Email {
-		return errors.ErrNotFound
-	}
-
-	delete(svc.things, id)
-
-	return nil
-}
-
 func (svc *mainfluxThings) RemoveThings(_ context.Context, owner string, ids ...string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
