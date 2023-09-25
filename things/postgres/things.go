@@ -368,6 +368,7 @@ func (tr thingRepository) Remove(ctx context.Context, owner string, ids ...strin
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
 	}
+
 	return nil
 }
 

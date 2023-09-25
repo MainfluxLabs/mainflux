@@ -169,7 +169,7 @@ func (req removeThingsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.ThingIDs) == 0 {
+	if len(req.ThingIDs) < 1 {
 		return apiutil.ErrEmptyList
 	}
 
