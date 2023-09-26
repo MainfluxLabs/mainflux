@@ -111,6 +111,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Patch("/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_channels")(removeChannelsEndpoint(svc)),
+		decodeRemoveChannels,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Put("/channels/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_channel")(updateChannelEndpoint(svc)),
 		decodeChannelUpdate,
@@ -351,6 +358,23 @@ func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error
 
 	return req, nil
 }
+
+func decodeRemoveChannels(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeChannelsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 
 func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewResourceReq{

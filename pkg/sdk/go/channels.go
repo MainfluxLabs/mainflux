@@ -198,3 +198,28 @@ func (sdk mfSDK) DeleteChannel(id, token string) error {
 
 	return nil
 }
+
+func (sdk mfSDK) DeleteChannels(ids []string, token string) error {
+	delReq := deleteChannelsReq{ChannelIDs: ids}
+	data, err := json.Marshal(delReq)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+	}
+
+	return nil
+}

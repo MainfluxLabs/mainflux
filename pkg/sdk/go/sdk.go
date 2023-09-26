@@ -237,6 +237,9 @@ type SDK interface {
 	// DeleteChannel removes existing channel.
 	DeleteChannel(id, token string) error
 
+	// DeleteChannels removes existing channel.
+	DeleteChannels(ids []string, token string) error
+
 	// AssignChannel assigns channel to a group.
 	AssignChannel(channelIDs []string, groupID string, token string) error
 

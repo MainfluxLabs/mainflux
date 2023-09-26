@@ -66,9 +66,9 @@ type Service interface {
 	// the provided key.
 	ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error)
 
-	// RemoveChannel removes the thing identified by the provided ID, that
+	// RemoveChannels removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
-	RemoveChannel(ctx context.Context, token, id string) error
+	RemoveChannels(ctx context.Context, token string, ids ...string) error
 
 	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
@@ -460,21 +460,25 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 	return Channel{}, errors.ErrAuthorization
 }
 
-func (ts *thingsService) RemoveChannel(ctx context.Context, token, id string) error {
+func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids ...string) error {
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if _, err = ts.channels.RetrieveByID(ctx, id); err != nil {
-		return err
+	for _, id := range ids {
+		if _, err = ts.channels.RetrieveByID(ctx, id); err != nil {
+			return err
+		}
 	}
 
-	if err := ts.channelCache.Remove(ctx, id); err != nil {
-		return err
+	for _, id := range ids {
+		if err := ts.channelCache.Remove(ctx, id); err != nil {
+			return err
+		}
 	}
 
-	return ts.channels.Remove(ctx, res.GetId(), id)
+	return ts.channels.Remove(ctx, res.GetId(), ids...)
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {

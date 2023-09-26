@@ -526,3 +526,83 @@ func TestDeleteChannel(t *testing.T) {
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
+
+func TestDeleteChannels(t *testing.T) {
+	svc := newThingsService()
+	ts := newThingsServer(svc)
+	defer ts.Close()
+	sdkConf := sdk.Config{
+		ThingsURL:       ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+	}
+
+	mainfluxSDK := sdk.NewSDK(sdkConf)
+	id1, err := mainfluxSDK.CreateChannel(ch1, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	id2, err := mainfluxSDK.CreateChannel(ch2, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	chIDs := []string{id1, id2}
+
+	cases := []struct {
+		desc    string
+		chanIDs []string
+		token   string
+		err     error
+	}{
+		{
+			desc:    "delete channels with invalid token",
+			chanIDs: chIDs,
+			token:   wrongValue,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+		},
+		{
+			desc:    "delete non-existing channels",
+			chanIDs: []string{wrongValue},
+			token:   token,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+		},
+		{
+			desc:    "delete channels with empty id",
+			chanIDs: []string{""},
+			token:   token,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+		},
+		{
+			desc:    "delete channels without channel ids",
+			chanIDs: []string{},
+			token:   token,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+		},
+		{
+			desc:    "delete channels with empty token",
+			chanIDs: chIDs,
+			token:   "",
+			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+		},
+		{
+			desc:    "delete channels with invalid token",
+			chanIDs: chIDs,
+			token:   wrongValue,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+		},
+		{
+			desc:    "delete existing channels",
+			chanIDs: chIDs,
+			token:   token,
+			err:     nil,
+		},
+		{
+			desc:    "delete deleted channels",
+			chanIDs: chIDs,
+			token:   token,
+			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+		},
+	}
+
+	for _, tc := range cases {
+		err := mainfluxSDK.DeleteChannels(tc.chanIDs, tc.token)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+	}
+}
