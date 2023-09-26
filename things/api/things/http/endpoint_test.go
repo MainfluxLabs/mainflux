@@ -55,6 +55,10 @@ var (
 		Name:     "test_app",
 		Metadata: map[string]interface{}{"test": "data"},
 	}
+	thing1 = things.Thing{
+		Name:     "test_app1",
+		Metadata: map[string]interface{}{"test": "data"},
+	}
 	channel = things.Channel{
 		Name:     "test",
 		Metadata: map[string]interface{}{"test": "data"},
@@ -1208,6 +1212,87 @@ func TestRemoveThing(t *testing.T) {
 			method: http.MethodDelete,
 			url:    fmt.Sprintf("%s/things/%s", ts.URL, tc.id),
 			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestRemoveThings(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	ths := []things.Thing{thing, thing1}
+	usrThs, err := svc.CreateThings(context.Background(), token, ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var thingIDs []string
+	for _, th := range usrThs {
+		thingIDs = append(thingIDs, th.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		data        []string
+		auth        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "remove existing things",
+			data:        thingIDs,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove non-existent things",
+			data:        []string{wrongValue},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove things with invalid token",
+			data:        thingIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove things with empty token",
+			data:        thingIDs,
+			auth:        "",
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove things with invalid content type",
+			data:        thingIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		data := struct {
+			ThingIDs []string `json:"thing_ids"`
+		}{
+			tc.data,
+		}
+
+		body := toJSON(data)
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/things", ts.URL),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))

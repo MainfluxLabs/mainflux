@@ -252,14 +252,17 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) Remove(_ context.Context, owner, id string) error {
+func (trm *thingRepositoryMock) Remove(_ context.Context, owner string, ids ...string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	if _, ok := trm.things[key(owner, id)]; !ok {
-		return errors.ErrNotFound
+	for _, id := range ids {
+		if _, ok := trm.things[key(owner, id)]; !ok {
+			return errors.ErrNotFound
+		}
+		delete(trm.things, key(owner, id))
 	}
-	delete(trm.things, key(owner, id))
+
 	return nil
 }
 

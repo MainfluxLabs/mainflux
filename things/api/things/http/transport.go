@@ -55,6 +55,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Patch("/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_things")(removeThingsEndpoint(svc)),
+		decodeRemoveThings,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Patch("/things/:id/key", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_key")(updateKeyEndpoint(svc)),
 		decodeKeyUpdate,
@@ -664,6 +671,22 @@ func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (inter
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, thingIDKey),
+	}
+
+	return req, nil
+}
+
+func decodeRemoveThings(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeThingsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil

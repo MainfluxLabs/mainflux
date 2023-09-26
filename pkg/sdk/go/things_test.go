@@ -657,6 +657,71 @@ func TestDeleteThing(t *testing.T) {
 	}
 }
 
+func TestDeleteThings(t *testing.T) {
+	svc := newThingsService()
+	ts := newThingsServer(svc)
+	defer ts.Close()
+	sdkConf := sdk.Config{
+		ThingsURL:       ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+	}
+
+	mainfluxSDK := sdk.NewSDK(sdkConf)
+	id1, err := mainfluxSDK.CreateThing(th1, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thIDs := []string{id1}
+
+	cases := []struct {
+		desc     string
+		thingIDs []string
+		token    string
+		err      error
+	}{
+		{
+			desc:     "delete things with invalid token",
+			thingIDs: thIDs,
+			token:    wrongValue,
+			err:      createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+		},
+		{
+			desc:     "delete non-existing things",
+			thingIDs: []string{wrongID},
+			token:    token,
+			err:      createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+		},
+		{
+			desc:     "delete things with invalid id",
+			thingIDs: []string{""},
+			token:    token,
+			err:      createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+		},
+		{
+			desc:     "delete things with empty token",
+			thingIDs: thIDs,
+			token:    "",
+			err:      createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+		},
+		{
+			desc:     "delete existing things",
+			thingIDs: thIDs,
+			token:    token,
+			err:      nil,
+		},
+		{
+			desc:     "delete deleted things",
+			thingIDs: thIDs,
+			token:    token,
+			err:      createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+		},
+	}
+
+	for _, tc := range cases {
+		err := mainfluxSDK.DeleteThings(tc.thingIDs, tc.token)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+	}
+}
+
 func TestIdentifyThing(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)

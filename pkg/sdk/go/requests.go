@@ -27,3 +27,8 @@ type ConnectionIDs struct {
 type deleteChannelsReq struct {
 	ChannelIDs []string `json:"channel_ids"`
 }
+
+// deleteThingsReq contains IDs of things to be deleted
+type deleteThingsReq struct {
+	ThingIDs []string `json:"thing_ids"`
+}
