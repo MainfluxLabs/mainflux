@@ -106,20 +106,22 @@ func (es eventStore) Restore(ctx context.Context, token string, backup things.Ba
 	return es.svc.Restore(ctx, token, backup)
 }
 
-func (es eventStore) RemoveThing(ctx context.Context, token, id string) error {
-	if err := es.svc.RemoveThing(ctx, token, id); err != nil {
-		return err
-	}
+func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		if err := es.svc.RemoveThings(ctx, token, id); err != nil {
+			return err
+		}
 
-	event := removeThingEvent{
-		id: id,
+		event := removeThingEvent{
+			id: id,
+		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
 	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
-	}
-	es.client.XAdd(ctx, record).Err()
 
 	return nil
 }

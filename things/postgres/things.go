@@ -356,15 +356,17 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, owner, chID str
 	}, nil
 }
 
-func (tr thingRepository) Remove(ctx context.Context, owner, id string) error {
-	dbth := dbThing{
-		ID:    id,
-		Owner: owner,
-	}
-	q := `DELETE FROM things WHERE id = :id AND owner = :owner;`
-	_, err := tr.db.NamedExecContext(ctx, q, dbth)
-	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+func (tr thingRepository) Remove(ctx context.Context, owner string, ids ...string) error {
+	for _, id := range ids {
+		dbth := dbThing{
+			ID:    id,
+			Owner: owner,
+		}
+		q := `DELETE FROM things WHERE id = :id AND owner = :owner;`
+		_, err := tr.db.NamedExecContext(ctx, q, dbth)
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
 
 	return nil

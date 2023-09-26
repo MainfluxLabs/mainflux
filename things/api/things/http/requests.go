@@ -159,6 +159,29 @@ func (req updateChannelReq) validate() error {
 	return nil
 }
 
+type removeThingsReq struct {
+	token    string
+	ThingIDs []string `json:"thing_ids,omitempty"`
+}
+
+func (req removeThingsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.ThingIDs) < 1 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, thingID := range req.ThingIDs {
+		if thingID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
 type viewResourceReq struct {
 	token string
 	id    string

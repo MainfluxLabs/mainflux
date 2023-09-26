@@ -109,12 +109,12 @@ func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, owne
 	return trm.repo.RetrieveByChannel(ctx, owner, chID, pm)
 }
 
-func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner, id string) error {
+func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner string, ids ...string) error {
 	span := createSpan(ctx, trm.tracer, removeThingOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.Remove(ctx, owner, id)
+	return trm.repo.Remove(ctx, owner, ids...)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {

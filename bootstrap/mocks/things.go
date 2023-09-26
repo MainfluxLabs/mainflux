@@ -126,7 +126,7 @@ func (svc *mainfluxThings) ListThingsByIDs(ctx context.Context, thingIDs []strin
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) error {
+func (svc *mainfluxThings) RemoveThings(_ context.Context, owner string, ids ...string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -135,24 +135,14 @@ func (svc *mainfluxThings) RemoveThing(_ context.Context, owner, id string) erro
 		return errors.ErrAuthentication
 	}
 
-	if t, ok := svc.things[id]; !ok || t.Owner != userID.Email {
-		return errors.ErrNotFound
-	}
-
-	delete(svc.things, id)
-	conns := make(map[string][]string)
-	for k, v := range svc.connections {
-		i := findIndex(v, id)
-		if i != -1 {
-			var tmp []string
-			if i != len(v)-2 {
-				tmp = v[i+1:]
-			}
-			conns[k] = append(v[:i], tmp...)
+	for _, id := range ids {
+		if t, ok := svc.things[id]; !ok || t.Owner != userID.Email {
+			return errors.ErrNotFound
 		}
+
+		delete(svc.things, id)
 	}
 
-	svc.connections = conns
 	return nil
 }
 

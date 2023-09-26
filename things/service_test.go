@@ -571,7 +571,7 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 }
 
-func TestRemoveThing(t *testing.T) {
+func TestRemoveThings(t *testing.T) {
 	svc := newService()
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -610,7 +610,7 @@ func TestRemoveThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveThing(context.Background(), tc.token, tc.id)
+		err := svc.RemoveThings(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
