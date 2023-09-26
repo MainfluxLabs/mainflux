@@ -73,7 +73,7 @@ type ThingRepository interface {
 	// user and connected or not connected to specified channel.
 	RetrieveByChannel(ctx context.Context, owner, chID string, pm PageMetadata) (Page, error)
 
-	// Remove removes the things having the provided identifier, that is owned
+	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
 	Remove(ctx context.Context, owner string, ids ...string) error
 

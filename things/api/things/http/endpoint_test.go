@@ -1224,7 +1224,7 @@ func TestRemoveThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	ths := []things.Thing{thing, thing}
+	ths := []things.Thing{thing, thing1}
 	usrThs, err := svc.CreateThings(context.Background(), token, ths...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 

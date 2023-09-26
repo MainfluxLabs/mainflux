@@ -42,7 +42,7 @@ type Service interface {
 	// the provided key.
 	ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (Page, error)
 
-	// RemoveThings removes the things identified with the provided ID, that
+	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
 

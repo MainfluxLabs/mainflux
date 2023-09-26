@@ -122,7 +122,7 @@ func (lm *loggingMiddleware) ListThingsByChannel(ctx context.Context, token, chI
 
 func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_thing for token %s and took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method remove_things for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

@@ -21,7 +21,6 @@ const (
 	retrieveThingsByOwnerOp   = "retrieve_things_by_owner"
 	retrieveThingsByChannelOp = "retrieve_things_by_chan"
 	removeThingOp             = "remove_thing"
-	removeThingsOp            = "remove_things"
 	retrieveThingIDByKeyOp    = "retrieve_id_by_key"
 	retrieveAllThingsOp       = "retrieve_all_things"
 	restoreThingsOp           = "restore_things"
@@ -111,7 +110,7 @@ func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, owne
 }
 
 func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner string, ids ...string) error {
-	span := createSpan(ctx, trm.tracer, removeThingsOp)
+	span := createSpan(ctx, trm.tracer, removeThingOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
