@@ -196,12 +196,10 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewResourceReq)
 
-		err := req.validate()
-		if err == errors.ErrNotFound {
-			return removeRes{}, nil
-		}
-
-		if err != nil {
+		if err := req.validate(); err != nil {
+			if err == errors.ErrNotFound {
+				return removeRes{}, nil
+			}
 			return nil, err
 		}
 
@@ -217,12 +215,10 @@ func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removeThingsReq)
 
-		err := req.validate()
-		if err == errors.ErrNotFound {
-			return removeRes{}, nil
-		}
-
-		if err != nil {
+		if err := req.validate(); err != nil {
+			if err == errors.ErrNotFound {
+				return removeRes{}, nil
+			}
 			return nil, err
 		}
 
