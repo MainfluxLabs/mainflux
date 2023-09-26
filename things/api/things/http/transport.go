@@ -189,7 +189,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Delete("/groups/:groupID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_group")(deleteGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "remove_group")(removeGroupEndpoint(svc)),
 		decodeGroupRequest,
 		encodeResponse,
 		opts...,
@@ -198,6 +198,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	r.Get("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
 		decodeListGroupsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Patch("/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_groups")(removeGroupsEndpoint(svc)),
+		decodeRemoveGroupsRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -601,6 +608,22 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 		id:    bone.GetValue(r, groupIDKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRemoveGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeGroupsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

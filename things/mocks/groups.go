@@ -67,24 +67,26 @@ func (grm *groupRepositoryMock) Update(ctx context.Context, group things.Group) 
 	return up, nil
 }
 
-func (grm *groupRepositoryMock) Remove(ctx context.Context, id string) error {
+func (grm *groupRepositoryMock) Remove(ctx context.Context, ids ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
-	if _, ok := grm.groups[id]; !ok {
-		return errors.ErrNotFound
+
+	for _, id := range ids {
+		if _, ok := grm.groups[id]; !ok {
+			return errors.ErrNotFound
+		}
+
+		for _, thingID := range grm.things[id] {
+			delete(grm.thingMembership, thingID)
+		}
+
+		for _, channelID := range grm.channels[id] {
+			delete(grm.channelMembership, channelID)
+		}
+
+		// This is not quite exact, it should go in depth
+		delete(grm.groups, id)
 	}
-
-	for _, thingID := range grm.things[id] {
-		delete(grm.thingMembership, thingID)
-	}
-
-	for _, channelID := range grm.channels[id] {
-		delete(grm.channelMembership, channelID)
-	}
-
-	// This is not quite exact, it should go in depth
-	delete(grm.groups, id)
-
 	return nil
 
 }
@@ -287,7 +289,32 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 }
 
 func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
-	panic("not implemented")
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var items []things.Channel
+	chs, ok := grm.channels[groupID]
+	if !ok {
+		return things.GroupChannelsPage{}, nil
+	}
+
+	first := uint64(pm.Offset)
+	last := first + uint64(pm.Limit)
+
+	if last > uint64(len(chs)) {
+		last = uint64(len(chs))
+	}
+
+	for i := first; i < last; i++ {
+		items = append(items, things.Channel{ID: chs[i]})
+	}
+
+	return things.GroupChannelsPage{
+		Channels: items,
+		PageMetadata: things.PageMetadata{
+			Total: uint64(len(items)),
+		},
+	}, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {

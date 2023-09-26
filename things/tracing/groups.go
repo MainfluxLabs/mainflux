@@ -58,12 +58,12 @@ func (grm groupRepositoryMiddleware) Update(ctx context.Context, g things.Group)
 	return grm.repo.Update(ctx, g)
 }
 
-func (grm groupRepositoryMiddleware) Remove(ctx context.Context, id string) error {
+func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...string) error {
 	span := createSpan(ctx, grm.tracer, removeGroupOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.Remove(ctx, id)
+	return grm.repo.Remove(ctx, groupIDs...)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Group, error) {

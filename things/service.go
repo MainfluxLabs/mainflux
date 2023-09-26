@@ -121,8 +121,8 @@ type Service interface {
 	// ViewThingMembership retrieves group that thing belongs to.
 	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
 
-	// RemoveGroup removes the group identified with the provided ID.
-	RemoveGroup(ctx context.Context, token, id string) error
+	// RemoveGroups removes the groups identified with the provided IDs.
+	RemoveGroups(ctx context.Context, token string, ids ...string) error
 
 	// AssignThing adds a thing with thingID into the group identified by groupID.
 	AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
@@ -754,43 +754,47 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 	return page.Groups, nil
 }
 
-func (ts *thingsService) RemoveGroup(ctx context.Context, token, id string) error {
+func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if gr.OwnerID != user.GetId() {
-		return errors.ErrAuthorization
-	}
-
-	cp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), id, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	for _, ch := range cp.Channels {
-		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), ch.ID, PageMetadata{})
+	for _, id := range ids {
+		gr, err := ts.groups.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
 
-		var thingIDs []string
-		for _, th := range tp.Things {
-			thingIDs = append(thingIDs, th.ID)
+		if gr.OwnerID != user.GetId() {
+			return errors.ErrAuthorization
 		}
 
-		if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
+		cp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), id, PageMetadata{})
+		if err != nil {
 			return err
 		}
+
+		for _, ch := range cp.Channels {
+			tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), ch.ID, PageMetadata{})
+			if err != nil {
+				return err
+			}
+
+			var thingIDs []string
+			for _, th := range tp.Things {
+				thingIDs = append(thingIDs, th.ID)
+			}
+
+			if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
+				return err
+			}
+		}
+
+		return ts.groups.Remove(ctx, id)
 	}
 
-	return ts.groups.Remove(ctx, id)
+	return nil
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {

@@ -557,14 +557,29 @@ func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func deleteGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func removeGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveGroup(ctx, req.token, req.id); err != nil {
+		if err := svc.RemoveGroups(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
+func removeGroupsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeGroupsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveGroups(ctx, req.token, req.GroupIDs...); err != nil {
 			return nil, err
 		}
 

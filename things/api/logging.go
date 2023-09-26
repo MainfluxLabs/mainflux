@@ -422,9 +422,9 @@ func (lm *loggingMiddleware) ViewThingMembership(ctx context.Context, token, thi
 	return lm.svc.ViewThingMembership(ctx, token, thingID)
 }
 
-func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) (err error) {
+func (lm *loggingMiddleware) RemoveGroups(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_group for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method remove_groups for token %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -432,7 +432,7 @@ func (lm *loggingMiddleware) RemoveGroup(ctx context.Context, token, id string) 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveGroup(ctx, token, id)
+	return lm.svc.RemoveGroups(ctx, token, ids...)
 }
 
 func (lm *loggingMiddleware) AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) (err error) {
