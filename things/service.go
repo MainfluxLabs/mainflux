@@ -790,11 +790,9 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 				return err
 			}
 		}
-
-		return ts.groups.Remove(ctx, id)
 	}
 
-	return nil
+	return ts.groups.Remove(ctx, ids...)
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
