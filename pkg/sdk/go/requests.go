@@ -32,3 +32,8 @@ type deleteChannelsReq struct {
 type deleteThingsReq struct {
 	ThingIDs []string `json:"thing_ids"`
 }
+
+// deleteGroupsReq contains IDs of groups to be deleted
+type deleteGroupsReq struct {
+	GroupIDs []string `json:"group_ids"`
+}

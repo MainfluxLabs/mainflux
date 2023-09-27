@@ -275,11 +275,10 @@ func TestGroupRemove(t *testing.T) {
 	err = groupRepo.AssignThing(context.Background(), group1.ID, thingID)
 	require.Nil(t, err, fmt.Sprintf("thing assign got unexpected error: %s", err))
 
-	err = groupRepo.Remove(context.Background(), group1.ID)
-	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty group: expected %v got %v\n", nil, err))
+	grIDs := []string{group1.ID, group2.ID}
 
-	err = groupRepo.Remove(context.Background(), group2.ID)
-	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete empty group: expected %v got %v\n", nil, err))
+	err = groupRepo.Remove(context.Background(), grIDs...)
+	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty groups: expected %v got %v\n", nil, err))
 }
 
 func TestRetrieveByOwner(t *testing.T) {

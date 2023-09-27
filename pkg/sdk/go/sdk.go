@@ -192,6 +192,9 @@ type SDK interface {
 	// DeleteGroup deletes users group.
 	DeleteGroup(id, token string) error
 
+	// DeleteGroups delete users groups.
+	DeleteGroups(ids []string, token string) error
+
 	// Groups returns page of groups.
 	Groups(meta PageMetadata, token string) (GroupsPage, error)
 

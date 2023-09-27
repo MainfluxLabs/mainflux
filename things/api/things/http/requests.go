@@ -563,3 +563,26 @@ func validateUUID(extID string) (err error) {
 
 	return nil
 }
+
+type removeGroupsReq struct {
+	token    string
+	GroupIDs []string `json:"group_ids,omitempty"`
+}
+
+func (req removeGroupsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.GroupIDs) < 1 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, groupID := range req.GroupIDs {
+		if groupID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}

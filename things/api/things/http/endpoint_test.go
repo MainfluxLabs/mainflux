@@ -2463,6 +2463,108 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+func TestRemoveGroups(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	var groups []things.Group
+	var groupIDs []string
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		group := things.Group{
+			Name:        "test-group-" + num,
+			Description: "test group desc",
+		}
+		grs, err := svc.CreateGroups(context.Background(), token, group)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		gr := grs[0]
+
+		groups = append(groups, gr)
+		groupIDs = append(groupIDs, gr.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		data        []string
+		auth        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "remove existing groups",
+			data:        groupIDs,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove non-existent groups",
+			data:        []string{wrongValue},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove groups with invalid token",
+			data:        groupIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove groups without group ids",
+			data:        []string{},
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove groups with empty group ids",
+			data:        []string{""},
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove groups with empty token",
+			data:        groupIDs,
+			auth:        "",
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove groups with invalid content type",
+			data:        groupIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		data := struct {
+			GroupIDs []string `json:"group_ids"`
+		}{
+			tc.data,
+		}
+
+		body := toJSON(data)
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/groups", ts.URL),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestBackup(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)

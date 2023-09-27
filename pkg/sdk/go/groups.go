@@ -89,6 +89,32 @@ func (sdk mfSDK) DeleteGroup(id, token string) error {
 	return nil
 }
 
+func (sdk mfSDK) DeleteGroups(ids []string, token string) error {
+	delReq := deleteGroupsReq{GroupIDs: ids}
+
+	data, err := json.Marshal(delReq)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, groupsEndpoint)
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.Wrap(ErrFailedRemoval, errors.New(resp.Status))
+	}
+
+	return nil
+}
+
 func (sdk mfSDK) AssignThing(memberIDs []string, groupID string, token string) error {
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/things", sdk.thingsURL, groupsEndpoint, groupID)

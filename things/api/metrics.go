@@ -300,13 +300,13 @@ func (ms *metricsMiddleware) ViewThingMembership(ctx context.Context, token, thi
 	return ms.svc.ViewThingMembership(ctx, token, thingID)
 }
 
-func (ms *metricsMiddleware) RemoveGroup(ctx context.Context, token, id string) error {
+func (ms *metricsMiddleware) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_group").Add(1)
-		ms.latency.With("method", "remove_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_groups").Add(1)
+		ms.latency.With("method", "remove_groups").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveGroup(ctx, token, id)
+	return ms.svc.RemoveGroups(ctx, token, ids...)
 }
 
 func (ms *metricsMiddleware) AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) error {

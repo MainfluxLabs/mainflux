@@ -105,38 +105,44 @@ func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Gr
 	return toGroup(dbu)
 }
 
-func (gr groupRepository) Remove(ctx context.Context, groupID string) error {
+func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error {
 	qd := `DELETE FROM groups WHERE id = :id`
-	group := things.Group{
-		ID: groupID,
-	}
-	dbg, err := toDBGroup(group)
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
 
-	res, err := gr.db.NamedExecContext(ctx, qd, dbg)
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				return errors.Wrap(errors.ErrConflict, err)
-			}
+	for _, groupID := range groupIDs {
+		group := things.Group{
+			ID: groupID,
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+
+		dbg, err := toDBGroup(group)
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+
+		res, err := gr.db.NamedExecContext(ctx, qd, dbg)
+		if err != nil {
+			pqErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pqErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+			
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+
+		cnt, err := res.RowsAffected()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		if cnt != 1 {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
 
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
-
-	if cnt != 1 {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
 	return nil
 }
 
