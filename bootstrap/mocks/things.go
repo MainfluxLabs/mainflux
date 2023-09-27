@@ -207,7 +207,7 @@ func (svc *mainfluxThings) ListChannels(context.Context, string, bool, things.Pa
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveChannel(context.Context, string, string) error {
+func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) error {
 	panic("not implemented")
 }
 

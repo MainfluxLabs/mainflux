@@ -182,20 +182,23 @@ func (es eventStore) ViewChannelByThing(ctx context.Context, token, thID string)
 	return es.svc.ViewChannelByThing(ctx, token, thID)
 }
 
-func (es eventStore) RemoveChannel(ctx context.Context, token, id string) error {
-	if err := es.svc.RemoveChannel(ctx, token, id); err != nil {
-		return err
-	}
+func (es eventStore) RemoveChannels(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		if err := es.svc.RemoveChannels(ctx, token, id); err != nil {
+			return err
+		}
 
-	event := removeChannelEvent{
-		id: id,
+		event := removeChannelEvent{
+			id: id,
+		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
+
 	}
-	record := &redis.XAddArgs{
-		Stream:       streamID,
-		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
-	}
-	es.client.XAdd(ctx, record).Err()
 
 	return nil
 }

@@ -57,9 +57,9 @@ type ChannelRepository interface {
 	// thing.
 	RetrieveConns(ctx context.Context, thID string, pm PageMetadata) (ChannelsPage, error)
 
-	// Remove removes the channel having the provided identifier, that is owned
+	// Remove removes the channels having the provided identifiers, that is owned
 	// by the specified user.
-	Remove(ctx context.Context, owner, id string) error
+	Remove(ctx context.Context, owner string, id ...string) error
 
 	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, owner, chID string, thIDs []string) error

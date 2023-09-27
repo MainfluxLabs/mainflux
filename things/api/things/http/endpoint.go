@@ -394,7 +394,26 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveChannel(ctx, req.token, req.id); err != nil {
+		if err := svc.RemoveChannels(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
+func removeChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeChannelsReq)
+
+		if err := req.validate(); err != nil {
+			if err == errors.ErrNotFound {
+				return removeRes{}, nil
+			}
+			return nil, err
+		}
+
+		if err := svc.RemoveChannels(ctx, req.token, req.ChannelIDs...); err != nil {
 			return nil, err
 		}
 

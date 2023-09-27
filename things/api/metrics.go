@@ -147,13 +147,13 @@ func (ms *metricsMiddleware) ViewChannelByThing(ctx context.Context, token, thID
 	return ms.svc.ViewChannelByThing(ctx, token, thID)
 }
 
-func (ms *metricsMiddleware) RemoveChannel(ctx context.Context, token, id string) error {
+func (ms *metricsMiddleware) RemoveChannels(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_channel").Add(1)
-		ms.latency.With("method", "remove_channel").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_channels").Add(1)
+		ms.latency.With("method", "remove_channels").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveChannel(ctx, token, id)
+	return ms.svc.RemoveChannels(ctx, token, ids...)
 }
 
 func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) error {

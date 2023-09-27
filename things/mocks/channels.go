@@ -174,23 +174,26 @@ func (crm *channelRepositoryMock) RetrieveConns(_ context.Context, thID string, 
 	return things.ChannelsPage{}, nil
 }
 
-func (crm *channelRepositoryMock) Remove(_ context.Context, owner, id string) error {
+func (crm *channelRepositoryMock) Remove(_ context.Context, owner string, ids ...string) error {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	if _, ok := crm.channels[key(owner, id)]; !ok {
-		return errors.ErrNotFound
+	for _, id := range ids {
+		if _, ok := crm.channels[key(owner, id)]; !ok {
+			return errors.ErrNotFound
+		}
+
+		delete(crm.channels, key(owner, id))
+
+		for thk := range crm.cconns {
+			delete(crm.cconns[thk], key(owner, id))
+		}
+		crm.tconns <- Connection{
+			chanID:    id,
+			connected: false,
+		}
 	}
 
-	delete(crm.channels, key(owner, id))
-
-	for thk := range crm.cconns {
-		delete(crm.cconns[thk], key(owner, id))
-	}
-	crm.tconns <- Connection{
-		chanID:    id,
-		connected: false,
-	}
 	return nil
 }
 

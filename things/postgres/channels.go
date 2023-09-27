@@ -250,15 +250,17 @@ func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm t
 	}, nil
 }
 
-func (cr channelRepository) Remove(ctx context.Context, owner, id string) error {
-	dbch := dbChannel{
-		ID:    id,
-		Owner: owner,
-	}
-	q := `DELETE FROM channels WHERE id = :id AND owner = :owner`
-	_, err := cr.db.NamedExecContext(ctx, q, dbch)
-	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+func (cr channelRepository) Remove(ctx context.Context, owner string, ids ...string) error {
+	for _, id := range ids {
+		dbch := dbChannel{
+			ID:    id,
+			Owner: owner,
+		}
+		q := `DELETE FROM channels WHERE id = :id AND owner = :owner`
+		_, err := cr.db.NamedExecContext(ctx, q, dbch)
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
 
 	return nil

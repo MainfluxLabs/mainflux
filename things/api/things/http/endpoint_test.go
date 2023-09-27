@@ -1976,6 +1976,109 @@ func TestRemoveChannel(t *testing.T) {
 	}
 }
 
+func TestRemoveChannels(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	channel1 := things.Channel{Name: "test1"}
+
+	c := []things.Channel{channel, channel1}
+	chs, _ := svc.CreateChannels(context.Background(), token, c...)
+
+	var chIDs []string
+	for _, ch := range chs {
+		chIDs = append(chIDs, ch.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		ids         []string
+		auth        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "remove channels with invalid token",
+			ids:         chIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove existing channels",
+			ids:         chIDs,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove removed channels",
+			ids:         chIDs,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove channels with invalid token",
+			ids:         chIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove channels with empty channel ids",
+			ids:         []string{""},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove channels without channel ids",
+			ids:         []string{},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove channels with empty token",
+			ids:         chIDs,
+			auth:        "",
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove channels with invalid content type",
+			ids:         chIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		data := struct {
+			ChannelIDs []string `json:"channel_ids"`
+		}{
+			tc.ids,
+		}
+
+		body := toJSON(data)
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/channels", ts.URL),
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestConnect(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
