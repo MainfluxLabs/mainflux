@@ -334,12 +334,6 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 	}
 
 	for _, id := range ids {
-		if _, err = ts.things.RetrieveByID(ctx, id); err != nil {
-			return err
-		}
-	}
-
-	for _, id := range ids {
 		if err := ts.thingCache.Remove(ctx, id); err != nil {
 			return err
 		}
@@ -472,12 +466,6 @@ func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids .
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	for _, id := range ids {
-		if _, err = ts.channels.RetrieveByID(ctx, id); err != nil {
-			return err
-		}
 	}
 
 	for _, id := range ids {
