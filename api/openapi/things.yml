@@ -530,7 +530,7 @@ paths:
         $ref: "#/components/requestBodies/GroupThingsReq"
       responses:
         '201':
-          $ref: "#/components/responses/GroupCreateRes"
+          description: Things assigned.
         '400':
           description: Failed due to malformed JSON.
         '401':
