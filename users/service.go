@@ -175,7 +175,15 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 }
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
-	if _, err := svc.users.RetrieveByEmail(context.Background(), user.Email); err == nil {
+	if u, err := svc.users.RetrieveByEmail(context.Background(), user.Email); err == nil {
+		req := mainflux.AssignRoleReq{
+			Id:   u.ID,
+			Role: auth.RoleRootAdmin,
+		}
+
+		// TODO: Fetch role before assigning
+		svc.auth.AssignRole(ctx, &req)
+
 		return nil
 	}
 
