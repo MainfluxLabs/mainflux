@@ -234,6 +234,23 @@ func (grm *groupRepositoryMock) RetrieveAllThingRelations(ctx context.Context) (
 	return gtr, nil
 }
 
+func (grm *groupRepositoryMock) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var gcr []things.GroupChannelRelation
+	for grID, chIDs := range grm.channels {
+		for _, chID := range chIDs {
+			gcr = append(gcr, things.GroupChannelRelation{
+				GroupID:   grID,
+				ChannelID: chID,
+			})
+		}
+	}
+
+	return gcr, nil
+}
+
 func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()

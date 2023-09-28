@@ -1403,6 +1403,13 @@ func TestBackup(t *testing.T) {
 	}
 	gtr = append(gtr, grRel1)
 
+	gcr := []things.GroupChannelRelation{
+		{
+			GroupID:   gr.ID,
+			ChannelID: ch.ID,
+		},
+	}
+
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
 		ChannelID:    ch.ID,
@@ -1412,11 +1419,12 @@ func TestBackup(t *testing.T) {
 	})
 
 	backup := things.Backup{
-		Groups:              groups,
-		Things:              ths,
-		Channels:            chsc,
-		Connections:         connections,
-		GroupThingRelations: gtr,
+		Groups:                groups,
+		Things:                ths,
+		Channels:              chsc,
+		Connections:           connections,
+		GroupThingRelations:   gtr,
+		GroupChannelRelations: gcr,
 	}
 
 	cases := map[string]struct {
@@ -1448,11 +1456,13 @@ func TestBackup(t *testing.T) {
 		channelsSize := len(backup.Channels)
 		connectionsSize := len(backup.Connections)
 		groupThingRelationsSize := len(backup.GroupThingRelations)
+		groupChannelRelationsSize := len(backup.GroupChannelRelations)
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
 		assert.Equal(t, len(tc.backup.GroupThingRelations), groupThingRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupThingRelations), groupThingRelationsSize))
+		assert.Equal(t, len(tc.backup.GroupChannelRelations), groupChannelRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupChannelRelations), groupChannelRelationsSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}

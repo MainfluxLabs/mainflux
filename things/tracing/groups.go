@@ -25,6 +25,7 @@ const (
 	assignChannelOp                = "assign_channel"
 	unassignChannelOp              = "unassign_channel"
 	retrieveAllThingRelationsOp    = "retrieve_all_thing_relations"
+	retrieveAllChannelRelationsOp  = "retrieve_all_channel_relations"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -167,6 +168,14 @@ func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveGroupChannels(ctx, ownerID, groupID, pm)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
+	span := createSpan(ctx, grm.tracer, retrieveAllChannelRelationsOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveAllChannelRelations(ctx)
 }
 
 func (grm groupRepositoryMiddleware) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {

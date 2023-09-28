@@ -870,11 +870,12 @@ func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRe
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:              []backupThingRes{},
-		Channels:            []backupChannelRes{},
-		Connections:         []backupConnectionRes{},
-		Groups:              []viewGroupRes{},
-		GroupThingRelations: []backupGroupThingRelationRes{},
+		Things:                []backupThingRes{},
+		Channels:              []backupChannelRes{},
+		Connections:           []backupConnectionRes{},
+		Groups:                []viewGroupRes{},
+		GroupThingRelations:   []backupGroupThingRelationRes{},
+		GroupChannelRelations: []backupGroupChannelRelationRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -929,6 +930,16 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			UpdatedAt: gtr.UpdatedAt,
 		}
 		res.GroupThingRelations = append(res.GroupThingRelations, view)
+	}
+
+	for _, gcr := range backup.GroupChannelRelations {
+		view := backupGroupChannelRelationRes{
+			ChannelID: gcr.ChannelID,
+			GroupID:   gcr.GroupID,
+			CreatedAt: gcr.CreatedAt,
+			UpdatedAt: gcr.UpdatedAt,
+		}
+		res.GroupChannelRelations = append(res.GroupChannelRelations, view)
 	}
 
 	return res
@@ -987,6 +998,16 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 			UpdatedAt: gtr.UpdatedAt,
 		}
 		backup.GroupThingRelations = append(backup.GroupThingRelations, gRel)
+	}
+
+	for _, gcr := range req.GroupChannelRelations {
+		gRel := things.GroupChannelRelation{
+			ChannelID: gcr.ChannelID,
+			GroupID:   gcr.GroupID,
+			CreatedAt: gcr.CreatedAt,
+			UpdatedAt: gcr.UpdatedAt,
+		}
+		backup.GroupChannelRelations = append(backup.GroupChannelRelations, gRel)
 	}
 
 	return backup

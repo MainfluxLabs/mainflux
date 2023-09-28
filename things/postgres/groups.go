@@ -129,7 +129,7 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 					return errors.Wrap(errors.ErrConflict, err)
 				}
 			}
-			
+
 			return errors.Wrap(errors.ErrUpdateEntity, err)
 		}
 
@@ -592,6 +592,32 @@ func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channel
 	return groupID, nil
 }
 
+func (gr groupRepository) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
+	q := `SELECT group_id, channel_id, created_at, updated_at FROM group_channels`
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	grRel := []things.GroupChannelRelation{}
+	for rows.Next() {
+		dbg := dbChannelRelation{}
+		if err := rows.StructScan(&dbg); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gr, err := toChannelRelation(dbg)
+		if err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		grRel = append(grRel, gr)
+	}
+
+	return grRel, nil
+}
+
 func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids ...string) error {
 	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -821,6 +847,39 @@ func toThingRelation(dbgr dbThingRelation) (things.GroupThingRelation, error) {
 	return things.GroupThingRelation{
 		GroupID:   dbgr.GroupID.String,
 		ThingID:   dbgr.ThingID.String,
+		CreatedAt: dbgr.CreatedAt,
+		UpdatedAt: dbgr.UpdatedAt,
+	}, nil
+}
+
+type dbChannelRelation struct {
+	GroupID   sql.NullString `db:"group_id"`
+	ChannelID sql.NullString `db:"channel_id"`
+	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
+}
+
+func toDBChannelRelation(channelID, groupID string) (dbChannelRelation, error) {
+	var grID sql.NullString
+	if groupID != "" {
+		grID = sql.NullString{String: groupID, Valid: true}
+	}
+
+	var cID sql.NullString
+	if channelID != "" {
+		cID = sql.NullString{String: channelID, Valid: true}
+	}
+
+	return dbChannelRelation{
+		GroupID:   grID,
+		ChannelID: cID,
+	}, nil
+}
+
+func toChannelRelation(dbgr dbChannelRelation) (things.GroupChannelRelation, error) {
+	return things.GroupChannelRelation{
+		GroupID:   dbgr.GroupID.String,
+		ChannelID: dbgr.ChannelID.String,
 		CreatedAt: dbgr.CreatedAt,
 		UpdatedAt: dbgr.UpdatedAt,
 	}, nil

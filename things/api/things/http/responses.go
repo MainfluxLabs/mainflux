@@ -228,12 +228,20 @@ type backupGroupThingRelationRes struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type backupGroupChannelRelationRes struct {
+	ChannelID string    `json:"channel_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type backupRes struct {
-	Things              []backupThingRes              `json:"things"`
-	Channels            []backupChannelRes            `json:"channels"`
-	Connections         []backupConnectionRes         `json:"connections"`
-	Groups              []viewGroupRes                `json:"groups"`
-	GroupThingRelations []backupGroupThingRelationRes `json:"group_thing_relations"`
+	Things                []backupThingRes                `json:"things"`
+	Channels              []backupChannelRes              `json:"channels"`
+	Connections           []backupConnectionRes           `json:"connections"`
+	Groups                []viewGroupRes                  `json:"groups"`
+	GroupThingRelations   []backupGroupThingRelationRes   `json:"group_thing_relations"`
+	GroupChannelRelations []backupGroupChannelRelationRes `json:"group_channel_relations"`
 }
 
 func (res backupRes) Code() int {

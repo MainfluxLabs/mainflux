@@ -151,4 +151,7 @@ type GroupRepository interface {
 
 	// RetrieveAllThingRelations retrieves all thing relations.
 	RetrieveAllThingRelations(ctx context.Context) ([]GroupThingRelation, error)
+
+	// RetrieveAllChannelRelations retrieves all thing relations.
+	RetrieveAllChannelRelations(ctx context.Context) ([]GroupChannelRelation, error)
 }
