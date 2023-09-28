@@ -172,9 +172,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}/groups:
     get:
-      summary: Gets membership for a thing with thing id.
+      summary: Retrieves thing membership.
       description: |
-       Retrieve group that member belongs to.
+       Retrieves group that thing is member of.
       tags:
         - things
       parameters:
@@ -305,7 +305,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /channels/{channelID}/groups:
     get:
-      summary: Gets channel membership.
+      summary: Retrieves channel membership
       description: |
         Gets group where channel is member of.
       tags:
@@ -347,9 +347,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /disconnect:
     put:
-      summary: Disconnect things and channel using IDs.
+      summary: Disconnect things from channel.
       description: |
-        Disconnect things specified by IDs from channel specified by ID.
+        Disconnect a list of things specified by IDs from channel specified by ID.
         Channel and things are owned by user identified using the provided access token.
       tags:
       - things
@@ -1424,14 +1424,14 @@ components:
           schema:
             $ref: "#/components/schemas/GroupSchema"
     GroupThingsReq:
-      description: JSON array of member IDs.
+      description: JSON array of thing IDs.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupThingsReqSchema"
     GroupChannelsReq:
-      description: JSON array of member IDs.
+      description: JSON array of channel IDs.
       required: true
       content:
         application/json:
