@@ -305,7 +305,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /channels/{channelID}/groups:
     get:
-      summary: Retrieves channel membership
+      summary: Retrieves channel membership.
       description: |
         Gets group where channel is member of.
       tags:
@@ -347,7 +347,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /disconnect:
     put:
-      summary: Disconnect things from channel.
+      summary: Disconnect things from the channel.
       description: |
         Disconnect a list of things specified by IDs from channel specified by ID.
         Channel and things are owned by user identified using the provided access token.
