@@ -885,14 +885,7 @@ func toChannelRelation(dbgr dbChannelRelation) (things.GroupChannelRelation, err
 	}, nil
 }
 
-type dbGroupChannels struct {
-	GroupID   sql.NullString `db:"group_id"`
-	ChannelID sql.NullString `db:"channel_id"`
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at"`
-}
-
-func todbGroupChannels(channelID, groupID string) (dbGroupChannels, error) {
+func todbGroupChannels(channelID, groupID string) (dbChannelRelation, error) {
 	var grID sql.NullString
 	if groupID != "" {
 		grID = sql.NullString{String: groupID, Valid: true}
@@ -903,7 +896,7 @@ func todbGroupChannels(channelID, groupID string) (dbGroupChannels, error) {
 		chID = sql.NullString{String: channelID, Valid: true}
 	}
 
-	return dbGroupChannels{
+	return dbChannelRelation{
 		GroupID:   grID,
 		ChannelID: chID,
 	}, nil
