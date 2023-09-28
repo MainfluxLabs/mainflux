@@ -307,7 +307,7 @@ paths:
     get:
       summary: Retrieves channel membership.
       description: |
-        Gets group where channel is member of.
+        Retrieves group where channel is member of.
       tags:
         - channels
       parameters:
@@ -370,7 +370,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}/channels:
     get:
-      summary: Gets channel connected to specified thing
+      summary: Retrieves channel connected to specified thing
       description: |
         Retrieves channel connected to specified thing.
       tags:
@@ -435,9 +435,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Gets all groups.
+      summary: Retrieves all groups.
       description: |
-        Gets all groups up to a max level of hierarchy that can be fetched in one
+        Retrieves all groups up to a max level of hierarchy that can be fetched in one
         request ( max level = 5). Result can be filtered by metadata. Groups will
         be returned as JSON array or JSON tree.
       tags:
@@ -458,9 +458,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}:
     get:
-      summary: Gets group info.
+      summary: Retrieves group info.
       description: |
-        Gets info on a group specified by id.
+        Retrieves group info by id.
       tags:
         - groups
       parameters:
@@ -542,7 +542,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Gets group things.
+      summary: Retrieves group things.
       description: |
        Retrieves an array of things that belong to the group specified by groupID.
       tags:
