@@ -47,12 +47,12 @@ func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (
 	return urm.repo.Save(ctx, user)
 }
 
-func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
+func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, id string, user users.User) error {
 	span := createSpan(ctx, urm.tracer, updateOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.UpdateUser(ctx, user)
+	return urm.repo.UpdateUser(ctx, id, user)
 }
 
 func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {

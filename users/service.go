@@ -205,8 +205,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 	user.Status = EnabledStatusKey
 
-	_, err = svc.users.Save(ctx, user)
-	if err != nil {
+	if _, err := svc.users.Save(ctx, user); err != nil {
 		return err
 	}
 
@@ -215,8 +214,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		Role: auth.RoleRootAdmin,
 	}
 
-	_, err = svc.auth.AssignRole(ctx, &req)
-	if err != nil {
+	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
 		return err
 	}
 
@@ -379,7 +377,16 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.users.UpdateUser(ctx, admin); err != nil {
+	if err := svc.users.UpdateUser(ctx, admin.ID, admin); err != nil {
+		return err
+	}
+
+	req := mainflux.AssignRoleReq{
+		Id:   admin.ID,
+		Role: auth.RoleRootAdmin,
+	}
+
+	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
 		return err
 	}
 
@@ -402,7 +409,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 		Email:    idn.email,
 		Metadata: u.Metadata,
 	}
-	return svc.users.UpdateUser(ctx, user)
+	return svc.users.UpdateUser(ctx, "", user)
 }
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
