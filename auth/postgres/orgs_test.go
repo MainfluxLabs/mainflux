@@ -1632,8 +1632,14 @@ func TestSavePolicy(t *testing.T) {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	groupID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	var groupIDs []string
+	for i := uint64(0); i < n; i++ {
+		groupID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		groupIDs = append(groupIDs, groupID)
+	}
+
 	memberID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
@@ -1641,41 +1647,41 @@ func TestSavePolicy(t *testing.T) {
 		desc     string
 		memberID string
 		policy   string
-		groupID  string
+		groupIDs []string
 		err      error
 	}{
 		{
-			desc:     "save policy",
+			desc:     "save group policies",
 			memberID: memberID,
 			policy:   auth.RwPolicy,
-			groupID:  groupID,
+			groupIDs: groupIDs,
 			err:      nil,
 		},
 		{
-			desc:     "save policy without group id",
+			desc:     "save group policies without group ids",
 			memberID: memberID,
 			policy:   auth.RwPolicy,
-			groupID:  "",
+			groupIDs: []string{""},
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "save policy without member id",
+			desc:     "save group policies without member id",
 			memberID: "",
 			policy:   auth.RwPolicy,
-			groupID:  groupID,
+			groupIDs: groupIDs,
 			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc:     "save existing policy",
+			desc:     "save existing group policies",
 			memberID: memberID,
 			policy:   auth.RwPolicy,
-			groupID:  groupID,
+			groupIDs: groupIDs,
 			err:      errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.SavePolicy(context.Background(), tc.memberID, tc.policy, tc.groupID)
+		err := repo.SavePolicy(context.Background(), tc.memberID, tc.policy, tc.groupIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

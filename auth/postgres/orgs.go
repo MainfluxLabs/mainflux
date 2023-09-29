@@ -686,10 +686,10 @@ func (or orgRepository) SavePolicy(ctx context.Context, memberID, policy string,
 			}
 			return errors.Wrap(errors.ErrCreateEntity, err)
 		}
+	}
 
-		if err = tx.Commit(); err != nil {
-			return errors.Wrap(errors.ErrCreateEntity, err)
-		}
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
 	return nil
