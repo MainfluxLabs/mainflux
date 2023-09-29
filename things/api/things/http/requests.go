@@ -365,13 +365,21 @@ type restoreGroupThingRelationReq struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type restoreGroupChannelRelationReq struct {
+	ChannelID string    `json:"channel_id"`
+	GroupID   string    `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type restoreReq struct {
-	token               string
-	Things              []restoreThingReq              `json:"things"`
-	Channels            []restoreChannelReq            `json:"channels"`
-	Connections         []restoreConnectionReq         `json:"connections"`
-	Groups              []restoreGroupReq              `json:"groups"`
-	GroupThingRelations []restoreGroupThingRelationReq `json:"group_thing_relations"`
+	token                 string
+	Things                []restoreThingReq                `json:"things"`
+	Channels              []restoreChannelReq              `json:"channels"`
+	Connections           []restoreConnectionReq           `json:"connections"`
+	Groups                []restoreGroupReq                `json:"groups"`
+	GroupThingRelations   []restoreGroupThingRelationReq   `json:"group_thing_relations"`
+	GroupChannelRelations []restoreGroupChannelRelationReq `json:"group_channel_relations"`
 }
 
 func (req restoreReq) validate() error {

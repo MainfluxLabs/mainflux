@@ -157,11 +157,12 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Things              []Thing
-	Channels            []Channel
-	Connections         []Connection
-	Groups              []Group
-	GroupThingRelations []GroupThingRelation
+	Things                []Thing
+	Channels              []Channel
+	Connections           []Connection
+	Groups                []Group
+	GroupThingRelations   []GroupThingRelation
+	GroupChannelRelations []GroupChannelRelation
 }
 
 var _ Service = (*thingsService)(nil)
@@ -623,6 +624,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
+	groupChannelRelations, err := ts.groups.RetrieveAllChannelRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	things, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
@@ -639,11 +645,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:              things,
-		Channels:            channels,
-		Connections:         connections,
-		Groups:              groups,
-		GroupThingRelations: groupThingRelations,
+		Things:                things,
+		Channels:              channels,
+		Connections:           connections,
+		Groups:                groups,
+		GroupThingRelations:   groupThingRelations,
+		GroupChannelRelations: groupChannelRelations,
 	}, nil
 }
 
@@ -660,6 +667,12 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 
 	for _, gtr := range backup.GroupThingRelations {
 		if err := ts.groups.AssignThing(ctx, gtr.GroupID, gtr.ThingID); err != nil {
+			return err
+		}
+	}
+
+	for _, gcr := range backup.GroupChannelRelations {
+		if err := ts.groups.AssignChannel(ctx, gcr.GroupID, gcr.ChannelID); err != nil {
 			return err
 		}
 	}
