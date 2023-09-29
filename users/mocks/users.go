@@ -62,7 +62,7 @@ func (urm *userRepositoryMock) Update(ctx context.Context, u users.User) error {
 	return nil
 }
 
-func (urm *userRepositoryMock) UpdateUser(ctx context.Context, id string, u users.User) error {
+func (urm *userRepositoryMock) UpdateUser(ctx context.Context, u users.User) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 

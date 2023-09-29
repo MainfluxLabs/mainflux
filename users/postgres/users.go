@@ -37,7 +37,7 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 		return "", errors.ErrMalformedEntity
 	}
 
-	dbu, err := toDBUser(user.ID, user)
+	dbu, err := toDBUser(user)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -69,7 +69,7 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 func (ur userRepository) Update(ctx context.Context, user users.User) error {
 	q := `UPDATE users SET(email, password, metadata, status) VALUES (:email, :password, :metadata, :status) WHERE email = :email;`
 
-	dbu, err := toDBUser(user.ID, user)
+	dbu, err := toDBUser(user)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
@@ -81,15 +81,15 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 	return nil
 }
 
-func (ur userRepository) UpdateUser(ctx context.Context, id string, user users.User) error {
-	var adminID string
-	if id != "" {
-		adminID = "id = :id,"
+func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
+	var idq string
+	if user.ID != "" {
+		idq = "id = :id,"
 	}
 
-	q := fmt.Sprintf(`UPDATE users SET %s metadata = :metadata WHERE email = :email AND status = 'enabled'`, adminID)
+	q := fmt.Sprintf(`UPDATE users SET %s metadata = :metadata WHERE email = :email AND status = 'enabled'`, idq)
 
-	dbu, err := toDBUser(id, user)
+	dbu, err := toDBUser(user)
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
@@ -290,7 +290,7 @@ type dbUser struct {
 	Status   string `db:"status"`
 }
 
-func toDBUser(id string, u users.User) (dbUser, error) {
+func toDBUser(u users.User) (dbUser, error) {
 	data := []byte("{}")
 	if len(u.Metadata) > 0 {
 		b, err := json.Marshal(u.Metadata)
@@ -301,7 +301,7 @@ func toDBUser(id string, u users.User) (dbUser, error) {
 	}
 
 	return dbUser{
-		ID:       id,
+		ID:       u.ID,
 		Email:    u.Email,
 		Password: u.Password,
 		Metadata: data,
