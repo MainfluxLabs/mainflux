@@ -18,12 +18,12 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	bsmocks "github.com/MainfluxLabs/mainflux/bootstrap/mocks"
 	"github.com/MainfluxLabs/mainflux/certs"
 	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
@@ -114,7 +114,7 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 		}
 	}
 
-	return bsmocks.NewThingsService(ths, map[string]things.Channel{}, auth)
+	return thmocks.NewThingsService(ths, map[string]things.Channel{}, auth)
 }
 
 func TestIssueCert(t *testing.T) {

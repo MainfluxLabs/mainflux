@@ -75,7 +75,7 @@ func handshake(tsURL, chanID, subtopic, thingKey string, addHeader bool) (*webso
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := thmocks.NewThingsService(map[string]string{thingKey: chanID},nil)
+	thingsClient := thmocks.NewThingsServiceClient(map[string]string{thingKey: chanID},nil)
 	svc, _ := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()

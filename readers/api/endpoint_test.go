@@ -148,7 +148,7 @@ func TestListChannelMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsService(map[string]string{user.ID: chanID}, nil)
+	thSvc := thmocks.NewThingsServiceClient(map[string]string{user.ID: chanID}, nil)
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
@@ -843,7 +843,7 @@ func TestListAllMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsService(map[string]string{userEmail: ""}, nil)
+	thSvc := thmocks.NewThingsServiceClient(map[string]string{userEmail: ""}, nil)
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
