@@ -303,7 +303,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels/{channelID}/groups:
+  /channels/{chanId}/groups:
     get:
       summary: Retrieves channel membership.
       description: |
@@ -571,7 +571,7 @@ paths:
         $ref: "#/components/requestBodies/GroupThingsReq"
       responses:
         '204':
-          description: Things removed.
+          description: Things unassigned.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -636,7 +636,7 @@ paths:
         $ref: "#/components/requestBodies/GroupChannelsReq"
       responses:
         '204':
-          description: Channels removed.
+          description: Channels unassigned.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -645,7 +645,7 @@ paths:
           description: Group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupID}/channels/{channelID}/things:
+  /groups/{groupId}/channels/{chanId}/things:
     get:
       summary: List group things by channel
       description: |
