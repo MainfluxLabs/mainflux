@@ -82,7 +82,12 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 }
 
 func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET id = :id, metadata = :metadata WHERE email = :email AND status = 'enabled'`
+	var idq string
+	if user.ID != "" {
+		idq = "id = :id,"
+	}
+
+	q := fmt.Sprintf(`UPDATE users SET %s metadata = :metadata WHERE email = :email AND status = 'enabled'`, idq)
 
 	dbu, err := toDBUser(user)
 	if err != nil {
