@@ -57,7 +57,7 @@ func newService() auth.Service {
 	orgRepo := mocks.NewOrgRepository()
 	roleRepo := mocks.NewRolesRepository()
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
-	tc := thmocks.NewThingsService(nil, createGroups())
+	tc := thmocks.NewThingsServiceClient(nil, createGroups())
 	t := jwt.New(secret)
 	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, idMockProvider, t, loginDuration)
 }

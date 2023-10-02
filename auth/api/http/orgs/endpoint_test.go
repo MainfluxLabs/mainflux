@@ -95,7 +95,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
-	tc := thmocks.NewThingsService(nil, groups)
+	tc := thmocks.NewThingsServiceClient(nil, groups)
 
 	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, idProvider, t, loginDuration)
 }

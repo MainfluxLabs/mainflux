@@ -26,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
@@ -190,7 +191,7 @@ func generateChannels() map[string]things.Channel {
 }
 
 func newThingsService(auth mainflux.AuthServiceClient) things.Service {
-	return btmocks.NewThingsService(map[string]things.Thing{}, generateChannels(), auth)
+	return thmocks.NewThingsService(map[string]things.Thing{}, generateChannels(), auth)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
