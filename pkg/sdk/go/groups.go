@@ -158,7 +158,7 @@ func (sdk mfSDK) UnassignThing(token, groupID string, thingIDs ...string) error 
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (sdk mfSDK) UnassignChannel(token, groupID string, thingIDs ...string) erro
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
