@@ -19,6 +19,8 @@ import (
 const (
 	usersNum   = 101
 	usersTable = "users"
+	email      = "user@test.com"
+	password   = "password"
 )
 
 var idProvider = uuid.New()
@@ -323,6 +325,63 @@ func TestRetrieveAll(t *testing.T) {
 		users, err := userRepo.RetrieveAll(context.Background())
 		size := uint64(len(users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	userRepo := postgres.NewUserRepo(dbMiddleware)
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	updateID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	user := users.User{
+		ID:       uid,
+		Email:    email,
+		Password: password,
+		Metadata: map[string]interface{}{"metadata": "test"},
+		Status:   users.EnabledStatusKey,
+	}
+
+	_, err = userRepo.Save(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	updtUser := user
+	updtUser.ID = updateID
+	updtUser.Metadata = map[string]interface{}{"updated": "metadata"}
+
+	wrongEmailUser := user
+	wrongEmailUser.Email = "wrong@email.com"
+
+	disabledUser := user
+	disabledUser.Status = users.DisabledStatusKey
+
+	cases := map[string]struct {
+		user  users.User
+		email string
+		err   error
+	}{
+		"update user with invalid email": {
+			user:  wrongEmailUser,
+			email: wrongEmailUser.Email,
+			err:   errors.ErrNotFound,
+		},
+		"update disabled user": {
+			user:  disabledUser,
+			email: disabledUser.Email,
+			err:   errors.ErrNotFound,
+		},
+		"update existing user": {
+			user:  updtUser,
+			email: updtUser.Email,
+			err:   nil,
+		},
+	}
+	for desc, tc := range cases {
+		err := userRepo.UpdateUser(context.Background(), tc.user)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}
 }
