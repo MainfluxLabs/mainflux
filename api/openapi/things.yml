@@ -170,21 +170,21 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/{memberId}/groups:
+  /things/{thingId}/groups:
     get:
-      summary: Gets memberships for a member with member id.
+      summary: Retrieves thing membership.
       description: |
-        Array of groups that member belongs to.
+       Retrieves group that thing is member of.
       tags:
         - things
       parameters:
-        - $ref: "#/components/parameters/MemberId"
+        - $ref: "#/components/parameters/ThingId"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
-          $ref: "#/components/responses/MembersRes"
+          $ref: "#/components/responses/GroupRes"
         '401':
           description: Missing or invalid access token provided.
         '500':
@@ -303,12 +303,29 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /channels/{chanId}/groups:
+    get:
+      summary: Retrieves channel membership.
+      description: |
+        Retrieves group where channel is member of.
+      tags:
+        - channels
+      parameters:
+        - $ref: "#/components/parameters/ChanId"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /connect:
     post:
       summary: Connects thing and channel.
       description: |
-        Connect things specified by IDs to channels specified by IDs.
+        Connect things specified by IDs to channel specified by ID.
         Channel and thing are owned by user identified using the provided access token.
+        In order for the connection to be successful, the things and the channel must be members of the same group.
       tags:
         - things
       requestBody:
@@ -330,10 +347,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /disconnect:
     put:
-      summary: Disconnect things and channels using lists of IDs.
+      summary: Disconnect things from the channel.
       description: |
-        Disconnect things from channels specified by lists of IDs.
-        Channels and things are owned by user identified using the provided access token.
+        Disconnect a list of things specified by IDs from channel specified by ID.
+        Channel and things are owned by user identified using the provided access token.
       tags:
       - things
       requestBody:
@@ -353,22 +370,16 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}/channels:
     get:
-      summary: List of channels connected to specified thing
+      summary: Retrieves channel connected to specified thing
       description: |
-        Retrieves list of channels connected to specified thing with pagination
-        metadata.
+        Retrieves channel connected to specified thing.
       tags:
         - channels
       parameters:
         - $ref: "#/components/parameters/ThingId"
-        - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Connected"
       responses:
         '200':
-          $ref: "#/components/responses/ChannelsPageRes"
-        '400':
-          description: Failed due to malformed query parameters.
+          $ref: "#/components/responses/ChannelRes"
         '401':
           description: Missing or invalid access token provided.
         '404':
@@ -405,28 +416,28 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /groups:
     post:
-      summary: Creates new group
+      summary: Creates new groups
       description: |
-        Creates new group that can be used for grouping entities - things, users.
+        Creates new groups that can be used for grouping entities - things, users.
       tags:
         - groups
       requestBody:
-         $ref: "#/components/requestBodies/GroupCreateReq"
+         $ref: "#/components/requestBodies/GroupsCreateReq"
       responses:
         '201':
           $ref: "#/components/responses/GroupCreateRes"
         '400':
           description: Failed due to malformed JSON.
         '409':
-          description: Failed due to using an existing email address.
+          description: Entity already exist.
         '415':
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Gets all groups.
+      summary: Retrieves all groups.
       description: |
-        Gets all groups up to a max level of hierarchy that can be fetched in one
+        Retrieves all groups up to a max level of hierarchy that can be fetched in one
         request ( max level = 5). Result can be filtered by metadata. Groups will
         be returned as JSON array or JSON tree.
       tags:
@@ -447,9 +458,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}:
     get:
-      summary: Gets group info.
+      summary: Retrieves group info.
       description: |
-        Gets info on a group specified by id.
+        Retrieves group info by id.
       tags:
         - groups
       parameters:
@@ -506,9 +517,9 @@ paths:
           description: Group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/members:
+  /groups/{groupId}/things:
     post:
-      summary: Assigns members to a group.
+      summary: Assigns things to a group.
       description: |
         Assigns things to a group specified by ids.
       tags:
@@ -516,24 +527,24 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/MembersReq"
+        $ref: "#/components/requestBodies/GroupThingsReq"
       responses:
         '201':
-          $ref: "#/components/responses/GroupCreateRes"
+          description: Things assigned.
         '400':
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
         '409':
-          description: Failed due to using an existing email address.
+          description: Entity already exist.
         '415':
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Gets members of a group.
+      summary: Retrieves group things.
       description: |
-        Array of member ids that are in the group specified with groupID.
+       Retrieves an array of things that belong to the group specified by groupID.
       tags:
         - groups
       parameters:
@@ -543,13 +554,13 @@ paths:
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
-          $ref: "#/components/responses/MembersRes"
+          $ref: "#/components/responses/ThingsPageRes"
         '401':
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
     patch:
-      summary: Unassigns members from a group.
+      summary: Unassigns things from a group.
       description: |
         Unassigns things from a group specified by ids.
       tags:
@@ -557,10 +568,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/MembersReq"
+        $ref: "#/components/requestBodies/GroupThingsReq"
       responses:
         '204':
-          description: Members removed.
+          description: Things unassigned.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -569,7 +580,96 @@ paths:
           description: Group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-
+  /groups/{groupId}/channels:
+    post:
+      summary: Assigns channels to a group.
+      description: |
+        Assigns channels to a group specified by ids.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/GroupChannelsReq"
+      responses:
+        '201':
+          description: Channels assigned.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '409':
+          description: Entity already exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List group channels.
+      description: |
+        An array of channels that belong to the group specified by groupID.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/ChannelsPageRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Unassigns channels from a group.
+      description: |
+        Unassigns channels from a group specified by ids.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/GroupChannelsReq"
+      responses:
+        '204':
+          description: Channels unassigned.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Group does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/channels/{chanId}/things:
+    get:
+      summary: List group things by channel
+      description: |
+        Retrieves list of disconnected things assigned to a group same as channel.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: A non-existent entity request.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /identify/channels/{chanId}/access-by-key:
     post:
       summary: Checks if thing has access to a channel.
@@ -858,13 +958,13 @@ components:
     ConnectionReqSchema:
       type: object
       properties:
-        channel_ids:
-          type: array
-          description: Channel IDs.
-          items:
-            type: string
+        channel_id:
+          type: string
+          example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
+          description: Channel ID.
         thing_ids:
           type: array
+          example: ["6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"]
           description: Thing IDs
           items:
             type: string
@@ -966,19 +1066,6 @@ components:
             $ref: "#/components/schemas/ThingResSchema"
       required:
         - things
-    GroupUpdateSchema:
-      type: object
-      properties:
-        name:
-          type: string
-          description: |
-            Free-form group name. Group name is unique on the given hierarchy level.
-        description:
-          type: string
-          description: Group description, free form text.
-        metadata:
-          type: object
-          description: Arbitrary, object-encoded group's data.
     GroupResSchema:
       type: object
       properties:
@@ -993,6 +1080,9 @@ components:
           type: string
           format: uuid
           description: UUID of user that created the group.
+        description:
+          type: string
+          description: Group description, free form text.
         metadata:
           type: object
           description: Arbitrary, object-encoded group's data.
@@ -1009,7 +1099,7 @@ components:
         - description
         - created_at
         - updated_at
-    GroupReqSchema:
+    GroupSchema:
       type: object
       properties:
         name:
@@ -1022,6 +1112,17 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded group's data.
+    GroupsReqSchema:
+      type: object
+      properties:
+        groups:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/GroupSchema"
+      required:
+        - groups
     GroupRelationResSchema:
       type: object
       properties:
@@ -1042,13 +1143,25 @@ components:
         - member_id
         - created_at
         - updated_at
-    MembersReqSchema:
+    GroupThingsReqSchema:
       type: object
       properties:
-        members:
+        things:
           type: array
-          minItems: 0
+          minItems: 1
           uniqueItems: true
+          example: ["6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"]
+          items:
+            type: string
+            format: uuid | ulid
+    GroupChannelsReqSchema:
+      type: object
+      properties:
+        channels:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          example: ["6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"]
           items:
             type: string
             format: uuid | ulid
@@ -1115,14 +1228,6 @@ components:
       schema:
         type: string
         format: ulid
-      required: true
-    MemberId:
-      name: memberId
-      description: Member id.
-      in: path
-      schema:
-        type: string
-        format: uuid | ulid
       required: true
     Limit:
       name: limit
@@ -1304,27 +1409,34 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ShareThingReqSchema"
-    GroupCreateReq:
+    GroupsCreateReq:
       description: JSON-formatted document describing group create request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupReqSchema"
+            $ref: "#/components/schemas/GroupsReqSchema"
     GroupUpdateReq:
       description: JSON-formatted document describing group create request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupUpdateSchema"
-    MembersReq:
-      description: JSON array of member IDs.
+            $ref: "#/components/schemas/GroupSchema"
+    GroupThingsReq:
+      description: JSON array of thing IDs.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/MembersReqSchema"
+            $ref: "#/components/schemas/GroupThingsReqSchema"
+    GroupChannelsReq:
+      description: JSON array of channel IDs.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GroupChannelsReqSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
@@ -1417,12 +1529,6 @@ components:
             $ref: "#/components/schemas/GroupResSchema"
     GroupsPageRes:
       description: Group data retrieved.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/GroupsPage"
-    MembersRes:
-      description: Groups data retrieved. Groups assigned to a member.
       content:
         application/json:
           schema:
