@@ -467,53 +467,50 @@ func TestUpdateUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	data := toJSON(metadata)
+	emptyData := toJSON(map[string]interface{}{})
+
 	cases := []struct {
 		desc     string
 		token    string
-		metadata map[string]interface{}
+		metadata string
 		status   int
 	}{
 		{
 			desc:     "update existing users metadata",
 			token:    token,
-			metadata: metadata,
+			metadata: data,
 			status:   http.StatusOK,
 		},
 		{
 			desc:     "update existing users metadata with empty metadata",
 			token:    token,
-			metadata: map[string]interface{}{},
+			metadata: emptyData,
 			status:   http.StatusOK,
 		},
 		{
 			desc:     "update existing users metadata with empty token",
 			token:    "",
-			metadata: metadata,
+			metadata: data,
 			status:   http.StatusUnauthorized,
 		},
 		{
 			desc:     "update existing users metadata with invalid token",
 			token:    invalidToken,
-			metadata: metadata,
+			metadata: data,
 			status:   http.StatusUnauthorized,
 		},
 	}
 
 	for _, tc := range cases {
-		data := struct {
-			Metadata map[string]interface{} `json:"metadata,omitempty"`
-		}{
-			tc.metadata,
-		}
-		body := toJSON(data)
-
 		req := testRequest{
 			client: client,
 			method: http.MethodPut,
 			url:    fmt.Sprintf("%s/users", ts.URL),
 			token:  tc.token,
-			body:   strings.NewReader(body),
+			body:   strings.NewReader(tc.metadata),
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
