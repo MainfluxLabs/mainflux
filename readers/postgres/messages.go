@@ -54,7 +54,7 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (tr postgresRepository) Restore(ctx context.Context, messages []senml.Message) error {
 	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -66,7 +66,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	if err != nil {
 		return errors.Wrap(errSaveMessage, err)
 	}
-	
+
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {

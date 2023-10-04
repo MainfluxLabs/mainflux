@@ -49,11 +49,11 @@ func (mm *metricsMiddleware) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return mm.svc.ListAllMessages(rpm)
 }
 
-func (mm *metricsMiddleware) Restore(ctx context.Context, messages ...senml.Message) error {
+func (mm *metricsMiddleware) Restore(ctx context.Context, messages []senml.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "restore").Add(1)
 		mm.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Restore(ctx, messages...)
+	return mm.svc.Restore(ctx, messages)
 }

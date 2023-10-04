@@ -76,7 +76,7 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 
 		messages := buildRestoreRequest(ctx, req)
 
-		if err := svc.Restore(ctx, messages...); err != nil {
+		if err := svc.Restore(ctx, messages); err != nil {
 			return nil, err
 		}
 

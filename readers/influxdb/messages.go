@@ -57,7 +57,7 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo *influxRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (repo *influxRepository) Restore(ctx context.Context, messages []senml.Message) error {
 	pts, err := repo.senmlPoints(messages)
 	if err != nil {
 		return err

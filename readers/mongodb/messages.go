@@ -45,7 +45,7 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (repo mongoRepository) Restore(ctx context.Context, messages []senml.Message) error {
 	coll := repo.db.Collection(defCollection)
 	var dbMsgs []interface{}
 	for _, msg := range messages {

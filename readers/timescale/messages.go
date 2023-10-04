@@ -52,7 +52,7 @@ func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (tr timescaleRepository) Restore(ctx context.Context, messages []senml.Message) error {
 	q := `INSERT INTO messages (channel, subtopic, publisher, protocol,
 		name, unit, value, string_value, bool_value, data_value, sum,
 		time, update_time)
