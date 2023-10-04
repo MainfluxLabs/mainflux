@@ -36,7 +36,7 @@ type MessageRepository interface {
 	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
 
 	// Restore restores message database from a backup.
-	Restore(ctx context.Context, messages []senml.Message) error
+	Restore(ctx context.Context, messages ...senml.Message) error
 }
 
 // Message represents any message format.

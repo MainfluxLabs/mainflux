@@ -22,8 +22,6 @@ const (
 	noLimit = 0
 )
 
-var errSaveMessage = errors.New("failed to save message to mongodb database")
-
 var _ readers.MessageRepository = (*mongoRepository)(nil)
 
 type mongoRepository struct {
@@ -45,7 +43,7 @@ func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageM
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo mongoRepository) Restore(ctx context.Context, messages []senml.Message) error {
+func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	coll := repo.db.Collection(defCollection)
 	var dbMsgs []interface{}
 	for _, msg := range messages {
@@ -54,7 +52,7 @@ func (repo mongoRepository) Restore(ctx context.Context, messages []senml.Messag
 
 	_, err := coll.InsertMany(context.Background(), dbMsgs)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	return nil

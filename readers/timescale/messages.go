@@ -30,7 +30,6 @@ var _ readers.MessageRepository = (*timescaleRepository)(nil)
 
 var (
 	errInvalidMessage = errors.New("invalid message representation")
-	errSaveMessage    = errors.New("failed to save message to timescale database")
 	errTransRollback  = errors.New("failed to rollback transaction")
 )
 
@@ -52,7 +51,7 @@ func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr timescaleRepository) Restore(ctx context.Context, messages []senml.Message) error {
+func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (channel, subtopic, publisher, protocol,
 		name, unit, value, string_value, bool_value, data_value, sum,
 		time, update_time)
@@ -62,7 +61,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages []senml.Mess
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	defer func() {
@@ -74,7 +73,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages []senml.Mess
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}()
 
@@ -85,11 +84,11 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages []senml.Mess
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
 

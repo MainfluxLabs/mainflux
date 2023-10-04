@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
-	influxdb2write "github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
 const (
@@ -27,10 +26,7 @@ const (
 
 var _ readers.MessageRepository = (*influxRepository)(nil)
 
-var (
-	errResultTime  = errors.New("invalid result time")
-	errSaveMessage = errors.New("failed to save message to influxdb database")
-)
+var errResultTime = errors.New("invalid result time")
 
 type RepoConfig struct {
 	Bucket string
@@ -57,7 +53,7 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo *influxRepository) Restore(ctx context.Context, messages []senml.Message) error {
+func (repo *influxRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	pts, err := repo.senmlPoints(messages)
 	if err != nil {
 		return err
@@ -69,7 +65,7 @@ func (repo *influxRepository) Restore(ctx context.Context, messages []senml.Mess
 	return nil
 }
 
-func (repo *influxRepository) senmlPoints(messages []senml.Message) ([]*influxdb2write.Point, error) {
+func (repo *influxRepository) senmlPoints(messages []senml.Message) ([]*write.Point, error) {
 	var pts []*write.Point
 	for _, msg := range messages {
 		tgs, flds := senmlTags(msg), senmlFields(msg)

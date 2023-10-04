@@ -73,7 +73,7 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Restore(ctx, req.Messages); err != nil {
+		if err := svc.Restore(ctx, req.Messages...); err != nil {
 			return nil, err
 		}
 

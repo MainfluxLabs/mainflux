@@ -30,7 +30,6 @@ const (
 var _ readers.MessageRepository = (*postgresRepository)(nil)
 
 var (
-	errSaveMessage    = errors.New("failed to save message to postgres database")
 	errInvalidMessage = errors.New("invalid message representation")
 	errTransRollback  = errors.New("failed to rollback transaction")
 )
@@ -54,7 +53,7 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr postgresRepository) Restore(ctx context.Context, messages []senml.Message) error {
+func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -64,7 +63,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages []senml.Messa
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	defer func() {
@@ -76,7 +75,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages []senml.Messa
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}()
 
@@ -91,11 +90,11 @@ func (tr postgresRepository) Restore(ctx context.Context, messages []senml.Messa
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
 

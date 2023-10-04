@@ -33,4 +33,7 @@ var (
 
 	// ErrScanMetadata indicates problem with metadata in db.
 	ErrScanMetadata = New("failed to scan metadata in db")
+
+	// ErrSaveMessage indicates failure occurred while saving message to database.
+	ErrSaveMessage = New("failed to save message to database")
 )
