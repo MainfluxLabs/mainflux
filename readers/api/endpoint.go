@@ -8,6 +8,7 @@ import (
 
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -73,10 +74,35 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Restore(ctx, req.Messages...); err != nil {
+		messages := buildRestoreRequest(ctx, req)
+
+		if err := svc.Restore(ctx, messages...); err != nil {
 			return nil, err
 		}
 
 		return restoreMessagesRes{}, nil
 	}
+}
+
+func buildRestoreRequest(ctx context.Context, req restoreMessagesReq) []senml.Message {
+	messages := make([]senml.Message, len(req.Messages))
+	for i, msg := range req.Messages {
+		messages[i] = senml.Message{
+			Channel:     msg.Channel,
+			Subtopic:    msg.Subtopic,
+			Publisher:   msg.Publisher,
+			Protocol:    msg.Protocol,
+			Name:        msg.Name,
+			Unit:        msg.Unit,
+			Time:        msg.Time,
+			UpdateTime:  msg.UpdateTime,
+			Value:       msg.Value,
+			StringValue: msg.StringValue,
+			DataValue:   msg.DataValue,
+			BoolValue:   msg.BoolValue,
+			Sum:         msg.Sum,
+		}
+	}
+
+	return messages
 }

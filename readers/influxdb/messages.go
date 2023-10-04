@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/readers"
-
 	jsont "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/readers"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	influxdb2write "github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
 const (
@@ -26,7 +28,8 @@ const (
 var _ readers.MessageRepository = (*influxRepository)(nil)
 
 var (
-	errResultTime = errors.New("invalid result time")
+	errResultTime  = errors.New("invalid result time")
+	errSaveMessage = errors.New("failed to save message to influxdb database")
 )
 
 type RepoConfig struct {
@@ -54,8 +57,31 @@ func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return repo.readAll(chanID, rpm)
 }
 
-func (repo *influxRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
+func (repo *influxRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+	pts, err := repo.senmlPoints(messages)
+	if err != nil {
+		return err
+	}
+
+	writeAPI := repo.client.WriteAPIBlocking(repo.cfg.Org, repo.cfg.Bucket)
+	err = writeAPI.WritePoint(context.Background(), pts...)
+
 	return nil
+}
+
+func (repo *influxRepository) senmlPoints(messages []senml.Message) ([]*influxdb2write.Point, error) {
+	var pts []*write.Point
+	for _, msg := range messages {
+		tgs, flds := senmlTags(msg), senmlFields(msg)
+
+		sec, dec := math.Modf(msg.Time)
+		t := time.Unix(int64(sec), int64(dec*(1e9)))
+
+		pt := influxdb2.NewPoint(defMeasurement, tgs, flds, t)
+		pts = append(pts, pt)
+	}
+
+	return pts, nil
 }
 
 func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {

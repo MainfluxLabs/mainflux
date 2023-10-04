@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -27,6 +28,12 @@ const (
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
+
+var (
+	errSaveMessage    = errors.New("failed to save message to postgres database")
+	errInvalidMessage = errors.New("invalid message representation")
+	errTransRollback  = errors.New("failed to rollback transaction")
+)
 
 type postgresRepository struct {
 	db *sqlx.DB
@@ -47,42 +54,52 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr postgresRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
-	tx, err := tr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
+func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
+          name, unit, value, string_value, bool_value, data_value, sum,
+          time, update_time)
+          VALUES (:id, :channel, :subtopic, :publisher, :protocol, :name, :unit,
+          :value, :string_value, :bool_value, :data_value, :sum,
+          :time, :update_time);`
 
-	q := fmt.Sprintf(`INSERT INTO %s (id, channel, subtopic, publisher, protocol, name,unit, value, bool_value, string_value, data_value, sum, time, update_time)
-	VALUES (:id, :channel, :subtopic, :publisher, :protocol, :name, :unit, :value, :bool_value, :string_value, :data_value, :sum, :time, :update_time);`, defTable)
+	tx, err := tr.db.BeginTxx(context.Background(), nil)
+	if err != nil {
+		return errors.Wrap(errSaveMessage, err)
+	}
+	
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errSaveMessage, err)
+		}
+	}()
 
 	for _, msg := range messages {
-
-		dbms := toDBMessage(msg)
-
-		if _, err := tx.NamedExecContext(ctx, q, dbms); err != nil {
-			tx.Rollback()
+		id, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+		m := senmlMessage{Message: msg, ID: id.String()}
+		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-
+					return errors.Wrap(errSaveMessage, errInvalidMessage)
 				}
 			}
-			return errors.Wrap(errors.ErrCreateEntity, err)
+
+			return errors.Wrap(errSaveMessage, err)
 		}
 	}
 
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
+	return err
 }
 
 func (tr postgresRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
