@@ -20,8 +20,6 @@ import (
 
 const senmlPoints = "messages"
 
-var errSaveMessage = errors.New("failed to save message to influxdb database")
-
 var _ consumers.Consumer = (*influxRepo)(nil)
 
 type RepoConfig struct {
@@ -61,7 +59,7 @@ func (repo *influxRepo) Consume(message interface{}) error {
 func (repo *influxRepo) senmlPoints(messages interface{}) ([]*influxdb2write.Point, error) {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
-		return nil, errSaveMessage
+		return nil, errors.ErrSaveMessage
 	}
 	var pts []*write.Point
 	for _, msg := range msgs {

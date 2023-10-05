@@ -5,6 +5,7 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
@@ -79,7 +80,7 @@ func (req listAllMessagesReq) validate() error {
 
 type restoreMessagesReq struct {
 	token    string
-	Messages []readers.BackupMessage `json:"messages"`
+	Messages []senml.Message `json:"messages"`
 }
 
 func (req restoreMessagesReq) validate() error {

@@ -28,6 +28,11 @@ const (
 
 var _ readers.MessageRepository = (*timescaleRepository)(nil)
 
+var (
+	errInvalidMessage = errors.New("invalid message representation")
+	errTransRollback  = errors.New("failed to rollback transaction")
+)
+
 type timescaleRepository struct {
 	db *sqlx.DB
 }
@@ -46,39 +51,48 @@ func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.Pag
 	return tr.readAll(chanID, rpm)
 }
 
-func (tr timescaleRepository) Restore(ctx context.Context, messages ...readers.BackupMessage) error {
-	tx, err := tr.db.BeginTxx(ctx, nil)
+func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+	q := `INSERT INTO messages (channel, subtopic, publisher, protocol,
+		name, unit, value, string_value, bool_value, data_value, sum,
+		time, update_time)
+		VALUES (:channel, :subtopic, :publisher, :protocol, :name, :unit,
+		:value, :string_value, :bool_value, :data_value, :sum,
+		:time, :update_time);`
+
+	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
-	q := fmt.Sprintf(`INSERT INTO %s (id, channel, subtopic, publisher, protocol, name,unit, value, bool_value, string_value, data_value, sum, time, update_time)
-	VALUES (:id, :channel, :subtopic, :publisher, :protocol, :name, :unit, :value, :bool_value, :string_value, :data_value, :sum, :time, :update_time);`, defTable)
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrSaveMessage, err)
+		}
+	}()
 
 	for _, msg := range messages {
-		dbMsg := toDBMessage(msg)
-		if _, err := tx.NamedExecContext(ctx, q, dbMsg); err != nil {
-			tx.Rollback()
+		m := senmlMessage{Message: msg}
+		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 				}
 			}
-			return errors.Wrap(errors.ErrCreateEntity, err)
+
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
+	return err
 }
 
 func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {

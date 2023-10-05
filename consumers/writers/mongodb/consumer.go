@@ -16,8 +16,6 @@ import (
 
 const senmlCollection string = "messages"
 
-var errSaveMessage = errors.New("failed to save message to mongodb database")
-
 var _ consumers.Consumer = (*mongoRepo)(nil)
 
 type mongoRepo struct {
@@ -42,7 +40,7 @@ func (repo *mongoRepo) Consume(message interface{}) error {
 func (repo *mongoRepo) saveSenml(messages interface{}) error {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
-		return errSaveMessage
+		return errors.ErrSaveMessage
 	}
 	coll := repo.db.Collection(senmlCollection)
 	var dbMsgs []interface{}
@@ -52,7 +50,7 @@ func (repo *mongoRepo) saveSenml(messages interface{}) error {
 
 	_, err := coll.InsertMany(context.Background(), dbMsgs)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	return nil
@@ -68,7 +66,7 @@ func (repo *mongoRepo) saveJSON(msgs json.Messages) error {
 
 	_, err := coll.InsertMany(context.Background(), m)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	return nil

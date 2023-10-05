@@ -20,7 +20,6 @@ import (
 
 var (
 	errInvalidMessage = errors.New("invalid message representation")
-	errSaveMessage    = errors.New("failed to save message to postgres database")
 	errTransRollback  = errors.New("failed to rollback transaction")
 	errNoTable        = errors.New("relation does not exist")
 )
@@ -48,7 +47,7 @@ func (pr postgresRepo) Consume(message interface{}) (err error) {
 func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 	msgs, ok := messages.([]senml.Message)
 	if !ok {
-		return errSaveMessage
+		return errors.ErrSaveMessage
 	}
 	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
@@ -59,7 +58,7 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 
 	tx, err := pr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 	defer func() {
 		if err != nil {
@@ -70,7 +69,7 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}()
 
@@ -85,11 +84,11 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
 	return err
@@ -111,7 +110,7 @@ func (pr postgresRepo) saveJSON(msgs mfjson.Messages) error {
 func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 	tx, err := pr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 	defer func() {
 		if err != nil {
@@ -122,7 +121,7 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}()
 
@@ -134,7 +133,7 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 		var dbmsg jsonMessage
 		dbmsg, err = toJSONMessage(m)
 		if err != nil {
-			return errors.Wrap(errSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 
 		if _, err = tx.NamedExec(q, dbmsg); err != nil {
@@ -142,7 +141,7 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 				case pgerrcode.UndefinedTable:
 					return errNoTable
 				}
@@ -195,7 +194,7 @@ func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
 	if msg.Payload != nil {
 		b, err := json.Marshal(msg.Payload)
 		if err != nil {
-			return jsonMessage{}, errors.Wrap(errSaveMessage, err)
+			return jsonMessage{}, errors.Wrap(errors.ErrSaveMessage, err)
 		}
 		data = b
 	}
