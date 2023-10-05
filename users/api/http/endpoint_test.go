@@ -47,6 +47,7 @@ var (
 	admin              = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
 	newUser            = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList          = []users.User{admin, user}
+	metadata           = map[string]interface{}{"key": "value"}
 	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
 	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword       = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
@@ -453,6 +454,66 @@ func TestListUsers(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Users, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Users))
+	}
+
+}
+
+func TestUpdateUser(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	token, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	data := toJSON(metadata)
+	emptyData := toJSON(map[string]interface{}{})
+
+	cases := []struct {
+		desc     string
+		token    string
+		metadata string
+		status   int
+	}{
+		{
+			desc:     "update existing users metadata",
+			token:    token,
+			metadata: data,
+			status:   http.StatusOK,
+		},
+		{
+			desc:     "update existing users metadata with empty metadata",
+			token:    token,
+			metadata: emptyData,
+			status:   http.StatusOK,
+		},
+		{
+			desc:     "update existing users metadata with empty token",
+			token:    "",
+			metadata: data,
+			status:   http.StatusUnauthorized,
+		},
+		{
+			desc:     "update existing users metadata with invalid token",
+			token:    invalidToken,
+			metadata: data,
+			status:   http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPut,
+			url:    fmt.Sprintf("%s/users", ts.URL),
+			token:  tc.token,
+			body:   strings.NewReader(tc.metadata),
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 
 }
