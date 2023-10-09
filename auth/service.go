@@ -609,15 +609,11 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		grs = append(grs, gr)
 	}
 
-	if err := svc.orgs.SavePolicy(ctx, user.ID, RwPolicy, groupIDs...); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.SavePolicy(ctx, user.ID, RwPolicy, groupIDs...); err != nil {
-		return err
-	}
-
 	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.SavePolicy(ctx, user.ID, RwPolicy, groupIDs...); err != nil {
 		return err
 	}
 

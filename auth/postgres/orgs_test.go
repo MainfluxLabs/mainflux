@@ -1632,16 +1632,36 @@ func TestSavePolicy(t *testing.T) {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     memberID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	var groupIDs []string
 	for i := uint64(0); i < n; i++ {
 		groupID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+		gr := auth.GroupRelation{
+			OrgID:   orgID,
+			GroupID: groupID,
+		}
+		err = repo.AssignGroups(context.Background(), gr)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 		groupIDs = append(groupIDs, groupID)
 	}
-
-	memberID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -1696,6 +1716,26 @@ func TestRetrievePolicy(t *testing.T) {
 	groupID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     memberID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gr := auth.GroupRelation{
+		OrgID:   orgID,
+		GroupID: groupID,
+	}
+	err = repo.AssignGroups(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	gp := auth.GroupsPolicy{
@@ -1757,6 +1797,26 @@ func TestRemovePolicy(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	memberID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     memberID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gr := auth.GroupRelation{
+		OrgID:   orgID,
+		GroupID: groupID,
+	}
+	err = repo.AssignGroups(context.Background(), gr)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	gp := auth.GroupsPolicy{
 		GroupID:  groupID,
@@ -1811,6 +1871,26 @@ func TestUpdatePolicy(t *testing.T) {
 	groupID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     memberID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gr := auth.GroupRelation{
+		OrgID:   orgID,
+		GroupID: groupID,
+	}
+	err = repo.AssignGroups(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	err = repo.SavePolicy(context.Background(), memberID, auth.RwPolicy, groupID)
