@@ -130,6 +130,14 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS group_policies`,
 				},
 			},
+			{
+				Id: "auth_6",
+				Up: []string{
+					`ALTER TABLE IF EXISTS group_relations
+						   ADD CONSTRAINT fk_group_policies_group_id FOREIGN KEY (group_id)
+						   REFERENCES group_policies (group_id) ON DELETE CASCADE ON UPDATE CASCADE`,
+				},
+			},
 		},
 	}
 
