@@ -609,18 +609,11 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		grs = append(grs, gr)
 	}
 
-	mp, err := svc.ListOrgMembers(ctx, token, orgID, PageMetadata{})
-	if err != nil {
+	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
 		return err
 	}
 
-	for _, member := range mp.Members {
-		if err := svc.orgs.SavePolicy(ctx, member.ID, RwPolicy, groupIDs...); err != nil {
-			return err
-		}
-	}
-
-	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
+	if err := svc.orgs.SavePolicy(ctx, user.ID, RwPolicy, groupIDs...); err != nil {
 		return err
 	}
 
@@ -635,23 +628,6 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 
 	if err := svc.canEditGroups(ctx, orgID, user.ID); err != nil {
 		return err
-	}
-
-	mp, err := svc.ListOrgMembers(ctx, token, orgID, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	for _, member := range mp.Members {
-		gPolicy := GroupsPolicy{
-			MemberID: member.ID,
-		}
-		for _, gid := range groupIDs {
-			gPolicy.GroupID = gid
-			if err := svc.orgs.RemovePolicy(ctx, gPolicy); err != nil {
-				return err
-			}
-		}
 	}
 
 	if err := svc.orgs.UnassignGroups(ctx, orgID, groupIDs...); err != nil {

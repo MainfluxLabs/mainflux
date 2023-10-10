@@ -123,7 +123,8 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS group_policies (
 							group_id    UUID UNIQUE NOT NULL,
 							member_id   UUID NOT NULL,
-							policy      VARCHAR(15)
+							policy      VARCHAR(15),
+							FOREIGN KEY (group_id) REFERENCES group_relations (group_id) ON DELETE CASCADE ON UPDATE CASCADE
 						 )`,
 				},
 				Down: []string{

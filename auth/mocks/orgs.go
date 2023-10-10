@@ -13,18 +13,20 @@ import (
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 
 type orgRepositoryMock struct {
-	mu      sync.Mutex
-	orgs    map[string]auth.Org
-	members map[string]auth.Member
-	groups  map[string]auth.Group
+	mu       sync.Mutex
+	orgs     map[string]auth.Org
+	members  map[string]auth.Member
+	groups   map[string]auth.Group
+	policies map[string]auth.GroupsPolicy
 }
 
 // NewOrgRepository returns mock of org repository
 func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
-		orgs:    make(map[string]auth.Org),
-		members: make(map[string]auth.Member),
-		groups:  make(map[string]auth.Group),
+		orgs:     make(map[string]auth.Org),
+		members:  make(map[string]auth.Member),
+		groups:   make(map[string]auth.Group),
+		policies: make(map[string]auth.GroupsPolicy),
 	}
 }
 
@@ -362,7 +364,19 @@ func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]
 }
 
 func (orm *orgRepositoryMock) SavePolicy(ctx context.Context, memberID string, policy string, groupIDs ...string) error {
-	panic("not implemented")
+	orm.mu.Lock()
+	defer orm.mu.Unlock()
+
+	if _, ok := orm.members[memberID]; !ok {
+		return errors.ErrNotFound
+	}
+
+	orm.policies[memberID] = auth.GroupsPolicy{
+		MemberID: memberID,
+		Policy:   policy,
+	}
+
+	return nil
 }
 
 func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
