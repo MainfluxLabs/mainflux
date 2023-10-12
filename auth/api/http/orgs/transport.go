@@ -29,6 +29,7 @@ const (
 	defLimit    = 10
 	defLevel    = 1
 	orgIDKey    = "orgID"
+	memberKey   = "memberID"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -67,6 +68,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Get("/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_orgs")(listOrgsEndpoint(svc)),
 		decodeListOrgsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_member")(viewMemberEndpoint(svc)),
+		decodeMemberRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -322,6 +330,16 @@ func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, erro
 		if req.Members[i].Role == auth.OwnerRole {
 			return nil, apiutil.ErrMalformedEntity
 		}
+	}
+
+	return req, nil
+}
+
+func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := memberReq{
+		token:    apiutil.ExtractBearerToken(r),
+		orgID:    bone.GetValue(r, orgIDKey),
+		memberID: bone.GetValue(r, memberKey),
 	}
 
 	return req, nil

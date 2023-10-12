@@ -159,6 +159,27 @@ paths:
           description: Organization does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/members/{memberId}:
+    get:
+      summary: Retrieves organization member details.
+      description: |
+        Retrieves organization member details for the given organization ID and member ID.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/MemberId"
+      responses:
+        '200':
+          description: Member retrieved.
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Organization or member does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/members:
     post:
       summary: Assigns members to organization.

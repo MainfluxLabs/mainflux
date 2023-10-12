@@ -159,6 +159,19 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, admin b
 	return lm.svc.ListOrgs(ctx, token, admin, pm)
 }
 
+func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (m auth.Member, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_member for token %s and org id %s and member id %s took %s to complete", token, orgID, memberID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewMember(ctx, token, orgID, memberID)
+}
+
 func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.MembersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_members for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))

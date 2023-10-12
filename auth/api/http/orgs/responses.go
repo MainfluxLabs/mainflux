@@ -24,6 +24,18 @@ type viewMemberRes struct {
 	Role  string `json:"role"`
 }
 
+func (res viewMemberRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewMemberRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewMemberRes) Empty() bool {
+	return false
+}
+
 type memberPageRes struct {
 	pageRes
 	Members []viewMemberRes `json:"members"`

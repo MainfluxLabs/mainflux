@@ -122,6 +122,24 @@ func (req listOrgMembershipsReq) validate() error {
 	return nil
 }
 
+type memberReq struct {
+	token    string
+	orgID    string
+	memberID string
+}
+
+func (req memberReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" || req.memberID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type membersReq struct {
 	token   string
 	orgID   string

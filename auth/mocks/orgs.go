@@ -219,6 +219,10 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	}, nil
 }
 
+func (orm *orgRepositoryMock) RetrieveMember(ctx context.Context, orgID, memberID string) (auth.Member, error) {
+	panic("not implemented")
+}
+
 func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()

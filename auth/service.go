@@ -476,6 +476,36 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 	return nil
 }
 
+func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string) (Member, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Member{}, err
+	}
+
+	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
+		return Member{}, err
+	}
+
+	usrReq := mainflux.UsersByIDsReq{Ids: []string{memberID}}
+	page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+	if err != nil {
+		return Member{}, err
+	}
+
+	role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
+	if err != nil {
+		return Member{}, err
+	}
+
+	member := Member{
+		ID:    page.Users[0].Id,
+		Email: page.Users[0].GetEmail(),
+		Role:  role,
+	}
+
+	return member, nil
+}
+
 func (svc service) UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
