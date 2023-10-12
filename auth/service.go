@@ -499,7 +499,7 @@ func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string
 
 	member := Member{
 		ID:    page.Users[0].Id,
-		Email: page.Users[0].GetEmail(),
+		Email: page.Users[0].Email,
 		Role:  role,
 	}
 
