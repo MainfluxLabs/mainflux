@@ -19,8 +19,8 @@ var (
 	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
 	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
 
-	// ErrOrgGgroupAlreadyAssigned indicates that group is already assigned.
-	ErrOrgGgroupAlreadyAssigned = errors.New("org group is already assigned")
+	// ErrOrgGroupAlreadyAssigned indicates that group is already assigned.
+	ErrOrgGroupAlreadyAssigned = errors.New("org group is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.
@@ -166,6 +166,9 @@ type Orgs interface {
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
 	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
+
+	// ViewMember retrieves member identified by memberID in org identified by orgID.
+	ViewMember(ctx context.Context, token, orgID, memberID string) (Member, error)
 
 	// AssignGroups adds groups with groupIDs into the org identified by orgID.
 	AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error

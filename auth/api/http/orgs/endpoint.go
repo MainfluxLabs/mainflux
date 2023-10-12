@@ -139,6 +139,29 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func viewMemberEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(memberReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		mb, err := svc.ViewMember(ctx, req.token, req.orgID, req.memberID)
+		if err != nil {
+			return nil, err
+
+		}
+
+		member := viewMemberRes{
+			ID:    mb.ID,
+			Email: mb.Email,
+			Role:  mb.Role,
+		}
+
+		return member, nil
+	}
+}
+
 func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(membersReq)

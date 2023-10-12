@@ -1190,7 +1190,7 @@ func TestAssignGroups(t *testing.T) {
 		{
 			desc:           "assign already assigned groups to org",
 			groupRelations: groupRelations,
-			err:            auth.ErrOrgGgroupAlreadyAssigned,
+			err:            auth.ErrOrgGroupAlreadyAssigned,
 		},
 		{
 			desc:           "assign groups to org with invalid org id",
@@ -1205,7 +1205,7 @@ func TestAssignGroups(t *testing.T) {
 		{
 			desc:           "assign groups to org with unknown org id",
 			groupRelations: unknownOrgIDgRel,
-			err:            auth.ErrOrgGgroupAlreadyAssigned,
+			err:            auth.ErrOrgGroupAlreadyAssigned,
 		},
 		{
 			desc:           "assign groups to org without group ids",
