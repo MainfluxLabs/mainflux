@@ -997,6 +997,10 @@ func (ts *thingsService) ListGroupThingsByChannel(ctx context.Context, token, gr
 		return GroupThingsPage{}, err
 	}
 
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+		return ts.groups.RetrieveGroupThingsByChannel(ctx, grID, chID, pm)
+	}
+
 	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: grID, Action: auth.ReadAction})
 	if user.GetId() != group.OwnerID && err != nil {
 		return GroupThingsPage{}, err
@@ -1016,13 +1020,17 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 		return GroupChannelsPage{}, err
 	}
 
-	if user.GetId() != group.OwnerID {
-		return GroupChannelsPage{}, errors.ErrAuthorization
-	}
-
 	gchp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), groupID, pm)
 	if err != nil {
 		return GroupChannelsPage{}, err
+	}
+
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+		return gchp, nil
+	}
+
+	if user.GetId() != group.OwnerID {
+		return GroupChannelsPage{}, errors.ErrAuthorization
 	}
 
 	return gchp, nil
