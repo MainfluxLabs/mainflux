@@ -1016,6 +1016,10 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 		return GroupChannelsPage{}, err
 	}
 
+	if user.GetId() != group.OwnerID {
+		return GroupChannelsPage{}, errors.ErrAuthorization
+	}
+
 	gchp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), groupID, pm)
 	if err != nil {
 		return GroupChannelsPage{}, err
