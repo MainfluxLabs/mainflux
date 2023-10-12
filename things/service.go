@@ -831,6 +831,10 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 		return Group{}, errors.ErrNotFound
 	}
 
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+		return gr, nil
+	}
+
 	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction})
 	if user.GetId() != gr.OwnerID && err != nil {
 		return Group{}, err
