@@ -728,7 +728,6 @@ func (or orgRepository) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) 
 	}
 
 	if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
-
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 

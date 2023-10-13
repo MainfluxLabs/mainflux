@@ -735,6 +735,34 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
+func (svc service) RemovePolicy(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
+		return err
+	}
+
+	for _, memberID := range memberIDs {
+		gp := GroupsPolicy{
+			GroupID:  groupID,
+			MemberID: memberID,
+		}
+
+		if err := svc.orgs.RemovePolicy(ctx, gp); err != nil {
+			return err
+		}
+
+		if err := svc.orgs.UnassignGroups(ctx, orgID, groupID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
 	gp := GroupsPolicy{
 		MemberID: userID,

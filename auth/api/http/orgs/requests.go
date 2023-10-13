@@ -241,6 +241,29 @@ func (req backupReq) validate() error {
 	return nil
 }
 
+type deletePolicyReq struct {
+	token     string
+	orgID     string
+	groupID   string
+	MemberIDs []string `json:"member_ids"`
+}
+
+func (req deletePolicyReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" || req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.MemberIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
 type restoreReq struct {
 	token           string
 	Orgs            []auth.Org            `json:"orgs"`

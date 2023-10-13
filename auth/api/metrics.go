@@ -250,3 +250,12 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 
 	return ms.svc.AssignRole(ctx, id, role)
 }
+
+func (ms *metricsMiddleware) RemovePolicy(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_policy").Add(1)
+		ms.latency.With("method", "remove_policy").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemovePolicy(ctx, token, orgID, groupID, memberIDs...)
+}
