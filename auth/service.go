@@ -753,8 +753,15 @@ func (svc service) CreatePolicy(ctx context.Context, token, orgID, groupID strin
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, gr); err != nil {
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
 		return err
+	}
+
+	if org.ID == "" {
+		if err := svc.orgs.AssignGroups(ctx, gr); err != nil {
+			return err
+		}
 	}
 
 	for _, m := range mp {
