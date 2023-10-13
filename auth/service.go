@@ -754,10 +754,6 @@ func (svc service) RemovePolicy(ctx context.Context, token, orgID, groupID strin
 		if err := svc.orgs.RemovePolicy(ctx, gp); err != nil {
 			return err
 		}
-
-		if err := svc.orgs.UnassignGroups(ctx, orgID, groupID); err != nil {
-			return err
-		}
 	}
 
 	return nil
