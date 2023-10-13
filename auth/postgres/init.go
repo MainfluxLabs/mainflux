@@ -121,7 +121,7 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "auth_5",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS group_policies (
-							group_id    UUID NOT NULL,
+							group_id    UUID UNIQUE NOT NULL,
 							member_id   UUID NOT NULL,
 							policy      VARCHAR(15),
 							FOREIGN KEY (group_id) REFERENCES group_relations (group_id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -129,6 +129,13 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS group_policies`,
+				},
+			},
+			{
+				Id: "auth_6",
+				Up: []string{
+					`ALTER TABLE group_policies DROP CONSTRAINT IF EXISTS group_policies_group_id_key`,
+					`ALTER TABLE group_policies ADD CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id)`,
 				},
 			},
 		},
