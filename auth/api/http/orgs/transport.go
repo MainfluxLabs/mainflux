@@ -27,9 +27,9 @@ const (
 	adminKey    = "admin"
 	defOffset   = 0
 	defLimit    = 10
-	defLevel    = 1
 	orgIDKey    = "orgID"
 	memberKey   = "memberID"
+	groupIDKey  = "groupID"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -127,7 +127,12 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
-
+	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "save_policy")(createPolicyEndpint(svc)),
+		decodeCreatePolicyRequest,
+		encodeResponse,
+		opts...,
+	))
 	mux.Get("/members/:memberID/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
 		decodeListMembershipsRequest,
@@ -238,6 +243,30 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 		limit:    l,
 		metadata: m,
 	}
+	return req, nil
+}
+
+func decodeCreatePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := createPolicyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	for _, m := range req.Members {
+		if m.Policy == "" {
+			m.Policy = auth.RPolicy
+		}
+	}
+
 	return req, nil
 }
 

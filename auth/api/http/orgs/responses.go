@@ -238,3 +238,17 @@ func (res restoreRes) Headers() map[string]string {
 func (res restoreRes) Empty() bool {
 	return true
 }
+
+type createPolicyRes struct{}
+
+func (res createPolicyRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res createPolicyRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createPolicyRes) Empty() bool {
+	return true
+}

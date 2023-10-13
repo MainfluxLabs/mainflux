@@ -122,6 +122,11 @@ type GroupRelation struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type MemberPolicy struct {
+	MemberID string
+	Policy   string
+}
+
 type Backup struct {
 	Orgs            []Org
 	MemberRelations []MemberRelation
@@ -178,6 +183,9 @@ type Orgs interface {
 
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
+
+	// CreatePolicy creates group policy for a user.
+	CreatePolicy(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
