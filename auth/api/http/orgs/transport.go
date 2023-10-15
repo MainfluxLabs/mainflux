@@ -365,6 +365,10 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 }
 
 func decodeDeletePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
 	req := deletePolicyReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),

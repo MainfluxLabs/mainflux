@@ -266,6 +266,29 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/groups/{groupId}:
+    patch:
+      summary: Unassigns group from organization.
+      description: |
+        Unassigns group from organization identified by the given IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/OrgGroupsReq"
+      responses:
+        '204':
+          description: Group unassigned from organization.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:
     post:
       summary: Assigns groups to organization.
@@ -646,6 +669,16 @@ components:
         - org_id
         - created_at
         - updated_at
+    DeletePolicySchema:
+      type: object
+      properties:
+        member_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
+          items:
+            type: string
     BackupAndResponseSchema:
       type: object
       properties:
@@ -688,6 +721,14 @@ components:
       schema:
         type: string
         format: uuid
+      required: true
+    GroupId:
+      name: groupId
+      description: Unique group identifier.
+      in: path
+      schema:
+        type: string
+        format: ulid
       required: true
     MemberId:
       name: memberId
@@ -777,6 +818,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
+    DeletePolicyReq:
+      description: JSON-formatted document describing delete policy request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DeletePolicySchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
