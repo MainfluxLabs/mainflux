@@ -268,9 +268,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups/{groupId}:
     patch:
-      summary: Unassigns group from organization.
+      summary: Remove policy.
       description: |
-        Unassigns group from organization identified by the given IDs.
+          Removes group policy for a user.
       tags:
         - auth
       parameters:
@@ -280,7 +280,7 @@ paths:
         $ref: "#/components/requestBodies/OrgGroupsReq"
       responses:
         '204':
-          description: Group unassigned from organization.
+          description: Policy removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
