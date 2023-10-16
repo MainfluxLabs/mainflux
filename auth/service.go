@@ -166,7 +166,7 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 
 	switch ar.Subject {
 	case RootSubject:
-		return svc.canAccessRoot(ctx, user.ID)
+		return svc.isAdmin(ctx, user.ID)
 	case GroupSubject:
 		return svc.canAccessGroup(ctx, user.ID, ar.Object, ar.Action)
 	default:
@@ -279,7 +279,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+		if err := svc.isAdmin(ctx, user.ID); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -724,7 +724,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -735,13 +735,12 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) UpdatePolicies(ctx context.Context, token, orgID string, gp ...GroupsPolicy) error {
+func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	groupID := gp[0].GroupID
 	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
 		return err
 	}
@@ -807,7 +806,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
 		return Backup{}, err
 	}
 
@@ -841,7 +840,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
 		return err
 	}
 
@@ -868,7 +867,7 @@ func (svc service) AssignRole(ctx context.Context, id, role string) error {
 	return nil
 }
 
-func (svc service) canAccessRoot(ctx context.Context, id string) error {
+func (svc service) isAdmin(ctx context.Context, id string) error {
 	role, err := svc.roles.RetrieveRole(ctx, id)
 	if err != nil {
 		return err
@@ -955,15 +954,19 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 		return err
 	}
 
-	if role != OwnerRole && role != AdminRole && role != EditorRole && policy != RwPolicy {
+	switch {
+	case role == OwnerRole,
+		role == AdminRole:
+		return nil
+	case policy == RwPolicy:
+		return nil
+	default:
 		return errors.ErrAuthorization
 	}
-
-	return nil
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return nil
 	}
 

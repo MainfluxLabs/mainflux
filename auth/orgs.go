@@ -184,8 +184,8 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// UpdatePolicies updates members group policies.
-	UpdatePolicies(ctx context.Context, token, orgID string, gp ...GroupsPolicy) error
+	// UpdatePolicies updates group members policies.
+	UpdatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)

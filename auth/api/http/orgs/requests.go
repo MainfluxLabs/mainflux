@@ -229,7 +229,7 @@ func (req orgReq) validate() error {
 	return nil
 }
 
-type groupPolicy struct {
+type memberPolicy struct {
 	MemberID string `json:"member_id"`
 	Policy   string `json:"policy"`
 }
@@ -238,7 +238,7 @@ type updatePoliciesReq struct {
 	token         string
 	orgID         string
 	groupID       string
-	GroupPolicies []groupPolicy `json:"group_policies"`
+	GroupPolicies []memberPolicy `json:"group_policies"`
 }
 
 func (req updatePoliciesReq) validate() error {

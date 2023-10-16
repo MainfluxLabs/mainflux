@@ -353,7 +353,7 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
-func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, orgID string, gp ...auth.GroupsPolicy) (err error) {
+func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, orgID, groupID string, gp ...auth.GroupsPolicy) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_policies for token %s org id %s and group id %s took %s to complete", token, orgID, gp[0].GroupID, time.Since(begin))
 		if err != nil {
@@ -362,5 +362,5 @@ func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, orgID st
 		}
 	}(time.Now())
 
-	return lm.svc.UpdatePolicies(ctx, token, orgID, gp...)
+	return lm.svc.UpdatePolicies(ctx, token, orgID, groupID, gp...)
 }

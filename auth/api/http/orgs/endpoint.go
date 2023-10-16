@@ -253,7 +253,6 @@ func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 		var groupPolicies []auth.GroupsPolicy
 		for _, gp := range req.GroupPolicies {
 			groupPolicy := auth.GroupsPolicy{
-				GroupID:  req.groupID,
 				MemberID: gp.MemberID,
 				Policy:   gp.Policy,
 			}
@@ -261,7 +260,7 @@ func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			groupPolicies = append(groupPolicies, groupPolicy)
 		}
 
-		if err := svc.UpdatePolicies(ctx, req.token, req.orgID, groupPolicies...); err != nil {
+		if err := svc.UpdatePolicies(ctx, req.token, req.orgID, req.groupID, groupPolicies...); err != nil {
 			return nil, err
 		}
 
