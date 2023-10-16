@@ -369,7 +369,7 @@ func decodeDeletePoliciesRequest(_ context.Context, r *http.Request) (interface{
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := deletePoliciesReq{
+	req := removePoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),

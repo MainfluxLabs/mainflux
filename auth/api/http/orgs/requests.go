@@ -241,14 +241,14 @@ func (req backupReq) validate() error {
 	return nil
 }
 
-type deletePoliciesReq struct {
+type removePoliciesReq struct {
 	token     string
 	orgID     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req deletePoliciesReq) validate() error {
+func (req removePoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
