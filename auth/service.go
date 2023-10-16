@@ -953,11 +953,15 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 		return err
 	}
 
-	if role != OwnerRole && role != AdminRole && role != EditorRole && policy != RwPolicy {
+	switch {
+	case role == OwnerRole,
+		role == AdminRole:
+		return nil
+	case policy == RwPolicy:
+		return nil
+	default:
 		return errors.ErrAuthorization
 	}
-
-	return nil
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {

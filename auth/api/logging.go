@@ -355,7 +355,7 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 
 func (lm *loggingMiddleware) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_policy for token %s and orgID %s and groupID %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_policies for token %s and orgID %s and groupID %s took %s to complete", token, orgID, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
