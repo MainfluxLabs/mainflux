@@ -267,7 +267,7 @@ func (req createPoliciesReq) validate() error {
 	}
 
 	for _, g := range req.GroupPolicies {
-		if g.Policy != auth.RPolicy && g.Policy != auth.RwPolicy && g.Policy != "" {
+		if g.Policy != auth.RPolicy && g.Policy != auth.RwPolicy {
 			return apiutil.ErrInvalidPolicy
 		}
 
