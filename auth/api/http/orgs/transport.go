@@ -30,6 +30,7 @@ const (
 	defLevel    = 1
 	orgIDKey    = "orgID"
 	memberKey   = "memberID"
+	groupIDKey  = "groupID"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -110,6 +111,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
 		decodeGroupsRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_policy")(updatePolicyEndpoint(svc)),
+		updatePolicyRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -362,6 +370,24 @@ func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error
 	req := groupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func updatePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updatePolicyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

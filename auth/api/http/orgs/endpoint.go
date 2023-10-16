@@ -243,6 +243,31 @@ func assignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func updatePolicyEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(updatePolicyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var mps []auth.MemberPolicy
+		for _, m := range req.Members {
+			mp := auth.MemberPolicy{
+				MemberID: m.MemberID,
+				Policy:   m.Policy,
+			}
+
+			mps = append(mps, mp)
+		}
+
+		if err := svc.UpdatePolicy(ctx, req.token, req.orgID, req.groupID, mps...); err != nil {
+			return nil, err
+		}
+
+		return updatePolicyRes{}, nil
+	}
+}
+
 func unassignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupsReq)

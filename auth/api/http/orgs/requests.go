@@ -229,6 +229,44 @@ func (req orgReq) validate() error {
 	return nil
 }
 
+type memberPolicy struct {
+	MemberID string `json:"member_id"`
+	Policy   string `json:"policy"`
+}
+
+type updatePolicyReq struct {
+	token   string
+	orgID   string
+	groupID string
+	Members []memberPolicy `json:"members"`
+}
+
+func (req updatePolicyReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" || req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Members) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, m := range req.Members {
+		if m.Policy != auth.RPolicy && m.Policy != auth.RwPolicy {
+			return apiutil.ErrInvalidPolicy
+		}
+
+		if m.MemberID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
 type backupReq struct {
 	token string
 }
