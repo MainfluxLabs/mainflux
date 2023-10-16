@@ -750,11 +750,13 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
-	if org.ID == orgID {
-		for _, g := range gp {
-			if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
-				return err
-			}
+	if org.ID != orgID {
+		return errors.ErrNotFound
+	}
+
+	for _, g := range gp {
+		if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
+			return err
 		}
 	}
 
@@ -956,11 +958,8 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 	}
 
 	switch {
-	case role == OwnerRole:
-		return nil
-	case role == AdminRole:
-		return nil
-	case role == EditorRole:
+	case role == OwnerRole,
+		role == AdminRole:
 		return nil
 	case policy == RwPolicy:
 		return nil
