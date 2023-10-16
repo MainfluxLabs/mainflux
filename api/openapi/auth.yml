@@ -277,7 +277,7 @@ paths:
         - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/DeletePoliciesReq"
+        $ref: "#/components/requestBodies/RemovePoliciesReq"
       responses:
         '204':
           description: Policies removed.
@@ -669,7 +669,7 @@ components:
         - org_id
         - created_at
         - updated_at
-    DeletePoliciesSchema:
+    RemovePoliciesSchema:
       type: object
       properties:
         member_ids:
@@ -818,13 +818,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
-    DeletePoliciesReq:
-      description: JSON-formatted document describing delete policies request.
+    RemovePoliciesReq:
+      description: JSON-formatted document describing remove policies request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/DeletePoliciesSchema"
+            $ref: "#/components/schemas/RemovePoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
