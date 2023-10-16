@@ -735,7 +735,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) RemovePolicy(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err

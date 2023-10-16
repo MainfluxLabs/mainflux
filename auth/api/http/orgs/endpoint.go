@@ -227,14 +227,14 @@ func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		return buildMembersResponse(page), nil
 	}
 }
-func deletePolicyEndpoint(svc auth.Service) endpoint.Endpoint {
+func deletePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(deletePolicyReq)
+		req := request.(deletePoliciesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemovePolicy(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemovePolicies(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 

@@ -268,19 +268,19 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups/{groupId}:
     patch:
-      summary: Remove policy.
+      summary: Remove policies.
       description: |
-          Removes group policy for a user.
+          Removes members group policies identified org and group IDs and member IDs.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/OrgGroupsReq"
+        $ref: "#/components/requestBodies/DeletePoliciesReq"
       responses:
         '204':
-          description: Policy removed.
+          description: Policies removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -669,7 +669,7 @@ components:
         - org_id
         - created_at
         - updated_at
-    DeletePolicySchema:
+    DeletePoliciesSchema:
       type: object
       properties:
         member_ids:
@@ -818,13 +818,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
-    DeletePolicyReq:
-      description: JSON-formatted document describing delete policy request.
+    DeletePoliciesReq:
+      description: JSON-formatted document describing delete policies request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/DeletePolicySchema"
+            $ref: "#/components/schemas/DeletePoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
