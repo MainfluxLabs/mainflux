@@ -289,14 +289,13 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 		var groupPolicies []auth.GroupsPolicy
 		for _, g := range req.GroupPolicies {
 			groupPolicy := auth.GroupsPolicy{
-				GroupID:  req.groupID,
 				MemberID: g.MemberID,
 				Policy:   g.Policy,
 			}
 			groupPolicies = append(groupPolicies, groupPolicy)
 		}
 
-		if err := svc.CreatePolicies(ctx, req.token, req.orgID, groupPolicies...); err != nil {
+		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, groupPolicies...); err != nil {
 			return nil, err
 		}
 

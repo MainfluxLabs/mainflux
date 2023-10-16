@@ -180,7 +180,7 @@ type Orgs interface {
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
 	// CreatePolicies creates group policies for members.
-	CreatePolicies(ctx context.Context, token, orgID string, gp ...GroupsPolicy) error
+	CreatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)

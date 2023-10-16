@@ -735,23 +735,14 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, orgID string, gp ...GroupsPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	groupID := gp[0].GroupID
 	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
 		return err
-	}
-
-	timestamp := getTimestmap()
-	gr := GroupRelation{
-		OrgID:     orgID,
-		GroupID:   groupID,
-		CreatedAt: timestamp,
-		UpdatedAt: timestamp,
 	}
 
 	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
@@ -759,15 +750,11 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID string, gp .
 		return err
 	}
 
-	if org.ID == "" {
-		if err := svc.orgs.AssignGroups(ctx, gr); err != nil {
-			return err
-		}
-	}
-
-	for _, g := range gp {
-		if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
-			return err
+	if org.ID == orgID {
+		for _, g := range gp {
+			if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -968,11 +955,18 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 		return err
 	}
 
-	if role != OwnerRole && role != AdminRole && role != EditorRole && policy != RwPolicy {
+	switch {
+	case role == OwnerRole:
+		return nil
+	case role == AdminRole:
+		return nil
+	case role == EditorRole:
+		return nil
+	case policy == RwPolicy:
+		return nil
+	default:
 		return errors.ErrAuthorization
 	}
-
-	return nil
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
