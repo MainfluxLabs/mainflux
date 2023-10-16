@@ -741,11 +741,11 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID string, gp .
 		return err
 	}
 
-	if err := svc.canEditGroups(ctx, orgID, user.ID); err != nil {
+	groupID := gp[0].GroupID
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
 		return err
 	}
 
-	groupID := gp[0].GroupID
 	timestamp := getTimestmap()
 	gr := GroupRelation{
 		OrgID:     orgID,
@@ -946,6 +946,29 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	}
 
 	if role != OwnerRole && role != AdminRole && role != EditorRole {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID string) error {
+	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	gp := GroupsPolicy{
+		MemberID: userID,
+		GroupID:  groupID,
+	}
+
+	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	if role != OwnerRole && role != AdminRole && role != EditorRole && policy != RwPolicy {
 		return errors.ErrAuthorization
 	}
 
