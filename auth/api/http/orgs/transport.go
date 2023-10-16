@@ -116,8 +116,8 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_policy")(updatePolicyEndpoint(svc)),
-		updatePolicyRequest,
+		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
+		updatePoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -379,12 +379,12 @@ func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func updatePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func updatePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := updatePolicyReq{
+	req := updatePoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),
