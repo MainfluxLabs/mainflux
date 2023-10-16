@@ -179,7 +179,7 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// RemovePolicies removes group policies for members.
+	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
