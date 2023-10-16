@@ -735,7 +735,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicy(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, orgID string, gp ...GroupsPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -745,6 +745,7 @@ func (svc service) CreatePolicy(ctx context.Context, token, orgID, groupID strin
 		return err
 	}
 
+	groupID := gp[0].GroupID
 	timestamp := getTimestmap()
 	gr := GroupRelation{
 		OrgID:     orgID,
@@ -764,8 +765,8 @@ func (svc service) CreatePolicy(ctx context.Context, token, orgID, groupID strin
 		}
 	}
 
-	for _, m := range mp {
-		if err := svc.orgs.SavePolicy(ctx, m.MemberID, m.Policy, groupID); err != nil {
+	for _, g := range gp {
+		if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
 			return err
 		}
 	}

@@ -353,14 +353,14 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
-func (lm *loggingMiddleware) CreatePolicy(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) (err error) {
+func (lm *loggingMiddleware) CreatePolicies(ctx context.Context, token, orgID string, gp ...auth.GroupsPolicy) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_policy for token %s groupID %s and orgID %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_policies for token %s orgID %s and groupID %s took %s to complete", token, orgID, gp[0].GroupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreatePolicy(ctx, token, orgID, groupID, mp...)
+	return lm.svc.CreatePolicies(ctx, token, orgID, gp...)
 }

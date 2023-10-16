@@ -241,19 +241,19 @@ func (req backupReq) validate() error {
 	return nil
 }
 
-type memberPolicy struct {
+type groupPolicy struct {
 	MemberID string `json:"member_id"`
 	Policy   string `json:"policy"`
 }
 
-type createPolicyReq struct {
-	token   string
-	orgID   string
-	groupID string
-	Members []memberPolicy `json:"members"`
+type createPoliciesReq struct {
+	token          string
+	orgID          string
+	groupID        string
+	GroupsPolicies []groupPolicy `json:"groups_policies"`
 }
 
-func (req createPolicyReq) validate() error {
+func (req createPoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -262,16 +262,16 @@ func (req createPolicyReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 {
+	if len(req.GroupsPolicies) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, m := range req.Members {
-		if m.Policy != auth.RPolicy && m.Policy != auth.RwPolicy && m.Policy != "" {
+	for _, g := range req.GroupsPolicies {
+		if g.Policy != auth.RPolicy && g.Policy != auth.RwPolicy && g.Policy != "" {
 			return apiutil.ErrInvalidPolicy
 		}
 
-		if m.MemberID == "" {
+		if g.MemberID == "" {
 			return apiutil.ErrMissingID
 		}
 	}

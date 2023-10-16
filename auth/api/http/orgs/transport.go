@@ -128,8 +128,8 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "save_policy")(createPolicyEndpint(svc)),
-		decodeCreatePolicyRequest,
+		kitot.TraceServer(tracer, "save_policy")(createPoliciesEndpint(svc)),
+		decodeCreatePoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -246,12 +246,12 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeCreatePolicyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreatePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createPolicyReq{
+	req := createPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),
@@ -261,9 +261,9 @@ func decodeCreatePolicyRequest(_ context.Context, r *http.Request) (interface{},
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	for _, m := range req.Members {
-		if m.Policy == "" {
-			m.Policy = auth.RPolicy
+	for _, gp := range req.GroupsPolicies {
+		if gp.Policy == "" {
+			gp.Policy = auth.RPolicy
 		}
 	}
 
