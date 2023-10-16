@@ -261,7 +261,7 @@ func decodeCreatePoliciesRequest(_ context.Context, r *http.Request) (interface{
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	for _, gp := range req.GroupsPolicies {
+	for _, gp := range req.GroupPolicies {
 		if gp.Policy == "" {
 			gp.Policy = auth.RPolicy
 		}

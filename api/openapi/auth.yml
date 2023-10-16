@@ -268,19 +268,19 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups/{groupId}:
     post:
-      summary: Create policy.
+      summary: Create group policies.
       description: |
-        Create new group policy for a user.
+        Create group members policies for the given group ID and member IDs.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupPolicyReq"
+        $ref: "#/components/requestBodies/GroupPoliciesReq"
       responses:
         '201':
-          description: Policy created.
+          description: Policies created.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -289,7 +289,6 @@ paths:
           description: Failed due to non existing organization or group.
         '500':
           $ref: "#/components/responses/ServiceError"
-
   /orgs/{orgId}/groups:
     post:
       summary: Assigns groups to organization.
@@ -670,10 +669,10 @@ components:
         - org_id
         - created_at
         - updated_at
-    GroupPolicySchema:
+    GroupPoliciesSchema:
       type: object
       properties:
-        members:
+        group_policies:
           type: array
           minItems: 1
           uniqueItems: true
@@ -831,13 +830,13 @@ components:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
 
-    GroupPolicyReq:
-      description: JSON-formatted document describing group policy request.
+    GroupPoliciesReq:
+      description: JSON-formatted document describing group policies request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupPolicySchema"
+            $ref: "#/components/schemas/GroupPoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true

@@ -287,7 +287,7 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		var groupPolicies []auth.GroupsPolicy
-		for _, g := range req.GroupsPolicies {
+		for _, g := range req.GroupPolicies {
 			groupPolicy := auth.GroupsPolicy{
 				GroupID:  req.groupID,
 				MemberID: g.MemberID,
