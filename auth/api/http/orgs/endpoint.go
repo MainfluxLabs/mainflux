@@ -227,7 +227,7 @@ func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		return buildMembersResponse(page), nil
 	}
 }
-func deletePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removePoliciesReq)
 		if err := req.validate(); err != nil {
