@@ -256,8 +256,8 @@ type OrgRepository interface {
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 
-	// SavePolicy saves group policy for a user.
-	SavePolicy(ctx context.Context, memberID, policy string, groupID ...string) error
+	// SavePolicies saves group members policies.
+	SavePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
 
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
@@ -265,6 +265,6 @@ type OrgRepository interface {
 	// RemovePolicy removes group policy for a user.
 	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
 
-	// UpdatePolicy updates group policy for a user.
-	UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error
+	// UpdatePolicies updates group members policies.
+	UpdatePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
 }

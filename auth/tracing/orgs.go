@@ -29,10 +29,10 @@ const (
 	retrieveAll                = "retrieve_all_orgs"
 	retrieveAllMemberRelations = "retrieve_all_member_elations"
 	retrieveAllGroupRelations  = "retrieve_all_group_relations"
-	savePolicy                 = "save_policy"
+	savePolicies               = "save_policies"
 	removePolicy               = "remove_policy"
 	retrievePolicy             = "retrieve_policy"
-	updatePolicy               = "update_policy"
+	updatePolicies             = "update_policies"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -202,12 +202,12 @@ func (orm orgRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context
 	return orm.repo.RetrieveAllGroupRelations(ctx)
 }
 
-func (orm orgRepositoryMiddleware) SavePolicy(ctx context.Context, memberID, policy string, groupIDs ...string) error {
-	span := createSpan(ctx, orm.tracer, savePolicy)
+func (orm orgRepositoryMiddleware) SavePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+	span := createSpan(ctx, orm.tracer, savePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.SavePolicy(ctx, memberID, policy, groupIDs...)
+	return orm.repo.SavePolicies(ctx, groupID, mp...)
 }
 
 func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
@@ -218,12 +218,12 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
 
-func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error {
-	span := createSpan(ctx, orm.tracer, updatePolicy)
+func (orm orgRepositoryMiddleware) UpdatePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+	span := createSpan(ctx, orm.tracer, updatePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdatePolicy(ctx, groupID, memberID, policy)
+	return orm.repo.UpdatePolicies(ctx, groupID, mp...)
 }
 
 func (orm orgRepositoryMiddleware) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
