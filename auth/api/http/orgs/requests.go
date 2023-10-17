@@ -247,10 +247,10 @@ type memberPolicy struct {
 }
 
 type createPoliciesReq struct {
-	token         string
-	orgID         string
-	groupID       string
-	GroupPolicies []memberPolicy `json:"group_policies"`
+	token           string
+	orgID           string
+	groupID         string
+	MembersPolicies []memberPolicy `json:"members_policies"`
 }
 
 func (req createPoliciesReq) validate() error {
@@ -262,16 +262,16 @@ func (req createPoliciesReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.GroupPolicies) == 0 {
+	if len(req.MembersPolicies) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, g := range req.GroupPolicies {
-		if g.Policy != auth.RPolicy && g.Policy != auth.RwPolicy {
+	for _, mp := range req.MembersPolicies {
+		if mp.Policy != auth.RPolicy && mp.Policy != auth.RwPolicy {
 			return apiutil.ErrInvalidPolicy
 		}
 
-		if g.MemberID == "" {
+		if mp.MemberID == "" {
 			return apiutil.ErrMissingID
 		}
 	}

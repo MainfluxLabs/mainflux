@@ -251,11 +251,11 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	return ms.svc.AssignRole(ctx, id, role)
 }
 
-func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, gp ...auth.GroupsPolicy) error {
+func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_policies").Add(1)
 		ms.latency.With("method", "create_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreatePolicies(ctx, token, orgID, groupID, gp...)
+	return ms.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
 }

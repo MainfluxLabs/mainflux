@@ -735,7 +735,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -754,8 +754,8 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 		return errors.ErrNotFound
 	}
 
-	for _, g := range gp {
-		if err := svc.orgs.SavePolicy(ctx, g.MemberID, g.Policy, groupID); err != nil {
+	for _, m := range mp {
+		if err := svc.orgs.SavePolicy(ctx, m.MemberID, m.Policy, groupID); err != nil {
 			return err
 		}
 	}

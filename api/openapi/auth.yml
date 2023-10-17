@@ -277,7 +277,7 @@ paths:
         - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupPoliciesReq"
+        $ref: "#/components/requestBodies/MembersPoliciesReq"
       responses:
         '201':
           description: Policies created.
@@ -669,7 +669,7 @@ components:
         - org_id
         - created_at
         - updated_at
-    GroupPoliciesSchema:
+    MembersPoliciesSchema:
       type: object
       properties:
         group_policies:
@@ -830,13 +830,13 @@ components:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
 
-    GroupPoliciesReq:
-      description: JSON-formatted document describing group policies request.
+    MembersPoliciesReq:
+      description: JSON-formatted document describing group members policies request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupPoliciesSchema"
+            $ref: "#/components/schemas/MembersPoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true

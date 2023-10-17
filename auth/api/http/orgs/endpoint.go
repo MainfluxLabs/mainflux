@@ -286,16 +286,16 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var groupPolicies []auth.GroupsPolicy
-		for _, g := range req.GroupPolicies {
-			groupPolicy := auth.GroupsPolicy{
-				MemberID: g.MemberID,
-				Policy:   g.Policy,
+		var membersPolicies []auth.MemberPolicy
+		for _, m := range req.MembersPolicies {
+			memberPolicy := auth.MemberPolicy{
+				MemberID: m.MemberID,
+				Policy:   m.Policy,
 			}
-			groupPolicies = append(groupPolicies, groupPolicy)
+			membersPolicies = append(membersPolicies, memberPolicy)
 		}
 
-		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, groupPolicies...); err != nil {
+		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
 			return nil, err
 		}
 
