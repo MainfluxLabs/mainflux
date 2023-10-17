@@ -384,7 +384,7 @@ func updatePoliciesRequest(_ context.Context, r *http.Request) (interface{}, err
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := updatePoliciesReq{
+	req := membersPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),

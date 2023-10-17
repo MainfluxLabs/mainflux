@@ -101,6 +101,11 @@ type GroupsPolicy struct {
 	Policy   string
 }
 
+type MemberPolicy struct {
+	MemberID string
+	Policy   string
+}
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -120,11 +125,6 @@ type GroupRelation struct {
 	OrgID     string    `json:"org_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type MemberPolicy struct {
-	MemberID string
-	Policy   string
 }
 
 type Backup struct {
@@ -185,7 +185,7 @@ type Orgs interface {
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
 	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, token, orgID, groupID string, gp ...GroupsPolicy) error
+	UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)

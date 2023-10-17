@@ -234,14 +234,14 @@ type memberPolicy struct {
 	Policy   string `json:"policy"`
 }
 
-type updatePoliciesReq struct {
-	token         string
-	orgID         string
-	groupID       string
-	GroupPolicies []memberPolicy `json:"group_policies"`
+type membersPoliciesReq struct {
+	token           string
+	orgID           string
+	groupID         string
+	MembersPolicies []memberPolicy `json:"members_policies"`
 }
 
-func (req updatePoliciesReq) validate() error {
+func (req membersPoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -250,11 +250,11 @@ func (req updatePoliciesReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.GroupPolicies) == 0 {
+	if len(req.MembersPolicies) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gp := range req.GroupPolicies {
+	for _, gp := range req.MembersPolicies {
 		if gp.Policy != auth.RPolicy && gp.Policy != auth.RwPolicy {
 			return apiutil.ErrInvalidPolicy
 		}
