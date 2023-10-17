@@ -267,17 +267,39 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups/{groupId}:
-    put:
-      summary: Update group policies.
+    post:
+      summary: Create group policies.
       description: |
-        Updates members group policies identified by the given organization and group IDs and member IDs.
+        Create group members policies for the given group ID and member IDs.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupPoliciesReq"
+        $ref: "#/components/requestBodies/MembersPoliciesReq"
+      responses:
+        '201':
+          description: Policies created.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update group policies.
+      description: |
+        Updates group members policies identified by the given organization and group IDs and member IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/MembersPoliciesReq"
       responses:
         '200':
           description: Group policies updated.
@@ -669,10 +691,10 @@ components:
         - org_id
         - created_at
         - updated_at
-    GroupPoliciesSchema:
+    MembersPoliciesSchema:
       type: object
       properties:
-        group_policies:
+        members_policies:
           type: array
           minItems: 1
           uniqueItems: true
@@ -828,13 +850,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
-    GroupPoliciesReq:
-      description: JSON-formatted document describing group policies request.
+
+    MembersPoliciesReq:
+      description: JSON-formatted document describing group members policies request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupPoliciesSchema"
+            $ref: "#/components/schemas/MembersPoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true

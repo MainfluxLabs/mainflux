@@ -27,7 +27,6 @@ const (
 	adminKey    = "admin"
 	defOffset   = 0
 	defLimit    = 10
-	defLevel    = 1
 	orgIDKey    = "orgID"
 	memberKey   = "memberID"
 	groupIDKey  = "groupID"
@@ -115,9 +114,16 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
+		decodeMembersPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
-		updatePoliciesRequest,
+		decodeMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -249,6 +255,24 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
+func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := membersPoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func decodeListMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
@@ -370,24 +394,6 @@ func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error
 	req := groupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func updatePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := membersPoliciesReq{
-		token:   apiutil.ExtractBearerToken(r),
-		orgID:   bone.GetValue(r, orgIDKey),
-		groupID: bone.GetValue(r, groupIDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

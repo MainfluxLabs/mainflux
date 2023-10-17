@@ -17,6 +17,7 @@ var (
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
 	_ mainflux.Response = (*updatePoliciesRes)(nil)
+	_ mainflux.Response = (*createPoliciesRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -237,6 +238,20 @@ func (res restoreRes) Headers() map[string]string {
 }
 
 func (res restoreRes) Empty() bool {
+	return true
+}
+
+type createPoliciesRes struct{}
+
+func (res createPoliciesRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res createPoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createPoliciesRes) Empty() bool {
 	return true
 }
 
