@@ -266,5 +266,5 @@ type OrgRepository interface {
 	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
 
 	// UpdatePolicy updates group policy for a user.
-	UpdatePolicy(ctx context.Context, gp GroupsPolicy) error
+	UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error
 }

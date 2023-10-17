@@ -387,7 +387,7 @@ func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.Groups
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (orm *orgRepositoryMock) UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error {
 	panic("not implemented")
 }
 

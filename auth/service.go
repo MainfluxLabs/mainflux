@@ -765,13 +765,7 @@ func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID str
 	}
 
 	for _, m := range mp {
-		groupPolicy := GroupsPolicy{
-			GroupID:  groupID,
-			MemberID: m.MemberID,
-			Policy:   m.Policy,
-		}
-
-		if err := svc.orgs.UpdatePolicy(ctx, groupPolicy); err != nil {
+		if err := svc.orgs.UpdatePolicy(ctx, groupID, m.MemberID, m.Policy); err != nil {
 			return err
 		}
 	}

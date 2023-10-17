@@ -1897,45 +1897,37 @@ func TestUpdatePolicy(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc   string
-		gp     auth.GroupsPolicy
-		policy string
-		err    error
+		desc     string
+		groupID  string
+		memberID string
+		policy   string
+		err      error
 	}{
 		{
-			desc: "update policy without group id",
-			gp: auth.GroupsPolicy{
-				GroupID:  "",
-				MemberID: memberID,
-				Policy:   auth.RPolicy,
-			},
-			policy: "",
-			err:    errors.ErrMalformedEntity,
+			desc:     "update policy without group id",
+			groupID:  "",
+			memberID: memberID,
+			policy:   auth.RPolicy,
+			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update policy without member id",
-			gp: auth.GroupsPolicy{
-				GroupID:  groupID,
-				MemberID: "",
-				Policy:   auth.RPolicy,
-			},
-			policy: "",
-			err:    errors.ErrMalformedEntity,
+			desc:     "update policy without member id",
+			groupID:  groupID,
+			memberID: "",
+			policy:   auth.RPolicy,
+			err:      errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update policy",
-			gp: auth.GroupsPolicy{
-				GroupID:  groupID,
-				MemberID: memberID,
-				Policy:   auth.RPolicy,
-			},
-			policy: auth.RPolicy,
-			err:    nil,
+			desc:     "update policy",
+			groupID:  groupID,
+			memberID: memberID,
+			policy:   auth.RPolicy,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdatePolicy(context.Background(), tc.gp)
+		err := repo.UpdatePolicy(context.Background(), tc.groupID, tc.memberID, tc.policy)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

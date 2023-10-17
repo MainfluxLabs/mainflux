@@ -735,8 +735,14 @@ func (or orgRepository) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) 
 	return nil
 }
 
-func (or orgRepository) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (or orgRepository) UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error {
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
+
+	gp := auth.GroupsPolicy{
+		MemberID: memberID,
+		GroupID:  groupID,
+		Policy:   policy,
+	}
 
 	dbgp, err := toDBGroupPolicy(gp)
 	if err != nil {

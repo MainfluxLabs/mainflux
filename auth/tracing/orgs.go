@@ -218,12 +218,12 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
 
-func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, groupID, memberID, policy string) error {
 	span := createSpan(ctx, orm.tracer, updatePolicy)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdatePolicy(ctx, gp)
+	return orm.repo.UpdatePolicy(ctx, groupID, memberID, policy)
 }
 
 func (orm orgRepositoryMiddleware) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
