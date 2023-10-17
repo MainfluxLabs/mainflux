@@ -113,8 +113,8 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 	mux.Patch("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_policies")(removePoliciesEndpoint(svc)),
-		decodeDeletePoliciesRequest,
+		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
+		decodeRemovePoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -386,7 +386,7 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 	return req, nil
 }
 
-func decodeDeletePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemovePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
