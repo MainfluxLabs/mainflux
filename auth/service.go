@@ -773,6 +773,15 @@ func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if org.ID != orgID {
+		return errors.ErrNotFound
+	}
+
 	for _, memberID := range memberIDs {
 		gp := GroupsPolicy{
 			GroupID:  groupID,
