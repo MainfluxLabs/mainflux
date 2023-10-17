@@ -262,8 +262,8 @@ type OrgRepository interface {
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
 
-	// RemovePolicy removes group policy for a user.
-	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
+	// RemovePolicies removes group members policies.
+	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UpdatePolicy updates group policy for a user.
 	UpdatePolicy(ctx context.Context, gp GroupsPolicy) error

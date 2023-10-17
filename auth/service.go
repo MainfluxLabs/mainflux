@@ -764,15 +764,8 @@ func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
-	for _, memberID := range memberIDs {
-		gp := GroupsPolicy{
-			GroupID:  groupID,
-			MemberID: memberID,
-		}
-
-		if err := svc.orgs.RemovePolicy(ctx, gp); err != nil {
-			return err
-		}
+	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+		return err
 	}
 
 	return nil
