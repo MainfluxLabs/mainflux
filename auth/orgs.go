@@ -184,10 +184,10 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// CreatePolicies creates group policies for members.
+	// CreatePolicies creates group members policies.
 	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
-	// UpdatePolicies updates group policies for members.
+	// UpdatePolicies updates group members policies.
 	UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
