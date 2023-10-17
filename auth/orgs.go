@@ -101,6 +101,11 @@ type GroupsPolicy struct {
 	Policy   string
 }
 
+type MemberPolicy struct {
+	MemberID string
+	Policy   string
+}
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -179,7 +184,10 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// RemovePolicies removes group members policies.
+	// CreatePolicies creates group policies for members.
+	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
+
+	// RemovePolicies removes group policies for members.
 	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.

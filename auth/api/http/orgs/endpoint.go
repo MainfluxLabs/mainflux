@@ -227,20 +227,6 @@ func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		return buildMembersResponse(page), nil
 	}
 }
-func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(removePoliciesReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.RemovePolicies(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
-			return nil, err
-		}
-
-		return deleteRes{}, nil
-	}
-}
 
 func assignOrgGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -290,6 +276,45 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return buildGroupsResponse(page), nil
+	}
+}
+
+func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var membersPolicies []auth.MemberPolicy
+		for _, m := range req.MembersPolicies {
+			memberPolicy := auth.MemberPolicy{
+				MemberID: m.MemberID,
+				Policy:   m.Policy,
+			}
+			membersPolicies = append(membersPolicies, memberPolicy)
+		}
+
+		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+			return nil, err
+		}
+
+		return createPoliciesRes{}, nil
+	}
+}
+
+func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removePoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemovePolicies(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return deleteRes{}, nil
 	}
 }
 
