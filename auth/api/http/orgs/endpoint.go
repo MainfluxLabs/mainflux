@@ -279,6 +279,30 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var membersPolicies []auth.MemberPolicy
+		for _, m := range req.MembersPolicies {
+			memberPolicy := auth.MemberPolicy{
+				MemberID: m.MemberID,
+				Policy:   m.Policy,
+			}
+			membersPolicies = append(membersPolicies, memberPolicy)
+		}
+
+		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+			return nil, err
+		}
+
+		return createPoliciesRes{}, nil
+	}
+}
+
 func backupEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
