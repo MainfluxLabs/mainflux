@@ -595,6 +595,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            format: uuid
     MemberRelationsSchema:
       type: object
       properties:
@@ -701,6 +702,7 @@ components:
           example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
           items:
             type: string
+            format: uuid
     MembersPoliciesSchema:
       type: object
       properties:
