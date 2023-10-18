@@ -131,6 +131,13 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS group_policies`,
 				},
 			},
+			{
+				Id: "auth_6",
+				Up: []string{
+					`ALTER TABLE group_policies DROP CONSTRAINT IF EXISTS group_policies_group_id_key`,
+					`ALTER TABLE group_policies ADD CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id)`,
+				},
+			},
 		},
 	}
 

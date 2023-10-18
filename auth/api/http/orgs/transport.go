@@ -30,6 +30,7 @@ const (
 	defLevel    = 1
 	orgIDKey    = "orgID"
 	memberKey   = "memberID"
+	groupIDKey  = "groupID"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -103,6 +104,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Get("/orgs/:orgID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members")(listMembersEndpoint(svc)),
 		decodeListMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
+		decpdeListMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -353,6 +361,28 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decpdeListMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listMembersPoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
+		offset:  o,
+		limit:   l,
 	}
 
 	return req, nil

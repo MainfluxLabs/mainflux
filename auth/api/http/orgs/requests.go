@@ -229,6 +229,26 @@ func (req orgReq) validate() error {
 	return nil
 }
 
+type listMembersPoliciesReq struct {
+	token   string
+	groupID string
+	orgID   string
+	offset  uint64
+	limit   uint64
+}
+
+func (req listMembersPoliciesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" || req.orgID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type backupReq struct {
 	token string
 }

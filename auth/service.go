@@ -842,6 +842,67 @@ func (svc service) AssignRole(ctx context.Context, id, role string) error {
 	return nil
 }
 
+func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (MembersPoliciesPage, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return MembersPoliciesPage{}, err
+	}
+
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+		return MembersPoliciesPage{}, err
+	}
+
+	mpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
+	if err != nil {
+		return MembersPoliciesPage{}, err
+	}
+
+	var memberIDs []string
+	for _, mp := range mpp.MembersPolicies {
+		memberIDs = append(memberIDs, mp.MemberID)
+	}
+
+	var memberPolicies []MemberPolicy
+	if len(mpp.MembersPolicies) > 0 {
+		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
+		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+		if err != nil {
+			return MembersPoliciesPage{}, err
+		}
+
+		emails := make(map[string]string)
+		for _, user := range up.Users {
+			emails[user.Id] = user.GetEmail()
+		}
+
+		for _, mp := range mpp.MembersPolicies {
+			email, ok := emails[mp.MemberID]
+			if !ok {
+				return MembersPoliciesPage{}, err
+			}
+
+			memeberPolicy := MemberPolicy{
+				MemberID: mp.MemberID,
+				Email:    email,
+				Policy:   mp.Policy,
+			}
+			memberPolicies = append(memberPolicies, memeberPolicy)
+		}
+
+	}
+
+	membersPliciesPage := MembersPoliciesPage{
+		MembersPolicies: memberPolicies,
+		PageMetadata: PageMetadata{
+			Total:  mpp.Total,
+			Offset: mpp.Offset,
+			Limit:  mpp.Limit,
+		},
+	}
+
+	return membersPliciesPage, nil
+}
+
 func (svc service) canAccessRoot(ctx context.Context, id string) error {
 	role, err := svc.roles.RetrieveRole(ctx, id)
 	if err != nil {
@@ -911,6 +972,41 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	}
 
 	return nil
+}
+
+func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID string) error {
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if org.ID != orgID {
+		return errors.ErrAuthorization
+	}
+	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	gp := GroupsPolicy{
+		MemberID: userID,
+		GroupID:  groupID,
+	}
+
+	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case role == OwnerRole,
+		role == AdminRole:
+		return nil
+	case policy == RwPolicy:
+		return nil
+	default:
+		return errors.ErrAuthorization
+	}
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {

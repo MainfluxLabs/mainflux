@@ -32,6 +32,7 @@ const (
 	savePolicy                 = "save_policy"
 	removePolicy               = "remove_policy"
 	retrievePolicy             = "retrieve_policy"
+	retrievePolicies           = "retrieve_policies"
 	updatePolicy               = "update_policy"
 )
 
@@ -217,7 +218,13 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
+func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.MembersPoliciesPage, error) {
+	span := createSpan(ctx, orm.tracer, retrievePolicies)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
 
+	return orm.repo.RetrievePolicies(ctx, groupID, pm)
+}
 func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
 	span := createSpan(ctx, orm.tracer, updatePolicy)
 	defer span.Finish()

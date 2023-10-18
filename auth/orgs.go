@@ -101,6 +101,17 @@ type GroupsPolicy struct {
 	Policy   string
 }
 
+type MemberPolicy struct {
+	MemberID string
+	Email    string
+	Policy   string
+}
+
+type MembersPoliciesPage struct {
+	PageMetadata
+	MembersPolicies []MemberPolicy
+}
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -179,6 +190,9 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
+	// ListMembersPolicies retrieves page of group members policies.
+	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (MembersPoliciesPage, error)
+
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -250,6 +264,9 @@ type OrgRepository interface {
 
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
+
+	// RetrievePolicies retrieves page of group members policies.
+	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (MembersPoliciesPage, error)
 
 	// RemovePolicy removes group policy for a user.
 	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
