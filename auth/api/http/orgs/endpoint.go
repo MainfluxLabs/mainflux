@@ -303,6 +303,21 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removePoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemovePolicies(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return deleteRes{}, nil
+	}
+}
+
 func backupEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)

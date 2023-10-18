@@ -745,19 +745,27 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	if org.ID != orgID {
-		return errors.ErrNotFound
-	}
-
 	for _, m := range mp {
 		if err := svc.orgs.SavePolicy(ctx, m.MemberID, m.Policy, groupID); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+		return err
 	}
 
 	return nil
@@ -942,6 +950,15 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 }
 
 func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID string) error {
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if org.ID != orgID {
+		return errors.ErrAuthorization
+	}
+
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
