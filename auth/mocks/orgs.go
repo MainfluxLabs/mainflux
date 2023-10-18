@@ -13,20 +13,20 @@ import (
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 
 type orgRepositoryMock struct {
-	mu       sync.Mutex
-	orgs     map[string]auth.Org
-	members  map[string]auth.Member
-	groups   map[string]auth.Group
-	policies map[string]auth.GroupsPolicy
+	mu              sync.Mutex
+	orgs            map[string]auth.Org
+	members         map[string]auth.Member
+	groups          map[string]auth.Group
+	membersPolicies map[string]auth.MemberPolicy
 }
 
 // NewOrgRepository returns mock of org repository
 func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
-		orgs:     make(map[string]auth.Org),
-		members:  make(map[string]auth.Member),
-		groups:   make(map[string]auth.Group),
-		policies: make(map[string]auth.GroupsPolicy),
+		orgs:            make(map[string]auth.Org),
+		members:         make(map[string]auth.Member),
+		groups:          make(map[string]auth.Group),
+		membersPolicies: make(map[string]auth.MemberPolicy),
 	}
 }
 
@@ -367,17 +367,19 @@ func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]
 	return grs, nil
 }
 
-func (orm *orgRepositoryMock) SavePolicy(ctx context.Context, memberID string, policy string, groupIDs ...string) error {
+func (orm *orgRepositoryMock) SavePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	if _, ok := orm.members[memberID]; !ok {
-		return errors.ErrNotFound
-	}
+	for _, m := range mp {
+		if _, ok := orm.members[m.MemberID]; !ok {
+			return errors.ErrNotFound
+		}
 
-	orm.policies[memberID] = auth.GroupsPolicy{
-		MemberID: memberID,
-		Policy:   policy,
+		orm.membersPolicies[m.MemberID] = auth.MemberPolicy{
+			MemberID: m.MemberID,
+			Policy:   m.Policy,
+		}
 	}
 
 	return nil
@@ -387,7 +389,7 @@ func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.Groups
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (orm *orgRepositoryMock) UpdatePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
 	panic("not implemented")
 }
 

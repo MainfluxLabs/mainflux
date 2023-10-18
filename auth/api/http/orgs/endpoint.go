@@ -281,7 +281,7 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createPoliciesReq)
+		req := request.(membersPoliciesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -300,6 +300,31 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return createPoliciesRes{}, nil
+	}
+}
+
+func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(membersPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var membersPolicies []auth.MemberPolicy
+		for _, mp := range req.MembersPolicies {
+			memberPolicy := auth.MemberPolicy{
+				MemberID: mp.MemberID,
+				Policy:   mp.Policy,
+			}
+
+			membersPolicies = append(membersPolicies, memberPolicy)
+		}
+
+		if err := svc.UpdatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+			return nil, err
+		}
+
+		return updatePoliciesRes{}, nil
 	}
 }
 

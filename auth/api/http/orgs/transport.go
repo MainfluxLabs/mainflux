@@ -106,18 +106,28 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
-		decodeCreatePoliciesRequest,
+		decodeMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
+
+	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
+		decodeMembersPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Patch("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
 		decodeRemovePoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
 		decodeGroupsRequest,
@@ -138,18 +148,21 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Get("/members/:memberID/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
 		decodeListMembershipsRequest,
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Get("/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
 		decodeBackup,
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Post("/restore", kithttp.NewServer(
 		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
 		decodeRestore,
@@ -251,12 +264,12 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeCreatePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createPoliciesReq{
+	req := membersPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),

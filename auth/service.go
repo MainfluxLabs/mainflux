@@ -643,8 +643,15 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		return err
 	}
 
-	if err := svc.orgs.SavePolicy(ctx, user.ID, RwPolicy, groupIDs...); err != nil {
-		return err
+	for _, groupID := range groupIDs {
+		mp := MemberPolicy{
+			MemberID: user.ID,
+			Policy:   RwPolicy,
+		}
+
+		if err := svc.orgs.SavePolicies(ctx, groupID, mp); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -745,10 +752,25 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
-	for _, m := range mp {
-		if err := svc.orgs.SavePolicy(ctx, m.MemberID, m.Policy, groupID); err != nil {
-			return err
-		}
+	if err := svc.orgs.SavePolicies(ctx, groupID, mp...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.UpdatePolicies(ctx, groupID, mp...); err != nil {
+		return err
 	}
 
 	return nil
@@ -804,7 +826,12 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		return err
 	}
 
-	if err := svc.orgs.SavePolicy(ctx, user.ID, policy, groupID); err != nil {
+	mp := MemberPolicy{
+		MemberID: user.ID,
+		Policy:   policy,
+	}
+
+	if err := svc.orgs.SavePolicies(ctx, groupID, mp); err != nil {
 		return err
 	}
 
