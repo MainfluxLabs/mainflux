@@ -270,7 +270,7 @@ paths:
     post:
       summary: Create group policies.
       description: |
-        Create group members policies for the given  org, group and member IDs.
+        Create group members policies for the given org, group and member IDs.
       tags:
         - auth
       parameters:
