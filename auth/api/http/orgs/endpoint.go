@@ -315,7 +315,7 @@ func listMembersPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		mpp, err := svc.ListMembersPolicies(ctx, req.token, req.orgID, req.groupID, pm)
+		mpp, err := svc.ListMembersPolicies(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}

@@ -113,7 +113,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+	mux.Get("/groups/:groupID/policies", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
 		decpdeListMembersPoliciesRequest,
 		encodeResponse,
@@ -407,7 +407,6 @@ func decpdeListMembersPoliciesRequest(_ context.Context, r *http.Request) (inter
 
 	req := listMembersPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),
 		offset:  o,
 		limit:   l,

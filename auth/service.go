@@ -754,13 +754,13 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 	return nil
 }
 
-func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error) {
+func (svc service) ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return GroupMembersPoliciesPage{}, err
 	}
 
-	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+	if err := svc.canViewPolicies(ctx, groupID, user.ID); err != nil {
 		return GroupMembersPoliciesPage{}, err
 	}
 
@@ -1008,6 +1008,41 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	}
 
 	return nil
+}
+
+func (svc service) canViewPolicies(ctx context.Context, groupID, userID string) error {
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	role, err := svc.orgs.RetrieveRole(ctx, userID, org.ID)
+	if err != nil {
+		return err
+	}
+
+	gp := GroupsPolicy{
+		MemberID: userID,
+		GroupID:  groupID,
+	}
+
+	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case role == OwnerRole,
+		role == AdminRole,
+		role == EditorRole,
+		role == ViewerRole:
+		return nil
+	case policy == RwPolicy,
+		policy == RPolicy:
+		return nil
+	default:
+		return errors.ErrAuthorization
+	}
 }
 
 func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID string) error {

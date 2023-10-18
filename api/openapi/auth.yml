@@ -289,26 +289,6 @@ paths:
           description: Failed due to non existing organization or group.
         '500':
           $ref: "#/components/responses/ServiceError"
-    get:
-      summary: Retrieves group policies.
-      description: |
-        Retrieves page of members policies for the given organization and group IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-        - $ref: "#/components/parameters/GroupId"
-      responses:
-        '200':
-           $ref: "#/components/responses/GroupMembersPoliciesRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Organization or group does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
     patch:
       summary: Remove policies.
       description: |
@@ -329,6 +309,27 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/policies:
+    get:
+      summary: Retrieves group policies.
+      description: |
+        Retrieves page of members policies for the given organization and group IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+           $ref: "#/components/responses/GroupMembersPoliciesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Organization or group does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:

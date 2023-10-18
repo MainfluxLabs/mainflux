@@ -199,7 +199,7 @@ type Orgs interface {
 	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// ListMembersPolicies retrieves page of group members policies.
-	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
+	ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
 	// RemovePolicies removes group policies for members.
 	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error

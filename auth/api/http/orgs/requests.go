@@ -232,7 +232,6 @@ func (req orgReq) validate() error {
 type listMembersPoliciesReq struct {
 	token   string
 	groupID string
-	orgID   string
 	offset  uint64
 	limit   uint64
 }
@@ -242,7 +241,7 @@ func (req listMembersPoliciesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" || req.orgID == "" {
+	if req.groupID == ""  {
 		return apiutil.ErrMissingID
 	}
 
