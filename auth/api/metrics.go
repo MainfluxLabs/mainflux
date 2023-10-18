@@ -224,15 +224,6 @@ func (ms *metricsMiddleware) AddPolicy(ctx context.Context, token, groupID, poli
 	return ms.svc.AddPolicy(ctx, token, groupID, policy)
 }
 
-func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (auth.MembersPoliciesPage, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members_policies").Add(1)
-		ms.latency.With("method", "list_members_policies").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListMembersPolicies(ctx, token, orgID, groupID, pm)
-}
-
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Backup, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)
@@ -258,4 +249,22 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	}(time.Now())
 
 	return ms.svc.AssignRole(ctx, id, role)
+}
+
+func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_policies").Add(1)
+		ms.latency.With("method", "create_policies").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
+}
+
+func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (auth.MembersPoliciesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_members_policies").Add(1)
+		ms.latency.With("method", "list_members_policies").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListMembersPolicies(ctx, token, orgID, groupID, pm)
 }

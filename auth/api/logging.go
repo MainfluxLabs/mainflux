@@ -315,18 +315,6 @@ func (lm *loggingMiddleware) AddPolicy(ctx context.Context, token, groupID, poli
 	return lm.svc.AddPolicy(ctx, token, groupID, policy)
 }
 
-func (lm *loggingMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (mpp auth.MembersPoliciesPage, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_members_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListMembersPolicies(ctx, token, orgID, groupID, pm)
-}
-
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup auth.Backup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
@@ -363,4 +351,28 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	}(time.Now())
 
 	return lm.svc.AssignRole(ctx, id, role)
+}
+
+func (lm *loggingMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
+}
+
+func (lm *loggingMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (mpp auth.MembersPoliciesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_members_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListMembersPolicies(ctx, token, orgID, groupID, pm)
 }

@@ -279,6 +279,30 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var membersPolicies []auth.MemberPolicy
+		for _, m := range req.MembersPolicies {
+			memberPolicy := auth.MemberPolicy{
+				MemberID: m.MemberID,
+				Policy:   m.Policy,
+			}
+			membersPolicies = append(membersPolicies, memberPolicy)
+		}
+
+		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+			return nil, err
+		}
+
+		return createPoliciesRes{}, nil
+	}
+}
+
 func listMembersPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersPoliciesReq)
@@ -460,11 +484,11 @@ func buildMembersPoliciesResponse(mpp auth.MembersPoliciesPage) listMembersPolic
 			Limit:  mpp.Limit,
 			Offset: mpp.Offset,
 		},
-		MembersPolicies: []memberPolicy{},
+		MembersPolicies: []groupMemberPolicy{},
 	}
 
 	for _, mbp := range mpp.MembersPolicies {
-		gp := memberPolicy{
+		gp := groupMemberPolicy{
 			Email:  mbp.Email,
 			ID:     mbp.MemberID,
 			Policy: mbp.Policy,

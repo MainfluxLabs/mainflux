@@ -166,7 +166,7 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 
 	switch ar.Subject {
 	case RootSubject:
-		return svc.canAccessRoot(ctx, user.ID)
+		return svc.isAdmin(ctx, user.ID)
 	case GroupSubject:
 		return svc.canAccessGroup(ctx, user.ID, ar.Object, ar.Action)
 	default:
@@ -279,7 +279,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+		if err := svc.isAdmin(ctx, user.ID); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -724,7 +724,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -735,108 +735,29 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
-	gp := GroupsPolicy{
-		MemberID: userID,
-		GroupID:  Object,
-	}
-
-	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	switch action {
-	case ReadAction:
-		if policy != RwPolicy && policy != RPolicy {
-			return errors.ErrAuthorization
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+		return err
+	}
+
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	if org.ID != orgID {
+		return errors.ErrNotFound
+	}
+
+	for _, m := range mp {
+		if err := svc.orgs.SavePolicy(ctx, m.MemberID, m.Policy, groupID); err != nil {
+			return err
 		}
-	case WriteAction:
-		if policy != RwPolicy {
-			return errors.ErrAuthorization
-		}
-	default:
-		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.orgs.SavePolicy(ctx, user.ID, policy, groupID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
-		return Backup{}, err
-	}
-
-	orgs, err := svc.orgs.RetrieveAll(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	mrs, err := svc.orgs.RetrieveAllMemberRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	grs, err := svc.orgs.RetrieveAllGroupRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	backup := Backup{
-		Orgs:            orgs,
-		MemberRelations: mrs,
-		GroupRelations:  grs,
-	}
-
-	return backup, nil
-}
-
-func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canAccessRoot(ctx, user.ID); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.Save(ctx, backup.Orgs...); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) AssignRole(ctx context.Context, id, role string) error {
-	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
-		return err
 	}
 
 	return nil
@@ -903,7 +824,114 @@ func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupI
 	return membersPliciesPage, nil
 }
 
-func (svc service) canAccessRoot(ctx context.Context, id string) error {
+func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
+	gp := GroupsPolicy{
+		MemberID: userID,
+		GroupID:  Object,
+	}
+
+	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	switch action {
+	case ReadAction:
+		if policy != RwPolicy && policy != RPolicy {
+			return errors.ErrAuthorization
+		}
+	case WriteAction:
+		if policy != RwPolicy {
+			return errors.ErrAuthorization
+		}
+	default:
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.orgs.SavePolicy(ctx, user.ID, policy, groupID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
+		return Backup{}, err
+	}
+
+	orgs, err := svc.orgs.RetrieveAll(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	mrs, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	grs, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
+	backup := Backup{
+		Orgs:            orgs,
+		MemberRelations: mrs,
+		GroupRelations:  grs,
+	}
+
+	return backup, nil
+}
+
+func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.isAdmin(ctx, user.ID); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.Save(ctx, backup.Orgs...); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) AssignRole(ctx context.Context, id, role string) error {
+	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) isAdmin(ctx context.Context, id string) error {
 	role, err := svc.roles.RetrieveRole(ctx, id)
 	if err != nil {
 		return err
@@ -983,6 +1011,7 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 	if org.ID != orgID {
 		return errors.ErrAuthorization
 	}
+
 	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
 	if err != nil {
 		return err
@@ -1010,7 +1039,7 @@ func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID s
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	if err := svc.canAccessRoot(ctx, user.ID); err == nil {
+	if err := svc.isAdmin(ctx, user.ID); err == nil {
 		return nil
 	}
 

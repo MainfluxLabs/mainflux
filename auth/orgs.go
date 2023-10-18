@@ -190,6 +190,9 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
+	// CreatePolicies creates group policies for members.
+	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
+
 	// ListMembersPolicies retrieves page of group members policies.
 	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (MembersPoliciesPage, error)
 
