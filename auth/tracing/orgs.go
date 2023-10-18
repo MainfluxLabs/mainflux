@@ -218,6 +218,7 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
+
 func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
 	span := createSpan(ctx, orm.tracer, retrievePolicies)
 	defer span.Finish()
@@ -225,6 +226,7 @@ func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID
 
 	return orm.repo.RetrievePolicies(ctx, groupID, pm)
 }
+
 func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
 	span := createSpan(ctx, orm.tracer, updatePolicy)
 	defer span.Finish()
@@ -233,10 +235,10 @@ func (orm orgRepositoryMiddleware) UpdatePolicy(ctx context.Context, gp auth.Gro
 	return orm.repo.UpdatePolicy(ctx, gp)
 }
 
-func (orm orgRepositoryMiddleware) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (orm orgRepositoryMiddleware) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	span := createSpan(ctx, orm.tracer, removePolicy)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RemovePolicy(ctx, gp)
+	return orm.repo.RemovePolicies(ctx, groupID, memberIDs...)
 }

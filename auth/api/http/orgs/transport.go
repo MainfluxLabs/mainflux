@@ -106,6 +106,12 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
+	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
+		decodeCreatePoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
 
 	mux.Get("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
@@ -114,6 +120,12 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Patch("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
+		decodeRemovePoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
 	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
 		decodeGroupsRequest,
@@ -131,12 +143,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Get("/orgs/:orgID/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
 		decodeListGroupsRequest,
-		encodeResponse,
-		opts...,
-	))
-	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
-		decodeCreatePoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -405,6 +411,24 @@ func decpdeListMembersPoliciesRequest(_ context.Context, r *http.Request) (inter
 		groupID: bone.GetValue(r, groupIDKey),
 		offset:  o,
 		limit:   l,
+	}
+
+	return req, nil
+}
+
+func decodeRemovePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removePoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil

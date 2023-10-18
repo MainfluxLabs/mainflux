@@ -768,19 +768,19 @@ func (or orgRepository) RetrievePolicies(ctx context.Context, groupID string, pm
 	return page, nil
 }
 
-func (or orgRepository) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (or orgRepository) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
-	dbgp := dbGroupPolicy{
-		MemberID: gp.MemberID,
-		GroupID:  gp.GroupID,
+	for _, memberID := range memberIDs {
+		dbgp := dbGroupPolicy{
+			MemberID: memberID,
+			GroupID:  groupID,
+		}
+
+		if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
-
-	if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
-
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
-
 	return nil
 }
 

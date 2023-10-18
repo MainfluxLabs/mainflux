@@ -268,3 +268,12 @@ func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, org
 
 	return ms.svc.ListMembersPolicies(ctx, token, orgID, groupID, pm)
 }
+
+func (ms *metricsMiddleware) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_policies").Add(1)
+		ms.latency.With("method", "remove_policies").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemovePolicies(ctx, token, orgID, groupID, memberIDs...)
+}

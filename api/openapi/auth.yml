@@ -270,7 +270,7 @@ paths:
     post:
       summary: Create group policies.
       description: |
-        Create group members policies for the given group ID and member IDs.
+        Create group members policies for the given org, group and member IDs.
       tags:
         - auth
       parameters:
@@ -290,9 +290,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Retrieves members policies.
+      summary: Retrieves group policies.
       description: |
-        Retrieves page of members policies for the given organization ID and group ID.
+        Retrieves page of members policies for the given organization and group IDs.
       tags:
         - auth
       parameters:
@@ -307,6 +307,28 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Organization or group does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Remove policies.
+      description: |
+          Removes group members policies identified by org, group and member IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/RemovePoliciesReq"
+      responses:
+        '204':
+          description: Policies removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or group.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/groups:
@@ -593,6 +615,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            format: uuid
     MemberRelationsSchema:
       type: object
       properties:
@@ -689,6 +712,17 @@ components:
         - org_id
         - created_at
         - updated_at
+    RemovePoliciesSchema:
+      type: object
+      properties:
+        member_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
+          items:
+            type: string
+            format: uuid
     MembersPoliciesSchema:
       type: object
       properties:
@@ -878,6 +912,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/MembersPoliciesSchema"
+    RemovePoliciesReq:
+      description: JSON-formatted document describing remove policies request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RemovePoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true

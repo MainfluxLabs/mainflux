@@ -201,6 +201,9 @@ type Orgs interface {
 	// ListMembersPolicies retrieves page of group members policies.
 	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
+	// RemovePolicies removes group policies for members.
+	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
+
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -276,8 +279,8 @@ type OrgRepository interface {
 	// RetrievePolicies retrieves page of group members policies.
 	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
-	// RemovePolicy removes group policy for a user.
-	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
+	// RemovePolicies removes group members policies.
+	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UpdatePolicy updates group policy for a user.
 	UpdatePolicy(ctx context.Context, gp GroupsPolicy) error

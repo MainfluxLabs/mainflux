@@ -299,6 +299,35 @@ func (req createPoliciesReq) validate() error {
 	return nil
 }
 
+type removePoliciesReq struct {
+	token     string
+	orgID     string
+	groupID   string
+	MemberIDs []string `json:"member_ids"`
+}
+
+func (req removePoliciesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" || req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.MemberIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, id := range req.MemberIDs {
+		if id == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
 type restoreReq struct {
 	token           string
 	Orgs            []auth.Org            `json:"orgs"`
