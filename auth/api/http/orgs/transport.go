@@ -107,13 +107,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
-		decodeGroupsRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
 		decodeMembersPoliciesRequest,
@@ -124,6 +117,20 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
 		decodeMembersPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
+		decodeRemovePoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
+		decodeGroupsRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -148,12 +155,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Get("/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
 		decodeBackup,
 		encodeResponse,
 		opts...,
 	))
+
 	mux.Post("/restore", kithttp.NewServer(
 		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
 		decodeRestore,
@@ -381,6 +390,24 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 	req := unassignMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRemovePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removePoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		orgID:   bone.GetValue(r, orgIDKey),
+		groupID: bone.GetValue(r, groupIDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

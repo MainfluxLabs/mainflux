@@ -190,6 +190,9 @@ type Orgs interface {
 	// UpdatePolicies updates group members policies.
 	UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
+	// RemovePolicies removes group policies for members.
+	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
+
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -262,8 +265,8 @@ type OrgRepository interface {
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
 
-	// RemovePolicy removes group policy for a user.
-	RemovePolicy(ctx context.Context, gp GroupsPolicy) error
+	// RemovePolicies removes group members policies.
+	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UpdatePolicies updates group members policies.
 	UpdatePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error

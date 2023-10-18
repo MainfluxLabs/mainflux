@@ -376,3 +376,15 @@ func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, orgID, g
 
 	return lm.svc.UpdatePolicies(ctx, token, orgID, groupID, mp...)
 }
+
+func (lm *loggingMiddleware) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_policies for token %s and orgID %s and groupID %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.RemovePolicies(ctx, token, orgID, groupID, memberIDs...)
+}

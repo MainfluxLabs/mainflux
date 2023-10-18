@@ -226,10 +226,10 @@ func (orm orgRepositoryMiddleware) UpdatePolicies(ctx context.Context, groupID s
 	return orm.repo.UpdatePolicies(ctx, groupID, mp...)
 }
 
-func (orm orgRepositoryMiddleware) RemovePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (orm orgRepositoryMiddleware) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	span := createSpan(ctx, orm.tracer, removePolicy)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RemovePolicy(ctx, gp)
+	return orm.repo.RemovePolicies(ctx, groupID, memberIDs...)
 }

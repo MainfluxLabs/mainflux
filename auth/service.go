@@ -776,6 +776,23 @@ func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID str
 	return nil
 }
 
+func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+		return err
+	}
+
+	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
 	gp := GroupsPolicy{
 		MemberID: userID,

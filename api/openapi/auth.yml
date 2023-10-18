@@ -270,7 +270,7 @@ paths:
     post:
       summary: Create group policies.
       description: |
-        Create group members policies for the given group ID and member IDs.
+        Create group members policies for the given  org, group and member IDs.
       tags:
         - auth
       parameters:
@@ -292,7 +292,7 @@ paths:
     put:
       summary: Update group policies.
       description: |
-        Updates group members policies identified by the given organization and group IDs and member IDs.
+        Updates group members policies identified by org, group and member IDs.
       tags:
         - auth
       parameters:
@@ -303,6 +303,28 @@ paths:
       responses:
         '200':
           description: Group policies updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Remove group policies.
+      description: |
+          Removes group members policies identified by org, group and member IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/RemovePoliciesReq"
+      responses:
+        '204':
+          description: Policies removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -595,6 +617,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            format: uuid
     MemberRelationsSchema:
       type: object
       properties:
@@ -691,6 +714,17 @@ components:
         - org_id
         - created_at
         - updated_at
+    RemovePoliciesSchema:
+      type: object
+      properties:
+        member_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
+          items:
+            type: string
+            format: uuid
     MembersPoliciesSchema:
       type: object
       properties:
@@ -850,7 +884,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
-
     MembersPoliciesReq:
       description: JSON-formatted document describing group members policies request.
       required: true
@@ -858,6 +891,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/MembersPoliciesSchema"
+    RemovePoliciesReq:
+      description: JSON-formatted document describing remove policies request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RemovePoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
