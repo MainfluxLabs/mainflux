@@ -235,7 +235,7 @@ type groupMemberPolicy struct {
 
 type listMembersPoliciesRes struct {
 	pageRes
-	MembersPolicies []groupMemberPolicy `json:"members_policies"`
+	GroupMembersPolicies []groupMemberPolicy `json:"group_members_policies"`
 }
 
 func (res listMembersPoliciesRes) Code() int {

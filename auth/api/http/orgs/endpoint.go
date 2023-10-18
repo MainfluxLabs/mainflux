@@ -484,7 +484,7 @@ func buildMembersPoliciesResponse(gmpp auth.GroupMembersPoliciesPage) listMember
 			Limit:  gmpp.Limit,
 			Offset: gmpp.Offset,
 		},
-		MembersPolicies: []groupMemberPolicy{},
+		GroupMembersPolicies: []groupMemberPolicy{},
 	}
 
 	for _, g := range gmpp.GroupMembersPolicies {
@@ -493,7 +493,7 @@ func buildMembersPoliciesResponse(gmpp auth.GroupMembersPoliciesPage) listMember
 			ID:     g.MemberID,
 			Policy: g.Policy,
 		}
-		res.MembersPolicies = append(res.MembersPolicies, gmp)
+		res.GroupMembersPolicies = append(res.GroupMembersPolicies, gmp)
 	}
 
 	return res
