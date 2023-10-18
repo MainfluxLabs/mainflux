@@ -103,13 +103,18 @@ type GroupsPolicy struct {
 
 type MemberPolicy struct {
 	MemberID string
+	Policy   string
+}
+
+type GroupMemberPolicy struct {
+	MemberID string
 	Email    string
 	Policy   string
 }
 
-type MembersPoliciesPage struct {
+type GroupMembersPoliciesPage struct {
 	PageMetadata
-	MembersPolicies []MemberPolicy
+	GroupMembersPolicies []GroupMemberPolicy
 }
 
 type Member struct {
@@ -194,7 +199,7 @@ type Orgs interface {
 	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// ListMembersPolicies retrieves page of group members policies.
-	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (MembersPoliciesPage, error)
+	ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -269,7 +274,7 @@ type OrgRepository interface {
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
 
 	// RetrievePolicies retrieves page of group members policies.
-	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (MembersPoliciesPage, error)
+	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
 	// RemovePolicy removes group policy for a user.
 	RemovePolicy(ctx context.Context, gp GroupsPolicy) error

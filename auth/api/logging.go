@@ -365,7 +365,7 @@ func (lm *loggingMiddleware) CreatePolicies(ctx context.Context, token, orgID, g
 	return lm.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
 }
 
-func (lm *loggingMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (mpp auth.MembersPoliciesPage, err error) {
+func (lm *loggingMiddleware) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm auth.PageMetadata) (mpp auth.GroupMembersPoliciesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_members_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
 		if err != nil {

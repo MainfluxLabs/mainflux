@@ -218,7 +218,7 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
-func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.MembersPoliciesPage, error) {
+func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
 	span := createSpan(ctx, orm.tracer, retrievePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

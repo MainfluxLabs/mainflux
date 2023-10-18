@@ -477,23 +477,23 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	return res
 }
 
-func buildMembersPoliciesResponse(mpp auth.MembersPoliciesPage) listMembersPoliciesRes {
+func buildMembersPoliciesResponse(gmpp auth.GroupMembersPoliciesPage) listMembersPoliciesRes {
 	res := listMembersPoliciesRes{
 		pageRes: pageRes{
-			Total:  mpp.Total,
-			Limit:  mpp.Limit,
-			Offset: mpp.Offset,
+			Total:  gmpp.Total,
+			Limit:  gmpp.Limit,
+			Offset: gmpp.Offset,
 		},
 		MembersPolicies: []groupMemberPolicy{},
 	}
 
-	for _, mbp := range mpp.MembersPolicies {
-		gp := groupMemberPolicy{
-			Email:  mbp.Email,
-			ID:     mbp.MemberID,
-			Policy: mbp.Policy,
+	for _, g := range gmpp.GroupMembersPolicies {
+		gmp := groupMemberPolicy{
+			Email:  g.Email,
+			ID:     g.MemberID,
+			Policy: g.Policy,
 		}
-		res.MembersPolicies = append(res.MembersPolicies, gp)
+		res.MembersPolicies = append(res.MembersPolicies, gmp)
 	}
 
 	return res

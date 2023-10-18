@@ -763,32 +763,32 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 	return nil
 }
 
-func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (MembersPoliciesPage, error) {
+func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error) {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
-		return MembersPoliciesPage{}, err
+		return GroupMembersPoliciesPage{}, err
 	}
 
 	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
-		return MembersPoliciesPage{}, err
+		return GroupMembersPoliciesPage{}, err
 	}
 
-	mpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
+	gmpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
 	if err != nil {
-		return MembersPoliciesPage{}, err
+		return GroupMembersPoliciesPage{}, err
 	}
 
 	var memberIDs []string
-	for _, mp := range mpp.MembersPolicies {
+	for _, mp := range gmpp.GroupMembersPolicies {
 		memberIDs = append(memberIDs, mp.MemberID)
 	}
 
-	var memberPolicies []MemberPolicy
-	if len(mpp.MembersPolicies) > 0 {
+	var groupMembersPolicies []GroupMemberPolicy
+	if len(gmpp.GroupMembersPolicies) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return MembersPoliciesPage{}, err
+			return GroupMembersPoliciesPage{}, err
 		}
 
 		emails := make(map[string]string)
@@ -796,32 +796,32 @@ func (svc service) ListMembersPolicies(ctx context.Context, token, orgID, groupI
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, mp := range mpp.MembersPolicies {
-			email, ok := emails[mp.MemberID]
+		for _, gmp := range gmpp.GroupMembersPolicies {
+			email, ok := emails[gmp.MemberID]
 			if !ok {
-				return MembersPoliciesPage{}, err
+				return GroupMembersPoliciesPage{}, err
 			}
 
-			memeberPolicy := MemberPolicy{
-				MemberID: mp.MemberID,
+			groupMemeberPolicy := GroupMemberPolicy{
+				MemberID: gmp.MemberID,
 				Email:    email,
-				Policy:   mp.Policy,
+				Policy:   gmp.Policy,
 			}
-			memberPolicies = append(memberPolicies, memeberPolicy)
+			groupMembersPolicies = append(groupMembersPolicies, groupMemeberPolicy)
 		}
 
 	}
 
-	membersPliciesPage := MembersPoliciesPage{
-		MembersPolicies: memberPolicies,
+	groupMembersPoliciesPage := GroupMembersPoliciesPage{
+		GroupMembersPolicies: groupMembersPolicies,
 		PageMetadata: PageMetadata{
-			Total:  mpp.Total,
-			Offset: mpp.Offset,
-			Limit:  mpp.Limit,
+			Total:  gmpp.Total,
+			Offset: gmpp.Offset,
+			Limit:  gmpp.Limit,
 		},
 	}
 
-	return membersPliciesPage, nil
+	return groupMembersPoliciesPage, nil
 }
 
 func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {

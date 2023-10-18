@@ -1880,7 +1880,7 @@ func TestRetrievePolicies(t *testing.T) {
 
 	for _, tc := range cases {
 		mpp, err := repo.RetrievePolicies(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(mpp.MembersPolicies)
+		size := len(mpp.GroupMembersPolicies)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
