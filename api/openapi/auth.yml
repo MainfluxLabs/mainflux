@@ -292,7 +292,7 @@ paths:
     patch:
       summary: Remove policies.
       description: |
-          Removes members group policies identified org and group IDs and member IDs.
+          Removes group members policies identified by org, group and member IDs.
       tags:
         - auth
       parameters:
