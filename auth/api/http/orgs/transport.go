@@ -114,7 +114,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/groups/:groupID/policies", kithttp.NewServer(
+	mux.Get("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
 		decpdeListMembersPoliciesRequest,
 		encodeResponse,
