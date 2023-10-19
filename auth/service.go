@@ -1044,6 +1044,10 @@ func (svc service) canViewPolicies(ctx context.Context, groupID, userID string) 
 		return err
 	}
 
+	if org.ID == "" {
+		return errors.ErrAuthorization
+	}
+
 	role, err := svc.orgs.RetrieveRole(ctx, userID, org.ID)
 	if err != nil {
 		return err
