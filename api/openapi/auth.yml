@@ -335,7 +335,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/members:
     get:
-      summary: Retrieves group policies.
+      summary: Retrieves group members policies.
       description: |
         Retrieves page of members policies for the given group ID.
       tags:

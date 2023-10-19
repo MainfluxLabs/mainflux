@@ -116,7 +116,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Get("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
-		decpdeListMembersPoliciesRequest,
+		decodeListMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -406,7 +406,7 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 	return req, nil
 }
 
-func decpdeListMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
