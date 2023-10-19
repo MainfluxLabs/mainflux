@@ -871,10 +871,6 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 		return err
 	}
 
-	if org.ID == "" {
-		return errors.ErrAuthorization
-	}
-
 	role, err := svc.orgs.RetrieveRole(ctx, userID, org.ID)
 	if err != nil {
 		return err
@@ -882,15 +878,15 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 
 	switch action {
 	case ReadAction:
-		if policy != RwPolicy && policy != RPolicy && role != OwnerRole && role != AdminRole && role != ViewerRole {
+		if policy == "" && role == "" {
 			return errors.ErrAuthorization
 		}
 	case WriteAction:
-		if policy != RwPolicy && role == OwnerRole && role != AdminRole && role != EditorRole {
+		if policy == RPolicy && role == ViewerRole {
 			return errors.ErrAuthorization
 		}
 	default:
-		return errors.ErrAuthorization
+		return nil
 	}
 
 	return nil
