@@ -195,13 +195,16 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// CreatePolicies creates group policies for members.
+	// CreatePolicies creates group members policies.
 	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
 
 	// ListMembersPolicies retrieves page of group members policies.
 	ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
-	// RemovePolicies removes group policies for members.
+	// UpdatePolicies updates group members policies.
+	UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
+
+	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
@@ -270,8 +273,8 @@ type OrgRepository interface {
 	// RetrieveAllGroupRelations retrieves all group relations.
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 
-	// SavePolicy saves group policy for a user.
-	SavePolicy(ctx context.Context, memberID, policy string, groupID ...string) error
+	// SavePolicies saves group members policies.
+	SavePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
 
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
@@ -282,6 +285,6 @@ type OrgRepository interface {
 	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdatePolicy updates group policy for a user.
-	UpdatePolicy(ctx context.Context, gp GroupsPolicy) error
+	// UpdatePolicies updates group members policies.
+	UpdatePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
 }

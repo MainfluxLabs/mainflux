@@ -17,6 +17,7 @@ var (
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
 	_ mainflux.Response = (*listMembersPoliciesRes)(nil)
+	_ mainflux.Response = (*updatePoliciesRes)(nil)
 	_ mainflux.Response = (*createPoliciesRes)(nil)
 )
 
@@ -275,5 +276,19 @@ func (res createPoliciesRes) Headers() map[string]string {
 }
 
 func (res createPoliciesRes) Empty() bool {
+	return true
+}
+
+type updatePoliciesRes struct{}
+
+func (res updatePoliciesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res updatePoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res updatePoliciesRes) Empty() bool {
 	return true
 }

@@ -265,14 +265,14 @@ type memberPolicy struct {
 	Policy   string `json:"policy"`
 }
 
-type createPoliciesReq struct {
+type membersPoliciesReq struct {
 	token           string
 	orgID           string
 	groupID         string
 	MembersPolicies []memberPolicy `json:"members_policies"`
 }
 
-func (req createPoliciesReq) validate() error {
+func (req membersPoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

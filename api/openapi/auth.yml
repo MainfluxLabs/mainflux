@@ -289,8 +289,30 @@ paths:
           description: Failed due to non existing organization or group.
         '500':
           $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update group policies.
+      description: |
+        Updates group members policies identified by org, group and member IDs.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/MembersPoliciesReq"
+      responses:
+        '200':
+          description: Group policies updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
     patch:
-      summary: Remove policies.
+      summary: Remove group policies.
       description: |
           Removes group members policies identified by org, group and member IDs.
       tags:
@@ -315,11 +337,10 @@ paths:
     get:
       summary: Retrieves group policies.
       description: |
-        Retrieves page of members policies for the given organization and group IDs.
+        Retrieves page of members policies for the given group ID.
       tags:
         - auth
       parameters:
-        - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       responses:
         '200':
@@ -961,7 +982,7 @@ components:
           schema:
             $ref: "#/components/schemas/OrgGroupsPageSchema"
     GroupMembersPoliciesRes:
-      description: JSON-formatted document describing members policies page response.
+      description: JSON-formatted document describing group members policies page response.
       content:
         application/json:
           schema:

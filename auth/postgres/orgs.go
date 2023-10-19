@@ -651,7 +651,7 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	return grs, nil
 }
 
-func (or orgRepository) SavePolicy(ctx context.Context, memberID, policy string, groupIDs ...string) error {
+func (or orgRepository) SavePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -659,11 +659,11 @@ func (or orgRepository) SavePolicy(ctx context.Context, memberID, policy string,
 
 	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
 
-	for _, id := range groupIDs {
+	for _, m := range mp {
 		gp := auth.GroupsPolicy{
-			MemberID: memberID,
-			GroupID:  id,
-			Policy:   policy,
+			MemberID: m.MemberID,
+			GroupID:  groupID,
+			Policy:   m.Policy,
 		}
 
 		dbgp, err := toDBGroupPolicy(gp)
@@ -784,36 +784,44 @@ func (or orgRepository) RemovePolicies(ctx context.Context, groupID string, memb
 	return nil
 }
 
-func (or orgRepository) UpdatePolicy(ctx context.Context, gp auth.GroupsPolicy) error {
+func (or orgRepository) UpdatePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
 
-	dbgp, err := toDBGroupPolicy(gp)
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	row, err := or.db.NamedExecContext(ctx, q, dbgp)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			}
+	for _, m := range mp {
+		gp := auth.GroupsPolicy{
+			MemberID: m.MemberID,
+			GroupID:  groupID,
+			Policy:   m.Policy,
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
+		dbgp, err := toDBGroupPolicy(gp)
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
 
-	cnt, err := row.RowsAffected()
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
+		row, err := or.db.NamedExecContext(ctx, q, dbgp)
+		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
 
-	if cnt != 1 {
-		return errors.Wrap(errors.ErrNotFound, err)
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+
+		cnt, err := row.RowsAffected()
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
+
+		if cnt != 1 {
+			return errors.Wrap(errors.ErrNotFound, err)
+		}
 	}
 
 	return nil
