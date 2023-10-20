@@ -742,13 +742,13 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 
@@ -759,13 +759,13 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 	return nil
 }
 
-func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 
@@ -776,17 +776,17 @@ func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID str
 	return nil
 }
 
-func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+func (svc service) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.canEditPolicies(ctx, orgID, groupID, user.ID); err != nil {
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 
@@ -794,6 +794,15 @@ func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID str
 }
 
 func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
+	org, err := svc.orgs.RetrieveByGroupID(ctx, Object)
+	if err != nil {
+		return err
+	}
+
+	if org.ID == "" {
+		return errors.ErrAuthorization
+	}
+
 	gp := GroupsPolicy{
 		MemberID: userID,
 		GroupID:  Object,
@@ -804,17 +813,22 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 		return err
 	}
 
+	role, err := svc.orgs.RetrieveRole(ctx, userID, org.ID)
+	if err != nil {
+		return err
+	}
+
 	switch action {
 	case ReadAction:
-		if policy != RwPolicy && policy != RPolicy {
+		if policy == "" && role == "" {
 			return errors.ErrAuthorization
 		}
 	case WriteAction:
-		if policy != RwPolicy {
+		if policy == RPolicy && role == ViewerRole {
 			return errors.ErrAuthorization
 		}
 	default:
-		return errors.ErrAuthorization
+		return nil
 	}
 
 	return nil
@@ -974,42 +988,6 @@ func (svc service) canEditGroups(ctx context.Context, orgID, userID string) erro
 	}
 
 	return nil
-}
-
-func (svc service) canEditPolicies(ctx context.Context, orgID, groupID, userID string) error {
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	if org.ID != orgID {
-		return errors.ErrAuthorization
-	}
-
-	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
-	if err != nil {
-		return err
-	}
-
-	gp := GroupsPolicy{
-		MemberID: userID,
-		GroupID:  groupID,
-	}
-
-	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
-	if err != nil {
-		return err
-	}
-
-	switch {
-	case role == OwnerRole,
-		role == AdminRole:
-		return nil
-	case policy == RwPolicy:
-		return nil
-	default:
-		return errors.ErrAuthorization
-	}
 }
 
 func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {

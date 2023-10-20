@@ -266,15 +266,14 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /orgs/{orgId}/groups/{groupId}:
+  /groups/{groupId}/members:
     post:
       summary: Create group policies.
       description: |
-        Create group members policies for the given org, group and member IDs.
+        Create group members policies for the given group and member IDs.
       tags:
         - auth
       parameters:
-        - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/MembersPoliciesReq"
@@ -292,17 +291,16 @@ paths:
     put:
       summary: Update group policies.
       description: |
-        Updates group members policies identified by org, group and member IDs.
+        Updates group members policies identified by group and member IDs.
       tags:
         - auth
       parameters:
-        - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/MembersPoliciesReq"
       responses:
         '200':
-          description: Group policies updated.
+          description: Policies updated.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -314,11 +312,10 @@ paths:
     patch:
       summary: Remove group policies.
       description: |
-          Removes group members policies identified by org, group and member IDs.
+          Removes group members policies identified by group and member IDs.
       tags:
         - auth
       parameters:
-        - $ref: "#/components/parameters/OrgId"
         - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/RemovePoliciesReq"

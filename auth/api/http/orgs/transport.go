@@ -107,21 +107,21 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+	mux.Post("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
 		decodeMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Put("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+	mux.Put("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
 		decodeMembersPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/orgs/:orgID/groups/:groupID", kithttp.NewServer(
+	mux.Patch("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
 		decodeRemovePoliciesRequest,
 		encodeResponse,
@@ -271,7 +271,6 @@ func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface
 
 	req := membersPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
 
@@ -406,7 +405,6 @@ func decodeRemovePoliciesRequest(_ context.Context, r *http.Request) (interface{
 
 	req := removePoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		orgID:   bone.GetValue(r, orgIDKey),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
 

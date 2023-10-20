@@ -353,38 +353,38 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
-func (lm *loggingMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) (err error) {
+func (lm *loggingMiddleware) CreatePolicies(ctx context.Context, token, groupID string, mp ...auth.MemberPolicy) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
+	return lm.svc.CreatePolicies(ctx, token, groupID, mp...)
 }
 
-func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) (err error) {
+func (lm *loggingMiddleware) UpdatePolicies(ctx context.Context, token, groupID string, mp ...auth.MemberPolicy) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_policies for token %s org id %s and group id %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method update_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.UpdatePolicies(ctx, token, orgID, groupID, mp...)
+	return lm.svc.UpdatePolicies(ctx, token, groupID, mp...)
 }
 
-func (lm *loggingMiddleware) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_policies for token %s and orgID %s and groupID %s took %s to complete", token, orgID, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.RemovePolicies(ctx, token, orgID, groupID, memberIDs...)
+	return lm.svc.RemovePolicies(ctx, token, groupID, memberIDs...)
 }

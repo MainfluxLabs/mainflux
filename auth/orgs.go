@@ -185,13 +185,13 @@ type Orgs interface {
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
 	// CreatePolicies creates group members policies.
-	CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
+	CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
 
 	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error
+	UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
 
 	// RemovePolicies removes group policies for members.
-	RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error
+	RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
