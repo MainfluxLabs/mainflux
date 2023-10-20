@@ -814,13 +814,13 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 		return err
 	}
 
+	if role == "" || policy == "" {
+		return errors.ErrAuthorization
+	}
+
 	switch action {
-	case ReadAction:
-		if policy == "" && role == "" {
-			return errors.ErrAuthorization
-		}
 	case WriteAction:
-		if policy == RPolicy && role == ViewerRole {
+		if policy == RPolicy || role == ViewerRole {
 			return errors.ErrAuthorization
 		}
 	default:
