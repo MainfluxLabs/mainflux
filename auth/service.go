@@ -794,21 +794,17 @@ func (svc service) RemovePolicies(ctx context.Context, token, groupID string, me
 }
 
 func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
-	org, err := svc.orgs.RetrieveByGroupID(ctx, Object)
-	if err != nil {
-		return err
-	}
-
-	if org.ID == "" {
-		return errors.ErrAuthorization
-	}
-
 	gp := GroupsPolicy{
 		MemberID: userID,
 		GroupID:  Object,
 	}
 
 	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	org, err := svc.orgs.RetrieveByGroupID(ctx, Object)
 	if err != nil {
 		return err
 	}
