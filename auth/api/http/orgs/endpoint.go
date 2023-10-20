@@ -343,6 +343,27 @@ func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func listMembersPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listMembersPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		pm := auth.PageMetadata{
+			Offset: req.offset,
+			Limit:  req.limit,
+		}
+
+		mpp, err := svc.ListMembersPolicies(ctx, req.token, req.groupID, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildMembersPoliciesResponse(mpp), nil
+	}
+}
+
 func backupEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
@@ -491,6 +512,28 @@ func buildBackupResponse(b auth.Backup) backupRes {
 			UpdatedAt: groupRel.UpdatedAt,
 		}
 		res.GroupRelations = append(res.GroupRelations, view)
+	}
+
+	return res
+}
+
+func buildMembersPoliciesResponse(gmpp auth.GroupMembersPoliciesPage) listMembersPoliciesRes {
+	res := listMembersPoliciesRes{
+		pageRes: pageRes{
+			Total:  gmpp.Total,
+			Limit:  gmpp.Limit,
+			Offset: gmpp.Offset,
+		},
+		GroupMembersPolicies: []groupMemberPolicy{},
+	}
+
+	for _, g := range gmpp.GroupMembersPolicies {
+		gmp := groupMemberPolicy{
+			Email:  g.Email,
+			ID:     g.MemberID,
+			Policy: g.Policy,
+		}
+		res.GroupMembersPolicies = append(res.GroupMembersPolicies, gmp)
 	}
 
 	return res
