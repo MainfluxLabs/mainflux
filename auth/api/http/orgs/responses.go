@@ -16,6 +16,7 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
+	_ mainflux.Response = (*listMembersPoliciesRes)(nil)
 	_ mainflux.Response = (*updatePoliciesRes)(nil)
 	_ mainflux.Response = (*createPoliciesRes)(nil)
 )
@@ -224,6 +225,29 @@ func (res backupRes) Headers() map[string]string {
 }
 
 func (res backupRes) Empty() bool {
+	return false
+}
+
+type groupMemberPolicy struct {
+	ID     string `json:"id"`
+	Email  string `json:"email"`
+	Policy string `json:"policy"`
+}
+
+type listMembersPoliciesRes struct {
+	pageRes
+	GroupMembersPolicies []groupMemberPolicy `json:"group_members_policies"`
+}
+
+func (res listMembersPoliciesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res listMembersPoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res listMembersPoliciesRes) Empty() bool {
 	return false
 }
 

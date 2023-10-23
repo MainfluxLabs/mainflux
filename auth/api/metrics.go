@@ -260,6 +260,15 @@ func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, groupID 
 	return ms.svc.CreatePolicies(ctx, token, groupID, mp...)
 }
 
+func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_members_policies").Add(1)
+		ms.latency.With("method", "list_members_policies").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListMembersPolicies(ctx, token, groupID, pm)
+}
+
 func (ms *metricsMiddleware) UpdatePolicies(ctx context.Context, token, groupID string, mp ...auth.MemberPolicy) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_policies").Add(1)

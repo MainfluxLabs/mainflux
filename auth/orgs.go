@@ -106,6 +106,17 @@ type MemberPolicy struct {
 	Policy   string
 }
 
+type GroupMemberPolicy struct {
+	MemberID string
+	Email    string
+	Policy   string
+}
+
+type GroupMembersPoliciesPage struct {
+	PageMetadata
+	GroupMembersPolicies []GroupMemberPolicy
+}
+
 type Member struct {
 	ID    string `json:"id"`
 	Role  string `json:"role"`
@@ -187,6 +198,9 @@ type Orgs interface {
 	// CreatePolicies creates group members policies.
 	CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
 
+	// ListMembersPolicies retrieves page of group members policies.
+	ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
+
 	// UpdatePolicies updates group members policies.
 	UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
 
@@ -264,6 +278,9 @@ type OrgRepository interface {
 
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
+
+	// RetrievePolicies retrieves page of group members policies.
+	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
 	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error

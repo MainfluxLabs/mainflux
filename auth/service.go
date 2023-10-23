@@ -759,6 +759,68 @@ func (svc service) CreatePolicies(ctx context.Context, token, groupID string, mp
 	return nil
 }
 
+func (svc service) ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return GroupMembersPoliciesPage{}, err
+	}
+
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, ReadAction); err != nil {
+		return GroupMembersPoliciesPage{}, err
+	}
+
+	gmpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
+	if err != nil {
+		return GroupMembersPoliciesPage{}, err
+	}
+
+	var memberIDs []string
+	for _, mp := range gmpp.GroupMembersPolicies {
+		memberIDs = append(memberIDs, mp.MemberID)
+	}
+
+	var groupMembersPolicies []GroupMemberPolicy
+	if len(gmpp.GroupMembersPolicies) > 0 {
+		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
+		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+		if err != nil {
+			return GroupMembersPoliciesPage{}, err
+		}
+
+		emails := make(map[string]string)
+		for _, user := range up.Users {
+			emails[user.Id] = user.GetEmail()
+		}
+
+		for _, gmp := range gmpp.GroupMembersPolicies {
+			email, ok := emails[gmp.MemberID]
+			if !ok {
+				return GroupMembersPoliciesPage{}, err
+			}
+
+			groupMemeberPolicy := GroupMemberPolicy{
+				MemberID: gmp.MemberID,
+				Email:    email,
+				Policy:   gmp.Policy,
+			}
+
+			groupMembersPolicies = append(groupMembersPolicies, groupMemeberPolicy)
+		}
+
+	}
+
+	groupMembersPoliciesPage := GroupMembersPoliciesPage{
+		GroupMembersPolicies: groupMembersPolicies,
+		PageMetadata: PageMetadata{
+			Total:  gmpp.Total,
+			Offset: gmpp.Offset,
+			Limit:  gmpp.Limit,
+		},
+	}
+
+	return groupMembersPoliciesPage, nil
+}
+
 func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {

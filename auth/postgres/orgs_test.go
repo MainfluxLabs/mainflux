@@ -1805,6 +1805,110 @@ func TestRetrievePolicy(t *testing.T) {
 	}
 }
 
+func TestRetrievePolicies(t *testing.T) {
+	dbMiddleware := postgres.NewDatabase(db)
+	repo := postgres.NewOrgRepo(dbMiddleware)
+
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", groupRelationsTable))
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	groupID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        orgName,
+		Description: orgDesc,
+		Metadata:    map[string]interface{}{"key": "value"},
+	}
+
+	err = repo.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	gr := auth.GroupRelation{
+		OrgID:   orgID,
+		GroupID: groupID,
+	}
+	err = repo.AssignGroups(context.Background(), gr)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := uint64(0); i < n; i++ {
+		memberID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		mp := auth.MemberPolicy{
+			MemberID: memberID,
+			Policy:   auth.RwPolicy,
+		}
+		err = repo.SavePolicies(context.Background(), groupID, mp)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc     string
+		groupID  string
+		pageMeta auth.PageMetadata
+		size     uint64
+		err      error
+	}{
+		{
+			desc:    "retrieve policies",
+			groupID: groupID,
+			pageMeta: auth.PageMetadata{
+				Offset: 0,
+				Limit:  5,
+				Total:  n,
+			},
+			size: 5,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve last policy",
+			groupID: groupID,
+			pageMeta: auth.PageMetadata{
+				Offset: n - 1,
+				Limit:  1,
+				Total:  n,
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "retrieve policies with invalid group id",
+			groupID: invalidID,
+			pageMeta: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  0,
+			},
+			err: errors.ErrRetrieveEntity,
+		},
+		{
+			desc:    "retrieve policies without group id",
+			groupID: "",
+			pageMeta: auth.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Total:  0,
+			},
+			size: 0,
+
+			err: errors.ErrRetrieveEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		mpp, err := repo.RetrievePolicies(context.Background(), tc.groupID, tc.pageMeta)
+		size := len(mpp.GroupMembersPolicies)
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestRemovePolicies(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)

@@ -719,6 +719,55 @@ func (or orgRepository) RetrievePolicy(ctc context.Context, gp auth.GroupsPolicy
 	return policy, nil
 }
 
+func (or orgRepository) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
+	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
+
+	params := map[string]interface{}{
+		"group_id": groupID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return auth.GroupMembersPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []auth.GroupMemberPolicy
+	for rows.Next() {
+		dbgp := dbGroupPolicy{}
+		if err := rows.StructScan(&dbgp); err != nil {
+			return auth.GroupMembersPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		mp, err := toGroupMemberPolicy(dbgp)
+		if err != nil {
+			return auth.GroupMembersPoliciesPage{}, err
+		}
+
+		items = append(items, mp)
+	}
+
+	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
+
+	total, err := total(ctx, or.db, cq, params)
+	if err != nil {
+		return auth.GroupMembersPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := auth.GroupMembersPoliciesPage{
+		GroupMembersPolicies: items,
+		PageMetadata: auth.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 func (or orgRepository) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
@@ -983,6 +1032,13 @@ func toDBGroupPolicy(gp auth.GroupsPolicy) (dbGroupPolicy, error) {
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
 		Policy:   gp.Policy,
+	}, nil
+}
+
+func toGroupMemberPolicy(dbgp dbGroupPolicy) (auth.GroupMemberPolicy, error) {
+	return auth.GroupMemberPolicy{
+		MemberID: dbgp.MemberID,
+		Policy:   dbgp.Policy,
 	}, nil
 }
 

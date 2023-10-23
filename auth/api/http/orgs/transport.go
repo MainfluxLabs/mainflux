@@ -114,6 +114,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
+		decodeListMembersPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
 		decodeMembersPoliciesRequest,
@@ -393,6 +400,27 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listMembersPoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+		offset:  o,
+		limit:   l,
 	}
 
 	return req, nil
