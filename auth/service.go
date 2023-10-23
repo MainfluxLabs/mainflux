@@ -742,7 +742,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -753,23 +753,6 @@ func (svc service) CreatePolicies(ctx context.Context, token, orgID, groupID str
 	}
 
 	if err := svc.orgs.SavePolicies(ctx, groupID, mp...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...MemberPolicy) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.UpdatePolicies(ctx, groupID, mp...); err != nil {
 		return err
 	}
 
@@ -838,7 +821,7 @@ func (svc service) ListMembersPolicies(ctx context.Context, token, groupID strin
 	return groupMembersPoliciesPage, nil
 }
 
-func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -848,7 +831,24 @@ func (svc service) RemovePolicies(ctx context.Context, token, orgID, groupID str
 		return err
 	}
 
-	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+	if err := svc.orgs.UpdatePolicies(ctx, groupID, mp...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
+		return err
+	}
+
+	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 

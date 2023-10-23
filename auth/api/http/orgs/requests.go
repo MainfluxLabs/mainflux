@@ -267,7 +267,6 @@ type memberPolicy struct {
 
 type membersPoliciesReq struct {
 	token           string
-	orgID           string
 	groupID         string
 	MembersPolicies []memberPolicy `json:"members_policies"`
 }
@@ -277,7 +276,7 @@ func (req membersPoliciesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.orgID == "" || req.groupID == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -300,7 +299,6 @@ func (req membersPoliciesReq) validate() error {
 
 type removePoliciesReq struct {
 	token     string
-	orgID     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
@@ -310,7 +308,7 @@ func (req removePoliciesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.orgID == "" || req.groupID == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
 

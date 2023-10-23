@@ -295,7 +295,7 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 			membersPolicies = append(membersPolicies, memberPolicy)
 		}
 
-		if err := svc.CreatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+		if err := svc.CreatePolicies(ctx, req.token, req.groupID, membersPolicies...); err != nil {
 			return nil, err
 		}
 
@@ -320,7 +320,7 @@ func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			membersPolicies = append(membersPolicies, memberPolicy)
 		}
 
-		if err := svc.UpdatePolicies(ctx, req.token, req.orgID, req.groupID, membersPolicies...); err != nil {
+		if err := svc.UpdatePolicies(ctx, req.token, req.groupID, membersPolicies...); err != nil {
 			return nil, err
 		}
 
@@ -335,7 +335,7 @@ func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemovePolicies(ctx, req.token, req.orgID, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemovePolicies(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 

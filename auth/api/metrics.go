@@ -251,13 +251,13 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	return ms.svc.AssignRole(ctx, id, role)
 }
 
-func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) error {
+func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, groupID string, mp ...auth.MemberPolicy) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_policies").Add(1)
 		ms.latency.With("method", "create_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreatePolicies(ctx, token, orgID, groupID, mp...)
+	return ms.svc.CreatePolicies(ctx, token, groupID, mp...)
 }
 
 func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
@@ -269,20 +269,20 @@ func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, gro
 	return ms.svc.ListMembersPolicies(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdatePolicies(ctx context.Context, token, orgID, groupID string, mp ...auth.MemberPolicy) error {
+func (ms *metricsMiddleware) UpdatePolicies(ctx context.Context, token, groupID string, mp ...auth.MemberPolicy) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_policies").Add(1)
 		ms.latency.With("method", "update_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdatePolicies(ctx, token, orgID, groupID, mp...)
+	return ms.svc.UpdatePolicies(ctx, token, groupID, mp...)
 }
 
-func (ms *metricsMiddleware) RemovePolicies(ctx context.Context, token, orgID, groupID string, memberIDs ...string) error {
+func (ms *metricsMiddleware) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_policies").Add(1)
 		ms.latency.With("method", "remove_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemovePolicies(ctx, token, orgID, groupID, memberIDs...)
+	return ms.svc.RemovePolicies(ctx, token, groupID, memberIDs...)
 }
