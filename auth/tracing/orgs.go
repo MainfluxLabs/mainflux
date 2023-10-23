@@ -203,12 +203,12 @@ func (orm orgRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context
 	return orm.repo.RetrieveAllGroupRelations(ctx)
 }
 
-func (orm orgRepositoryMiddleware) SavePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+func (orm orgRepositoryMiddleware) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	span := createSpan(ctx, orm.tracer, savePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.SavePolicies(ctx, groupID, mp...)
+	return orm.repo.SavePolicies(ctx, groupID, giByIDs...)
 }
 
 func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
@@ -227,12 +227,12 @@ func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID
 	return orm.repo.RetrievePolicies(ctx, groupID, pm)
 }
 
-func (orm orgRepositoryMiddleware) UpdatePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+func (orm orgRepositoryMiddleware) UpdatePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	span := createSpan(ctx, orm.tracer, updatePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdatePolicies(ctx, groupID, mp...)
+	return orm.repo.UpdatePolicies(ctx, groupID, giByIDs...)
 }
 
 func (orm orgRepositoryMiddleware) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {

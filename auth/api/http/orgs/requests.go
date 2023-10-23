@@ -241,7 +241,7 @@ func (req listMembersPoliciesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == ""  {
+	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -261,8 +261,8 @@ func (req backupReq) validate() error {
 }
 
 type memberPolicy struct {
-	MemberID string `json:"member_id"`
-	Policy   string `json:"policy"`
+	Email  string `json:"email"`
+	Policy string `json:"policy"`
 }
 
 type membersPoliciesReq struct {
@@ -289,7 +289,7 @@ func (req membersPoliciesReq) validate() error {
 			return apiutil.ErrInvalidPolicy
 		}
 
-		if mp.MemberID == "" {
+		if mp.Email == "" {
 			return apiutil.ErrMissingID
 		}
 	}

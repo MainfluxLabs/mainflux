@@ -286,16 +286,16 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var membersPolicies []auth.MemberPolicy
+		var giByEmails []auth.GroupInvitationByEmail
 		for _, m := range req.MembersPolicies {
-			memberPolicy := auth.MemberPolicy{
-				MemberID: m.MemberID,
-				Policy:   m.Policy,
+			giByEmail := auth.GroupInvitationByEmail{
+				Email:  m.Email,
+				Policy: m.Policy,
 			}
-			membersPolicies = append(membersPolicies, memberPolicy)
+			giByEmails = append(giByEmails, giByEmail)
 		}
 
-		if err := svc.CreatePolicies(ctx, req.token, req.groupID, membersPolicies...); err != nil {
+		if err := svc.CreatePolicies(ctx, req.token, req.groupID, giByEmails...); err != nil {
 			return nil, err
 		}
 
@@ -310,17 +310,17 @@ func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var membersPolicies []auth.MemberPolicy
+		var giByEmails []auth.GroupInvitationByEmail
 		for _, mp := range req.MembersPolicies {
-			memberPolicy := auth.MemberPolicy{
-				MemberID: mp.MemberID,
-				Policy:   mp.Policy,
+			giByEmail := auth.GroupInvitationByEmail{
+				Email:  mp.Email,
+				Policy: mp.Policy,
 			}
 
-			membersPolicies = append(membersPolicies, memberPolicy)
+			giByEmails = append(giByEmails, giByEmail)
 		}
 
-		if err := svc.UpdatePolicies(ctx, req.token, req.groupID, membersPolicies...); err != nil {
+		if err := svc.UpdatePolicies(ctx, req.token, req.groupID, giByEmails...); err != nil {
 			return nil, err
 		}
 

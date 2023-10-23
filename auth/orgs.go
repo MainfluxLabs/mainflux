@@ -101,9 +101,14 @@ type GroupsPolicy struct {
 	Policy   string
 }
 
-type MemberPolicy struct {
+type GroupInvitationByID struct {
 	MemberID string
 	Policy   string
+}
+
+type GroupInvitationByEmail struct {
+	Email  string
+	Policy string
 }
 
 type GroupMemberPolicy struct {
@@ -196,13 +201,13 @@ type Orgs interface {
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
 	// CreatePolicies creates group members policies.
-	CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
+	CreatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
 	// ListMembersPolicies retrieves page of group members policies.
 	ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
 
 	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
+	UpdatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
 	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
@@ -274,7 +279,7 @@ type OrgRepository interface {
 	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
 
 	// SavePolicies saves group members policies.
-	SavePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
+	SavePolicies(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 
 	// RetrievePolicy retrieves group policy for a user.
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
@@ -286,5 +291,5 @@ type OrgRepository interface {
 	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, groupID string, mp ...MemberPolicy) error
+	UpdatePolicies(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 }
