@@ -644,12 +644,12 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 	}
 
 	for _, groupID := range groupIDs {
-		mp := MemberPolicy{
+		giByIDs := GroupInvitationByID{
 			MemberID: user.ID,
 			Policy:   RwPolicy,
 		}
 
-		if err := svc.orgs.SavePolicies(ctx, groupID, mp); err != nil {
+		if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
 			return err
 		}
 	}
@@ -742,7 +742,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
+func (svc service) CreatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -752,7 +752,28 @@ func (svc service) CreatePolicies(ctx context.Context, token, groupID string, mp
 		return err
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, mp...); err != nil {
+	var memberEmails []string
+	var member = make(map[string]string)
+	for _, g := range giByEmails {
+		member[g.Email] = g.Policy
+		memberEmails = append(memberEmails, g.Email)
+	}
+
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	giByIDs := []GroupInvitationByID{}
+	for _, user := range usr.Users {
+		giByIDs = append(giByIDs, GroupInvitationByID{
+			Policy:   member[user.Email],
+			MemberID: user.Id,
+		})
+	}
+
+	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
@@ -821,7 +842,7 @@ func (svc service) ListMembersPolicies(ctx context.Context, token, groupID strin
 	return groupMembersPoliciesPage, nil
 }
 
-func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error {
+func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -831,7 +852,28 @@ func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, mp
 		return err
 	}
 
-	if err := svc.orgs.UpdatePolicies(ctx, groupID, mp...); err != nil {
+	var memberEmails []string
+	var member = make(map[string]string)
+	for _, g := range giByEmails {
+		member[g.Email] = g.Policy
+		memberEmails = append(memberEmails, g.Email)
+	}
+
+	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	if err != nil {
+		return err
+	}
+
+	giByIDs := []GroupInvitationByID{}
+	for _, user := range usr.Users {
+		giByIDs = append(giByIDs, GroupInvitationByID{
+			Policy:   member[user.Email],
+			MemberID: user.Id,
+		})
+	}
+
+	if err := svc.orgs.UpdatePolicies(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
@@ -844,11 +886,22 @@ func (svc service) RemovePolicies(ctx context.Context, token, groupID string, me
 		return err
 	}
 
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range memberIDs {
+		if m == org.OwnerID {
+			return errors.ErrAuthorization
+		}
+	}
+
 	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
 		return err
 	}
 
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
+	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -898,12 +951,12 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		return err
 	}
 
-	mp := MemberPolicy{
+	giByIDs := GroupInvitationByID{
 		MemberID: user.ID,
 		Policy:   policy,
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, mp); err != nil {
+	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
 		return err
 	}
 

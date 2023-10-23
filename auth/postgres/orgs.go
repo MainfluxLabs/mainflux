@@ -651,7 +651,7 @@ func (or orgRepository) RetrieveAllGroupRelations(ctx context.Context) ([]auth.G
 	return grs, nil
 }
 
-func (or orgRepository) SavePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+func (or orgRepository) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -659,11 +659,11 @@ func (or orgRepository) SavePolicies(ctx context.Context, groupID string, mp ...
 
 	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
 
-	for _, m := range mp {
+	for _, g := range giByIDs {
 		gp := auth.GroupsPolicy{
-			MemberID: m.MemberID,
+			MemberID: g.MemberID,
 			GroupID:  groupID,
-			Policy:   m.Policy,
+			Policy:   g.Policy,
 		}
 
 		dbgp, err := toDBGroupPolicy(gp)
@@ -784,14 +784,14 @@ func (or orgRepository) RemovePolicies(ctx context.Context, groupID string, memb
 	return nil
 }
 
-func (or orgRepository) UpdatePolicies(ctx context.Context, groupID string, mp ...auth.MemberPolicy) error {
+func (or orgRepository) UpdatePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
 
-	for _, m := range mp {
+	for _, g := range giByIDs {
 		gp := auth.GroupsPolicy{
-			MemberID: m.MemberID,
+			MemberID: g.MemberID,
 			GroupID:  groupID,
-			Policy:   m.Policy,
+			Policy:   g.Policy,
 		}
 
 		dbgp, err := toDBGroupPolicy(gp)

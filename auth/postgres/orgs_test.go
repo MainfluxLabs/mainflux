@@ -1660,7 +1660,7 @@ func TestSavePolicies(t *testing.T) {
 	err = repo.AssignGroups(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	mp := []auth.MemberPolicy{
+	giByIDs := []auth.GroupInvitationByID{
 		{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
@@ -1671,7 +1671,7 @@ func TestSavePolicies(t *testing.T) {
 		},
 	}
 
-	mpWithoutMemberIDs := []auth.MemberPolicy{
+	giWithoutMemberIDs := []auth.GroupInvitationByID{
 		{
 			MemberID: "",
 			Policy:   auth.RwPolicy,
@@ -1683,39 +1683,39 @@ func TestSavePolicies(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc         string
-		groupID      string
-		memberPolicy []auth.MemberPolicy
-		err          error
+		desc    string
+		groupID string
+		giByIDs []auth.GroupInvitationByID
+		err     error
 	}{
 		{
-			desc:         "save group policies",
-			memberPolicy: mp,
-			groupID:      groupID,
-			err:          nil,
+			desc:    "save group policies",
+			giByIDs: giByIDs,
+			groupID: groupID,
+			err:     nil,
 		},
 		{
-			desc:         "save group policies without group ids",
-			memberPolicy: mpWithoutMemberIDs,
-			groupID:      "",
-			err:          errors.ErrMalformedEntity,
+			desc:    "save group policies without group ids",
+			giByIDs: giByIDs,
+			groupID: "",
+			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:         "save group policies without member id",
-			memberPolicy: mpWithoutMemberIDs,
-			groupID:      groupID,
-			err:          errors.ErrMalformedEntity,
+			desc:    "save group policies without member id",
+			giByIDs: giWithoutMemberIDs,
+			groupID: groupID,
+			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:         "save existing group policies",
-			memberPolicy: mp,
-			groupID:      groupID,
-			err:          errors.ErrConflict,
+			desc:    "save existing group policies",
+			giByIDs: giByIDs,
+			groupID: groupID,
+			err:     errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.SavePolicies(context.Background(), tc.groupID, tc.memberPolicy...)
+		err := repo.SavePolicies(context.Background(), tc.groupID, tc.giByIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1758,12 +1758,12 @@ func TestRetrievePolicy(t *testing.T) {
 		MemberID: memberID,
 	}
 
-	mp := auth.MemberPolicy{
+	giByID := auth.GroupInvitationByID{
 		MemberID: memberID,
 		Policy:   auth.RwPolicy,
 	}
 
-	err = repo.SavePolicies(context.Background(), groupID, mp)
+	err = repo.SavePolicies(context.Background(), groupID, giByID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1840,11 +1840,11 @@ func TestRetrievePolicies(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		mp := auth.MemberPolicy{
+		giByID := auth.GroupInvitationByID{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
 		}
-		err = repo.SavePolicies(context.Background(), groupID, mp)
+		err = repo.SavePolicies(context.Background(), groupID, giByID)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -1946,12 +1946,12 @@ func TestRemovePolicies(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		mp := auth.MemberPolicy{
+		giByID := auth.GroupInvitationByID{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
 		}
 
-		err = repo.SavePolicies(context.Background(), groupID, mp)
+		err = repo.SavePolicies(context.Background(), groupID, giByID)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -2023,7 +2023,7 @@ func TestUpdatePolicies(t *testing.T) {
 	err = repo.AssignGroups(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	mp := []auth.MemberPolicy{
+	giByIDs := []auth.GroupInvitationByID{
 		{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
@@ -2034,19 +2034,19 @@ func TestUpdatePolicies(t *testing.T) {
 		},
 	}
 
-	err = repo.SavePolicies(context.Background(), groupID, mp...)
+	err = repo.SavePolicies(context.Background(), groupID, giByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc         string
-		groupID      string
-		memberPolicy auth.MemberPolicy
-		err          error
+		desc    string
+		groupID string
+		giByID  auth.GroupInvitationByID
+		err     error
 	}{
 		{
 			desc:    "update policy without group id",
 			groupID: "",
-			memberPolicy: auth.MemberPolicy{
+			giByID: auth.GroupInvitationByID{
 				MemberID: "",
 				Policy:   auth.RPolicy,
 			},
@@ -2055,7 +2055,7 @@ func TestUpdatePolicies(t *testing.T) {
 		{
 			desc:    "update policy without member id",
 			groupID: groupID,
-			memberPolicy: auth.MemberPolicy{
+			giByID: auth.GroupInvitationByID{
 				MemberID: "",
 				Policy:   auth.RPolicy,
 			},
@@ -2064,7 +2064,7 @@ func TestUpdatePolicies(t *testing.T) {
 		{
 			desc:    "update policy",
 			groupID: groupID,
-			memberPolicy: auth.MemberPolicy{
+			giByID: auth.GroupInvitationByID{
 				MemberID: memberID,
 				Policy:   auth.RPolicy,
 			},
@@ -2073,7 +2073,7 @@ func TestUpdatePolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdatePolicies(context.Background(), tc.groupID, tc.memberPolicy)
+		err := repo.UpdatePolicies(context.Background(), tc.groupID, tc.giByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
