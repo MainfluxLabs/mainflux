@@ -204,7 +204,7 @@ type Orgs interface {
 	// UpdatePolicies updates group members policies.
 	UpdatePolicies(ctx context.Context, token, groupID string, mp ...MemberPolicy) error
 
-	// RemovePolicies removes group policies for members.
+	// RemovePolicies removes group members policies.
 	RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
