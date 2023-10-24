@@ -203,13 +203,13 @@ func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, 
 		return &mainflux.MembersRes{}, err
 	}
 
-	mr := res.(membersRes)
+	mr := res.(orgMembersRes)
 
 	return &mainflux.MembersRes{
 		Offset:  mr.offset,
 		Limit:   mr.limit,
 		Total:   mr.total,
-		Members: mr.members,
+		Members: mr.orgMemberIDs,
 	}, err
 }
 
@@ -247,11 +247,11 @@ func encodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, 
 
 func decodeMembersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.MembersRes)
-	return membersRes{
-		offset:  res.Offset,
-		limit:   res.Limit,
-		total:   res.Total,
-		members: res.Members,
+	return orgMembersRes{
+		offset:       res.Offset,
+		limit:        res.Limit,
+		total:        res.Total,
+		orgMemberIDs: res.Members,
 	}, nil
 }
 

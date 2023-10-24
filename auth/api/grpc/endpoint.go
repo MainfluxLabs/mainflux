@@ -134,7 +134,7 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(membersReq)
 		if err := req.validate(); err != nil {
-			return membersRes{}, err
+			return orgMembersRes{}, err
 		}
 
 		pm := auth.PageMetadata{
@@ -143,17 +143,17 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 		mp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
 		if err != nil {
-			return membersRes{}, err
+			return orgMembersRes{}, err
 		}
-		var members []string
-		for _, id := range mp.Members {
-			members = append(members, id.MemberID)
+		var omIDs []string
+		for _, id := range mp.OrgMembers {
+			omIDs = append(omIDs, id.MemberID)
 		}
-		return membersRes{
-			offset:  req.offset,
-			limit:   req.limit,
-			total:   mp.PageMetadata.Total,
-			members: members,
+		return orgMembersRes{
+			orgMemberIDs: omIDs,
+			offset:       req.offset,
+			limit:        req.limit,
+			total:        mp.PageMetadata.Total,
 		}, nil
 	}
 }

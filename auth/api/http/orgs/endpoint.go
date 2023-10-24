@@ -311,10 +311,10 @@ func updateGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		var giByEmails []auth.GroupInvitationByEmail
-		for _, mp := range req.GroupMembers {
+		for _, gm := range req.GroupMembers {
 			giByEmail := auth.GroupInvitationByEmail{
-				Email:  mp.Email,
-				Policy: mp.Policy,
+				Email:  gm.Email,
+				Policy: gm.Policy,
 			}
 
 			giByEmails = append(giByEmails, giByEmail)
@@ -428,17 +428,17 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 	return res
 }
 
-func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
+func buildMembersResponse(omp auth.OrgMembersPage) memberPageRes {
 	res := memberPageRes{
 		pageRes: pageRes{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  omp.Total,
+			Offset: omp.Offset,
+			Limit:  omp.Limit,
 		},
 		Members: []viewMemberRes{},
 	}
 
-	for _, memb := range mp.Members {
+	for _, memb := range omp.OrgMembers {
 		m := viewMemberRes{
 			ID:    memb.MemberID,
 			Email: memb.Email,
@@ -450,17 +450,17 @@ func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
 	return res
 }
 
-func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
+func buildGroupsResponse(gp auth.GroupsPage) groupsPageRes {
 	res := groupsPageRes{
 		pageRes: pageRes{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  gp.Total,
+			Offset: gp.Offset,
+			Limit:  gp.Limit,
 		},
 		Groups: []viewGroupRes{},
 	}
 
-	for _, group := range mp.Groups {
+	for _, group := range gp.Groups {
 		g := viewGroupRes{
 			ID:          group.ID,
 			OwnerID:     group.OwnerID,

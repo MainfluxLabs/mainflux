@@ -12,12 +12,12 @@ type issueRes struct {
 	value string
 }
 
-type membersRes struct {
-	total     uint64
-	offset    uint64
-	limit     uint64
-	groupType string
-	members   []string
+type orgMembersRes struct {
+	total        uint64
+	offset       uint64
+	limit        uint64
+	groupType    string
+	orgMemberIDs []string
 }
 type emptyRes struct {
 	err error

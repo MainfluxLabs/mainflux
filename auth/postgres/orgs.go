@@ -220,7 +220,7 @@ func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	page := auth.OrgMembersPage{
-		Members: oms,
+		OrgMembers: oms,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,

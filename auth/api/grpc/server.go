@@ -179,12 +179,12 @@ func decodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, 
 }
 
 func encodeMembersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(membersRes)
+	res := grpcRes.(orgMembersRes)
 	return &mainflux.MembersRes{
 		Total:   res.total,
 		Offset:  res.offset,
 		Limit:   res.limit,
-		Members: res.members,
+		Members: res.orgMemberIDs,
 	}, nil
 }
 
