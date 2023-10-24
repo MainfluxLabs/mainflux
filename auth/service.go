@@ -705,13 +705,13 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 				return GroupMembersPage{}, err
 			}
 
-			groupMemeberPolicy := GroupMember{
+			groupMember := GroupMember{
 				MemberID: gmp.MemberID,
 				Email:    email,
 				Policy:   gmp.Policy,
 			}
 
-			groupMembers = append(groupMembers, groupMemeberPolicy)
+			groupMembers = append(groupMembers, groupMember)
 		}
 
 	}
