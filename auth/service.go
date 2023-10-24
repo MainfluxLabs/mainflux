@@ -252,7 +252,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	mr := OrgMember{
+	om := OrgMember{
 		OrgID:     id,
 		MemberID:  user.ID,
 		Role:      OwnerRole,
@@ -260,7 +260,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -480,16 +480,16 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		return OrgMembersPage{}, err
 	}
 
-	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
+	omp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
 	if err != nil {
 		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
 	var oms []OrgMember
-	if len(mp.OrgMembers) > 0 {
+	if len(omp.OrgMembers) > 0 {
 		var memberIDs []string
 		var member = make(map[string]string)
-		for _, m := range mp.OrgMembers {
+		for _, m := range omp.OrgMembers {
 			member[m.MemberID] = m.Role
 			memberIDs = append(memberIDs, m.MemberID)
 		}
@@ -513,9 +513,9 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 	mpg := OrgMembersPage{
 		OrgMembers: oms,
 		PageMetadata: PageMetadata{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  omp.Total,
+			Offset: omp.Offset,
+			Limit:  omp.Limit,
 		},
 	}
 
@@ -580,13 +580,13 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 		return GroupsPage{}, err
 	}
 
-	mp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
+	ogp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
 	if err != nil {
 		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
 	var groupIDs []string
-	for _, g := range mp.OrgGroups {
+	for _, g := range ogp.OrgGroups {
 		groupIDs = append(groupIDs, g.GroupID)
 	}
 
@@ -612,9 +612,9 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 	pg := GroupsPage{
 		Groups: groups,
 		PageMetadata: PageMetadata{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  ogp.Total,
+			Offset: ogp.Offset,
+			Limit:  ogp.Limit,
 		},
 	}
 
@@ -682,8 +682,8 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 	}
 
 	var memberIDs []string
-	for _, mp := range gmpp.GroupMembers {
-		memberIDs = append(memberIDs, mp.MemberID)
+	for _, gm := range gmpp.GroupMembers {
+		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
 	var groupMembers []GroupMember

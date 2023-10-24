@@ -141,19 +141,19 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 			Offset: req.offset,
 			Limit:  req.limit,
 		}
-		mp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
+		omp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return orgMembersRes{}, err
 		}
 		var omIDs []string
-		for _, id := range mp.OrgMembers {
+		for _, id := range omp.OrgMembers {
 			omIDs = append(omIDs, id.MemberID)
 		}
 		return orgMembersRes{
 			orgMemberIDs: omIDs,
 			offset:       req.offset,
 			limit:        req.limit,
-			total:        mp.PageMetadata.Total,
+			total:        omp.PageMetadata.Total,
 		}, nil
 	}
 }

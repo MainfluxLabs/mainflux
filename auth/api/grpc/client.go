@@ -203,13 +203,13 @@ func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, 
 		return &mainflux.MembersRes{}, err
 	}
 
-	mr := res.(orgMembersRes)
+	omr := res.(orgMembersRes)
 
 	return &mainflux.MembersRes{
-		Offset:  mr.offset,
-		Limit:   mr.limit,
-		Total:   mr.total,
-		Members: mr.orgMemberIDs,
+		Offset:  omr.offset,
+		Limit:   omr.limit,
+		Total:   omr.total,
+		Members: omr.orgMemberIDs,
 	}, err
 }
 

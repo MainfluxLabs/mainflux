@@ -331,8 +331,8 @@ func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember
 	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
-	for _, mr := range oms {
-		dbom := toDBOrgMember(mr)
+	for _, om := range oms {
+		dbom := toDBOrgMember(om)
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbom); err != nil {
 			tx.Rollback()
@@ -368,11 +368,11 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		mr := auth.OrgMember{
+		om := auth.OrgMember{
 			OrgID:    orgID,
 			MemberID: id,
 		}
-		dbom := toDBOrgMember(mr)
+		dbom := toDBOrgMember(om)
 
 		if _, err := tx.NamedExecContext(ctx, qDel, dbom); err != nil {
 			tx.Rollback()
@@ -401,8 +401,8 @@ func (or orgRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
-	for _, mr := range oms {
-		dbom := toDBOrgMember(mr)
+	for _, om := range oms {
+		dbom := toDBOrgMember(om)
 
 		row, err := or.db.NamedExecContext(ctx, qUpd, dbom)
 		if err != nil {
@@ -646,11 +646,7 @@ func (or orgRepository) SaveGroupMembers(ctx context.Context, groupID string, gi
 			GroupID:  groupID,
 			Policy:   g.Policy,
 		}
-
-		dbgp, err := toDBGroupPolicy(gp)
-		if err != nil {
-			return errors.Wrap(errors.ErrCreateEntity, err)
-		}
+		dbgp := toDBGroupPolicy(gp)
 
 		if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
 			tx.Rollback()
@@ -722,12 +718,9 @@ func (or orgRepository) RetrieveGroupMembers(ctx context.Context, groupID string
 			return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		mp, err := toGroupMember(dbgp)
-		if err != nil {
-			return auth.GroupMembersPage{}, err
-		}
+		gm := toGroupMember(dbgp)
 
-		items = append(items, mp)
+		items = append(items, gm)
 	}
 
 	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
@@ -774,11 +767,7 @@ func (or orgRepository) UpdateGroupMembers(ctx context.Context, groupID string, 
 			GroupID:  groupID,
 			Policy:   g.Policy,
 		}
-
-		dbgp, err := toDBGroupPolicy(gp)
-		if err != nil {
-			return errors.Wrap(errors.ErrUpdateEntity, err)
-		}
+		dbgp := toDBGroupPolicy(gp)
 
 		row, err := or.db.NamedExecContext(ctx, q, dbgp)
 		if err != nil {
@@ -957,23 +946,23 @@ type dbOrgMember struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func toDBOrgMember(mr auth.OrgMember) dbOrgMember {
+func toDBOrgMember(om auth.OrgMember) dbOrgMember {
 	return dbOrgMember{
-		OrgID:     mr.OrgID,
-		MemberID:  mr.MemberID,
-		Role:      mr.Role,
-		CreatedAt: mr.CreatedAt,
-		UpdatedAt: mr.UpdatedAt,
+		OrgID:     om.OrgID,
+		MemberID:  om.MemberID,
+		Role:      om.Role,
+		CreatedAt: om.CreatedAt,
+		UpdatedAt: om.UpdatedAt,
 	}
 }
 
-func toMemberRelation(mr dbOrgMember) auth.OrgMember {
+func toMemberRelation(dbom dbOrgMember) auth.OrgMember {
 	return auth.OrgMember{
-		OrgID:     mr.OrgID,
-		MemberID:  mr.MemberID,
-		Role:      mr.Role,
-		CreatedAt: mr.CreatedAt,
-		UpdatedAt: mr.UpdatedAt,
+		OrgID:     dbom.OrgID,
+		MemberID:  dbom.MemberID,
+		Role:      dbom.Role,
+		CreatedAt: dbom.CreatedAt,
+		UpdatedAt: dbom.UpdatedAt,
 	}
 }
 
@@ -1008,19 +997,19 @@ type dbGroupPolicy struct {
 	Policy   string `db:"policy"`
 }
 
-func toDBGroupPolicy(gp auth.GroupsPolicy) (dbGroupPolicy, error) {
+func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
 	return dbGroupPolicy{
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
 		Policy:   gp.Policy,
-	}, nil
+	}
 }
 
-func toGroupMember(dbgp dbGroupPolicy) (auth.GroupMember, error) {
+func toGroupMember(dbgp dbGroupPolicy) auth.GroupMember {
 	return auth.GroupMember{
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
-	}, nil
+	}
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {

@@ -279,12 +279,12 @@ func (req groupMembersReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, mp := range req.GroupMembers {
-		if mp.Policy != auth.RPolicy && mp.Policy != auth.RwPolicy {
+	for _, gm := range req.GroupMembers {
+		if gm.Policy != auth.RPolicy && gm.Policy != auth.RwPolicy {
 			return apiutil.ErrInvalidPolicy
 		}
 
-		if mp.Email == "" {
+		if gm.Email == "" {
 			return apiutil.ErrMissingID
 		}
 	}
