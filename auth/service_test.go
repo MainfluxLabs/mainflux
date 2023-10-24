@@ -1725,55 +1725,55 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
-		desc                string
-		token               string
-		orgSize             int
-		memberRelationsSize int
-		groupRelationsSize  int
-		err                 error
+		desc          string
+		token         string
+		orgSize       int
+		orgMemberSize int
+		orgGroupSize  int
+		err           error
 	}{
 		{
-			desc:                "backup all orgs, org members and org groups",
-			token:               superAdminToken,
-			orgSize:             1,
-			memberRelationsSize: len(members) + 1,
-			groupRelationsSize:  len(grIDs),
-			err:                 nil,
+			desc:          "backup all orgs, org members and org groups",
+			token:         superAdminToken,
+			orgSize:       1,
+			orgMemberSize: len(members) + 1,
+			orgGroupSize:  len(grIDs),
+			err:           nil,
 		},
 		{
-			desc:                "backup with invalid credentials",
-			token:               invalid,
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthentication,
+			desc:          "backup with invalid credentials",
+			token:         invalid,
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthentication,
 		},
 		{
-			desc:                "backup without credentials",
-			token:               "",
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthentication,
+			desc:          "backup without credentials",
+			token:         "",
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthentication,
 		},
 		{
-			desc:                "backup with unauthorised credentials",
-			token:               viewerToken,
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthorization,
+			desc:          "backup with unauthorised credentials",
+			token:         viewerToken,
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthorization,
 		},
 	}
 
 	for _, tc := range cases {
 		page, err := svc.Backup(context.Background(), tc.token)
 		orgSize := len(page.Orgs)
-		memberRelationsSize := len(page.OrgMembers)
-		groupRelationsSize := len(page.OrgGroups)
+		orgMemberSize := len(page.OrgMembers)
+		orgGroupSize := len(page.OrgGroups)
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
-		assert.Equal(t, tc.memberRelationsSize, memberRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.memberRelationsSize, memberRelationsSize))
-		assert.Equal(t, tc.groupRelationsSize, groupRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.groupRelationsSize, groupRelationsSize))
+		assert.Equal(t, tc.orgMemberSize, orgMemberSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgMemberSize, orgMemberSize))
+		assert.Equal(t, tc.orgGroupSize, orgGroupSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgGroupSize, orgGroupSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

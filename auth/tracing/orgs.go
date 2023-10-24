@@ -163,12 +163,12 @@ func (orm orgRepositoryMiddleware) RetrieveAllOrgMembers(ctx context.Context) ([
 	return orm.repo.RetrieveAllOrgMembers(ctx)
 }
 
-func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, grs ...auth.OrgGroup) error {
+func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) error {
 	span := createSpan(ctx, orm.tracer, assignOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignGroups(ctx, grs...)
+	return orm.repo.AssignGroups(ctx, ogs...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {

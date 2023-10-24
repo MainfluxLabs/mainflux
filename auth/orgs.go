@@ -241,7 +241,7 @@ type OrgRepository interface {
 	RetrieveAllOrgMembers(ctx context.Context) ([]OrgMember, error)
 
 	// AssignGroups adds groups to an org.
-	AssignGroups(ctx context.Context, grs ...OrgGroup) error
+	AssignGroups(ctx context.Context, ogs ...OrgGroup) error
 
 	// UnassignGroups removes groups from an org
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error

@@ -444,9 +444,9 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, m := range members {
-		member[m.Email] = m.Role
+		roleByEmail[m.Email] = m.Role
 		memberEmails = append(memberEmails, m.Email)
 	}
 
@@ -461,7 +461,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		om := OrgMember{
 			OrgID:     orgID,
 			MemberID:  user.Id,
-			Role:      member[user.Email],
+			Role:      roleByEmail[user.Email],
 			UpdatedAt: getTimestmap(),
 		}
 
@@ -488,9 +488,9 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 	var oms []OrgMember
 	if len(omp.OrgMembers) > 0 {
 		var memberIDs []string
-		var member = make(map[string]string)
+		var roleByEmail = make(map[string]string)
 		for _, m := range omp.OrgMembers {
-			member[m.MemberID] = m.Role
+			roleByEmail[m.MemberID] = m.Role
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
@@ -504,7 +504,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 			mbr := OrgMember{
 				MemberID: user.Id,
 				Email:    user.Email,
-				Role:     member[user.Id],
+				Role:     roleByEmail[user.Id],
 			}
 			oms = append(oms, mbr)
 		}
@@ -533,19 +533,19 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 	}
 
 	timestamp := getTimestmap()
-	var grs []OrgGroup
+	var ogs []OrgGroup
 	for _, groupID := range groupIDs {
-		gr := OrgGroup{
+		og := OrgGroup{
 			OrgID:     orgID,
 			GroupID:   groupID,
 			CreatedAt: timestamp,
 			UpdatedAt: timestamp,
 		}
 
-		grs = append(grs, gr)
+		ogs = append(ogs, og)
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
+	if err := svc.orgs.AssignGroups(ctx, ogs...); err != nil {
 		return err
 	}
 
@@ -644,9 +644,9 @@ func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, g := range giByEmails {
-		member[g.Email] = g.Policy
+		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
 
@@ -659,7 +659,7 @@ func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string
 	giByIDs := []GroupInvitationByID{}
 	for _, user := range usr.Users {
 		giByIDs = append(giByIDs, GroupInvitationByID{
-			Policy:   member[user.Email],
+			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
@@ -734,9 +734,9 @@ func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, g := range giByEmails {
-		member[g.Email] = g.Policy
+		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
 
@@ -749,7 +749,7 @@ func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string
 	giByIDs := []GroupInvitationByID{}
 	for _, user := range usr.Users {
 		giByIDs = append(giByIDs, GroupInvitationByID{
-			Policy:   member[user.Email],
+			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
@@ -859,7 +859,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	grs, err := svc.orgs.RetrieveAllOrgGroups(ctx)
+	ogs, err := svc.orgs.RetrieveAllOrgGroups(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -867,7 +867,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 	backup := Backup{
 		Orgs:       orgs,
 		OrgMembers: mrs,
-		OrgGroups:  grs,
+		OrgGroups:  ogs,
 	}
 
 	return backup, nil
