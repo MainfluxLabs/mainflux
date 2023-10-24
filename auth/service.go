@@ -676,18 +676,18 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 		return GroupMembersPage{}, err
 	}
 
-	gmpp, err := svc.orgs.RetrieveGroupMembers(ctx, groupID, pm)
+	gmp, err := svc.orgs.RetrieveGroupMembers(ctx, groupID, pm)
 	if err != nil {
 		return GroupMembersPage{}, err
 	}
 
 	var memberIDs []string
-	for _, gm := range gmpp.GroupMembers {
+	for _, gm := range gmp.GroupMembers {
 		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
 	var groupMembers []GroupMember
-	if len(gmpp.GroupMembers) > 0 {
+	if len(gmp.GroupMembers) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
@@ -699,16 +699,16 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gmp := range gmpp.GroupMembers {
-			email, ok := emails[gmp.MemberID]
+		for _, gm := range gmp.GroupMembers {
+			email, ok := emails[gm.MemberID]
 			if !ok {
 				return GroupMembersPage{}, err
 			}
 
 			groupMember := GroupMember{
-				MemberID: gmp.MemberID,
+				MemberID: gm.MemberID,
 				Email:    email,
-				Policy:   gmp.Policy,
+				Policy:   gm.Policy,
 			}
 
 			groupMembers = append(groupMembers, groupMember)
@@ -719,9 +719,9 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 	groupMembersPage := GroupMembersPage{
 		GroupMembers: groupMembers,
 		PageMetadata: PageMetadata{
-			Total:  gmpp.Total,
-			Offset: gmpp.Offset,
-			Limit:  gmpp.Limit,
+			Total:  gmp.Total,
+			Offset: gmp.Offset,
+			Limit:  gmp.Limit,
 		},
 	}
 
