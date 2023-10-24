@@ -18,7 +18,7 @@ var (
 	_ mainflux.Response = (*restoreRes)(nil)
 	_ mainflux.Response = (*listGroupMembersRes)(nil)
 	_ mainflux.Response = (*updateGroupMembersRes)(nil)
-	_ mainflux.Response = (*createPoliciesRes)(nil)
+	_ mainflux.Response = (*createGroupMemberRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -228,7 +228,7 @@ func (res backupRes) Empty() bool {
 	return false
 }
 
-type groupMemberPolicy struct {
+type groupMember struct {
 	ID     string `json:"id"`
 	Email  string `json:"email"`
 	Policy string `json:"policy"`
@@ -236,7 +236,7 @@ type groupMemberPolicy struct {
 
 type listGroupMembersRes struct {
 	pageRes
-	GroupMembers []groupMemberPolicy `json:"group_members_policies"`
+	GroupMembers []groupMember `json:"group_members"`
 }
 
 func (res listGroupMembersRes) Code() int {
@@ -265,17 +265,17 @@ func (res restoreRes) Empty() bool {
 	return true
 }
 
-type createPoliciesRes struct{}
+type createGroupMemberRes struct{}
 
-func (res createPoliciesRes) Code() int {
+func (res createGroupMemberRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res createPoliciesRes) Headers() map[string]string {
+func (res createGroupMemberRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createPoliciesRes) Empty() bool {
+func (res createGroupMemberRes) Empty() bool {
 	return true
 }
 

@@ -276,7 +276,7 @@ func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := membersPoliciesReq{
+	req := groupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}

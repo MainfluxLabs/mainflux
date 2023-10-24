@@ -281,13 +281,13 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func createGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersPoliciesReq)
+		req := request.(groupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		var giByEmails []auth.GroupInvitationByEmail
-		for _, m := range req.MembersPolicies {
+		for _, m := range req.GroupMembers {
 			giByEmail := auth.GroupInvitationByEmail{
 				Email:  m.Email,
 				Policy: m.Policy,
@@ -299,19 +299,19 @@ func createGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createPoliciesRes{}, nil
+		return createGroupMemberRes{}, nil
 	}
 }
 
 func updateGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersPoliciesReq)
+		req := request.(groupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		var giByEmails []auth.GroupInvitationByEmail
-		for _, mp := range req.MembersPolicies {
+		for _, mp := range req.GroupMembers {
 			giByEmail := auth.GroupInvitationByEmail{
 				Email:  mp.Email,
 				Policy: mp.Policy,
@@ -524,11 +524,11 @@ func buildMembersPoliciesResponse(gmp auth.GroupMembersPage) listGroupMembersRes
 			Limit:  gmp.Limit,
 			Offset: gmp.Offset,
 		},
-		GroupMembers: []groupMemberPolicy{},
+		GroupMembers: []groupMember{},
 	}
 
 	for _, g := range gmp.GroupMembers {
-		gmp := groupMemberPolicy{
+		gmp := groupMember{
 			Email:  g.Email,
 			ID:     g.MemberID,
 			Policy: g.Policy,

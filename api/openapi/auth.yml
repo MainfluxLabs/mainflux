@@ -444,7 +444,7 @@ paths:
       summary: Retrieves backup of orgs service.
       description: |
         Retrieves backup of the orgs service. Backup is a JSON file that contains
-        all orgs, member relations and group relations.
+        all orgs, org members and org groups.
       tags:
         - auth
       responses:
@@ -459,7 +459,7 @@ paths:
       summary: Restores org service from backup.
       description: |
         Restores org service from backup. Backup is a JSON file that contains
-        all orgs, member relations and group relations.
+        all orgs, org members and org groups.
       tags:
         - auth
       requestBody:
@@ -634,7 +634,7 @@ components:
           items:
             type: string
             format: uuid
-    MemberRelationsSchema:
+    OrgMembersSchema:
       type: object
       properties:
         member_id:
@@ -773,7 +773,7 @@ components:
         limit:
           type: integer
           description: Limit of the page.
-        group_members_policies:
+        group_members:
           type: array
           items:
             properties:
@@ -796,13 +796,13 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/OrgResSchema"
-        member_relations:
+        org_members:
           type: array
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/MemberRelationsSchema"
-        group_relations:
+            $ref: "#/components/schemas/OrgMembersSchema"
+        org_groups:
           type: array
           minItems: 1
           uniqueItems: true
@@ -810,8 +810,8 @@ components:
             $ref: "#/components/schemas/GroupRelationSchema"
       required:
         - orgs
-        - member_relations
-        - group_relations
+        - org_members
+        - org_groups
 
   parameters:
     ApiKeyId:
