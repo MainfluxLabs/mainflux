@@ -71,13 +71,6 @@ type MembersPage struct {
 	Members []OrgMember
 }
 
-// OrgGroupsPage contains page related metadata as well as list of groups that
-// belong to this page.
-type OrgGroupsPage struct {
-	PageMetadata
-	GroupIDs []string
-}
-
 type Group struct {
 	ID          string
 	OwnerID     string
@@ -90,9 +83,9 @@ type GroupsPage struct {
 	Groups []Group
 }
 
-type GroupRelationsPage struct {
+type OrgGroupsPage struct {
 	PageMetadata
-	GroupRelations []GroupRelation
+	OrgGroups []OrgGroup
 }
 
 type GroupsPolicy struct {
@@ -119,7 +112,7 @@ type GroupMember struct {
 
 type GroupMembersPage struct {
 	PageMetadata
-	GroupMembersPolicies []GroupMember
+	GroupMembers []GroupMember
 }
 
 type OrgMember struct {
@@ -131,7 +124,7 @@ type OrgMember struct {
 	Email     string
 }
 
-type GroupRelation struct {
+type OrgGroup struct {
 	GroupID   string
 	OrgID     string
 	CreatedAt time.Time
@@ -139,9 +132,9 @@ type GroupRelation struct {
 }
 
 type Backup struct {
-	Orgs            []Org
-	MemberRelations []OrgMember
-	GroupRelations  []GroupRelation
+	Orgs       []Org
+	OrgMembers []OrgMember
+	OrgGroups  []OrgGroup
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -201,10 +194,10 @@ type Orgs interface {
 	// RemoveGroupMembers removes group members policies.
 	RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error
 
-	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
+	// Backup retrieves all orgs, org members and org groups. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs, org relations and group relations from a backup. Only accessible by admin.
+	// Restore adds orgs, org members and org groups from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -249,23 +242,23 @@ type OrgRepository interface {
 	// RetrieveMembers retrieves members assigned to an org identified by orgID.
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
-	// RetrieveAllMemberRelations retrieves all member relations.
-	RetrieveAllMemberRelations(ctx context.Context) ([]OrgMember, error)
+	// RetrieveAllOrgMembers retrieves all org members.
+	RetrieveAllOrgMembers(ctx context.Context) ([]OrgMember, error)
 
 	// AssignGroups adds groups to an org.
-	AssignGroups(ctx context.Context, grs ...GroupRelation) error
+	AssignGroups(ctx context.Context, grs ...OrgGroup) error
 
 	// UnassignGroups removes groups from an org
 	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error
 
 	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
-	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (GroupRelationsPage, error)
+	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
 
 	// RetrieveByGroupID retrieves org where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)
 
-	// RetrieveAllGroupRelations retrieves all group relations.
-	RetrieveAllGroupRelations(ctx context.Context) ([]GroupRelation, error)
+	// RetrieveAllOrgGroups retrieves all org groups.
+	RetrieveAllOrgGroups(ctx context.Context) ([]OrgGroup, error)
 
 	// SavePolicies saves group members policies.
 	SavePolicies(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error

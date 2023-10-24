@@ -223,11 +223,11 @@ func (orm *orgRepositoryMock) RetrieveMember(ctx context.Context, orgID, memberI
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
+func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, gr := range grs {
+	for _, gr := range ogs {
 		if _, ok := orm.orgs[gr.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
@@ -253,16 +253,16 @@ func (orm *orgRepositoryMock) UnassignGroups(ctx context.Context, orgID string, 
 	return nil
 }
 
-func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
+func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-	grs := []auth.GroupRelation{}
+	ogs := []auth.OrgGroup{}
 	for _, group := range orm.groups {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.orgs[orgID]; ok {
-				grs = append(grs, auth.GroupRelation{
+				ogs = append(ogs, auth.OrgGroup{
 					OrgID:   orgID,
 					GroupID: group.ID,
 				})
@@ -271,8 +271,8 @@ func (orm *orgRepositoryMock) RetrieveGroups(ctx context.Context, orgID string, 
 		i++
 	}
 
-	return auth.GroupRelationsPage{
-		GroupRelations: grs,
+	return auth.OrgGroupsPage{
+		OrgGroups: ogs,
 		PageMetadata: auth.PageMetadata{
 			Total:  uint64(len(orm.groups)),
 			Offset: pm.Offset,
@@ -333,7 +333,7 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.OrgMember, error) {
+func (orm *orgRepositoryMock) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMember, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -350,21 +350,21 @@ func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([
 	return mrs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
+func (orm *orgRepositoryMock) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGroup, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	var grs []auth.GroupRelation
+	var ogs []auth.OrgGroup
 	for _, org := range orm.orgs {
 		for _, group := range orm.groups {
-			grs = append(grs, auth.GroupRelation{
+			ogs = append(ogs, auth.OrgGroup{
 				OrgID:   org.ID,
 				GroupID: group.ID,
 			})
 		}
 	}
 
-	return grs, nil
+	return ogs, nil
 }
 
 func (orm *orgRepositoryMock) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {

@@ -326,10 +326,10 @@ func (req removeGroupMembersReq) validate() error {
 }
 
 type restoreReq struct {
-	token           string
-	Orgs            []auth.Org           `json:"orgs"`
-	MemberRelations []auth.OrgMember     `json:"member_relations"`
-	GroupRelations  []auth.GroupRelation `json:"group_relations"`
+	token      string
+	Orgs       []auth.Org       `json:"orgs"`
+	OrgMembers []auth.OrgMember `json:"org_members"`
+	OrgGroups  []auth.OrgGroup  `json:"org_groups"`
 }
 
 func (req restoreReq) validate() error {
@@ -337,7 +337,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Orgs) == 0 && len(req.MemberRelations) == 0 && len(req.GroupRelations) == 0 {
+	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 && len(req.OrgGroups) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -1579,7 +1579,7 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	m := []viewMemberRelations{
+	m := []viewOrgMembers{
 		{
 			MemberID: id,
 			OrgID:    o.ID,
@@ -1598,7 +1598,7 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	g := []viewGroupRelations{
+	g := []viewOrgGroups{
 		{
 			GroupID: grIDs[0],
 			OrgID:   o.ID,
@@ -1659,12 +1659,12 @@ func TestBackup(t *testing.T) {
 		var data backupRes
 		err = json.NewDecoder(res.Body).Decode(&data)
 
-		sort.Slice(data.MemberRelations, func(i, j int) bool {
-			return data.MemberRelations[i].MemberID < data.MemberRelations[j].MemberID
+		sort.Slice(data.OrgMembers, func(i, j int) bool {
+			return data.OrgMembers[i].MemberID < data.OrgMembers[j].MemberID
 		})
 
-		sort.Slice(data.GroupRelations, func(i, j int) bool {
-			return data.GroupRelations[i].GroupID < data.GroupRelations[j].GroupID
+		sort.Slice(data.OrgGroups, func(i, j int) bool {
+			return data.OrgGroups[i].GroupID < data.OrgGroups[j].GroupID
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
@@ -1725,7 +1725,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	g := []auth.GroupRelation{
+	g := []auth.OrgGroup{
 		{
 			GroupID: grIDs[0],
 			OrgID:   orgID,
@@ -1737,9 +1737,9 @@ func TestRestore(t *testing.T) {
 	}
 
 	data := toJSON(restoreReq{
-		Orgs:            or,
-		MemberRelations: m,
-		GroupRelations:  g,
+		Orgs:       or,
+		OrgMembers: m,
+		OrgGroups:  g,
 	})
 
 	cases := []struct {
@@ -1856,25 +1856,25 @@ type groupsPageRes struct {
 	Groups []viewGroupRes `json:"groups"`
 }
 
-type viewMemberRelations struct {
+type viewOrgMembers struct {
 	MemberID string `json:"member_id"`
 	OrgID    string `json:"org_id"`
 	Role     string `json:"role"`
 }
 
-type viewGroupRelations struct {
+type viewOrgGroups struct {
 	GroupID string `json:"group_id"`
 	OrgID   string `json:"org_id"`
 }
 
 type backupRes struct {
-	Orgs            []orgRes              `json:"orgs"`
-	MemberRelations []viewMemberRelations `json:"member_relations"`
-	GroupRelations  []viewGroupRelations  `json:"group_relations"`
+	Orgs       []orgRes         `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
+	OrgGroups  []viewOrgGroups  `json:"org_groups"`
 }
 
 type restoreReq struct {
-	Orgs            []auth.Org           `json:"orgs"`
-	MemberRelations []auth.OrgMember     `json:"member_relations"`
-	GroupRelations  []auth.GroupRelation `json:"group_relations"`
+	Orgs       []auth.Org       `json:"orgs"`
+	OrgMembers []auth.OrgMember `json:"org_members"`
+	OrgGroups  []auth.OrgGroup  `json:"org_groups"`
 }

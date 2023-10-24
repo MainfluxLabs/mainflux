@@ -195,7 +195,7 @@ func (res unassignRes) Empty() bool {
 	return true
 }
 
-type viewMemberRelations struct {
+type viewOrgMembers struct {
 	MemberID  string    `json:"member_id"`
 	OrgID     string    `json:"org_id"`
 	Role      string    `json:"role"`
@@ -203,7 +203,7 @@ type viewMemberRelations struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type viewGroupRelations struct {
+type viewOrgGroups struct {
 	GroupID   string    `json:"group_id"`
 	OrgID     string    `json:"org_id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -211,9 +211,9 @@ type viewGroupRelations struct {
 }
 
 type backupRes struct {
-	Orgs            []viewOrgRes          `json:"orgs"`
-	MemberRelations []viewMemberRelations `json:"member_relations"`
-	GroupRelations  []viewGroupRelations  `json:"group_relations"`
+	Orgs       []viewOrgRes     `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
+	OrgGroups  []viewOrgGroups  `json:"org_groups"`
 }
 
 func (res backupRes) Code() int {
@@ -236,7 +236,7 @@ type groupMemberPolicy struct {
 
 type listGroupMembersRes struct {
 	pageRes
-	GroupMembersPolicies []groupMemberPolicy `json:"group_members_policies"`
+	GroupMembers []groupMemberPolicy `json:"group_members_policies"`
 }
 
 func (res listGroupMembersRes) Code() int {

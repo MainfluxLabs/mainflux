@@ -1733,7 +1733,7 @@ func TestBackup(t *testing.T) {
 		err                 error
 	}{
 		{
-			desc:                "backup all orgs, member relations and group relations",
+			desc:                "backup all orgs, org members and org groups",
 			token:               superAdminToken,
 			orgSize:             1,
 			memberRelationsSize: len(members) + 1,
@@ -1769,8 +1769,8 @@ func TestBackup(t *testing.T) {
 	for _, tc := range cases {
 		page, err := svc.Backup(context.Background(), tc.token)
 		orgSize := len(page.Orgs)
-		memberRelationsSize := len(page.MemberRelations)
-		groupRelationsSize := len(page.GroupRelations)
+		memberRelationsSize := len(page.OrgMembers)
+		groupRelationsSize := len(page.OrgGroups)
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
 		assert.Equal(t, tc.memberRelationsSize, memberRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.memberRelationsSize, memberRelationsSize))
 		assert.Equal(t, tc.groupRelationsSize, groupRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.groupRelationsSize, groupRelationsSize))
@@ -1802,20 +1802,20 @@ func TestRestore(t *testing.T) {
 	}
 
 	orgs := []auth.Org{{ID: id, OwnerID: ownerID, Name: name}}
-	var memberRelations []auth.OrgMember
+	var orgMembers []auth.OrgMember
 	for _, memberID := range memberIDs {
-		memberRelations = append(memberRelations, auth.OrgMember{MemberID: memberID, OrgID: id})
+		orgMembers = append(orgMembers, auth.OrgMember{MemberID: memberID, OrgID: id})
 	}
 
-	var groupRelations []auth.GroupRelation
+	var orgGroups []auth.OrgGroup
 	for _, groupID := range groupIDs {
-		groupRelations = append(groupRelations, auth.GroupRelation{GroupID: groupID, OrgID: id})
+		orgGroups = append(orgGroups, auth.OrgGroup{GroupID: groupID, OrgID: id})
 	}
 
 	backup := auth.Backup{
-		Orgs:            orgs,
-		MemberRelations: memberRelations,
-		GroupRelations:  groupRelations,
+		Orgs:       orgs,
+		OrgMembers: orgMembers,
+		OrgGroups:  orgGroups,
 	}
 
 	cases := []struct {
@@ -1825,7 +1825,7 @@ func TestRestore(t *testing.T) {
 		err    error
 	}{
 		{
-			desc:   "restore all orgs, member relations and group relations",
+			desc:   "restore all orgs, org members and org groups",
 			token:  superAdminToken,
 			backup: backup,
 			err:    nil,

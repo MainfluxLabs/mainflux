@@ -12,28 +12,28 @@ import (
 )
 
 const (
-	saveOrg                    = "save_org"
-	deleteOrg                  = "delete_org"
-	updateOrg                  = "update_org"
-	retrieveByID               = "retrieve_by_id"
-	retrieveByOwner            = "retrieve_by_owner"
-	orgMemberships             = "org_memberships"
-	orgMembers                 = "org_members"
-	retrieveGroups             = "retrieve_groups"
-	assignOrgMembers           = "assign_org_members"
-	assignOrgGroups            = "assign_org_groups"
-	unassignOrgMembers         = "unassign_org_members"
-	unassignOrgGroups          = "unassign_org_groups"
-	retrieveByGroupID          = "retrieve_by_group_id"
-	updateOrgMembers           = "update_org_members"
-	retrieveAll                = "retrieve_all_orgs"
-	retrieveAllMemberRelations = "retrieve_all_member_elations"
-	retrieveAllGroupRelations  = "retrieve_all_group_relations"
-	savePolicies               = "save_policies"
-	removeGroupMembers             = "remove_policies"
-	retrievePolicy             = "retrieve_policy"
-	retrievePolicies           = "retrieve_policies"
-	updateGroupMembers             = "update_group_members"
+	saveOrg               = "save_org"
+	deleteOrg             = "delete_org"
+	updateOrg             = "update_org"
+	retrieveByID          = "retrieve_by_id"
+	retrieveByOwner       = "retrieve_by_owner"
+	orgMemberships        = "org_memberships"
+	orgMembers            = "org_members"
+	retrieveGroups        = "retrieve_groups"
+	assignOrgMembers      = "assign_org_members"
+	assignOrgGroups       = "assign_org_groups"
+	unassignOrgMembers    = "unassign_org_members"
+	unassignOrgGroups     = "unassign_org_groups"
+	retrieveByGroupID     = "retrieve_by_group_id"
+	updateOrgMembers      = "update_org_members"
+	retrieveAll           = "retrieve_all_orgs"
+	retrieveAllOrgMembers = "retrieve_all_member_elations"
+	retrieveAllOrgGroups  = "retrieve_all_org_groups"
+	savePolicies          = "save_policies"
+	removeGroupMembers    = "remove_policies"
+	retrievePolicy        = "retrieve_policy"
+	retrievePolicies      = "retrieve_policies"
+	updateGroupMembers    = "update_group_members"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -155,15 +155,15 @@ func (orm orgRepositoryMiddleware) RetrieveMembers(ctx context.Context, orgID st
 	return orm.repo.RetrieveMembers(ctx, orgID, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Context) ([]auth.OrgMember, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAllMemberRelations)
+func (orm orgRepositoryMiddleware) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMember, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAllMemberRelations(ctx)
+	return orm.repo.RetrieveAllOrgMembers(ctx)
 }
 
-func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, grs ...auth.GroupRelation) error {
+func (orm orgRepositoryMiddleware) AssignGroups(ctx context.Context, grs ...auth.OrgGroup) error {
 	span := createSpan(ctx, orm.tracer, assignOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -179,7 +179,7 @@ func (orm orgRepositoryMiddleware) UnassignGroups(ctx context.Context, orgID str
 	return orm.repo.UnassignGroups(ctx, orgID, groupIDs...)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.GroupRelationsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveGroups(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgGroupsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -195,12 +195,12 @@ func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupI
 	return orm.repo.RetrieveByGroupID(ctx, groupID)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAllGroupRelations(ctx context.Context) ([]auth.GroupRelation, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAllGroupRelations)
+func (orm orgRepositoryMiddleware) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGroup, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAllGroupRelations(ctx)
+	return orm.repo.RetrieveAllOrgGroups(ctx)
 }
 
 func (orm orgRepositoryMiddleware) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {

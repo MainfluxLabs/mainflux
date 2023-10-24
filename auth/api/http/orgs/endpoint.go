@@ -388,9 +388,9 @@ func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		backup := auth.Backup{
-			Orgs:            req.Orgs,
-			MemberRelations: req.MemberRelations,
-			GroupRelations:  req.GroupRelations,
+			Orgs:       req.Orgs,
+			OrgMembers: req.OrgMembers,
+			OrgGroups:  req.OrgGroups,
 		}
 
 		err := svc.Restore(ctx, req.token, backup)
@@ -475,9 +475,9 @@ func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
 
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
-		Orgs:            []viewOrgRes{},
-		MemberRelations: []viewMemberRelations{},
-		GroupRelations:  []viewGroupRelations{},
+		Orgs:       []viewOrgRes{},
+		OrgMembers: []viewOrgMembers{},
+		OrgGroups:  []viewOrgGroups{},
 	}
 
 	for _, org := range b.Orgs {
@@ -493,47 +493,47 @@ func buildBackupResponse(b auth.Backup) backupRes {
 		res.Orgs = append(res.Orgs, view)
 	}
 
-	for _, mRel := range b.MemberRelations {
-		view := viewMemberRelations{
+	for _, mRel := range b.OrgMembers {
+		view := viewOrgMembers{
 			OrgID:     mRel.OrgID,
 			MemberID:  mRel.MemberID,
 			Role:      mRel.Role,
 			CreatedAt: mRel.CreatedAt,
 			UpdatedAt: mRel.UpdatedAt,
 		}
-		res.MemberRelations = append(res.MemberRelations, view)
+		res.OrgMembers = append(res.OrgMembers, view)
 	}
 
-	for _, groupRel := range b.GroupRelations {
-		view := viewGroupRelations{
+	for _, groupRel := range b.OrgGroups {
+		view := viewOrgGroups{
 			GroupID:   groupRel.GroupID,
 			OrgID:     groupRel.OrgID,
 			CreatedAt: groupRel.CreatedAt,
 			UpdatedAt: groupRel.UpdatedAt,
 		}
-		res.GroupRelations = append(res.GroupRelations, view)
+		res.OrgGroups = append(res.OrgGroups, view)
 	}
 
 	return res
 }
 
-func buildMembersPoliciesResponse(gmpp auth.GroupMembersPage) listGroupMembersRes {
+func buildMembersPoliciesResponse(gmp auth.GroupMembersPage) listGroupMembersRes {
 	res := listGroupMembersRes{
 		pageRes: pageRes{
-			Total:  gmpp.Total,
-			Limit:  gmpp.Limit,
-			Offset: gmpp.Offset,
+			Total:  gmp.Total,
+			Limit:  gmp.Limit,
+			Offset: gmp.Offset,
 		},
-		GroupMembersPolicies: []groupMemberPolicy{},
+		GroupMembers: []groupMemberPolicy{},
 	}
 
-	for _, g := range gmpp.GroupMembersPolicies {
+	for _, g := range gmp.GroupMembers {
 		gmp := groupMemberPolicy{
 			Email:  g.Email,
 			ID:     g.MemberID,
 			Policy: g.Policy,
 		}
-		res.GroupMembersPolicies = append(res.GroupMembersPolicies, gmp)
+		res.GroupMembers = append(res.GroupMembers, gmp)
 	}
 
 	return res

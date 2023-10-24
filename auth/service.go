@@ -312,7 +312,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 	}
 
 	var groupIDs []string
-	for _, g := range gPage.GroupRelations {
+	for _, g := range gPage.OrgGroups {
 		groupIDs = append(groupIDs, g.GroupID)
 	}
 
@@ -533,9 +533,9 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 	}
 
 	timestamp := getTimestmap()
-	var grs []GroupRelation
+	var grs []OrgGroup
 	for _, groupID := range groupIDs {
-		gr := GroupRelation{
+		gr := OrgGroup{
 			OrgID:     orgID,
 			GroupID:   groupID,
 			CreatedAt: timestamp,
@@ -586,7 +586,7 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 	}
 
 	var groupIDs []string
-	for _, g := range mp.GroupRelations {
+	for _, g := range mp.OrgGroups {
 		groupIDs = append(groupIDs, g.GroupID)
 	}
 
@@ -682,12 +682,12 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 	}
 
 	var memberIDs []string
-	for _, mp := range gmpp.GroupMembersPolicies {
+	for _, mp := range gmpp.GroupMembers {
 		memberIDs = append(memberIDs, mp.MemberID)
 	}
 
 	var groupMembersPolicies []GroupMember
-	if len(gmpp.GroupMembersPolicies) > 0 {
+	if len(gmpp.GroupMembers) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
@@ -699,7 +699,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gmp := range gmpp.GroupMembersPolicies {
+		for _, gmp := range gmpp.GroupMembers {
 			email, ok := emails[gmp.MemberID]
 			if !ok {
 				return GroupMembersPage{}, err
@@ -717,7 +717,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 	}
 
 	groupMembersPoliciesPage := GroupMembersPage{
-		GroupMembersPolicies: groupMembersPolicies,
+		GroupMembers: groupMembersPolicies,
 		PageMetadata: PageMetadata{
 			Total:  gmpp.Total,
 			Offset: gmpp.Offset,
@@ -854,20 +854,20 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	mrs, err := svc.orgs.RetrieveAllOrgMembers(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	grs, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	grs, err := svc.orgs.RetrieveAllOrgGroups(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	backup := Backup{
-		Orgs:            orgs,
-		MemberRelations: mrs,
-		GroupRelations:  grs,
+		Orgs:       orgs,
+		OrgMembers: mrs,
+		OrgGroups:  grs,
 	}
 
 	return backup, nil
@@ -882,11 +882,11 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, backup.OrgMembers...); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+	if err := svc.orgs.AssignGroups(ctx, backup.OrgGroups...); err != nil {
 		return err
 	}
 
