@@ -29,7 +29,7 @@ const (
 	retrieveAll           = "retrieve_all_orgs"
 	retrieveAllOrgMembers = "retrieve_all_member_elations"
 	retrieveAllOrgGroups  = "retrieve_all_org_groups"
-	saveGroupMembers          = "save_group_members"
+	saveGroupMembers      = "save_group_members"
 	removeGroupMembers    = "remove_policies"
 	retrieveGroupMember   = "retrieve_group_member"
 	RetrieveGroupMembers  = "retrieve_group_members"
