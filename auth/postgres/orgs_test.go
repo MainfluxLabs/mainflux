@@ -505,7 +505,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		err = repo.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.OrgMember{
+		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -513,7 +513,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = repo.AssignMembers(context.Background(), memberRelation)
+		err = repo.AssignMembers(context.Background(), orgMember)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -640,7 +640,7 @@ func TestAssignMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.OrgMember{
+		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -648,7 +648,7 @@ func TestAssignMembers(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		orgMembers = append(orgMembers, memberRelation)
+		orgMembers = append(orgMembers, orgMember)
 	}
 
 	var invalidOrgIDmRel []auth.OrgMember
@@ -744,7 +744,7 @@ func TestUnassignMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.OrgMember{
+		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -752,7 +752,7 @@ func TestUnassignMembers(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		orgMembers = append(orgMembers, memberRelation)
+		orgMembers = append(orgMembers, orgMember)
 		memberIDs = append(memberIDs, memberID)
 	}
 
@@ -830,7 +830,7 @@ func TestRetrieveRole(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	memberRelation := auth.OrgMember{
+	orgMember := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
 		Role:      auth.AdminRole,
@@ -838,7 +838,7 @@ func TestRetrieveRole(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = repo.AssignMembers(context.Background(), memberRelation)
+	err = repo.AssignMembers(context.Background(), orgMember)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -914,7 +914,7 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	memberRelation := auth.OrgMember{
+	orgMember := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
 		Role:      auth.EditorRole,
@@ -922,7 +922,7 @@ func TestUpdateMembers(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = repo.AssignMembers(context.Background(), memberRelation)
+	err = repo.AssignMembers(context.Background(), orgMember)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	updateMrel := auth.OrgMember{
@@ -968,43 +968,43 @@ func TestUpdateMembers(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc           string
-		memberRelation auth.OrgMember
-		err            error
+		desc      string
+		orgMember auth.OrgMember
+		err       error
 	}{
 		{
-			desc:           "update member role",
-			memberRelation: updateMrel,
-			err:            nil,
+			desc:      "update member role",
+			orgMember: updateMrel,
+			err:       nil,
 		}, {
-			desc:           "update role with invalid org id",
-			memberRelation: invalidOrgIDmRel,
-			err:            errors.ErrMalformedEntity,
+			desc:      "update role with invalid org id",
+			orgMember: invalidOrgIDmRel,
+			err:       errors.ErrMalformedEntity,
 		}, {
-			desc:           "update role with unknown org id",
-			memberRelation: unknownOrgIDmRel,
-			err:            errors.ErrNotFound,
+			desc:      "update role with unknown org id",
+			orgMember: unknownOrgIDmRel,
+			err:       errors.ErrNotFound,
 		}, {
-			desc:           "update role without org id",
-			memberRelation: emptyOrgIDmRel,
-			err:            errors.ErrMalformedEntity,
+			desc:      "update role without org id",
+			orgMember: emptyOrgIDmRel,
+			err:       errors.ErrMalformedEntity,
 		}, {
-			desc:           "update role with invalid member id",
-			memberRelation: invalidMemberIDmRel,
-			err:            errors.ErrMalformedEntity,
+			desc:      "update role with invalid member id",
+			orgMember: invalidMemberIDmRel,
+			err:       errors.ErrMalformedEntity,
 		}, {
-			desc:           "update role with unknown member id",
-			memberRelation: unknownMemberIDmRel,
-			err:            errors.ErrNotFound,
+			desc:      "update role with unknown member id",
+			orgMember: unknownMemberIDmRel,
+			err:       errors.ErrNotFound,
 		}, {
-			desc:           "update role with empty member",
-			memberRelation: emptyMemberIDmRel,
-			err:            errors.ErrMalformedEntity,
+			desc:      "update role with empty member",
+			orgMember: emptyMemberIDmRel,
+			err:       errors.ErrMalformedEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdateMembers(context.Background(), tc.memberRelation)
+		err := repo.UpdateMembers(context.Background(), tc.orgMember)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1036,13 +1036,13 @@ func TestRetrieveMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.OrgMember{
+		orgMember := auth.OrgMember{
 			OrgID:    orgID,
 			MemberID: memberID,
 			Role:     auth.EditorRole,
 		}
 
-		orgMembers = append(orgMembers, memberRelation)
+		orgMembers = append(orgMembers, orgMember)
 	}
 
 	err = repo.AssignMembers(context.Background(), orgMembers...)
@@ -1531,13 +1531,13 @@ func TestRetrieveAllOrgMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.OrgMember{
+		orgMember := auth.OrgMember{
 			OrgID:    org.ID,
 			MemberID: memberID,
 			Role:     auth.EditorRole,
 		}
 
-		orgMembers = append(orgMembers, memberRelation)
+		orgMembers = append(orgMembers, orgMember)
 	}
 
 	err = repo.AssignMembers(context.Background(), orgMembers...)
