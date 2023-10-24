@@ -235,8 +235,8 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 
 func (ms *metricsMiddleware) CreateGroupMembers(ctx context.Context, token, groupID string, gis ...auth.GroupInvitationByEmail) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_policies").Add(1)
-		ms.latency.With("method", "create_policies").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_group_members").Add(1)
+		ms.latency.With("method", "create_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.CreateGroupMembers(ctx, token, groupID, gis...)

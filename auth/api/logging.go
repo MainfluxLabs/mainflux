@@ -329,7 +329,7 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 
 func (lm *loggingMiddleware) CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...auth.GroupInvitationByEmail) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_group_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
