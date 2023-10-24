@@ -143,7 +143,7 @@ func (req memberReq) validate() error {
 type membersReq struct {
 	token   string
 	orgID   string
-	Members []auth.Member `json:"members"`
+	Members []auth.OrgMember `json:"members"`
 }
 
 func (req membersReq) validate() error {
@@ -229,14 +229,14 @@ func (req orgReq) validate() error {
 	return nil
 }
 
-type listMembersPoliciesReq struct {
+type listGroupMembersReq struct {
 	token   string
 	groupID string
 	offset  uint64
 	limit   uint64
 }
 
-func (req listMembersPoliciesReq) validate() error {
+func (req listGroupMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -297,13 +297,13 @@ func (req membersPoliciesReq) validate() error {
 	return nil
 }
 
-type removePoliciesReq struct {
+type removeGroupMembersReq struct {
 	token     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req removePoliciesReq) validate() error {
+func (req removeGroupMembersReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -327,9 +327,9 @@ func (req removePoliciesReq) validate() error {
 
 type restoreReq struct {
 	token           string
-	Orgs            []auth.Org            `json:"orgs"`
-	MemberRelations []auth.MemberRelation `json:"member_relations"`
-	GroupRelations  []auth.GroupRelation  `json:"group_relations"`
+	Orgs            []auth.Org           `json:"orgs"`
+	MemberRelations []auth.OrgMember     `json:"member_relations"`
+	GroupRelations  []auth.GroupRelation `json:"group_relations"`
 }
 
 func (req restoreReq) validate() error {

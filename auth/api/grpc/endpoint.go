@@ -122,7 +122,7 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		if err := svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID); err != nil {
+		if err := svc.AssignGroups(ctx, req.token, req.groupID, req.memberID); err != nil {
 			return emptyRes{}, err
 		}
 
@@ -147,7 +147,7 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 		var members []string
 		for _, id := range mp.Members {
-			members = append(members, id.ID)
+			members = append(members, id.MemberID)
 		}
 		return membersRes{
 			offset:  req.offset,

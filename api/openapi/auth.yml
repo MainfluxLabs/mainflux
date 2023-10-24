@@ -337,7 +337,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/RemovePoliciesReq"
+        $ref: "#/components/requestBodies/RemoveGroupMembersReq"
       responses:
         '204':
           description: Policies removed.
@@ -730,7 +730,7 @@ components:
         - org_id
         - created_at
         - updated_at
-    RemovePoliciesSchema:
+    RemoveGroupMembersSchema:
       type: object
       properties:
         member_ids:
@@ -761,7 +761,7 @@ components:
             required:
               - member_id
               - policy
-    GroupMembersPoliciesPageSchema:
+    GroupMembersPageSchema:
       type: object
       properties:
         total:
@@ -933,13 +933,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/MembersPoliciesSchema"
-    RemovePoliciesReq:
-      description: JSON-formatted document describing remove policies request.
+    RemoveGroupMembersReq:
+      description: JSON-formatted document describing remove group member request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/RemovePoliciesSchema"
+            $ref: "#/components/schemas/RemoveGroupMembersSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
@@ -981,11 +981,11 @@ components:
           schema:
             $ref: "#/components/schemas/OrgGroupsPageSchema"
     GroupMembersPoliciesRes:
-      description: JSON-formatted document describing group members policies page response.
+      description: JSON-formatted document describing group members page response.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupMembersPoliciesPageSchema"
+            $ref: "#/components/schemas/GroupMembersPageSchema"
     HealthRes:
       description: Service Health Check.
       content:

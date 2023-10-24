@@ -45,7 +45,7 @@ const (
 
 var (
 	org           = auth.Org{Name: name, Description: description}
-	members       = []auth.Member{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
+	members       = []auth.OrgMember{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
 	idProvider    = uuid.New()
@@ -783,21 +783,21 @@ func TestAssignMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	mb := []auth.Member{
+	mb := []auth.OrgMember{
 		{
-			ID:   "member1",
-			Role: auth.ViewerRole,
+			MemberID: "member1",
+			Role:     auth.ViewerRole,
 		},
 		{
-			ID:   "member2",
-			Role: auth.ViewerRole,
+			MemberID: "member2",
+			Role:     auth.ViewerRole,
 		},
 	}
 	cases := []struct {
 		desc   string
 		token  string
 		orgID  string
-		member []auth.Member
+		member []auth.OrgMember
 		err    error
 	}{
 		{
@@ -975,7 +975,7 @@ func TestUpdateMembers(t *testing.T) {
 		desc   string
 		token  string
 		orgID  string
-		member auth.Member
+		member auth.OrgMember
 		err    error
 	}{
 		{
@@ -1802,9 +1802,9 @@ func TestRestore(t *testing.T) {
 	}
 
 	orgs := []auth.Org{{ID: id, OwnerID: ownerID, Name: name}}
-	var memberRelations []auth.MemberRelation
+	var memberRelations []auth.OrgMember
 	for _, memberID := range memberIDs {
-		memberRelations = append(memberRelations, auth.MemberRelation{MemberID: memberID, OrgID: id})
+		memberRelations = append(memberRelations, auth.OrgMember{MemberID: memberID, OrgID: id})
 	}
 
 	var groupRelations []auth.GroupRelation

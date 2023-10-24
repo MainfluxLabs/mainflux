@@ -57,7 +57,7 @@ type OrgsPage struct {
 // belong to this page.
 type OrgMembersPage struct {
 	PageMetadata
-	Members []Member
+	Members []OrgMember
 }
 
 type User struct {
@@ -68,7 +68,7 @@ type User struct {
 
 type MembersPage struct {
 	PageMetadata
-	Members []Member
+	Members []OrgMember
 }
 
 // OrgGroupsPage contains page related metadata as well as list of groups that
@@ -111,41 +111,36 @@ type GroupInvitationByEmail struct {
 	Policy string
 }
 
-type GroupMemberPolicy struct {
+type GroupMember struct {
 	MemberID string
 	Email    string
 	Policy   string
 }
 
-type GroupMembersPoliciesPage struct {
+type GroupMembersPage struct {
 	PageMetadata
-	GroupMembersPolicies []GroupMemberPolicy
+	GroupMembersPolicies []GroupMember
 }
 
-type Member struct {
-	ID    string `json:"id"`
-	Role  string `json:"role"`
-	Email string `json:"email"`
-}
-
-type MemberRelation struct {
-	MemberID  string    `json:"member_id"`
-	OrgID     string    `json:"org_id"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type OrgMember struct {
+	MemberID  string
+	OrgID     string
+	Role      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Email     string
 }
 
 type GroupRelation struct {
-	GroupID   string    `json:"group_id"`
-	OrgID     string    `json:"org_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	GroupID   string
+	OrgID     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Backup struct {
 	Orgs            []Org
-	MemberRelations []MemberRelation
+	MemberRelations []OrgMember
 	GroupRelations  []GroupRelation
 }
 
@@ -171,25 +166,19 @@ type Orgs interface {
 	RemoveOrg(ctx context.Context, token, id string) error
 
 	// AssignMembers adds members with member emails into the org identified by orgID.
-	AssignMembers(ctx context.Context, token, orgID string, members ...Member) error
+	AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
 
 	// UnassignMembers removes members with member ids from org identified by orgID.
 	UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error
 
 	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error
-
-	// AssignMembersByIDs adds members with memberIDs into the org identified by orgID.
-	AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
-
-	// UnassignMembersByIDs removes members with memberIDs from org identified by orgID.
-	UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error
+	UpdateMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
 	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
-	ViewMember(ctx context.Context, token, orgID, memberID string) (Member, error)
+	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
 
 	// AssignGroups adds groups with groupIDs into the org identified by orgID.
 	AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
@@ -200,17 +189,17 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// CreatePolicies creates group members policies.
-	CreatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
+	// CreateGroupMembers creates group members policies.
+	CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
-	// ListMembersPolicies retrieves page of group members policies.
-	ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
+	// ListGroupMembers retrieves page of group members policies.
+	ListGroupMembers(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
+	// UpdateGroupMembers updates group members policies.
+	UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
-	// RemovePolicies removes group members policies.
-	RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
+	// RemoveGroupMembers removes group members policies.
+	RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org relations and group relations. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -246,13 +235,13 @@ type OrgRepository interface {
 	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, mrs ...MemberRelation) error
+	AssignMembers(ctx context.Context, oms ...OrgMember) error
 
 	// UnassignMembers removes members from an org
 	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
 
 	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, mrs ...MemberRelation) error
+	UpdateMembers(ctx context.Context, oms ...OrgMember) error
 
 	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
@@ -261,7 +250,7 @@ type OrgRepository interface {
 	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
 	// RetrieveAllMemberRelations retrieves all member relations.
-	RetrieveAllMemberRelations(ctx context.Context) ([]MemberRelation, error)
+	RetrieveAllMemberRelations(ctx context.Context) ([]OrgMember, error)
 
 	// AssignGroups adds groups to an org.
 	AssignGroups(ctx context.Context, grs ...GroupRelation) error
@@ -285,11 +274,11 @@ type OrgRepository interface {
 	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
 
 	// RetrievePolicies retrieves page of group members policies.
-	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error)
+	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// RemovePolicies removes group members policies.
-	RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error
+	// RemoveGroupMembers removes group members policies.
+	RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdatePolicies updates group members policies.
-	UpdatePolicies(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
+	// UpdateGroupMembers updates group members policies.
+	UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 }

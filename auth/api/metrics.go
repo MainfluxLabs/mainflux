@@ -125,31 +125,13 @@ func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memb
 	return ms.svc.ListOrgMemberships(ctx, token, memberID, pm)
 }
 
-func (ms *metricsMiddleware) AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "assign_members_by_ids").Add(1)
-		ms.latency.With("method", "assign_members_by_ids").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.AssignMembersByIDs(ctx, token, orgID, memberIDs...)
-}
-
-func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, members ...auth.Member) error {
+func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign_members").Add(1)
 		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignMembers(ctx, token, orgID, members...)
-}
-
-func (ms *metricsMiddleware) UnassignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "unassign_members_by_ids").Add(1)
-		ms.latency.With("method", "unassign_members_by_ids").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.UnassignMembersByIDs(ctx, token, orgID, memberIDs...)
+	return ms.svc.AssignMembers(ctx, token, orgID, oms...)
 }
 
 func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
@@ -161,16 +143,16 @@ func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID s
 	return ms.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
 }
 
-func (ms *metricsMiddleware) UpdateMembers(ctx context.Context, token, orgID string, members ...auth.Member) error {
+func (ms *metricsMiddleware) UpdateMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_members").Add(1)
 		ms.latency.With("method", "update_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateMembers(ctx, token, orgID, members...)
+	return ms.svc.UpdateMembers(ctx, token, orgID, oms...)
 }
 
-func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (auth.Member, error) {
+func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (auth.OrgMember, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_member").Add(1)
 		ms.latency.With("method", "view_member").Observe(time.Since(begin).Seconds())
@@ -251,38 +233,38 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	return ms.svc.AssignRole(ctx, id, role)
 }
 
-func (ms *metricsMiddleware) CreatePolicies(ctx context.Context, token, groupID string, gis ...auth.GroupInvitationByEmail) error {
+func (ms *metricsMiddleware) CreateGroupMembers(ctx context.Context, token, groupID string, gis ...auth.GroupInvitationByEmail) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_policies").Add(1)
 		ms.latency.With("method", "create_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreatePolicies(ctx, token, groupID, gis...)
+	return ms.svc.CreateGroupMembers(ctx, token, groupID, gis...)
 }
 
-func (ms *metricsMiddleware) ListMembersPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
+func (ms *metricsMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members_policies").Add(1)
-		ms.latency.With("method", "list_members_policies").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_group_members").Add(1)
+		ms.latency.With("method", "list_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListMembersPolicies(ctx, token, groupID, pm)
+	return ms.svc.ListGroupMembers(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdatePolicies(ctx context.Context, token, groupID string, gise ...auth.GroupInvitationByEmail) error {
+func (ms *metricsMiddleware) UpdateGroupMembers(ctx context.Context, token, groupID string, gise ...auth.GroupInvitationByEmail) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_policies").Add(1)
-		ms.latency.With("method", "update_policies").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_group_members").Add(1)
+		ms.latency.With("method", "update_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdatePolicies(ctx, token, groupID, gise...)
+	return ms.svc.UpdateGroupMembers(ctx, token, groupID, gise...)
 }
 
-func (ms *metricsMiddleware) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ms *metricsMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_policies").Add(1)
 		ms.latency.With("method", "remove_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemovePolicies(ctx, token, groupID, memberIDs...)
+	return ms.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
 }

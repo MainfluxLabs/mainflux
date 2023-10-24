@@ -15,7 +15,7 @@ var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 type orgRepositoryMock struct {
 	mu              sync.Mutex
 	orgs            map[string]auth.Org
-	members         map[string]auth.Member
+	members         map[string]auth.OrgMember
 	groups          map[string]auth.Group
 	membersPolicies map[string]auth.GroupInvitationByID
 }
@@ -24,7 +24,7 @@ type orgRepositoryMock struct {
 func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
 		orgs:            make(map[string]auth.Org),
-		members:         make(map[string]auth.Member),
+		members:         make(map[string]auth.OrgMember),
 		groups:          make(map[string]auth.Group),
 		membersPolicies: make(map[string]auth.GroupInvitationByID),
 	}
@@ -135,17 +135,17 @@ func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID 
 	}, nil
 }
 
-func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, mr := range mrs {
-		if _, ok := orm.orgs[mr.OrgID]; !ok {
+	for _, om := range oms {
+		if _, ok := orm.orgs[om.OrgID]; !ok {
 			return errors.ErrNotFound
 		}
-		orm.members[mr.MemberID] = auth.Member{
-			ID:   mr.MemberID,
-			Role: mr.Role,
+		orm.members[om.MemberID] = auth.OrgMember{
+			MemberID: om.MemberID,
+			Role:     om.Role,
 		}
 	}
 
@@ -166,17 +166,17 @@ func (orm *orgRepositoryMock) UnassignMembers(ctx context.Context, orgID string,
 	return nil
 }
 
-func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
+func (orm *orgRepositoryMock) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	for _, mr := range mrs {
-		if _, ok := orm.members[mr.MemberID]; !ok || orm.orgs[mr.OrgID].ID != mr.OrgID {
+	for _, om := range oms {
+		if _, ok := orm.members[om.MemberID]; !ok || orm.orgs[om.OrgID].ID != om.OrgID {
 			return errors.ErrNotFound
 		}
-		orm.members[mr.MemberID] = auth.Member{
-			ID:   mr.MemberID,
-			Role: mr.Role,
+		orm.members[om.MemberID] = auth.OrgMember{
+			MemberID: om.MemberID,
+			Role:     om.Role,
 		}
 	}
 
@@ -199,7 +199,7 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	defer orm.mu.Unlock()
 
 	i := uint64(0)
-	members := []auth.Member{}
+	members := []auth.OrgMember{}
 	for _, member := range orm.members {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			if _, ok := orm.orgs[orgID]; ok {
@@ -219,7 +219,7 @@ func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string,
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveMember(ctx context.Context, orgID, memberID string) (auth.Member, error) {
+func (orm *orgRepositoryMock) RetrieveMember(ctx context.Context, orgID, memberID string) (auth.OrgMember, error) {
 	panic("not implemented")
 }
 
@@ -333,16 +333,16 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+func (orm *orgRepositoryMock) RetrieveAllMemberRelations(ctx context.Context) ([]auth.OrgMember, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	var mrs []auth.MemberRelation
+	var mrs []auth.OrgMember
 	for _, org := range orm.orgs {
 		for _, member := range orm.members {
-			mrs = append(mrs, auth.MemberRelation{
+			mrs = append(mrs, auth.OrgMember{
 				OrgID:    org.ID,
-				MemberID: member.ID,
+				MemberID: member.MemberID,
 			})
 		}
 	}
@@ -389,15 +389,15 @@ func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.Groups
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
+func (orm *orgRepositoryMock) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) UpdatePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+func (orm *orgRepositoryMock) UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
+func (orm *orgRepositoryMock) RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }
 

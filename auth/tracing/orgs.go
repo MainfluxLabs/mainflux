@@ -30,10 +30,10 @@ const (
 	retrieveAllMemberRelations = "retrieve_all_member_elations"
 	retrieveAllGroupRelations  = "retrieve_all_group_relations"
 	savePolicies               = "save_policies"
-	removePolicies             = "remove_policies"
+	removeGroupMembers             = "remove_policies"
 	retrievePolicy             = "retrieve_policy"
 	retrievePolicies           = "retrieve_policies"
-	updatePolicies             = "update_policies"
+	updateGroupMembers             = "update_group_members"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -115,12 +115,12 @@ func (orm orgRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memb
 	return orm.repo.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
+func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	span := createSpan(ctx, orm.tracer, assignOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignMembers(ctx, mrs...)
+	return orm.repo.AssignMembers(ctx, oms...)
 }
 
 func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error {
@@ -131,12 +131,12 @@ func (orm orgRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID st
 	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
 }
 
-func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, mrs ...auth.MemberRelation) error {
+func (orm orgRepositoryMiddleware) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	span := createSpan(ctx, orm.tracer, updateOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdateMembers(ctx, mrs...)
+	return orm.repo.UpdateMembers(ctx, oms...)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
@@ -155,7 +155,7 @@ func (orm orgRepositoryMiddleware) RetrieveMembers(ctx context.Context, orgID st
 	return orm.repo.RetrieveMembers(ctx, orgID, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Context) ([]auth.MemberRelation, error) {
+func (orm orgRepositoryMiddleware) RetrieveAllMemberRelations(ctx context.Context) ([]auth.OrgMember, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAllMemberRelations)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -219,7 +219,7 @@ func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.G
 	return orm.repo.RetrievePolicy(ctx, gp)
 }
 
-func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPoliciesPage, error) {
+func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
 	span := createSpan(ctx, orm.tracer, retrievePolicies)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -227,18 +227,18 @@ func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID
 	return orm.repo.RetrievePolicies(ctx, groupID, pm)
 }
 
-func (orm orgRepositoryMiddleware) UpdatePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
-	span := createSpan(ctx, orm.tracer, updatePolicies)
+func (orm orgRepositoryMiddleware) UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+	span := createSpan(ctx, orm.tracer, updateGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdatePolicies(ctx, groupID, giByIDs...)
+	return orm.repo.UpdateGroupMembers(ctx, groupID, giByIDs...)
 }
 
-func (orm orgRepositoryMiddleware) RemovePolicies(ctx context.Context, groupID string, memberIDs ...string) error {
-	span := createSpan(ctx, orm.tracer, removePolicies)
+func (orm orgRepositoryMiddleware) RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error {
+	span := createSpan(ctx, orm.tracer, removeGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RemovePolicies(ctx, groupID, memberIDs...)
+	return orm.repo.RemoveGroupMembers(ctx, groupID, memberIDs...)
 }

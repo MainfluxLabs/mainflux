@@ -54,9 +54,9 @@ var (
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
 	idProvider    = uuid.New()
-	viewerMember  = auth.Member{ID: viewerID, Email: viewerEmail, Role: auth.ViewerRole}
-	editorMember  = auth.Member{ID: editorID, Email: editorEmail, Role: auth.EditorRole}
-	adminMember   = auth.Member{ID: adminID, Email: adminEmail, Role: auth.AdminRole}
+	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.ViewerRole}
+	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.EditorRole}
+	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.AdminRole}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 	groups        = map[string]things.Group{groupID: {ID: groupID, OwnerID: id, Name: name, Description: description}, groupID2: {ID: groupID2, OwnerID: id, Name: name, Description: description}}
@@ -772,8 +772,8 @@ func TestAssignMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(membersReq{Members: []auth.Member{editorMember}})
-	invalidData := toJSON(membersReq{Members: []auth.Member{invalidMember}})
+	data := toJSON(membersReq{Members: []auth.OrgMember{editorMember}})
+	invalidData := toJSON(membersReq{Members: []auth.OrgMember{invalidMember}})
 
 	cases := []struct {
 		desc   string
@@ -867,12 +867,12 @@ func TestUnassignMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	members := []auth.Member{editorMember, viewerMember}
+	members := []auth.OrgMember{editorMember, viewerMember}
 
 	err = svc.AssignMembers(context.Background(), token, or.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(unassignMembersReq{MemberIDs: []string{viewerMember.ID, editorMember.ID}})
+	data := toJSON(unassignMembersReq{MemberIDs: []string{viewerMember.MemberID, editorMember.MemberID}})
 
 	cases := []struct {
 		desc   string
@@ -968,8 +968,8 @@ func TestUpdateMembers(t *testing.T) {
 	err = svc.AssignMembers(context.Background(), token, or.ID, viewerMember)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	ViewerRoleData := toJSON(membersReq{Members: []auth.Member{updtToEditor}})
-	ownerRoleData := toJSON(membersReq{Members: []auth.Member{updtToOwner}})
+	ViewerRoleData := toJSON(membersReq{Members: []auth.OrgMember{updtToEditor}})
+	ownerRoleData := toJSON(membersReq{Members: []auth.OrgMember{updtToOwner}})
 
 	cases := []struct {
 		desc   string
@@ -1060,7 +1060,7 @@ func TestListMembers(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	members := []auth.Member{viewerMember, editorMember, adminMember}
+	members := []auth.OrgMember{viewerMember, editorMember, adminMember}
 
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1071,7 +1071,7 @@ func TestListMembers(t *testing.T) {
 	var data []viewMemberRes
 	for _, m := range members {
 		data = append(data, viewMemberRes{
-			ID:    m.ID,
+			ID:    m.MemberID,
 			Email: m.Email,
 			Role:  m.Role,
 		})
@@ -1562,7 +1562,7 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignGroups(context.Background(), adminToken, o.ID, grIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	members := []auth.Member{viewerMember, editorMember, adminMember}
+	members := []auth.OrgMember{viewerMember, editorMember, adminMember}
 	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -1707,7 +1707,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	m := []auth.MemberRelation{
+	m := []auth.OrgMember{
 		{
 			MemberID: viewerID,
 			OrgID:    orgID,
@@ -1822,7 +1822,7 @@ type pageRes struct {
 }
 
 type membersReq struct {
-	Members []auth.Member `json:"members"`
+	Members []auth.OrgMember `json:"members"`
 }
 
 type unassignMembersReq struct {
@@ -1874,7 +1874,7 @@ type backupRes struct {
 }
 
 type restoreReq struct {
-	Orgs            []auth.Org            `json:"orgs"`
-	MemberRelations []auth.MemberRelation `json:"member_relations"`
-	GroupRelations  []auth.GroupRelation  `json:"group_relations"`
+	Orgs            []auth.Org           `json:"orgs"`
+	MemberRelations []auth.OrgMember     `json:"member_relations"`
+	GroupRelations  []auth.GroupRelation `json:"group_relations"`
 }

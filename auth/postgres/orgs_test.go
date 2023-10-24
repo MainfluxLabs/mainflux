@@ -505,7 +505,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		err = repo.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.MemberRelation{
+		memberRelation := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -635,12 +635,12 @@ func TestAssignMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var memberRelations []auth.MemberRelation
+	var memberRelations []auth.OrgMember
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.MemberRelation{
+		memberRelation := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -651,25 +651,25 @@ func TestAssignMembers(t *testing.T) {
 		memberRelations = append(memberRelations, memberRelation)
 	}
 
-	var invalidOrgIDmRel []auth.MemberRelation
+	var invalidOrgIDmRel []auth.OrgMember
 	for _, m := range memberRelations {
 		m.OrgID = invalidID
 		invalidOrgIDmRel = append(invalidOrgIDmRel, m)
 	}
 
-	var emptyOrgIDmRel []auth.MemberRelation
+	var emptyOrgIDmRel []auth.OrgMember
 	for _, m := range memberRelations {
 		m.OrgID = ""
 		emptyOrgIDmRel = append(emptyOrgIDmRel, m)
 	}
 
-	var noMemberIDmRel []auth.MemberRelation
+	var noMemberIDmRel []auth.OrgMember
 	for _, m := range memberRelations {
 		m.MemberID = ""
 		noMemberIDmRel = append(noMemberIDmRel, m)
 	}
 
-	var invalidMemberIDmRel []auth.MemberRelation
+	var invalidMemberIDmRel []auth.OrgMember
 	for _, m := range memberRelations {
 		m.MemberID = invalidID
 		invalidMemberIDmRel = append(invalidMemberIDmRel, m)
@@ -677,7 +677,7 @@ func TestAssignMembers(t *testing.T) {
 
 	cases := []struct {
 		desc            string
-		memberRelations []auth.MemberRelation
+		memberRelations []auth.OrgMember
 		err             error
 	}{
 		{
@@ -738,13 +738,13 @@ func TestUnassignMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var memberRelations []auth.MemberRelation
+	var memberRelations []auth.OrgMember
 	var memberIDs []string
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.MemberRelation{
+		memberRelation := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.EditorRole,
@@ -830,7 +830,7 @@ func TestRetrieveRole(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	memberRelation := auth.MemberRelation{
+	memberRelation := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
 		Role:      auth.AdminRole,
@@ -914,7 +914,7 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	memberRelation := auth.MemberRelation{
+	memberRelation := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
 		Role:      auth.EditorRole,
@@ -925,43 +925,43 @@ func TestUpdateMembers(t *testing.T) {
 	err = repo.AssignMembers(context.Background(), memberRelation)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	updateMrel := auth.MemberRelation{
+	updateMrel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: memberID,
 		Role:     auth.ViewerRole,
 	}
 
-	invalidOrgIDmRel := auth.MemberRelation{
+	invalidOrgIDmRel := auth.OrgMember{
 		OrgID:    invalidID,
 		MemberID: memberID,
 		Role:     auth.ViewerRole,
 	}
 
-	unknownOrgIDmRel := auth.MemberRelation{
+	unknownOrgIDmRel := auth.OrgMember{
 		OrgID:    unknownID,
 		MemberID: memberID,
 		Role:     auth.ViewerRole,
 	}
 
-	emptyOrgIDmRel := auth.MemberRelation{
+	emptyOrgIDmRel := auth.OrgMember{
 		OrgID:    "",
 		MemberID: memberID,
 		Role:     auth.ViewerRole,
 	}
 
-	invalidMemberIDmRel := auth.MemberRelation{
+	invalidMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: invalidID,
 		Role:     auth.ViewerRole,
 	}
 
-	unknownMemberIDmRel := auth.MemberRelation{
+	unknownMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: unknownID,
 		Role:     auth.ViewerRole,
 	}
 
-	emptyMemberIDmRel := auth.MemberRelation{
+	emptyMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: "",
 		Role:     auth.ViewerRole,
@@ -969,7 +969,7 @@ func TestUpdateMembers(t *testing.T) {
 
 	cases := []struct {
 		desc           string
-		memberRelation auth.MemberRelation
+		memberRelation auth.OrgMember
 		err            error
 	}{
 		{
@@ -1031,12 +1031,12 @@ func TestRetrieveMembers(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var memberRelations []auth.MemberRelation
+	var memberRelations []auth.OrgMember
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.MemberRelation{
+		memberRelation := auth.OrgMember{
 			OrgID:    orgID,
 			MemberID: memberID,
 			Role:     auth.EditorRole,
@@ -1526,12 +1526,12 @@ func TestRetrieveAllMemberRelations(t *testing.T) {
 	err = repo.Save(context.Background(), org)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	var memberRelations []auth.MemberRelation
+	var memberRelations []auth.OrgMember
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		memberRelation := auth.MemberRelation{
+		memberRelation := auth.OrgMember{
 			OrgID:    org.ID,
 			MemberID: memberID,
 			Role:     auth.EditorRole,
@@ -1909,7 +1909,7 @@ func TestRetrievePolicies(t *testing.T) {
 	}
 }
 
-func TestRemovePolicies(t *testing.T) {
+func TestRemoveGroupMembers(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -1984,12 +1984,12 @@ func TestRemovePolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repo.RemovePolicies(context.Background(), tc.groupID, tc.memberIDs...)
+		err := repo.RemoveGroupMembers(context.Background(), tc.groupID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdatePolicies(t *testing.T) {
+func TestUpdateGroupMembers(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -2073,7 +2073,7 @@ func TestUpdatePolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repo.UpdatePolicies(context.Background(), tc.groupID, tc.giByID)
+		err := repo.UpdateGroupMembers(context.Background(), tc.groupID, tc.giByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

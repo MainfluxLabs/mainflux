@@ -16,8 +16,8 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
-	_ mainflux.Response = (*listMembersPoliciesRes)(nil)
-	_ mainflux.Response = (*updatePoliciesRes)(nil)
+	_ mainflux.Response = (*listGroupMembersRes)(nil)
+	_ mainflux.Response = (*updateGroupMembersRes)(nil)
 	_ mainflux.Response = (*createPoliciesRes)(nil)
 )
 
@@ -234,20 +234,20 @@ type groupMemberPolicy struct {
 	Policy string `json:"policy"`
 }
 
-type listMembersPoliciesRes struct {
+type listGroupMembersRes struct {
 	pageRes
 	GroupMembersPolicies []groupMemberPolicy `json:"group_members_policies"`
 }
 
-func (res listMembersPoliciesRes) Code() int {
+func (res listGroupMembersRes) Code() int {
 	return http.StatusOK
 }
 
-func (res listMembersPoliciesRes) Headers() map[string]string {
+func (res listGroupMembersRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listMembersPoliciesRes) Empty() bool {
+func (res listGroupMembersRes) Empty() bool {
 	return false
 }
 
@@ -279,16 +279,16 @@ func (res createPoliciesRes) Empty() bool {
 	return true
 }
 
-type updatePoliciesRes struct{}
+type updateGroupMembersRes struct{}
 
-func (res updatePoliciesRes) Code() int {
+func (res updateGroupMembersRes) Code() int {
 	return http.StatusOK
 }
 
-func (res updatePoliciesRes) Headers() map[string]string {
+func (res updateGroupMembersRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res updatePoliciesRes) Empty() bool {
+func (res updateGroupMembersRes) Empty() bool {
 	return true
 }
