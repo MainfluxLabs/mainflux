@@ -122,7 +122,7 @@ func assignEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		if err := svc.AssignMembersByIDs(ctx, req.token, req.memberID, req.groupID); err != nil {
+		if err := svc.AssignGroups(ctx, req.token, req.groupID, req.memberID); err != nil {
 			return emptyRes{}, err
 		}
 
@@ -134,26 +134,26 @@ func membersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(membersReq)
 		if err := req.validate(); err != nil {
-			return membersRes{}, err
+			return orgMembersRes{}, err
 		}
 
 		pm := auth.PageMetadata{
 			Offset: req.offset,
 			Limit:  req.limit,
 		}
-		mp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
+		omp, err := svc.ListOrgMembers(ctx, req.token, req.groupID, pm)
 		if err != nil {
-			return membersRes{}, err
+			return orgMembersRes{}, err
 		}
-		var members []string
-		for _, id := range mp.Members {
-			members = append(members, id.ID)
+		var omIDs []string
+		for _, id := range omp.OrgMembers {
+			omIDs = append(omIDs, id.MemberID)
 		}
-		return membersRes{
-			offset:  req.offset,
-			limit:   req.limit,
-			total:   mp.PageMetadata.Total,
-			members: members,
+		return orgMembersRes{
+			orgMemberIDs: omIDs,
+			offset:       req.offset,
+			limit:        req.limit,
+			total:        omp.PageMetadata.Total,
 		}, nil
 	}
 }

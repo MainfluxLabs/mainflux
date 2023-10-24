@@ -45,7 +45,7 @@ const (
 
 var (
 	org           = auth.Org{Name: name, Description: description}
-	members       = []auth.Member{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
+	members       = []auth.OrgMember{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
 	idProvider    = uuid.New()
@@ -783,21 +783,21 @@ func TestAssignMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	mb := []auth.Member{
+	mb := []auth.OrgMember{
 		{
-			ID:   "member1",
-			Role: auth.ViewerRole,
+			MemberID: "member1",
+			Role:     auth.ViewerRole,
 		},
 		{
-			ID:   "member2",
-			Role: auth.ViewerRole,
+			MemberID: "member2",
+			Role:     auth.ViewerRole,
 		},
 	}
 	cases := []struct {
 		desc   string
 		token  string
 		orgID  string
-		member []auth.Member
+		member []auth.OrgMember
 		err    error
 	}{
 		{
@@ -975,7 +975,7 @@ func TestUpdateMembers(t *testing.T) {
 		desc   string
 		token  string
 		orgID  string
-		member auth.Member
+		member auth.OrgMember
 		err    error
 	}{
 		{
@@ -1172,7 +1172,7 @@ func TestListOrgMembers(t *testing.T) {
 
 	for _, tc := range cases {
 		page, err := svc.ListOrgMembers(context.Background(), tc.token, tc.orgID, tc.meta)
-		size := uint64(len(page.Members))
+		size := uint64(len(page.OrgMembers))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
@@ -1725,55 +1725,55 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
-		desc                string
-		token               string
-		orgSize             int
-		memberRelationsSize int
-		groupRelationsSize  int
-		err                 error
+		desc          string
+		token         string
+		orgSize       int
+		orgMemberSize int
+		orgGroupSize  int
+		err           error
 	}{
 		{
-			desc:                "backup all orgs, member relations and group relations",
-			token:               superAdminToken,
-			orgSize:             1,
-			memberRelationsSize: len(members) + 1,
-			groupRelationsSize:  len(grIDs),
-			err:                 nil,
+			desc:          "backup all orgs, org members and org groups",
+			token:         superAdminToken,
+			orgSize:       1,
+			orgMemberSize: len(members) + 1,
+			orgGroupSize:  len(grIDs),
+			err:           nil,
 		},
 		{
-			desc:                "backup with invalid credentials",
-			token:               invalid,
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthentication,
+			desc:          "backup with invalid credentials",
+			token:         invalid,
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthentication,
 		},
 		{
-			desc:                "backup without credentials",
-			token:               "",
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthentication,
+			desc:          "backup without credentials",
+			token:         "",
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthentication,
 		},
 		{
-			desc:                "backup with unauthorised credentials",
-			token:               viewerToken,
-			orgSize:             0,
-			memberRelationsSize: 0,
-			groupRelationsSize:  0,
-			err:                 errors.ErrAuthorization,
+			desc:          "backup with unauthorised credentials",
+			token:         viewerToken,
+			orgSize:       0,
+			orgMemberSize: 0,
+			orgGroupSize:  0,
+			err:           errors.ErrAuthorization,
 		},
 	}
 
 	for _, tc := range cases {
 		page, err := svc.Backup(context.Background(), tc.token)
 		orgSize := len(page.Orgs)
-		memberRelationsSize := len(page.MemberRelations)
-		groupRelationsSize := len(page.GroupRelations)
+		orgMemberSize := len(page.OrgMembers)
+		orgGroupSize := len(page.OrgGroups)
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
-		assert.Equal(t, tc.memberRelationsSize, memberRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.memberRelationsSize, memberRelationsSize))
-		assert.Equal(t, tc.groupRelationsSize, groupRelationsSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.groupRelationsSize, groupRelationsSize))
+		assert.Equal(t, tc.orgMemberSize, orgMemberSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgMemberSize, orgMemberSize))
+		assert.Equal(t, tc.orgGroupSize, orgGroupSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgGroupSize, orgGroupSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1802,20 +1802,20 @@ func TestRestore(t *testing.T) {
 	}
 
 	orgs := []auth.Org{{ID: id, OwnerID: ownerID, Name: name}}
-	var memberRelations []auth.MemberRelation
+	var orgMembers []auth.OrgMember
 	for _, memberID := range memberIDs {
-		memberRelations = append(memberRelations, auth.MemberRelation{MemberID: memberID, OrgID: id})
+		orgMembers = append(orgMembers, auth.OrgMember{MemberID: memberID, OrgID: id})
 	}
 
-	var groupRelations []auth.GroupRelation
+	var orgGroups []auth.OrgGroup
 	for _, groupID := range groupIDs {
-		groupRelations = append(groupRelations, auth.GroupRelation{GroupID: groupID, OrgID: id})
+		orgGroups = append(orgGroups, auth.OrgGroup{GroupID: groupID, OrgID: id})
 	}
 
 	backup := auth.Backup{
-		Orgs:            orgs,
-		MemberRelations: memberRelations,
-		GroupRelations:  groupRelations,
+		Orgs:       orgs,
+		OrgMembers: orgMembers,
+		OrgGroups:  orgGroups,
 	}
 
 	cases := []struct {
@@ -1825,7 +1825,7 @@ func TestRestore(t *testing.T) {
 		err    error
 	}{
 		{
-			desc:   "restore all orgs, member relations and group relations",
+			desc:   "restore all orgs, org members and org groups",
 			token:  superAdminToken,
 			backup: backup,
 			err:    nil,

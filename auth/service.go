@@ -159,16 +159,11 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 }
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
-	user, err := svc.identify(ctx, ar.Token)
-	if err != nil {
-		return err
-	}
-
 	switch ar.Subject {
 	case RootSubject:
-		return svc.isAdmin(ctx, user.ID)
+		return svc.isAdmin(ctx, ar.Token)
 	case GroupSubject:
-		return svc.canAccessGroup(ctx, user.ID, ar.Object, ar.Action)
+		return svc.canAccessGroup(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
 	}
@@ -257,7 +252,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	mr := MemberRelation{
+	om := OrgMember{
 		OrgID:     id,
 		MemberID:  user.ID,
 		Role:      OwnerRole,
@@ -265,7 +260,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, mr); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -279,7 +274,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm Pa
 	}
 
 	if admin {
-		if err := svc.isAdmin(ctx, user.ID); err == nil {
+		if err := svc.isAdmin(ctx, token); err == nil {
 			return svc.orgs.RetrieveByAdmin(ctx, pm)
 		}
 	}
@@ -293,7 +288,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	if err := svc.isOwner(ctx, id, user.ID); err != nil {
+	if err := svc.orgRolesAuth(ctx, token, id, OwnerRole); err != nil {
 		return err
 	}
 
@@ -303,8 +298,8 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 	}
 
 	var memberIDs []string
-	for _, m := range mPage.Members {
-		memberIDs = append(memberIDs, m.ID)
+	for _, m := range mPage.OrgMembers {
+		memberIDs = append(memberIDs, m.MemberID)
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, id, memberIDs...); err != nil {
@@ -317,7 +312,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 	}
 
 	var groupIDs []string
-	for _, g := range gPage.GroupRelations {
+	for _, g := range gPage.OrgGroups {
 		groupIDs = append(groupIDs, g.GroupID)
 	}
 
@@ -334,7 +329,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	if err := svc.canEditOrg(ctx, o.ID, user.ID); err != nil {
+	if err := svc.orgRolesAuth(ctx, token, o.ID, AdminRole); err != nil {
 		return Org{}, err
 	}
 
@@ -355,12 +350,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 }
 
 func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return Org{}, err
-	}
-
-	if err := svc.canAccessOrg(ctx, id, user); err != nil {
+	if err := svc.orgRolesAuth(ctx, token, id, ViewerRole); err != nil {
 		return Org{}, err
 	}
 
@@ -372,38 +362,16 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	return org, nil
 }
 
-func (svc service) AssignMembersByIDs(ctx context.Context, token, orgID string, memberIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.AssignMembers(ctx, MemberRelation{}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) AssignMembers(ctx context.Context, token, orgID string, members ...Member) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
+func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error {
+	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
 		return err
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
-	for _, m := range members {
-		member[m.Email] = m.Role
-		memberEmails = append(memberEmails, m.Email)
+	var roleByEmail = make(map[string]string)
+	for _, om := range oms {
+		roleByEmail[om.Email] = om.Role
+		memberEmails = append(memberEmails, om.Email)
 	}
 
 	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
@@ -412,47 +380,21 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	mbs := []Member{}
-	for _, user := range usr.Users {
-		mbs = append(mbs, Member{
-			Role: member[user.Email],
-			ID:   user.Id,
-		})
-
-	}
-
 	timestamp := getTimestmap()
-	var mrs []MemberRelation
-	for _, m := range mbs {
-		mr := MemberRelation{
+	var members []OrgMember
+	for _, user := range usr.Users {
+		member := OrgMember{
 			OrgID:     orgID,
-			MemberID:  m.ID,
-			Role:      m.Role,
+			MemberID:  user.Id,
+			Role:      roleByEmail[user.Email],
 			UpdatedAt: timestamp,
 			CreatedAt: timestamp,
 		}
 
-		mrs = append(mrs, mr)
+		members = append(members, member)
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, mrs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID string, memberIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, members...); err != nil {
 		return err
 	}
 
@@ -460,12 +402,7 @@ func (svc service) UnassignMembersByIDs(ctx context.Context, token string, orgID
 }
 
 func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditMembers(ctx, orgID, user.ID, memberIDs...); err != nil {
+	if err := svc.canAssignMembers(ctx, token, orgID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -476,50 +413,40 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 	return nil
 }
 
-func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string) (Member, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return Member{}, err
-	}
-
-	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
-		return Member{}, err
+func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error) {
+	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
+		return OrgMember{}, err
 	}
 
 	usrReq := mainflux.UsersByIDsReq{Ids: []string{memberID}}
 	page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 	if err != nil {
-		return Member{}, err
+		return OrgMember{}, err
 	}
 
 	role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
 	if err != nil {
-		return Member{}, err
+		return OrgMember{}, err
 	}
 
-	member := Member{
-		ID:    page.Users[0].Id,
-		Email: page.Users[0].Email,
-		Role:  role,
+	member := OrgMember{
+		MemberID: page.Users[0].Id,
+		Email:    page.Users[0].Email,
+		Role:     role,
 	}
 
 	return member, nil
 }
 
-func (svc service) UpdateMembers(ctx context.Context, token, orgID string, members ...Member) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditOrg(ctx, orgID, user.ID); err != nil {
+func (svc service) UpdateMembers(ctx context.Context, token, orgID string, members ...OrgMember) error {
+	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
 		return err
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, m := range members {
-		member[m.Email] = m.Role
+		roleByEmail[m.Email] = m.Role
 		memberEmails = append(memberEmails, m.Email)
 	}
 
@@ -529,87 +456,66 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
-	mbs := []Member{}
+	var oms []OrgMember
 	for _, user := range usr.Users {
-		mbs = append(mbs, Member{
-			Role: member[user.Email],
-			ID:   user.Id,
-		})
-
-	}
-
-	var mrs []MemberRelation
-	for _, m := range mbs {
-		mr := MemberRelation{
+		om := OrgMember{
 			OrgID:     orgID,
-			MemberID:  m.ID,
-			Role:      m.Role,
+			MemberID:  user.Id,
+			Role:      roleByEmail[user.Email],
 			UpdatedAt: getTimestmap(),
 		}
 
-		mrs = append(mrs, mr)
+		oms = append(oms, om)
 	}
 
-	if err := svc.orgs.UpdateMembers(ctx, mrs...); err != nil {
+	if err := svc.orgs.UpdateMembers(ctx, oms...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (MembersPage, error) {
-	user, err := svc.Identify(ctx, token)
+func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
+	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
+		return OrgMembersPage{}, err
+	}
+
+	omp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
 	if err != nil {
-		return MembersPage{}, err
+		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
-		return MembersPage{}, err
-	}
+	var oms []OrgMember
+	if len(omp.OrgMembers) > 0 {
+		var memberIDs []string
+		var roleByEmail = make(map[string]string)
+		for _, m := range omp.OrgMembers {
+			roleByEmail[m.MemberID] = m.Role
+			memberIDs = append(memberIDs, m.MemberID)
+		}
 
-	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
-	if err != nil {
-		return MembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
-	}
-
-	var memberIDs []string
-	for _, m := range mp.Members {
-		memberIDs = append(memberIDs, m.ID)
-	}
-	var members []Member
-	if len(mp.Members) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return MembersPage{}, err
+			return OrgMembersPage{}, err
 		}
 
-		emails := make(map[string]string)
 		for _, user := range page.Users {
-			emails[user.Id] = user.GetEmail()
-		}
-
-		for _, m := range mp.Members {
-			email, ok := emails[m.ID]
-			if !ok {
-				return MembersPage{}, err
+			mbr := OrgMember{
+				MemberID: user.Id,
+				Email:    user.Email,
+				Role:     roleByEmail[user.Id],
 			}
-
-			mbr := Member{
-				ID:    m.ID,
-				Email: email,
-				Role:  m.Role,
-			}
-			members = append(members, mbr)
+			oms = append(oms, mbr)
 		}
 	}
 
-	mpg := MembersPage{
-		Members: members,
+	mpg := OrgMembersPage{
+		OrgMembers: oms,
 		PageMetadata: PageMetadata{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  omp.Total,
+			Offset: omp.Offset,
+			Limit:  omp.Limit,
 		},
 	}
 
@@ -622,24 +528,24 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 		return err
 	}
 
-	if err := svc.canEditGroups(ctx, orgID, user.ID); err != nil {
+	if err := svc.orgRolesAuth(ctx, token, orgID, EditorRole); err != nil {
 		return err
 	}
 
 	timestamp := getTimestmap()
-	var grs []GroupRelation
+	var ogs []OrgGroup
 	for _, groupID := range groupIDs {
-		gr := GroupRelation{
+		og := OrgGroup{
 			OrgID:     orgID,
 			GroupID:   groupID,
 			CreatedAt: timestamp,
 			UpdatedAt: timestamp,
 		}
 
-		grs = append(grs, gr)
+		ogs = append(ogs, og)
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, grs...); err != nil {
+	if err := svc.orgs.AssignGroups(ctx, ogs...); err != nil {
 		return err
 	}
 
@@ -649,7 +555,7 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 			Policy:   RwPolicy,
 		}
 
-		if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
+		if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 			return err
 		}
 	}
@@ -658,12 +564,7 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 }
 
 func (svc service) UnassignGroups(ctx context.Context, token string, orgID string, groupIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canEditGroups(ctx, orgID, user.ID); err != nil {
+	if err := svc.orgRolesAuth(ctx, token, orgID, EditorRole); err != nil {
 		return err
 	}
 
@@ -675,22 +576,17 @@ func (svc service) UnassignGroups(ctx context.Context, token string, orgID strin
 }
 
 func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (GroupsPage, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
+	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
 		return GroupsPage{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, orgID, user); err != nil {
-		return GroupsPage{}, err
-	}
-
-	mp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
+	ogp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
 	if err != nil {
 		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
 	var groupIDs []string
-	for _, g := range mp.GroupRelations {
+	for _, g := range ogp.OrgGroups {
 		groupIDs = append(groupIDs, g.GroupID)
 	}
 
@@ -716,9 +612,9 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 	pg := GroupsPage{
 		Groups: groups,
 		PageMetadata: PageMetadata{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  ogp.Total,
+			Offset: ogp.Offset,
+			Limit:  ogp.Limit,
 		},
 	}
 
@@ -731,7 +627,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, err
 	}
 
-	if err := svc.isAdmin(ctx, user.ID); err == nil {
+	if err := svc.isAdmin(ctx, token); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
@@ -742,20 +638,15 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
+func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
+	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, g := range giByEmails {
-		member[g.Email] = g.Policy
+		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
 
@@ -768,44 +659,39 @@ func (svc service) CreatePolicies(ctx context.Context, token, groupID string, gi
 	giByIDs := []GroupInvitationByID{}
 	for _, user := range usr.Users {
 		giByIDs = append(giByIDs, GroupInvitationByID{
-			Policy:   member[user.Email],
+			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) ListMembersPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPoliciesPage, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return GroupMembersPoliciesPage{}, err
+func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error) {
+	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+		return GroupMembersPage{}, err
 	}
 
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, ReadAction); err != nil {
-		return GroupMembersPoliciesPage{}, err
-	}
-
-	gmpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
+	gmp, err := svc.orgs.RetrieveGroupMembers(ctx, groupID, pm)
 	if err != nil {
-		return GroupMembersPoliciesPage{}, err
+		return GroupMembersPage{}, err
 	}
 
 	var memberIDs []string
-	for _, mp := range gmpp.GroupMembersPolicies {
-		memberIDs = append(memberIDs, mp.MemberID)
+	for _, gm := range gmp.GroupMembers {
+		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
-	var groupMembersPolicies []GroupMemberPolicy
-	if len(gmpp.GroupMembersPolicies) > 0 {
+	var groupMembers []GroupMember
+	if len(gmp.GroupMembers) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return GroupMembersPoliciesPage{}, err
+			return GroupMembersPage{}, err
 		}
 
 		emails := make(map[string]string)
@@ -813,49 +699,44 @@ func (svc service) ListMembersPolicies(ctx context.Context, token, groupID strin
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gmp := range gmpp.GroupMembersPolicies {
-			email, ok := emails[gmp.MemberID]
+		for _, gm := range gmp.GroupMembers {
+			email, ok := emails[gm.MemberID]
 			if !ok {
-				return GroupMembersPoliciesPage{}, err
+				return GroupMembersPage{}, err
 			}
 
-			groupMemeberPolicy := GroupMemberPolicy{
-				MemberID: gmp.MemberID,
+			groupMember := GroupMember{
+				MemberID: gm.MemberID,
 				Email:    email,
-				Policy:   gmp.Policy,
+				Policy:   gm.Policy,
 			}
 
-			groupMembersPolicies = append(groupMembersPolicies, groupMemeberPolicy)
+			groupMembers = append(groupMembers, groupMember)
 		}
 
 	}
 
-	groupMembersPoliciesPage := GroupMembersPoliciesPage{
-		GroupMembersPolicies: groupMembersPolicies,
+	groupMembersPage := GroupMembersPage{
+		GroupMembers: groupMembers,
 		PageMetadata: PageMetadata{
-			Total:  gmpp.Total,
-			Offset: gmpp.Offset,
-			Limit:  gmpp.Limit,
+			Total:  gmp.Total,
+			Offset: gmp.Offset,
+			Limit:  gmp.Limit,
 		},
 	}
 
-	return groupMembersPoliciesPage, nil
+	return groupMembersPage, nil
 }
 
-func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
+func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
+	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
 	var memberEmails []string
-	var member = make(map[string]string)
+	var roleByEmail = make(map[string]string)
 	for _, g := range giByEmails {
-		member[g.Email] = g.Policy
+		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
 
@@ -868,21 +749,20 @@ func (svc service) UpdatePolicies(ctx context.Context, token, groupID string, gi
 	giByIDs := []GroupInvitationByID{}
 	for _, user := range usr.Users {
 		giByIDs = append(giByIDs, GroupInvitationByID{
-			Policy:   member[user.Email],
+			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
 
-	if err := svc.orgs.UpdatePolicies(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.orgs.UpdateGroupMembers(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) RemovePolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
+func (svc service) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
@@ -897,24 +777,25 @@ func (svc service) RemovePolicies(ctx context.Context, token, groupID string, me
 		}
 	}
 
-	if err := svc.canAccessGroup(ctx, user.ID, groupID, WriteAction); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.RemovePolicies(ctx, groupID, memberIDs...); err != nil {
+	if err := svc.orgs.RemoveGroupMembers(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) canAccessGroup(ctx context.Context, userID, Object, action string) error {
+func (svc service) canAccessGroup(ctx context.Context, token, Object, action string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
 	gp := GroupsPolicy{
-		MemberID: userID,
+		MemberID: user.ID,
 		GroupID:  Object,
 	}
 
-	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	policy, err := svc.orgs.RetrieveGroupMember(ctx, gp)
 	if err != nil {
 		return err
 	}
@@ -924,7 +805,7 @@ func (svc service) canAccessGroup(ctx context.Context, userID, Object, action st
 		return err
 	}
 
-	role, err := svc.orgs.RetrieveRole(ctx, userID, org.ID)
+	role, err := svc.orgs.RetrieveRole(ctx, user.ID, org.ID)
 	if err != nil {
 		return err
 	}
@@ -956,7 +837,7 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		Policy:   policy,
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
+	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 		return err
 	}
 
@@ -964,12 +845,7 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	if err := svc.isAdmin(ctx, user.ID); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -978,32 +854,27 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.orgs.RetrieveAllMemberRelations(ctx)
+	mrs, err := svc.orgs.RetrieveAllOrgMembers(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	grs, err := svc.orgs.RetrieveAllGroupRelations(ctx)
+	ogs, err := svc.orgs.RetrieveAllOrgGroups(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	backup := Backup{
-		Orgs:            orgs,
-		MemberRelations: mrs,
-		GroupRelations:  grs,
+		Orgs:       orgs,
+		OrgMembers: mrs,
+		OrgGroups:  ogs,
 	}
 
 	return backup, nil
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.isAdmin(ctx, user.ID); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return err
 	}
 
@@ -1011,11 +882,11 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, backup.MemberRelations...); err != nil {
+	if err := svc.orgs.AssignMembers(ctx, backup.OrgMembers...); err != nil {
 		return err
 	}
 
-	if err := svc.orgs.AssignGroups(ctx, backup.GroupRelations...); err != nil {
+	if err := svc.orgs.AssignGroups(ctx, backup.OrgGroups...); err != nil {
 		return err
 	}
 
@@ -1030,8 +901,13 @@ func (svc service) AssignRole(ctx context.Context, id, role string) error {
 	return nil
 }
 
-func (svc service) isAdmin(ctx context.Context, id string) error {
-	role, err := svc.roles.RetrieveRole(ctx, id)
+func (svc service) isAdmin(ctx context.Context, token string) error {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	role, err := svc.roles.RetrieveRole(ctx, user.ID)
 	if err != nil {
 		return err
 	}
@@ -1043,34 +919,43 @@ func (svc service) isAdmin(ctx context.Context, id string) error {
 	return nil
 }
 
-func (svc service) isOwner(ctx context.Context, orgID, userID string) error {
-	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action string) error {
+	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if role != OwnerRole {
-		return errors.ErrAuthorization
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return nil
 	}
 
-	return nil
-}
-
-func (svc service) canEditOrg(ctx context.Context, orgID, userID string) error {
-	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
+	role, err := svc.orgs.RetrieveRole(ctx, user.ID, orgID)
 	if err != nil {
 		return err
 	}
 
-	if role != OwnerRole && role != AdminRole {
-		return errors.ErrAuthorization
+	switch role {
+	case OwnerRole:
+		return nil
+	case AdminRole:
+		if action == ViewerRole || action == EditorRole || action == AdminRole {
+			return nil
+		}
+	case EditorRole:
+		if action == ViewerRole || action == EditorRole {
+			return nil
+		}
+	case ViewerRole:
+		if action == ViewerRole {
+			return nil
+		}
 	}
 
-	return nil
+	return errors.ErrAuthorization
 }
 
-func (svc service) canEditMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
-	if err := svc.canEditOrg(ctx, orgID, userID); err != nil {
+func (svc service) canAssignMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
+	if err := svc.orgRolesAuth(ctx, orgID, userID, AdminRole); err != nil {
 		return err
 	}
 
@@ -1083,36 +968,6 @@ func (svc service) canEditMembers(ctx context.Context, orgID, userID string, mem
 		if role == OwnerRole {
 			return errors.ErrAuthorization
 		}
-	}
-
-	return nil
-}
-
-func (svc service) canEditGroups(ctx context.Context, orgID, userID string) error {
-	role, err := svc.orgs.RetrieveRole(ctx, userID, orgID)
-	if err != nil {
-		return err
-	}
-
-	if role != OwnerRole && role != AdminRole && role != EditorRole {
-		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func (svc service) canAccessOrg(ctx context.Context, orgID string, user Identity) error {
-	if err := svc.isAdmin(ctx, user.ID); err == nil {
-		return nil
-	}
-
-	role, err := svc.orgs.RetrieveRole(ctx, user.ID, orgID)
-	if err != nil {
-		return err
-	}
-
-	if role != OwnerRole && role != AdminRole && role != EditorRole && role != ViewerRole {
-		return errors.ErrAuthorization
 	}
 
 	return nil

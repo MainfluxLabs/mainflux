@@ -153,7 +153,7 @@ func viewMemberEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		member := viewMemberRes{
-			ID:    mb.ID,
+			ID:    mb.MemberID,
 			Email: mb.Email,
 			Role:  mb.Role,
 		}
@@ -279,15 +279,15 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
+func createGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersPoliciesReq)
+		req := request.(groupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		var giByEmails []auth.GroupInvitationByEmail
-		for _, m := range req.MembersPolicies {
+		for _, m := range req.GroupMembers {
 			giByEmail := auth.GroupInvitationByEmail{
 				Email:  m.Email,
 				Policy: m.Policy,
@@ -295,47 +295,47 @@ func createPoliciesEndpint(svc auth.Service) endpoint.Endpoint {
 			giByEmails = append(giByEmails, giByEmail)
 		}
 
-		if err := svc.CreatePolicies(ctx, req.token, req.groupID, giByEmails...); err != nil {
+		if err := svc.CreateGroupMembers(ctx, req.token, req.groupID, giByEmails...); err != nil {
 			return nil, err
 		}
 
-		return createPoliciesRes{}, nil
+		return createGroupMemberRes{}, nil
 	}
 }
 
-func updatePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+func updateGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersPoliciesReq)
+		req := request.(groupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		var giByEmails []auth.GroupInvitationByEmail
-		for _, mp := range req.MembersPolicies {
+		for _, gm := range req.GroupMembers {
 			giByEmail := auth.GroupInvitationByEmail{
-				Email:  mp.Email,
-				Policy: mp.Policy,
+				Email:  gm.Email,
+				Policy: gm.Policy,
 			}
 
 			giByEmails = append(giByEmails, giByEmail)
 		}
 
-		if err := svc.UpdatePolicies(ctx, req.token, req.groupID, giByEmails...); err != nil {
+		if err := svc.UpdateGroupMembers(ctx, req.token, req.groupID, giByEmails...); err != nil {
 			return nil, err
 		}
 
-		return updatePoliciesRes{}, nil
+		return updateGroupMembersRes{}, nil
 	}
 }
 
-func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+func removeGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(removePoliciesReq)
+		req := request.(removeGroupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemovePolicies(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemoveGroupMembers(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -343,9 +343,9 @@ func removePoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listMembersPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersPoliciesReq)
+		req := request.(listGroupMembersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -355,12 +355,12 @@ func listMembersPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		mpp, err := svc.ListMembersPolicies(ctx, req.token, req.groupID, pm)
+		mpp, err := svc.ListGroupMembers(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildMembersPoliciesResponse(mpp), nil
+		return buildGroupMembersResponse(mpp), nil
 	}
 }
 
@@ -388,9 +388,9 @@ func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		backup := auth.Backup{
-			Orgs:            req.Orgs,
-			MemberRelations: req.MemberRelations,
-			GroupRelations:  req.GroupRelations,
+			Orgs:       req.Orgs,
+			OrgMembers: req.OrgMembers,
+			OrgGroups:  req.OrgGroups,
 		}
 
 		err := svc.Restore(ctx, req.token, backup)
@@ -428,19 +428,19 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 	return res
 }
 
-func buildMembersResponse(mp auth.MembersPage) memberPageRes {
+func buildMembersResponse(omp auth.OrgMembersPage) memberPageRes {
 	res := memberPageRes{
 		pageRes: pageRes{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  omp.Total,
+			Offset: omp.Offset,
+			Limit:  omp.Limit,
 		},
 		Members: []viewMemberRes{},
 	}
 
-	for _, memb := range mp.Members {
+	for _, memb := range omp.OrgMembers {
 		m := viewMemberRes{
-			ID:    memb.ID,
+			ID:    memb.MemberID,
 			Email: memb.Email,
 			Role:  memb.Role,
 		}
@@ -450,17 +450,17 @@ func buildMembersResponse(mp auth.MembersPage) memberPageRes {
 	return res
 }
 
-func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
+func buildGroupsResponse(gp auth.GroupsPage) groupsPageRes {
 	res := groupsPageRes{
 		pageRes: pageRes{
-			Total:  mp.Total,
-			Offset: mp.Offset,
-			Limit:  mp.Limit,
+			Total:  gp.Total,
+			Offset: gp.Offset,
+			Limit:  gp.Limit,
 		},
 		Groups: []viewGroupRes{},
 	}
 
-	for _, group := range mp.Groups {
+	for _, group := range gp.Groups {
 		g := viewGroupRes{
 			ID:          group.ID,
 			OwnerID:     group.OwnerID,
@@ -475,9 +475,9 @@ func buildGroupsResponse(mp auth.GroupsPage) groupsPageRes {
 
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
-		Orgs:            []viewOrgRes{},
-		MemberRelations: []viewMemberRelations{},
-		GroupRelations:  []viewGroupRelations{},
+		Orgs:       []viewOrgRes{},
+		OrgMembers: []viewOrgMembers{},
+		OrgGroups:  []viewOrgGroups{},
 	}
 
 	for _, org := range b.Orgs {
@@ -493,47 +493,47 @@ func buildBackupResponse(b auth.Backup) backupRes {
 		res.Orgs = append(res.Orgs, view)
 	}
 
-	for _, mRel := range b.MemberRelations {
-		view := viewMemberRelations{
+	for _, mRel := range b.OrgMembers {
+		view := viewOrgMembers{
 			OrgID:     mRel.OrgID,
 			MemberID:  mRel.MemberID,
 			Role:      mRel.Role,
 			CreatedAt: mRel.CreatedAt,
 			UpdatedAt: mRel.UpdatedAt,
 		}
-		res.MemberRelations = append(res.MemberRelations, view)
+		res.OrgMembers = append(res.OrgMembers, view)
 	}
 
-	for _, groupRel := range b.GroupRelations {
-		view := viewGroupRelations{
+	for _, groupRel := range b.OrgGroups {
+		view := viewOrgGroups{
 			GroupID:   groupRel.GroupID,
 			OrgID:     groupRel.OrgID,
 			CreatedAt: groupRel.CreatedAt,
 			UpdatedAt: groupRel.UpdatedAt,
 		}
-		res.GroupRelations = append(res.GroupRelations, view)
+		res.OrgGroups = append(res.OrgGroups, view)
 	}
 
 	return res
 }
 
-func buildMembersPoliciesResponse(gmpp auth.GroupMembersPoliciesPage) listMembersPoliciesRes {
-	res := listMembersPoliciesRes{
+func buildGroupMembersResponse(gmp auth.GroupMembersPage) listGroupMembersRes {
+	res := listGroupMembersRes{
 		pageRes: pageRes{
-			Total:  gmpp.Total,
-			Limit:  gmpp.Limit,
-			Offset: gmpp.Offset,
+			Total:  gmp.Total,
+			Limit:  gmp.Limit,
+			Offset: gmp.Offset,
 		},
-		GroupMembersPolicies: []groupMemberPolicy{},
+		GroupMembers: []groupMember{},
 	}
 
-	for _, g := range gmpp.GroupMembersPolicies {
-		gmp := groupMemberPolicy{
+	for _, g := range gmp.GroupMembers {
+		gmp := groupMember{
 			Email:  g.Email,
 			ID:     g.MemberID,
 			Policy: g.Policy,
 		}
-		res.GroupMembersPolicies = append(res.GroupMembersPolicies, gmp)
+		res.GroupMembers = append(res.GroupMembers, gmp)
 	}
 
 	return res

@@ -108,29 +108,29 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Post("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_policies")(createPoliciesEndpint(svc)),
-		decodeMembersPoliciesRequest,
+		kitot.TraceServer(tracer, "create_group_members")(createGroupMembersEndpoint(svc)),
+		decodeGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members_policies")(listMembersPoliciesEndpoint(svc)),
-		decodeListMembersPoliciesRequest,
+		kitot.TraceServer(tracer, "list_group_members")(listGroupMembersEndpoint(svc)),
+		decodeListGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Put("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_policies")(updatePoliciesEndpoint(svc)),
-		decodeMembersPoliciesRequest,
+		kitot.TraceServer(tracer, "update_group_members")(updateGroupMembersEndpoint(svc)),
+		decodeGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Patch("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_policies")(removePoliciesEndpoint(svc)),
-		decodeRemovePoliciesRequest,
+		kitot.TraceServer(tracer, "remove_group_members")(removeGroupMembersEndpoint(svc)),
+		decodeRemoveGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -271,12 +271,12 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := membersPoliciesReq{
+	req := groupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}
@@ -405,7 +405,7 @@ func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface
 	return req, nil
 }
 
-func decodeListMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -416,7 +416,7 @@ func decodeListMembersPoliciesRequest(_ context.Context, r *http.Request) (inter
 		return nil, err
 	}
 
-	req := listMembersPoliciesReq{
+	req := listGroupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 		offset:  o,
@@ -426,12 +426,12 @@ func decodeListMembersPoliciesRequest(_ context.Context, r *http.Request) (inter
 	return req, nil
 }
 
-func decodeRemovePoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroupMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removePoliciesReq{
+	req := removeGroupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, groupIDKey),
 	}

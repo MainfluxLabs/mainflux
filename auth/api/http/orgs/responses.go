@@ -16,9 +16,9 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
-	_ mainflux.Response = (*listMembersPoliciesRes)(nil)
-	_ mainflux.Response = (*updatePoliciesRes)(nil)
-	_ mainflux.Response = (*createPoliciesRes)(nil)
+	_ mainflux.Response = (*listGroupMembersRes)(nil)
+	_ mainflux.Response = (*updateGroupMembersRes)(nil)
+	_ mainflux.Response = (*createGroupMemberRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -195,7 +195,7 @@ func (res unassignRes) Empty() bool {
 	return true
 }
 
-type viewMemberRelations struct {
+type viewOrgMembers struct {
 	MemberID  string    `json:"member_id"`
 	OrgID     string    `json:"org_id"`
 	Role      string    `json:"role"`
@@ -203,7 +203,7 @@ type viewMemberRelations struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type viewGroupRelations struct {
+type viewOrgGroups struct {
 	GroupID   string    `json:"group_id"`
 	OrgID     string    `json:"org_id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -211,9 +211,9 @@ type viewGroupRelations struct {
 }
 
 type backupRes struct {
-	Orgs            []viewOrgRes          `json:"orgs"`
-	MemberRelations []viewMemberRelations `json:"member_relations"`
-	GroupRelations  []viewGroupRelations  `json:"group_relations"`
+	Orgs       []viewOrgRes     `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
+	OrgGroups  []viewOrgGroups  `json:"org_groups"`
 }
 
 func (res backupRes) Code() int {
@@ -228,26 +228,26 @@ func (res backupRes) Empty() bool {
 	return false
 }
 
-type groupMemberPolicy struct {
+type groupMember struct {
 	ID     string `json:"id"`
 	Email  string `json:"email"`
 	Policy string `json:"policy"`
 }
 
-type listMembersPoliciesRes struct {
+type listGroupMembersRes struct {
 	pageRes
-	GroupMembersPolicies []groupMemberPolicy `json:"group_members_policies"`
+	GroupMembers []groupMember `json:"group_members"`
 }
 
-func (res listMembersPoliciesRes) Code() int {
+func (res listGroupMembersRes) Code() int {
 	return http.StatusOK
 }
 
-func (res listMembersPoliciesRes) Headers() map[string]string {
+func (res listGroupMembersRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listMembersPoliciesRes) Empty() bool {
+func (res listGroupMembersRes) Empty() bool {
 	return false
 }
 
@@ -265,30 +265,30 @@ func (res restoreRes) Empty() bool {
 	return true
 }
 
-type createPoliciesRes struct{}
+type createGroupMemberRes struct{}
 
-func (res createPoliciesRes) Code() int {
+func (res createGroupMemberRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res createPoliciesRes) Headers() map[string]string {
+func (res createGroupMemberRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createPoliciesRes) Empty() bool {
+func (res createGroupMemberRes) Empty() bool {
 	return true
 }
 
-type updatePoliciesRes struct{}
+type updateGroupMembersRes struct{}
 
-func (res updatePoliciesRes) Code() int {
+func (res updateGroupMembersRes) Code() int {
 	return http.StatusOK
 }
 
-func (res updatePoliciesRes) Headers() map[string]string {
+func (res updateGroupMembersRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res updatePoliciesRes) Empty() bool {
+func (res updateGroupMembersRes) Empty() bool {
 	return true
 }
