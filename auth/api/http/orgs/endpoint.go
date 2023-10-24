@@ -428,7 +428,7 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 	return res
 }
 
-func buildMembersResponse(mp auth.MembersPage) memberPageRes {
+func buildMembersResponse(mp auth.OrgMembersPage) memberPageRes {
 	res := memberPageRes{
 		pageRes: pageRes{
 			Total:  mp.Total,

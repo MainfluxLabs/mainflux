@@ -1172,7 +1172,7 @@ func TestListOrgMembers(t *testing.T) {
 
 	for _, tc := range cases {
 		page, err := svc.ListOrgMembers(context.Background(), tc.token, tc.orgID, tc.meta)
-		size := uint64(len(page.Members))
+		size := uint64(len(page.OrgMembers))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}

@@ -298,7 +298,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 	}
 
 	var memberIDs []string
-	for _, m := range mPage.Members {
+	for _, m := range mPage.OrgMembers {
 		memberIDs = append(memberIDs, m.MemberID)
 	}
 
@@ -475,21 +475,21 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 	return nil
 }
 
-func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (MembersPage, error) {
+func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
 	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
-		return MembersPage{}, err
+		return OrgMembersPage{}, err
 	}
 
 	mp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
 	if err != nil {
-		return MembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
 	}
 
-	var members []OrgMember
-	if len(mp.Members) > 0 {
+	var oms []OrgMember
+	if len(mp.OrgMembers) > 0 {
 		var memberIDs []string
 		var member = make(map[string]string)
-		for _, m := range mp.Members {
+		for _, m := range mp.OrgMembers {
 			member[m.MemberID] = m.Role
 			memberIDs = append(memberIDs, m.MemberID)
 		}
@@ -497,7 +497,7 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return MembersPage{}, err
+			return OrgMembersPage{}, err
 		}
 
 		for _, user := range page.Users {
@@ -506,12 +506,12 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 				Email:    user.Email,
 				Role:     member[user.Id],
 			}
-			members = append(members, mbr)
+			oms = append(oms, mbr)
 		}
 	}
 
-	mpg := MembersPage{
-		Members: members,
+	mpg := OrgMembersPage{
+		OrgMembers: oms,
 		PageMetadata: PageMetadata{
 			Total:  mp.Total,
 			Offset: mp.Offset,

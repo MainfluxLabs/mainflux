@@ -161,7 +161,7 @@ func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 	return ms.svc.ViewMember(ctx, token, orgID, memberID)
 }
 
-func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (auth.MembersPage, error) {
+func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_org_members").Add(1)
 		ms.latency.With("method", "list_org_members").Observe(time.Since(begin).Seconds())

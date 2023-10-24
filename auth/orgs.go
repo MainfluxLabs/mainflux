@@ -57,18 +57,13 @@ type OrgsPage struct {
 // belong to this page.
 type OrgMembersPage struct {
 	PageMetadata
-	Members []OrgMember
+	OrgMembers []OrgMember
 }
 
 type User struct {
 	ID     string
 	Email  string
 	Status string
-}
-
-type MembersPage struct {
-	PageMetadata
-	Members []OrgMember
 }
 
 type Group struct {
@@ -168,7 +163,7 @@ type Orgs interface {
 	UpdateMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
 
 	// ListOrgMembers retrieves members assigned to an org identified by orgID.
-	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (MembersPage, error)
+	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
