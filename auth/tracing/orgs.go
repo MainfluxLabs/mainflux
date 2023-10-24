@@ -29,10 +29,10 @@ const (
 	retrieveAll           = "retrieve_all_orgs"
 	retrieveAllOrgMembers = "retrieve_all_member_elations"
 	retrieveAllOrgGroups  = "retrieve_all_org_groups"
-	savePolicies          = "save_policies"
+	saveGroupMembers          = "save_group_members"
 	removeGroupMembers    = "remove_policies"
-	retrievePolicy        = "retrieve_policy"
-	retrievePolicies      = "retrieve_policies"
+	retrieveGroupMember   = "retrieve_group_member"
+	RetrieveGroupMembers  = "retrieve_group_members"
 	updateGroupMembers    = "update_group_members"
 )
 
@@ -203,28 +203,28 @@ func (orm orgRepositoryMiddleware) RetrieveAllOrgGroups(ctx context.Context) ([]
 	return orm.repo.RetrieveAllOrgGroups(ctx)
 }
 
-func (orm orgRepositoryMiddleware) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
-	span := createSpan(ctx, orm.tracer, savePolicies)
+func (orm orgRepositoryMiddleware) SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+	span := createSpan(ctx, orm.tracer, saveGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.SavePolicies(ctx, groupID, giByIDs...)
+	return orm.repo.SaveGroupMembers(ctx, groupID, giByIDs...)
 }
 
-func (orm orgRepositoryMiddleware) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
-	span := createSpan(ctx, orm.tracer, retrievePolicy)
+func (orm orgRepositoryMiddleware) RetrieveGroupMember(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+	span := createSpan(ctx, orm.tracer, retrieveGroupMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrievePolicy(ctx, gp)
+	return orm.repo.RetrieveGroupMember(ctx, gp)
 }
 
-func (orm orgRepositoryMiddleware) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
-	span := createSpan(ctx, orm.tracer, retrievePolicies)
+func (orm orgRepositoryMiddleware) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
+	span := createSpan(ctx, orm.tracer, RetrieveGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrievePolicies(ctx, groupID, pm)
+	return orm.repo.RetrieveGroupMembers(ctx, groupID, pm)
 }
 
 func (orm orgRepositoryMiddleware) UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {

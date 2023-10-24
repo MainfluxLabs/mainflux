@@ -1625,7 +1625,7 @@ func TestRetrieveAllOrgGroups(t *testing.T) {
 	}
 }
 
-func TestSavePolicies(t *testing.T) {
+func TestSaveGroupMembers(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -1689,25 +1689,25 @@ func TestSavePolicies(t *testing.T) {
 		err     error
 	}{
 		{
-			desc:    "save group policies",
+			desc:    "save group members",
 			giByIDs: giByIDs,
 			groupID: groupID,
 			err:     nil,
 		},
 		{
-			desc:    "save group policies without group ids",
+			desc:    "save group members without group ids",
 			giByIDs: giByIDs,
 			groupID: "",
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save group policies without member id",
+			desc:    "save group members without member id",
 			giByIDs: giWithoutMemberIDs,
 			groupID: groupID,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save existing group policies",
+			desc:    "save existing group members",
 			giByIDs: giByIDs,
 			groupID: groupID,
 			err:     errors.ErrConflict,
@@ -1715,7 +1715,7 @@ func TestSavePolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repo.SavePolicies(context.Background(), tc.groupID, tc.giByIDs...)
+		err := repo.SaveGroupMembers(context.Background(), tc.groupID, tc.giByIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1763,7 +1763,7 @@ func TestRetrievePolicy(t *testing.T) {
 		Policy:   auth.RwPolicy,
 	}
 
-	err = repo.SavePolicies(context.Background(), groupID, giByID)
+	err = repo.SaveGroupMembers(context.Background(), groupID, giByID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -1799,13 +1799,13 @@ func TestRetrievePolicy(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		policy, err := repo.RetrievePolicy(context.Background(), tc.gp)
+		policy, err := repo.RetrieveGroupMember(context.Background(), tc.gp)
 		assert.Equal(t, tc.policy, policy, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.policy, policy))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrievePolicies(t *testing.T) {
+func TestRetrieveGroupMembers(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -1844,7 +1844,7 @@ func TestRetrievePolicies(t *testing.T) {
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
 		}
-		err = repo.SavePolicies(context.Background(), groupID, giByID)
+		err = repo.SaveGroupMembers(context.Background(), groupID, giByID)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -1902,7 +1902,7 @@ func TestRetrievePolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		mpp, err := repo.RetrievePolicies(context.Background(), tc.groupID, tc.pageMeta)
+		mpp, err := repo.RetrieveGroupMembers(context.Background(), tc.groupID, tc.pageMeta)
 		size := len(mpp.GroupMembers)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
@@ -1951,7 +1951,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 			Policy:   auth.RwPolicy,
 		}
 
-		err = repo.SavePolicies(context.Background(), groupID, giByID)
+		err = repo.SaveGroupMembers(context.Background(), groupID, giByID)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -2034,7 +2034,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 		},
 	}
 
-	err = repo.SavePolicies(context.Background(), groupID, giByIDs...)
+	err = repo.SaveGroupMembers(context.Background(), groupID, giByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {

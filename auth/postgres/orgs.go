@@ -632,7 +632,7 @@ func (or orgRepository) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGro
 	return ogs, nil
 }
 
-func (or orgRepository) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+func (or orgRepository) SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
@@ -676,7 +676,7 @@ func (or orgRepository) SavePolicies(ctx context.Context, groupID string, giByID
 	return nil
 }
 
-func (or orgRepository) RetrievePolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
+func (or orgRepository) RetrieveGroupMember(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
 	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
@@ -700,7 +700,7 @@ func (or orgRepository) RetrievePolicy(ctc context.Context, gp auth.GroupsPolicy
 	return policy, nil
 }
 
-func (or orgRepository) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
+func (or orgRepository) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
 	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{

@@ -109,7 +109,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Post("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_group_members")(createGroupMembersEndpoint(svc)),
-		decodeMembersPoliciesRequest,
+		decodeGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -123,7 +123,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Put("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group_members")(updateGroupMembersEndpoint(svc)),
-		decodeMembersPoliciesRequest,
+		decodeGroupMembersRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -271,7 +271,7 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeMembersPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}

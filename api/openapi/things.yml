@@ -998,19 +998,6 @@ components:
         - channel_owner
         - thing_id
         - thing_owner
-    ShareThingReqSchema:
-      type: object
-      properties:
-        user_id:
-          type: string
-          description: User ID.
-          items:
-            type: string
-        policies:
-          type: array
-          description: Policies
-          items:
-            type: string
     GroupsPage:
       type: object
       properties:
@@ -1402,13 +1389,6 @@ components:
                 type: string
                 format: uuid
                 description: Thing ID by which thing is uniquely identified.
-    ShareThingReq:
-      description: JSON-formatted document describing sharing things policies.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ShareThingReqSchema"
     GroupsCreateReq:
       description: JSON-formatted document describing group create request.
       required: true

@@ -17,7 +17,7 @@ type orgRepositoryMock struct {
 	orgs            map[string]auth.Org
 	members         map[string]auth.OrgMember
 	groups          map[string]auth.Group
-	membersPolicies map[string]auth.GroupInvitationByID
+	groupMembers map[string]auth.GroupInvitationByID
 }
 
 // NewOrgRepository returns mock of org repository
@@ -26,7 +26,7 @@ func NewOrgRepository() auth.OrgRepository {
 		orgs:            make(map[string]auth.Org),
 		members:         make(map[string]auth.OrgMember),
 		groups:          make(map[string]auth.Group),
-		membersPolicies: make(map[string]auth.GroupInvitationByID),
+		groupMembers: make(map[string]auth.GroupInvitationByID),
 	}
 }
 
@@ -367,7 +367,7 @@ func (orm *orgRepositoryMock) RetrieveAllOrgGroups(ctx context.Context) ([]auth.
 	return ogs, nil
 }
 
-func (orm *orgRepositoryMock) SavePolicies(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+func (orm *orgRepositoryMock) SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -376,7 +376,7 @@ func (orm *orgRepositoryMock) SavePolicies(ctx context.Context, groupID string, 
 			return errors.ErrNotFound
 		}
 
-		orm.membersPolicies[g.MemberID] = auth.GroupInvitationByID{
+		orm.groupMembers[g.MemberID] = auth.GroupInvitationByID{
 			MemberID: g.MemberID,
 			Policy:   g.Policy,
 		}
@@ -385,11 +385,11 @@ func (orm *orgRepositoryMock) SavePolicies(ctx context.Context, groupID string, 
 	return nil
 }
 
-func (orm *orgRepositoryMock) RetrievePolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+func (orm *orgRepositoryMock) RetrieveGroupMember(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) RetrievePolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
+func (orm *orgRepositoryMock) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
 	panic("not implemented")
 }
 

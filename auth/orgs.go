@@ -182,16 +182,16 @@ type Orgs interface {
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
-	// CreateGroupMembers creates group members policies.
+	// CreateGroupMembers creates group members.
 	CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
-	// ListGroupMembers retrieves page of group members policies.
+	// ListGroupMembers retrieves page of group members.
 	ListGroupMembers(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// UpdateGroupMembers updates group members policies.
+	// UpdateGroupMembers updates group members.
 	UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error
 
-	// RemoveGroupMembers removes group members policies.
+	// RemoveGroupMembers removes group members.
 	RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error
 
 	// Backup retrieves all orgs, org members and org groups. Only accessible by admin.
@@ -260,18 +260,18 @@ type OrgRepository interface {
 	// RetrieveAllOrgGroups retrieves all org groups.
 	RetrieveAllOrgGroups(ctx context.Context) ([]OrgGroup, error)
 
-	// SavePolicies saves group members policies.
-	SavePolicies(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
+	// SaveGroupMembers saves group members.
+	SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 
-	// RetrievePolicy retrieves group policy for a user.
-	RetrievePolicy(ctc context.Context, gp GroupsPolicy) (string, error)
+	// RetrieveGroupMember retrieves group policy for a user.
+	RetrieveGroupMember(ctc context.Context, gp GroupsPolicy) (string, error)
 
-	// RetrievePolicies retrieves page of group members policies.
-	RetrievePolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPage, error)
+	// RetrieveGroupMembers retrieves page of group members.
+	RetrieveGroupMembers(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// RemoveGroupMembers removes group members policies.
+	// RemoveGroupMembers removes group members.
 	RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdateGroupMembers updates group members policies.
+	// UpdateGroupMembers updates group members.
 	UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 }

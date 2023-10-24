@@ -360,7 +360,7 @@ func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildMembersPoliciesResponse(mpp), nil
+		return buildGroupMembersResponse(mpp), nil
 	}
 }
 
@@ -517,7 +517,7 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	return res
 }
 
-func buildMembersPoliciesResponse(gmp auth.GroupMembersPage) listGroupMembersRes {
+func buildGroupMembersResponse(gmp auth.GroupMembersPage) listGroupMembersRes {
 	res := listGroupMembersRes{
 		pageRes: pageRes{
 			Total:  gmp.Total,

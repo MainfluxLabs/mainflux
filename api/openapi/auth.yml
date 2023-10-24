@@ -268,18 +268,18 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/members:
     post:
-      summary: Create group policies.
+      summary: Create group members.
       description: |
-        Create group members policies for the given group and member IDs.
+        Create group members for the given group and member IDs.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/MembersPoliciesReq"
+        $ref: "#/components/requestBodies/GroupMembersReq"
       responses:
         '201':
-          description: Policies created.
+          description: Group member created.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -289,16 +289,16 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Retrieves group members policies.
+      summary: Retrieves group members.
       description: |
-        Retrieves page of members policies for the given group ID.
+        Retrieves page of group members for the given group ID.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/GroupId"
       responses:
         '200':
-           $ref: "#/components/responses/GroupMembersPoliciesRes"
+           $ref: "#/components/responses/GroupMembersRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -308,18 +308,18 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
-      summary: Update group policies.
+      summary: Update group members.
       description: |
-        Updates group members policies identified by group and member IDs.
+        Updates group members identified by group and member IDs.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/MembersPoliciesReq"
+        $ref: "#/components/requestBodies/GroupMembersReq"
       responses:
         '200':
-          description: Policies updated.
+          description: Group member updated.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -329,9 +329,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     patch:
-      summary: Remove group policies.
+      summary: Remove group members.
       description: |
-          Removes group members policies identified by group and member IDs.
+          Removes group members identified by group and member IDs.
       tags:
         - auth
       parameters:
@@ -340,7 +340,7 @@ paths:
         $ref: "#/components/requestBodies/RemoveGroupMembersReq"
       responses:
         '204':
-          description: Policies removed.
+          description: Group member removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -741,7 +741,7 @@ components:
           items:
             type: string
             format: uuid
-    MembersPoliciesSchema:
+    GroupMembersSchema:
       type: object
       properties:
         members_policies:
@@ -766,7 +766,7 @@ components:
       properties:
         total:
           type: integer
-          description: Total number of members policies.
+          description: Total number of group members.
         offset:
           type: integer
           description: Offset of the page.
@@ -926,13 +926,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsSchema"
-    MembersPoliciesReq:
-      description: JSON-formatted document describing group members policies request.
+    GroupMembersReq:
+      description: JSON-formatted document describing group members request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/MembersPoliciesSchema"
+            $ref: "#/components/schemas/GroupMembersSchema"
     RemoveGroupMembersReq:
       description: JSON-formatted document describing remove group member request.
       required: true
@@ -980,7 +980,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgGroupsPageSchema"
-    GroupMembersPoliciesRes:
+    GroupMembersRes:
       description: JSON-formatted document describing group members page response.
       content:
         application/json:

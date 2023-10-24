@@ -555,7 +555,7 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 			Policy:   RwPolicy,
 		}
 
-		if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
+		if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 			return err
 		}
 	}
@@ -664,7 +664,7 @@ func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string
 		})
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
@@ -676,7 +676,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 		return GroupMembersPage{}, err
 	}
 
-	gmpp, err := svc.orgs.RetrievePolicies(ctx, groupID, pm)
+	gmpp, err := svc.orgs.RetrieveGroupMembers(ctx, groupID, pm)
 	if err != nil {
 		return GroupMembersPage{}, err
 	}
@@ -686,7 +686,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 		memberIDs = append(memberIDs, mp.MemberID)
 	}
 
-	var groupMembersPolicies []GroupMember
+	var groupMembers []GroupMember
 	if len(gmpp.GroupMembers) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
@@ -711,13 +711,13 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 				Policy:   gmp.Policy,
 			}
 
-			groupMembersPolicies = append(groupMembersPolicies, groupMemeberPolicy)
+			groupMembers = append(groupMembers, groupMemeberPolicy)
 		}
 
 	}
 
-	groupMembersPoliciesPage := GroupMembersPage{
-		GroupMembers: groupMembersPolicies,
+	groupMembersPage := GroupMembersPage{
+		GroupMembers: groupMembers,
 		PageMetadata: PageMetadata{
 			Total:  gmpp.Total,
 			Offset: gmpp.Offset,
@@ -725,7 +725,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 		},
 	}
 
-	return groupMembersPoliciesPage, nil
+	return groupMembersPage, nil
 }
 
 func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
@@ -795,7 +795,7 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		GroupID:  Object,
 	}
 
-	policy, err := svc.orgs.RetrievePolicy(ctx, gp)
+	policy, err := svc.orgs.RetrieveGroupMember(ctx, gp)
 	if err != nil {
 		return err
 	}
@@ -837,7 +837,7 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		Policy:   policy,
 	}
 
-	if err := svc.orgs.SavePolicies(ctx, groupID, giByIDs); err != nil {
+	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 		return err
 	}
 
