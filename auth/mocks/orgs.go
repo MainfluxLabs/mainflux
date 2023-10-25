@@ -17,7 +17,7 @@ type orgRepositoryMock struct {
 	orgs         map[string]auth.Org
 	orgMembers   map[string]auth.OrgMember
 	orgGroups    map[string]auth.OrgGroup
-	groupMembers map[string]auth.GroupInvitationByID
+	groupMembers map[string]auth.GroupPolicyByID
 }
 
 // NewOrgRepository returns mock of org repository
@@ -26,7 +26,7 @@ func NewOrgRepository() auth.OrgRepository {
 		orgs:         make(map[string]auth.Org),
 		orgMembers:   make(map[string]auth.OrgMember),
 		orgGroups:    make(map[string]auth.OrgGroup),
-		groupMembers: make(map[string]auth.GroupInvitationByID),
+		groupMembers: make(map[string]auth.GroupPolicyByID),
 	}
 }
 

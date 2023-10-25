@@ -260,13 +260,13 @@ func (req backupReq) validate() error {
 	return nil
 }
 
-type groupMembersReq struct {
-	token        string
-	groupID      string
-	GroupMembers []groupMember `json:"group_members"`
+type groupPoliciesReq struct {
+	token         string
+	groupID       string
+	GroupPolicies []groupPolicy `json:"group_policies"`
 }
 
-func (req groupMembersReq) validate() error {
+func (req groupPoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -275,11 +275,11 @@ func (req groupMembersReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.GroupMembers) == 0 {
+	if len(req.GroupPolicies) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gm := range req.GroupMembers {
+	for _, gm := range req.GroupPolicies {
 		if gm.Policy != auth.RPolicy && gm.Policy != auth.RwPolicy {
 			return apiutil.ErrInvalidPolicy
 		}
@@ -292,13 +292,13 @@ func (req groupMembersReq) validate() error {
 	return nil
 }
 
-type removeGroupMembersReq struct {
+type removeGroupPoliciesReq struct {
 	token     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req removeGroupMembersReq) validate() error {
+func (req removeGroupPoliciesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

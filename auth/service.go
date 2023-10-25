@@ -102,14 +102,14 @@ type service struct {
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
 	roles         RolesRepository
-	members       MembersRepository
+	policies      PoliciesRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, members MembersRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, policies PoliciesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -117,7 +117,7 @@ func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 		users:         uc,
 		keys:          keys,
 		roles:         roles,
-		members:       members,
+		policies:      policies,
 		idProvider:    idp,
 		loginDuration: duration,
 	}
@@ -553,12 +553,12 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 	}
 
 	for _, groupID := range groupIDs {
-		giByIDs := GroupInvitationByID{
+		gpByIDs := GroupPolicyByID{
 			MemberID: user.ID,
 			Policy:   RwPolicy,
 		}
 
-		if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
+		if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs); err != nil {
 			return err
 		}
 	}
@@ -641,14 +641,14 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
+func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error {
 	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
 	var memberEmails []string
 	var roleByEmail = make(map[string]string)
-	for _, g := range giByEmails {
+	for _, g := range gps {
 		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
@@ -659,42 +659,42 @@ func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string
 		return err
 	}
 
-	giByIDs := []GroupInvitationByID{}
+	gpByIDs := []GroupPolicyByID{}
 	for _, user := range usr.Users {
-		giByIDs = append(giByIDs, GroupInvitationByID{
+		gpByIDs = append(gpByIDs, GroupPolicyByID{
 			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
 
-	if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error) {
+func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
 	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
-		return GroupMembersPage{}, err
+		return GroupPoliciesPage{}, err
 	}
 
-	gmp, err := svc.members.RetrieveGroupMembers(ctx, groupID, pm)
+	gpp, err := svc.policies.RetrieveGroupPolicies(ctx, groupID, pm)
 	if err != nil {
-		return GroupMembersPage{}, err
+		return GroupPoliciesPage{}, err
 	}
 
 	var memberIDs []string
-	for _, gm := range gmp.GroupMembers {
-		memberIDs = append(memberIDs, gm.MemberID)
+	for _, gp := range gpp.GroupMembersPolicies {
+		memberIDs = append(memberIDs, gp.MemberID)
 	}
 
-	var groupMembers []GroupMember
-	if len(gmp.GroupMembers) > 0 {
+	var groupMembersPolicies []GroupMemberPolicy
+	if len(gpp.GroupMembersPolicies) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return GroupMembersPage{}, err
+			return GroupPoliciesPage{}, err
 		}
 
 		emails := make(map[string]string)
@@ -702,43 +702,43 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gm := range gmp.GroupMembers {
-			email, ok := emails[gm.MemberID]
+		for _, gp := range gpp.GroupMembersPolicies {
+			email, ok := emails[gp.MemberID]
 			if !ok {
-				return GroupMembersPage{}, err
+				return GroupPoliciesPage{}, err
 			}
 
-			groupMember := GroupMember{
-				MemberID: gm.MemberID,
+			gmp := GroupMemberPolicy{
+				MemberID: gp.MemberID,
 				Email:    email,
-				Policy:   gm.Policy,
+				Policy:   gp.Policy,
 			}
 
-			groupMembers = append(groupMembers, groupMember)
+			groupMembersPolicies = append(groupMembersPolicies, gmp)
 		}
 
 	}
 
-	groupMembersPage := GroupMembersPage{
-		GroupMembers: groupMembers,
+	page := GroupPoliciesPage{
+		GroupMembersPolicies: groupMembersPolicies,
 		PageMetadata: PageMetadata{
-			Total:  gmp.Total,
-			Offset: gmp.Offset,
-			Limit:  gmp.Limit,
+			Total:  gpp.Total,
+			Offset: gpp.Offset,
+			Limit:  gpp.Limit,
 		},
 	}
 
-	return groupMembersPage, nil
+	return page, nil
 }
 
-func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...GroupInvitationByEmail) error {
+func (svc service) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error {
 	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
 	var memberEmails []string
 	var roleByEmail = make(map[string]string)
-	for _, g := range giByEmails {
+	for _, g := range gps {
 		roleByEmail[g.Email] = g.Policy
 		memberEmails = append(memberEmails, g.Email)
 	}
@@ -749,22 +749,22 @@ func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string
 		return err
 	}
 
-	giByIDs := []GroupInvitationByID{}
+	gpByIDs := []GroupPolicyByID{}
 	for _, user := range usr.Users {
-		giByIDs = append(giByIDs, GroupInvitationByID{
+		gpByIDs = append(gpByIDs, GroupPolicyByID{
 			Policy:   roleByEmail[user.Email],
 			MemberID: user.Id,
 		})
 	}
 
-	if err := svc.members.UpdateGroupMembers(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.policies.UpdateGroupPolicies(ctx, groupID, gpByIDs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (svc service) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
@@ -780,7 +780,7 @@ func (svc service) RemoveGroupMembers(ctx context.Context, token, groupID string
 		}
 	}
 
-	if err := svc.members.RemoveGroupMembers(ctx, groupID, memberIDs...); err != nil {
+	if err := svc.policies.RemoveGroupPolicies(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -798,7 +798,7 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		GroupID:  Object,
 	}
 
-	policy, err := svc.members.RetrieveGroupMemberPolicy(ctx, gp)
+	policy, err := svc.policies.RetrieveGroupPolicy(ctx, gp)
 	if err != nil {
 		return err
 	}
@@ -835,12 +835,12 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		return err
 	}
 
-	giByIDs := GroupInvitationByID{
+	gpByIDs := GroupPolicyByID{
 		MemberID: user.ID,
 		Policy:   policy,
 	}
 
-	if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
+	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs); err != nil {
 		return err
 	}
 

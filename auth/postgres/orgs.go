@@ -840,8 +840,8 @@ func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
 	}
 }
 
-func toGroupMember(dbgp dbGroupPolicy) auth.GroupMember {
-	return auth.GroupMember{
+func toGroupMemberPolicy(dbgp dbGroupPolicy) auth.GroupMemberPolicy {
+	return auth.GroupMemberPolicy{
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
 	}

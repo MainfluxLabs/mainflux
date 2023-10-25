@@ -9,28 +9,28 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ auth.MembersRepository = (*membersRepository)(nil)
+var _ auth.PoliciesRepository = (*policiesRepository)(nil)
 
-type membersRepository struct {
+type policiesRepository struct {
 	db Database
 }
 
-// NewMembersRepo instantiates a PostgreSQL implementation of members repository.
-func NewMembersRepo(db Database) auth.MembersRepository {
-	return &membersRepository{
+// NewPoliciesRepo instantiates a PostgreSQL implementation of policies repository.
+func NewPoliciesRepo(db Database) auth.PoliciesRepository {
+	return &policiesRepository{
 		db: db,
 	}
 }
 
-func (mr membersRepository) SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
-	tx, err := mr.db.BeginTxx(ctx, nil)
+func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID string, gps ...auth.GroupPolicyByID) error {
+	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignToOrg, err)
 	}
 
 	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
 
-	for _, g := range giByIDs {
+	for _, g := range gps {
 		gp := auth.GroupsPolicy{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
@@ -38,7 +38,7 @@ func (mr membersRepository) SaveGroupMembers(ctx context.Context, groupID string
 		}
 		dbgp := toDBGroupPolicy(gp)
 
-		if _, err := mr.db.NamedExecContext(ctx, q, dbgp); err != nil {
+		if _, err := pr.db.NamedExecContext(ctx, q, dbgp); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -62,7 +62,7 @@ func (mr membersRepository) SaveGroupMembers(ctx context.Context, groupID string
 	return nil
 }
 
-func (mr membersRepository) RetrieveGroupMemberPolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
+func (pr policiesRepository) RetrieveGroupPolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
 	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
@@ -70,7 +70,7 @@ func (mr membersRepository) RetrieveGroupMemberPolicy(ctc context.Context, gp au
 		"group_id":  gp.GroupID,
 	}
 
-	rows, err := mr.db.NamedQueryContext(ctc, q, params)
+	rows, err := pr.db.NamedQueryContext(ctc, q, params)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -86,7 +86,7 @@ func (mr membersRepository) RetrieveGroupMemberPolicy(ctc context.Context, gp au
 	return policy, nil
 }
 
-func (mr membersRepository) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
+func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupPoliciesPage, error) {
 	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
@@ -95,33 +95,33 @@ func (mr membersRepository) RetrieveGroupMembers(ctx context.Context, groupID st
 		"offset":   pm.Offset,
 	}
 
-	rows, err := mr.db.NamedQueryContext(ctx, q, params)
+	rows, err := pr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []auth.GroupMember
+	var items []auth.GroupMemberPolicy
 	for rows.Next() {
 		dbgp := dbGroupPolicy{}
 		if err := rows.StructScan(&dbgp); err != nil {
-			return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		gm := toGroupMember(dbgp)
+		gm := toGroupMemberPolicy(dbgp)
 
 		items = append(items, gm)
 	}
 
 	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
 
-	total, err := total(ctx, mr.db, cq, params)
+	total, err := total(ctx, pr.db, cq, params)
 	if err != nil {
-		return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := auth.GroupMembersPage{
-		GroupMembers: items,
+	page := auth.GroupPoliciesPage{
+		GroupMembersPolicies: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -132,7 +132,7 @@ func (mr membersRepository) RetrieveGroupMembers(ctx context.Context, groupID st
 	return page, nil
 }
 
-func (mr membersRepository) RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error {
+func (pr policiesRepository) RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
@@ -141,17 +141,17 @@ func (mr membersRepository) RemoveGroupMembers(ctx context.Context, groupID stri
 			GroupID:  groupID,
 		}
 
-		if _, err := mr.db.NamedExecContext(ctx, q, dbgp); err != nil {
+		if _, err := pr.db.NamedExecContext(ctx, q, dbgp); err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
 	}
 	return nil
 }
 
-func (mr membersRepository) UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
+func (pr policiesRepository) UpdateGroupPolicies(ctx context.Context, groupID string, gps ...auth.GroupPolicyByID) error {
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
 
-	for _, g := range giByIDs {
+	for _, g := range gps {
 		gp := auth.GroupsPolicy{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
@@ -159,7 +159,7 @@ func (mr membersRepository) UpdateGroupMembers(ctx context.Context, groupID stri
 		}
 		dbgp := toDBGroupPolicy(gp)
 
-		row, err := mr.db.NamedExecContext(ctx, q, dbgp)
+		row, err := pr.db.NamedExecContext(ctx, q, dbgp)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
