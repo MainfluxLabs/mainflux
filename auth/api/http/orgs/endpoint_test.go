@@ -772,8 +772,8 @@ func TestAssignMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(membersReq{Members: []auth.OrgMember{editorMember}})
-	invalidData := toJSON(membersReq{Members: []auth.OrgMember{invalidMember}})
+	data := toJSON(membersReq{OrgMembers: []auth.OrgMember{editorMember}})
+	invalidData := toJSON(membersReq{OrgMembers: []auth.OrgMember{invalidMember}})
 
 	cases := []struct {
 		desc   string
@@ -968,8 +968,8 @@ func TestUpdateMembers(t *testing.T) {
 	err = svc.AssignMembers(context.Background(), token, or.ID, viewerMember)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	ViewerRoleData := toJSON(membersReq{Members: []auth.OrgMember{updtToEditor}})
-	ownerRoleData := toJSON(membersReq{Members: []auth.OrgMember{updtToOwner}})
+	ViewerRoleData := toJSON(membersReq{OrgMembers: []auth.OrgMember{updtToEditor}})
+	ownerRoleData := toJSON(membersReq{OrgMembers: []auth.OrgMember{updtToOwner}})
 
 	cases := []struct {
 		desc   string
@@ -1822,7 +1822,7 @@ type pageRes struct {
 }
 
 type membersReq struct {
-	Members []auth.OrgMember `json:"members"`
+	OrgMembers []auth.OrgMember `json:"org_members"`
 }
 
 type unassignMembersReq struct {

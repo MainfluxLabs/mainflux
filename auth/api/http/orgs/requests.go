@@ -141,9 +141,9 @@ func (req memberReq) validate() error {
 }
 
 type membersReq struct {
-	token   string
-	orgID   string
-	Members []auth.OrgMember `json:"members"`
+	token      string
+	orgID      string
+	OrgMembers []auth.OrgMember `json:"org_members"`
 }
 
 func (req membersReq) validate() error {
@@ -155,11 +155,11 @@ func (req membersReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Members) == 0 {
+	if len(req.OrgMembers) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, m := range req.Members {
+	for _, m := range req.OrgMembers {
 		if m.Role != auth.AdminRole && m.Role != auth.ViewerRole && m.Role != auth.EditorRole {
 			return apiutil.ErrInvalidMemberRole
 		}
@@ -263,7 +263,7 @@ func (req backupReq) validate() error {
 type groupMembersReq struct {
 	token        string
 	groupID      string
-	GroupMembers []groupMember `json:"members_policies"`
+	GroupMembers []groupMember `json:"group_members"`
 }
 
 func (req groupMembersReq) validate() error {
