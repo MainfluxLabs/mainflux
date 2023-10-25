@@ -32,7 +32,7 @@ func (mrm *membersRepositoryMock) SaveGroupMembers(ctx context.Context, groupID 
 	return nil
 }
 
-func (mrm *membersRepositoryMock) RetrieveGroupMember(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+func (mrm *membersRepositoryMock) RetrieveGroupMemberPolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
 	panic("not implemented")
 }
 

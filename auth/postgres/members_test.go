@@ -108,7 +108,7 @@ func TestSaveGroupMembers(t *testing.T) {
 	}
 }
 
-func TestRetrievePolicy(t *testing.T) {
+func TestRetrieveGroupMemberPolicy(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	orgsRepo := postgres.NewOrgRepo(dbMiddleware)
 	membersRepo := postgres.NewMembersRepo(dbMiddleware)
@@ -188,7 +188,7 @@ func TestRetrievePolicy(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		policy, err := membersRepo.RetrieveGroupMember(context.Background(), tc.gp)
+		policy, err := membersRepo.RetrieveGroupMemberPolicy(context.Background(), tc.gp)
 		assert.Equal(t, tc.policy, policy, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.policy, policy))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}

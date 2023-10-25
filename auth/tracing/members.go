@@ -42,12 +42,12 @@ func (mrm membersRepositoryMiddleware) SaveGroupMembers(ctx context.Context, gro
 	return mrm.repo.SaveGroupMembers(ctx, groupID, giByIDs...)
 }
 
-func (mrm membersRepositoryMiddleware) RetrieveGroupMember(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+func (mrm membersRepositoryMiddleware) RetrieveGroupMemberPolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
 	span := createSpan(ctx, mrm.tracer, retrieveGroupMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return mrm.repo.RetrieveGroupMember(ctx, gp)
+	return mrm.repo.RetrieveGroupMemberPolicy(ctx, gp)
 }
 
 func (mrm membersRepositoryMiddleware) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {

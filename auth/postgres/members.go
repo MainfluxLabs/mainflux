@@ -15,7 +15,7 @@ type membersRepository struct {
 	db Database
 }
 
-// NewMembersRepo instantiates a PostgreSQL implementation of org  repository.
+// NewMembersRepo instantiates a PostgreSQL implementation of members repository.
 func NewMembersRepo(db Database) auth.MembersRepository {
 	return &membersRepository{
 		db: db,
@@ -62,7 +62,7 @@ func (mr membersRepository) SaveGroupMembers(ctx context.Context, groupID string
 	return nil
 }
 
-func (mr membersRepository) RetrieveGroupMember(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
+func (mr membersRepository) RetrieveGroupMemberPolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
 	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{

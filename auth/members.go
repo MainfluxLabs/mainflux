@@ -47,8 +47,8 @@ type MembersRepository interface {
 	// SaveGroupMembers saves group members.
 	SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...GroupInvitationByID) error
 
-	// RetrieveGroupMember retrieves group policy for a user.
-	RetrieveGroupMember(ctc context.Context, gp GroupsPolicy) (string, error)
+	// RetrieveGroupMemberPolicy retrieves group member policy.
+	RetrieveGroupMemberPolicy(ctc context.Context, gp GroupsPolicy) (string, error)
 
 	// RetrieveGroupMembers retrieves page of group members.
 	RetrieveGroupMembers(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPage, error)

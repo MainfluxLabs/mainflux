@@ -798,7 +798,7 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		GroupID:  Object,
 	}
 
-	policy, err := svc.members.RetrieveGroupMember(ctx, gp)
+	policy, err := svc.members.RetrieveGroupMemberPolicy(ctx, gp)
 	if err != nil {
 		return err
 	}
