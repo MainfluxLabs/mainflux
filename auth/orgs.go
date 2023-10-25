@@ -147,6 +147,9 @@ type Orgs interface {
 	// UnassignGroups removes groups with groupIDs from org identified by orgID.
 	UnassignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
 
+	//ViewGroupMembership retrieves orgs where group is assigned.
+	ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error)
+
 	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
 	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 

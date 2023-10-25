@@ -107,6 +107,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/groups/:groupID/orgs", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group_membership")(viewGroupMembershipEndpoint(svc)),
+		decodeViewGroupMembershipRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Post("/groups/:groupID/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_group_policies")(createGroupPoliciesEndpoint(svc)),
 		decodeGroupPoliciesRequest,
@@ -115,7 +122,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Get("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_members")(listGroupMembersEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_group_policies")(listGroupPoliciesEndpoint(svc)),
 		decodeListGroupPoliciesRequest,
 		encodeResponse,
 		opts...,
@@ -268,6 +275,15 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 		limit:    l,
 		metadata: m,
 	}
+	return req, nil
+}
+
+func decodeViewGroupMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewGroupMembershipReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
 	return req, nil
 }
 

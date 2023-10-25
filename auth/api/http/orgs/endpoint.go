@@ -343,7 +343,7 @@ func removeGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listGroupMembersReq)
 		if err := req.validate(); err != nil {
@@ -355,12 +355,38 @@ func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		mpp, err := svc.ListGroupPolicies(ctx, req.token, req.groupID, pm)
+		gpp, err := svc.ListGroupPolicies(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupMembersResponse(mpp), nil
+		return buildGroupPoliciesResponse(gpp), nil
+	}
+}
+
+func viewGroupMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewGroupMembershipReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		o, err := svc.ViewGroupMembership(ctx, req.token, req.groupID)
+		if err != nil {
+			return nil, err
+		}
+
+		org := viewOrgRes{
+			ID:          o.ID,
+			Name:        o.Name,
+			OwnerID:     o.OwnerID,
+			Description: o.Description,
+			Metadata:    o.Metadata,
+			CreatedAt:   o.CreatedAt,
+			UpdatedAt:   o.UpdatedAt,
+		}
+
+		return org, nil
 	}
 }
 
@@ -517,7 +543,7 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	return res
 }
 
-func buildGroupMembersResponse(gpp auth.GroupPoliciesPage) listGroupPoliciesRes {
+func buildGroupPoliciesResponse(gpp auth.GroupPoliciesPage) listGroupPoliciesRes {
 	res := listGroupPoliciesRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,

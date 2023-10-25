@@ -15,7 +15,7 @@ const (
 	saveGroupMembers      = "save_group_policies"
 	removeGroupMembers    = "remove_group_policies"
 	retrieveGroupMember   = "retrieve_group_policy"
-	RetrieveGroupPolicies = "retrieve_group_members"
+	RetrieveGroupPolicies = "retrieve_group_policies"
 	updateGroupMembers    = "update_group_policies"
 )
 

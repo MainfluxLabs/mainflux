@@ -320,6 +320,23 @@ func (req removeGroupPoliciesReq) validate() error {
 	return nil
 }
 
+type viewGroupMembershipReq struct {
+	token   string
+	groupID string
+}
+
+func (req viewGroupMembershipReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type restoreReq struct {
 	token      string
 	Orgs       []auth.Org       `json:"orgs"`

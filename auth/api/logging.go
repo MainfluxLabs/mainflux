@@ -276,6 +276,18 @@ func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID str
 	return lm.svc.ListOrgGroups(ctx, token, orgID, pm)
 }
 
+func (lm *loggingMiddleware) ViewGroupMembership(ctx context.Context, token, groupID string) (o auth.Org, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_group_membership for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroupMembership(ctx, token, groupID)
+}
+
 func (lm *loggingMiddleware) AddPolicy(ctx context.Context, token, groupID, policy string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method add_policy for token %s and took %s to complete", token, time.Since(begin))

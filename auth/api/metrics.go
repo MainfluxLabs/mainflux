@@ -197,6 +197,14 @@ func (ms *metricsMiddleware) ListOrgGroups(ctx context.Context, token, groupID s
 	return ms.svc.ListOrgGroups(ctx, token, groupID, pm)
 }
 
+func (ms *metricsMiddleware) ViewGroupMembership(ctx context.Context, token, groupID string) (auth.Org, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_group_membership").Add(1)
+		ms.latency.With("method", "view_group_membership").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.ViewGroupMembership(ctx, token, groupID)
+}
+
 func (ms *metricsMiddleware) AddPolicy(ctx context.Context, token, groupID, policy string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "add_policy").Add(1)
@@ -244,8 +252,8 @@ func (ms *metricsMiddleware) CreateGroupPolicies(ctx context.Context, token, gro
 
 func (ms *metricsMiddleware) ListGroupPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (auth.GroupPoliciesPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_group_members").Add(1)
-		ms.latency.With("method", "list_group_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_group_policies").Add(1)
+		ms.latency.With("method", "list_group_policies").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ListGroupPolicies(ctx, token, groupID, pm)

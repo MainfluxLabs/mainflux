@@ -787,6 +787,19 @@ func (svc service) RemoveGroupPolicies(ctx context.Context, token, groupID strin
 	return nil
 }
 
+func (svc service)  ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error) {
+	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+		return Org{}, err
+	}
+
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
+	if err != nil {
+		return Org{}, err
+	}
+
+	return org, nil
+}
+
 func (svc service) canAccessGroup(ctx context.Context, token, Object, action string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
