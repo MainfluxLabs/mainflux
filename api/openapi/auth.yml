@@ -744,7 +744,7 @@ components:
     GroupMembersSchema:
       type: object
       properties:
-        members_policies:
+        group_members:
           type: array
           minItems: 1
           uniqueItems: true
