@@ -317,10 +317,13 @@ func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 	rolesRepo := postgres.NewRolesRepo(db)
 	rolesRepo = tracing.RolesRepositoryMiddleware(tracer, rolesRepo)
 
+	membersRepo := postgres.NewMembersRepo(db)
+	membersRepo = tracing.MembersRepositoryMiddleware(tracer, membersRepo)
+
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, idProvider, t, duration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membersRepo, idProvider, t, duration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

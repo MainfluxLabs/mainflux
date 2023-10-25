@@ -91,6 +91,7 @@ type Service interface {
 	Authz
 	Roles
 	Orgs
+	Members
 }
 
 var _ Service = (*service)(nil)
@@ -101,13 +102,14 @@ type service struct {
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
 	roles         RolesRepository
+	members       MembersRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, members MembersRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -115,6 +117,7 @@ func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 		users:         uc,
 		keys:          keys,
 		roles:         roles,
+		members:       members,
 		idProvider:    idp,
 		loginDuration: duration,
 	}
@@ -555,7 +558,7 @@ func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupI
 			Policy:   RwPolicy,
 		}
 
-		if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
+		if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 			return err
 		}
 	}
@@ -664,7 +667,7 @@ func (svc service) CreateGroupMembers(ctx context.Context, token, groupID string
 		})
 	}
 
-	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
@@ -676,7 +679,7 @@ func (svc service) ListGroupMembers(ctx context.Context, token, groupID string, 
 		return GroupMembersPage{}, err
 	}
 
-	gmp, err := svc.orgs.RetrieveGroupMembers(ctx, groupID, pm)
+	gmp, err := svc.members.RetrieveGroupMembers(ctx, groupID, pm)
 	if err != nil {
 		return GroupMembersPage{}, err
 	}
@@ -754,7 +757,7 @@ func (svc service) UpdateGroupMembers(ctx context.Context, token, groupID string
 		})
 	}
 
-	if err := svc.orgs.UpdateGroupMembers(ctx, groupID, giByIDs...); err != nil {
+	if err := svc.members.UpdateGroupMembers(ctx, groupID, giByIDs...); err != nil {
 		return err
 	}
 
@@ -777,7 +780,7 @@ func (svc service) RemoveGroupMembers(ctx context.Context, token, groupID string
 		}
 	}
 
-	if err := svc.orgs.RemoveGroupMembers(ctx, groupID, memberIDs...); err != nil {
+	if err := svc.members.RemoveGroupMembers(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -795,7 +798,7 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		GroupID:  Object,
 	}
 
-	policy, err := svc.orgs.RetrieveGroupMember(ctx, gp)
+	policy, err := svc.members.RetrieveGroupMember(ctx, gp)
 	if err != nil {
 		return err
 	}
@@ -837,7 +840,7 @@ func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string)
 		Policy:   policy,
 	}
 
-	if err := svc.orgs.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
+	if err := svc.members.SaveGroupMembers(ctx, groupID, giByIDs); err != nil {
 		return err
 	}
 
