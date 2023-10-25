@@ -162,13 +162,13 @@ func TestRetrieveGroupMemberPolicy(t *testing.T) {
 		err    error
 	}{
 		{
-			desc:   "retrieve policy",
+			desc:   "retrieve group member policy",
 			gp:     gp,
 			policy: auth.RwPolicy,
 			err:    nil,
 		},
 		{
-			desc: "retrieve policy without group id",
+			desc: "retrieve group member policy without group id",
 			gp: auth.GroupsPolicy{
 				GroupID:  "",
 				MemberID: memberID,
@@ -177,7 +177,7 @@ func TestRetrieveGroupMemberPolicy(t *testing.T) {
 			err:    errors.ErrRetrieveEntity,
 		},
 		{
-			desc: "retrieve policy without member id",
+			desc: "retrieve group member policy without member id",
 			gp: auth.GroupsPolicy{
 				GroupID:  groupID,
 				MemberID: "",
@@ -246,7 +246,7 @@ func TestRetrieveGroupMembers(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "retrieve policies",
+			desc:    "retrieve group members",
 			groupID: groupID,
 			pageMeta: auth.PageMetadata{
 				Offset: 0,
@@ -257,7 +257,7 @@ func TestRetrieveGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve last policy",
+			desc:    "retrieve last group member",
 			groupID: groupID,
 			pageMeta: auth.PageMetadata{
 				Offset: n - 1,
@@ -268,7 +268,7 @@ func TestRetrieveGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve policies with invalid group id",
+			desc:    "retrieve group members with invalid group id",
 			groupID: invalidID,
 			pageMeta: auth.PageMetadata{
 				Offset: 0,
@@ -278,7 +278,7 @@ func TestRetrieveGroupMembers(t *testing.T) {
 			err: errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve policies without group id",
+			desc:    "retrieve group members without group id",
 			groupID: "",
 			pageMeta: auth.PageMetadata{
 				Offset: 0,
@@ -355,19 +355,19 @@ func TestRemoveGroupMembers(t *testing.T) {
 		err       error
 	}{
 		{
-			desc:      "remove policies without group id",
+			desc:      "remove group members without group id",
 			groupID:   "",
 			memberIDs: memberIDs,
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove policies without member id",
+			desc:      "remove group members without member ids",
 			groupID:   groupID,
 			memberIDs: []string{""},
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove policies",
+			desc:      "remove group members",
 			groupID:   groupID,
 			memberIDs: memberIDs,
 			err:       nil,
@@ -436,7 +436,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 		err     error
 	}{
 		{
-			desc:    "update policy without group id",
+			desc:    "update group members without group id",
 			groupID: "",
 			giByID: auth.GroupInvitationByID{
 				MemberID: "",
@@ -445,7 +445,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "update policy without member id",
+			desc:    "update group members without member id",
 			groupID: groupID,
 			giByID: auth.GroupInvitationByID{
 				MemberID: "",
@@ -454,7 +454,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "update policy",
+			desc:    "update group members",
 			groupID: groupID,
 			giByID: auth.GroupInvitationByID{
 				MemberID: memberID,
