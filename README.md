@@ -1,6 +1,5 @@
 # Mainflux
 
-[![build status][ci-badge]][ci-url]
 [![go report card][grc-badge]][grc-url]
 [![coverage][cov-badge]][cov-url]
 [![license][license]](LICENSE)
@@ -27,7 +26,6 @@ For more details, check out the [official documentation][docs].
 - Event sourcing
 - Container-based deployment using [Docker][docker] and [Kubernetes][kubernetes]
 - [LoRaWAN][lora] network integration
-- [OPC UA](opcua) integration
 - Edge [Agent](agent) and [Export](export) services for remote IoT gateway management and edge computing
 - SDK
 - CLI
@@ -127,40 +125,20 @@ Thank you for your interest in Mainflux and the desire to contribute!
 2. Checkout the [contribution guide](CONTRIBUTING.md) to learn more about our style and conventions.
 3. Make your changes compatible to our workflow.
 
-### We're Hiring
-
-You like Mainflux and you would like to make it your day job? We're always looking for talented engineers interested in open-source, IoT and distributed systems. If you recognize yourself, reach out to [@drasko][drasko] - he will contact you back.
-
->The best way to grab our attention is, of course, by sending PRs :sunglasses:.
-
-## Community
-
-- [Google group][forum]
-- [Gitter][gitter]
-- [Twitter][twitter]
-
 ## License
 
 [Apache-2.0](LICENSE)
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmainflux%2Fmainflux?ref=badge_large)
-
 [banner]: https://github.com/MainfluxLabs/docs/blob/master/docs/img/gopherBanner.jpg
-[ci-badge]: https://github.com/MainfluxLabs/mainflux/actions/workflows/docker-image.yml/badge.svg?branch=master
-[ci-url]: https://github.com/MainfluxLabs/mainflux
 [docs]: https://mainfluxlabs.github.io/docs
 [docker]: https://www.docker.com
-[forum]: https://groups.google.com/forum/#!forum/mainflux
-[gitter]: https://gitter.im/MainfluxLabs/mainflux?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [gitter-badge]: https://badges.gitter.im/Join%20Chat.svg
 [grc-badge]: https://goreportcard.com/badge/github.com/MainfluxLabs/mainflux
 [grc-url]: https://goreportcard.com/report/github.com/MainfluxLabs/mainflux
 [cov-badge]: https://codecov.io/gh/MainfluxLabs/mainflux/branch/master/graph/badge.svg
 [cov-url]: https://codecov.io/gh/MainfluxLabs/mainflux
 [license]: https://img.shields.io/badge/license-Apache%20v2.0-blue.svg
-[twitter]: https://twitter.com/mainflux
 [lora]: https://lora-alliance.org/
-[opcua]: https://opcfoundation.org/about/opc-technologies/opc-ua/
 [agent]: https://github.com/MainfluxLabs/agent
 [export]: https://github.com/MainfluxLabs/export
 [kubernetes]: https://kubernetes.io/
