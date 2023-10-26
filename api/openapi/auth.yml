@@ -266,6 +266,26 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/orgs:
+    get:
+      summary: Retrieves group membership.
+      description: |
+        Retrieves organizations where group is assigned.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/OrgRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Group does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/members:
     post:
       summary: Create group members.
