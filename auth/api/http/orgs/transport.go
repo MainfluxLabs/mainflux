@@ -136,7 +136,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Patch("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group_policies")(removeGroupMembersEndpoint(svc)),
+		kitot.TraceServer(tracer, "remove_group_policies")(removeGroupPoliciesEndpoint(svc)),
 		decodeRemoveGroupPoliciesRequest,
 		encodeResponse,
 		opts...,

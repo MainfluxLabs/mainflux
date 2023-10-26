@@ -353,7 +353,7 @@ func updateGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func removeGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func removeGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removeGroupPoliciesReq)
 		if err := req.validate(); err != nil {
