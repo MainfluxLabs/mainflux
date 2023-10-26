@@ -42,7 +42,7 @@ func (mrm policiesRepositoryMiddleware) SaveGroupPolicies(ctx context.Context, g
 	return mrm.repo.SaveGroupPolicies(ctx, groupID, gps...)
 }
 
-func (mrm policiesRepositoryMiddleware) RetrieveGroupPolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+func (mrm policiesRepositoryMiddleware) RetrieveGroupPolicy(ctx context.Context, gp auth.GroupPolicy) (string, error) {
 	span := createSpan(ctx, mrm.tracer, retrieveGroupMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

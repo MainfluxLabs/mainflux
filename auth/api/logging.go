@@ -339,7 +339,7 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
-func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByEmail) (err error) {
+func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
@@ -351,7 +351,7 @@ func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, gro
 	return lm.svc.CreateGroupPolicies(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (mpp auth.GroupPoliciesPage, err error) {
+func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (gpp auth.GroupPoliciesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
@@ -363,7 +363,7 @@ func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, group
 	return lm.svc.ListGroupPolicies(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByEmail) (err error) {
+func (lm *loggingMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {

@@ -48,7 +48,7 @@ func TestSaveGroupPolicies(t *testing.T) {
 	err = orgsRepo.AssignGroups(context.Background(), og)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	gpByIDs := []auth.GroupPolicyByID{
+	gps := []auth.GroupPolicyByID{
 		{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
@@ -59,7 +59,7 @@ func TestSaveGroupPolicies(t *testing.T) {
 		},
 	}
 
-	gpWithoutMemberIDs := []auth.GroupPolicyByID{
+	gpsWithoutMemberIDs := []auth.GroupPolicyByID{
 		{
 			MemberID: "",
 			Policy:   auth.RwPolicy,
@@ -73,37 +73,37 @@ func TestSaveGroupPolicies(t *testing.T) {
 	cases := []struct {
 		desc    string
 		groupID string
-		gpByIDs []auth.GroupPolicyByID
+		gps     []auth.GroupPolicyByID
 		err     error
 	}{
 		{
 			desc:    "save group policies",
-			gpByIDs: gpByIDs,
+			gps:     gps,
 			groupID: groupID,
 			err:     nil,
 		},
 		{
 			desc:    "save group policies without group ids",
-			gpByIDs: gpByIDs,
+			gps:     gps,
 			groupID: "",
 			err:     errors.ErrMalformedEntity,
 		},
 		{
 			desc:    "save group policies without member id",
-			gpByIDs: gpWithoutMemberIDs,
+			gps:     gpsWithoutMemberIDs,
 			groupID: groupID,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
 			desc:    "save existing group policies",
-			gpByIDs: gpByIDs,
+			gps:     gps,
 			groupID: groupID,
 			err:     errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.SaveGroupPolicies(context.Background(), tc.groupID, tc.gpByIDs...)
+		err := policiesRepo.SaveGroupPolicies(context.Background(), tc.groupID, tc.gps...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -141,7 +141,7 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 	err = orgsRepo.AssignGroups(context.Background(), og)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	gp := auth.GroupsPolicy{
+	gp := auth.GroupPolicy{
 		GroupID:  groupID,
 		Policy:   auth.RwPolicy,
 		MemberID: memberID,
@@ -157,7 +157,7 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 
 	cases := []struct {
 		desc   string
-		gp     auth.GroupsPolicy
+		gp     auth.GroupPolicy
 		policy string
 		err    error
 	}{
@@ -169,7 +169,7 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 		},
 		{
 			desc: "retrieve group policy without group id",
-			gp: auth.GroupsPolicy{
+			gp: auth.GroupPolicy{
 				GroupID:  "",
 				MemberID: memberID,
 			},
@@ -178,7 +178,7 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 		},
 		{
 			desc: "retrieve group policy without member id",
-			gp: auth.GroupsPolicy{
+			gp: auth.GroupPolicy{
 				GroupID:  groupID,
 				MemberID: "",
 			},
@@ -230,11 +230,11 @@ func TestRetrieveGroupPolicies(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		gpByID := auth.GroupPolicyByID{
+		gp := auth.GroupPolicyByID{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
 		}
-		err = policiesRepo.SaveGroupPolicies(context.Background(), groupID, gpByID)
+		err = policiesRepo.SaveGroupPolicies(context.Background(), groupID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -293,7 +293,7 @@ func TestRetrieveGroupPolicies(t *testing.T) {
 
 	for _, tc := range cases {
 		gpp, err := policiesRepo.RetrieveGroupPolicies(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(gpp.GroupMembersPolicies)
+		size := len(gpp.GroupPolicies)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
@@ -337,12 +337,12 @@ func TestRemoveGroupPolicies(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		gpByID := auth.GroupPolicyByID{
+		gp := auth.GroupPolicyByID{
 			MemberID: memberID,
 			Policy:   auth.RwPolicy,
 		}
 
-		err = policiesRepo.SaveGroupPolicies(context.Background(), groupID, gpByID)
+		err = policiesRepo.SaveGroupPolicies(context.Background(), groupID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -454,7 +454,7 @@ func TestUpdateGroupPolicies(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "update group olicies",
+			desc:    "update group policies",
 			groupID: groupID,
 			gpByID: auth.GroupPolicyByID{
 				MemberID: memberID,

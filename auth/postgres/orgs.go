@@ -832,7 +832,7 @@ type dbGroupPolicy struct {
 	Policy   string `db:"policy"`
 }
 
-func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
+func toDBGroupPolicy(gp auth.GroupPolicy) dbGroupPolicy {
 	return dbGroupPolicy{
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
@@ -840,8 +840,8 @@ func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
 	}
 }
 
-func toGroupMemberPolicy(dbgp dbGroupPolicy) auth.GroupMemberPolicy {
-	return auth.GroupMemberPolicy{
+func toGroupPolicy(dbgp dbGroupPolicy) auth.GroupPolicy {
+	return auth.GroupPolicy{
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
 	}

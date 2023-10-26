@@ -32,7 +32,7 @@ func (mrm *policiesRepositoryMock) SaveGroupPolicies(ctx context.Context, groupI
 	return nil
 }
 
-func (mrm *policiesRepositoryMock) RetrieveGroupPolicy(ctx context.Context, gp auth.GroupsPolicy) (string, error) {
+func (mrm *policiesRepositoryMock) RetrieveGroupPolicy(ctx context.Context, gp auth.GroupPolicy) (string, error) {
 	panic("not implemented")
 }
 

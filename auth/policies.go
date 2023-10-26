@@ -2,9 +2,10 @@ package auth
 
 import "context"
 
-type GroupsPolicy struct {
+type GroupPolicy struct {
 	GroupID  string
 	MemberID string
+	Email    string
 	Policy   string
 }
 
@@ -12,32 +13,20 @@ type GroupPolicyByID struct {
 	MemberID string
 	Policy   string
 }
-
-type GroupPolicyByEmail struct {
-	Email  string
-	Policy string
-}
-
-type GroupMemberPolicy struct {
-	MemberID string
-	Email    string
-	Policy   string
-}
-
 type GroupPoliciesPage struct {
 	PageMetadata
-	GroupMembersPolicies []GroupMemberPolicy
+	GroupPolicies []GroupPolicy
 }
 
-type Members interface {
+type Policies interface {
 	// CreateGroupPolicies creates group policies.
-	CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error
+	CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
 
 	// ListGroupPolicies retrieves page of group policies.
 	ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
 
 	// UpdateGroupPolicies updates group policies.
-	UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error
+	UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
 
 	// RemoveGroupPolicies removes group policies.
 	RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
@@ -48,7 +37,7 @@ type PoliciesRepository interface {
 	SaveGroupPolicies(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
 
 	// RetrieveGroupPolicy retrieves group policy.
-	RetrieveGroupPolicy(ctc context.Context, gp GroupsPolicy) (string, error)
+	RetrieveGroupPolicy(ctc context.Context, gp GroupPolicy) (string, error)
 
 	// RetrieveGroupPolicies retrieves page of group policies.
 	RetrieveGroupPolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupPoliciesPage, error)

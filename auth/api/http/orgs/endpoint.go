@@ -279,6 +279,32 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func viewGroupMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewGroupMembershipReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		o, err := svc.ViewGroupMembership(ctx, req.token, req.groupID)
+		if err != nil {
+			return nil, err
+		}
+
+		org := viewOrgRes{
+			ID:          o.ID,
+			Name:        o.Name,
+			OwnerID:     o.OwnerID,
+			Description: o.Description,
+			Metadata:    o.Metadata,
+			CreatedAt:   o.CreatedAt,
+			UpdatedAt:   o.UpdatedAt,
+		}
+
+		return org, nil
+	}
+}
+
 func createGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupPoliciesReq)
@@ -286,16 +312,16 @@ func createGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var gpByEmails []auth.GroupPolicyByEmail
+		var gps []auth.GroupPolicyByID
 		for _, g := range req.GroupPolicies {
-			gpByEmail := auth.GroupPolicyByEmail{
-				Email:  g.Email,
-				Policy: g.Policy,
+			gp := auth.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
 			}
-			gpByEmails = append(gpByEmails, gpByEmail)
+			gps = append(gps, gp)
 		}
 
-		if err := svc.CreateGroupPolicies(ctx, req.token, req.groupID, gpByEmails...); err != nil {
+		if err := svc.CreateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
@@ -310,17 +336,16 @@ func updateGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var gpByEmails []auth.GroupPolicyByEmail
+		var gps []auth.GroupPolicyByID
 		for _, g := range req.GroupPolicies {
-			giByEmail := auth.GroupPolicyByEmail{
-				Email:  g.Email,
-				Policy: g.Policy,
+			gp := auth.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
 			}
-
-			gpByEmails = append(gpByEmails, giByEmail)
+			gps = append(gps, gp)
 		}
 
-		if err := svc.UpdateGroupPolicies(ctx, req.token, req.groupID, gpByEmails...); err != nil {
+		if err := svc.UpdateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
@@ -361,32 +386,6 @@ func listGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return buildGroupPoliciesResponse(gpp), nil
-	}
-}
-
-func viewGroupMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewGroupMembershipReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		o, err := svc.ViewGroupMembership(ctx, req.token, req.groupID)
-		if err != nil {
-			return nil, err
-		}
-
-		org := viewOrgRes{
-			ID:          o.ID,
-			Name:        o.Name,
-			OwnerID:     o.OwnerID,
-			Description: o.Description,
-			Metadata:    o.Metadata,
-			CreatedAt:   o.CreatedAt,
-			UpdatedAt:   o.UpdatedAt,
-		}
-
-		return org, nil
 	}
 }
 
@@ -553,7 +552,7 @@ func buildGroupPoliciesResponse(gpp auth.GroupPoliciesPage) listGroupPoliciesRes
 		GroupPolicies: []groupPolicy{},
 	}
 
-	for _, g := range gpp.GroupMembersPolicies {
+	for _, g := range gpp.GroupPolicies {
 		gp := groupPolicy{
 			Email:  g.Email,
 			ID:     g.MemberID,

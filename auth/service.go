@@ -91,7 +91,7 @@ type Service interface {
 	Authz
 	Roles
 	Orgs
-	Members
+	Policies
 }
 
 var _ Service = (*service)(nil)
@@ -641,33 +641,12 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 }
 
-func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error {
+func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
 	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
-	var memberEmails []string
-	var roleByEmail = make(map[string]string)
-	for _, g := range gps {
-		roleByEmail[g.Email] = g.Policy
-		memberEmails = append(memberEmails, g.Email)
-	}
-
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
-	if err != nil {
-		return err
-	}
-
-	gpByIDs := []GroupPolicyByID{}
-	for _, user := range usr.Users {
-		gpByIDs = append(gpByIDs, GroupPolicyByID{
-			Policy:   roleByEmail[user.Email],
-			MemberID: user.Id,
-		})
-	}
-
-	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs...); err != nil {
+	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
@@ -685,12 +664,12 @@ func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string,
 	}
 
 	var memberIDs []string
-	for _, gp := range gpp.GroupMembersPolicies {
+	for _, gp := range gpp.GroupPolicies {
 		memberIDs = append(memberIDs, gp.MemberID)
 	}
 
-	var groupMembersPolicies []GroupMemberPolicy
-	if len(gpp.GroupMembersPolicies) > 0 {
+	var groupPolicies []GroupPolicy
+	if len(gpp.GroupPolicies) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
@@ -702,25 +681,25 @@ func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string,
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gp := range gpp.GroupMembersPolicies {
+		for _, gp := range gpp.GroupPolicies {
 			email, ok := emails[gp.MemberID]
 			if !ok {
 				return GroupPoliciesPage{}, err
 			}
 
-			gmp := GroupMemberPolicy{
+			groupPolicy := GroupPolicy{
 				MemberID: gp.MemberID,
 				Email:    email,
 				Policy:   gp.Policy,
 			}
 
-			groupMembersPolicies = append(groupMembersPolicies, gmp)
+			groupPolicies = append(groupPolicies, groupPolicy)
 		}
 
 	}
 
 	page := GroupPoliciesPage{
-		GroupMembersPolicies: groupMembersPolicies,
+		GroupPolicies: groupPolicies,
 		PageMetadata: PageMetadata{
 			Total:  gpp.Total,
 			Offset: gpp.Offset,
@@ -731,33 +710,23 @@ func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string,
 	return page, nil
 }
 
-func (svc service) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByEmail) error {
+func (svc service) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
 	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
 		return err
 	}
 
-	var memberEmails []string
-	var roleByEmail = make(map[string]string)
-	for _, g := range gps {
-		roleByEmail[g.Email] = g.Policy
-		memberEmails = append(memberEmails, g.Email)
-	}
-
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
 	if err != nil {
 		return err
 	}
 
-	gpByIDs := []GroupPolicyByID{}
-	for _, user := range usr.Users {
-		gpByIDs = append(gpByIDs, GroupPolicyByID{
-			Policy:   roleByEmail[user.Email],
-			MemberID: user.Id,
-		})
+	for _, gp := range gps {
+		if gp.MemberID == org.OwnerID {
+			return errors.ErrAuthorization
+		}
 	}
 
-	if err := svc.policies.UpdateGroupPolicies(ctx, groupID, gpByIDs...); err != nil {
+	if err := svc.policies.UpdateGroupPolicies(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
@@ -787,17 +756,12 @@ func (svc service) RemoveGroupPolicies(ctx context.Context, token, groupID strin
 	return nil
 }
 
-func (svc service)  ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error) {
+func (svc service) ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error) {
 	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
 		return Org{}, err
 	}
 
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
-		return Org{}, err
-	}
-
-	return org, nil
+	return svc.orgs.RetrieveByGroupID(ctx, groupID)
 }
 
 func (svc service) canAccessGroup(ctx context.Context, token, Object, action string) error {
@@ -806,7 +770,7 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		return err
 	}
 
-	gp := GroupsPolicy{
+	gp := GroupPolicy{
 		MemberID: user.ID,
 		GroupID:  Object,
 	}

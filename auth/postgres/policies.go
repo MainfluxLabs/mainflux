@@ -31,7 +31,7 @@ func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID stri
 	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
 
 	for _, g := range gps {
-		gp := auth.GroupsPolicy{
+		gp := auth.GroupPolicy{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
 			Policy:   g.Policy,
@@ -62,7 +62,7 @@ func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID stri
 	return nil
 }
 
-func (pr policiesRepository) RetrieveGroupPolicy(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
+func (pr policiesRepository) RetrieveGroupPolicy(ctc context.Context, gp auth.GroupPolicy) (string, error) {
 	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
@@ -101,16 +101,15 @@ func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID 
 	}
 	defer rows.Close()
 
-	var items []auth.GroupMemberPolicy
+	var items []auth.GroupPolicy
 	for rows.Next() {
 		dbgp := dbGroupPolicy{}
 		if err := rows.StructScan(&dbgp); err != nil {
 			return auth.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		gm := toGroupMemberPolicy(dbgp)
-
-		items = append(items, gm)
+		gp := toGroupPolicy(dbgp)
+		items = append(items, gp)
 	}
 
 	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
@@ -121,7 +120,7 @@ func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID 
 	}
 
 	page := auth.GroupPoliciesPage{
-		GroupMembersPolicies: items,
+		GroupPolicies: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -152,7 +151,7 @@ func (pr policiesRepository) UpdateGroupPolicies(ctx context.Context, groupID st
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gps {
-		gp := auth.GroupsPolicy{
+		gp := auth.GroupPolicy{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
 			Policy:   g.Policy,

@@ -241,7 +241,7 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	return ms.svc.AssignRole(ctx, id, role)
 }
 
-func (ms *metricsMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByEmail) error {
+func (ms *metricsMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_group_policies").Add(1)
 		ms.latency.With("method", "create_group_policies").Observe(time.Since(begin).Seconds())
@@ -259,7 +259,7 @@ func (ms *metricsMiddleware) ListGroupPolicies(ctx context.Context, token, group
 	return ms.svc.ListGroupPolicies(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByEmail) error {
+func (ms *metricsMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_group_policies").Add(1)
 		ms.latency.With("method", "update_group_policies").Observe(time.Since(begin).Seconds())
