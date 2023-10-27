@@ -97,13 +97,13 @@ func (req updateCertReq) validate() error {
 	return nil
 }
 
-type updateGetConnByKey struct {
+type updateConnReq struct {
 	token    string
 	id       string
 	Channels []string `json:"channels"`
 }
 
-func (req updateGetConnByKey) validate() error {
+func (req updateConnReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

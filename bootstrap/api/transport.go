@@ -66,7 +66,7 @@ func MakeHandler(svc bootstrap.Service, reader bootstrap.ConfigReader, logger lo
 
 	r.Put("/things/configs/connections/:id", kithttp.NewServer(
 		updateConnEndpoint(svc),
-		decodeUpdateGetConnByKeyuest,
+		decodeUpdateConnRequest,
 		encodeResponse,
 		opts...))
 
@@ -151,12 +151,12 @@ func decodeUpdateCertRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeUpdateGetConnByKeyuest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateConnRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := updateGetConnByKey{
+	req := updateConnReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
 	}
