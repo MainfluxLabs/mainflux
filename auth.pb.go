@@ -28,26 +28,25 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type AccessByKeyReq struct {
-	Token                string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	ChanID               string   `protobuf:"bytes,2,opt,name=chanID,proto3" json:"chanID,omitempty"`
+type ConnByKeyReq struct {
+	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *AccessByKeyReq) Reset()         { *m = AccessByKeyReq{} }
-func (m *AccessByKeyReq) String() string { return proto.CompactTextString(m) }
-func (*AccessByKeyReq) ProtoMessage()    {}
-func (*AccessByKeyReq) Descriptor() ([]byte, []int) {
+func (m *ConnByKeyReq) Reset()         { *m = ConnByKeyReq{} }
+func (m *ConnByKeyReq) String() string { return proto.CompactTextString(m) }
+func (*ConnByKeyReq) ProtoMessage()    {}
+func (*ConnByKeyReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8bbd6f3875b0e874, []int{0}
 }
-func (m *AccessByKeyReq) XXX_Unmarshal(b []byte) error {
+func (m *ConnByKeyReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *AccessByKeyReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ConnByKeyReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_AccessByKeyReq.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ConnByKeyReq.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -57,28 +56,76 @@ func (m *AccessByKeyReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *AccessByKeyReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AccessByKeyReq.Merge(m, src)
+func (m *ConnByKeyReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConnByKeyReq.Merge(m, src)
 }
-func (m *AccessByKeyReq) XXX_Size() int {
+func (m *ConnByKeyReq) XXX_Size() int {
 	return m.Size()
 }
-func (m *AccessByKeyReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_AccessByKeyReq.DiscardUnknown(m)
+func (m *ConnByKeyReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConnByKeyReq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AccessByKeyReq proto.InternalMessageInfo
+var xxx_messageInfo_ConnByKeyReq proto.InternalMessageInfo
 
-func (m *AccessByKeyReq) GetToken() string {
+func (m *ConnByKeyReq) GetKey() string {
 	if m != nil {
-		return m.Token
+		return m.Key
 	}
 	return ""
 }
 
-func (m *AccessByKeyReq) GetChanID() string {
+type ConnByKeyRes struct {
+	ChannelID            string   `protobuf:"bytes,1,opt,name=channelID,proto3" json:"channelID,omitempty"`
+	ThingID              string   `protobuf:"bytes,2,opt,name=thingID,proto3" json:"thingID,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ConnByKeyRes) Reset()         { *m = ConnByKeyRes{} }
+func (m *ConnByKeyRes) String() string { return proto.CompactTextString(m) }
+func (*ConnByKeyRes) ProtoMessage()    {}
+func (*ConnByKeyRes) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8bbd6f3875b0e874, []int{1}
+}
+func (m *ConnByKeyRes) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ConnByKeyRes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ConnByKeyRes.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ConnByKeyRes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConnByKeyRes.Merge(m, src)
+}
+func (m *ConnByKeyRes) XXX_Size() int {
+	return m.Size()
+}
+func (m *ConnByKeyRes) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConnByKeyRes.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConnByKeyRes proto.InternalMessageInfo
+
+func (m *ConnByKeyRes) GetChannelID() string {
 	if m != nil {
-		return m.ChanID
+		return m.ChannelID
+	}
+	return ""
+}
+
+func (m *ConnByKeyRes) GetThingID() string {
+	if m != nil {
+		return m.ThingID
 	}
 	return ""
 }
@@ -95,7 +142,7 @@ func (m *ChannelOwnerReq) Reset()         { *m = ChannelOwnerReq{} }
 func (m *ChannelOwnerReq) String() string { return proto.CompactTextString(m) }
 func (*ChannelOwnerReq) ProtoMessage()    {}
 func (*ChannelOwnerReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8bbd6f3875b0e874, []int{1}
+	return fileDescriptor_8bbd6f3875b0e874, []int{2}
 }
 func (m *ChannelOwnerReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -149,7 +196,7 @@ func (m *ThingID) Reset()         { *m = ThingID{} }
 func (m *ThingID) String() string { return proto.CompactTextString(m) }
 func (*ThingID) ProtoMessage()    {}
 func (*ThingID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8bbd6f3875b0e874, []int{2}
+	return fileDescriptor_8bbd6f3875b0e874, []int{3}
 }
 func (m *ThingID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -196,7 +243,7 @@ func (m *ChannelID) Reset()         { *m = ChannelID{} }
 func (m *ChannelID) String() string { return proto.CompactTextString(m) }
 func (*ChannelID) ProtoMessage()    {}
 func (*ChannelID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8bbd6f3875b0e874, []int{3}
+	return fileDescriptor_8bbd6f3875b0e874, []int{4}
 }
 func (m *ChannelID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -228,61 +275,6 @@ var xxx_messageInfo_ChannelID proto.InternalMessageInfo
 func (m *ChannelID) GetValue() string {
 	if m != nil {
 		return m.Value
-	}
-	return ""
-}
-
-type AccessByIDReq struct {
-	ThingID              string   `protobuf:"bytes,1,opt,name=thingID,proto3" json:"thingID,omitempty"`
-	ChanID               string   `protobuf:"bytes,2,opt,name=chanID,proto3" json:"chanID,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AccessByIDReq) Reset()         { *m = AccessByIDReq{} }
-func (m *AccessByIDReq) String() string { return proto.CompactTextString(m) }
-func (*AccessByIDReq) ProtoMessage()    {}
-func (*AccessByIDReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8bbd6f3875b0e874, []int{4}
-}
-func (m *AccessByIDReq) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AccessByIDReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AccessByIDReq.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AccessByIDReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AccessByIDReq.Merge(m, src)
-}
-func (m *AccessByIDReq) XXX_Size() int {
-	return m.Size()
-}
-func (m *AccessByIDReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_AccessByIDReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AccessByIDReq proto.InternalMessageInfo
-
-func (m *AccessByIDReq) GetThingID() string {
-	if m != nil {
-		return m.ThingID
-	}
-	return ""
-}
-
-func (m *AccessByIDReq) GetChanID() string {
-	if m != nil {
-		return m.ChanID
 	}
 	return ""
 }
@@ -1290,11 +1282,11 @@ func (m *AssignRoleReq) GetRole() string {
 }
 
 func init() {
-	proto.RegisterType((*AccessByKeyReq)(nil), "mainflux.AccessByKeyReq")
+	proto.RegisterType((*ConnByKeyReq)(nil), "mainflux.ConnByKeyReq")
+	proto.RegisterType((*ConnByKeyRes)(nil), "mainflux.ConnByKeyRes")
 	proto.RegisterType((*ChannelOwnerReq)(nil), "mainflux.ChannelOwnerReq")
 	proto.RegisterType((*ThingID)(nil), "mainflux.ThingID")
 	proto.RegisterType((*ChannelID)(nil), "mainflux.ChannelID")
-	proto.RegisterType((*AccessByIDReq)(nil), "mainflux.AccessByIDReq")
 	proto.RegisterType((*Token)(nil), "mainflux.Token")
 	proto.RegisterType((*UserIdentity)(nil), "mainflux.UserIdentity")
 	proto.RegisterType((*IssueReq)(nil), "mainflux.IssueReq")
@@ -1318,63 +1310,63 @@ func init() { proto.RegisterFile("auth.proto", fileDescriptor_8bbd6f3875b0e874) 
 
 var fileDescriptor_8bbd6f3875b0e874 = []byte{
 	// 911 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x5b, 0x8f, 0xdb, 0x44,
-	0x14, 0xce, 0xc5, 0xb9, 0x9d, 0x6d, 0xd2, 0x65, 0xa8, 0x82, 0x31, 0x6a, 0xd8, 0x8e, 0x90, 0xa8,
-	0x78, 0x70, 0xab, 0x6d, 0x11, 0x08, 0x41, 0x57, 0xd9, 0x7a, 0xb5, 0xb2, 0x10, 0x02, 0x99, 0x22,
-	0xf1, 0xea, 0x75, 0x26, 0x89, 0xa9, 0x2f, 0xc1, 0x33, 0x2e, 0x84, 0x07, 0x7e, 0x05, 0x0f, 0xbc,
-	0xf3, 0x67, 0x90, 0x78, 0xe1, 0x27, 0xa0, 0xe5, 0x8f, 0x54, 0x73, 0xb1, 0x3d, 0xd9, 0xb5, 0xad,
-	0x7d, 0x9b, 0x6f, 0xe6, 0x9c, 0xf3, 0x9d, 0xdb, 0x9c, 0x03, 0xe0, 0xe7, 0x6c, 0x6b, 0xef, 0xb2,
-	0x94, 0xa5, 0x68, 0x1c, 0xfb, 0x61, 0xb2, 0x8e, 0xf2, 0x5f, 0xad, 0x0f, 0x36, 0x69, 0xba, 0x89,
-	0xc8, 0x13, 0x71, 0x7f, 0x95, 0xaf, 0x9f, 0x90, 0x78, 0xc7, 0xf6, 0x52, 0x0c, 0xbf, 0x80, 0xd9,
-	0x32, 0x08, 0x08, 0xa5, 0xe7, 0xfb, 0xaf, 0xc9, 0xde, 0x23, 0x3f, 0xa3, 0x07, 0x30, 0x60, 0xe9,
-	0x6b, 0x92, 0x98, 0xdd, 0x93, 0xee, 0xe3, 0x89, 0x27, 0x01, 0x9a, 0xc3, 0x30, 0xd8, 0xfa, 0x89,
-	0xeb, 0x98, 0x3d, 0x71, 0xad, 0x10, 0x3e, 0x83, 0xfb, 0x2f, 0xb7, 0x7e, 0x92, 0x90, 0xe8, 0xdb,
-	0x5f, 0x12, 0x92, 0x29, 0x03, 0x29, 0x3f, 0x17, 0x06, 0x04, 0x68, 0x34, 0xf0, 0x21, 0x8c, 0x5e,
-	0x6d, 0xc3, 0x64, 0xe3, 0x3a, 0x5c, 0xf1, 0x8d, 0x1f, 0xe5, 0xa4, 0x50, 0x14, 0x00, 0x3f, 0x82,
-	0x89, 0x62, 0x68, 0x14, 0x59, 0xc2, 0xb4, 0x08, 0xc2, 0x75, 0xb8, 0x0b, 0x26, 0x8c, 0x98, 0x34,
-	0xaa, 0x04, 0x0b, 0xd8, 0xe8, 0xc6, 0x43, 0x18, 0xbc, 0x12, 0x81, 0xd6, 0x33, 0x3c, 0x87, 0x7b,
-	0x3f, 0x50, 0x92, 0xb9, 0x2b, 0x92, 0xb0, 0x90, 0xed, 0xd1, 0x0c, 0x7a, 0xe1, 0x4a, 0x89, 0xf4,
-	0xc2, 0x15, 0xd7, 0x22, 0xb1, 0x1f, 0x46, 0xca, 0xaa, 0x04, 0xd8, 0x81, 0xb1, 0x4b, 0x69, 0x4e,
-	0xb8, 0x4b, 0x77, 0xd2, 0x40, 0x08, 0x0c, 0xb6, 0xdf, 0x11, 0xb3, 0x7f, 0xd2, 0x7d, 0x3c, 0xf5,
-	0xc4, 0x19, 0x27, 0x70, 0x6f, 0x99, 0xb3, 0x6d, 0x9a, 0x85, 0xbf, 0x91, 0xd6, 0x02, 0xa5, 0x57,
-	0x3f, 0x91, 0x80, 0x15, 0x81, 0x49, 0xc4, 0x53, 0x41, 0x73, 0xf9, 0xd0, 0x97, 0xa9, 0x50, 0x90,
-	0x6b, 0xf8, 0x01, 0x0b, 0xd3, 0xc4, 0x34, 0xa4, 0x86, 0x44, 0xd8, 0x3e, 0xe0, 0xa3, 0x68, 0x21,
-	0xfb, 0x4a, 0x60, 0x19, 0xc1, 0xd8, 0xd3, 0x6e, 0xf0, 0x6b, 0x98, 0x7c, 0x97, 0x46, 0x61, 0xd0,
-	0xde, 0x3d, 0x3b, 0x21, 0x52, 0x38, 0x27, 0x51, 0xbb, 0x73, 0x2a, 0x1c, 0x43, 0x0f, 0x07, 0xff,
-	0x08, 0xb0, 0xa4, 0x34, 0xdc, 0x24, 0x31, 0x49, 0x58, 0x03, 0x9b, 0x09, 0xa3, 0x4d, 0x96, 0xe6,
-	0xbb, 0xb2, 0xc8, 0x05, 0x44, 0x16, 0x8c, 0x63, 0x12, 0x5f, 0x91, 0xcc, 0x75, 0x14, 0x61, 0x89,
-	0xf1, 0xef, 0x00, 0xdf, 0x88, 0x33, 0x6d, 0x8e, 0xa3, 0xd9, 0x32, 0xf7, 0x77, 0xbd, 0xa6, 0x44,
-	0x06, 0x62, 0x78, 0x0a, 0x71, 0x3b, 0x51, 0x18, 0x87, 0x32, 0x0c, 0xc3, 0x93, 0xa0, 0x2c, 0xf3,
-	0x40, 0x18, 0x91, 0x65, 0xd6, 0xf9, 0xa9, 0xe4, 0x67, 0x7e, 0x24, 0xf8, 0x0d, 0x4f, 0x02, 0x8d,
-	0xa5, 0x57, 0xcf, 0xd2, 0xaf, 0x63, 0x31, 0x2a, 0x16, 0x1e, 0x81, 0x8c, 0x98, 0x9a, 0x83, 0x93,
-	0x3e, 0x8f, 0x40, 0x41, 0xec, 0x80, 0xc1, 0x5b, 0xfc, 0x8e, 0x8d, 0x3a, 0x87, 0x21, 0x65, 0x3e,
-	0xcb, 0xa9, 0xca, 0xa3, 0x42, 0xf8, 0x13, 0x38, 0xe6, 0x56, 0xe8, 0xf9, 0xfe, 0x82, 0xcb, 0x89,
-	0x5c, 0xce, 0x61, 0x28, 0x94, 0xa8, 0xd9, 0x15, 0x94, 0x0a, 0xe1, 0x47, 0x30, 0x55, 0xb2, 0xae,
-	0x23, 0x04, 0x8f, 0xa1, 0x1f, 0xae, 0x0a, 0x29, 0x7e, 0xc4, 0x4f, 0x61, 0x2c, 0x44, 0x78, 0x4a,
-	0x3e, 0x82, 0x41, 0xce, 0xcf, 0xe2, 0xfd, 0xe8, 0x74, 0x66, 0x17, 0x13, 0xce, 0xe6, 0x22, 0x9e,
-	0x7c, 0xc4, 0x1b, 0x18, 0x5c, 0xf2, 0x9a, 0xdc, 0x8a, 0xc3, 0x84, 0x91, 0x98, 0x44, 0x55, 0xed,
-	0x14, 0xe4, 0x79, 0x4a, 0xfc, 0x98, 0xa8, 0x48, 0xc4, 0x19, 0x9d, 0xc0, 0xd1, 0x8a, 0xd0, 0x20,
-	0x0b, 0x77, 0xda, 0x0f, 0xd1, 0xaf, 0xf0, 0x43, 0x98, 0x08, 0xa2, 0x06, 0xcf, 0x9f, 0x57, 0xcf,
-	0x14, 0x7d, 0x0c, 0x43, 0xd1, 0x28, 0x85, 0xef, 0xf7, 0x2b, 0xdf, 0x85, 0x90, 0xa7, 0x9e, 0xf1,
-	0x33, 0x98, 0xca, 0xf6, 0xf6, 0xd2, 0xa8, 0x76, 0x6c, 0x20, 0x30, 0xb2, 0x34, 0x22, 0x2a, 0x04,
-	0x71, 0x3e, 0xfd, 0xa7, 0x07, 0x53, 0x31, 0x43, 0xe9, 0xf7, 0x24, 0x7b, 0x13, 0x06, 0x04, 0x9d,
-	0xc1, 0xec, 0xa5, 0x9f, 0x68, 0x83, 0x1d, 0x99, 0x15, 0xe3, 0xe1, 0xbc, 0xb7, 0xde, 0xa9, 0x5e,
-	0xd4, 0x20, 0xc6, 0x1d, 0x74, 0x01, 0x33, 0x97, 0xea, 0x83, 0x1d, 0xbd, 0x5f, 0x89, 0xdd, 0x18,
-	0xf8, 0xd6, 0xdc, 0x96, 0x1b, 0xc6, 0x2e, 0x36, 0x8c, 0x7d, 0xc1, 0x37, 0x0c, 0xee, 0xa0, 0x73,
-	0x98, 0x6a, 0x7e, 0xb8, 0x0e, 0x7a, 0xef, 0xb6, 0x1b, 0x62, 0x62, 0xb7, 0xd8, 0x78, 0x0a, 0x63,
-	0x39, 0x76, 0xd7, 0x7b, 0xa4, 0xe5, 0x4d, 0x4c, 0xeb, 0x7a, 0xe7, 0xbf, 0x84, 0xd9, 0x25, 0x61,
-	0x32, 0xfb, 0xa2, 0xb7, 0xd0, 0xbb, 0x37, 0xf2, 0xcd, 0x6b, 0x66, 0xd5, 0x5c, 0x52, 0xdc, 0x39,
-	0xfd, 0xa3, 0x2b, 0x67, 0x7d, 0x99, 0xcc, 0x17, 0x30, 0xbd, 0x24, 0xac, 0xea, 0x54, 0x3d, 0x88,
-	0x83, 0xfe, 0xb5, 0xd0, 0x8d, 0x07, 0x61, 0x10, 0x39, 0x70, 0x5c, 0xe9, 0xcb, 0x5f, 0x81, 0xac,
-	0x5b, 0x26, 0xca, 0xef, 0x52, 0x6f, 0xe5, 0xf4, 0xaf, 0x3e, 0x1c, 0xf1, 0xb1, 0x5c, 0x78, 0x65,
-	0xc3, 0x40, 0xec, 0x16, 0xa4, 0x89, 0x17, 0xcb, 0xc6, 0xba, 0x99, 0x27, 0xdc, 0x41, 0x9f, 0xb6,
-	0xa5, 0x71, 0x7e, 0x48, 0x59, 0xac, 0x39, 0xdc, 0x41, 0x5f, 0xc1, 0xa4, 0x5c, 0x06, 0x48, 0x13,
-	0xd3, 0x37, 0x52, 0x4b, 0xf1, 0xbe, 0x80, 0xc9, 0x72, 0xb5, 0x92, 0xeb, 0x41, 0xaf, 0x42, 0xb9,
-	0x30, 0x5a, 0x74, 0x3f, 0x87, 0xa1, 0xfc, 0x0b, 0xe8, 0x81, 0xc6, 0x5b, 0x0e, 0xff, 0x16, 0xcd,
-	0xcf, 0x60, 0xa4, 0x46, 0xa9, 0xae, 0x5a, 0x4d, 0x77, 0xab, 0xee, 0x96, 0x97, 0xea, 0xac, 0xd8,
-	0x2e, 0xfc, 0xfb, 0x1d, 0x34, 0xab, 0xfe, 0x29, 0x9b, 0x99, 0xcf, 0x8f, 0xff, 0xbe, 0x5e, 0x74,
-	0xff, 0xbd, 0x5e, 0x74, 0xff, 0xbb, 0x5e, 0x74, 0xff, 0xfc, 0x7f, 0xd1, 0xb9, 0x1a, 0x0a, 0x99,
-	0x67, 0x6f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x26, 0x26, 0xb8, 0x8b, 0x9c, 0x09, 0x00, 0x00,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0xcd, 0x8e, 0xe3, 0x44,
+	0x10, 0x8e, 0x13, 0xe7, 0xaf, 0x26, 0xc9, 0x86, 0x66, 0x15, 0x8c, 0x61, 0x43, 0xb6, 0x85, 0xc4,
+	0x8a, 0x83, 0x77, 0x95, 0x5d, 0x04, 0x42, 0xc0, 0x32, 0x33, 0x19, 0xa2, 0x08, 0x21, 0x90, 0x59,
+	0x24, 0xae, 0x4e, 0xd2, 0x49, 0xcc, 0xf8, 0x27, 0xb8, 0xdb, 0x0b, 0xe6, 0xc0, 0x99, 0x07, 0xe0,
+	0xc0, 0x9d, 0x97, 0xe1, 0xc8, 0x23, 0xa0, 0xe1, 0x45, 0x56, 0xfd, 0x63, 0xbb, 0x33, 0xeb, 0x44,
+	0x73, 0xeb, 0xaf, 0xbb, 0xaa, 0xbe, 0xaa, 0xea, 0xea, 0xaf, 0x01, 0xbc, 0x94, 0xed, 0x9c, 0x7d,
+	0x12, 0xb3, 0x18, 0x75, 0x42, 0xcf, 0x8f, 0x36, 0x41, 0xfa, 0xab, 0xfd, 0xce, 0x36, 0x8e, 0xb7,
+	0x01, 0x79, 0x2c, 0xf6, 0x97, 0xe9, 0xe6, 0x31, 0x09, 0xf7, 0x2c, 0x93, 0x66, 0x78, 0x02, 0xbd,
+	0xcb, 0x38, 0x8a, 0x2e, 0xb2, 0xaf, 0x49, 0xe6, 0x92, 0x9f, 0xd1, 0x10, 0x1a, 0xd7, 0x24, 0xb3,
+	0x8c, 0x89, 0xf1, 0xa8, 0xeb, 0xf2, 0x25, 0xfe, 0xea, 0xc0, 0x82, 0xa2, 0x77, 0xa1, 0xbb, 0xda,
+	0x79, 0x51, 0x44, 0x82, 0xc5, 0x4c, 0xd9, 0x95, 0x1b, 0xc8, 0x82, 0x36, 0xdb, 0xf9, 0xd1, 0x76,
+	0x31, 0xb3, 0xea, 0xe2, 0x2c, 0x87, 0xf8, 0x39, 0xdc, 0xbb, 0x94, 0x66, 0xdf, 0xfe, 0x12, 0x91,
+	0x84, 0x93, 0xdd, 0x87, 0x66, 0xcc, 0xd7, 0x2a, 0x8c, 0x04, 0x68, 0x04, 0x2d, 0x1e, 0xaf, 0x88,
+	0xa0, 0x10, 0x7e, 0x0f, 0xda, 0x2f, 0x64, 0x2c, 0xee, 0xf8, 0xd2, 0x0b, 0x52, 0x92, 0x3b, 0x0a,
+	0x80, 0x1f, 0x42, 0xf7, 0xb2, 0x48, 0xa4, 0xda, 0xe4, 0x01, 0x34, 0x5f, 0xc4, 0xd7, 0x24, 0x3a,
+	0x72, 0xfc, 0x0c, 0x7a, 0x3f, 0x50, 0x92, 0x2c, 0xd6, 0x24, 0x62, 0x3e, 0xcb, 0xd0, 0x00, 0xea,
+	0xfe, 0x5a, 0x99, 0xd4, 0xfd, 0x35, 0xf7, 0x22, 0xa1, 0xe7, 0x07, 0x2a, 0x33, 0x09, 0xf0, 0x0c,
+	0x3a, 0x0b, 0x4a, 0x53, 0xc2, 0x4b, 0xba, 0x93, 0x07, 0x42, 0x60, 0xb2, 0x6c, 0x4f, 0xac, 0xc6,
+	0xc4, 0x78, 0xd4, 0x77, 0xc5, 0x1a, 0x47, 0xd0, 0x3b, 0x4f, 0xd9, 0x2e, 0x4e, 0xfc, 0xdf, 0x88,
+	0x6a, 0x0e, 0xe3, 0xa9, 0xe6, 0x19, 0x0a, 0xc0, 0x9b, 0x13, 0x2f, 0x7f, 0x22, 0x2b, 0x96, 0x37,
+	0x47, 0x22, 0xde, 0x77, 0x9a, 0xca, 0x83, 0x86, 0xec, 0xbb, 0x82, 0xdc, 0xc3, 0x5b, 0x31, 0x3f,
+	0x8e, 0x2c, 0x53, 0x7a, 0x48, 0x84, 0x9d, 0x03, 0x3e, 0x8a, 0xc6, 0x72, 0x7c, 0x04, 0x96, 0x15,
+	0x74, 0x5c, 0x6d, 0x07, 0x5f, 0x43, 0xf7, 0xbb, 0x38, 0xf0, 0x57, 0xd9, 0xc9, 0xe4, 0xf6, 0xc2,
+	0x24, 0x4f, 0x4e, 0xa2, 0xd3, 0xc9, 0xa9, 0x72, 0x4c, 0xbd, 0x1c, 0xfc, 0x23, 0xc0, 0x39, 0xa5,
+	0xfe, 0x36, 0x0a, 0x49, 0xc4, 0x8e, 0xb0, 0x59, 0xd0, 0xde, 0x26, 0x71, 0xba, 0x2f, 0x47, 0x4d,
+	0x41, 0x64, 0x43, 0x27, 0x24, 0xe1, 0x92, 0x24, 0x8b, 0x99, 0x22, 0x2c, 0x30, 0xfe, 0x1d, 0xe0,
+	0x1b, 0xb1, 0xa6, 0xc7, 0xeb, 0x38, 0x1e, 0x99, 0xe7, 0xbb, 0xd9, 0x50, 0x22, 0x0b, 0x31, 0x5d,
+	0x85, 0x78, 0x9c, 0xc0, 0x0f, 0x7d, 0x59, 0x86, 0xe9, 0x4a, 0x50, 0x5c, 0x73, 0x53, 0x04, 0x91,
+	0xd7, 0xac, 0xf3, 0x53, 0xc9, 0xcf, 0xbc, 0x40, 0xf0, 0x9b, 0xae, 0x04, 0x1a, 0x4b, 0xbd, 0x9a,
+	0xa5, 0x51, 0xc5, 0x62, 0x96, 0x2c, 0xbc, 0x02, 0x59, 0x31, 0xb5, 0x9a, 0x93, 0x06, 0xaf, 0x40,
+	0x41, 0x3c, 0x03, 0x93, 0x8f, 0xf8, 0x1d, 0x07, 0x75, 0x04, 0x2d, 0xca, 0x3c, 0x96, 0x52, 0xd5,
+	0x47, 0x85, 0xf0, 0x87, 0x30, 0xe4, 0x51, 0xe8, 0x45, 0x76, 0xc5, 0xed, 0x44, 0x2f, 0x47, 0xd0,
+	0x12, 0x4e, 0xd4, 0x32, 0x04, 0xa5, 0x42, 0xf8, 0x21, 0xf4, 0x95, 0xed, 0x62, 0x46, 0x95, 0xc6,
+	0xf8, 0xeb, 0xdc, 0x8a, 0x2f, 0xf1, 0x13, 0xe8, 0x08, 0x13, 0xde, 0x92, 0xf7, 0xa1, 0x99, 0xf2,
+	0xb5, 0x38, 0x3f, 0x9b, 0x0e, 0x9c, 0x5c, 0xc8, 0x1c, 0x6e, 0xe2, 0xca, 0x43, 0xbc, 0x85, 0xe6,
+	0x9c, 0xdf, 0xc9, 0x6b, 0x75, 0x58, 0xd0, 0x16, 0x32, 0x52, 0xde, 0x9d, 0x82, 0xbc, 0x4f, 0x91,
+	0x17, 0x12, 0x55, 0x89, 0x58, 0xa3, 0x09, 0x9c, 0xad, 0x09, 0x5d, 0x25, 0xfe, 0x5e, 0x7b, 0x21,
+	0xfa, 0x16, 0x7e, 0x00, 0x5d, 0x41, 0x74, 0x24, 0xf3, 0x67, 0xe5, 0x31, 0x45, 0x1f, 0x40, 0x4b,
+	0x0c, 0x4a, 0x9e, 0xfb, 0xbd, 0x32, 0x77, 0x61, 0xe4, 0xaa, 0x63, 0xfc, 0x14, 0xfa, 0x72, 0xbc,
+	0xdd, 0x38, 0xa8, 0x94, 0x0d, 0x04, 0x66, 0x12, 0x07, 0x44, 0x95, 0x20, 0xd6, 0xd3, 0x3f, 0xea,
+	0xd0, 0x17, 0x02, 0x48, 0xbf, 0x27, 0xc9, 0x4b, 0x7f, 0x45, 0xd0, 0x97, 0xd0, 0x9b, 0x13, 0x56,
+	0xa8, 0x33, 0x1a, 0x95, 0x7c, 0xba, 0xa8, 0xdb, 0xd5, 0xfb, 0x14, 0xd7, 0xd0, 0x15, 0x0c, 0x16,
+	0x54, 0x97, 0x65, 0xf4, 0xb6, 0x66, 0x7b, 0x28, 0xd7, 0xf6, 0xc8, 0x91, 0x3f, 0x89, 0x93, 0xff,
+	0x24, 0xce, 0x15, 0xff, 0x49, 0x70, 0x0d, 0x3d, 0x81, 0x8e, 0xd4, 0xcc, 0x4d, 0x86, 0xb4, 0xa2,
+	0x85, 0xd4, 0xda, 0x6f, 0x68, 0x1b, 0xea, 0x2f, 0xa8, 0xa1, 0xcf, 0x60, 0x30, 0x27, 0x4c, 0xb6,
+	0x4e, 0x0c, 0x06, 0x7a, 0xf3, 0x56, 0xb3, 0x78, 0xc3, 0xed, 0x8a, 0x4d, 0x8a, 0x6b, 0xd3, 0x3f,
+	0x0d, 0x29, 0xd4, 0x45, 0x27, 0xbe, 0x80, 0xfe, 0x9c, 0xb0, 0x72, 0xcc, 0xd0, 0x5b, 0x87, 0x63,
+	0x53, 0x0c, 0x9f, 0x8d, 0x6e, 0x1d, 0xc8, 0x3e, 0xcc, 0x60, 0x58, 0xfa, 0xcb, 0x91, 0x46, 0xf6,
+	0x6b, 0x21, 0x8a, 0x59, 0xaf, 0x8e, 0x32, 0xfd, 0xbb, 0x01, 0x67, 0x5c, 0x53, 0xf3, 0xac, 0x1c,
+	0x68, 0x8a, 0x8f, 0x01, 0x69, 0xe6, 0xf9, 0x4f, 0x61, 0xdf, 0xee, 0x13, 0xae, 0xa1, 0x8f, 0x4e,
+	0xb5, 0x71, 0x74, 0x48, 0x99, 0xff, 0x51, 0xb8, 0x86, 0x3e, 0x87, 0x6e, 0xa1, 0xe4, 0xfa, 0x0c,
+	0xe8, 0xdf, 0xc9, 0x89, 0xcb, 0xfb, 0x14, 0xba, 0xe7, 0xeb, 0xb5, 0xd4, 0x76, 0xfd, 0x16, 0x0a,
+	0xb5, 0x3f, 0xe1, 0xfb, 0x09, 0xb4, 0xe4, 0x20, 0xa3, 0xfb, 0x1a, 0x6f, 0xa1, 0xdc, 0x27, 0x3c,
+	0x3f, 0x86, 0xb6, 0xd2, 0x41, 0xdd, 0xb5, 0x94, 0x66, 0xbb, 0x6a, 0x97, 0x5f, 0xd5, 0xf3, 0xfc,
+	0x6b, 0xe0, 0x6f, 0x47, 0xbf, 0xe7, 0x83, 0x17, 0x75, 0x9c, 0xf9, 0x62, 0xf8, 0xcf, 0xcd, 0xd8,
+	0xf8, 0xf7, 0x66, 0x6c, 0xfc, 0x77, 0x33, 0x36, 0xfe, 0xfa, 0x7f, 0x5c, 0x5b, 0xb6, 0x84, 0xcd,
+	0xd3, 0x57, 0x01, 0x00, 0x00, 0xff, 0xff, 0x66, 0xe2, 0xa2, 0xea, 0x40, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1389,9 +1381,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ThingsServiceClient interface {
-	CanAccessByKey(ctx context.Context, in *AccessByKeyReq, opts ...grpc.CallOption) (*ThingID, error)
+	GetConnByKey(ctx context.Context, in *ConnByKeyReq, opts ...grpc.CallOption) (*ConnByKeyRes, error)
 	IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*ThingID, error)
 	GetGroupsByIDs(ctx context.Context, in *GroupsReq, opts ...grpc.CallOption) (*GroupsRes, error)
 }
@@ -1404,9 +1395,9 @@ func NewThingsServiceClient(cc *grpc.ClientConn) ThingsServiceClient {
 	return &thingsServiceClient{cc}
 }
 
-func (c *thingsServiceClient) CanAccessByKey(ctx context.Context, in *AccessByKeyReq, opts ...grpc.CallOption) (*ThingID, error) {
-	out := new(ThingID)
-	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/CanAccessByKey", in, out, opts...)
+func (c *thingsServiceClient) GetConnByKey(ctx context.Context, in *ConnByKeyReq, opts ...grpc.CallOption) (*ConnByKeyRes, error) {
+	out := new(ConnByKeyRes)
+	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/GetConnByKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1416,15 +1407,6 @@ func (c *thingsServiceClient) CanAccessByKey(ctx context.Context, in *AccessByKe
 func (c *thingsServiceClient) IsChannelOwner(ctx context.Context, in *ChannelOwnerReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/IsChannelOwner", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *thingsServiceClient) CanAccessByID(ctx context.Context, in *AccessByIDReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/CanAccessByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1451,9 +1433,8 @@ func (c *thingsServiceClient) GetGroupsByIDs(ctx context.Context, in *GroupsReq,
 
 // ThingsServiceServer is the server API for ThingsService service.
 type ThingsServiceServer interface {
-	CanAccessByKey(context.Context, *AccessByKeyReq) (*ThingID, error)
+	GetConnByKey(context.Context, *ConnByKeyReq) (*ConnByKeyRes, error)
 	IsChannelOwner(context.Context, *ChannelOwnerReq) (*emptypb.Empty, error)
-	CanAccessByID(context.Context, *AccessByIDReq) (*emptypb.Empty, error)
 	Identify(context.Context, *Token) (*ThingID, error)
 	GetGroupsByIDs(context.Context, *GroupsReq) (*GroupsRes, error)
 }
@@ -1462,14 +1443,11 @@ type ThingsServiceServer interface {
 type UnimplementedThingsServiceServer struct {
 }
 
-func (*UnimplementedThingsServiceServer) CanAccessByKey(ctx context.Context, req *AccessByKeyReq) (*ThingID, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CanAccessByKey not implemented")
+func (*UnimplementedThingsServiceServer) GetConnByKey(ctx context.Context, req *ConnByKeyReq) (*ConnByKeyRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnByKey not implemented")
 }
 func (*UnimplementedThingsServiceServer) IsChannelOwner(ctx context.Context, req *ChannelOwnerReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsChannelOwner not implemented")
-}
-func (*UnimplementedThingsServiceServer) CanAccessByID(ctx context.Context, req *AccessByIDReq) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CanAccessByID not implemented")
 }
 func (*UnimplementedThingsServiceServer) Identify(ctx context.Context, req *Token) (*ThingID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Identify not implemented")
@@ -1482,20 +1460,20 @@ func RegisterThingsServiceServer(s *grpc.Server, srv ThingsServiceServer) {
 	s.RegisterService(&_ThingsService_serviceDesc, srv)
 }
 
-func _ThingsService_CanAccessByKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AccessByKeyReq)
+func _ThingsService_GetConnByKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConnByKeyReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ThingsServiceServer).CanAccessByKey(ctx, in)
+		return srv.(ThingsServiceServer).GetConnByKey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/mainflux.ThingsService/CanAccessByKey",
+		FullMethod: "/mainflux.ThingsService/GetConnByKey",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ThingsServiceServer).CanAccessByKey(ctx, req.(*AccessByKeyReq))
+		return srv.(ThingsServiceServer).GetConnByKey(ctx, req.(*ConnByKeyReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1514,24 +1492,6 @@ func _ThingsService_IsChannelOwner_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ThingsServiceServer).IsChannelOwner(ctx, req.(*ChannelOwnerReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ThingsService_CanAccessByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AccessByIDReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ThingsServiceServer).CanAccessByID(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/mainflux.ThingsService/CanAccessByID",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ThingsServiceServer).CanAccessByID(ctx, req.(*AccessByIDReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1577,16 +1537,12 @@ var _ThingsService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ThingsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CanAccessByKey",
-			Handler:    _ThingsService_CanAccessByKey_Handler,
+			MethodName: "GetConnByKey",
+			Handler:    _ThingsService_GetConnByKey_Handler,
 		},
 		{
 			MethodName: "IsChannelOwner",
 			Handler:    _ThingsService_IsChannelOwner_Handler,
-		},
-		{
-			MethodName: "CanAccessByID",
-			Handler:    _ThingsService_CanAccessByID_Handler,
 		},
 		{
 			MethodName: "Identify",
@@ -1997,7 +1953,7 @@ var _AuthService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "auth.proto",
 }
 
-func (m *AccessByKeyReq) Marshal() (dAtA []byte, err error) {
+func (m *ConnByKeyReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2007,12 +1963,12 @@ func (m *AccessByKeyReq) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *AccessByKeyReq) MarshalTo(dAtA []byte) (int, error) {
+func (m *ConnByKeyReq) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *AccessByKeyReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ConnByKeyReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2021,17 +1977,51 @@ func (m *AccessByKeyReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.ChanID) > 0 {
-		i -= len(m.ChanID)
-		copy(dAtA[i:], m.ChanID)
-		i = encodeVarintAuth(dAtA, i, uint64(len(m.ChanID)))
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ConnByKeyRes) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ConnByKeyRes) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConnByKeyRes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ThingID) > 0 {
+		i -= len(m.ThingID)
+		copy(dAtA[i:], m.ThingID)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.ThingID)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Token) > 0 {
-		i -= len(m.Token)
-		copy(dAtA[i:], m.Token)
-		i = encodeVarintAuth(dAtA, i, uint64(len(m.Token)))
+	if len(m.ChannelID) > 0 {
+		i -= len(m.ChannelID)
+		copy(dAtA[i:], m.ChannelID)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.ChannelID)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2141,47 +2131,6 @@ func (m *ChannelID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Value)
 		copy(dAtA[i:], m.Value)
 		i = encodeVarintAuth(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *AccessByIDReq) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AccessByIDReq) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AccessByIDReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.ChanID) > 0 {
-		i -= len(m.ChanID)
-		copy(dAtA[i:], m.ChanID)
-		i = encodeVarintAuth(dAtA, i, uint64(len(m.ChanID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.ThingID) > 0 {
-		i -= len(m.ThingID)
-		copy(dAtA[i:], m.ThingID)
-		i = encodeVarintAuth(dAtA, i, uint64(len(m.ThingID)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2965,17 +2914,33 @@ func encodeVarintAuth(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *AccessByKeyReq) Size() (n int) {
+func (m *ConnByKeyReq) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Token)
+	l = len(m.Key)
 	if l > 0 {
 		n += 1 + l + sovAuth(uint64(l))
 	}
-	l = len(m.ChanID)
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ConnByKeyRes) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChannelID)
+	if l > 0 {
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	l = len(m.ThingID)
 	if l > 0 {
 		n += 1 + l + sovAuth(uint64(l))
 	}
@@ -3028,26 +2993,6 @@ func (m *ChannelID) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Value)
-	if l > 0 {
-		n += 1 + l + sovAuth(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *AccessByIDReq) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ThingID)
-	if l > 0 {
-		n += 1 + l + sovAuth(uint64(l))
-	}
-	l = len(m.ChanID)
 	if l > 0 {
 		n += 1 + l + sovAuth(uint64(l))
 	}
@@ -3440,7 +3385,7 @@ func sovAuth(x uint64) (n int) {
 func sozAuth(x uint64) (n int) {
 	return sovAuth(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *AccessByKeyReq) Unmarshal(dAtA []byte) error {
+func (m *ConnByKeyReq) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3463,15 +3408,15 @@ func (m *AccessByKeyReq) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: AccessByKeyReq: wiretype end group for non-group")
+			return fmt.Errorf("proto: ConnByKeyReq: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AccessByKeyReq: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ConnByKeyReq: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3499,39 +3444,7 @@ func (m *AccessByKeyReq) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Token = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChanID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAuth
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAuth
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthAuth
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChanID = string(dAtA[iNdEx:postIndex])
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3539,7 +3452,128 @@ func (m *AccessByKeyReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConnByKeyRes) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConnByKeyRes: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConnByKeyRes: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChannelID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChannelID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThingID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ThingID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -3654,7 +3688,10 @@ func (m *ChannelOwnerReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -3737,7 +3774,10 @@ func (m *ThingID) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -3820,122 +3860,10 @@ func (m *ChannelID) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
 				return ErrInvalidLengthAuth
 			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AccessByIDReq) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowAuth
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AccessByIDReq: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AccessByIDReq: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ThingID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAuth
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAuth
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthAuth
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ThingID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChanID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAuth
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAuth
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthAuth
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChanID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipAuth(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4018,7 +3946,10 @@ func (m *Token) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4133,7 +4064,10 @@ func (m *UserIdentity) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4267,7 +4201,10 @@ func (m *IssueReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4446,7 +4383,10 @@ func (m *AuthorizeReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4517,7 +4457,10 @@ func (m *AuthorizeRes) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4696,7 +4639,10 @@ func (m *PolicyReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -4843,7 +4789,10 @@ func (m *Assignment) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5028,7 +4977,10 @@ func (m *MembersReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5200,7 +5152,10 @@ func (m *MembersRes) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5347,7 +5302,10 @@ func (m *User) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5430,7 +5388,10 @@ func (m *UsersByEmailsReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5513,7 +5474,10 @@ func (m *UsersByIDsReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5598,7 +5562,10 @@ func (m *UsersRes) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5777,7 +5744,10 @@ func (m *Group) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5860,7 +5830,10 @@ func (m *GroupsReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -5945,7 +5918,10 @@ func (m *GroupsRes) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {
@@ -6060,7 +6036,10 @@ func (m *AssignRoleReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthAuth
 			}
 			if (iNdEx + skippy) > l {

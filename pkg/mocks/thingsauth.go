@@ -27,33 +27,29 @@ func NewThingsServiceClient(channels map[string]string, groups map[string]things
 	return &thingsServiceMock{channels, groups}
 }
 
-func (svc thingsServiceMock) CanAccessByKey(ctx context.Context, in *mainflux.AccessByKeyReq, opts ...grpc.CallOption) (*mainflux.ThingID, error) {
-	token := in.GetToken()
+func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *mainflux.ConnByKeyReq, opts ...grpc.CallOption) (*mainflux.ConnByKeyRes, error) {
+	key := in.GetKey()
 
-	if token == "invalid" {
+	if key == "invalid" {
 		return nil, errors.ErrAuthentication
 	}
 
-	if token == "" {
+	if key == "" {
 		return nil, errors.ErrAuthentication
 	}
 
-	if token == "token" {
+	if key == "token" {
 		return nil, errors.ErrAuthorization
 	}
 
 	// Since there is no appropriate way to simulate internal server error,
 	// we had to use this obscure approach. ErrorToken simulates gRPC
 	// call which returns internal server error.
-	if token == "unavailable" {
+	if key == "unavailable" {
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &mainflux.ThingID{Value: token}, nil
-}
-
-func (svc thingsServiceMock) CanAccessByID(context.Context, *mainflux.AccessByIDReq, ...grpc.CallOption) (*empty.Empty, error) {
-	panic("not implemented")
+	return &mainflux.ConnByKeyRes{ChannelID: key, ThingID: key}, nil
 }
 
 func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *mainflux.ChannelOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {

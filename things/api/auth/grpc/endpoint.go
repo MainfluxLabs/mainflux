@@ -11,30 +11,18 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func canAccessEndpoint(svc things.Service) endpoint.Endpoint {
+func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(accessByKeyReq)
+		req := request.(connByKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		id, err := svc.CanAccessByKey(ctx, req.chanID, req.thingKey)
+		conn, err := svc.GetConnByKey(ctx, req.key)
 		if err != nil {
-			return identityRes{}, err
+			return connByKeyRes{}, err
 		}
-		return identityRes{id: id}, nil
-	}
-}
-
-func canAccessByIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(accessByIDReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		err := svc.CanAccessByID(ctx, req.chanID, req.thingID)
-		return emptyRes{err: err}, err
+		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID}, nil
 	}
 }
 

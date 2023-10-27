@@ -354,7 +354,7 @@ paths:
       tags:
       - things
       requestBody:
-        $ref: "#/components/requestBodies/DisconnReq"
+        $ref: "#/components/requestBodies/ConnByKeyReq"
       responses:
         '200':
           $ref: "#/components/responses/DisconnRes"
@@ -688,29 +688,6 @@ paths:
         '401':
           description: |
             Thing and channel are not connected, or thing with specified key doesn't
-            exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /identify/channels/{chanId}/access-by-id:
-    post:
-      summary: Checks if thing has access to a channel.
-      description: |
-        Checks if a thing with a specified ID has an access to a specified
-        channel.
-      tags:
-        - access
-      parameters:
-        - $ref: "#/components/parameters/ChanId"
-      requestBody:
-        $ref: "#/components/requestBodies/AccessByIDReq"
-      responses:
-        '200':
-          description: Thing has access to the specified channel.
-        '401':
-          description: |
-            Thing and channel are not connected, or thing with specified ID doesn't
             exist.
         '415':
           description: Missing or invalid content type.
@@ -1356,7 +1333,7 @@ components:
         application/json:
           schema:
            $ref: "#/components/schemas/ConnectionReqSchema"
-    DisconnReq:
+    ConnByKeyReq:
       description: JSON-formatted document describing the entities for disconnection.
       required: true
       content:
@@ -1377,18 +1354,6 @@ components:
                 description: Thing key that is used for thing auth.
             required:
               - token
-    AccessByIDReq:
-      description: JSON-formatted document that contains thing key.
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              thing_id:
-                type: string
-                format: uuid
-                description: Thing ID by which thing is uniquely identified.
     GroupsCreateReq:
       description: JSON-formatted document describing group create request.
       required: true

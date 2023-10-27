@@ -29,6 +29,7 @@ type channelRepositoryMock struct {
 	channels map[string]things.Channel
 	tconns   chan Connection                      // used for synchronization with thing repo
 	cconns   map[string]map[string]things.Channel // used to track connections
+	conns    map[string]string                    // used to track connections
 	things   things.ThingRepository
 }
 
@@ -246,22 +247,22 @@ func (crm *channelRepositoryMock) Disconnect(_ context.Context, owner, chID stri
 	return nil
 }
 
-func (crm *channelRepositoryMock) HasThing(_ context.Context, chanID, token string) (string, error) {
+func (crm *channelRepositoryMock) RetrieveConnByThingKey(_ context.Context, token string) (things.Connection, error) {
 	tid, err := crm.things.RetrieveByKey(context.Background(), token)
 	if err != nil {
-		return "", err
+		return things.Connection{}, err
 	}
 
 	chans, ok := crm.cconns[tid]
 	if !ok {
-		return "", errors.ErrAuthorization
+		return things.Connection{}, errors.ErrAuthorization
 	}
 
-	if _, ok := chans[chanID]; !ok {
-		return "", errors.ErrAuthorization
+	if len(chans) == 0 {
+		return things.Connection{}, errors.ErrAuthorization
 	}
 
-	return tid, nil
+	return things.Connection{ThingID: tid}, nil
 }
 
 func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingID string) error {

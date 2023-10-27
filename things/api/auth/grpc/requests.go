@@ -5,17 +5,12 @@ package grpc
 
 import "github.com/MainfluxLabs/mainflux/internal/apiutil"
 
-type accessByKeyReq struct {
-	thingKey string
-	chanID   string
+type connByKeyReq struct {
+	key string
 }
 
-func (req accessByKeyReq) validate() error {
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if req.thingKey == "" {
+func (req connByKeyReq) validate() error {
+	if req.key == "" {
 		return apiutil.ErrBearerKey
 	}
 

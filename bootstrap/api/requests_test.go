@@ -147,7 +147,7 @@ func TestUpdateCertReqValidation(t *testing.T) {
 	}
 }
 
-func TestUpdateConnReqValidation(t *testing.T) {
+func TestUpdateGetConnByKeyValidation(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string

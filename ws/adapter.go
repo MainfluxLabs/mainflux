@@ -74,7 +74,7 @@ func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 
 // Publish publishes the message using the broker
 func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg messaging.Message) error {
-	thid, err := svc.authorize(ctx, thingKey, msg.GetChannel())
+	conn, err := svc.authorize(ctx, thingKey, msg.GetChannel())
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -83,7 +83,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg mes
 		return ErrFailedMessagePublish
 	}
 
-	msg.Publisher = thid.GetValue()
+	msg.Publisher = conn.ThingID
 
 	if err := svc.pubsub.Publish(msg.GetChannel(), msg); err != nil {
 		return ErrFailedMessagePublish
@@ -98,19 +98,19 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subt
 		return ErrUnauthorizedAccess
 	}
 
-	thid, err := svc.authorize(ctx, thingKey, chanID)
+	conn, err := svc.authorize(ctx, thingKey, chanID)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	c.id = thid.GetValue()
+	c.id = conn.ThingID
 
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 
-	if err := svc.pubsub.Subscribe(thid.GetValue(), subject, c); err != nil {
+	if err := svc.pubsub.Subscribe(conn.ChannelID, subject, c); err != nil {
 		return ErrFailedSubscription
 	}
 
@@ -123,7 +123,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 		return ErrUnauthorizedAccess
 	}
 
-	thid, err := svc.authorize(ctx, thingKey, chanID)
+	conn, err := svc.authorize(ctx, thingKey, chanID)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -133,18 +133,17 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 
-	return svc.pubsub.Unsubscribe(thid.GetValue(), subject)
+	return svc.pubsub.Unsubscribe(conn.ChannelID, subject)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (*mainflux.ThingID, error) {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  thingKey,
-		ChanID: chanID,
+func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (*mainflux.ConnByKeyRes, error) {
+	ar := &mainflux.ConnByKeyReq{
+		Key: thingKey,
 	}
-	thid, err := svc.things.CanAccessByKey(ctx, ar)
+	conn, err := svc.things.GetConnByKey(ctx, ar)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	return thid, nil
+	return conn, nil
 }

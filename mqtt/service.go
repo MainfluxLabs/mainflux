@@ -89,7 +89,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string)
 		}
 		return nil
 	default:
-		if _, err := ms.things.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
+		if _, err := ms.things.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key}); err != nil {
 			return err
 		}
 		return nil

@@ -133,7 +133,7 @@ func updateEndpoint(svc bootstrap.Service) endpoint.Endpoint {
 
 func updateConnEndpoint(svc bootstrap.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateConnReq)
+		req := request.(updateGetConnByKey)
 
 		if err := req.validate(); err != nil {
 			return nil, err

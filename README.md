@@ -1,7 +1,6 @@
 # Mainflux
 
 [![go report card][grc-badge]][grc-url]
-[![coverage][cov-badge]][cov-url]
 [![license][license]](LICENSE)
 
 ![banner][banner]

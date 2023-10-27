@@ -245,12 +245,8 @@ func (es eventStore) Disconnect(ctx context.Context, token, chID string, thIDs [
 	return nil
 }
 
-func (es eventStore) CanAccessByKey(ctx context.Context, chanID string, key string) (string, error) {
-	return es.svc.CanAccessByKey(ctx, chanID, key)
-}
-
-func (es eventStore) CanAccessByID(ctx context.Context, chanID string, thingID string) error {
-	return es.svc.CanAccessByID(ctx, chanID, thingID)
+func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
+	return es.svc.GetConnByKey(ctx, key)
 }
 
 func (es eventStore) IsChannelOwner(ctx context.Context, owner, chanID string) error {

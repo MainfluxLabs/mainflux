@@ -21,16 +21,19 @@ func (res identityRes) Empty() bool {
 	return false
 }
 
-type canAccessByIDRes struct{}
+type connByKeyRes struct {
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
+}
 
-func (res canAccessByIDRes) Code() int {
+func (res connByKeyRes) Code() int {
 	return http.StatusOK
 }
 
-func (res canAccessByIDRes) Headers() map[string]string {
+func (res connByKeyRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res canAccessByIDRes) Empty() bool {
-	return true
+func (res connByKeyRes) Empty() bool {
+	return false
 }

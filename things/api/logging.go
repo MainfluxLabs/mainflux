@@ -240,9 +240,9 @@ func (lm *loggingMiddleware) Disconnect(ctx context.Context, token, chID string,
 	return lm.svc.Disconnect(ctx, token, chID, thIDs)
 }
 
-func (lm *loggingMiddleware) CanAccessByKey(ctx context.Context, id, key string) (thing string, err error) {
+func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn things.Connection, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_access for channel %s and thing %s took %s to complete", id, thing, time.Since(begin))
+		message := fmt.Sprintf("Method can_access for thing %s took %s to complete", conn.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -250,20 +250,7 @@ func (lm *loggingMiddleware) CanAccessByKey(ctx context.Context, id, key string)
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CanAccessByKey(ctx, id, key)
-}
-
-func (lm *loggingMiddleware) CanAccessByID(ctx context.Context, chanID, thingID string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_access_by_id for channel %s and thing %s took %s to complete", chanID, thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.CanAccessByID(ctx, chanID, thingID)
+	return lm.svc.GetConnByKey(ctx, key)
 }
 
 func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner, chanID string) (err error) {

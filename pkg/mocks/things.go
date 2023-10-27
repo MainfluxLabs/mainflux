@@ -211,11 +211,7 @@ func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanAccessByKey(context.Context, string, string) (string, error) {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) CanAccessByID(context.Context, string, string) error {
+func (svc *mainfluxThings) GetConnByKey(context.Context, string) (things.Connection, error) {
 	panic("not implemented")
 }
 

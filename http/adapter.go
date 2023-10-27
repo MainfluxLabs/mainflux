@@ -33,16 +33,15 @@ func New(publisher messaging.Publisher, things mainflux.ThingsServiceClient) Ser
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, token string, msg messaging.Message) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  token,
-		ChanID: msg.Channel,
+func (as *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) error {
+	cr := &mainflux.ConnByKeyReq{
+		Key: key,
 	}
-	thid, err := as.things.CanAccessByKey(ctx, ar)
+	conn, err := as.things.GetConnByKey(ctx, cr)
 	if err != nil {
 		return err
 	}
-	msg.Publisher = thid.GetValue()
+	msg.Publisher = conn.ThingID
 
-	return as.publisher.Publish(msg.Channel, msg)
+	return as.publisher.Publish(conn.ChannelID, msg)
 }
