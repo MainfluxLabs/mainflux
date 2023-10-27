@@ -22,3 +22,7 @@ type orgMembersRes struct {
 type emptyRes struct {
 	err error
 }
+
+type retrieveRoleRes struct {
+	role string
+}

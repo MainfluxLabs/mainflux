@@ -21,13 +21,14 @@ import (
 var _ mainflux.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue      kitgrpc.Handler
-	identify   kitgrpc.Handler
-	authorize  kitgrpc.Handler
-	addPolicy  kitgrpc.Handler
-	assign     kitgrpc.Handler
-	members    kitgrpc.Handler
-	assignRole kitgrpc.Handler
+	issue        kitgrpc.Handler
+	identify     kitgrpc.Handler
+	authorize    kitgrpc.Handler
+	addPolicy    kitgrpc.Handler
+	assign       kitgrpc.Handler
+	members      kitgrpc.Handler
+	assignRole   kitgrpc.Handler
+	retrieveRole kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -67,6 +68,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			kitot.TraceServer(tracer, "assign_role")(assignRoleEndpoint(svc)),
 			decodeAssignRoleRequest,
 			encodeEmptyResponse,
+		),
+		retrieveRole: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "retrieve_role")(retrieveRoleEndpoint(svc)),
+			decodeRetrieveRoleRequest,
+			encodeRetrieveRoleResponse,
 		),
 	}
 }
@@ -127,9 +133,27 @@ func (s *grpcServer) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq
 	return res.(*empty.Empty), nil
 }
 
+func (s *grpcServer) RetrieveRole(ctx context.Context, req *mainflux.RetrieveRoleReq) (*mainflux.RetrieveRoleRes, error) {
+	_, res, err := s.retrieveRole.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*mainflux.RetrieveRoleRes), nil
+}
+
 func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
+}
+
+func decodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.RetrieveRoleReq)
+	return retrieveRoleReq{id: req.GetId()}, nil
+}
+
+func encodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(retrieveRoleRes)
+	return &mainflux.RetrieveRoleRes{Role: res.role}, nil
 }
 
 func decodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
