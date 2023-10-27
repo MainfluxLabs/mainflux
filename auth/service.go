@@ -43,6 +43,9 @@ var (
 type Roles interface {
 	// AssignRole assigns a role to a user.
 	AssignRole(ctx context.Context, id, role string) error
+
+	// RetrieveRole retrieves a role for a user.
+	RetrieveRole(ctx context.Context, id string) (string, error)
 }
 
 // Authn specifies an API that must be fullfiled by the domain service
@@ -874,11 +877,11 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 }
 
 func (svc service) AssignRole(ctx context.Context, id, role string) error {
-	if err := svc.roles.SaveRole(ctx, id, role); err != nil {
-		return err
-	}
+	return svc.roles.SaveRole(ctx, id, role)
+}
 
-	return nil
+func (svc service) RetrieveRole(ctx context.Context, id string) (string, error) {
+	return svc.roles.RetrieveRole(ctx, id)
 }
 
 func (svc service) isAdmin(ctx context.Context, token string) error {

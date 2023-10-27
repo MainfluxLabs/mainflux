@@ -176,13 +176,24 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 	if u, err := svc.users.RetrieveByEmail(context.Background(), user.Email); err == nil {
+		role, err := svc.auth.RetrieveRole(ctx, &mainflux.RetrieveRoleReq{Id: u.ID})
+		if err != nil {
+			return err
+		}
+
 		req := mainflux.AssignRoleReq{
 			Id:   u.ID,
 			Role: auth.RoleRootAdmin,
 		}
 
-		// TODO: Fetch role before assigning
-		svc.auth.AssignRole(ctx, &req)
+		switch role.Role {
+		case auth.RoleRootAdmin:
+			return nil
+		default:
+			if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
+				return err
+			}
+		}
 
 		return nil
 	}

@@ -23,14 +23,15 @@ const (
 var _ mainflux.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue      endpoint.Endpoint
-	identify   endpoint.Endpoint
-	authorize  endpoint.Endpoint
-	addPolicy  endpoint.Endpoint
-	assign     endpoint.Endpoint
-	members    endpoint.Endpoint
-	assignRole endpoint.Endpoint
-	timeout    time.Duration
+	issue        endpoint.Endpoint
+	identify     endpoint.Endpoint
+	authorize    endpoint.Endpoint
+	addPolicy    endpoint.Endpoint
+	assign       endpoint.Endpoint
+	members      endpoint.Endpoint
+	retrieveRole endpoint.Endpoint
+	assignRole   endpoint.Endpoint
+	timeout      time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -83,6 +84,14 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			encodeMembersRequest,
 			decodeMembersResponse,
 			mainflux.MembersRes{},
+		).Endpoint()),
+		retrieveRole: kitot.TraceClient(tracer, "retrieve_role")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RetrieveRole",
+			encodeRetrieveRoleRequest,
+			decodeRetrieveRoleResponse,
+			mainflux.RetrieveRoleRes{},
 		).Endpoint()),
 		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
 			conn,
@@ -232,6 +241,31 @@ func encodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{
 		Id:   req.ID,
 		Role: req.Role,
 	}, nil
+}
+
+func (client grpcClient) RetrieveRole(ctx context.Context, req *mainflux.RetrieveRoleReq, _ ...grpc.CallOption) (r *mainflux.RetrieveRoleRes, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.retrieveRole(ctx, retrieveRoleReq{id: req.GetId()})
+	if err != nil {
+		return &mainflux.RetrieveRoleRes{}, err
+	}
+
+	rr := res.(retrieveRoleRes)
+	return &mainflux.RetrieveRoleRes{Role: rr.role}, err
+}
+
+func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(retrieveRoleReq)
+	return &mainflux.RetrieveRoleReq{
+		Id: req.id,
+	}, nil
+}
+
+func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*mainflux.RetrieveRoleRes)
+	return retrieveRoleRes{role: res.GetRole()}, nil
 }
 
 func encodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

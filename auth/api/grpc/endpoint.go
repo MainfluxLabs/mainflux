@@ -93,6 +93,26 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		return emptyRes{}, nil
 	}
 }
+func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(retrieveRoleReq)
+
+		if err := req.validate(); err != nil {
+			return retrieveRoleRes{}, err
+		}
+
+		role, err := svc.RetrieveRole(ctx, req.id)
+		if err != nil {
+			return retrieveRoleRes{}, err
+		}
+
+		res := retrieveRoleRes{
+			role: role,
+		}
+
+		return res, nil
+	}
+}
 
 func addPolicyEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
