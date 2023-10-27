@@ -654,7 +654,7 @@ components:
           items:
             type: string
             format: uuid
-    OrgMembersSchema:
+    OrgMembersResSchema:
       type: object
       properties:
         member_id:
@@ -821,7 +821,7 @@ components:
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/OrgMembersSchema"
+            $ref: "#/components/schemas/OrgMembersResSchema"
         org_groups:
           type: array
           minItems: 1
