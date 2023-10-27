@@ -144,3 +144,15 @@ func (req assignRoleReq) validate() error {
 
 	return nil
 }
+
+type retrieveRoleReq struct {
+	id string
+}
+
+func (req retrieveRoleReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}

@@ -339,6 +339,18 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
+func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method retrieve_role for id %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.RetrieveRole(ctx, id)
+}
+
 func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))

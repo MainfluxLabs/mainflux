@@ -241,6 +241,15 @@ func (ms *metricsMiddleware) AssignRole(ctx context.Context, id, role string) er
 	return ms.svc.AssignRole(ctx, id, role)
 }
 
+func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "retrieve_role").Add(1)
+		ms.latency.With("method", "retrieve_role").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RetrieveRole(ctx, id)
+}
+
 func (ms *metricsMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_group_policies").Add(1)

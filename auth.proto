@@ -27,6 +27,7 @@ service AuthService {
     rpc Assign(Assignment) returns (google.protobuf.Empty) {}
     rpc Members(MembersReq) returns (MembersRes) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
+    rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
 }
 
 message ConnByKeyReq {
@@ -145,4 +146,11 @@ message GroupsRes {
 message AssignRoleReq {
     string id = 1;
     string role = 2;
+}
+
+message RetrieveRoleReq {
+    string id = 1;
+}
+message RetrieveRoleRes {
+    string role = 1;
 }
