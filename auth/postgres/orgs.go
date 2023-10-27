@@ -632,171 +632,6 @@ func (or orgRepository) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGro
 	return ogs, nil
 }
 
-func (or orgRepository) SaveGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
-	tx, err := or.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
-	}
-
-	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
-
-	for _, g := range giByIDs {
-		gp := auth.GroupsPolicy{
-			MemberID: g.MemberID,
-			GroupID:  groupID,
-			Policy:   g.Policy,
-		}
-		dbgp := toDBGroupPolicy(gp)
-
-		if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				}
-			}
-			return errors.Wrap(errors.ErrCreateEntity, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
-func (or orgRepository) RetrieveGroupMember(ctc context.Context, gp auth.GroupsPolicy) (string, error) {
-	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
-
-	params := map[string]interface{}{
-		"member_id": gp.MemberID,
-		"group_id":  gp.GroupID,
-	}
-
-	rows, err := or.db.NamedQueryContext(ctc, q, params)
-	if err != nil {
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var policy string
-	for rows.Next() {
-		if err := rows.Scan(&policy); err != nil {
-			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-	}
-
-	return policy, nil
-}
-
-func (or orgRepository) RetrieveGroupMembers(ctx context.Context, groupID string, pm auth.PageMetadata) (auth.GroupMembersPage, error) {
-	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
-
-	params := map[string]interface{}{
-		"group_id": groupID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-	}
-
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []auth.GroupMember
-	for rows.Next() {
-		dbgp := dbGroupPolicy{}
-		if err := rows.StructScan(&dbgp); err != nil {
-			return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		gm := toGroupMember(dbgp)
-
-		items = append(items, gm)
-	}
-
-	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
-
-	total, err := total(ctx, or.db, cq, params)
-	if err != nil {
-		return auth.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := auth.GroupMembersPage{
-		GroupMembers: items,
-		PageMetadata: auth.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
-func (or orgRepository) RemoveGroupMembers(ctx context.Context, groupID string, memberIDs ...string) error {
-	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
-
-	for _, memberID := range memberIDs {
-		dbgp := dbGroupPolicy{
-			MemberID: memberID,
-			GroupID:  groupID,
-		}
-
-		if _, err := or.db.NamedExecContext(ctx, q, dbgp); err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
-		}
-	}
-	return nil
-}
-
-func (or orgRepository) UpdateGroupMembers(ctx context.Context, groupID string, giByIDs ...auth.GroupInvitationByID) error {
-	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
-
-	for _, g := range giByIDs {
-		gp := auth.GroupsPolicy{
-			MemberID: g.MemberID,
-			GroupID:  groupID,
-			Policy:   g.Policy,
-		}
-		dbgp := toDBGroupPolicy(gp)
-
-		row, err := or.db.NamedExecContext(ctx, q, dbgp)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				}
-			}
-
-			return errors.Wrap(errors.ErrUpdateEntity, err)
-		}
-
-		cnt, err := row.RowsAffected()
-		if err != nil {
-			return errors.Wrap(errors.ErrUpdateEntity, err)
-		}
-
-		if cnt != 1 {
-			return errors.Wrap(errors.ErrNotFound, err)
-		}
-	}
-
-	return nil
-}
-
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	ownq := dbutil.GetOwnerQuery(ownerID, ownerDbId)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -997,7 +832,7 @@ type dbGroupPolicy struct {
 	Policy   string `db:"policy"`
 }
 
-func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
+func toDBGroupPolicy(gp auth.GroupPolicy) dbGroupPolicy {
 	return dbGroupPolicy{
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
@@ -1005,8 +840,8 @@ func toDBGroupPolicy(gp auth.GroupsPolicy) dbGroupPolicy {
 	}
 }
 
-func toGroupMember(dbgp dbGroupPolicy) auth.GroupMember {
-	return auth.GroupMember{
+func toGroupPolicy(dbgp dbGroupPolicy) auth.GroupPolicy {
+	return auth.GroupPolicy{
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
 	}

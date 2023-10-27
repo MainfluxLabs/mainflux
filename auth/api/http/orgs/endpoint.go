@@ -279,63 +279,88 @@ func listGroupsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func createGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func viewGroupMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupMembersReq)
+		req := request.(viewGroupMembershipReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var giByEmails []auth.GroupInvitationByEmail
-		for _, m := range req.GroupMembers {
-			giByEmail := auth.GroupInvitationByEmail{
-				Email:  m.Email,
-				Policy: m.Policy,
-			}
-			giByEmails = append(giByEmails, giByEmail)
-		}
-
-		if err := svc.CreateGroupMembers(ctx, req.token, req.groupID, giByEmails...); err != nil {
+		o, err := svc.ViewGroupMembership(ctx, req.token, req.groupID)
+		if err != nil {
 			return nil, err
 		}
 
-		return createGroupMemberRes{}, nil
+		org := viewOrgRes{
+			ID:          o.ID,
+			Name:        o.Name,
+			OwnerID:     o.OwnerID,
+			Description: o.Description,
+			Metadata:    o.Metadata,
+			CreatedAt:   o.CreatedAt,
+			UpdatedAt:   o.UpdatedAt,
+		}
+
+		return org, nil
 	}
 }
 
-func updateGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func createGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupMembersReq)
+		req := request.(groupPoliciesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var giByEmails []auth.GroupInvitationByEmail
-		for _, gm := range req.GroupMembers {
-			giByEmail := auth.GroupInvitationByEmail{
-				Email:  gm.Email,
-				Policy: gm.Policy,
+		var gps []auth.GroupPolicyByID
+		for _, g := range req.GroupPolicies {
+			gp := auth.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
 			}
-
-			giByEmails = append(giByEmails, giByEmail)
+			gps = append(gps, gp)
 		}
 
-		if err := svc.UpdateGroupMembers(ctx, req.token, req.groupID, giByEmails...); err != nil {
+		if err := svc.CreateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
-		return updateGroupMembersRes{}, nil
+		return createGroupPoliciesRes{}, nil
 	}
 }
 
-func removeGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func updateGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(removeGroupMembersReq)
+		req := request.(groupPoliciesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveGroupMembers(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+		var gps []auth.GroupPolicyByID
+		for _, g := range req.GroupPolicies {
+			gp := auth.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
+			}
+			gps = append(gps, gp)
+		}
+
+		if err := svc.UpdateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
+			return nil, err
+		}
+
+		return updateGroupPoliciesRes{}, nil
+	}
+}
+
+func removeGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeGroupPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveGroupPolicies(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -343,7 +368,7 @@ func removeGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listGroupPoliciesEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listGroupMembersReq)
 		if err := req.validate(); err != nil {
@@ -355,12 +380,12 @@ func listGroupMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		mpp, err := svc.ListGroupMembers(ctx, req.token, req.groupID, pm)
+		gpp, err := svc.ListGroupPolicies(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupMembersResponse(mpp), nil
+		return buildGroupPoliciesResponse(gpp), nil
 	}
 }
 
@@ -517,23 +542,23 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	return res
 }
 
-func buildGroupMembersResponse(gmp auth.GroupMembersPage) listGroupMembersRes {
-	res := listGroupMembersRes{
+func buildGroupPoliciesResponse(gpp auth.GroupPoliciesPage) listGroupPoliciesRes {
+	res := listGroupPoliciesRes{
 		pageRes: pageRes{
-			Total:  gmp.Total,
-			Limit:  gmp.Limit,
-			Offset: gmp.Offset,
+			Total:  gpp.Total,
+			Limit:  gpp.Limit,
+			Offset: gpp.Offset,
 		},
-		GroupMembers: []groupMember{},
+		GroupPolicies: []groupPolicy{},
 	}
 
-	for _, g := range gmp.GroupMembers {
-		gmp := groupMember{
+	for _, g := range gpp.GroupPolicies {
+		gp := groupPolicy{
 			Email:  g.Email,
 			ID:     g.MemberID,
 			Policy: g.Policy,
 		}
-		res.GroupMembers = append(res.GroupMembers, gmp)
+		res.GroupPolicies = append(res.GroupPolicies, gp)
 	}
 
 	return res

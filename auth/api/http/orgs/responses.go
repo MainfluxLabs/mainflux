@@ -16,9 +16,9 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
-	_ mainflux.Response = (*listGroupMembersRes)(nil)
-	_ mainflux.Response = (*updateGroupMembersRes)(nil)
-	_ mainflux.Response = (*createGroupMemberRes)(nil)
+	_ mainflux.Response = (*listGroupPoliciesRes)(nil)
+	_ mainflux.Response = (*updateGroupPoliciesRes)(nil)
+	_ mainflux.Response = (*createGroupPoliciesRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -228,26 +228,26 @@ func (res backupRes) Empty() bool {
 	return false
 }
 
-type groupMember struct {
+type groupPolicy struct {
 	ID     string `json:"id"`
 	Email  string `json:"email"`
 	Policy string `json:"policy"`
 }
 
-type listGroupMembersRes struct {
+type listGroupPoliciesRes struct {
 	pageRes
-	GroupMembers []groupMember `json:"group_members"`
+	GroupPolicies []groupPolicy `json:"group_policies"`
 }
 
-func (res listGroupMembersRes) Code() int {
+func (res listGroupPoliciesRes) Code() int {
 	return http.StatusOK
 }
 
-func (res listGroupMembersRes) Headers() map[string]string {
+func (res listGroupPoliciesRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listGroupMembersRes) Empty() bool {
+func (res listGroupPoliciesRes) Empty() bool {
 	return false
 }
 
@@ -265,30 +265,30 @@ func (res restoreRes) Empty() bool {
 	return true
 }
 
-type createGroupMemberRes struct{}
+type createGroupPoliciesRes struct{}
 
-func (res createGroupMemberRes) Code() int {
+func (res createGroupPoliciesRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res createGroupMemberRes) Headers() map[string]string {
+func (res createGroupPoliciesRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createGroupMemberRes) Empty() bool {
+func (res createGroupPoliciesRes) Empty() bool {
 	return true
 }
 
-type updateGroupMembersRes struct{}
+type updateGroupPoliciesRes struct{}
 
-func (res updateGroupMembersRes) Code() int {
+func (res updateGroupPoliciesRes) Code() int {
 	return http.StatusOK
 }
 
-func (res updateGroupMembersRes) Headers() map[string]string {
+func (res updateGroupPoliciesRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res updateGroupMembersRes) Empty() bool {
+func (res updateGroupPoliciesRes) Empty() bool {
 	return true
 }

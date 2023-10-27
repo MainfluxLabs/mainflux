@@ -276,6 +276,18 @@ func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID str
 	return lm.svc.ListOrgGroups(ctx, token, orgID, pm)
 }
 
+func (lm *loggingMiddleware) ViewGroupMembership(ctx context.Context, token, groupID string) (o auth.Org, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_group_membership for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroupMembership(ctx, token, groupID)
+}
+
 func (lm *loggingMiddleware) AddPolicy(ctx context.Context, token, groupID, policy string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method add_policy for token %s and took %s to complete", token, time.Since(begin))
@@ -327,50 +339,50 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 	return lm.svc.AssignRole(ctx, id, role)
 }
 
-func (lm *loggingMiddleware) CreateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...auth.GroupInvitationByEmail) (err error) {
+func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_group_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreateGroupMembers(ctx, token, groupID, giByEmails...)
+	return lm.svc.CreateGroupPolicies(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm auth.PageMetadata) (mpp auth.GroupMembersPage, err error) {
+func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (gpp auth.GroupPoliciesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_group_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListGroupMembers(ctx, token, groupID, pm)
+	return lm.svc.ListGroupPolicies(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) UpdateGroupMembers(ctx context.Context, token, groupID string, giByEmails ...auth.GroupInvitationByEmail) (err error) {
+func (lm *loggingMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_group_members for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method update_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.UpdateGroupMembers(ctx, token, groupID, giByEmails...)
+	return lm.svc.UpdateGroupPolicies(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
+	return lm.svc.RemoveGroupPolicies(ctx, token, groupID, memberIDs...)
 }
