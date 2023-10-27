@@ -389,24 +389,6 @@ func (cr channelRepository) RetrieveConnByThingKey(ctx context.Context, thingKey
 	return things.Connection{ThingID: thingID, ChannelID: dbch.ChannelID}, nil
 }
 
-func (cr channelRepository) HasThingByID(ctx context.Context, chanID, thingID string) error {
-	return cr.hasThing(ctx, chanID, thingID)
-}
-
-func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM connections WHERE channel_id = $1 AND thing_id = $2);`
-	exists := false
-	if err := cr.db.QueryRowxContext(ctx, q, chanID, thingID).Scan(&exists); err != nil {
-		return errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	if !exists {
-		return errors.ErrNotFound
-	}
-
-	return nil
-}
-
 func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
 	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
 

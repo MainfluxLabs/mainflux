@@ -124,14 +124,6 @@ func (crm channelRepositoryMiddleware) RetrieveConnByThingKey(ctx context.Contex
 	return crm.repo.RetrieveConnByThingKey(ctx, key)
 }
 
-func (crm channelRepositoryMiddleware) HasThingByID(ctx context.Context, chanID, thingID string) error {
-	span := createSpan(ctx, crm.tracer, hasThingByIDOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.HasThingByID(ctx, chanID, thingID)
-}
-
 func (crm channelRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllChannelsOp)
 	defer span.Finish()

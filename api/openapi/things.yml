@@ -354,7 +354,7 @@ paths:
       tags:
       - things
       requestBody:
-        $ref: "#/components/requestBodies/ConnByKeyReq"
+        $ref: "#/components/requestBodies/DisconnReq"
       responses:
         '200':
           $ref: "#/components/responses/DisconnRes"
@@ -1333,7 +1333,7 @@ components:
         application/json:
           schema:
            $ref: "#/components/schemas/ConnectionReqSchema"
-    ConnByKeyReq:
+    DisconnReq:
       description: JSON-formatted document describing the entities for disconnection.
       required: true
       content:

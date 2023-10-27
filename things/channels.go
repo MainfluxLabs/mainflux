@@ -70,11 +70,6 @@ type ChannelRepository interface {
 	// RetrieveConnByThingKey retrieves connections IDs by ThingKey
 	RetrieveConnByThingKey(ctx context.Context, key string) (Connection, error)
 
-	// HasThingByID determines whether the thing with the provided ID, is
-	// "connected" to the specified channel. If that's the case, then
-	// returned error will be nil.
-	HasThingByID(ctx context.Context, chanID, thingID string) error
-
 	// RetrieveAll retrieves all channels for all users.
 	RetrieveAll(ctx context.Context) ([]Channel, error)
 

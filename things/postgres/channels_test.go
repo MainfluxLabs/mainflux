@@ -663,7 +663,7 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
-/*func TestHasThing(t *testing.T) {
+func TestRetrieveConnByThingKey(t *testing.T) {
 	email := "channel-access-check@example.com"
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
@@ -710,87 +710,7 @@ func TestDisconnect(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, _, err := chanRepo.RetrieveConnByThingKey(context.Background(), tc.key)
-		hasAccess := err == nil
-		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("%s: expected %t got %t\n", desc, tc.hasAccess, hasAccess))
-	}
-}*/
-
-func TestHasThingByID(t *testing.T) {
-	email := "channel-access-check@example.com"
-	dbMiddleware := postgres.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	th := things.Thing{
-		ID:    thID,
-		Owner: email,
-		Key:   thkey,
-	}
-	ths, err := thingRepo.Save(context.Background(), th)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thID = ths[0].ID
-
-	disconnectedThID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	disconnectedThKey, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	disconnectedThing := things.Thing{
-		ID:    disconnectedThID,
-		Owner: email,
-		Key:   disconnectedThKey,
-	}
-	ths, err = thingRepo.Save(context.Background(), disconnectedThing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	disconnectedThingID := ths[0].ID
-
-	chanRepo := postgres.NewChannelRepository(dbMiddleware)
-	chID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	chs, err := chanRepo.Save(context.Background(), things.Channel{
-		ID:    chID,
-		Owner: email,
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	chID = chs[0].ID
-	chanRepo.Connect(context.Background(), email, chID, []string{thID})
-
-	nonexistentChanID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	cases := map[string]struct {
-		chID      string
-		thID      string
-		hasAccess bool
-	}{
-		"access check for thing that has access": {
-			chID:      chID,
-			thID:      thID,
-			hasAccess: true,
-		},
-		"access check for thing without access": {
-			chID:      chID,
-			thID:      disconnectedThingID,
-			hasAccess: false,
-		},
-		"access check for non-existing channel": {
-			chID:      nonexistentChanID,
-			thID:      thID,
-			hasAccess: false,
-		},
-		"access check for non-existing thing": {
-			chID:      chID,
-			thID:      wrongValue,
-			hasAccess: false,
-		},
-	}
-
-	for desc, tc := range cases {
-		err := chanRepo.HasThingByID(context.Background(), tc.chID, tc.thID)
+		_, err := chanRepo.RetrieveConnByThingKey(context.Background(), tc.key)
 		hasAccess := err == nil
 		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("%s: expected %t got %t\n", desc, tc.hasAccess, hasAccess))
 	}
