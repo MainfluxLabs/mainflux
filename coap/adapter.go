@@ -56,25 +56,23 @@ func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: msg.Channel,
+	cr := &mainflux.ConnByKeyReq{
+		Key: key,
 	}
-	thid, err := svc.things.CanAccessByKey(ctx, ar)
+	conn, err := svc.things.GetConnByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	msg.Publisher = thid.GetValue()
+	msg.Publisher = conn.ThingID
 
 	return svc.pubsub.Publish(msg.Channel, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: chanID,
+	cr := &mainflux.ConnByKeyReq{
+		Key: key,
 	}
-	if _, err := svc.things.CanAccessByKey(ctx, ar); err != nil {
+	if _, err := svc.things.GetConnByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
@@ -85,14 +83,14 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {
-	ar := &mainflux.AccessByKeyReq{
-		Token:  key,
-		ChanID: chanID,
+	cr := &mainflux.ConnByKeyReq{
+		Key: key,
 	}
-	if _, err := svc.things.CanAccessByKey(ctx, ar); err != nil {
+	conn, err := svc.things.GetConnByKey(ctx, cr)
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
+	subject := fmt.Sprintf("%s.%s", chansPrefix, conn.ChannelID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}

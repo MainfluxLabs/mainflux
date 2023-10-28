@@ -67,15 +67,8 @@ type ChannelRepository interface {
 	// Disconnect disconnects a list of things from a channel.
 	Disconnect(ctx context.Context, owner, chID string, thIDs []string) error
 
-	// HasThing determines whether the thing with the provided access key, is
-	// "connected" to the specified channel. If that's the case, it returns
-	// thing's ID.
-	HasThing(ctx context.Context, chanID, key string) (string, error)
-
-	// HasThingByID determines whether the thing with the provided ID, is
-	// "connected" to the specified channel. If that's the case, then
-	// returned error will be nil.
-	HasThingByID(ctx context.Context, chanID, thingID string) error
+	// RetrieveConnByThingKey retrieves connections IDs by ThingKey
+	RetrieveConnByThingKey(ctx context.Context, key string) (Connection, error)
 
 	// RetrieveAll retrieves all channels for all users.
 	RetrieveAll(ctx context.Context) ([]Channel, error)

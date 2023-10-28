@@ -114,7 +114,11 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	return h.authAccess(c.Username, *topic)
+	if err := h.authAccess(c, *topic); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AuthSubscribe is called on device publish,
@@ -127,11 +131,11 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	for _, v := range *topics {
-		if err := h.authAccess(c.Username, v); err != nil {
+	for _, t := range *topics {
+		err := h.authAccess(c, t)
+		if err != nil {
 			return err
 		}
-
 	}
 
 	return nil
@@ -246,7 +250,7 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(username string, topic string) error {
+func (h *handler) authAccess(c *session.Client, topic string) error {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 	if !channelRegExp.Match([]byte(topic)) {
@@ -258,8 +262,16 @@ func (h *handler) authAccess(username string, topic string) error {
 		return ErrMalformedTopic
 	}
 
-	chanID := channelParts[1]
-	return h.auth.Authorize(context.Background(), chanID, username)
+	thID, _, err := h.auth.ConnectionIDS(context.Background(), string(c.Password))
+	if err != nil {
+		return err
+	}
+
+	if thID != c.Username {
+		return ErrAuthentication
+	}
+
+	return nil
 }
 
 func parseSubtopic(subtopic string) (string, error) {

@@ -171,12 +171,6 @@ func TestAuthSubscribe(t *testing.T) {
 			topic:  &invalidTopics,
 		},
 		{
-			desc:   "subscribe with invalid channel ID",
-			client: &sessionClient,
-			err:    mqtt.ErrAuthentication,
-			topic:  &invalidChanIDTopics,
-		},
-		{
 			desc:   "subscribe with invalid thing ID",
 			client: &invalidThingSessionClient,
 			err:    mqtt.ErrAuthentication,
@@ -391,7 +385,7 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]interface{}{chanID: thingID})
+	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]string{thingID: chanID})
 	eventStore := mocks.NewEventStore()
 	return mqtt.NewHandler([]messaging.Publisher{pubmocks.NewPublisher()}, eventStore, logger, authClient, newService())
 }

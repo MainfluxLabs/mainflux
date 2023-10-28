@@ -20,8 +20,7 @@ var _ mainflux.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout        time.Duration
-	canAccessByKey endpoint.Endpoint
-	canAccessByID  endpoint.Endpoint
+	getConnByKey   endpoint.Endpoint
 	isChannelOwner endpoint.Endpoint
 	identify       endpoint.Endpoint
 	getGroupsByIDs endpoint.Endpoint
@@ -33,21 +32,13 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 
 	return &grpcClient{
 		timeout: timeout,
-		canAccessByKey: kitot.TraceClient(tracer, "can_access")(kitgrpc.NewClient(
+		getConnByKey: kitot.TraceClient(tracer, "get_conn_by_key")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"CanAccessByKey",
-			encodeCanAccessByKeyRequest,
-			decodeIdentityResponse,
-			mainflux.ThingID{},
-		).Endpoint()),
-		canAccessByID: kitot.TraceClient(tracer, "can_access_by_id")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"CanAccessByID",
-			encodeCanAccessByIDRequest,
-			decodeEmptyResponse,
-			empty.Empty{},
+			"GetConnByKey",
+			encodeGetConnByKeyRequest,
+			decodeGetConnByKeyResponse,
+			mainflux.ConnByKeyRes{},
 		).Endpoint()),
 		isChannelOwner: kitot.TraceClient(tracer, "is_channel_owner")(kitgrpc.NewClient(
 			conn,
@@ -76,32 +67,20 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) CanAccessByKey(ctx context.Context, req *mainflux.AccessByKeyReq, _ ...grpc.CallOption) (*mainflux.ThingID, error) {
+func (client grpcClient) GetConnByKey(ctx context.Context, req *mainflux.ConnByKeyReq, _ ...grpc.CallOption) (*mainflux.ConnByKeyRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	ar := accessByKeyReq{
-		thingKey: req.GetToken(),
-		chanID:   req.GetChanID(),
+	ar := connByKeyReq{
+		key: req.GetKey(),
 	}
-	res, err := client.canAccessByKey(ctx, ar)
+	res, err := client.getConnByKey(ctx, ar)
 	if err != nil {
 		return nil, err
 	}
 
-	ir := res.(identityRes)
-	return &mainflux.ThingID{Value: ir.id}, nil
-}
-
-func (client grpcClient) CanAccessByID(ctx context.Context, req *mainflux.AccessByIDReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	ar := accessByIDReq{thingID: req.GetThingID(), chanID: req.GetChanID()}
-	res, err := client.canAccessByID(ctx, ar)
-	if err != nil {
-		return nil, err
-	}
-
-	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	cr := res.(connByKeyRes)
+	return &mainflux.ConnByKeyRes{ChannelID: cr.channelOD, ThingID: cr.thingID}, nil
 }
 
 func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.ChannelOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -137,18 +116,13 @@ func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *mainflux.Group
 		return nil, err
 	}
 
-	ir := res.(getGroupsByIDsRes)
-	return &mainflux.GroupsRes{Groups: ir.groups}, nil
+	gr := res.(getGroupsByIDsRes)
+	return &mainflux.GroupsRes{Groups: gr.groups}, nil
 }
 
-func encodeCanAccessByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(accessByKeyReq)
-	return &mainflux.AccessByKeyReq{Token: req.thingKey, ChanID: req.chanID}, nil
-}
-
-func encodeCanAccessByIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(accessByIDReq)
-	return &mainflux.AccessByIDReq{ThingID: req.thingID, ChanID: req.chanID}, nil
+func encodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(connByKeyReq)
+	return &mainflux.ConnByKeyReq{Key: req.key}, nil
 }
 
 func encodeIsChannelOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -169,6 +143,11 @@ func encodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interf
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.ThingID)
 	return identityRes{id: res.GetValue()}, nil
+}
+
+func decodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*mainflux.ConnByKeyRes)
+	return connByKeyRes{channelOD: res.ChannelID, thingID: res.ThingID}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

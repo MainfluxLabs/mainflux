@@ -355,36 +355,38 @@ func (cr channelRepository) Disconnect(ctx context.Context, owner, chID string, 
 	return nil
 }
 
-func (cr channelRepository) HasThing(ctx context.Context, chanID, thingKey string) (string, error) {
+func (cr channelRepository) RetrieveConnByThingKey(ctx context.Context, thingKey string) (things.Connection, error) {
 	var thingID string
 	q := `SELECT id FROM things WHERE key = $1`
 	if err := cr.db.QueryRowxContext(ctx, q, thingKey).Scan(&thingID); err != nil {
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	if err := cr.hasThing(ctx, chanID, thingID); err != nil {
-		return "", err
+	q = fmt.Sprintf(`SELECT thing_id, channel_id FROM connections
+		               WHERE thing_id = :thing;`)
+
+	params := map[string]interface{}{
+		"thing": thingID,
 	}
 
-	return thingID, nil
-}
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
 
-func (cr channelRepository) HasThingByID(ctx context.Context, chanID, thingID string) error {
-	return cr.hasThing(ctx, chanID, thingID)
-}
-
-func (cr channelRepository) hasThing(ctx context.Context, chanID, thingID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM connections WHERE channel_id = $1 AND thing_id = $2);`
-	exists := false
-	if err := cr.db.QueryRowxContext(ctx, q, chanID, thingID).Scan(&exists); err != nil {
-		return errors.Wrap(errors.ErrRetrieveEntity, err)
+	dbch := dbConn{}
+	for rows.Next() {
+		if err := rows.StructScan(&dbch); err != nil {
+			return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
 	}
 
-	if !exists {
-		return errors.ErrNotFound
+	if dbch.ChannelID == "" {
+		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return nil
+	return things.Connection{ThingID: thingID, ChannelID: dbch.ChannelID}, nil
 }
 
 func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {

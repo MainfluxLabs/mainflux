@@ -12,8 +12,8 @@ import (
 
 // Client represents Auth cache.
 type Client interface {
-	Authorize(ctx context.Context, chanID, thingID string) error
 	Identify(ctx context.Context, thingKey string) (string, error)
+	ConnectionIDS(ctx context.Context, thingKey string) (string, string, error)
 }
 
 const (
@@ -51,15 +51,15 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	return thingID, nil
 }
 
-func (c client) Authorize(ctx context.Context, chanID, thingID string) error {
-	if c.redisClient.SIsMember(ctx, chanPrefix+":"+chanID, thingID).Val() {
-		return nil
+func (c client) ConnectionIDS(ctx context.Context, thingKey string) (string, string, error) {
+	req := &mainflux.ConnByKeyReq{
+		Key: thingKey,
 	}
 
-	ar := &mainflux.AccessByIDReq{
-		ThingID: thingID,
-		ChanID:  chanID,
+	conn, err := c.things.GetConnByKey(context.TODO(), req)
+	if err != nil {
+		return "", "", err
 	}
-	_, err := c.things.CanAccessByID(ctx, ar)
-	return err
+
+	return conn.ThingID, conn.ChannelID, nil
 }

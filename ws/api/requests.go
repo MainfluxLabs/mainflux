@@ -5,7 +5,7 @@ package api
 
 import "github.com/gorilla/websocket"
 
-type connReq struct {
+type getConnByKey struct {
 	thingKey string
 	chanID   string
 	subtopic string

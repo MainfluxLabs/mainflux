@@ -6,8 +6,8 @@ package http
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
@@ -30,38 +30,23 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func canAccessByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(canAccessByKeyReq)
+		req := request.(getConnByKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		id, err := svc.CanAccessByKey(ctx, req.chanID, req.Token)
+		conn, err := svc.GetConnByKey(ctx, req.Key)
 		if err != nil {
 			return nil, err
 		}
 
-		res := identityRes{
-			ID: id,
+		res := connByKeyRes{
+			ChannelID: conn.ChannelID,
+			ThingID:   conn.ThingID,
 		}
 
-		return res, nil
-	}
-}
-
-func canAccessByIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(canAccessByIDReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.CanAccessByID(ctx, req.chanID, req.ThingID); err != nil {
-			return nil, err
-		}
-
-		res := canAccessByIDRes{}
 		return res, nil
 	}
 }

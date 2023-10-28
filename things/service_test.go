@@ -1159,7 +1159,7 @@ func TestDisconnect(t *testing.T) {
 
 }
 
-func TestCanAccessByKey(t *testing.T) {
+func TestGetConnByKey(t *testing.T) {
 	svc := newService()
 
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
@@ -1184,92 +1184,22 @@ func TestCanAccessByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
-		token   string
-		channel string
-		err     error
+		key string
+		err error
 	}{
 		"allowed access": {
-			token:   th.Key,
-			channel: ch.ID,
-			err:     nil,
+			key: th.Key,
+			err: nil,
 		},
 		"non-existing thing": {
-			token:   wrongValue,
-			channel: ch.ID,
-			err:     errors.ErrNotFound,
-		},
-		"non-existing chan": {
-			token:   th.Key,
-			channel: wrongValue,
-			err:     errors.ErrAuthorization,
-		},
-		"non-connected channel": {
-			token:   th.Key,
-			channel: chs[1].ID,
-			err:     errors.ErrAuthorization,
+			key: wrongValue,
+			err: errors.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.CanAccessByKey(context.Background(), tc.channel, tc.token)
+		_, err := svc.GetConnByKey(context.Background(), tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected '%s' got '%s'\n", desc, tc.err, err))
-	}
-}
-
-func TestCanAccessByID(t *testing.T) {
-	svc := newService()
-
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0], thingList[1])
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
-
-	grs, err := svc.CreateGroups(context.Background(), token, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	cases := map[string]struct {
-		thingID string
-		channel string
-		err     error
-	}{
-		"allowed access": {
-			thingID: th.ID,
-			channel: ch.ID,
-			err:     nil,
-		},
-		"access to non-existing thing": {
-			thingID: wrongValue,
-			channel: ch.ID,
-			err:     errors.ErrAuthorization,
-		},
-		"access to non-existing channel": {
-			thingID: th.ID,
-			channel: wrongID,
-			err:     errors.ErrAuthorization,
-		},
-		"access to not-connected thing": {
-			thingID: ths[1].ID,
-			channel: ch.ID,
-			err:     errors.ErrAuthorization,
-		},
-	}
-
-	for desc, tc := range cases {
-		err := svc.CanAccessByID(context.Background(), tc.channel, tc.thingID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 

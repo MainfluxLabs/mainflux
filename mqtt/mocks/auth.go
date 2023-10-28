@@ -14,20 +14,25 @@ var _ mainflux.AuthServiceClient = (*authServiceMock)(nil)
 
 type MockClient struct {
 	key   map[string]string
-	conns map[string]interface{}
+	conns map[string]string
 }
 
-func NewClient(key map[string]string, conns map[string]interface{}) auth.Client {
+func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) Authorize(ctx context.Context, chanID, thingID string) error {
-	for k, v := range cli.conns {
-		if k == chanID && v == thingID {
-			return nil
-		}
+func (cli MockClient) ConnectionIDS(ctx context.Context, key string) (string, string, error) {
+	thID, ok := cli.key[key]
+	if !ok {
+		return "", "", errors.ErrAuthentication
 	}
-	return errors.ErrAuthentication
+
+	chID, ok := cli.conns[thID]
+	if !ok {
+		return "", "", errors.ErrAuthentication
+	}
+
+	return thID, chID, nil
 }
 
 func (cli MockClient) Identify(ctx context.Context, thingKey string) (string, error) {

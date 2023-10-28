@@ -174,22 +174,13 @@ func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, chID string,
 	return ms.svc.Disconnect(ctx, token, chID, thIDs)
 }
 
-func (ms *metricsMiddleware) CanAccessByKey(ctx context.Context, id, key string) (string, error) {
+func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "can_access_by_key").Add(1)
-		ms.latency.With("method", "can_access_by_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_conn_by_key").Add(1)
+		ms.latency.With("method", "get_conn_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CanAccessByKey(ctx, id, key)
-}
-
-func (ms *metricsMiddleware) CanAccessByID(ctx context.Context, chanID, thingID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "can_access_by_id").Add(1)
-		ms.latency.With("method", "can_access_by_id").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.CanAccessByID(ctx, chanID, thingID)
+	return ms.svc.GetConnByKey(ctx, key)
 }
 
 func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner, chanID string) error {

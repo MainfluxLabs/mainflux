@@ -50,20 +50,20 @@ func handshake(svc ws.Service) http.HandlerFunc {
 	}
 }
 
-func decodeRequest(r *http.Request) (connReq, error) {
+func decodeRequest(r *http.Request) (getConnByKey, error) {
 	authKey := r.Header.Get("Authorization")
 	if authKey == "" {
 		authKeys := bone.GetQuery(r, "authorization")
 		if len(authKeys) == 0 {
 			logger.Debug("Missing authorization key.")
-			return connReq{}, errUnauthorizedAccess
+			return getConnByKey{}, errUnauthorizedAccess
 		}
 		authKey = authKeys[0]
 	}
 
 	chanID := bone.GetValue(r, "id")
 
-	req := connReq{
+	req := getConnByKey{
 		thingKey: authKey,
 		chanID:   chanID,
 	}
@@ -71,12 +71,12 @@ func decodeRequest(r *http.Request) (connReq, error) {
 	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
 	if len(channelParts) < 2 {
 		logger.Warn("Empty channel id or malformed url")
-		return connReq{}, apiutil.ErrMalformedEntity
+		return getConnByKey{}, apiutil.ErrMalformedEntity
 	}
 
 	subtopic, err := parseSubTopic(channelParts[2])
 	if err != nil {
-		return connReq{}, err
+		return getConnByKey{}, err
 	}
 
 	req.subtopic = subtopic
@@ -136,7 +136,7 @@ func listen(conn *websocket.Conn, msgs chan<- []byte) {
 	}
 }
 
-func process(svc ws.Service, req connReq, msgs <-chan []byte) {
+func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 	for msg := range msgs {
 		m := messaging.Message{
 			Channel:  req.chanID,

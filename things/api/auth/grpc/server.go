@@ -21,8 +21,7 @@ import (
 var _ mainflux.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	canAccessByKey kitgrpc.Handler
-	canAccessByID  kitgrpc.Handler
+	getConnByKey   kitgrpc.Handler
 	isChannelOwner kitgrpc.Handler
 	identify       kitgrpc.Handler
 	getGroupsByIDs kitgrpc.Handler
@@ -31,15 +30,10 @@ type grpcServer struct {
 // NewServer returns new ThingsServiceServer instance.
 func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsServiceServer {
 	return &grpcServer{
-		canAccessByKey: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "can_access")(canAccessEndpoint(svc)),
-			decodeCanAccessByKeyRequest,
-			encodeIdentityResponse,
-		),
-		canAccessByID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "can_access_by_id")(canAccessByIDEndpoint(svc)),
-			decodeCanAccessByIDRequest,
-			encodeEmptyResponse,
+		getConnByKey: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_conn_by_key")(getConnByKeyEndpoint(svc)),
+			decodeGetConnByKeyRequest,
+			encodeGetConnByKeyResponse,
 		),
 		isChannelOwner: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "is_channel_owner")(isChannelOwnerEndpoint(svc)),
@@ -59,22 +53,13 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsSer
 	}
 }
 
-func (gs *grpcServer) CanAccessByKey(ctx context.Context, req *mainflux.AccessByKeyReq) (*mainflux.ThingID, error) {
-	_, res, err := gs.canAccessByKey.ServeGRPC(ctx, req)
+func (gs *grpcServer) GetConnByKey(ctx context.Context, req *mainflux.ConnByKeyReq) (*mainflux.ConnByKeyRes, error) {
+	_, res, err := gs.getConnByKey.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*mainflux.ThingID), nil
-}
-
-func (gs *grpcServer) CanAccessByID(ctx context.Context, req *mainflux.AccessByIDReq) (*empty.Empty, error) {
-	_, res, err := gs.canAccessByID.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-
-	return res.(*empty.Empty), nil
+	return res.(*mainflux.ConnByKeyRes), nil
 }
 
 func (gs *grpcServer) IsChannelOwner(ctx context.Context, req *mainflux.ChannelOwnerReq) (*empty.Empty, error) {
@@ -104,14 +89,9 @@ func (gs *grpcServer) GetGroupsByIDs(ctx context.Context, req *mainflux.GroupsRe
 	return res.(*mainflux.GroupsRes), nil
 }
 
-func decodeCanAccessByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AccessByKeyReq)
-	return accessByKeyReq{thingKey: req.GetToken(), chanID: req.GetChanID()}, nil
-}
-
-func decodeCanAccessByIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AccessByIDReq)
-	return accessByIDReq{thingID: req.GetThingID(), chanID: req.GetChanID()}, nil
+func decodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.ConnByKeyReq)
+	return connByKeyReq{key: req.GetKey()}, nil
 }
 
 func decodeIsChannelOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -134,6 +114,11 @@ func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 	return &mainflux.ThingID{Value: res.id}, nil
 }
 
+func encodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(connByKeyRes)
+	return &mainflux.ConnByKeyRes{ChannelID: res.channelOD, ThingID: res.thingID}, nil
+}
+
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(emptyRes)
 	return &empty.Empty{}, encodeError(res.err)
@@ -148,17 +133,17 @@ func encodeError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Contains(err,apiutil.ErrMalformedEntity),
+	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrBearerKey:
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Contains(err,errors.ErrAuthentication):
+	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())
-	case errors.Contains(err,errors.ErrAuthorization):
+	case errors.Contains(err, errors.ErrAuthorization):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.Contains(err,things.ErrEntityConnected):
+	case errors.Contains(err, things.ErrEntityConnected):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.Contains(err,errors.ErrNotFound):
+	case errors.Contains(err, errors.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")

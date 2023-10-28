@@ -76,13 +76,9 @@ type Service interface {
 	// Disconnect disconnects a list of things from a channel.
 	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// CanAccessByKey determines whether the channel can be accessed using the
+	// GetConnByKey determines whether the channel can be accessed using the
 	// provided key and returns thing's id if access is allowed.
-	CanAccessByKey(ctx context.Context, chanID, key string) (string, error)
-
-	// CanAccessByID determines whether the channel can be accessed by
-	// the given thing and returns error if it cannot.
-	CanAccessByID(ctx context.Context, chanID, thingID string) error
+	GetConnByKey(ctx context.Context, key string) (Connection, error)
 
 	// IsChannelOwner determines whether the channel can be accessed by
 	// the given user and returns error if it cannot.
@@ -266,11 +262,6 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 }
 
 func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	thing, err := ts.things.RetrieveByID(ctx, id)
 	if err != nil {
 		return Thing{}, err
@@ -278,6 +269,11 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 
 	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
 		return thing, nil
+	}
+
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	if thing.Owner == res.GetId() {
@@ -532,39 +528,19 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 	return ts.channels.Disconnect(ctx, res.GetId(), chID, thIDs)
 }
 
-func (ts *thingsService) CanAccessByKey(ctx context.Context, chanID, thingKey string) (string, error) {
-	thingID, err := ts.hasThing(ctx, chanID, thingKey)
-	if err == nil {
-		return thingID, nil
-	}
-
-	thingID, err = ts.channels.HasThing(ctx, chanID, thingKey)
+func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {
+	conn, err := ts.channels.RetrieveConnByThingKey(ctx, thingKey)
 	if err != nil {
-		return "", err
+		return Connection{}, err
 	}
 
-	if err := ts.thingCache.Save(ctx, thingKey, thingID); err != nil {
-		return "", err
+	if err := ts.thingCache.Save(ctx, thingKey, conn.ThingID); err != nil {
+		return Connection{}, err
 	}
-	if err := ts.channelCache.Connect(ctx, chanID, thingID); err != nil {
-		return "", err
+	if err := ts.channelCache.Connect(ctx, conn.ChannelID, conn.ThingID); err != nil {
+		return Connection{}, err
 	}
-	return thingID, nil
-}
-
-func (ts *thingsService) CanAccessByID(ctx context.Context, chanID, thingID string) error {
-	if connected := ts.channelCache.HasThing(ctx, chanID, thingID); connected {
-		return nil
-	}
-
-	if err := ts.channels.HasThingByID(ctx, chanID, thingID); err != nil {
-		return err
-	}
-
-	if err := ts.channelCache.Connect(ctx, chanID, thingID); err != nil {
-		return err
-	}
-	return nil
+	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
 }
 
 func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID string) error {
@@ -595,18 +571,6 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 		return "", err
 	}
 	return id, nil
-}
-
-func (ts *thingsService) hasThing(ctx context.Context, chanID, thingKey string) (string, error) {
-	thingID, err := ts.thingCache.ID(ctx, thingKey)
-	if err != nil {
-		return "", err
-	}
-
-	if connected := ts.channelCache.HasThing(ctx, chanID, thingID); !connected {
-		return "", errors.ErrAuthorization
-	}
-	return thingID, nil
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {

@@ -364,7 +364,7 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 		}
 		return nil
 	default:
-		if _, err := thingc.CanAccessByKey(ctx, &mainflux.AccessByKeyReq{Token: key, ChanID: chanID}); err != nil {
+		if _, err := thingc.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key}); err != nil {
 			return err
 		}
 		return nil

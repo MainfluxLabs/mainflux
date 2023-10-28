@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"strings"
 
-	kitot "github.com/go-kit/kit/tracing/opentracing"
-	kithttp "github.com/go-kit/kit/transport/http"
-	"github.com/go-zoo/bone"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
+	kithttp "github.com/go-kit/kit/transport/http"
+	"github.com/go-zoo/bone"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -38,15 +38,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger logger.Lo
 	))
 
 	r.Post("/identify/channels/:chanId/access-by-key", kithttp.NewServer(
-		kitot.TraceServer(tracer, "can_access_by_key")(canAccessByKeyEndpoint(svc)),
-		decodeCanAccessByKey,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/identify/channels/:chanId/access-by-id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "can_access_by_id")(canAccessByIDEndpoint(svc)),
-		decodeCanAccessByID,
+		kitot.TraceServer(tracer, "get_conn_by_key")(getConnByKeyEndpoint(svc)),
+		decodeGetConnByKey,
 		encodeResponse,
 		opts...,
 	))
@@ -67,27 +60,12 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCanAccessByKey(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := canAccessByKeyReq{
-		chanID: bone.GetValue(r, "chanId"),
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeCanAccessByID(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := canAccessByIDReq{
+	req := getConnByKeyReq{
 		chanID: bone.GetValue(r, "chanId"),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
