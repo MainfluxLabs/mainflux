@@ -148,11 +148,86 @@ func TestIdentify(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", desc, tc.status, res.StatusCode))
 	}
 }
+func TestGetConnByThingKey(t *testing.T) {
+	svc := newService(map[string]string{token: email})
+	ts := newServer(svc)
+	defer ts.Close()
+
+	ths, err := svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
+	th := ths[0]
+
+	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	require.Nil(t, err, fmt.Sprintf("failed to create channel: %s", err))
+	ch := chs[0]
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
+	require.Nil(t, err, fmt.Sprintf("failed to connect thing and channel: %s", err))
+
+	data := toJSON(getConnByKeyReq{
+		Key: th.Key,
+	})
+
+	cases := map[string]struct {
+		contentType string
+		req         string
+		status      int
+	}{
+		"check access for connected thing and channel": {
+			contentType: contentType,
+			req:         data,
+			status:      http.StatusOK,
+		},
+		"check access with invalid content type": {
+			contentType: wrong,
+			req:         data,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		"check access with empty JSON request": {
+			contentType: contentType,
+			req:         "{}",
+			status:      http.StatusUnauthorized,
+		},
+		"check access with invalid JSON request": {
+			contentType: contentType,
+			req:         "}",
+			status:      http.StatusBadRequest,
+		},
+		"check access with empty request": {
+			contentType: contentType,
+			req:         "",
+			status:      http.StatusBadRequest,
+		},
+	}
+
+	for desc, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/identify/channels/%s/access-by-key", ts.URL, ""),
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", desc, tc.status, res.StatusCode))
+	}
+}
 
 type identifyReq struct {
 	Token string `json:"token"`
 }
 
 type getConnByKeyReq struct {
-	Token string `json:"token"`
+	Key string `json:"key"`
 }

@@ -37,7 +37,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		conn, err := svc.GetConnByKey(ctx, req.Token)
+		conn, err := svc.GetConnByKey(ctx, req.Key)
 		if err != nil {
 			return nil, err
 		}

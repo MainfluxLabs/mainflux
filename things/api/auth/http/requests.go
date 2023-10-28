@@ -19,16 +19,12 @@ func (req identifyReq) validate() error {
 
 type getConnByKeyReq struct {
 	chanID string
-	Token  string `json:"token"`
+	Key    string `json:"key"`
 }
 
 func (req getConnByKeyReq) validate() error {
-	if req.Token == "" {
+	if req.Key == "" {
 		return apiutil.ErrBearerKey
-	}
-
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
 	}
 
 	return nil
