@@ -114,7 +114,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if _, _, err := h.authAccess(c, *topic); err != nil {
+	if err := h.authAccess(c, *topic); err != nil {
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	}
 
 	for _, t := range *topics {
-		_, _, err := h.authAccess(c, t)
+		err := h.authAccess(c, t)
 		if err != nil {
 			return err
 		}
@@ -250,28 +250,28 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client, topic string) (string, string, error) {
+func (h *handler) authAccess(c *session.Client, topic string) error {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 	if !channelRegExp.Match([]byte(topic)) {
-		return "", "", ErrMalformedTopic
+		return ErrMalformedTopic
 	}
 
 	channelParts := channelRegExp.FindStringSubmatch(topic)
 	if len(channelParts) < 1 {
-		return "", "", ErrMalformedTopic
+		return ErrMalformedTopic
 	}
 
-	thID, chID, err := h.auth.ConnectionByThingKey(context.Background(), string(c.Password))
+	thID, _, err := h.auth.ConnectionByThingKey(context.Background(), string(c.Password))
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
 	if thID != c.Username {
-		return "", "", ErrAuthentication
+		return ErrAuthentication
 	}
 
-	return thID, chID, nil
+	return nil
 }
 
 func parseSubtopic(subtopic string) (string, error) {
