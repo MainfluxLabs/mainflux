@@ -21,7 +21,7 @@ func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) ConnectionByThingKey(ctx context.Context, key string) (string, string, error) {
+func (cli MockClient) ConnectionIDS(ctx context.Context, key string) (string, string, error) {
 	thID, ok := cli.key[key]
 	if !ok {
 		return "", "", errors.ErrAuthentication

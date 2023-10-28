@@ -262,7 +262,7 @@ func (h *handler) authAccess(c *session.Client, topic string) error {
 		return ErrMalformedTopic
 	}
 
-	thID, _, err := h.auth.ConnectionByThingKey(context.Background(), string(c.Password))
+	thID, _, err := h.auth.ConnectionIDS(context.Background(), string(c.Password))
 	if err != nil {
 		return err
 	}
