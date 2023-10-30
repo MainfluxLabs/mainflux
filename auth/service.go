@@ -768,6 +768,10 @@ func (svc service) ViewGroupMembership(ctx context.Context, token, groupID strin
 }
 
 func (svc service) canAccessGroup(ctx context.Context, token, Object, action string) error {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return nil
+	}
+
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
@@ -847,10 +851,16 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
+	gps, err := svc.policies.RetrieveAllGroupPolicies(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	backup := Backup{
-		Orgs:       orgs,
-		OrgMembers: mrs,
-		OrgGroups:  ogs,
+		Orgs:          orgs,
+		OrgMembers:    mrs,
+		OrgGroups:     ogs,
+		GroupPolicies: gps,
 	}
 
 	return backup, nil
@@ -871,6 +881,17 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 
 	if err := svc.orgs.AssignGroups(ctx, backup.OrgGroups...); err != nil {
 		return err
+	}
+
+	for _, g := range backup.GroupPolicies {
+		gp := GroupPolicyByID{
+			MemberID: g.MemberID,
+			Policy:   g.Policy,
+		}
+
+		if err := svc.policies.SaveGroupPolicies(ctx, g.GroupID, gp); err != nil {
+			return err
+		}
 	}
 
 	return nil

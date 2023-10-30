@@ -842,6 +842,7 @@ func toDBGroupPolicy(gp auth.GroupPolicy) dbGroupPolicy {
 
 func toGroupPolicy(dbgp dbGroupPolicy) auth.GroupPolicy {
 	return auth.GroupPolicy{
+		GroupID:  dbgp.GroupID,
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
 	}

@@ -131,6 +131,29 @@ func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID 
 	return page, nil
 }
 
+func (pr policiesRepository) RetrieveAllGroupPolicies(ctx context.Context) ([]auth.GroupPolicy, error) {
+	q := `SELECT member_id, group_id, policy FROM group_policies;`
+
+	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []auth.GroupPolicy
+	for rows.Next() {
+		dbgp := dbGroupPolicy{}
+		if err := rows.StructScan(&dbgp); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gp := toGroupPolicy(dbgp)
+		items = append(items, gp)
+	}
+
+	return items, nil
+}
+
 func (pr policiesRepository) RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 

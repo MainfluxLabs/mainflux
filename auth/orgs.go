@@ -10,9 +10,6 @@ var (
 	// ErrAssignToOrg indicates failure to assign member to an org.
 	ErrAssignToOrg = errors.New("failed to assign member to an org")
 
-	// ErrUnassignFromOrg indicates failure to unassign member from an org.
-	ErrUnassignFromOrg = errors.New("failed to unassign member from an org")
-
 	// ErrOrgNotEmpty indicates org is not empty, can't be deleted.
 	ErrOrgNotEmpty = errors.New("org is not empty")
 
@@ -28,16 +25,16 @@ type OrgMetadata map[string]interface{}
 
 // Org represents the org information.
 type Org struct {
-	ID          string      `json:"id"`
-	OwnerID     string      `json:"owner_id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Metadata    OrgMetadata `json:"metadata"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID          string
+	OwnerID     string
+	Name        string
+	Description string
+	Metadata    OrgMetadata
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
-// PageMetadata contains page metadata that helps navigation.
+// PageMetadata  contains page metadata that helps navigation.
 type PageMetadata struct {
 	Total    uint64
 	Offset   uint64
@@ -100,9 +97,10 @@ type OrgGroup struct {
 }
 
 type Backup struct {
-	Orgs       []Org
-	OrgMembers []OrgMember
-	OrgGroups  []OrgGroup
+	Orgs          []Org
+	OrgMembers    []OrgMember
+	OrgGroups     []OrgGroup
+	GroupPolicies []GroupPolicy
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service

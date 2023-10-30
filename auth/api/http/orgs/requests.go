@@ -338,10 +338,11 @@ func (req viewGroupMembershipReq) validate() error {
 }
 
 type restoreReq struct {
-	token      string
-	Orgs       []auth.Org       `json:"orgs"`
-	OrgMembers []auth.OrgMember `json:"org_members"`
-	OrgGroups  []auth.OrgGroup  `json:"org_groups"`
+	token         string
+	Orgs          []viewOrgRes        `json:"orgs"`
+	OrgMembers    []viewOrgMembers    `json:"org_members"`
+	OrgGroups     []viewOrgGroups     `json:"org_groups"`
+	GroupPolicies []viewGroupPolicies `json:"group_policies"`
 }
 
 func (req restoreReq) validate() error {
@@ -349,7 +350,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 && len(req.OrgGroups) == 0 {
+	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 && len(req.OrgGroups) == 0 && len(req.GroupPolicies) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -412,11 +412,7 @@ func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		backup := auth.Backup{
-			Orgs:       req.Orgs,
-			OrgMembers: req.OrgMembers,
-			OrgGroups:  req.OrgGroups,
-		}
+		backup := buildRestoreReq(req)
 
 		err := svc.Restore(ctx, req.token, backup)
 		if err != nil {
@@ -500,9 +496,10 @@ func buildGroupsResponse(gp auth.GroupsPage) groupsPageRes {
 
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
-		Orgs:       []viewOrgRes{},
-		OrgMembers: []viewOrgMembers{},
-		OrgGroups:  []viewOrgGroups{},
+		Orgs:          []viewOrgRes{},
+		OrgMembers:    []viewOrgMembers{},
+		OrgGroups:     []viewOrgGroups{},
+		GroupPolicies: []viewGroupPolicies{},
 	}
 
 	for _, org := range b.Orgs {
@@ -539,7 +536,63 @@ func buildBackupResponse(b auth.Backup) backupRes {
 		res.OrgGroups = append(res.OrgGroups, view)
 	}
 
+	for _, gp := range b.GroupPolicies {
+		view := viewGroupPolicies{
+			GroupID:  gp.GroupID,
+			MemberID: gp.MemberID,
+			Policy:   gp.Policy,
+		}
+		res.GroupPolicies = append(res.GroupPolicies, view)
+	}
+
 	return res
+}
+
+func buildRestoreReq(req restoreReq) (b auth.Backup) {
+	for _, org := range req.Orgs {
+		o := auth.Org{
+			ID:          org.ID,
+			OwnerID:     org.OwnerID,
+			Name:        org.Name,
+			Description: org.Description,
+			Metadata:    org.Metadata,
+			CreatedAt:   org.CreatedAt,
+			UpdatedAt:   org.UpdatedAt,
+		}
+		b.Orgs = append(b.Orgs, o)
+	}
+
+	for _, om := range req.OrgMembers {
+		m := auth.OrgMember{
+			OrgID:     om.OrgID,
+			MemberID:  om.MemberID,
+			Role:      om.Role,
+			CreatedAt: om.CreatedAt,
+			UpdatedAt: om.UpdatedAt,
+		}
+		b.OrgMembers = append(b.OrgMembers, m)
+	}
+
+	for _, og := range req.OrgGroups {
+		g := auth.OrgGroup{
+			GroupID:   og.GroupID,
+			OrgID:     og.OrgID,
+			CreatedAt: og.CreatedAt,
+			UpdatedAt: og.UpdatedAt,
+		}
+		b.OrgGroups = append(b.OrgGroups, g)
+	}
+
+	for _, gp := range req.GroupPolicies {
+		g := auth.GroupPolicy{
+			GroupID:  gp.GroupID,
+			MemberID: gp.MemberID,
+			Policy:   gp.Policy,
+		}
+		b.GroupPolicies = append(b.GroupPolicies, g)
+	}
+
+	return b
 }
 
 func buildGroupPoliciesResponse(gpp auth.GroupPoliciesPage) listGroupPoliciesRes {

@@ -40,6 +40,9 @@ func (mrm *policiesRepositoryMock) RetrieveGroupPolicies(ctx context.Context, gr
 	panic("not implemented")
 }
 
+func (mrm *policiesRepositoryMock) RetrieveAllGroupPolicies(ctx context.Context) ([]auth.GroupPolicy, error) {
+	panic("not implemented")
+}
 func (mrm *policiesRepositoryMock) UpdateGroupPolicies(ctx context.Context, groupID string, gps ...auth.GroupPolicyByID) error {
 	panic("not implemented")
 }
