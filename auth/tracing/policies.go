@@ -58,6 +58,14 @@ func (mrm policiesRepositoryMiddleware) RetrieveGroupPolicies(ctx context.Contex
 	return mrm.repo.RetrieveGroupPolicies(ctx, groupID, pm)
 }
 
+func (mrm policiesRepositoryMiddleware) RetrieveAllGroupPolicies(ctx context.Context) ([]auth.GroupPolicy, error) {
+	span := createSpan(ctx, mrm.tracer, RetrieveGroupPolicies)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return mrm.repo.RetrieveAllGroupPolicies(ctx)
+}
+
 func (mrm policiesRepositoryMiddleware) UpdateGroupPolicies(ctx context.Context, groupID string, gps ...auth.GroupPolicyByID) error {
 	span := createSpan(ctx, mrm.tracer, updateGroupMembers)
 	defer span.Finish()

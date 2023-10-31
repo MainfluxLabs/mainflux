@@ -28,13 +28,13 @@ type OrgMetadata map[string]interface{}
 
 // Org represents the org information.
 type Org struct {
-	ID          string      `json:"id"`
-	OwnerID     string      `json:"owner_id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Metadata    OrgMetadata `json:"metadata"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID          string
+	OwnerID     string
+	Name        string
+	Description string
+	Metadata    OrgMetadata
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -100,9 +100,10 @@ type OrgGroup struct {
 }
 
 type Backup struct {
-	Orgs       []Org
-	OrgMembers []OrgMember
-	OrgGroups  []OrgGroup
+	Orgs          []Org
+	OrgMembers    []OrgMember
+	OrgGroups     []OrgGroup
+	GroupPolicies []GroupPolicy
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service

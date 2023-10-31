@@ -42,6 +42,9 @@ type PoliciesRepository interface {
 	// RetrieveGroupPolicies retrieves page of group policies.
 	RetrieveGroupPolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
 
+	// RetrieveAllGroupPolicies retrieves all group policies. This is used for backup.
+	RetrieveAllGroupPolicies(ctx context.Context) ([]GroupPolicy, error)
+
 	// RemoveGroupPolicies removes group policies.
 	RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error
 

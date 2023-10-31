@@ -1570,6 +1570,14 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	groupPolicy := auth.GroupPolicyByID{
+		MemberID: viewerID,
+		Policy:   auth.RPolicy,
+	}
+
+	err = svc.CreateGroupPolicies(context.Background(), adminToken, grIDs[0], groupPolicy)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	or := []orgRes{
 		{
 			ID:          o.ID,
@@ -1610,34 +1618,45 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
+	gp := []viewGroupPolicies{
+		{
+			MemberID: o.OwnerID,
+			Policy:   auth.RwPolicy,
+		},
+		{
+			MemberID: viewerID,
+			Policy:   auth.RPolicy,
+		},
+	}
+
 	sort.Slice(g, func(i, j int) bool {
 		return g[i].GroupID < g[j].GroupID
 	})
 
-	data := backupRes{or, m, g}
+	data := backup{or, m, g, gp}
 
 	cases := []struct {
 		desc   string
 		token  string
-		res    backupRes
+		res    backup
 		status int
 	}{
 		{
 			desc:   "backup with invalid auth token",
 			token:  wrongValue,
-			res:    backupRes{},
+			res:    backup{},
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "backup without auth token",
 			token:  "",
-			res:    backupRes{},
+			res:    backup{},
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "backup with unauthorized credentials",
 			token:  viewerToken,
-			res:    backupRes{},
+			res:    backup{},
 			status: http.StatusForbidden,
 		},
 		{
@@ -1657,7 +1676,7 @@ func TestBackup(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data backupRes
+		var data backup
 		err = json.NewDecoder(res.Body).Decode(&data)
 
 		sort.Slice(data.OrgMembers, func(i, j int) bool {
@@ -1666,6 +1685,10 @@ func TestBackup(t *testing.T) {
 
 		sort.Slice(data.OrgGroups, func(i, j int) bool {
 			return data.OrgGroups[i].GroupID < data.OrgGroups[j].GroupID
+		})
+
+		sort.Slice(data.GroupPolicies, func(i, j int) bool {
+			return data.GroupPolicies[i].MemberID < data.GroupPolicies[j].MemberID
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
@@ -1698,7 +1721,7 @@ func TestRestore(t *testing.T) {
 	orgID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	or := []auth.Org{
+	or := []orgRes{
 		{
 			ID:          orgID,
 			OwnerID:     id,
@@ -1708,7 +1731,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	m := []auth.OrgMember{
+	m := []viewOrgMembers{
 		{
 			MemberID: viewerID,
 			OrgID:    orgID,
@@ -1726,7 +1749,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	g := []auth.OrgGroup{
+	g := []viewOrgGroups{
 		{
 			GroupID: grIDs[0],
 			OrgID:   orgID,
@@ -1737,10 +1760,19 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	data := toJSON(restoreReq{
-		Orgs:       or,
-		OrgMembers: m,
-		OrgGroups:  g,
+	gp := []viewGroupPolicies{
+		{
+			GroupID:  grIDs[0],
+			MemberID: viewerID,
+			Policy:   auth.ViewerRole,
+		},
+	}
+
+	data := toJSON(backup{
+		Orgs:          or,
+		OrgMembers:    m,
+		OrgGroups:     g,
+		GroupPolicies: gp,
 	})
 
 	cases := []struct {
@@ -1868,14 +1900,15 @@ type viewOrgGroups struct {
 	OrgID   string `json:"org_id"`
 }
 
-type backupRes struct {
-	Orgs       []orgRes         `json:"orgs"`
-	OrgMembers []viewOrgMembers `json:"org_members"`
-	OrgGroups  []viewOrgGroups  `json:"org_groups"`
+type viewGroupPolicies struct {
+	GroupID  string `json:"group_id"`
+	MemberID string `json:"member_id"`
+	Policy   string `json:"policy"`
 }
 
-type restoreReq struct {
-	Orgs       []auth.Org       `json:"orgs"`
-	OrgMembers []auth.OrgMember `json:"org_members"`
-	OrgGroups  []auth.OrgGroup  `json:"org_groups"`
+type backup struct {
+	Orgs          []orgRes            `json:"orgs"`
+	OrgMembers    []viewOrgMembers    `json:"org_members"`
+	OrgGroups     []viewOrgGroups     `json:"org_groups"`
+	GroupPolicies []viewGroupPolicies `json:"group_policies"`
 }

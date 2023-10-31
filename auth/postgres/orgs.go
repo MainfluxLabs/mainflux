@@ -362,7 +362,7 @@ func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember
 func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrUnassignFromOrg, err)
 	}
 
 	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
@@ -386,12 +386,12 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 				}
 			}
 
-			return errors.Wrap(auth.ErrAssignToOrg, err)
+			return errors.Wrap(auth.ErrUnassignFromOrg, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrUnassignFromOrg, err)
 	}
 
 	return nil
@@ -842,6 +842,7 @@ func toDBGroupPolicy(gp auth.GroupPolicy) dbGroupPolicy {
 
 func toGroupPolicy(dbgp dbGroupPolicy) auth.GroupPolicy {
 	return auth.GroupPolicy{
+		GroupID:  dbgp.GroupID,
 		MemberID: dbgp.MemberID,
 		Policy:   dbgp.Policy,
 	}

@@ -210,10 +210,17 @@ type viewOrgGroups struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type viewGroupPolicies struct {
+	GroupID  string `json:"group_id"`
+	MemberID string `json:"member_id"`
+	Policy   string `json:"policy"`
+}
+
 type backupRes struct {
-	Orgs       []viewOrgRes     `json:"orgs"`
-	OrgMembers []viewOrgMembers `json:"org_members"`
-	OrgGroups  []viewOrgGroups  `json:"org_groups"`
+	Orgs          []viewOrgRes        `json:"orgs"`
+	OrgMembers    []viewOrgMembers    `json:"org_members"`
+	OrgGroups     []viewOrgGroups     `json:"org_groups"`
+	GroupPolicies []viewGroupPolicies `json:"group_policies"`
 }
 
 func (res backupRes) Code() int {

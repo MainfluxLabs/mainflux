@@ -1722,48 +1722,61 @@ func TestBackup(t *testing.T) {
 	err = svc.AssignGroups(context.Background(), ownerToken, or.ID, grIDs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	gp := auth.GroupPolicyByID{
+		MemberID: viewerID,
+		Policy:   auth.RPolicy,
+	}
+
+	err = svc.CreateGroupPolicies(context.Background(), ownerToken, grIDs[0], gp)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
-		desc          string
-		token         string
-		orgSize       int
-		orgMemberSize int
-		orgGroupSize  int
-		err           error
+		desc           string
+		token          string
+		orgSize        int
+		orgMemberSize  int
+		orgGroupSize   int
+		grPoliciesSize int
+		err            error
 	}{
 		{
-			desc:          "backup all orgs, org members and org groups",
-			token:         superAdminToken,
-			orgSize:       1,
-			orgMemberSize: len(members) + 1,
-			orgGroupSize:  len(grIDs),
-			err:           nil,
+			desc:           "backup all orgs, org members and org groups",
+			token:          superAdminToken,
+			orgSize:        1,
+			orgMemberSize:  len(members) + 1,
+			orgGroupSize:   len(grIDs),
+			grPoliciesSize: 10,
+			err:            nil,
 		},
 		{
-			desc:          "backup with invalid credentials",
-			token:         invalid,
-			orgSize:       0,
-			orgMemberSize: 0,
-			orgGroupSize:  0,
-			err:           errors.ErrAuthentication,
+			desc:           "backup with invalid credentials",
+			token:          invalid,
+			orgSize:        0,
+			orgMemberSize:  0,
+			orgGroupSize:   0,
+			grPoliciesSize: 0,
+			err:            errors.ErrAuthentication,
 		},
 		{
-			desc:          "backup without credentials",
-			token:         "",
-			orgSize:       0,
-			orgMemberSize: 0,
-			orgGroupSize:  0,
-			err:           errors.ErrAuthentication,
+			desc:           "backup without credentials",
+			token:          "",
+			orgSize:        0,
+			orgMemberSize:  0,
+			orgGroupSize:   0,
+			grPoliciesSize: 0,
+			err:            errors.ErrAuthentication,
 		},
 		{
-			desc:          "backup with unauthorised credentials",
-			token:         viewerToken,
-			orgSize:       0,
-			orgMemberSize: 0,
-			orgGroupSize:  0,
-			err:           errors.ErrAuthorization,
+			desc:           "backup with unauthorised credentials",
+			token:          viewerToken,
+			orgSize:        0,
+			orgMemberSize:  0,
+			orgGroupSize:   0,
+			grPoliciesSize: 0,
+			err:            errors.ErrAuthorization,
 		},
 	}
 
@@ -1775,6 +1788,7 @@ func TestBackup(t *testing.T) {
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
 		assert.Equal(t, tc.orgMemberSize, orgMemberSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgMemberSize, orgMemberSize))
 		assert.Equal(t, tc.orgGroupSize, orgGroupSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgGroupSize, orgGroupSize))
+		assert.Equal(t, tc.grPoliciesSize, len(page.GroupPolicies), fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.grPoliciesSize, len(page.GroupPolicies)))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1813,10 +1827,16 @@ func TestRestore(t *testing.T) {
 		orgGroups = append(orgGroups, auth.OrgGroup{GroupID: groupID, OrgID: id})
 	}
 
+	var groupPolicies []auth.GroupPolicy
+	for _, groupID := range groupIDs {
+		groupPolicies = append(groupPolicies, auth.GroupPolicy{GroupID: groupID, MemberID: viewerID, Policy: auth.RPolicy})
+	}
+
 	backup := auth.Backup{
-		Orgs:       orgs,
-		OrgMembers: orgMembers,
-		OrgGroups:  orgGroups,
+		Orgs:          orgs,
+		OrgMembers:    orgMembers,
+		OrgGroups:     orgGroups,
+		GroupPolicies: groupPolicies,
 	}
 
 	cases := []struct {
