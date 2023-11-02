@@ -183,7 +183,7 @@ func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
-					  WHERE org_id = :org_id %s`, mq)
+					  WHERE org_id = :org_id %s LIMIT :limit OFFSET :offset`, mq)
 
 	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
