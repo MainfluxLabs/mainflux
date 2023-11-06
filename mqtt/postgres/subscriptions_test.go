@@ -53,7 +53,7 @@ func TestSave(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "subscribe thing to several subtopic successfully",
+			desc: "subscribe thing to several subtopics successfully",
 			sub:  sub2,
 			err:  nil,
 		},
