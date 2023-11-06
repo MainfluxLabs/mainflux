@@ -183,7 +183,7 @@ func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm au
 	}
 
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
-					  WHERE org_id = :org_id %s`, mq)
+					  WHERE org_id = :org_id %s LIMIT :limit OFFSET :offset`, mq)
 
 	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
@@ -515,7 +515,7 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 	}
 
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, gre.updated_at FROM group_relations gre
-					  WHERE gre.org_id = :org_id %s`, mq)
+					  WHERE gre.org_id = :org_id %s LIMIT :limit OFFSET :offset`, mq)
 
 	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
