@@ -35,6 +35,9 @@ func TestSave(t *testing.T) {
 		ChanID:   chanID,
 	}
 
+	sub2 := sub
+	sub2.Subtopic = "subtopic_2"
+
 	invalidSub := sub
 	invalidSub.ThingID = invalidID
 
@@ -47,6 +50,11 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save subscription successfully",
 			sub:  sub,
+			err:  nil,
+		},
+		{
+			desc: "subscribe thing to several subtopics successfully",
+			sub:  sub2,
 			err:  nil,
 		},
 		{

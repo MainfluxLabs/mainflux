@@ -59,6 +59,12 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS subscriptions`,
 				},
 			},
+			{
+				Id: "mqtt_2",
+				Up: []string{
+					`ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_client_id_key`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
