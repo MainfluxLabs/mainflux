@@ -785,13 +785,13 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
+	if _, err := ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction}); err != nil {
+		return Group{}, err
+	}
+
 	gr, err := ts.groups.RetrieveByID(ctx, id)
 	if err != nil {
 		return Group{}, errors.ErrNotFound
-	}
-
-	if _, err := ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction}); err != nil {
-		return Group{}, err
 	}
 
 	return gr, nil
