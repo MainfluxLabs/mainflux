@@ -797,6 +797,10 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		return err
 	}
 
+	if role == OwnerRole || role == AdminRole {
+		return nil
+	}
+
 	if role == "" || policy == "" {
 		return errors.ErrAuthorization
 	}

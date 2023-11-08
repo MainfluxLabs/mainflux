@@ -498,7 +498,7 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 	return nil
 }
 
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
@@ -514,12 +514,10 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, gr
 	case true:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM channels c
-			WHERE c.owner = :owner_id
-			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
 			%s %s;`, mq, olq)
 		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.owner = :owner_id
-			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
+			WHERE c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
 	default:
 		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM group_channels gr, channels c
@@ -529,7 +527,6 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, gr
 	}
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
