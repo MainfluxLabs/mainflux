@@ -739,7 +739,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return errors.ErrAuthorization
 		}
 
-		cp, err := ts.groups.RetrieveGroupChannels(ctx, id, PageMetadata{})
+		cp, err := ts.groups.RetrieveGroupChannels(ctx, "", id, PageMetadata{})
 		if err != nil {
 			return err
 		}
@@ -968,7 +968,7 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 		return GroupChannelsPage{}, err
 	}
 
-	gchp, err := ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
+	gchp, err := ts.groups.RetrieveGroupChannels(ctx, "", groupID, pm)
 	if err != nil {
 		return GroupChannelsPage{}, err
 	}

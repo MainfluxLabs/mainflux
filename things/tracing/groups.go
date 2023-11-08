@@ -162,12 +162,12 @@ func (grm groupRepositoryMiddleware) RetrieveChannelMembership(ctx context.Conte
 	return grm.repo.RetrieveChannelMembership(ctx, channelID)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupChannelsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveGroupChannels(ctx, groupID, pm)
+	return grm.repo.RetrieveGroupChannels(ctx, ownerID, groupID, pm)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {

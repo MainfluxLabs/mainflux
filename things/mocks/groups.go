@@ -305,7 +305,7 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
