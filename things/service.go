@@ -739,7 +739,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return errors.ErrAuthorization
 		}
 
-		cp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), id, PageMetadata{})
+		cp, err := ts.groups.RetrieveGroupChannels(ctx, "", id, PageMetadata{})
 		if err != nil {
 			return err
 		}
@@ -785,23 +785,13 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
+	if _, err := ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction}); err != nil {
 		return Group{}, err
 	}
 
 	gr, err := ts.groups.RetrieveByID(ctx, id)
 	if err != nil {
 		return Group{}, errors.ErrNotFound
-	}
-
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
-		return gr, nil
-	}
-
-	_, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: id, Action: auth.ReadAction})
-	if user.GetId() != gr.OwnerID && err != nil {
-		return Group{}, err
 	}
 
 	return gr, nil
@@ -974,27 +964,13 @@ func (ts *thingsService) ListGroupThingsByChannel(ctx context.Context, token, gr
 }
 
 func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error) {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
+	if _, err := ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err != nil {
 		return GroupChannelsPage{}, err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	gchp, err := ts.groups.RetrieveGroupChannels(ctx, "", groupID, pm)
 	if err != nil {
 		return GroupChannelsPage{}, err
-	}
-
-	gchp, err := ts.groups.RetrieveGroupChannels(ctx, user.GetId(), groupID, pm)
-	if err != nil {
-		return GroupChannelsPage{}, err
-	}
-
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
-		return gchp, nil
-	}
-
-	if user.GetId() != group.OwnerID {
-		return GroupChannelsPage{}, errors.ErrAuthorization
 	}
 
 	return gchp, nil

@@ -879,7 +879,6 @@ func TestRetrieveGroupChannels(t *testing.T) {
 				Limit:      10,
 				Unassigned: true,
 			},
-
 			channels: nil,
 			ownerID:  unknownUID,
 			err:      nil,
