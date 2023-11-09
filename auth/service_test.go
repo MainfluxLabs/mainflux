@@ -972,6 +972,8 @@ func TestUpdateMembers(t *testing.T) {
 	err = svc.AssignMembers(context.Background(), ownerToken, or.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	orgOwner := auth.OrgMember{Email: ownerEmail, Role: auth.OwnerRole}
+
 	cases := []struct {
 		desc   string
 		token  string
@@ -1006,6 +1008,20 @@ func TestUpdateMembers(t *testing.T) {
 			orgID:  or.ID,
 			member: members[1],
 			err:    nil,
+		},
+		{
+			desc:   "update org owner role as owner",
+			token:  ownerToken,
+			orgID:  or.ID,
+			member: orgOwner,
+			err:    errors.ErrAuthorization,
+		},
+		{
+			desc:   "update org owner role as admin",
+			token:  adminToken,
+			orgID:  or.ID,
+			member: orgOwner,
+			err:    errors.ErrAuthorization,
 		},
 		{
 			desc:   "update org member role with wrong credentials",

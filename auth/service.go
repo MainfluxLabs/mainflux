@@ -449,6 +449,11 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		return err
 	}
 
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	if err != nil {
+		return err
+	}
+
 	var memberEmails []string
 	var roleByEmail = make(map[string]string)
 	for _, m := range members {
@@ -464,6 +469,10 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 
 	var oms []OrgMember
 	for _, user := range usr.Users {
+		if user.Id == org.OwnerID {
+			return errors.ErrAuthorization
+		}
+
 		om := OrgMember{
 			OrgID:     orgID,
 			MemberID:  user.Id,
