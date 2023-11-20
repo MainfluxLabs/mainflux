@@ -786,6 +786,15 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 		return err
 	}
 
+	groups, err := svc.things.GetGroupsByIDs(ctx, &mainflux.GroupsReq{Ids: []string{Object}})
+	if err != nil {
+		return err
+	}
+
+	if user.ID == groups.Groups[0].OwnerID {
+		return nil
+	}
+
 	gp := GroupPolicy{
 		MemberID: user.ID,
 		GroupID:  Object,
