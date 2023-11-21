@@ -1724,7 +1724,7 @@ func TestBackup(t *testing.T) {
 
 	var grIDs []string
 	for i := 0; i < n; i++ {
-		groupID, err := idProvider.ID()
+		groupID := fmt.Sprintf(id+"-%d", i)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 		grIDs = append(grIDs, groupID)
 	}
