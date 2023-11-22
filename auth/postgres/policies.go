@@ -25,7 +25,7 @@ func NewPoliciesRepo(db Database) auth.PoliciesRepository {
 func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID string, gps ...auth.GroupPolicyByID) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return err
 	}
 
 	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`

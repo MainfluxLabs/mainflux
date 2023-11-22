@@ -325,7 +325,7 @@ func (or orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrAssignMember, err)
 	}
 
 	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
@@ -348,12 +348,12 @@ func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember
 				}
 			}
 
-			return errors.Wrap(auth.ErrAssignToOrg, err)
+			return errors.Wrap(auth.ErrAssignMember, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrAssignMember, err)
 	}
 
 	return nil
@@ -362,7 +362,7 @@ func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember
 func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrUnassignFromOrg, err)
+		return errors.Wrap(auth.ErrUnassignMember, err)
 	}
 
 	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
@@ -386,12 +386,12 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 				}
 			}
 
-			return errors.Wrap(auth.ErrUnassignFromOrg, err)
+			return errors.Wrap(auth.ErrUnassignMember, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrUnassignFromOrg, err)
+		return errors.Wrap(auth.ErrUnassignMember, err)
 	}
 
 	return nil
@@ -435,7 +435,7 @@ func (or orgRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember
 func (or orgRepository) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrAssignGroup, err)
 	}
 
 	qIns := `INSERT INTO group_relations (org_id, group_id, created_at, updated_at)
@@ -458,12 +458,12 @@ func (or orgRepository) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) 
 				}
 			}
 
-			return errors.Wrap(auth.ErrAssignToOrg, err)
+			return errors.Wrap(auth.ErrAssignGroup, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrAssignGroup, err)
 	}
 
 	return nil
@@ -472,7 +472,7 @@ func (or orgRepository) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) 
 func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrUnassignGroup, err)
 	}
 
 	qDel := `DELETE from group_relations WHERE org_id = :org_id AND group_id = :group_id`
@@ -497,12 +497,12 @@ func (or orgRepository) UnassignGroups(ctx context.Context, orgID string, groupI
 				}
 			}
 
-			return errors.Wrap(auth.ErrAssignToOrg, err)
+			return errors.Wrap(auth.ErrUnassignGroup, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignToOrg, err)
+		return errors.Wrap(auth.ErrUnassignGroup, err)
 	}
 
 	return nil
