@@ -408,8 +408,19 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms .
 }
 
 func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error {
-	if err := svc.canAssignMembers(ctx, orgID, token, memberIDs...); err != nil {
+	if err := svc.canAssignMembers(ctx, token, orgID, memberIDs...); err != nil {
 		return err
+	}
+
+	grs, err := svc.orgs.RetrieveGroups(ctx, orgID, PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, gr := range grs.OrgGroups {
+		if err := svc.policies.RemoveGroupPolicies(ctx, gr.GroupID, memberIDs...); err != nil {
+			return err
+		}
 	}
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
@@ -971,7 +982,7 @@ func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action
 	return errors.ErrAuthorization
 }
 
-func (svc service) canAssignMembers(ctx context.Context, orgID, token string, memberIDs ...string) error {
+func (svc service) canAssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
 	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
 		return err
 	}
