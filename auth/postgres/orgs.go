@@ -514,8 +514,13 @@ func (or orgRepository) RetrieveGroups(ctx context.Context, orgID string, pm aut
 		return auth.OrgGroupsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
 	q := fmt.Sprintf(`SELECT gre.group_id, gre.org_id, gre.created_at, gre.updated_at FROM group_relations gre
-					  WHERE gre.org_id = :org_id %s LIMIT :limit OFFSET :offset`, mq)
+					  WHERE gre.org_id = :org_id %s %s`, mq, olq)
 
 	dbmp, err := toDBOrgMemberPage("", orgID, pm)
 	if err != nil {
