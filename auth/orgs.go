@@ -7,11 +7,17 @@ import (
 )
 
 var (
-	// ErrAssignToOrg indicates failure to assign member to an org.
-	ErrAssignToOrg = errors.New("failed to assign member to an org")
+	// ErrAssignMember indicates failure to assign member to org.
+	ErrAssignMember = errors.New("failed to assign member to org")
 
-	// ErrUnassignFromOrg indicates failure to unassign member from an org.
-	ErrUnassignFromOrg = errors.New("failed to unassign member from an org")
+	// ErrUnassignMember indicates failure to unassign member from an org.
+	ErrUnassignMember = errors.New("failed to unassign member from org")
+
+	// ErrAssignGroup indicates failure to assign group to org.
+	ErrAssignGroup = errors.New("failed to assign group to org")
+
+	// ErrUnassignGroup indicates failure to unassign group from org.
+	ErrUnassignGroup = errors.New("failed to unassign group from org")
 
 	// ErrOrgNotEmpty indicates org is not empty, can't be deleted.
 	ErrOrgNotEmpty = errors.New("org is not empty")
