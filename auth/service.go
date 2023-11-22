@@ -408,7 +408,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms .
 }
 
 func (svc service) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error {
-	if err := svc.canAssignMembers(ctx, token, orgID, memberIDs...); err != nil {
+	if err := svc.canAssignMembers(ctx, orgID, token, memberIDs...); err != nil {
 		return err
 	}
 
@@ -971,8 +971,8 @@ func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action
 	return errors.ErrAuthorization
 }
 
-func (svc service) canAssignMembers(ctx context.Context, orgID, userID string, memberIDs ...string) error {
-	if err := svc.orgRolesAuth(ctx, orgID, userID, AdminRole); err != nil {
+func (svc service) canAssignMembers(ctx context.Context, orgID, token string, memberIDs ...string) error {
+	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
 		return err
 	}
 
