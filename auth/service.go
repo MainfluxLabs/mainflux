@@ -666,8 +666,20 @@ func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID strin
 }
 
 func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
-	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
 		return GroupPoliciesPage{}, err
+	}
+
+	grs, err := svc.things.GetGroupsByIDs(ctx, &mainflux.GroupsReq{Ids: []string{groupID}})
+	if err != nil {
+		return GroupPoliciesPage{}, err
+	}
+
+	if user.ID != grs.Groups[0].OwnerID {
+		if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+			return GroupPoliciesPage{}, err
+		}
 	}
 
 	gpp, err := svc.policies.RetrieveGroupPolicies(ctx, groupID, pm)
@@ -707,7 +719,6 @@ func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string,
 
 			groupPolicies = append(groupPolicies, groupPolicy)
 		}
-
 	}
 
 	page := GroupPoliciesPage{
@@ -784,15 +795,6 @@ func (svc service) canAccessGroup(ctx context.Context, token, Object, action str
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
-	}
-
-	groups, err := svc.things.GetGroupsByIDs(ctx, &mainflux.GroupsReq{Ids: []string{Object}})
-	if err != nil {
-		return err
-	}
-
-	if user.ID == groups.Groups[0].OwnerID {
-		return nil
 	}
 
 	gp := GroupPolicy{
