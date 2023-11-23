@@ -666,20 +666,8 @@ func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID strin
 }
 
 func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
+	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
 		return GroupPoliciesPage{}, err
-	}
-
-	grs, err := svc.things.GetGroupsByIDs(ctx, &mainflux.GroupsReq{Ids: []string{groupID}})
-	if err != nil {
-		return GroupPoliciesPage{}, err
-	}
-
-	if user.ID != grs.Groups[0].OwnerID {
-		if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
-			return GroupPoliciesPage{}, err
-		}
 	}
 
 	gpp, err := svc.policies.RetrieveGroupPolicies(ctx, groupID, pm)
