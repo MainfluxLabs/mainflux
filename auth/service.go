@@ -298,34 +298,6 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	mPage, err := svc.orgs.RetrieveMembers(ctx, id, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	var memberIDs []string
-	for _, m := range mPage.OrgMembers {
-		memberIDs = append(memberIDs, m.MemberID)
-	}
-
-	if err := svc.orgs.UnassignMembers(ctx, id, memberIDs...); err != nil {
-		return err
-	}
-
-	gPage, err := svc.orgs.RetrieveGroups(ctx, id, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	var groupIDs []string
-	for _, g := range gPage.OrgGroups {
-		groupIDs = append(groupIDs, g.GroupID)
-	}
-
-	if err := svc.orgs.UnassignGroups(ctx, id, groupIDs...); err != nil {
-		return err
-	}
-
 	return svc.orgs.Delete(ctx, user.ID, id)
 }
 

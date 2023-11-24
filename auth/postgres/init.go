@@ -138,6 +138,15 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE group_policies ADD CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id)`,
 				},
 			},
+			{
+				Id: "auth_7",
+				Up: []string{
+					`ALTER TABLE member_relations DROP CONSTRAINT IF EXISTS member_relations_org_id_fkey`,
+					`ALTER TABLE member_relations ADD CONSTRAINT member_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE ON UPDATE CASCADE`,
+					`ALTER TABLE group_relations DROP CONSTRAINT IF EXISTS group_relations_org_id_fkey`,
+					`ALTER TABLE group_relations ADD CONSTRAINT group_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE ON UPDATE CASCADE`,
+				},
+			},
 		},
 	}
 
