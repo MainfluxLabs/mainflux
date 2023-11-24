@@ -34,7 +34,7 @@ const (
 	groupIDKey    = "groupID"
 	thingIDKey    = "thingID"
 	channelIDKey  = "channelID"
-	unassignedKey = "unassigned"
+
 	adminKey      = "admin"
 	defOffset     = 0
 	defLimit      = 10
@@ -554,19 +554,14 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
-	u, err := apiutil.ReadBoolQuery(r, unassignedKey, false)
-	if err != nil {
-		return nil, err
-	}
-
 	req := listMembersReq{
 		token:      apiutil.ExtractBearerToken(r),
 		id:         bone.GetValue(r, groupIDKey),
-		unassigned: u,
 		offset:     o,
 		limit:      l,
 		metadata:   m,
 	}
+
 	return req, nil
 }
 

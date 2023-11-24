@@ -501,7 +501,7 @@ func TestAssignThing(t *testing.T) {
 	err = groupRepo.AssignThing(context.Background(), group.ID, thid)
 	require.Nil(t, err, fmt.Sprintf("thing assign save unexpected error: %s", err))
 
-	thp, err := groupRepo.RetrieveGroupThings(context.Background(), uid, group.ID, pm)
+	thp, err := groupRepo.RetrieveGroupThings(context.Background(), group.ID, pm)
 	require.Nil(t, err, fmt.Sprintf("thing assign save unexpected error: %s", err))
 	assert.True(t, thp.Total == 1, fmt.Sprintf("retrieve things of a group: expected %d got %d\n", 1, thp.Total))
 
@@ -545,14 +545,14 @@ func TestUnassignThing(t *testing.T) {
 	err = groupRepo.AssignThing(context.Background(), group.ID, thid)
 	require.Nil(t, err, fmt.Sprintf("thing assign unexpected error: %s", err))
 
-	thp, err := groupRepo.RetrieveGroupThings(context.Background(), uid, group.ID, pm)
+	thp, err := groupRepo.RetrieveGroupThings(context.Background(), group.ID, pm)
 	require.Nil(t, err, fmt.Sprintf("thing assign save unexpected error: %s", err))
 	assert.True(t, thp.Total == 2, fmt.Sprintf("retrieve things of a group: expected %d got %d\n", 2, thp.Total))
 
 	err = groupRepo.UnassignThing(context.Background(), group.ID, thid)
 	require.Nil(t, err, fmt.Sprintf("thing unassign save unexpected error: %s", err))
 
-	thp, err = groupRepo.RetrieveGroupThings(context.Background(), uid, group.ID, pm)
+	thp, err = groupRepo.RetrieveGroupThings(context.Background(), group.ID, pm)
 	require.Nil(t, err, fmt.Sprintf("things retrieve unexpected error: %s", err))
 	assert.True(t, thp.Total == 1, fmt.Sprintf("retrieve things of a group: expected %d got %d\n", 1, thp.Total))
 }
@@ -564,8 +564,6 @@ func TestRetrieveGroupThings(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
 	uid, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	unknownUID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	creationTime := time.Now().UTC()
@@ -617,7 +615,6 @@ func TestRetrieveGroupThings(t *testing.T) {
 		pagemeta things.PageMetadata
 		groupID  string
 		things   []things.Thing
-		ownerID  string
 		err      error
 	}{
 		"retrieve group things": {
@@ -647,32 +644,10 @@ func TestRetrieveGroupThings(t *testing.T) {
 			things:  ths[1:2],
 			err:     nil,
 		},
-
-		"retrieve unassigned things": {
-			pagemeta: things.PageMetadata{
-				Offset:     0,
-				Limit:      10,
-				Unassigned: true,
-			},
-			things:  ths[2:],
-			ownerID: uid,
-			err:     nil,
-		},
-		"retrieve unassigned things with unknown owner": {
-			pagemeta: things.PageMetadata{
-				Offset:     0,
-				Limit:      10,
-				Unassigned: true,
-			},
-
-			things:  nil,
-			ownerID: unknownUID,
-			err:     nil,
-		},
 	}
 
 	for desc, tc := range cases {
-		ths, err := groupRepo.RetrieveGroupThings(context.Background(), tc.ownerID, tc.groupID, tc.pagemeta)
+		ths, err := groupRepo.RetrieveGroupThings(context.Background(), tc.groupID, tc.pagemeta)
 		assert.Equal(t, tc.things, ths.Things, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.things, ths.Things))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
@@ -780,8 +755,6 @@ func TestRetrieveGroupChannels(t *testing.T) {
 
 	uid, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	unknownUID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	creationTime := time.Now().UTC()
 	group := things.Group{
@@ -832,7 +805,6 @@ func TestRetrieveGroupChannels(t *testing.T) {
 		pagemeta things.PageMetadata
 		groupID  string
 		channels []things.Channel
-		ownerID  string
 		err      error
 	}{
 		"retrieve group channels": {
@@ -862,31 +834,10 @@ func TestRetrieveGroupChannels(t *testing.T) {
 			channels: channels[1:2],
 			err:      nil,
 		},
-
-		"retrieve unassigned channels": {
-			pagemeta: things.PageMetadata{
-				Offset:     0,
-				Limit:      10,
-				Unassigned: true,
-			},
-			channels: channels[2:],
-			ownerID:  uid,
-			err:      nil,
-		},
-		"retrieve unassigned channels with unknown owner": {
-			pagemeta: things.PageMetadata{
-				Offset:     0,
-				Limit:      10,
-				Unassigned: true,
-			},
-			channels: nil,
-			ownerID:  unknownUID,
-			err:      nil,
-		},
 	}
 
 	for desc, tc := range cases {
-		chs, err := groupRepo.RetrieveGroupChannels(context.Background(), tc.ownerID, tc.groupID, tc.pagemeta)
+		chs, err := groupRepo.RetrieveGroupChannels(context.Background(), tc.groupID, tc.pagemeta)
 		assert.Equal(t, tc.channels, chs.Channels, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.channels, chs.Channels))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}

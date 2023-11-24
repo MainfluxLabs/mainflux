@@ -149,7 +149,6 @@ type PageMetadata struct {
 	Dir          string                 `json:"dir,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 	Disconnected bool                   // Used for connected or disconnected lists
-	Unassigned   bool                   // Used for assigned or unassigned lists
 }
 
 type Backup struct {
@@ -734,7 +733,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		cp, err := ts.groups.RetrieveGroupChannels(ctx, "", id, PageMetadata{})
+		cp, err := ts.groups.RetrieveGroupChannels(ctx, id, PageMetadata{})
 		if err != nil {
 			return err
 		}
@@ -920,7 +919,7 @@ func (ts *thingsService) ListGroupThings(ctx context.Context, token string, grou
 		}
 	}
 
-	return ts.groups.RetrieveGroupThings(ctx, "", groupID, pm)
+	return ts.groups.RetrieveGroupThings(ctx, groupID, pm)
 }
 
 func (ts *thingsService) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm PageMetadata) (GroupThingsPage, error) {
@@ -954,7 +953,7 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 		}
 	}
 
-	return ts.groups.RetrieveGroupChannels(ctx, "", groupID, pm)
+	return ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
 }
 
 func (ts *thingsService) ViewThingMembership(ctx context.Context, token string, thingID string) (Group, error) {
