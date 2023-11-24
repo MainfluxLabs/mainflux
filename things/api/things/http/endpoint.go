@@ -632,7 +632,6 @@ func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			Offset:     req.offset,
 			Limit:      req.limit,
 			Metadata:   req.metadata,
-			Unassigned: req.unassigned,
 		}
 
 		page, err := svc.ListGroupThings(ctx, req.token, req.id, pm)
@@ -711,7 +710,6 @@ func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			Offset:     req.offset,
 			Limit:      req.limit,
 			Metadata:   req.metadata,
-			Unassigned: req.unassigned,
 		}
 
 		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)

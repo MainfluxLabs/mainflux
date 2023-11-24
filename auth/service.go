@@ -690,7 +690,6 @@ func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string,
 
 			groupPolicies = append(groupPolicies, groupPolicy)
 		}
-
 	}
 
 	page := GroupPoliciesPage{

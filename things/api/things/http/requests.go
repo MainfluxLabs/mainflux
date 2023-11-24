@@ -465,7 +465,6 @@ func (req listGroupsReq) validate() error {
 type listMembersReq struct {
 	token      string
 	id         string
-	unassigned bool
 	offset     uint64
 	limit      uint64
 	metadata   things.GroupMetadata

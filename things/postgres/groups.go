@@ -227,7 +227,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return gr.retrieve(ctx, "", pm)
 }
 
-func (gr groupRepository) RetrieveGroupThings(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
@@ -238,27 +238,13 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, ownerID, grou
 		olq = ""
 	}
 
-	var q, qc string
-	switch pm.Unassigned {
-	case true:
-		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
-			FROM  things t
-			WHERE t.owner = :owner_id
-			AND t.id NOT IN (SELECT gr.thing_id FROM group_things gr)
-			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM things t
-			WHERE t.owner = :owner_id
-			AND t.id NOT IN (SELECT gr.thing_id FROM group_things gr) %s;`, mq)
-	default:
-		q = fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
 			FROM group_things gr, things t
 			WHERE gr.group_id = :group_id and gr.thing_id = t.id
 			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr WHERE gr.group_id = :group_id %s;`, mq)
-	}
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr WHERE gr.group_id = :group_id %s;`, mq)
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -498,7 +484,7 @@ func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids
 	return nil
 }
 
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
@@ -509,27 +495,13 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, ownerID, gr
 		olq = ""
 	}
 
-	var q, qc string
-	switch pm.Unassigned {
-	case true:
-		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
-			FROM channels c
-			WHERE c.owner = :owner_id
-			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr)
-			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM channels c
-			WHERE c.owner = :owner_id
-			AND c.id NOT IN (SELECT gr.channel_id FROM group_channels gr) %s;`, mq)
-	default:
-		q = fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
+	q := fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
 			FROM group_channels gr, channels c
 			WHERE gr.group_id = :group_id and gr.channel_id = c.id
 			%s %s;`, mq, olq)
-		qc = fmt.Sprintf(`SELECT COUNT(*) FROM group_channels gr WHERE gr.group_id = :group_id %s;`, mq)
-	}
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_channels gr WHERE gr.group_id = :group_id %s;`, mq)
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -857,23 +829,6 @@ type dbChannelRelation struct {
 	ChannelID sql.NullString `db:"channel_id"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
-}
-
-func toDBChannelRelation(channelID, groupID string) (dbChannelRelation, error) {
-	var grID sql.NullString
-	if groupID != "" {
-		grID = sql.NullString{String: groupID, Valid: true}
-	}
-
-	var cID sql.NullString
-	if channelID != "" {
-		cID = sql.NullString{String: channelID, Valid: true}
-	}
-
-	return dbChannelRelation{
-		GroupID:   grID,
-		ChannelID: cID,
-	}, nil
 }
 
 func toChannelRelation(dbgr dbChannelRelation) (things.GroupChannelRelation, error) {

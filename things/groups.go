@@ -120,7 +120,7 @@ type GroupRepository interface {
 	RetrieveThingMembership(ctx context.Context, thingID string) (string, error)
 
 	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
-	RetrieveGroupThings(ctx context.Context, ownerID, groupID string, pm PageMetadata) (GroupThingsPage, error)
+	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
 	// RetrieveGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
 	RetrieveGroupThingsByChannel(ctx context.Context, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
@@ -135,7 +135,7 @@ type GroupRepository interface {
 	RetrieveChannelMembership(ctx context.Context, channelID string) (string, error)
 
 	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	RetrieveGroupChannels(ctx context.Context, ownerID, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
 	// AssignChannel assigns a channel to a group
 	AssignChannel(ctx context.Context, groupID string, ids ...string) error
