@@ -82,7 +82,12 @@ func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return generateCSV(page)
+		csvData, err := generateCSV(page)
+		if err != nil {
+			return nil, err
+		}
+
+		return backupFileRes{file: csvData}, nil
 	}
 }
 
