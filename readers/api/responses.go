@@ -46,3 +46,19 @@ func (res restoreMessagesRes) Headers() map[string]string {
 func (res restoreMessagesRes) Empty() bool {
 	return true
 }
+
+type backupFileRes struct {
+	file []byte
+}
+
+func (res backupFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupFileRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupFileRes) Empty() bool {
+	return false
+}

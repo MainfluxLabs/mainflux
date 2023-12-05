@@ -36,4 +36,7 @@ var (
 
 	// ErrSaveMessage indicates failure occurred while saving message to database.
 	ErrSaveMessage = New("failed to save message to database")
+
+	// ErrWrongMessageType indicates wrong message type.
+	ErrWrongMessageType = New("wrong message type")
 )

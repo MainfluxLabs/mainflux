@@ -4,7 +4,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
+	"fmt"
+	"reflect"
 
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -61,6 +65,27 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
+func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listAllMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		// Check if user is authorized to read all messages
+		if err := authorizeAdmin(ctx, auth.RootSubject, req.token); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.Backup(req.pageMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		return generateCSV(page)
+	}
+}
+
 func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
@@ -79,4 +104,55 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 
 		return restoreMessagesRes{}, nil
 	}
+}
+
+func generateCSV(page readers.MessagesPage) ([]byte, error) {
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	// Write header row
+	header := []string{
+		"ID",
+		"Channel",
+		"Subtopic",
+		"Publisher",
+		"Protocol",
+		"Name",
+		"Unit",
+		"Value",
+		"String_value",
+		"Bool_value",
+		"Data_value",
+		"Sum",
+		"Time",
+		"Update_time",
+	}
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+
+	// Process each message and write to CSV using reflection
+	for _, msgInterface := range page.Messages {
+		value := reflect.ValueOf(msgInterface)
+		if value.Kind() != reflect.Struct {
+			return nil, errors.ErrWrongMessageType
+		}
+
+		var row []string
+		for i := 0; i < value.NumField(); i++ {
+			fieldValue := fmt.Sprintf("%v", value.Field(i).Interface())
+			row = append(row, fieldValue)
+		}
+
+		if err := writer.Write(row); err != nil {
+			return nil, err
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

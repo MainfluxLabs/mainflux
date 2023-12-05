@@ -53,6 +53,10 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
+func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll("", rpm)
+}
+
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,

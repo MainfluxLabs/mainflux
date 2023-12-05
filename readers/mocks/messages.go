@@ -40,6 +40,10 @@ func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (re
 	return repo.readAll("", rpm)
 }
 
+func (repo *messageRepositoryMock) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
 func (repo *messageRepositoryMock) Restore(ctx context.Context, messages ...senml.Message) error {
 	panic("not implemented")
 }

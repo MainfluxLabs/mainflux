@@ -21,24 +21,25 @@ import (
 )
 
 const (
-	contentType    = "application/json"
-	offsetKey      = "offset"
-	limitKey       = "limit"
-	formatKey      = "format"
-	subtopicKey    = "subtopic"
-	publisherKey   = "publisher"
-	protocolKey    = "protocol"
-	nameKey        = "name"
-	valueKey       = "v"
-	stringValueKey = "vs"
-	dataValueKey   = "vd"
-	boolValueKey   = "vb"
-	comparatorKey  = "comparator"
-	fromKey        = "from"
-	toKey          = "to"
-	defLimit       = 10
-	defOffset      = 0
-	defFormat      = "messages"
+	contentType            = "application/json"
+	octetStreamContentType = "application/octet-stream"
+	offsetKey              = "offset"
+	limitKey               = "limit"
+	formatKey              = "format"
+	subtopicKey            = "subtopic"
+	publisherKey           = "publisher"
+	protocolKey            = "protocol"
+	nameKey                = "name"
+	valueKey               = "v"
+	stringValueKey         = "vs"
+	dataValueKey           = "vd"
+	boolValueKey           = "vb"
+	comparatorKey          = "comparator"
+	fromKey                = "from"
+	toKey                  = "to"
+	defLimit               = 10
+	defOffset              = 0
+	defFormat              = "messages"
 )
 
 var (
@@ -72,6 +73,12 @@ func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient,
 		restoreEndpoint(svc),
 		decodeRestore,
 		encodeResponse,
+		opts...,
+	))
+	mux.Get("/backup", kithttp.NewServer(
+		backupEndpoint(svc),
+		decodeListAllMessages,
+		encodeBackupFileResponse,
 		opts...,
 	))
 
@@ -305,6 +312,26 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	w.Header().Set("Content-Type", octetStreamContentType)
+
+	if ar, ok := response.(backupFileRes); ok {
+		for k, v := range ar.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.WriteHeader(ar.Code())
+
+		if ar.Empty() {
+			return nil
+		}
+
+		w.Write(ar.file)
+	}
+
+	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

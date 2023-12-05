@@ -56,6 +56,19 @@ func (lm *loggingMiddleware) ListAllMessages(rpm readers.PageMetadata) (page rea
 	return lm.svc.ListAllMessages(rpm)
 }
 
+func (lm *loggingMiddleware) Backup(rpm readers.PageMetadata) (page readers.MessagesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Backup(rpm)
+}
+
 func (lm *loggingMiddleware) Restore(ctx context.Context, messages ...senml.Message) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
