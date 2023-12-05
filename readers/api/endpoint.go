@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"reflect"
+	"strconv"
 
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -115,7 +115,6 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	// Write header row
 	header := []string{
 		"ID",
 		"Channel",
@@ -136,7 +135,6 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 		return nil, err
 	}
 
-	// Process each message and write to CSV using reflection
 	for _, msg := range page.Messages {
 		value := reflect.ValueOf(msg)
 		if value.Kind() != reflect.Struct {
@@ -144,8 +142,14 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 		}
 
 		var row []string
-		for i := 0; i < value.NumField(); i++ {
-			fieldValue := fmt.Sprintf("%v", value.Field(i).Interface())
+		for _, col := range header {
+			field := value.FieldByName(col)
+
+			var fieldValue string
+			if field.IsValid() {
+				fieldValue = convertFieldToString(field)
+			}
+
 			row = append(row, fieldValue)
 		}
 
@@ -160,4 +164,23 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func convertFieldToString(field reflect.Value) string {
+	if field.Kind() == reflect.Ptr {
+		field = field.Elem()
+	}
+
+	switch field.Kind() {
+	case reflect.Float64:
+		return strconv.FormatFloat(field.Float(), 'f', -1, 64)
+	case reflect.String:
+		return field.String()
+	case reflect.Bool:
+		return strconv.FormatBool(field.Bool())
+	case reflect.Slice:
+		return string(field.Bytes())
+	default:
+		return ""
+	}
 }
