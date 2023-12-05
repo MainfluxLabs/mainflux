@@ -132,8 +132,8 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	}
 
 	// Process each message and write to CSV using reflection
-	for _, msgInterface := range page.Messages {
-		value := reflect.ValueOf(msgInterface)
+	for _, msg := range page.Messages {
+		value := reflect.ValueOf(msg)
 		if value.Kind() != reflect.Struct {
 			return nil, errors.ErrWrongMessageType
 		}
