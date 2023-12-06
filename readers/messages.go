@@ -71,23 +71,6 @@ type PageMetadata struct {
 	Format      string  `json:"format,omitempty"`
 }
 
-type BackupMessage struct {
-	ID           string
-	Channel      string
-	Subtopic     string
-	Publisher    string
-	Protocol     string
-	Name         string
-	Unit         string
-	Value        float64
-	String_value string
-	Bool_value   bool
-	Data_value   []byte
-	Sum          float64
-	Time         float64
-	Update_time  float64
-}
-
 // ParseValueComparator convert comparison operator keys into mathematic anotation
 func ParseValueComparator(query map[string]interface{}) string {
 	comparator := "="

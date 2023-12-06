@@ -7,11 +7,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"reflect"
-	"strconv"
+	"fmt"
 
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -116,7 +116,6 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	writer := csv.NewWriter(&buf)
 
 	header := []string{
-		"ID",
 		"Channel",
 		"Subtopic",
 		"Publisher",
@@ -136,25 +135,40 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	}
 
 	for _, msg := range page.Messages {
-		value := reflect.ValueOf(msg)
-		if value.Kind() != reflect.Struct {
-			return nil, errors.ErrWrongMessageType
-		}
-
-		var row []string
-		for _, col := range header {
-			field := value.FieldByName(col)
-
-			var fieldValue string
-			if field.IsValid() {
-				fieldValue = convertFieldToString(field)
+		switch m := msg.(type) {
+		// handle SenML messages
+		case senml.Message:
+			row := []string{
+				m.Channel,
+				m.Subtopic,
+				m.Publisher,
+				m.Protocol,
+				m.Name,
+				m.Unit,
+				getFloatValue(m.Value, ""),
+				getStringValue(m.StringValue, ""),
+				getBoolValue(m.BoolValue, ""),
+				getStringValue(m.DataValue, ""),
+				getFloatValue(m.Sum, ""),
+				fmt.Sprintf("%v", m.Time),
+				fmt.Sprintf("%v", m.UpdateTime),
 			}
-
-			row = append(row, fieldValue)
-		}
-
-		if err := writer.Write(row); err != nil {
-			return nil, err
+			if err := writer.Write(row); err != nil {
+				return nil, err
+			}
+		// handle JSON messages
+		case map[string]interface{}:
+			row := make([]string, len(header))
+			for key, value := range m {
+				if idx := indexOf(header, key); idx != -1 {
+					row[idx] = getValue(value, "")
+				}
+			}
+			if err := writer.Write(row); err != nil {
+				return nil, err
+			}
+		default:
+			continue
 		}
 	}
 
@@ -166,21 +180,48 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func convertFieldToString(field reflect.Value) string {
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
-	}
-
-	switch field.Kind() {
-	case reflect.Float64:
-		return strconv.FormatFloat(field.Float(), 'f', -1, 64)
-	case reflect.String:
-		return field.String()
-	case reflect.Bool:
-		return strconv.FormatBool(field.Bool())
-	case reflect.Slice:
-		return string(field.Bytes())
+// Helper function to handle the different types of values.
+func getValue(value interface{}, defaultValue string) string {
+	switch v := value.(type) {
+	case *float64:
+		return getFloatValue(v, defaultValue)
+	case *string:
+		return getStringValue(v, defaultValue)
+	case *bool:
+		return getBoolValue(v, defaultValue)
 	default:
-		return ""
+		return fmt.Sprintf("%v", v)
 	}
+}
+
+// Helper function to get the index of a string in a slice.
+// Returns -1 if the string is not found in the slice.
+func indexOf(slice []string, item string) int {
+	for i, val := range slice {
+		if val == item {
+			return i
+		}
+	}
+	return -1
+}
+
+func getStringValue(ptr *string, defaultValue string) string {
+	if ptr != nil {
+		return *ptr
+	}
+	return defaultValue
+}
+
+func getFloatValue(ptr *float64, defaultValue string) string {
+	if ptr != nil {
+		return fmt.Sprintf("%v", *ptr)
+	}
+	return defaultValue
+}
+
+func getBoolValue(ptr *bool, defaultValue string) string {
+	if ptr != nil {
+		return fmt.Sprintf("%v", *ptr)
+	}
+	return defaultValue
 }
