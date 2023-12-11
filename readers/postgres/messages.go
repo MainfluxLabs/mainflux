@@ -53,6 +53,10 @@ func (tr postgresRepository) ListChannelMessages(chanID string, rpm readers.Page
 	return tr.readAll(chanID, rpm)
 }
 
+func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll("", rpm)
+}
+
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
@@ -270,40 +274,4 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	}
 	ret["payload"] = pld
 	return ret, nil
-}
-
-type dbMessage struct {
-	ID           string  `json:"id,omitempty"`
-	Channel      string  `json:"channel"`
-	Subtopic     string  `json:"subtopic"`
-	Publisher    string  `json:"publisher"`
-	Protocol     string  `json:"protocol"`
-	Name         string  `json:"name"`
-	Unit         string  `json:"unit,omitempty"`
-	Value        float64 `json:"value"`
-	String_value string  `json:"string_value,omitempty"`
-	Bool_value   bool    `json:"bool_value,omitempty"`
-	Data_value   []byte  `json:"data_value,omitempty"`
-	Sum          float64 `json:"sum,omitempty"`
-	Time         float64 `json:"time"`
-	Update_time  float64 `json:"update_time,omitempty"`
-}
-
-func toDBMessage(ms readers.BackupMessage) dbMessage {
-	return dbMessage{
-		ID:           ms.ID,
-		Channel:      ms.Channel,
-		Subtopic:     ms.Subtopic,
-		Publisher:    ms.Publisher,
-		Protocol:     ms.Protocol,
-		Name:         ms.Name,
-		Unit:         ms.Unit,
-		Value:        ms.Value,
-		String_value: ms.String_value,
-		Bool_value:   ms.Bool_value,
-		Data_value:   ms.Data_value,
-		Sum:          ms.Sum,
-		Time:         ms.Time,
-		Update_time:  ms.Update_time,
-	}
 }

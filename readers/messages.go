@@ -37,6 +37,9 @@ type MessageRepository interface {
 
 	// Restore restores message database from a backup.
 	Restore(ctx context.Context, messages ...senml.Message) error
+
+	// Backup retrieves all messages from database.
+	Backup(rpm PageMetadata) (MessagesPage, error)
 }
 
 // Message represents any message format.
@@ -66,23 +69,6 @@ type PageMetadata struct {
 	From        float64 `json:"from,omitempty"`
 	To          float64 `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
-}
-
-type BackupMessage struct {
-	ID           string
-	Channel      string
-	Subtopic     string
-	Publisher    string
-	Protocol     string
-	Name         string
-	Unit         string
-	Value        float64
-	String_value string
-	Bool_value   bool
-	Data_value   []byte
-	Sum          float64
-	Time         float64
-	Update_time  float64
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation
