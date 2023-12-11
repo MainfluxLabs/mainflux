@@ -16,6 +16,22 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
+var header = []string{
+	"channel",
+	"subtopic",
+	"publisher",
+	"protocol",
+	"name",
+	"unit",
+	"value",
+	"string_value",
+	"bool_value",
+	"data_value",
+	"sum",
+	"time",
+	"update_time",
+}
+
 func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listChannelMessagesReq)
@@ -72,7 +88,6 @@ func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		// Check if user is authorized to read all messages
 		if err := authorizeAdmin(ctx, auth.RootSubject, req.token); err != nil {
 			return nil, err
 		}
@@ -115,61 +130,12 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	header := []string{
-		"Channel",
-		"Subtopic",
-		"Publisher",
-		"Protocol",
-		"Name",
-		"Unit",
-		"Value",
-		"String_value",
-		"Bool_value",
-		"Data_value",
-		"Sum",
-		"Time",
-		"Update_time",
-	}
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	for _, msg := range page.Messages {
-		switch m := msg.(type) {
-		// handle SenML messages
-		case senml.Message:
-			row := []string{
-				m.Channel,
-				m.Subtopic,
-				m.Publisher,
-				m.Protocol,
-				m.Name,
-				m.Unit,
-				getFloatValue(m.Value, ""),
-				getStringValue(m.StringValue, ""),
-				getBoolValue(m.BoolValue, ""),
-				getStringValue(m.DataValue, ""),
-				getFloatValue(m.Sum, ""),
-				fmt.Sprintf("%v", m.Time),
-				fmt.Sprintf("%v", m.UpdateTime),
-			}
-			if err := writer.Write(row); err != nil {
-				return nil, err
-			}
-		// handle JSON messages
-		case map[string]interface{}:
-			row := make([]string, len(header))
-			for key, value := range m {
-				if idx := indexOf(header, key); idx != -1 {
-					row[idx] = getValue(value, "")
-				}
-			}
-			if err := writer.Write(row); err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
+	if err := convertSenMLToCSV(page, writer); err != nil {
+		return nil, err
 	}
 
 	writer.Flush()
@@ -180,48 +146,48 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Helper function to handle the different types of values.
-func getValue(value interface{}, defaultValue string) string {
-	switch v := value.(type) {
-	case *float64:
-		return getFloatValue(v, defaultValue)
-	case *string:
-		return getStringValue(v, defaultValue)
-	case *bool:
-		return getBoolValue(v, defaultValue)
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
+func convertSenMLToCSV(page readers.MessagesPage, writer *csv.Writer) error {
+	for _, msg := range page.Messages {
+		if m, ok := msg.(senml.Message); ok {
+			row := []string{
+				m.Channel,
+				m.Subtopic,
+				m.Publisher,
+				m.Protocol,
+				m.Name,
+				m.Unit,
+				getValue(m.Value, ""),
+				getValue(m.StringValue, ""),
+				getValue(m.BoolValue, ""),
+				getValue(m.DataValue, ""),
+				getValue(m.Sum, ""),
+				fmt.Sprintf("%v", m.Time),
+				fmt.Sprintf("%v", m.UpdateTime),
+			}
 
-// Helper function to get the index of a string in a slice.
-// Returns -1 if the string is not found in the slice.
-func indexOf(slice []string, item string) int {
-	for i, val := range slice {
-		if val == item {
-			return i
+			if err := writer.Write(row); err != nil {
+				return err
+			}
 		}
 	}
-	return -1
+	return nil
 }
 
-func getStringValue(ptr *string, defaultValue string) string {
-	if ptr != nil {
-		return *ptr
-	}
-	return defaultValue
-}
 
-func getFloatValue(ptr *float64, defaultValue string) string {
-	if ptr != nil {
-		return fmt.Sprintf("%v", *ptr)
-	}
-	return defaultValue
-}
-
-func getBoolValue(ptr *bool, defaultValue string) string {
-	if ptr != nil {
-		return fmt.Sprintf("%v", *ptr)
+func getValue(ptr interface{}, defaultValue string) string {
+	switch v := ptr.(type) {
+	case *string:
+		if v != nil {
+			return *v
+		}
+	case *float64:
+		if v != nil {
+			return fmt.Sprintf("%v", *v)
+		}
+	case *bool:
+		if v != nil {
+			return fmt.Sprintf("%v", *v)
+		}
 	}
 	return defaultValue
 }
