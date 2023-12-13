@@ -63,7 +63,33 @@ func (repo *influxRepo) senmlPoints(messages interface{}) ([]*influxdb2write.Poi
 	}
 	var pts []*write.Point
 	for _, msg := range msgs {
-		tgs, flds := senmlTags(msg), senmlFields(msg)
+		tgs := map[string]string{
+			"channel":   msg.Channel,
+			"subtopic":  msg.Subtopic,
+			"publisher": msg.Publisher,
+			"name":      msg.Name,
+		}
+
+		flds := map[string]interface{}{
+			"protocol":   msg.Protocol,
+			"unit":       msg.Unit,
+			"updateTime": msg.UpdateTime,
+		}
+
+		switch {
+		case msg.Value != nil:
+			flds["value"] = *msg.Value
+		case msg.StringValue != nil:
+			flds["stringValue"] = *msg.StringValue
+		case msg.DataValue != nil:
+			flds["dataValue"] = *msg.DataValue
+		case msg.BoolValue != nil:
+			flds["boolValue"] = *msg.BoolValue
+		}
+
+		if msg.Sum != nil {
+			flds["sum"] = *msg.Sum
+		}
 
 		sec, dec := math.Modf(msg.Time)
 		t := time.Unix(int64(sec), int64(dec*(1e9)))
@@ -93,7 +119,13 @@ func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*influxdb2write.Point,
 		}
 		// At least one known field need to exist so that COUNT can be performed.
 		fields["protocol"] = m.Protocol
-		pt := influxdb2.NewPoint(msgs.Format, jsonTags(m), fields, t)
+
+		tags := map[string]string{
+			"channel":   m.Channel,
+			"subtopic":  m.Subtopic,
+			"publisher": m.Publisher,
+		}
+		pt := influxdb2.NewPoint(msgs.Format, tags, fields, t)
 		pts = append(pts, pt)
 	}
 
