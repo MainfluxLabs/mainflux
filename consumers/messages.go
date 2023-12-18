@@ -5,14 +5,10 @@ package consumers
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
-	"github.com/pelletier/go-toml"
-
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
@@ -21,45 +17,33 @@ import (
 )
 
 const (
-	defContentType  = "application/senml+json"
-	jsonContentType = "application/json"
-	defFormat       = "senml"
-	jsonFormat      = "json"
-	MessagesProfile = "messages"
-	JSONProfile     = "json"
-)
-
-var (
-	errOpenConfFile  = errors.New("unable to open configuration file")
-	errParseConfFile = errors.New("unable to parse configuration file")
+	senmlContentType = "application/senml+json"
+	jsonContentType  = "application/json"
+	senmlFormat      = "senml"
+	jsonFormat       = "json"
 )
 
 // Start method starts consuming messages received from Message broker.
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
-func Start(id string, sub messaging.Subscriber, consumer Consumer, configPath string, logger logger.Logger) error {
-	var profile string
-	cfg, err := loadConfig(profile, configPath)
-	if err != nil {
-		logger.Warn(fmt.Sprintf("Failed to load consumer config: %s", err))
+func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger) error {
+	subjects := map[string]transformerConfig{
+		brokers.SubjectAllMessages: {
+			Format:      senmlFormat,
+			ContentType: senmlContentType,
+		},
+		brokers.SubjectAllJSON: {
+			Format:      jsonFormat,
+			ContentType: jsonContentType,
+		},
 	}
 
-	transformer := makeTransformer(cfg.TransformerCfg, logger)
-
-	var subject string
-	switch profile {
-	case MessagesProfile:
-		subject = brokers.SubjectAllMessages
-	case JSONProfile:
-		subject = brokers.SubjectAllJSON
-	default:
-		subject = brokers.SubjectAllChannels
+	for subject, cfg := range subjects {
+		transformer := makeTransformer(cfg, logger)
+		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
+			return err
+		}
 	}
-
-	if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -88,66 +72,10 @@ func (h handleFunc) Cancel() error {
 	return nil
 }
 
-type subscriberConfig struct {
-	Subjects []string `toml:"subjects"`
-}
-
 type transformerConfig struct {
-	Format      string           `toml:"format"`
-	ContentType string           `toml:"content_type"`
-	TimeFields  []json.TimeField `toml:"time_fields"`
-}
-
-type config struct {
-	SubscriberCfg  subscriberConfig  `toml:"subscriber"`
-	TransformerCfg transformerConfig `toml:"transformer"`
-}
-
-func loadConfig(profile, configPath string) (config, error) {
-	var cfg config
-	switch profile {
-	case MessagesProfile:
-		cfg = config{
-			SubscriberCfg: subscriberConfig{
-				Subjects: []string{brokers.SubjectAllMessages},
-			},
-			TransformerCfg: transformerConfig{
-				Format:      defFormat,
-				ContentType: defContentType,
-			},
-		}
-	case JSONProfile:
-		cfg = config{
-			SubscriberCfg: subscriberConfig{
-				Subjects: []string{brokers.SubjectAllJSON},
-			},
-			TransformerCfg: transformerConfig{
-				Format:      jsonFormat,
-				ContentType: jsonContentType,
-			},
-		}
-	default:
-		cfg = config{
-			SubscriberCfg: subscriberConfig{
-				Subjects: []string{brokers.SubjectAllChannels},
-			},
-			TransformerCfg: transformerConfig{
-				Format:      defFormat,
-				ContentType: defContentType,
-			},
-		}
-	}
-
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return cfg, errors.Wrap(errOpenConfFile, err)
-	}
-
-	if err := toml.Unmarshal(data, &cfg); err != nil {
-		return cfg, errors.Wrap(errParseConfFile, err)
-	}
-
-	return cfg, nil
+	Format      string
+	ContentType string
+	TimeFields  []json.TimeField
 }
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {

@@ -40,7 +40,6 @@ const (
 	defDBSSLCert     = ""
 	defDBSSLKey      = ""
 	defDBSSLRootCert = ""
-	defConfigPath    = "/config.toml"
 
 	envBrokerURL     = "MF_BROKER_URL"
 	envLogLevel      = "MF_POSTGRES_WRITER_LOG_LEVEL"
@@ -54,15 +53,13 @@ const (
 	envDBSSLCert     = "MF_POSTGRES_WRITER_DB_SSL_CERT"
 	envDBSSLKey      = "MF_POSTGRES_WRITER_DB_SSL_KEY"
 	envDBSSLRootCert = "MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT"
-	envConfigPath    = "MF_POSTGRES_WRITER_CONFIG_PATH"
 )
 
 type config struct {
-	brokerURL  string
-	logLevel   string
-	port       string
-	configPath string
-	dbConfig   postgres.Config
+	brokerURL string
+	logLevel  string
+	port      string
+	dbConfig  postgres.Config
 }
 
 func main() {
@@ -87,7 +84,7 @@ func main() {
 
 	repo := newService(db, logger)
 
-	if err = consumers.Start(svcName, pubSub, repo, cfg.configPath, logger); err != nil {
+	if err = consumers.Start(svcName, pubSub, repo, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 
@@ -123,11 +120,10 @@ func loadConfig() config {
 	}
 
 	return config{
-		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		port:       mainflux.Env(envPort, defPort),
-		configPath: mainflux.Env(envConfigPath, defConfigPath),
-		dbConfig:   dbConfig,
+		brokerURL: mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:  mainflux.Env(envLogLevel, defLogLevel),
+		port:      mainflux.Env(envPort, defPort),
+		dbConfig:  dbConfig,
 	}
 }
 
