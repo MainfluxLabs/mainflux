@@ -14,8 +14,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 )
 
-// SubjectAllChannels represents subject to subscribe for all the channels.
-const SubjectAllChannels = "channels.>"
+const (
+	// SubjectAllChannels represents subject to subscribe for all the channels.
+	SubjectAllChannels = "channels.>"
+	// SubjectAllMessages represents subject to subscribe for all the senml messages.
+	SubjectAllMessages = "channels.*.messages>"
+	// SubjectAllJSON represents subject to subscribe for all the JSON messages.
+	SubjectAllJSON     = "channels.*.json>"
+)
 
 func init() {
 	log.Println("The binary was build using Nats as the message broker")

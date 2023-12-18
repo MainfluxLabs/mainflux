@@ -21,8 +21,12 @@ import (
 )
 
 const (
-	defContentType = "application/senml+json"
-	defFormat      = "senml"
+	defContentType  = "application/senml+json"
+	jsonContentType = "application/json"
+	defFormat       = "senml"
+	jsonFormat      = "json"
+	MessagesProfile = "messages"
+	JSONProfile     = "json"
 )
 
 var (
@@ -34,18 +38,28 @@ var (
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
 func Start(id string, sub messaging.Subscriber, consumer Consumer, configPath string, logger logger.Logger) error {
-	cfg, err := loadConfig(configPath)
+	var profile string
+	cfg, err := loadConfig(profile, configPath)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Failed to load consumer config: %s", err))
 	}
 
 	transformer := makeTransformer(cfg.TransformerCfg, logger)
 
-	for _, subject := range cfg.SubscriberCfg.Subjects {
-		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
-			return err
-		}
+	var subject string
+	switch profile {
+	case MessagesProfile:
+		subject = brokers.SubjectAllMessages
+	case JSONProfile:
+		subject = brokers.SubjectAllJSON
+	default:
+		subject = brokers.SubjectAllChannels
 	}
+
+	if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -89,15 +103,39 @@ type config struct {
 	TransformerCfg transformerConfig `toml:"transformer"`
 }
 
-func loadConfig(configPath string) (config, error) {
-	cfg := config{
-		SubscriberCfg: subscriberConfig{
-			Subjects: []string{brokers.SubjectAllChannels},
-		},
-		TransformerCfg: transformerConfig{
-			Format:      defFormat,
-			ContentType: defContentType,
-		},
+func loadConfig(profile, configPath string) (config, error) {
+	var cfg config
+	switch profile {
+	case MessagesProfile:
+		cfg = config{
+			SubscriberCfg: subscriberConfig{
+				Subjects: []string{brokers.SubjectAllMessages},
+			},
+			TransformerCfg: transformerConfig{
+				Format:      defFormat,
+				ContentType: defContentType,
+			},
+		}
+	case JSONProfile:
+		cfg = config{
+			SubscriberCfg: subscriberConfig{
+				Subjects: []string{brokers.SubjectAllJSON},
+			},
+			TransformerCfg: transformerConfig{
+				Format:      jsonFormat,
+				ContentType: jsonContentType,
+			},
+		}
+	default:
+		cfg = config{
+			SubscriberCfg: subscriberConfig{
+				Subjects: []string{brokers.SubjectAllChannels},
+			},
+			TransformerCfg: transformerConfig{
+				Format:      defFormat,
+				ContentType: defContentType,
+			},
+		}
 	}
 
 	data, err := ioutil.ReadFile(configPath)
