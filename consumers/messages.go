@@ -17,10 +17,9 @@ import (
 )
 
 const (
-	senmlContentType = "application/senml+json"
-	jsonContentType  = "application/json"
-	senmlFormat      = "senml"
-	jsonFormat       = "json"
+	senmlContentType       = "application/senml+json"
+	senmlBinaryContentType = "application/senml+cbor"
+	jsonContentType        = "application/json"
 )
 
 // Start method starts consuming messages received from Message broker.
@@ -29,11 +28,12 @@ const (
 func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger) error {
 	subjects := map[string]transformerConfig{
 		brokers.SubjectAllMessages: {
-			Format:      senmlFormat,
 			ContentType: senmlContentType,
 		},
+		brokers.SubjectAllMessagesBinary: {
+			ContentType: senmlBinaryContentType,
+		},
 		brokers.SubjectAllJSON: {
-			Format:      jsonFormat,
 			ContentType: jsonContentType,
 		},
 	}
@@ -73,21 +73,20 @@ func (h handleFunc) Cancel() error {
 }
 
 type transformerConfig struct {
-	Format      string
 	ContentType string
 	TimeFields  []json.TimeField
 }
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
-	switch strings.ToUpper(cfg.Format) {
-	case "SENML":
+	switch strings.ToUpper(cfg.ContentType) {
+	case senmlContentType, senmlBinaryContentType:
 		logger.Info("Using SenML transformer")
 		return senml.New(cfg.ContentType)
-	case "JSON":
+	case jsonContentType:
 		logger.Info("Using JSON transformer")
 		return json.New(cfg.TimeFields)
 	default:
-		logger.Error(fmt.Sprintf("Can't create transformer: unknown transformer type %s", cfg.Format))
+		logger.Error(fmt.Sprintf("Can't create transformer: unknown transformer type %s", cfg.ContentType))
 		os.Exit(1)
 		return nil
 	}

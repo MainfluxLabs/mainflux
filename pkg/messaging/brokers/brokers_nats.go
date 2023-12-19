@@ -19,6 +19,8 @@ const (
 	SubjectAllChannels = "channels.>"
 	// SubjectAllMessages represents subject to subscribe for all the senml messages.
 	SubjectAllMessages = "channels.*.messages>"
+	// SubjectAllMessagesBinary represents subject to subscribe for all the binary messages.
+	SubjectAllMessagesBinary = "channels.*.messages.binary>"
 	// SubjectAllJSON represents subject to subscribe for all the JSON messages.
 	SubjectAllJSON = "channels.*.json>"
 )
