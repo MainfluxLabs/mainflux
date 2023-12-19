@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	senmlContentType       = "application/senml+json"
-	senmlBinaryContentType = "application/senml+cbor"
-	jsonContentType        = "application/json"
+	senmlContentType = "application/senml+json"
+	cborContentType  = "application/senml+cbor"
+	jsonContentType  = "application/json"
 )
 
 // Start method starts consuming messages received from Message broker.
@@ -29,9 +29,6 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger
 	subjects := map[string]transformerConfig{
 		brokers.SubjectAllMessages: {
 			ContentType: senmlContentType,
-		},
-		brokers.SubjectAllMessagesBinary: {
-			ContentType: senmlBinaryContentType,
 		},
 		brokers.SubjectAllJSON: {
 			ContentType: jsonContentType,
@@ -79,7 +76,7 @@ type transformerConfig struct {
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
 	switch strings.ToUpper(cfg.ContentType) {
-	case senmlContentType, senmlBinaryContentType:
+	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")
 		return senml.New(cfg.ContentType)
 	case jsonContentType:
