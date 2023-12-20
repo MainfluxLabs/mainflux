@@ -46,7 +46,6 @@ const (
 	defDBUser        = "mainflux"
 	defDBPass        = "mainflux"
 	defDB            = "subscriptions"
-	defConfigPath    = "/config.toml"
 	defDBSSLMode     = "disable"
 	defDBSSLCert     = ""
 	defDBSSLKey      = ""
@@ -77,7 +76,6 @@ const (
 	envDBUser        = "MF_SMTP_NOTIFIER_DB_USER"
 	envDBPass        = "MF_SMTP_NOTIFIER_DB_PASS"
 	envDB            = "MF_SMTP_NOTIFIER_DB"
-	envConfigPath    = "MF_SMTP_NOTIFIER_CONFIG_PATH"
 	envDBSSLMode     = "MF_SMTP_NOTIFIER_DB_SSL_MODE"
 	envDBSSLCert     = "MF_SMTP_NOTIFIER_DB_SSL_CERT"
 	envDBSSLKey      = "MF_SMTP_NOTIFIER_DB_SSL_KEY"
@@ -105,7 +103,6 @@ const (
 
 type config struct {
 	brokerURL       string
-	configPath      string
 	logLevel        string
 	dbConfig        postgres.Config
 	emailConf       email.Config
@@ -156,7 +153,7 @@ func main() {
 
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, cfg.configPath, logger); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 
@@ -214,7 +211,6 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
-		configPath:      mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:        dbConfig,
 		emailConf:       emailConf,
 		from:            mainflux.Env(envFrom, defFrom),

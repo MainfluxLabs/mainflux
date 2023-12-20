@@ -29,31 +29,28 @@ const (
 	svcName      = "mongodb-writer"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel   = "error"
-	defBrokerURL  = "nats://localhost:4222"
-	defPort       = "8180"
-	defDB         = "mainflux"
-	defDBHost     = "localhost"
-	defDBPort     = "27017"
-	defConfigPath = "/config.toml"
+	defLogLevel  = "error"
+	defBrokerURL = "nats://localhost:4222"
+	defPort      = "8180"
+	defDB        = "mainflux"
+	defDBHost    = "localhost"
+	defDBPort    = "27017"
 
-	envBrokerURL  = "MF_BROKER_URL"
-	envLogLevel   = "MF_MONGO_WRITER_LOG_LEVEL"
-	envPort       = "MF_MONGO_WRITER_PORT"
-	envDB         = "MF_MONGO_WRITER_DB"
-	envDBHost     = "MF_MONGO_WRITER_DB_HOST"
-	envDBPort     = "MF_MONGO_WRITER_DB_PORT"
-	envConfigPath = "MF_MONGO_WRITER_CONFIG_PATH"
+	envBrokerURL = "MF_BROKER_URL"
+	envLogLevel  = "MF_MONGO_WRITER_LOG_LEVEL"
+	envPort      = "MF_MONGO_WRITER_PORT"
+	envDB        = "MF_MONGO_WRITER_DB"
+	envDBHost    = "MF_MONGO_WRITER_DB_HOST"
+	envDBPort    = "MF_MONGO_WRITER_DB_PORT"
 )
 
 type config struct {
-	brokerURL  string
-	logLevel   string
-	port       string
-	dbName     string
-	dbHost     string
-	dbPort     string
-	configPath string
+	brokerURL string
+	logLevel  string
+	port      string
+	dbName    string
+	dbHost    string
+	dbPort    string
 }
 
 func main() {
@@ -87,7 +84,7 @@ func main() {
 	repo = api.LoggingMiddleware(repo, logger)
 	repo = api.MetricsMiddleware(repo, counter, latency)
 
-	if err := consumers.Start(svcName, pubSub, repo, cfg.configPath, logger); err != nil {
+	if err := consumers.Start(svcName, pubSub, repo, logger); err != nil {
 		logger.Error(fmt.Sprintf("Failed to start MongoDB writer: %s", err))
 		os.Exit(1)
 	}
@@ -112,13 +109,12 @@ func main() {
 
 func loadConfigs() config {
 	return config{
-		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		port:       mainflux.Env(envPort, defPort),
-		dbName:     mainflux.Env(envDB, defDB),
-		dbHost:     mainflux.Env(envDBHost, defDBHost),
-		dbPort:     mainflux.Env(envDBPort, defDBPort),
-		configPath: mainflux.Env(envConfigPath, defConfigPath),
+		brokerURL: mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:  mainflux.Env(envLogLevel, defLogLevel),
+		port:      mainflux.Env(envPort, defPort),
+		dbName:    mainflux.Env(envDB, defDB),
+		dbHost:    mainflux.Env(envDBHost, defDBHost),
+		dbPort:    mainflux.Env(envDBPort, defDBPort),
 	}
 }
 
