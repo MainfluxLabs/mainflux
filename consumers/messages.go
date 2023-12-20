@@ -22,6 +22,29 @@ const (
 	jsonContentType  = "application/json"
 )
 
+var timeFields = []json.TimeField{
+	{
+		FieldName:   "seconds_key",
+		FieldFormat: "unix",
+		Location:    "UTC",
+	},
+	{
+		FieldName:   "millis_key",
+		FieldFormat: "unix_ms",
+		Location:    "UTC",
+	},
+	{
+		FieldName:   "micros_key",
+		FieldFormat: "unix_us",
+		Location:    "UTC",
+	},
+	{
+		FieldName:   "nanos_key",
+		FieldFormat: "unix_ns",
+		Location:    "UTC",
+	},
+}
+
 // Start method starts consuming messages received from Message broker.
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
@@ -75,6 +98,7 @@ type transformerConfig struct {
 }
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
+	cfg.TimeFields = timeFields
 	switch strings.ToUpper(cfg.ContentType) {
 	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")
