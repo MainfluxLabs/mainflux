@@ -156,6 +156,15 @@ func (ms *metricsMiddleware) RemoveChannels(ctx context.Context, token string, i
 	return ms.svc.RemoveChannels(ctx, token, ids...)
 }
 
+func (ms *metricsMiddleware) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_channel_profile").Add(1)
+		ms.latency.With("method", "view_channel_profile").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewChannelProfile(ctx, chID)
+}
+
 func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "connect").Add(1)

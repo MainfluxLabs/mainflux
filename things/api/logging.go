@@ -214,6 +214,19 @@ func (lm *loggingMiddleware) RemoveChannels(ctx context.Context, token string, i
 	return lm.svc.RemoveChannels(ctx, token, ids...)
 }
 
+func (lm *loggingMiddleware) ViewChannelProfile(ctx context.Context, chID string) (profile things.Profile, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_channel_profile for channel ID %s took %s to complete", chID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewChannelProfile(ctx, chID)
+}
+
 func (lm *loggingMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method connect for token %s, channel %s and things %s took %s to complete", token, chID, thIDs, time.Since(begin))

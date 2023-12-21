@@ -3,10 +3,12 @@
 
 package messaging
 
+import "github.com/MainfluxLabs/mainflux"
+
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publishes message to the stream.
-	Publish(topic string, msg Message) error
+	Publish(topic string, profile *mainflux.Profile, msg Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error

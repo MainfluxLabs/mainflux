@@ -9,25 +9,28 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
+	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	topic        = "topic"
-	chansPrefix  = "channels"
-	channel      = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic     = "engine"
-	clientID     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	exchangeName = "mainflux-exchange"
+	topic            = "topic"
+	chansPrefix      = "channels"
+	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic         = "engine"
+	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	exchangeName     = "mainflux-exchange"
+	senmlContentType = "application/senml+json"
 )
 
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
+	profile = &mainflux.Profile{ContentType: senmlContentType}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -87,7 +90,7 @@ func TestPublisher(t *testing.T) {
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err = pubsub.Publish(topic, expectedMsg)
+		err = pubsub.Publish(topic, profile, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -402,7 +405,7 @@ func TestPubSub(t *testing.T) {
 				Payload: data,
 			}
 
-			err = pubsub.Publish(tc.topic, expectedMsg)
+			err = pubsub.Publish(tc.topic, profile, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan

@@ -6,15 +6,23 @@ package nats
 import (
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
 )
 
 // A maximum number of reconnect attempts before NATS connection closes permanently.
 // Value -1 represents an unlimited number of reconnect retries, i.e. the client
 // will never give up on retrying to re-establish connection to NATS server.
-const maxReconnects = -1
+const (
+	maxReconnects    = -1
+	senmlContentType = "application/senml+json"
+	cborContentType  = "application/senml+cbor"
+	jsonContentType  = "application/json"
+	senmlFormat      = "senml"
+	jsonFormat       = "json"
+)
 
 var _ messaging.Publisher = (*publisher)(nil)
 
@@ -37,7 +45,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(topic string, msg messaging.Message) error {
+func (pub *publisher) Publish(topic string, profile *mainflux.Profile, msg messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
@@ -46,10 +54,22 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 		return err
 	}
 
+	var format string
+	switch profile.ContentType {
+	case senmlContentType, cborContentType:
+		format = senmlFormat
+	case jsonContentType:
+		format = senmlFormat
+	default:
+		return ErrUnnownContent
+	}
+
+	topic += "." + format
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}
+
 	if err := pub.conn.Publish(subject, data); err != nil {
 		return err
 	}

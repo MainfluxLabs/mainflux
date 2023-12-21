@@ -12,6 +12,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+const profileKey = "profile"
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -69,6 +71,9 @@ type Service interface {
 	// RemoveChannels removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveChannels(ctx context.Context, token string, ids ...string) error
+
+	// ViewChannelProfile retrieves channel profile.
+	ViewChannelProfile(ctx context.Context, chID string) (Profile, error)
 
 	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
@@ -471,6 +476,15 @@ func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids .
 	}
 
 	return ts.channels.Remove(ctx, res.GetId(), ids...)
+}
+
+func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (Profile, error) {
+	channel, err := ts.channels.RetrieveByID(ctx, chID)
+	if err != nil {
+		return Profile{}, err
+	}
+
+	return channel.Profile, nil
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {

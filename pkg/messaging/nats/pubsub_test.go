@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/stretchr/testify/assert"
@@ -15,17 +16,19 @@ import (
 )
 
 const (
-	topic       = "topic"
-	chansPrefix = "channels"
-	channel     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic    = "engine"
-	clientID    = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	topic            = "topic"
+	chansPrefix      = "channels"
+	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic         = "engine"
+	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	senmlContentType = "application/senml+json"
 )
 
 var (
 	msgChan   = make(chan messaging.Message)
 	data      = []byte("payload")
 	errFailed = errors.New("failed")
+	profile   = &mainflux.Profile{ContentType: senmlContentType}
 )
 
 func TestPublisher(t *testing.T) {
@@ -74,7 +77,7 @@ func TestPublisher(t *testing.T) {
 		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, expectedMsg)
+		err = pubsub.Publish(topic, profile, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

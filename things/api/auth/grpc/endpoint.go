@@ -22,7 +22,24 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return connByKeyRes{}, err
 		}
-		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID}, nil
+
+		p, err := svc.ViewChannelProfile(ctx, conn.ChannelID)
+		if err != nil {
+			return connByKeyRes{}, err
+		}
+
+		timeField := &mainflux.TimeField{
+			FieldName:   p.TimeField.FieldName,
+			FieldFormat: p.TimeField.FieldFormat,
+			Location:    p.TimeField.Location,
+		}
+
+		profile := &mainflux.Profile{
+			ContentType: p.ContentType,
+			TimeField:   timeField,
+		}
+
+		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
 	}
 }
 

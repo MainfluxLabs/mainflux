@@ -211,6 +211,10 @@ func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) GetConnByKey(context.Context, string) (things.Connection, error) {
 	panic("not implemented")
 }

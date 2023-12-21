@@ -65,7 +65,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	}
 	msg.Publisher = conn.ThingID
 
-	return svc.pubsub.Publish(msg.Channel, msg)
+	return svc.pubsub.Publish(msg.Channel, conn.Profile, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {

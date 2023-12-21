@@ -5,6 +5,8 @@ package things
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
 
 // Channel represents a Mainflux "communication group". This group contains the
@@ -13,7 +15,13 @@ type Channel struct {
 	ID       string
 	Owner    string
 	Name     string
+	Profile  Profile
 	Metadata map[string]interface{}
+}
+
+type Profile struct {
+	ContentType string
+	TimeField   json.TimeField
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

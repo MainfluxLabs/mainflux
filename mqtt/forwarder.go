@@ -52,7 +52,7 @@ func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
 		}
 		go func() {
-			if err := pub.Publish(topic, msg); err != nil {
+			if err := pub.Publish(topic, nil, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()
