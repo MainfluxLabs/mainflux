@@ -22,6 +22,7 @@ const (
 	subtopic         = "engine"
 	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	senmlContentType = "application/senml+json"
+	senmlFormat      = "senml"
 )
 
 var (
@@ -32,9 +33,10 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", chansPrefix, topic), handler{})
+	format := senmlFormat
+	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, format), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic), handler{})
+	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s.%s", chansPrefix, topic, format, subtopic), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
