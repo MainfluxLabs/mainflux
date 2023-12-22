@@ -46,9 +46,9 @@ message Profile {
 }
 
 message TimeField {
-    string fieldName   = 1;
-    string fieldFormat = 2;
-    string location    = 3;
+    string name     = 1;
+    string format   = 2;
+    string location = 3;
 }
 
 message ChannelOwnerReq {
