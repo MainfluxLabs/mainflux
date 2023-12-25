@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
@@ -122,7 +123,7 @@ func (as *adapterService) Publish(ctx context.Context, m Message) error {
 		Created:   time.Now().UnixNano(),
 	}
 
-	return as.publisher.Publish(msg.Channel, nil, msg)
+	return as.publisher.Publish(msg.Channel, mainflux.Profile{}, msg)
 }
 
 func (as *adapterService) CreateThing(ctx context.Context, thingID string, devEUI string) error {

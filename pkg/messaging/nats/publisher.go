@@ -45,7 +45,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(topic string, profile *mainflux.Profile, msg messaging.Message) error {
+func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
@@ -59,7 +59,7 @@ func (pub *publisher) Publish(topic string, profile *mainflux.Profile, msg messa
 	case senmlContentType, cborContentType:
 		format = senmlFormat
 	case jsonContentType:
-		format = senmlFormat
+		format = jsonFormat
 	default:
 		return ErrUnnownContent
 	}

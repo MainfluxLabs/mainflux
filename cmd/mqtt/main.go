@@ -200,7 +200,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	fwd := mqtt.NewForwarder(brokers.SubjectAllChannels, logger)
+	topics := []string{
+		brokers.SubjectAllMessages,
+		brokers.SubjectAllChannels,
+	}
+
+	fwd := mqtt.NewForwarder(topics, logger)
 	if err := fwd.Forward(svcName, nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
 		os.Exit(1)

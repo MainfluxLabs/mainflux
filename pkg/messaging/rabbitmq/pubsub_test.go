@@ -30,7 +30,7 @@ const (
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
-	profile = &mainflux.Profile{ContentType: senmlContentType}
+	profile = mainflux.Profile{ContentType: senmlContentType}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")

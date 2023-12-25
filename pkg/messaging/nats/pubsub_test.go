@@ -29,7 +29,7 @@ var (
 	msgChan   = make(chan messaging.Message)
 	data      = []byte("payload")
 	errFailed = errors.New("failed")
-	profile   = &mainflux.Profile{ContentType: senmlContentType}
+	profile   = mainflux.Profile{ContentType: senmlContentType}
 )
 
 func TestPublisher(t *testing.T) {

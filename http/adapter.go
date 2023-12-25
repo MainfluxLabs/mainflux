@@ -43,5 +43,10 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 	}
 	msg.Publisher = conn.ThingID
 
-	return as.publisher.Publish(conn.ChannelID, conn.Profile, msg)
+	profile := conn.Profile
+	if profile == nil {
+		profile = &mainflux.Profile{}
+	}
+
+	return as.publisher.Publish(conn.ChannelID, *profile, msg)
 }
