@@ -61,7 +61,7 @@ func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messag
 	case jsonContentType:
 		format = jsonFormat
 	default:
-		return ErrUnnownContent
+		return ErrUnknownContent
 	}
 
 	topic += "." + format
