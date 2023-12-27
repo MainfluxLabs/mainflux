@@ -10,11 +10,13 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 )
 
 const (
 	channels = "channels"
 	messages = "messages"
+	json     = "json"
 )
 
 // Forwarder specifies MQTT forwarder interface API.
@@ -39,7 +41,7 @@ func NewForwarder(topics []string, logger log.Logger) Forwarder {
 
 func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
 	for _, topic := range f.topics {
-		if err := sub.Subscribe(id, topic, handle(pub, f.logger)); err != nil {
+		if err := sub.Subscribe(id, topic, handle(topic, pub, f.logger)); err != nil {
 			return err
 		}
 	}
@@ -47,17 +49,26 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return nil
 }
 
-func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
+func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc {
 	return func(msg messaging.Message) error {
 		if msg.Protocol == protocol {
 			return nil
 		}
 		// Use concatenation instead of fmt.Sprintf for the
 		// sake of simplicity and performance.
-		topic := channels + "/" + msg.Channel + "/" + messages
+		switch topic {
+		case brokers.SubjectAllMessages:
+			topic = channels + "/" + msg.Channel + "/" + messages
+		case brokers.SubjectAllJSON:
+			topic = channels + "/" + msg.Channel + "/" + json
+		default:
+			return ErrInvalidSubject
+		}
+
 		if msg.Subtopic != "" {
 			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
 		}
+
 		go func() {
 			if err := pub.Publish(topic, mainflux.Profile{}, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
