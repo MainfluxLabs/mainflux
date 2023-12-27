@@ -62,7 +62,7 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		case brokers.SubjectAllJSON:
 			topic = channels + "/" + msg.Channel + "/" + json
 		default:
-			return ErrInvalidSubject
+			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
 		}
 
 		if msg.Subtopic != "" {

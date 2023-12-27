@@ -47,7 +47,6 @@ const (
 
 var (
 	channelRegExp                = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
-	ErrInvalidSubject            = errors.New("invalid subject")
 	ErrMalformedSubtopic         = errors.New("malformed subtopic")
 	ErrClientNotInitialized      = errors.New("client is not initialized")
 	ErrMalformedTopic            = errors.New("malformed topic")

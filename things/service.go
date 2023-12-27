@@ -486,7 +486,7 @@ func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (P
 
 	profile, ok := channel.Metadata[profileKey].(Profile)
 	if !ok {
-		return Profile{}, errors.ErrNotFound
+		return Profile{}, nil
 	}
 
 	return profile, nil
