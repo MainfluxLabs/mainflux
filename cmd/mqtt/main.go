@@ -202,7 +202,7 @@ func main() {
 
 	subjects := []string{
 		brokers.SubjectAllMessages,
-		brokers.SubjectAllChannels,
+		brokers.SubjectAllJSON,
 	}
 
 	fwd := mqtt.NewForwarder(subjects, logger)

@@ -19,8 +19,8 @@ type Channel struct {
 }
 
 type Profile struct {
-	ContentType string
-	TimeField   json.TimeField
+	ContentType string         `mapstructure:"content_type"`
+	TimeField   json.TimeField `mapstructure:"time_field"`
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

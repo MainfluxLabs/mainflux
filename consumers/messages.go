@@ -6,7 +6,6 @@ package consumers
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -99,7 +98,8 @@ type transformerConfig struct {
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
 	cfg.TimeFields = timeFields
-	switch strings.ToUpper(cfg.ContentType) {
+
+	switch cfg.ContentType {
 	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")
 		return senml.New(cfg.ContentType)
