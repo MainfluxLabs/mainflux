@@ -20,7 +20,7 @@ const (
 	senmlContentType = "application/senml+json"
 	cborContentType  = "application/senml+cbor"
 	jsonContentType  = "application/json"
-	messagesFormat   = "senml"
+	senmlFormat      = "senml"
 	jsonFormat       = "json"
 	messagesSuffix   = "messages"
 )
@@ -58,7 +58,7 @@ func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messag
 	var format string
 	switch profile.ContentType {
 	case senmlContentType, cborContentType:
-		format = messagesFormat
+		format = senmlFormat
 	case jsonContentType:
 		format = jsonFormat
 	default:
