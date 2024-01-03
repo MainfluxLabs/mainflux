@@ -20,8 +20,9 @@ const (
 	senmlContentType = "application/senml+json"
 	cborContentType  = "application/senml+cbor"
 	jsonContentType  = "application/json"
-	messagesFormat   = "messages"
+	messagesFormat   = "senml"
 	jsonFormat       = "json"
+	messagesSuffix   = "messages"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -64,7 +65,7 @@ func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messag
 		return ErrUnknownContent
 	}
 
-	topic += "." + format
+	topic = fmt.Sprintf("%s.%s.%s", topic, format, messagesSuffix)
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)

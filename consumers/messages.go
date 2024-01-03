@@ -52,13 +52,7 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger
 		brokers.SubjectAllMessages: {
 			ContentType: senmlContentType,
 		},
-		brokers.SubjectAllMessagesWithSubtopics: {
-			ContentType: senmlContentType,
-		},
 		brokers.SubjectAllJSON: {
-			ContentType: jsonContentType,
-		},
-		brokers.SubjectAllJSONWithSubtopics: {
 			ContentType: jsonContentType,
 		},
 	}
