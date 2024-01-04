@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	// SubjectAllSenmlMessages represents subject to subscribe for all the senml messages.
-	SubjectAllSenmlMessages = "channels.*.senml.>"
-	// SubjectAllJSONMessages represents subject to subscribe for all the JSON messages.
-	SubjectAllJSONMessages = "channels.*.json.>"
+	// SubjectSenmlMessages represents subject to subscribe for all the senml messages.
+	SubjectSenmlMessages = "channels.*.senml.>"
+	// SubjectJSONMessages represents subject to subscribe for all the JSON messages.
+	SubjectJSONMessages = "channels.*.json.>"
 )
 
 func init() {
