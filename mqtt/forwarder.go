@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 )
 
 const (
-	channels = "channels"
-	messages = "messages"
+	channels    = "channels"
+	messages    = "messages"
+	senmlFormat = "senml"
+	jsonFormat  = "json"
 )
 
 // Forwarder specifies MQTT forwarder interface API.
@@ -24,35 +28,51 @@ type Forwarder interface {
 }
 
 type forwarder struct {
-	topic  string
+	topics []string
 	logger log.Logger
 }
 
 // NewForwarder returns new Forwarder implementation.
-func NewForwarder(topic string, logger log.Logger) Forwarder {
+func NewForwarder(topics []string, logger log.Logger) Forwarder {
 	return forwarder{
-		topic:  topic,
+		topics: topics,
 		logger: logger,
 	}
 }
 
 func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
-	return sub.Subscribe(id, f.topic, handle(pub, f.logger))
+	for _, topic := range f.topics {
+		if err := sub.Subscribe(id, topic, handle(topic, pub, f.logger)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
+func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc {
 	return func(msg messaging.Message) error {
 		if msg.Protocol == protocol {
 			return nil
 		}
 		// Use concatenation instead of fmt.Sprintf for the
 		// sake of simplicity and performance.
-		topic := channels + "/" + msg.Channel + "/" + messages
+		switch topic {
+		case brokers.SubjectSenMLMessages:
+			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
+		case brokers.SubjectJSONMessages:
+			topic = channels + "/" + msg.Channel + "/" + jsonFormat + "/" + messages
+		default:
+			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
+			return nil
+		}
+
 		if msg.Subtopic != "" {
 			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
 		}
+
 		go func() {
-			if err := pub.Publish(topic, msg); err != nil {
+			if err := pub.Publish(topic, mainflux.Profile{}, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()

@@ -80,7 +80,7 @@ func (client grpcClient) GetConnByKey(ctx context.Context, req *mainflux.ConnByK
 	}
 
 	cr := res.(connByKeyRes)
-	return &mainflux.ConnByKeyRes{ChannelID: cr.channelOD, ThingID: cr.thingID}, nil
+	return &mainflux.ConnByKeyRes{ChannelID: cr.channelOD, ThingID: cr.thingID, Profile: cr.profile}, nil
 }
 
 func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.ChannelOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -147,7 +147,7 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.ConnByKeyRes)
-	return connByKeyRes{channelOD: res.ChannelID, thingID: res.ThingID}, nil
+	return connByKeyRes{channelOD: res.ChannelID, thingID: res.ThingID, profile: res.Profile}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

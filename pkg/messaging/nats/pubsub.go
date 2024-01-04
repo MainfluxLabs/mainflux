@@ -19,9 +19,10 @@ const chansPrefix = "channels"
 
 // Publisher and Subscriber errors.
 var (
-	ErrNotSubscribed = errors.New("not subscribed")
-	ErrEmptyTopic    = errors.New("empty topic")
-	ErrEmptyID       = errors.New("empty id")
+	ErrNotSubscribed  = errors.New("not subscribed")
+	ErrEmptyTopic     = errors.New("empty topic")
+	ErrEmptyID        = errors.New("empty id")
+	ErrUnknownContent = errors.New("unknown content type")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)

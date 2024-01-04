@@ -31,9 +31,9 @@ var (
 
 // TimeField represents the message fields to use as timestamp
 type TimeField struct {
-	FieldName   string `toml:"field_name"`
-	FieldFormat string `toml:"field_format"`
-	Location    string `toml:"location"`
+	FieldName   string `toml:"field_name" json:"field_name"`
+	FieldFormat string `toml:"field_format" json:"field_format"`
+	Location    string `toml:"location" json:"location"`
 }
 
 type transformerService struct {
@@ -54,16 +54,16 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 		Created:   msg.Created,
 		Protocol:  msg.Protocol,
 		Channel:   msg.Channel,
-		Subtopic:  msg.Subtopic,
 	}
 
-	if ret.Subtopic == "" {
+	subs := strings.Split(msg.Subtopic, ".")
+	switch {
+	case msg.Subtopic == "":
 		return nil, errors.Wrap(ErrTransform, errUnknownFormat)
-	}
-
-	subs := strings.Split(ret.Subtopic, ".")
-	if len(subs) == 0 {
-		return nil, errors.Wrap(ErrTransform, errUnknownFormat)
+	case len(subs) == 1:
+		ret.Subtopic = ""
+	default:
+		ret.Subtopic = strings.Join(subs[:len(subs)-1], ".")
 	}
 
 	format := subs[len(subs)-1]

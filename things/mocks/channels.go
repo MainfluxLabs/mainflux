@@ -262,7 +262,11 @@ func (crm *channelRepositoryMock) RetrieveConnByThingKey(_ context.Context, toke
 		return things.Connection{}, errors.ErrAuthorization
 	}
 
-	return things.Connection{ThingID: tid}, nil
+	for _, v := range chans {
+		return things.Connection{ThingID: tid, ChannelID: v.ID}, nil
+	}
+
+	return things.Connection{}, errors.ErrNotFound
 }
 
 func (crm *channelRepositoryMock) HasThingByID(_ context.Context, chanID, thingID string) error {

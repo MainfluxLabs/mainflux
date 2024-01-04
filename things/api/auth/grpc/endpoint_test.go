@@ -24,7 +24,7 @@ const wrongID = ""
 
 var (
 	thing   = things.Thing{Name: "test_app", Metadata: map[string]interface{}{"test": "test"}}
-	channel = things.Channel{Name: "test", Metadata: map[string]interface{}{"test": "test"}}
+	channel = things.Channel{Name: "test", Metadata: map[string]interface{}{"test": "test", "profile": things.Profile{ContentType: "application/json"}}}
 	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 

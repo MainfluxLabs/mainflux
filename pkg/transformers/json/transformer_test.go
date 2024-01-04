@@ -21,6 +21,8 @@ const (
 	invalidTsPayload = `{"custom_ts_key": "abc", "key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}`
 	listPayload      = `[{"key1": "val1", "key2": 123, "keylist3": "val3", "key4": {"key5": "val5"}}, {"key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}]`
 	invalidPayload   = `{"key1": }`
+	subtopic         = "subtopic"
+	format           = "format"
 )
 
 func TestTransformJSON(t *testing.T) {
@@ -37,7 +39,7 @@ func TestTransformJSON(t *testing.T) {
 	tr := json.New(ts)
 	msg := messaging.Message{
 		Channel:   "channel-1",
-		Subtopic:  "subtopic-1",
+		Subtopic:  subtopic + "." + format,
 		Publisher: "publisher-1",
 		Protocol:  "protocol",
 		Payload:   []byte(validPayload),
@@ -65,7 +67,7 @@ func TestTransformJSON(t *testing.T) {
 		Data: []json.Message{
 			{
 				Channel:   msg.Channel,
-				Subtopic:  msg.Subtopic,
+				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
 				Created:   msg.Created,
@@ -79,14 +81,14 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: msg.Subtopic,
+		Format: format,
 	}
 
 	jsonTsMsgs := json.Messages{
 		Data: []json.Message{
 			{
 				Channel:   msg.Channel,
-				Subtopic:  msg.Subtopic,
+				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
 				Created:   int64(1638310819000000000),
@@ -101,14 +103,14 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: msg.Subtopic,
+		Format: format,
 	}
 
 	jsonMicrosMsgs := json.Messages{
 		Data: []json.Message{
 			{
 				Channel:   msg.Channel,
-				Subtopic:  msg.Subtopic,
+				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
 				Created:   int64(1638310819000000000),
@@ -123,14 +125,14 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: msg.Subtopic,
+		Format: format,
 	}
 
 	listJSON := json.Messages{
 		Data: []json.Message{
 			{
 				Channel:   msg.Channel,
-				Subtopic:  msg.Subtopic,
+				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
 				Created:   msg.Created,
@@ -145,7 +147,7 @@ func TestTransformJSON(t *testing.T) {
 			},
 			{
 				Channel:   msg.Channel,
-				Subtopic:  msg.Subtopic,
+				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
 				Created:   msg.Created,
@@ -159,7 +161,7 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: msg.Subtopic,
+		Format: format,
 	}
 
 	cases := []struct {

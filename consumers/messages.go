@@ -6,7 +6,6 @@ package consumers
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -50,10 +49,10 @@ var timeFields = []json.TimeField{
 // using MessageRepository to store them.
 func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger) error {
 	subjects := map[string]transformerConfig{
-		brokers.SubjectAllMessages: {
+		brokers.SubjectSenMLMessages: {
 			ContentType: senmlContentType,
 		},
-		brokers.SubjectAllJSON: {
+		brokers.SubjectJSONMessages: {
 			ContentType: jsonContentType,
 		},
 	}
@@ -99,7 +98,8 @@ type transformerConfig struct {
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
 	cfg.TimeFields = timeFields
-	switch strings.ToUpper(cfg.ContentType) {
+
+	switch cfg.ContentType {
 	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")
 		return senml.New(cfg.ContentType)

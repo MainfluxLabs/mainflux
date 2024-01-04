@@ -35,8 +35,20 @@ message ConnByKeyReq {
 }
 
 message ConnByKeyRes {
-    string channelID = 1;
-    string thingID   = 2;
+    string  channelID = 1;
+    string  thingID   = 2;
+    Profile profile   = 3;
+}
+
+message Profile {
+    string    contentType = 1;
+    TimeField timeField   = 2;
+}
+
+message TimeField {
+    string name     = 1;
+    string format   = 2;
+    string location = 3;
 }
 
 message ChannelOwnerReq {

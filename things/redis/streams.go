@@ -203,6 +203,10 @@ func (es eventStore) RemoveChannels(ctx context.Context, token string, ids ...st
 	return nil
 }
 
+func (es eventStore) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
+	return es.svc.ViewChannelProfile(ctx, chID)
+}
+
 func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []string) error {
 	if err := es.svc.Connect(ctx, token, chID, thIDs); err != nil {
 		return err

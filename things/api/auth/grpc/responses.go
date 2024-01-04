@@ -12,6 +12,7 @@ type identityRes struct {
 type connByKeyRes struct {
 	channelOD string
 	thingID   string
+	profile   *mainflux.Profile
 }
 
 type emptyRes struct {
