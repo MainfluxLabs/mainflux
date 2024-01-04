@@ -201,7 +201,7 @@ func main() {
 	}
 
 	subjects := []string{
-		brokers.SubjectAllMessages,
+		brokers.SubjectAllSenml,
 		brokers.SubjectAllJSON,
 	}
 

@@ -5,12 +5,12 @@ package things
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/mitchellh/mapstructure"
 )
 
 const profileKey = "profile"
@@ -485,14 +485,14 @@ func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (P
 		return Profile{}, err
 	}
 
-	pm, ok := channel.Metadata[profileKey].(map[string]interface{})
-	if !ok {
-		return Profile{}, nil
+	meta, err := json.Marshal(channel.Metadata[profileKey])
+	if err != nil {
+		return Profile{}, err
 	}
 
 	var profile Profile
-	if err := mapstructure.Decode(pm, &profile); err != nil {
-		return Profile{}, nil
+	if err := json.Unmarshal(meta, &profile); err != nil {
+		return Profile{}, err
 	}
 
 	return profile, nil
