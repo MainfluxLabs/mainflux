@@ -58,7 +58,7 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		// Use concatenation instead of fmt.Sprintf for the
 		// sake of simplicity and performance.
 		switch topic {
-		case brokers.SubjectSenmlMessages:
+		case brokers.SubjectSenMLMessages:
 			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
 		case brokers.SubjectJSONMessages:
 			topic = channels + "/" + msg.Channel + "/" + jsonFormat + "/" + messages
