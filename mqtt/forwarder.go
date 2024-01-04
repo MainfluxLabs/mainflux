@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	channels       = "channels"
-	senmlFormat    = "senml"
-	jsonFormat     = "json"
-	messagesSuffix = "messages"
+	channels    = "channels"
+	messages    = "messages"
+	senmlFormat = "senml"
+	jsonFormat  = "json"
 )
 
 // Forwarder specifies MQTT forwarder interface API.
@@ -59,9 +59,9 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		// sake of simplicity and performance.
 		switch topic {
 		case brokers.SubjectSenmlMessages:
-			topic = fmt.Sprintf("%s/%s/%s/%s", channels, msg.Channel, senmlFormat, messagesSuffix)
+			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
 		case brokers.SubjectJSONMessages:
-			topic = fmt.Sprintf("%s/%s/%s/%s", channels, msg.Channel, jsonFormat, messagesSuffix)
+			topic = channels + "/" + msg.Channel + "/" + jsonFormat + "/" + messages
 		default:
 			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
 			return nil
