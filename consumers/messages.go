@@ -49,10 +49,10 @@ var timeFields = []json.TimeField{
 // using MessageRepository to store them.
 func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger) error {
 	subjects := map[string]transformerConfig{
-		brokers.SubjectAllSenml: {
+		brokers.SubjectAllSenmlMessages: {
 			ContentType: senmlContentType,
 		},
-		brokers.SubjectAllJSON: {
+		brokers.SubjectAllJSONMessages: {
 			ContentType: jsonContentType,
 		},
 	}

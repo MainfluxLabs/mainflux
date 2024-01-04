@@ -58,7 +58,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 
 	subs := strings.Split(msg.Subtopic, ".")
 	switch {
-	case len(subs) == 0:
+	case msg.Subtopic == "":
 		return nil, errors.Wrap(ErrTransform, errUnknownFormat)
 	case len(subs) == 1:
 		ret.Subtopic = ""
