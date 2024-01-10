@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/stretchr/testify/assert"
@@ -15,29 +16,21 @@ import (
 )
 
 const (
-	topic            = "topic"
-	chansPrefix      = "channels"
-	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic         = "engine"
-	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	senmlContentType = "application/senml+json"
-	senmlFormat      = "senml"
-	messagesSuffix   = "messages"
+	topic          = "topic"
+	chansPrefix    = "channels"
+	channel        = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic       = "engine"
+	clientID       = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	senmlFormat    = "senml"
+	messagesSuffix = "messages"
 )
 
 var (
-	msgChan   = make(chan messaging.Message)
-	data      = []byte("payload")
-	errFailed = errors.New("failed")
-	timeField = &messaging.TimeField{
-		Name:     "seconds_key",
-		Format:   "unix",
-		Location: "UTC",
-	}
-	profile = &messaging.Profile{
-		ContentType: senmlContentType,
-		TimeField:   timeField,
-	}
+	msgChan    = make(chan messaging.Message)
+	data       = []byte("payload")
+	errFailed  = errors.New("failed")
+	profile    = mainflux.Profile{ContentType: nats.SenmlContentType, TimeField: &mainflux.TimeField{}}
+	msgProfile = &messaging.Profile{ContentType: nats.SenmlContentType, TimeField: &messaging.TimeField{}}
 )
 
 func TestPublisher(t *testing.T) {
@@ -84,11 +77,11 @@ func TestPublisher(t *testing.T) {
 			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
-			Profile:  profile,
+			Profile:  msgProfile,
 		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, expectedMsg)
+		err = pubsub.Publish(topic, profile, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

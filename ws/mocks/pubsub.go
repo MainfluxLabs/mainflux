@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/gorilla/websocket"
@@ -15,7 +16,7 @@ import (
 var _ messaging.PubSub = (*mockPubSub)(nil)
 
 type MockPubSub interface {
-	Publish(string, messaging.Message) error
+	Publish(string, mainflux.Profile, messaging.Message) error
 	Subscribe(string, string, messaging.MessageHandler) error
 	Unsubscribe(string, string) error
 	SetFail(bool)
@@ -32,7 +33,7 @@ type mockPubSub struct {
 func NewPubSub() MockPubSub {
 	return &mockPubSub{false, nil}
 }
-func (pubsub *mockPubSub) Publish(s string, msg messaging.Message) error {
+func (pubsub *mockPubSub) Publish(s string, profile mainflux.Profile, msg messaging.Message) error {
 	if pubsub.conn != nil {
 		data, err := json.Marshal(msg)
 		if err != nil {

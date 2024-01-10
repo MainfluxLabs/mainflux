@@ -6,6 +6,7 @@ package nats
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
@@ -16,7 +17,7 @@ import (
 // will never give up on retrying to re-establish connection to NATS server.
 const (
 	maxReconnects    = -1
-	senmlContentType = "application/senml+json"
+	SenmlContentType = "application/senml+json"
 	cborContentType  = "application/senml+cbor"
 	jsonContentType  = "application/json"
 	senmlFormat      = "senml"
@@ -45,18 +46,21 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(topic string, msg messaging.Message) error {
+func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
-	data, err := proto.Marshal(&msg)
+
+	m := SetMessageProfile(msg, profile)
+
+	data, err := proto.Marshal(&m)
 	if err != nil {
 		return err
 	}
 
 	var format string
-	switch msg.Profile.ContentType {
-	case senmlContentType, cborContentType:
+	switch m.Profile.ContentType {
+	case SenmlContentType, cborContentType:
 		format = senmlFormat
 	case jsonContentType:
 		format = jsonFormat
@@ -80,4 +84,25 @@ func (pub *publisher) Publish(topic string, msg messaging.Message) error {
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
+}
+
+func SetMessageProfile(msg messaging.Message, profile mainflux.Profile) messaging.Message {
+	switch profile.ContentType {
+	case "":
+		msg.Profile = &messaging.Profile{
+			ContentType: SenmlContentType,
+			TimeField:   &messaging.TimeField{},
+		}
+	default:
+		msg.Profile = &messaging.Profile{
+			ContentType: profile.ContentType,
+			TimeField: &messaging.TimeField{
+				Name:     profile.TimeField.Name,
+				Format:   profile.TimeField.Format,
+				Location: profile.TimeField.Location,
+			},
+		}
+	}
+
+	return msg
 }

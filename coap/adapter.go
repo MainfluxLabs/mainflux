@@ -68,24 +68,12 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	}
 	msg.Publisher = conn.ThingID
 
-	switch {
-	case conn.Profile != nil:
-		msg.Profile = &messaging.Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField: &messaging.TimeField{
-				Name:     conn.Profile.TimeField.Name,
-				Format:   conn.Profile.TimeField.Format,
-				Location: conn.Profile.TimeField.Location,
-			},
-		}
-
-	default:
-		msg.Profile = &messaging.Profile{
-			ContentType: senmlContentType,
-		}
+	profile := conn.Profile
+	if profile == nil {
+		profile = &mainflux.Profile{}
 	}
 
-	return svc.pubsub.Publish(msg.Channel, msg)
+	return svc.pubsub.Publish(msg.Channel, *profile, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {

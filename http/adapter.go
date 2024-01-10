@@ -45,22 +45,10 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 	}
 	msg.Publisher = conn.ThingID
 
-	switch {
-	case conn.Profile != nil:
-		msg.Profile = &messaging.Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField: &messaging.TimeField{
-				Name:     conn.Profile.TimeField.Name,
-				Format:   conn.Profile.TimeField.Format,
-				Location: conn.Profile.TimeField.Location,
-			},
-		}
-
-	default:
-		msg.Profile = &messaging.Profile{
-			ContentType: senmlContentType,
-		}
+	profile := conn.Profile
+	if profile == nil {
+		profile = &mainflux.Profile{}
 	}
 
-	return as.publisher.Publish(conn.ChannelID, msg)
+	return as.publisher.Publish(conn.ChannelID, *profile, msg)
 }

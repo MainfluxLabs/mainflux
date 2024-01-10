@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -17,18 +19,19 @@ import (
 )
 
 const (
-	topic            = "topic"
-	chansPrefix      = "channels"
-	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic         = "engine"
-	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	exchangeName     = "mainflux-exchange"
-	senmlContentType = "application/senml+json"
+	topic        = "topic"
+	chansPrefix  = "channels"
+	channel      = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic     = "engine"
+	clientID     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	exchangeName = "mainflux-exchange"
 )
 
 var (
-	msgChan = make(chan messaging.Message)
-	data    = []byte("payload")
+	msgChan    = make(chan messaging.Message)
+	data       = []byte("payload")
+	profile    = mainflux.Profile{ContentType: nats.SenmlContentType, TimeField: &mainflux.TimeField{}}
+	msgProfile = &messaging.Profile{ContentType: nats.SenmlContentType, TimeField: &messaging.TimeField{}}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -87,8 +90,9 @@ func TestPublisher(t *testing.T) {
 			Channel:   tc.channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
+			Profile:   msgProfile,
 		}
-		err = pubsub.Publish(topic, expectedMsg)
+		err = pubsub.Publish(topic, profile, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -173,6 +177,7 @@ func TestSubscribe(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
+				Profile:   msgProfile,
 			}
 
 			data, err := proto.Marshal(&expectedMsg)
@@ -403,7 +408,7 @@ func TestPubSub(t *testing.T) {
 				Payload: data,
 			}
 
-			err = pubsub.Publish(tc.topic, expectedMsg)
+			err = pubsub.Publish(tc.topic, profile, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan
