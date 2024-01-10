@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
@@ -45,8 +46,17 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 
 	profile := conn.Profile
 	if profile == nil {
-		profile = &mainflux.Profile{}
+		return errors.ErrMalformedEntity
 	}
 
-	return as.publisher.Publish(conn.ChannelID, *profile, msg)
+	msg.Profile = &messaging.Profile{
+		ContentType: profile.ContentType,
+		TimeField: &messaging.TimeField{
+			Name:     profile.TimeField.Name,
+			Format:   profile.TimeField.Format,
+			Location: profile.TimeField.Location,
+		},
+	}
+
+	return as.publisher.Publish(conn.ChannelID, msg)
 }

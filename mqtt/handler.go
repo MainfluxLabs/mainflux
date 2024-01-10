@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
@@ -187,7 +186,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	for _, pub := range h.publishers {
-		if err := pub.Publish(msg.Channel, mainflux.Profile{}, msg); err != nil {
+		if err := pub.Publish(msg.Channel, msg); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}

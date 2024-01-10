@@ -67,10 +67,19 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 
 	profile := conn.Profile
 	if profile == nil {
-		profile = &mainflux.Profile{}
+		return errors.ErrMalformedEntity
 	}
 
-	return svc.pubsub.Publish(msg.Channel, *profile, msg)
+	msg.Profile = &messaging.Profile{
+		ContentType: profile.ContentType,
+		TimeField: &messaging.TimeField{
+			Name:     profile.TimeField.Name,
+			Format:   profile.TimeField.Format,
+			Location: profile.TimeField.Location,
+		},
+	}
+
+	return svc.pubsub.Publish(msg.Channel, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {

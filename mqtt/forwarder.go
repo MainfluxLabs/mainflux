@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -72,7 +71,7 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		}
 
 		go func() {
-			if err := pub.Publish(topic, mainflux.Profile{}, msg); err != nil {
+			if err := pub.Publish(topic, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()

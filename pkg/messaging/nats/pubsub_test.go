@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,15 @@ var (
 	msgChan   = make(chan messaging.Message)
 	data      = []byte("payload")
 	errFailed = errors.New("failed")
-	profile   = mainflux.Profile{ContentType: senmlContentType}
+	timeField = &messaging.TimeField{
+		Name:     "seconds_key",
+		Format:   "unix",
+		Location: "UTC",
+	}
+	profile = &messaging.Profile{
+		ContentType: senmlContentType,
+		TimeField:   timeField,
+	}
 )
 
 func TestPublisher(t *testing.T) {
@@ -77,10 +84,11 @@ func TestPublisher(t *testing.T) {
 			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
+			Profile:  profile,
 		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, profile, expectedMsg)
+		err = pubsub.Publish(topic, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

@@ -58,16 +58,24 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger
 	}
 
 	for subject, cfg := range subjects {
-		transformer := makeTransformer(cfg, logger)
-		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
+		if err := sub.Subscribe(id, subject, handle(cfg, consumer, logger)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func handle(t transformers.Transformer, c Consumer) handleFunc {
+func handle(cfg transformerConfig, c Consumer, logger logger.Logger) handleFunc {
 	return func(msg messaging.Message) error {
+		if msg.Profile != nil {
+			timeField := json.TimeField{
+				FieldName:   msg.Profile.TimeField.Name,
+				FieldFormat: msg.Profile.TimeField.Format,
+				Location:    msg.Profile.TimeField.Location,
+			}
+			cfg.TimeFields = append(cfg.TimeFields, timeField)
+		}
+		t := makeTransformer(cfg, logger)
 		m := interface{}(msg)
 		var err error
 		if t != nil {
@@ -97,8 +105,6 @@ type transformerConfig struct {
 }
 
 func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
-	cfg.TimeFields = timeFields
-
 	switch cfg.ContentType {
 	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")

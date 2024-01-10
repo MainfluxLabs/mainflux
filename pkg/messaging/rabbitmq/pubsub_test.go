@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
 	"github.com/gogo/protobuf/proto"
@@ -30,7 +29,6 @@ const (
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
-	profile = mainflux.Profile{ContentType: senmlContentType}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -90,7 +88,7 @@ func TestPublisher(t *testing.T) {
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err = pubsub.Publish(topic, profile, expectedMsg)
+		err = pubsub.Publish(topic, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -405,7 +403,7 @@ func TestPubSub(t *testing.T) {
 				Payload: data,
 			}
 
-			err = pubsub.Publish(tc.topic, profile, expectedMsg)
+			err = pubsub.Publish(tc.topic, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan
