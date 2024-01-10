@@ -12,8 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-const senmlContentType = "application/senml+json"
-
 // Service specifies coap service API.
 type Service interface {
 	// Publish Messssage

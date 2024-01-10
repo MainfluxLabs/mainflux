@@ -17,10 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-const (
-	chansPrefix      = "channels"
-	senmlContentType = "application/senml+json"
-)
+const chansPrefix = "channels"
 
 // ErrUnsubscribe indicates an error to unsubscribe
 var ErrUnsubscribe = errors.New("unable to unsubscribe")
