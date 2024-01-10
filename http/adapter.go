@@ -9,9 +9,10 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
+
+const senmlContentType = "application/senml+json"
 
 // Service specifies coap service API.
 type Service interface {
@@ -44,18 +45,21 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 	}
 	msg.Publisher = conn.ThingID
 
-	profile := conn.Profile
-	if profile == nil {
-		return errors.ErrMalformedEntity
-	}
+	switch {
+	case conn.Profile != nil:
+		msg.Profile = &messaging.Profile{
+			ContentType: conn.Profile.ContentType,
+			TimeField: &messaging.TimeField{
+				Name:     conn.Profile.TimeField.Name,
+				Format:   conn.Profile.TimeField.Format,
+				Location: conn.Profile.TimeField.Location,
+			},
+		}
 
-	msg.Profile = &messaging.Profile{
-		ContentType: profile.ContentType,
-		TimeField: &messaging.TimeField{
-			Name:     profile.TimeField.Name,
-			Format:   profile.TimeField.Format,
-			Location: profile.TimeField.Location,
-		},
+	default:
+		msg.Profile = &messaging.Profile{
+			ContentType: senmlContentType,
+		}
 	}
 
 	return as.publisher.Publish(conn.ChannelID, msg)

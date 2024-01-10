@@ -17,7 +17,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-const chansPrefix = "channels"
+const (
+	chansPrefix      = "channels"
+	senmlContentType = "application/senml+json"
+)
 
 // ErrUnsubscribe indicates an error to unsubscribe
 var ErrUnsubscribe = errors.New("unable to unsubscribe")
@@ -65,18 +68,21 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	}
 	msg.Publisher = conn.ThingID
 
-	profile := conn.Profile
-	if profile == nil {
-		return errors.ErrMalformedEntity
-	}
+	switch {
+	case conn.Profile != nil:
+		msg.Profile = &messaging.Profile{
+			ContentType: conn.Profile.ContentType,
+			TimeField: &messaging.TimeField{
+				Name:     conn.Profile.TimeField.Name,
+				Format:   conn.Profile.TimeField.Format,
+				Location: conn.Profile.TimeField.Location,
+			},
+		}
 
-	msg.Profile = &messaging.Profile{
-		ContentType: profile.ContentType,
-		TimeField: &messaging.TimeField{
-			Name:     profile.TimeField.Name,
-			Format:   profile.TimeField.Format,
-			Location: profile.TimeField.Location,
-		},
+	default:
+		msg.Profile = &messaging.Profile{
+			ContentType: senmlContentType,
+		}
 	}
 
 	return svc.pubsub.Publish(msg.Channel, msg)
