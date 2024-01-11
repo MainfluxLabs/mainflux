@@ -72,7 +72,7 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		}
 
 		go func() {
-			if err := pub.Publish(topic, mainflux.Profile{}, msg); err != nil {
+			if err := pub.Publish(topic, &mainflux.Profile{}, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()

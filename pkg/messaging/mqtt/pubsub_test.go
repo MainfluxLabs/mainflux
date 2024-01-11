@@ -64,7 +64,7 @@ func TestPublisher(t *testing.T) {
 	})
 
 	// Test publish with an empty topic.
-	err = pubsub.Publish("", mainflux.Profile{}, messaging.Message{Payload: data})
+	err = pubsub.Publish("", &mainflux.Profile{}, messaging.Message{Payload: data})
 	assert.Equal(t, err, mqtt_pubsub.ErrEmptyTopic, fmt.Sprintf("Publish with empty topic: expected: %s, got: %s", mqtt_pubsub.ErrEmptyTopic, err))
 
 	cases := []struct {
@@ -105,7 +105,7 @@ func TestPublisher(t *testing.T) {
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err := pubsub.Publish(topic, mainflux.Profile{}, expectedMsg)
+		err := pubsub.Publish(topic, &mainflux.Profile{}, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 		data, err := proto.Marshal(&expectedMsg)
@@ -269,7 +269,7 @@ func TestPubSub(t *testing.T) {
 			}
 
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(topic, mainflux.Profile{}, expectedMsg)
+			err := pubsub.Publish(topic, &mainflux.Profile{}, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan

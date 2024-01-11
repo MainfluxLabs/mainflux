@@ -82,7 +82,7 @@ func TestPublisher(t *testing.T) {
 		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, profile, expectedMsg)
+		err = pubsub.Publish(topic, &profile, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

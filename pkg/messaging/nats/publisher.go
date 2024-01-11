@@ -46,12 +46,17 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messaging.Message) error {
+func (pub *publisher) Publish(topic string, profile *mainflux.Profile, msg messaging.Message) error {
 	if topic == "" {
 		return ErrEmptyTopic
 	}
 
-	switch profile.ContentType {
+	var p mainflux.Profile
+	if profile != nil {
+		p = *profile
+	}
+
+	switch p.ContentType {
 	case "":
 		msg.Profile = &messaging.Profile{
 			ContentType: senmlContentType,
