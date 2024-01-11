@@ -65,12 +65,12 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	}
 	msg.Publisher = conn.ThingID
 
-	profile := conn.Profile
-	if profile == nil {
-		profile = &mainflux.Profile{}
+	var profile mainflux.Profile
+	if conn.Profile != nil {
+		profile = *conn.Profile
 	}
 
-	return svc.pubsub.Publish(msg.Channel, *profile, msg)
+	return svc.pubsub.Publish(msg.Channel, profile, msg)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {

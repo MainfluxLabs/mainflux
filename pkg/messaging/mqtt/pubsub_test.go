@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt_pubsub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -27,9 +26,7 @@ const (
 )
 
 var (
-	data       = []byte("payload")
-	profile    = mainflux.Profile{ContentType: nats.SenmlContentType, TimeField: &mainflux.TimeField{}}
-	msgProfile = &messaging.Profile{ContentType: nats.SenmlContentType, TimeField: &messaging.TimeField{}}
+	data = []byte("payload")
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.
@@ -67,7 +64,7 @@ func TestPublisher(t *testing.T) {
 	})
 
 	// Test publish with an empty topic.
-	err = pubsub.Publish("", profile, messaging.Message{Payload: data})
+	err = pubsub.Publish("", mainflux.Profile{}, messaging.Message{Payload: data})
 	assert.Equal(t, err, mqtt_pubsub.ErrEmptyTopic, fmt.Sprintf("Publish with empty topic: expected: %s, got: %s", mqtt_pubsub.ErrEmptyTopic, err))
 
 	cases := []struct {
@@ -107,9 +104,8 @@ func TestPublisher(t *testing.T) {
 			Channel:   tc.channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
-			Profile:   msgProfile,
 		}
-		err := pubsub.Publish(topic, profile, expectedMsg)
+		err := pubsub.Publish(topic, mainflux.Profile{}, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 		data, err := proto.Marshal(&expectedMsg)
@@ -199,7 +195,6 @@ func TestSubscribe(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
-				Profile:   msgProfile,
 			}
 			data, err := proto.Marshal(&expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
@@ -271,11 +266,10 @@ func TestPubSub(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
-				Profile:   msgProfile,
 			}
 
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(topic, profile, expectedMsg)
+			err := pubsub.Publish(topic, mainflux.Profile{}, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan

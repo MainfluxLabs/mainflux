@@ -16,21 +16,22 @@ import (
 )
 
 const (
-	topic          = "topic"
-	chansPrefix    = "channels"
-	channel        = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic       = "engine"
-	clientID       = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	senmlFormat    = "senml"
-	messagesSuffix = "messages"
+	topic            = "topic"
+	chansPrefix      = "channels"
+	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic         = "engine"
+	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	senmlContentType = "application/senml+json"
+	senmlFormat      = "senml"
+	messagesSuffix   = "messages"
 )
 
 var (
 	msgChan    = make(chan messaging.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	profile    = mainflux.Profile{ContentType: nats.SenmlContentType, TimeField: &mainflux.TimeField{}}
-	msgProfile = &messaging.Profile{ContentType: nats.SenmlContentType, TimeField: &messaging.TimeField{}}
+	profile    = mainflux.Profile{ContentType: senmlContentType, TimeField: &mainflux.TimeField{}}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}}
 )
 
 func TestPublisher(t *testing.T) {

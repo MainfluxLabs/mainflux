@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 )
@@ -41,10 +40,7 @@ func (pub publisher) Publish(topic string, profile mainflux.Profile, msg messagi
 	if topic == "" {
 		return ErrEmptyTopic
 	}
-
-	m := nats.SetMessageProfile(msg, profile)
-
-	data, err := proto.Marshal(&m)
+	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
