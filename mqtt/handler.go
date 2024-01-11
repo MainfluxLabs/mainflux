@@ -186,8 +186,10 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Created:   time.Now().UnixNano(),
 	}
 
+	conn := &mainflux.ConnByKeyRes{ChannelID: msg.Channel}
+
 	for _, pub := range h.publishers {
-		if err := pub.Publish(msg.Channel, &mainflux.Profile{}, msg); err != nil {
+		if err := pub.Publish(conn, msg); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}

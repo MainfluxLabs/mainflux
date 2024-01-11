@@ -29,6 +29,7 @@ const (
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
+	c       = &mainflux.ConnByKeyRes{ChannelID: topic}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -88,7 +89,8 @@ func TestPublisher(t *testing.T) {
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err = pubsub.Publish(topic, &mainflux.Profile{}, expectedMsg)
+
+		err = pubsub.Publish(c, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -402,8 +404,8 @@ func TestPubSub(t *testing.T) {
 				Channel: channel,
 				Payload: data,
 			}
-
-			err = pubsub.Publish(tc.topic, &mainflux.Profile{}, expectedMsg)
+			conn := &mainflux.ConnByKeyRes{ChannelID: tc.topic}
+			err = pubsub.Publish(conn, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan

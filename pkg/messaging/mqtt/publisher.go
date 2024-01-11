@@ -36,7 +36,8 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(topic string, profile *mainflux.Profile, msg messaging.Message) error {
+func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
+	topic := conn.ChannelID
 	if topic == "" {
 		return ErrEmptyTopic
 	}

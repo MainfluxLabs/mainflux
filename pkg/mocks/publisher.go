@@ -15,7 +15,7 @@ func NewPublisher() messaging.Publisher {
 	return mockPublisher{}
 }
 
-func (pub mockPublisher) Publish(topic string, profile *mainflux.Profile, msg messaging.Message) error {
+func (pub mockPublisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
 	return nil
 }
 
