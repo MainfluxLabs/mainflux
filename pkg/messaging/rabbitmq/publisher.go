@@ -43,15 +43,11 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	topic := conn.ChannelID
-	if topic == "" {
-		return ErrEmptyTopic
-	}
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
+	subject := fmt.Sprintf("%s.%s", chansPrefix, conn.ChannelID)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}

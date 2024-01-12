@@ -64,11 +64,6 @@ func TestPublisher(t *testing.T) {
 		client.Disconnect(100)
 	})
 
-	connWithEmptyTopic := &mainflux.ConnByKeyRes{ChannelID: ""}
-	// Test publish with an empty topic.
-	err = pubsub.Publish(connWithEmptyTopic, messaging.Message{Payload: data})
-	assert.Equal(t, err, mqtt_pubsub.ErrEmptyTopic, fmt.Sprintf("Publish with empty topic: expected: %s, got: %s", mqtt_pubsub.ErrEmptyTopic, err))
-
 	cases := []struct {
 		desc     string
 		channel  string

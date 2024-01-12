@@ -37,15 +37,11 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	topic := conn.ChannelID
-	if topic == "" {
-		return ErrEmptyTopic
-	}
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
-	token := pub.client.Publish(topic, qos, false, data)
+	token := pub.client.Publish(conn.ChannelID, qos, false, data)
 	if token.Error() != nil {
 		return token.Error()
 	}
