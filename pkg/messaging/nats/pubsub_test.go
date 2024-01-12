@@ -27,10 +27,12 @@ const (
 )
 
 var (
-	msgChan   = make(chan messaging.Message)
-	data      = []byte("payload")
-	errFailed = errors.New("failed")
-	profile   = mainflux.Profile{ContentType: senmlContentType}
+	msgChan    = make(chan messaging.Message)
+	data       = []byte("payload")
+	errFailed  = errors.New("failed")
+	profile    = mainflux.Profile{ContentType: senmlContentType, TimeField: &mainflux.TimeField{}}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}}
+	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: &profile}
 )
 
 func TestPublisher(t *testing.T) {
@@ -77,10 +79,11 @@ func TestPublisher(t *testing.T) {
 			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
+			Profile:  msgProfile,
 		}
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(topic, profile, expectedMsg)
+		err = pubsub.Publish(conn, expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

@@ -18,19 +18,18 @@ import (
 )
 
 const (
-	topic            = "topic"
-	chansPrefix      = "channels"
-	channel          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	subtopic         = "engine"
-	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
-	exchangeName     = "mainflux-exchange"
-	senmlContentType = "application/senml+json"
+	topic        = "topic"
+	chansPrefix  = "channels"
+	channel      = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	subtopic     = "engine"
+	clientID     = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
+	exchangeName = "mainflux-exchange"
 )
 
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
-	profile = mainflux.Profile{ContentType: senmlContentType}
+	c       = &mainflux.ConnByKeyRes{ChannelID: topic}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -90,7 +89,8 @@ func TestPublisher(t *testing.T) {
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
-		err = pubsub.Publish(topic, profile, expectedMsg)
+
+		err = pubsub.Publish(c, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -404,8 +404,8 @@ func TestPubSub(t *testing.T) {
 				Channel: channel,
 				Payload: data,
 			}
-
-			err = pubsub.Publish(tc.topic, profile, expectedMsg)
+			conn := &mainflux.ConnByKeyRes{ChannelID: tc.topic}
+			err = pubsub.Publish(conn, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan

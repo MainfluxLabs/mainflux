@@ -46,26 +46,18 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messaging.Message) error {
-	if topic == "" {
-		return ErrEmptyTopic
+func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
+	msg, format, err := setMessageProfile(conn, msg)
+	if err != nil {
+		return err
 	}
+
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
 
-	var format string
-	switch profile.ContentType {
-	case senmlContentType, cborContentType:
-		format = senmlFormat
-	case jsonContentType:
-		format = jsonFormat
-	default:
-		return ErrUnknownContent
-	}
-
-	topic = fmt.Sprintf("%s.%s.%s", topic, format, messagesSuffix)
+	topic := fmt.Sprintf("%s.%s.%s", conn.ChannelID, format, messagesSuffix)
 	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
@@ -81,4 +73,37 @@ func (pub *publisher) Publish(topic string, profile mainflux.Profile, msg messag
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
+}
+
+func setMessageProfile(conn *mainflux.ConnByKeyRes, msg messaging.Message) (messaging.Message, string, error) {
+	if conn.Profile == nil || conn.Profile.ContentType == "" {
+		msg.Profile = &messaging.Profile{
+			ContentType: senmlContentType,
+			TimeField:   &messaging.TimeField{},
+		}
+		return msg, senmlFormat, nil
+	}
+
+	switch conn.Profile.ContentType {
+	case jsonContentType:
+		msg.Profile = &messaging.Profile{
+			ContentType: conn.Profile.ContentType,
+			TimeField: &messaging.TimeField{
+				Name:     conn.Profile.TimeField.Name,
+				Format:   conn.Profile.TimeField.Format,
+				Location: conn.Profile.TimeField.Location,
+			},
+		}
+		return msg, jsonFormat, nil
+	case senmlContentType, cborContentType:
+		msg.Profile = &messaging.Profile{
+			ContentType: conn.Profile.ContentType,
+			TimeField:   &messaging.TimeField{},
+		}
+		return msg, senmlFormat, nil
+
+	default:
+		return messaging.Message{}, "", ErrUnknownContent
+	}
+
 }
