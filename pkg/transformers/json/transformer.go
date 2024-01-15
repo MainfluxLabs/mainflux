@@ -77,7 +77,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 		ret.Payload = p
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p)
+		ts, err := ts.transformTimeField(p, *msg.Profile.TimeField)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -97,7 +97,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 			newMsg := ret
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v)
+			ts, err := ts.transformTimeField(v, *msg.Profile.TimeField)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
@@ -176,20 +176,17 @@ func flatten(prefix string, m, m1 map[string]interface{}) (map[string]interface{
 	return m, nil
 }
 
-func (ts *transformerService) transformTimeField(payload map[string]interface{}) (int64, error) {
-	if len(ts.timeFields) == 0 {
+func (ts *transformerService) transformTimeField(payload map[string]interface{}, timeField messaging.TimeField) (int64, error) {
+	if timeField.Name == "" {
 		return 0, nil
 	}
 
-	for _, tf := range ts.timeFields {
-		if val, ok := payload[tf.FieldName]; ok {
-			t, err := parseTimestamp(tf.FieldFormat, val, tf.Location)
-			if err != nil {
-				return 0, err
-			}
-
-			return t.UnixNano(), nil
+	if val, ok := payload[timeField.Name]; ok {
+		t, err := parseTimestamp(timeField.Format, val, timeField.Location)
+		if err != nil {
+			return 0, err
 		}
+		return t.UnixNano(), nil
 	}
 
 	return 0, nil

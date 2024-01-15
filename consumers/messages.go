@@ -25,34 +25,20 @@ const (
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
 func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger) error {
-	subjects := map[string]transformerConfig{
-		brokers.SubjectSenMLMessages: {
-			ContentType: senmlContentType,
-		},
-		brokers.SubjectJSONMessages: {
-			ContentType: jsonContentType,
-		},
-	}
+	senmlTransformer := makeTransformer(senmlContentType, logger)
+	jsonTransformer := makeTransformer(jsonContentType, logger)
 
-	for subject, cfg := range subjects {
-		if err := sub.Subscribe(id, subject, handle(cfg, consumer, logger)); err != nil {
-			return err
-		}
+	if err := sub.Subscribe(id, brokers.SubjectSenMLMessages, handle(senmlTransformer, consumer)); err != nil {
+		return err
+	}
+	if err := sub.Subscribe(id, brokers.SubjectJSONMessages, handle(jsonTransformer, consumer)); err != nil {
+		return err
 	}
 	return nil
 }
 
-func handle(cfg transformerConfig, c Consumer, logger logger.Logger) handleFunc {
+func handle(t transformers.Transformer, c Consumer) handleFunc {
 	return func(msg messaging.Message) error {
-		if msg.Profile != nil {
-			timeField := json.TimeField{
-				FieldName:   msg.Profile.TimeField.Name,
-				FieldFormat: msg.Profile.TimeField.Format,
-				Location:    msg.Profile.TimeField.Location,
-			}
-			cfg.TimeFields = append(cfg.TimeFields, timeField)
-		}
-		t := makeTransformer(cfg, logger)
 		m := interface{}(msg)
 		var err error
 		if t != nil {
@@ -81,16 +67,16 @@ type transformerConfig struct {
 	TimeFields  []json.TimeField
 }
 
-func makeTransformer(cfg transformerConfig, logger logger.Logger) transformers.Transformer {
-	switch cfg.ContentType {
+func makeTransformer(contentType string, logger logger.Logger) transformers.Transformer {
+	switch contentType {
 	case senmlContentType, cborContentType:
 		logger.Info("Using SenML transformer")
-		return senml.New(cfg.ContentType)
+		return senml.New(contentType)
 	case jsonContentType:
 		logger.Info("Using JSON transformer")
-		return json.New(cfg.TimeFields)
+		return json.New([]json.TimeField{})
 	default:
-		logger.Error(fmt.Sprintf("Can't create transformer: unknown transformer type %s", cfg.ContentType))
+		logger.Error(fmt.Sprintf("Can't create transformer: unknown transformer type %s", contentType))
 		os.Exit(1)
 		return nil
 	}
