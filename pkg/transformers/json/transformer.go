@@ -5,11 +5,11 @@ package json
 
 import (
 	"encoding/json"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
 const sep = "/"

@@ -1,8 +1,8 @@
 # Messaging
 
-`messaging` package defines `Publisher`, `Subscriber` and an aggregate `Pubsub` interface. 
+`messaging` package defines `Publisher`, `Subscriber` and an aggregate `Pubsub` interface.
 
-`Subscriber` interface defines methods used to subscribe to a message broker such as MQTT or NATS or RabbitMQ. 
+`Subscriber` interface defines methods used to subscribe to a message broker such as MQTT or NATS or RabbitMQ.
 
 `Publisher` interface defines methods used to publish messages to a message broker such as MQTT or NATS or RabbitMQ.
 
