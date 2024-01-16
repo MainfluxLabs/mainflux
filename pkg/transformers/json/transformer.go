@@ -178,7 +178,11 @@ func flatten(prefix string, m, m1 map[string]interface{}) (map[string]interface{
 
 func (ts *transformerService) transformTimeField(payload map[string]interface{}, timeField messaging.TimeField) (int64, error) {
 	if timeField.Name == "" {
-		t, err := parseTimestamp(timeField.Format, timeField.Name, timeField.Location)
+		return 0, nil
+	}
+
+	if val, ok := payload[timeField.Name]; ok {
+		t, err := parseTimestamp(timeField.Format, val, timeField.Location)
 		if err != nil {
 			return 0, err
 		}

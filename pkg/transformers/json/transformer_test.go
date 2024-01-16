@@ -44,6 +44,7 @@ func TestTransformJSON(t *testing.T) {
 		Protocol:  "protocol",
 		Payload:   []byte(validPayload),
 		Created:   now,
+		Profile:   &messaging.Profile{TimeField: &messaging.TimeField{Name: "nanos_key", Format: "unix_ns", Location: "UTC"}},
 	}
 	invalid := msg
 	invalid.Payload = []byte(invalidPayload)
@@ -53,15 +54,18 @@ func TestTransformJSON(t *testing.T) {
 
 	tsMsg := msg
 	tsMsg.Payload = []byte(tsPayload)
+	tsMsg.Profile = &messaging.Profile{TimeField: &messaging.TimeField{Name: "custom_ts_key", Format: "unix", Location: "UTC"}}
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
+	microsMsg.Profile = &messaging.Profile{TimeField: &messaging.TimeField{Name: "custom_ts_micro_key", Format: "unix_us", Location: "UTC"}}
 
 	invalidFmt := msg
 	invalidFmt.Subtopic = ""
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
+	invalidTimeField.Profile = &messaging.Profile{TimeField: &messaging.TimeField{Name: "custom_ts_key", Format: "unix", Location: "UTC"}}
 
 	jsonMsgs := json.Messages{
 		Data: []json.Message{
