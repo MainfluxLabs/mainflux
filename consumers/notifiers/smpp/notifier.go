@@ -6,13 +6,13 @@ package smpp
 import (
 	"time"
 
-	"github.com/fiorix/go-smpp/smpp"
-	"github.com/fiorix/go-smpp/smpp/pdu/pdufield"
-	"github.com/fiorix/go-smpp/smpp/pdu/pdutext"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/fiorix/go-smpp/smpp"
+	"github.com/fiorix/go-smpp/smpp/pdu/pdufield"
+	"github.com/fiorix/go-smpp/smpp/pdu/pdutext"
 )
 
 var _ notifiers.Notifier = (*notifier)(nil)
@@ -38,7 +38,7 @@ func New(cfg Config) notifiers.Notifier {
 	t.Bind()
 	ret := &notifier{
 		transmitter:   t,
-		transformer:   json.New([]json.TimeField{}),
+		transformer:   json.New(),
 		sourceAddrTON: cfg.SourceAddrTON,
 		destAddrTON:   cfg.DestAddrTON,
 		sourceAddrNPI: cfg.SourceAddrNPI,
