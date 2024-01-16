@@ -33,7 +33,7 @@ var profile = &messaging.Profile{TimeField: &messaging.TimeField{Name: "nanos_ke
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
 
-	tr := json.New([]json.TimeField{})
+	tr := json.New()
 	msg := messaging.Message{
 		Channel:   "channel-1",
 		Subtopic:  subtopic + "." + format,

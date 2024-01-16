@@ -5,11 +5,11 @@ package json
 
 import (
 	"encoding/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
 const sep = "/"
@@ -41,10 +41,8 @@ type transformerService struct {
 }
 
 // New returns a new JSON transformer.
-func New(tfs []TimeField) transformers.Transformer {
-	return &transformerService{
-		timeFields: tfs,
-	}
+func New() transformers.Transformer {
+	return &transformerService{}
 }
 
 // Transform transforms Mainflux message to a list of JSON messages.

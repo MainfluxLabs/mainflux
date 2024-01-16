@@ -32,19 +32,18 @@ type transformer struct {
 }
 
 // New returns transformer service implementation for SenML messages.
-func New(contentFormat string) transformers.Transformer {
+func New() transformers.Transformer {
+	return transformer{}
+}
+
+func (t transformer) Transform(msg messaging.Message) (interface{}, error) {
+	contentFormat := msg.Profile.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
 		format = formats[JSON]
 	}
 
-	return transformer{
-		format: format,
-	}
-}
-
-func (t transformer) Transform(msg messaging.Message) (interface{}, error) {
-	raw, err := senml.Decode(msg.Payload, t.format)
+	raw, err := senml.Decode(msg.Payload, format)
 	if err != nil {
 		return nil, errors.Wrap(errDecode, err)
 	}
@@ -56,7 +55,7 @@ func (t transformer) Transform(msg messaging.Message) (interface{}, error) {
 
 	msgs := make([]Message, len(normalized.Records))
 	for i, v := range normalized.Records {
-		// Use reception timestamp if SenML messsage Time is missing
+		// Use reception timestamp if SenML message Time is missing
 		t := v.Time
 		if t == 0 {
 			// Convert the Unix timestamp in nanoseconds to float64

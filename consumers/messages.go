@@ -11,14 +11,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
-const senmlContentType = "application/senml+json"
-
 // Start method starts consuming messages received from Message broker.
 // This method transforms messages to SenML format before
 // using MessageRepository to store them.
 func Start(id string, sub messaging.Subscriber, consumer Consumer) error {
-	senmlTransformer := senml.New(senmlContentType)
-	jsonTransformer := json.New([]json.TimeField{})
+	senmlTransformer := senml.New()
+	jsonTransformer := json.New()
 
 	if err := sub.Subscribe(id, brokers.SubjectSenMLMessages, handle(senmlTransformer, consumer)); err != nil {
 		return err
