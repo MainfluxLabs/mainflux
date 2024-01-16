@@ -8,8 +8,8 @@ package api
 import (
 	"time"
 
-	"github.com/go-kit/kit/metrics"
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/go-kit/kit/metrics"
 )
 
 var _ consumers.Consumer = (*metricsMiddleware)(nil)
