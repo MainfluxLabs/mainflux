@@ -29,8 +29,8 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		timeField := &mainflux.TimeField{
-			Name:     p.TimeField.FieldName,
-			Format:   p.TimeField.FieldFormat,
+			Name:     p.TimeField.Name,
+			Format:   p.TimeField.Format,
 			Location: p.TimeField.Location,
 		}
 

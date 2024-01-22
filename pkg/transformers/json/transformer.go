@@ -31,9 +31,9 @@ var (
 
 // TimeField represents the message fields to use as timestamp
 type TimeField struct {
-	FieldName   string `toml:"field_name" json:"field_name"`
-	FieldFormat string `toml:"field_format" json:"field_format"`
-	Location    string `toml:"location" json:"location"`
+	Name     string `json:"name"`
+	Format   string `json:"format"`
+	Location string `json:"location"`
 }
 
 type transformerService struct {
