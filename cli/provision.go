@@ -125,7 +125,7 @@ var cmdProvision = []cobra.Command{
 				Email:    un,
 				Password: "12345678",
 			}
-			if _, err := sdk.CreateUser("", user); err != nil {
+			if _, err := sdk.RegisterUser(user); err != nil {
 				logError(err)
 				return
 			}
@@ -152,6 +152,11 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
+			var thIDs []string
+			for _, th := range things {
+				thIDs = append(thIDs, th.ID)
+			}
+
 			// Create channels
 			for i := 0; i < numChan; i++ {
 				n := fmt.Sprintf("c%d", i)
@@ -164,6 +169,37 @@ var cmdProvision = []cobra.Command{
 			}
 			channels, err = sdk.CreateChannels(channels, ut)
 			if err != nil {
+				logError(err)
+				return
+			}
+
+			var chIDs []string
+			for _, ch := range channels {
+				chIDs = append(chIDs, ch.ID)
+			}
+
+			g := mfxsdk.Group{
+				Name: "gr",
+			}
+
+			grID, err := sdk.CreateGroup(g, ut)
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			gr, err := sdk.Group(grID, ut)
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			if err := sdk.AssignChannel(chIDs, grID, ut); err != nil {
+				logError(err)
+				return
+			}
+
+			if err := sdk.AssignThing(thIDs, grID, ut); err != nil {
 				logError(err)
 				return
 			}
@@ -186,7 +222,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			logJSON(user, ut, things, channels)
+			logJSON(user, ut, gr, things, channels)
 		},
 	},
 }
