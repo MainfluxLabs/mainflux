@@ -73,8 +73,6 @@ services:
     restart: on-failure
     networks:
       - mainfluxlabs-base-net
-    ports:
-    - 4222:4222
 
   ## AUTH SERVICE
   auth-db:
