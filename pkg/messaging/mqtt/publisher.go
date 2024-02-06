@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 )
@@ -37,6 +38,15 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
+	msg, _, err := nats.SetMessageProfile(conn, msg)
+	if err != nil {
+		return err
+	}
+
+	if !msg.Profile.Retention {
+		return nil
+	}
+
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
