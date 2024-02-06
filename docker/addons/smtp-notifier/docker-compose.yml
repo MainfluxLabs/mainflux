@@ -61,5 +61,4 @@ services:
     networks:
       - docker_mainfluxlabs-base-net
     volumes:
-      - ./config.toml:/config.toml
       - ../../templates/${MF_SMTP_NOTIFIER_TEMPLATE}:/${MF_EMAIL_TEMPLATE}

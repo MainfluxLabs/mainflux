@@ -5,6 +5,7 @@ package nats
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -52,6 +53,11 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		return err
 	}
 
+	if msg.Profile.Retention {
+		log.Printf("Message retention is enabled for channel with an ID:  %s", conn.ChannelID)
+		return nil
+	}
+
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
@@ -80,6 +86,7 @@ func setMessageProfile(conn *mainflux.ConnByKeyRes, msg messaging.Message) (mess
 		msg.Profile = &messaging.Profile{
 			ContentType: senmlContentType,
 			TimeField:   &messaging.TimeField{},
+			Retention:   false,
 		}
 		return msg, senmlFormat, nil
 	}
@@ -93,12 +100,14 @@ func setMessageProfile(conn *mainflux.ConnByKeyRes, msg messaging.Message) (mess
 				Format:   conn.Profile.TimeField.Format,
 				Location: conn.Profile.TimeField.Location,
 			},
+			Retention: conn.Profile.Retention,
 		}
 		return msg, jsonFormat, nil
 	case senmlContentType, cborContentType:
 		msg.Profile = &messaging.Profile{
 			ContentType: conn.Profile.ContentType,
 			TimeField:   &messaging.TimeField{},
+			Retention:   conn.Profile.Retention,
 		}
 		return msg, senmlFormat, nil
 

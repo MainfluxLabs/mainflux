@@ -60,5 +60,3 @@ services:
       - ${MF_SMPP_NOTIFIER_PORT}:${MF_SMPP_NOTIFIER_PORT}
     networks:
       - docker_mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml
