@@ -4,17 +4,13 @@
 package mqtt
 
 import (
-	"errors"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 )
-
-var errPublishTimeout = errors.New("failed to publish due to timeout reached")
 
 var _ messaging.Publisher = (*publisher)(nil)
 
@@ -38,7 +34,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	msg, _, err := nats.SetMessageProfile(conn, msg)
+	msg, _, err := messaging.SetMessageProfile(conn, msg)
 	if err != nil {
 		return err
 	}
@@ -57,7 +53,7 @@ func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message)
 	}
 	ok := token.WaitTimeout(pub.timeout)
 	if !ok {
-		return errPublishTimeout
+		return messaging.ErrPublishTimeout
 	}
 
 	return token.Error()

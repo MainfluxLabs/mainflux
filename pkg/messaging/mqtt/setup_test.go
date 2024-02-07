@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	mainflux_log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt_pubsub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -104,7 +104,7 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 	ok := token.WaitTimeout(timeout)
 	if !ok {
-		return nil, mqtt_pubsub.ErrConnect
+		return nil, messaging.ErrConnect
 	}
 
 	if token.Error() != nil {

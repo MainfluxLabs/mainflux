@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,9 +29,9 @@ var (
 	msgChan    = make(chan messaging.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	profile    = mainflux.Profile{ContentType: senmlContentType, TimeField: &mainflux.TimeField{}, Retention: true}
+	profile    = &mainflux.Profile{ContentType: senmlContentType, Retention: true}
 	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Retention: true}
-	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: &profile}
+	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
 )
 
 func TestPublisher(t *testing.T) {
@@ -75,15 +74,16 @@ func TestPublisher(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		expectedMsg := messaging.Message{
+		msg := messaging.Message{
 			Channel:  tc.channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
-			Profile:  msgProfile,
 		}
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		err = pubsub.Publish(conn, expectedMsg)
+		expectedMsg := msg
+		expectedMsg.Profile = msgProfile
+
+		err = pubsub.Publish(conn, msg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan
@@ -137,7 +137,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from a non-existent topic with an ID",
 			topic:        "h",
 			clientID:     "clientid1",
-			errorMessage: nats.ErrNotSubscribed,
+			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -145,7 +145,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from the same topic with a different ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientidd2",
-			errorMessage: nats.ErrNotSubscribed,
+			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -153,7 +153,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from the same topic with a different ID not subscribed",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientidd3",
-			errorMessage: nats.ErrNotSubscribed,
+			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -161,7 +161,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from an already unsubscribed topic with an ID",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "clientid1",
-			errorMessage: nats.ErrNotSubscribed,
+			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -193,7 +193,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from an already unsubscribed topic with a subtopic with an ID",
 			topic:        fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			clientID:     "clientid1",
-			errorMessage: nats.ErrNotSubscribed,
+			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -201,7 +201,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Subscribe to an empty topic with an ID",
 			topic:        "",
 			clientID:     "clientid1",
-			errorMessage: nats.ErrEmptyTopic,
+			errorMessage: messaging.ErrEmptyTopic,
 			pubsub:       true,
 			handler:      handler{false},
 		},
@@ -209,7 +209,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from an empty topic with an ID",
 			topic:        "",
 			clientID:     "clientid1",
-			errorMessage: nats.ErrEmptyTopic,
+			errorMessage: messaging.ErrEmptyTopic,
 			pubsub:       false,
 			handler:      handler{false},
 		},
@@ -217,7 +217,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Subscribe to a topic with empty id",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "",
-			errorMessage: nats.ErrEmptyID,
+			errorMessage: messaging.ErrEmptyID,
 			pubsub:       true,
 			handler:      handler{false},
 		},
@@ -225,7 +225,7 @@ func TestPubsub(t *testing.T) {
 			desc:         "Unsubscribe from a topic with empty id",
 			topic:        fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:     "",
-			errorMessage: nats.ErrEmptyID,
+			errorMessage: messaging.ErrEmptyID,
 			pubsub:       false,
 			handler:      handler{false},
 		},

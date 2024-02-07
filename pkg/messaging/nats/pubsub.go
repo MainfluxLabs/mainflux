@@ -4,7 +4,6 @@
 package nats
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -16,14 +15,6 @@ import (
 )
 
 const chansPrefix = "channels"
-
-// Publisher and Subscriber errors.
-var (
-	ErrNotSubscribed  = errors.New("not subscribed")
-	ErrEmptyTopic     = errors.New("empty topic")
-	ErrEmptyID        = errors.New("empty id")
-	ErrUnknownContent = errors.New("unknown content type")
-)
 
 var _ messaging.PubSub = (*pubsub)(nil)
 
@@ -66,10 +57,10 @@ func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 
 	ps.mu.Lock()
@@ -122,22 +113,22 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	// Check topic
 	s, ok := ps.subscriptions[topic]
 	if !ok {
-		return ErrNotSubscribed
+		return messaging.ErrNotSubscribed
 	}
 	// Check topic ID
 	current, ok := s[id]
 	if !ok {
-		return ErrNotSubscribed
+		return messaging.ErrNotSubscribed
 	}
 	if current.cancel != nil {
 		if err := current.cancel(); err != nil {

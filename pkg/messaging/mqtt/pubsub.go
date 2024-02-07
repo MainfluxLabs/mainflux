@@ -4,7 +4,6 @@
 package mqtt
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -18,29 +17,6 @@ import (
 const (
 	username = "mainflux-mqtt"
 	qos      = 2
-)
-
-var (
-	// ErrConnect indicates that connection to MQTT broker failed
-	ErrConnect = errors.New("failed to connect to MQTT broker")
-
-	// ErrSubscribeTimeout indicates that the subscription failed due to timeout.
-	ErrSubscribeTimeout = errors.New("failed to subscribe due to timeout reached")
-
-	// ErrUnsubscribeTimeout indicates that unsubscribe failed due to timeout.
-	ErrUnsubscribeTimeout = errors.New("failed to unsubscribe due to timeout reached")
-
-	// ErrUnsubscribeDeleteTopic indicates that unsubscribe failed because the topic was deleted.
-	ErrUnsubscribeDeleteTopic = errors.New("failed to unsubscribe due to deletion of topic")
-
-	// ErrNotSubscribed indicates that the topic is not subscribed to.
-	ErrNotSubscribed = errors.New("not subscribed")
-
-	// ErrEmptyTopic indicates the absence of topic.
-	ErrEmptyTopic = errors.New("empty topic")
-
-	// ErrEmptyID indicates the absence of ID.
-	ErrEmptyID = errors.New("empty ID")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -81,10 +57,10 @@ func NewPubSub(url, queue string, timeout time.Duration, logger log.Logger) (mes
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
@@ -117,24 +93,24 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		return token.Error()
 	}
 	if ok := token.WaitTimeout(ps.timeout); !ok {
-		return ErrSubscribeTimeout
+		return messaging.ErrSubscribeTimeout
 	}
 	return token.Error()
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
 	s, ok := ps.subscriptions[id]
 	if !ok || !s.contains(topic) {
-		return ErrNotSubscribed
+		return messaging.ErrNotSubscribed
 	}
 
 	if err := s.unsubscribe(topic, ps.timeout); err != nil {
@@ -161,10 +137,10 @@ func (s *subscription) unsubscribe(topic string, timeout time.Duration) error {
 	}
 
 	if ok := token.WaitTimeout(timeout); !ok {
-		return ErrUnsubscribeTimeout
+		return messaging.ErrUnsubscribeTimeout
 	}
 	if ok := s.delete(topic); !ok {
-		return ErrUnsubscribeDeleteTopic
+		return messaging.ErrUnsubscribeDeleteTopic
 	}
 	return token.Error()
 }
@@ -182,7 +158,7 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 	ok := token.WaitTimeout(timeout)
 	if !ok {
-		return nil, ErrConnect
+		return nil, messaging.ErrConnect
 	}
 
 	if token.Error() != nil {

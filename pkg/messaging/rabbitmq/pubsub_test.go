@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
@@ -154,14 +153,14 @@ func TestSubscribe(t *testing.T) {
 			desc:     "Subscribe to an empty topic with an ID",
 			topic:    "",
 			clientID: "clientid1",
-			err:      rabbitmq.ErrEmptyTopic,
+			err:      messaging.ErrEmptyTopic,
 			handler:  handler{false, "clientid1"},
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
 			topic:    topic,
 			clientID: "",
-			err:      rabbitmq.ErrEmptyID,
+			err:      messaging.ErrEmptyID,
 			handler:  handler{false, ""},
 		},
 	}
@@ -246,7 +245,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:      "Unsubscribe from a non-existent topic with an ID",
 			topic:     "h",
 			clientID:  "clientid4",
-			err:       rabbitmq.ErrNotSubscribed,
+			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
 			handler:   handler{false, "clientid4"},
 		},
@@ -254,7 +253,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:      "Unsubscribe from an already unsubscribed topic with an ID",
 			topic:     fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:  "clientid4",
-			err:       rabbitmq.ErrNotSubscribed,
+			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
 			handler:   handler{false, "clientid4"},
 		},
@@ -278,7 +277,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:      "Unsubscribe from an already unsubscribed topic with a subtopic with an ID",
 			topic:     fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic),
 			clientID:  "clientid4",
-			err:       rabbitmq.ErrNotSubscribed,
+			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
 			handler:   handler{false, "clientid4"},
 		},
@@ -286,7 +285,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:      "Unsubscribe from an empty topic with an ID",
 			topic:     "",
 			clientID:  "clientid4",
-			err:       rabbitmq.ErrEmptyTopic,
+			err:       messaging.ErrEmptyTopic,
 			subscribe: false,
 			handler:   handler{false, "clientid4"},
 		},
@@ -294,7 +293,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:      "Unsubscribe from a topic with empty ID",
 			topic:     fmt.Sprintf("%s.%s", chansPrefix, topic),
 			clientID:  "",
-			err:       rabbitmq.ErrEmptyID,
+			err:       messaging.ErrEmptyID,
 			subscribe: false,
 			handler:   handler{false, ""},
 		},
@@ -377,14 +376,14 @@ func TestPubSub(t *testing.T) {
 			desc:     "Subscribe to an empty topic with an ID",
 			topic:    "",
 			clientID: clientID,
-			err:      rabbitmq.ErrEmptyTopic,
+			err:      messaging.ErrEmptyTopic,
 			handler:  handler{false, clientID},
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
 			topic:    topic,
 			clientID: "",
-			err:      rabbitmq.ErrEmptyID,
+			err:      messaging.ErrEmptyID,
 			handler:  handler{false, ""},
 		},
 	}
