@@ -30,8 +30,8 @@ var (
 	msgChan    = make(chan messaging.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	profile    = mainflux.Profile{ContentType: senmlContentType, TimeField: &mainflux.TimeField{}}
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}}
+	profile    = mainflux.Profile{ContentType: senmlContentType, TimeField: &mainflux.TimeField{}, Retention: true}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Retention: true}
 	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: &profile}
 )
 

@@ -26,8 +26,10 @@ const (
 )
 
 var (
-	data = []byte("payload")
-	conn = &mainflux.ConnByKeyRes{ChannelID: topic}
+	data       = []byte("payload")
+	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
+	profile    = &mainflux.Profile{ContentType: "application/senml+json", Retention: true}
+	msgProfile = &messaging.Profile{ContentType: "application/senml+json", TimeField: &messaging.TimeField{}, Retention: true}
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.
@@ -101,6 +103,7 @@ func TestPublisher(t *testing.T) {
 			Channel:   tc.channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
+			Profile:   msgProfile,
 		}
 		err := pubsub.Publish(conn, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
@@ -263,6 +266,7 @@ func TestPubSub(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
+				Profile:   msgProfile,
 			}
 
 			// Publish message, and then receive it on message channel.
