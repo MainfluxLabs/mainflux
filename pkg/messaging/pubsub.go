@@ -48,7 +48,7 @@ var (
 
 // Publisher specifies message publishing API.
 type Publisher interface {
-	// Publish publishes message to the stream.
+	// Publish publishes message to the message broker.
 	Publish(conn *mainflux.ConnByKeyRes, msg Message) error
 
 	// Close gracefully closes message publisher's connection.
