@@ -16,13 +16,8 @@ import (
 // Value -1 represents an unlimited number of reconnect retries, i.e. the client
 // will never give up on retrying to re-establish connection to NATS server.
 const (
-	maxReconnects    = -1
-	senmlContentType = "application/senml+json"
-	cborContentType  = "application/senml+cbor"
-	jsonContentType  = "application/json"
-	senmlFormat      = "senml"
-	jsonFormat       = "json"
-	messagesSuffix   = "messages"
+	maxReconnects  = -1
+	messagesSuffix = "messages"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -47,9 +42,13 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
-	msg, format, err := setMessageProfile(conn, msg)
+	msg, format, err := messaging.SetMessageProfile(conn, msg)
 	if err != nil {
 		return err
+	}
+
+	if !msg.Profile.Retention {
+		return nil
 	}
 
 	data, err := proto.Marshal(&msg)
@@ -73,37 +72,4 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
-}
-
-func setMessageProfile(conn *mainflux.ConnByKeyRes, msg messaging.Message) (messaging.Message, string, error) {
-	if conn.Profile == nil || conn.Profile.ContentType == "" {
-		msg.Profile = &messaging.Profile{
-			ContentType: senmlContentType,
-			TimeField:   &messaging.TimeField{},
-		}
-		return msg, senmlFormat, nil
-	}
-
-	switch conn.Profile.ContentType {
-	case jsonContentType:
-		msg.Profile = &messaging.Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField: &messaging.TimeField{
-				Name:     conn.Profile.TimeField.Name,
-				Format:   conn.Profile.TimeField.Format,
-				Location: conn.Profile.TimeField.Location,
-			},
-		}
-		return msg, jsonFormat, nil
-	case senmlContentType, cborContentType:
-		msg.Profile = &messaging.Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField:   &messaging.TimeField{},
-		}
-		return msg, senmlFormat, nil
-
-	default:
-		return messaging.Message{}, "", ErrUnknownContent
-	}
-
 }

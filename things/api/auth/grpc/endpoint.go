@@ -37,6 +37,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			TimeField:   timeField,
+			Retention:   p.Retention,
 		}
 
 		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil

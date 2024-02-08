@@ -43,6 +43,7 @@ message ConnByKeyRes {
 message Profile {
     string    contentType = 1;
     TimeField timeField   = 2;
+    bool      retention   = 3;
 }
 
 message TimeField {

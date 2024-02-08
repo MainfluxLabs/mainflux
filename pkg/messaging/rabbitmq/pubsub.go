@@ -4,13 +4,12 @@
 package rabbitmq
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -21,16 +20,6 @@ const (
 	exchangeName       = "mainflux-exchange"
 )
 
-var (
-	// ErrNotSubscribed indicates that the topic is not subscribed to.
-	ErrNotSubscribed = errors.New("not subscribed")
-
-	// ErrEmptyTopic indicates the absence of topic.
-	ErrEmptyTopic = errors.New("empty topic")
-
-	// ErrEmptyID indicates the absence of ID.
-	ErrEmptyID = errors.New("empty ID")
-)
 var _ messaging.PubSub = (*pubsub)(nil)
 
 type subscription struct {
@@ -69,10 +58,10 @@ func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 	ps.mu.Lock()
 
@@ -125,10 +114,10 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if id == "" {
-		return ErrEmptyID
+		return messaging.ErrEmptyID
 	}
 	if topic == "" {
-		return ErrEmptyTopic
+		return messaging.ErrEmptyTopic
 	}
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
@@ -137,12 +126,12 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	// Check topic
 	s, ok := ps.subscriptions[topic]
 	if !ok {
-		return ErrNotSubscribed
+		return messaging.ErrNotSubscribed
 	}
 	// Check topic ID
 	current, ok := s[id]
 	if !ok {
-		return ErrNotSubscribed
+		return messaging.ErrNotSubscribed
 	}
 	if current.cancel != nil {
 		if err := current.cancel(); err != nil {
