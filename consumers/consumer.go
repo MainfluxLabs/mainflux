@@ -29,6 +29,13 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer) error {
 	if err := sub.Subscribe(id, brokers.SubjectJSONMessages, handle(jsonTransformer, consumer)); err != nil {
 		return err
 	}
+	if err := sub.Subscribe(id, brokers.SubjectSmtp, handle(nil, consumer)); err != nil {
+		return err
+	}
+	if err := sub.Subscribe(id, brokers.SubjectSmpp, handle(nil, consumer)); err != nil {
+		return err
+	}
+
 	return nil
 }
 

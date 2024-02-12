@@ -19,10 +19,17 @@ message Profile {
     string    contentType = 1;
     TimeField timeField   = 2;
     bool      retention   = 3;
+	Notifier  notifier    = 4;
 }
 
 message TimeField {
     string name     = 1;
     string format   = 2;
     string location = 3;
+}
+
+message Notifier {
+	string type    					 = 1;
+	string subject 					 = 2;
+	repeated string contacts = 3;
 }

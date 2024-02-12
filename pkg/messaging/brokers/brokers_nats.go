@@ -19,6 +19,10 @@ const (
 	SubjectSenMLMessages = "channels.*.senml.>"
 	// SubjectJSONMessages represents subject to subscribe for the JSON messages.
 	SubjectJSONMessages = "channels.*.json.>"
+	// SubjectSmtp represents subject to subscribe for the SMTP messages.
+	SubjectSmtp = "smtp.*"
+	// SubjectSmpp represents subject to subscribe for the SMPP messages.
+	SubjectSmpp = "smpp.*"
 )
 
 func init() {

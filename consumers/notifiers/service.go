@@ -5,7 +5,6 @@ package notifiers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -100,29 +99,11 @@ func (ns *notifierService) Consume(message interface{}) error {
 	if !ok {
 		return ErrMessage
 	}
-	topic := msg.Channel
-	if msg.Subtopic != "" {
-		topic = fmt.Sprintf("%s.%s", msg.Channel, msg.Subtopic)
-	}
-	pm := PageMetadata{
-		Topic:  topic,
-		Offset: 0,
-		Limit:  -1,
-	}
-	page, err := ns.subs.RetrieveAll(context.Background(), pm)
-	if err != nil {
-		return err
-	}
 
-	var to []string
-	for _, sub := range page.Subscriptions {
-		to = append(to, sub.Contact)
-	}
-	if len(to) > 0 {
-		err := ns.notifier.Notify(ns.from, to, msg)
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
+	to := msg.Profile.Notifier.Contacts
+	err := ns.notifier.Notify(ns.from, to, msg)
+	if err != nil {
+		return errors.Wrap(ErrNotify, err)
 	}
 
 	return nil
