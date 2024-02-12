@@ -4,6 +4,8 @@
 package consumers
 
 import (
+	"fmt"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
@@ -19,21 +21,26 @@ type Consumer interface {
 }
 
 // Start method starts consuming messages received from Message broker.
-func Start(id string, sub messaging.Subscriber, consumer Consumer) error {
+func Start(id string, sub messaging.Subscriber, consumer Consumer, logger logger.Logger, subjects ...string) error {
 	senmlTransformer := senml.New()
 	jsonTransformer := json.New()
 
-	if err := sub.Subscribe(id, brokers.SubjectSenMLMessages, handle(senmlTransformer, consumer)); err != nil {
-		return err
-	}
-	if err := sub.Subscribe(id, brokers.SubjectJSONMessages, handle(jsonTransformer, consumer)); err != nil {
-		return err
-	}
-	if err := sub.Subscribe(id, brokers.SubjectSmtp, handle(nil, consumer)); err != nil {
-		return err
-	}
-	if err := sub.Subscribe(id, brokers.SubjectSmpp, handle(nil, consumer)); err != nil {
-		return err
+	for _, subject := range subjects {
+		var transformer transformers.Transformer
+		switch subject {
+		case brokers.SubjectSenMLMessages:
+			transformer = senmlTransformer
+		case brokers.SubjectJSONMessages:
+			transformer = jsonTransformer
+		case brokers.SubjectSmtp, brokers.SubjectSmpp:
+			transformer = nil
+		default:
+			logger.Error(fmt.Sprintf("Can't create transformer: unknown transformer for subject %s", subject))
+		}
+
+		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -87,7 +87,8 @@ func main() {
 
 	repo := newService(db, logger)
 
-	if err = consumers.Start(svcName, pubSub, repo); err != nil {
+	subjects := []string{brokers.SubjectSenMLMessages, brokers.SubjectJSONMessages}
+	if err = consumers.Start(svcName, pubSub, repo, logger, subjects...); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Timescale writer: %s", err))
 	}
 
