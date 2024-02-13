@@ -20,10 +20,15 @@ func NewNotifier() notifiers.Notifier {
 }
 
 func (n notifier) Notify(from string, to []string, msg messaging.Message) error {
+	if len(to) < 1 {
+		return notifiers.ErrNotify
+	}
+
 	for _, t := range to {
 		if t == invalidSender {
 			return notifiers.ErrNotify
 		}
 	}
+
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -19,16 +18,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/smtp"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
@@ -38,24 +34,12 @@ import (
 )
 
 const (
-	svcName          = "smtp-notifier"
-	stopWaitTime     = 5 * time.Second
-	defLogLevel      = "error"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "subscriptions"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defHTTPPort      = "8906"
-	defServerCert    = ""
-	defServerKey     = ""
-	defFrom          = ""
-	defJaegerURL     = ""
-	defBrokerURL     = "nats://localhost:4222"
+	svcName      = "smtp-notifier"
+	stopWaitTime = 5 * time.Second
+	defLogLevel  = "error"
+	defFrom      = ""
+	defJaegerURL = ""
+	defBrokerURL = "nats://localhost:4222"
 
 	defEmailHost        = "localhost"
 	defEmailPort        = "25"
@@ -70,22 +54,10 @@ const (
 	defAuthGRPCURL     = "localhost:8181"
 	defAuthGRPCTimeout = "1s"
 
-	envLogLevel      = "MF_SMTP_NOTIFIER_LOG_LEVEL"
-	envDBHost        = "MF_SMTP_NOTIFIER_DB_HOST"
-	envDBPort        = "MF_SMTP_NOTIFIER_DB_PORT"
-	envDBUser        = "MF_SMTP_NOTIFIER_DB_USER"
-	envDBPass        = "MF_SMTP_NOTIFIER_DB_PASS"
-	envDB            = "MF_SMTP_NOTIFIER_DB"
-	envDBSSLMode     = "MF_SMTP_NOTIFIER_DB_SSL_MODE"
-	envDBSSLCert     = "MF_SMTP_NOTIFIER_DB_SSL_CERT"
-	envDBSSLKey      = "MF_SMTP_NOTIFIER_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_SMTP_NOTIFIER_DB_SSL_ROOT_CERT"
-	envHTTPPort      = "MF_SMTP_NOTIFIER_PORT"
-	envServerCert    = "MF_SMTP_NOTIFIER_SERVER_CERT"
-	envServerKey     = "MF_SMTP_NOTIFIER_SERVER_KEY"
-	envFrom          = "MF_SMTP_NOTIFIER_FROM_ADDR"
-	envJaegerURL     = "MF_JAEGER_URL"
-	envBrokerURL     = "MF_BROKER_URL"
+	envLogLevel  = "MF_SMTP_NOTIFIER_LOG_LEVEL"
+	envFrom      = "MF_SMTP_NOTIFIER_FROM_ADDR"
+	envJaegerURL = "MF_JAEGER_URL"
+	envBrokerURL = "MF_BROKER_URL"
 
 	envEmailHost        = "MF_EMAIL_HOST"
 	envEmailPort        = "MF_EMAIL_PORT"
@@ -104,12 +76,8 @@ const (
 type config struct {
 	brokerURL       string
 	logLevel        string
-	dbConfig        postgres.Config
 	emailConf       email.Config
 	from            string
-	httpPort        string
-	serverCert      string
-	serverKey       string
 	jaegerURL       string
 	authTLS         bool
 	authCACerts     string
@@ -127,9 +95,6 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	db := connectToDB(cfg.dbConfig, logger)
-	defer db.Close()
-
 	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -145,21 +110,11 @@ func main() {
 		defer close()
 	}
 
-	tracer, closer := initJaeger("smtp-notifier", cfg.jaegerURL, logger)
-	defer closer.Close()
-
-	dbTracer, dbCloser := initJaeger("smtp-notifier_db", cfg.jaegerURL, logger)
-	defer dbCloser.Close()
-
-	svc := newService(db, dbTracer, auth, cfg, logger)
+	svc := newService(auth, cfg, logger)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
-
-	g.Go(func() error {
-		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
-	})
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -201,9 +156,6 @@ func loadConfig() config {
 		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
 		emailConf:       emailConf,
 		from:            mainflux.Env(envFrom, defFrom),
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		authTLS:         tls,
 		authCACerts:     mainflux.Env(envAuthCACerts, defAuthCACerts),
@@ -237,15 +189,6 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
-	db, err := postgres.Connect(dbConfig)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
-		os.Exit(1)
-	}
-	return db
-}
-
 func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
 	var opts []grpc.DialOption
 	if cfg.authTLS {
@@ -271,9 +214,7 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
-	database := postgres.NewDatabase(db)
-	repo := tracing.New(postgres.New(database), tracer)
+func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
 	idp := ulid.New()
 
 	agent, err := email.New(&c.emailConf)
@@ -283,7 +224,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 	}
 
 	notifier := smtp.New(agent)
-	svc := notifiers.New(ac, repo, idp, notifier, c.from)
+	svc := notifiers.New(ac, idp, notifier, c.from)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
@@ -301,37 +242,4 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceC
 		}, []string{"method"}),
 	)
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc notifiers.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, tracer, logger)}
-
-	switch {
-	case certFile != "" || keyFile != "":
-		logger.Info(fmt.Sprintf("SMTP notifier service started using https, cert %s key %s, exposed port %s", certFile, keyFile, port))
-		go func() {
-			errCh <- server.ListenAndServeTLS(certFile, keyFile)
-		}()
-	default:
-		logger.Info(fmt.Sprintf("SMTP notifier service started using http, exposed port %s", port))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("SMTP notifier service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("smtp notifier service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("SMTP notifier service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }

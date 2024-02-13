@@ -16,32 +16,12 @@ volumes:
   mainfluxlabs-smtp-notifier-volume:
 
 services:
-  smtp-notifier-db:
-    image: postgres:10.2-alpine
-    container_name: mainfluxlabs-smtp-notifier-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_SMTP_NOTIFIER_DB_USER}
-      POSTGRES_PASSWORD: ${MF_SMTP_NOTIFIER_DB_PASS}
-      POSTGRES_DB: ${MF_SMTP_NOTIFIER_DB}
-    networks:
-      - docker_mainfluxlabs-base-net
-    volumes:
-      - mainfluxlabs-smtp-notifier-volume:/var/lib/postgresql/datab
-
   smtp-notifier:
     image: mainfluxlabs/smtp-notifier:latest
     container_name: mainfluxlabs-smtp-notifier
-    depends_on:
-      - smtp-notifier-db
     restart: on-failure
     environment:
       MF_SMTP_NOTIFIER_LOG_LEVEL: ${MF_SMTP_NOTIFIER_LOG_LEVEL}
-      MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
-      MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
-      MF_SMTP_NOTIFIER_DB_USER: ${MF_SMTP_NOTIFIER_DB_USER}
-      MF_SMTP_NOTIFIER_DB_PASS: ${MF_SMTP_NOTIFIER_DB_PASS}
-      MF_SMTP_NOTIFIER_DB: ${MF_SMTP_NOTIFIER_DB}
       MF_SMTP_NOTIFIER_PORT: ${MF_SMTP_NOTIFIER_PORT}
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
