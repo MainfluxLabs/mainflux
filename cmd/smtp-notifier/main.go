@@ -153,8 +153,7 @@ func main() {
 
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
-	subject := brokers.SubjectSmtp
-	if err = consumers.Start(svcName, pubSub, svc, subject); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 
@@ -187,18 +186,6 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envAuthTLS)
 	}
 
-	dbConfig := postgres.Config{
-		Host:        mainflux.Env(envDBHost, defDBHost),
-		Port:        mainflux.Env(envDBPort, defDBPort),
-		User:        mainflux.Env(envDBUser, defDBUser),
-		Pass:        mainflux.Env(envDBPass, defDBPass),
-		Name:        mainflux.Env(envDB, defDB),
-		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
-		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
-		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
-		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
-	}
-
 	emailConf := email.Config{
 		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
 		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
@@ -212,7 +199,6 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
-		dbConfig:        dbConfig,
 		emailConf:       emailConf,
 		from:            mainflux.Env(envFrom, defFrom),
 		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),

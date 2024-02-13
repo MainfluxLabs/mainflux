@@ -18,14 +18,14 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/sync/errgroup"
 
 	mfsmpp "github.com/MainfluxLabs/mainflux/consumers/notifiers/smpp"
-"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -155,8 +155,7 @@ func main() {
 
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
-	subject := brokers.SubjectSmpp
-	if err = consumers.Start(svcName, pubSub, svc, subject); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 

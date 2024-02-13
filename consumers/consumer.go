@@ -5,6 +5,7 @@ package consumers
 
 import (
 	"errors"
+
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
@@ -29,9 +30,9 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...s
 	for _, subject := range subjects {
 		var transformer transformers.Transformer
 		switch subject {
-		case brokers.SubjectSenMLMessages:
+		case brokers.SubjectSenML:
 			transformer = senmlTransformer
-		case brokers.SubjectJSONMessages:
+		case brokers.SubjectJSON:
 			transformer = jsonTransformer
 		case brokers.SubjectSmtp, brokers.SubjectSmpp:
 			transformer = nil
