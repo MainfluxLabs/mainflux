@@ -20,9 +20,9 @@ const (
 	// SubjectJSONMessages represents subject to subscribe for the JSON messages.
 	SubjectJSONMessages = "channels.*.json.>"
 	// SubjectSmtp represents subject to subscribe for the SMTP messages.
-	SubjectSmtp = "smtp.*"
+	SubjectSmtp = "smtp"
 	// SubjectSmpp represents subject to subscribe for the SMPP messages.
-	SubjectSmpp = "smpp.*"
+	SubjectSmpp = "smpp"
 )
 
 func init() {

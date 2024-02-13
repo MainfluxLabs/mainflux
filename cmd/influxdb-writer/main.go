@@ -95,7 +95,7 @@ func main() {
 	repo = api.MetricsMiddleware(repo, counter, latency)
 
 	subjects := []string{brokers.SubjectSenMLMessages, brokers.SubjectJSONMessages}
-	if err := consumers.Start(svcName, pubSub, repo, logger, subjects...); err != nil {
+	if err := consumers.Start(svcName, pubSub, repo, subjects...); err != nil {
 		logger.Error(fmt.Sprintf("Failed to start InfluxDB writer: %s", err))
 		os.Exit(1)
 	}

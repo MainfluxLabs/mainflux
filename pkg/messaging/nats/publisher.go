@@ -62,11 +62,7 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 	var subject string
 	switch {
 	case conn.Profile.Notifier.Type == smtpType || conn.Profile.Notifier.Type == smppType:
-		topic = fmt.Sprint(conn.Profile.Notifier.Type)
-		subject = topic
-		if msg.Subtopic != "" {
-			subject = fmt.Sprintf("%s.%s", topic, msg.Subtopic)
-		}
+		subject = conn.Profile.Notifier.Type
 	default:
 		topic = fmt.Sprintf("%s.%s.%s", conn.ChannelID, format, messagesSuffix)
 		subject = fmt.Sprintf("%s.%s", chansPrefix, topic)

@@ -154,7 +154,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	subject := brokers.SubjectSmtp
-	if err = consumers.Start(svcName, pubSub, svc, logger, subject); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, subject); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 
