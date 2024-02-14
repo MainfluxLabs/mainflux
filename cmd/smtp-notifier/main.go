@@ -113,7 +113,7 @@ func main() {
 	svc := newService(auth, cfg, logger)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmtp); err != nil {
-		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
+		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
 	}
 
 	g.Go(func() error {
