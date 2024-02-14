@@ -22,6 +22,13 @@ type Profile struct {
 	ContentType string         `json:"content_type"`
 	TimeField   json.TimeField `json:"time_field"`
 	Retention   bool           `json:"retention"`
+	Notifier    Notifier       `json:"notifier"`
+}
+
+type Notifier struct {
+	Type     string   `json:"type"`
+	Contacts []string `json:"contacts"`
+	Subject  string   `json:"subject"`
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

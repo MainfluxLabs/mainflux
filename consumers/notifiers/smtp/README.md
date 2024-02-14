@@ -10,20 +10,6 @@ default values.
 
 | Variable                          | Description                                                             | Default               |
 | --------------------------------- | ----------------------------------------------------------------------- | --------------------- |
-| MF_SMTP_NOTIFIER_LOG_LEVEL        | Log level for SMT Notifier (debug, info, warn, error)                   | error                 |
-| MF_SMTP_NOTIFIER_DB_HOST          | Database host address                                                   | localhost             |
-| MF_SMTP_NOTIFIER_DB_PORT          | Database host port                                                      | 5432                  |
-| MF_SMTP_NOTIFIER_DB_USER          | Database user                                                           | mainflux              |
-| MF_SMTP_NOTIFIER_DB_PASS          | Database password                                                       | mainflux              |
-| MF_SMTP_NOTIFIER_DB               | Name of the database used by the service                                | subscriptions         |
-| MF_SMTP_NOTIFIER_CONFIG_PATH      | Path to the config file with message broker subjects configuration      | disable               |
-| MF_SMTP_NOTIFIER_DB_SSL_MODE      | Database connection SSL mode (disable, require, verify-ca, verify-full) |                       |
-| MF_SMTP_NOTIFIER_DB_SSL_CERT      | Path to the PEM encoded cert file                                       |                       |
-| MF_SMTP_NOTIFIER_DB_SSL_KEY       | Path to the PEM encoded certificate key                                 |                       |
-| MF_SMTP_NOTIFIER_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                       |
-| MF_SMTP_NOTIFIER_PORT             | HTTP server port                                                        | 8180                  |
-| MF_SMTP_NOTIFIER_SERVER_CERT      | Path to server cert in pem format                                       |                       |
-| MF_SMTP_NOTIFIER_SERVER_KEY       | Path to server key in pem format                                        |                       |
 | MF_JAEGER_URL                     | Jaeger server URL                                                       | localhost:6831        |
 | MF_BROKER_URL                     | Message broker URL                                                      | nats://127.0.0.1:4222 |
 | MF_EMAIL_HOST                     | Mail server host                                                        | localhost             |

@@ -103,6 +103,11 @@ func SetMessageProfile(conn *mainflux.ConnByKeyRes, msg Message) (Message, strin
 				Location: conn.Profile.TimeField.Location,
 			},
 			Retention: conn.Profile.Retention,
+			Notifier: &Notifier{
+				Type:     conn.Profile.Notifier.Type,
+				Contacts: conn.Profile.Notifier.Contacts,
+				Subject:  conn.Profile.Notifier.Subject,
+			},
 		}
 		return msg, jsonFormat, nil
 	case senmlContentType, cborContentType:
@@ -110,6 +115,11 @@ func SetMessageProfile(conn *mainflux.ConnByKeyRes, msg Message) (Message, strin
 			ContentType: conn.Profile.ContentType,
 			TimeField:   &TimeField{},
 			Retention:   conn.Profile.Retention,
+			Notifier: &Notifier{
+				Type:     conn.Profile.Notifier.Type,
+				Contacts: conn.Profile.Notifier.Contacts,
+				Subject:  conn.Profile.Notifier.Subject,
+			},
 		}
 		return msg, senmlFormat, nil
 

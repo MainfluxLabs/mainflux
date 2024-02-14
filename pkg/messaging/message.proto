@@ -6,23 +6,30 @@ package messaging;
 
 // Message represents a message emitted by the Mainflux adapters layer.
 message Message {
-	string  channel   = 1;
-	string  subtopic  = 2;
-	string  publisher = 3;
-	string  protocol  = 4;
-	bytes   payload   = 5;
-	int64   created   = 6; // Unix timestamp in nanoseconds
-	Profile profile   = 7;
+    string  channel   = 1;
+    string  subtopic  = 2;
+    string  publisher = 3;
+    string  protocol  = 4;
+    bytes   payload   = 5;
+    int64   created   = 6; // Unix timestamp in nanoseconds
+    Profile profile   = 7;
 }
 
 message Profile {
     string    contentType = 1;
     TimeField timeField   = 2;
     bool      retention   = 3;
+    Notifier  notifier    = 4;
 }
 
 message TimeField {
     string name     = 1;
     string format   = 2;
     string location = 3;
+}
+
+message Notifier {
+    string type		     = 1;
+    string subject	     = 2;
+    repeated string contacts = 3;
 }

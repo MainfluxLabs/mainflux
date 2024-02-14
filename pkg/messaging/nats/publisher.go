@@ -18,6 +18,8 @@ import (
 const (
 	maxReconnects  = -1
 	messagesSuffix = "messages"
+	subjectSMTP    = "smtp"
+	subjectSMPP    = "smpp"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -56,10 +58,15 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		return err
 	}
 
-	topic := fmt.Sprintf("%s.%s.%s", conn.ChannelID, format, messagesSuffix)
-	subject := fmt.Sprintf("%s.%s", chansPrefix, topic)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	var subject string
+	switch conn.Profile.Notifier.Type {
+	case subjectSMTP, subjectSMPP:
+		subject = conn.Profile.Notifier.Type
+	default:
+		subject = fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
+		if msg.Subtopic != "" {
+			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+		}
 	}
 
 	if err := pub.conn.Publish(subject, data); err != nil {

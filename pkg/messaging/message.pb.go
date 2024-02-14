@@ -122,6 +122,7 @@ type Profile struct {
 	ContentType          string     `protobuf:"bytes,1,opt,name=contentType,proto3" json:"contentType,omitempty"`
 	TimeField            *TimeField `protobuf:"bytes,2,opt,name=timeField,proto3" json:"timeField,omitempty"`
 	Retention            bool       `protobuf:"varint,3,opt,name=retention,proto3" json:"retention,omitempty"`
+	Notifier             *Notifier  `protobuf:"bytes,4,opt,name=notifier,proto3" json:"notifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`
 	XXX_sizecache        int32      `json:"-"`
@@ -179,6 +180,13 @@ func (m *Profile) GetRetention() bool {
 		return m.Retention
 	}
 	return false
+}
+
+func (m *Profile) GetNotifier() *Notifier {
+	if m != nil {
+		return m.Notifier
+	}
+	return nil
 }
 
 type TimeField struct {
@@ -244,36 +252,103 @@ func (m *TimeField) GetLocation() string {
 	return ""
 }
 
+type Notifier struct {
+	Type                 string   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Subject              string   `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
+	Contacts             []string `protobuf:"bytes,3,rep,name=contacts,proto3" json:"contacts,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Notifier) Reset()         { *m = Notifier{} }
+func (m *Notifier) String() string { return proto.CompactTextString(m) }
+func (*Notifier) ProtoMessage()    {}
+func (*Notifier) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e5e29d24c44e4762, []int{3}
+}
+func (m *Notifier) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Notifier) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Notifier.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Notifier) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Notifier.Merge(m, src)
+}
+func (m *Notifier) XXX_Size() int {
+	return m.Size()
+}
+func (m *Notifier) XXX_DiscardUnknown() {
+	xxx_messageInfo_Notifier.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Notifier proto.InternalMessageInfo
+
+func (m *Notifier) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Notifier) GetSubject() string {
+	if m != nil {
+		return m.Subject
+	}
+	return ""
+}
+
+func (m *Notifier) GetContacts() []string {
+	if m != nil {
+		return m.Contacts
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Message)(nil), "messaging.Message")
 	proto.RegisterType((*Profile)(nil), "messaging.Profile")
 	proto.RegisterType((*TimeField)(nil), "messaging.TimeField")
+	proto.RegisterType((*Notifier)(nil), "messaging.Notifier")
 }
 
 func init() { proto.RegisterFile("pkg/messaging/message.proto", fileDescriptor_e5e29d24c44e4762) }
 
 var fileDescriptor_e5e29d24c44e4762 = []byte{
-	// 311 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0xbf, 0x4e, 0xf3, 0x30,
-	0x14, 0xc5, 0x3f, 0x7f, 0x2d, 0x4d, 0x73, 0xcb, 0x80, 0x2c, 0x84, 0x2c, 0x40, 0x51, 0xd4, 0x29,
-	0x03, 0x2a, 0x52, 0x79, 0x03, 0x06, 0x36, 0x24, 0x64, 0xfa, 0x02, 0x6e, 0x7a, 0xdb, 0x5a, 0x38,
-	0xb6, 0x95, 0xb8, 0x43, 0x07, 0xde, 0x83, 0x47, 0x62, 0x64, 0x67, 0x41, 0xe5, 0x45, 0x50, 0xdc,
-	0xd8, 0xe9, 0xe6, 0xdf, 0x39, 0xf7, 0x8f, 0xcf, 0x85, 0x1b, 0xfb, 0xb6, 0xb9, 0xaf, 0xb0, 0x69,
-	0xc4, 0x46, 0xea, 0xf0, 0xc2, 0x99, 0xad, 0x8d, 0x33, 0x34, 0x8d, 0xc6, 0xf4, 0x9b, 0x40, 0xf2,
-	0x7c, 0x34, 0x29, 0x83, 0xa4, 0xdc, 0x0a, 0xad, 0x51, 0x31, 0x92, 0x93, 0x22, 0xe5, 0x01, 0xe9,
-	0x35, 0x8c, 0x9b, 0xdd, 0xd2, 0x19, 0x2b, 0x4b, 0xf6, 0xdf, 0x5b, 0x91, 0xe9, 0x2d, 0xa4, 0x76,
-	0xb7, 0x54, 0xb2, 0xd9, 0x62, 0xcd, 0x06, 0xde, 0xec, 0x85, 0xb6, 0xd3, 0xef, 0x2c, 0x8d, 0x62,
-	0xc3, 0x63, 0x67, 0xe0, 0x76, 0x9f, 0x15, 0x7b, 0x65, 0xc4, 0x8a, 0x9d, 0xe5, 0xa4, 0x38, 0xe7,
-	0x01, 0xfd, 0x4f, 0x6a, 0x14, 0x0e, 0x57, 0x6c, 0x94, 0x93, 0x62, 0xc0, 0x03, 0xd2, 0x3b, 0x48,
-	0x6c, 0x6d, 0xd6, 0x52, 0x21, 0x4b, 0x72, 0x52, 0x4c, 0xe6, 0x74, 0x16, 0xc3, 0xcc, 0x5e, 0x8e,
-	0x0e, 0x0f, 0x25, 0xd3, 0x77, 0x48, 0x3a, 0x8d, 0xe6, 0x30, 0x29, 0x8d, 0x76, 0xa8, 0xdd, 0x62,
-	0x6f, 0xb1, 0x0b, 0x78, 0x2a, 0xd1, 0x39, 0xa4, 0x4e, 0x56, 0xf8, 0x24, 0x51, 0xad, 0x7c, 0xca,
-	0xc9, 0xfc, 0xf2, 0x64, 0xf8, 0x22, 0x78, 0xbc, 0x2f, 0x6b, 0xc3, 0xd7, 0xd8, 0x4e, 0x90, 0x46,
-	0xfb, 0xf0, 0x63, 0xde, 0x0b, 0xd3, 0x57, 0x48, 0x63, 0x17, 0xa5, 0x30, 0xd4, 0xa2, 0x0a, 0x9b,
-	0xfd, 0x9b, 0x5e, 0xc1, 0x68, 0x6d, 0xea, 0x4a, 0xb8, 0xee, 0xaa, 0x1d, 0xb5, 0x57, 0x53, 0xa6,
-	0x14, 0x71, 0x6a, 0xca, 0x23, 0x3f, 0x5e, 0x7c, 0x1e, 0x32, 0xf2, 0x75, 0xc8, 0xc8, 0xcf, 0x21,
-	0x23, 0x1f, 0xbf, 0xd9, 0xbf, 0xe5, 0xc8, 0x5f, 0xf4, 0xe1, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xfe,
-	0xec, 0x5a, 0x8c, 0xf4, 0x01, 0x00, 0x00,
+	// 366 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x51, 0x41, 0x4e, 0xeb, 0x30,
+	0x10, 0xfd, 0xfe, 0x29, 0x4d, 0xe2, 0xb0, 0x40, 0x06, 0x21, 0x0b, 0x50, 0x14, 0x65, 0x95, 0x05,
+	0x6a, 0xa5, 0x70, 0x03, 0x16, 0xec, 0x40, 0xc8, 0xf4, 0x02, 0x4e, 0x3a, 0x6d, 0x0d, 0x89, 0x1d,
+	0x25, 0xee, 0xa2, 0x37, 0xe1, 0x14, 0x9c, 0x83, 0x25, 0x7b, 0x36, 0xa8, 0x5c, 0x04, 0xd9, 0x8d,
+	0x93, 0xee, 0xe6, 0xcd, 0x1b, 0xbf, 0x37, 0x6f, 0x8c, 0xaf, 0x9b, 0xb7, 0xf5, 0xbc, 0x86, 0xae,
+	0xe3, 0x6b, 0x21, 0x5d, 0x05, 0xb3, 0xa6, 0x55, 0x5a, 0x91, 0x70, 0x20, 0xd2, 0x6f, 0x84, 0xfd,
+	0xc7, 0x03, 0x49, 0x28, 0xf6, 0xcb, 0x0d, 0x97, 0x12, 0x2a, 0x8a, 0x12, 0x94, 0x85, 0xcc, 0x41,
+	0x72, 0x85, 0x83, 0x6e, 0x5b, 0x68, 0xd5, 0x88, 0x92, 0xfe, 0xb7, 0xd4, 0x80, 0xc9, 0x0d, 0x0e,
+	0x9b, 0x6d, 0x51, 0x89, 0x6e, 0x03, 0x2d, 0xf5, 0x2c, 0x39, 0x36, 0xcc, 0x4b, 0xeb, 0x59, 0xaa,
+	0x8a, 0x4e, 0x0e, 0x2f, 0x1d, 0x36, 0x7e, 0x0d, 0xdf, 0x55, 0x8a, 0x2f, 0xe9, 0x49, 0x82, 0xb2,
+	0x53, 0xe6, 0xa0, 0xdd, 0xa4, 0x05, 0xae, 0x61, 0x49, 0xa7, 0x09, 0xca, 0x3c, 0xe6, 0x20, 0xb9,
+	0xc5, 0x7e, 0xd3, 0xaa, 0x95, 0xa8, 0x80, 0xfa, 0x09, 0xca, 0xa2, 0x9c, 0xcc, 0x86, 0x30, 0xb3,
+	0xe7, 0x03, 0xc3, 0xdc, 0x48, 0xfa, 0x81, 0xb0, 0xdf, 0x37, 0x49, 0x82, 0xa3, 0x52, 0x49, 0x0d,
+	0x52, 0x2f, 0x76, 0x0d, 0xf4, 0x09, 0x8f, 0x5b, 0x24, 0xc7, 0xa1, 0x16, 0x35, 0x3c, 0x08, 0xa8,
+	0x96, 0x36, 0x66, 0x94, 0x5f, 0x1c, 0xa9, 0x2f, 0x1c, 0xc7, 0xc6, 0x31, 0x93, 0xbe, 0x05, 0xa3,
+	0x20, 0x94, 0xb4, 0xe9, 0x03, 0x36, 0x36, 0xc8, 0x1c, 0x07, 0x52, 0x69, 0xb1, 0x12, 0xd0, 0xda,
+	0xf4, 0x51, 0x7e, 0x7e, 0x24, 0xf8, 0xd4, 0x53, 0x6c, 0x18, 0x4a, 0x5f, 0x70, 0x38, 0xd8, 0x10,
+	0x82, 0x27, 0x92, 0xd7, 0x6e, 0x55, 0x5b, 0x93, 0x4b, 0x3c, 0x5d, 0xa9, 0xb6, 0xe6, 0xba, 0xff,
+	0x87, 0x1e, 0x99, 0x3b, 0x57, 0xaa, 0xe4, 0xc3, 0x1a, 0x21, 0x1b, 0x70, 0xba, 0xc0, 0x81, 0xb3,
+	0x32, 0x9a, 0x7a, 0x8c, 0x6f, 0x6b, 0x73, 0xed, 0x6e, 0x5b, 0xbc, 0x42, 0xe9, 0x44, 0x1d, 0x34,
+	0xaa, 0xe6, 0x40, 0xbc, 0xd4, 0x1d, 0xf5, 0x12, 0xcf, 0xa8, 0x3a, 0x7c, 0x7f, 0xf6, 0xb9, 0x8f,
+	0xd1, 0xd7, 0x3e, 0x46, 0x3f, 0xfb, 0x18, 0xbd, 0xff, 0xc6, 0xff, 0x8a, 0xa9, 0xfd, 0xd9, 0xbb,
+	0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc6, 0x62, 0x78, 0xf6, 0x7c, 0x02, 0x00, 0x00,
 }
 
 func (m *Message) Marshal() (dAtA []byte, err error) {
@@ -379,6 +454,18 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
+	if m.Notifier != nil {
+		{
+			size, err := m.Notifier.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessage(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
 	if m.Retention {
 		i--
 		if m.Retention {
@@ -459,6 +546,56 @@ func (m *TimeField) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Notifier) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Notifier) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Notifier) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Contacts) > 0 {
+		for iNdEx := len(m.Contacts) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Contacts[iNdEx])
+			copy(dAtA[i:], m.Contacts[iNdEx])
+			i = encodeVarintMessage(dAtA, i, uint64(len(m.Contacts[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Subject) > 0 {
+		i -= len(m.Subject)
+		copy(dAtA[i:], m.Subject)
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.Subject)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.Type)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	offset -= sovMessage(v)
 	base := offset
@@ -526,6 +663,10 @@ func (m *Profile) Size() (n int) {
 	if m.Retention {
 		n += 2
 	}
+	if m.Notifier != nil {
+		l = m.Notifier.Size()
+		n += 1 + l + sovMessage(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -549,6 +690,32 @@ func (m *TimeField) Size() (n int) {
 	l = len(m.Location)
 	if l > 0 {
 		n += 1 + l + sovMessage(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Notifier) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovMessage(uint64(l))
+	}
+	l = len(m.Subject)
+	if l > 0 {
+		n += 1 + l + sovMessage(uint64(l))
+	}
+	if len(m.Contacts) > 0 {
+		for _, s := range m.Contacts {
+			l = len(s)
+			n += 1 + l + sovMessage(uint64(l))
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -947,6 +1114,42 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Retention = bool(v != 0)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Notifier", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Notifier == nil {
+				m.Notifier = &Notifier{}
+			}
+			if err := m.Notifier.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMessage(dAtA[iNdEx:])
@@ -1093,6 +1296,153 @@ func (m *TimeField) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Location = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Notifier) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Notifier: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Notifier: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Subject", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Subject = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contacts", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contacts = append(m.Contacts, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

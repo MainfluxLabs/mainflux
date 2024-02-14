@@ -34,10 +34,17 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			Location: p.TimeField.Location,
 		}
 
+		notifier := &mainflux.Notifier{
+			Type:     p.Notifier.Type,
+			Contacts: p.Notifier.Contacts,
+			Subject:  p.Notifier.Subject,
+		}
+
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			TimeField:   timeField,
 			Retention:   p.Retention,
+			Notifier:    notifier,
 		}
 
 		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil

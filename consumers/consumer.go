@@ -4,12 +4,16 @@
 package consumers
 
 import (
+	"errors"
+
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
+
+var errUnkownSubject = errors.New("unknown subject")
 
 // Consumer specifies message consuming API.
 type Consumer interface {
@@ -19,16 +23,25 @@ type Consumer interface {
 }
 
 // Start method starts consuming messages received from Message broker.
-func Start(id string, sub messaging.Subscriber, consumer Consumer) error {
-	senmlTransformer := senml.New()
-	jsonTransformer := json.New()
+func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...string) error {
+	for _, subject := range subjects {
+		var transformer transformers.Transformer
+		switch subject {
+		case brokers.SubjectSenML:
+			transformer = senml.New()
+		case brokers.SubjectJSON:
+			transformer = json.New()
+		case brokers.SubjectSmtp, brokers.SubjectSmpp:
+			transformer = nil
+		default:
+			return errUnkownSubject
+		}
 
-	if err := sub.Subscribe(id, brokers.SubjectSenMLMessages, handle(senmlTransformer, consumer)); err != nil {
-		return err
+		if err := sub.Subscribe(id, subject, handle(transformer, consumer)); err != nil {
+			return err
+		}
 	}
-	if err := sub.Subscribe(id, brokers.SubjectJSONMessages, handle(jsonTransformer, consumer)); err != nil {
-		return err
-	}
+
 	return nil
 }
 
