@@ -10,10 +10,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-var (
 	// ErrMessage indicates an error converting a message to Mainflux message.
-	ErrMessage = errors.New("failed to convert to Mainflux message")
-)
+	var ErrMessage = errors.New("failed to convert to Mainflux message")
 
 // Service reprents a notification service.
 type Service interface {

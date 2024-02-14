@@ -35,7 +35,6 @@ import (
 
 const (
 	svcName      = "smtp-notifier"
-	stopWaitTime = 5 * time.Second
 	defLogLevel  = "error"
 	defFrom      = ""
 	defJaegerURL = ""
@@ -241,5 +240,6 @@ func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger) n
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
+
 	return svc
 }

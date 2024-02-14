@@ -24,16 +24,13 @@ type Consumer interface {
 
 // Start method starts consuming messages received from Message broker.
 func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...string) error {
-	senmlTransformer := senml.New()
-	jsonTransformer := json.New()
-
 	for _, subject := range subjects {
 		var transformer transformers.Transformer
 		switch subject {
 		case brokers.SubjectSenML:
-			transformer = senmlTransformer
+			transformer = senml.New()
 		case brokers.SubjectJSON:
-			transformer = jsonTransformer
+			transformer = json.New()
 		case brokers.SubjectSmtp, brokers.SubjectSmpp:
 			transformer = nil
 		default:

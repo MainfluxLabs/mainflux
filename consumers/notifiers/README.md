@@ -9,7 +9,8 @@ for sending notifications over specific protocols.
 
 ## Configuration
 
-The service is configured using the environment variables.
+The channel profile should include a list of contact emails. These emails are the recipients of the messages sent by the service.
+Configuration of the service is achieved through environment variables.
 The environment variables needed for service configuration depend on the underlying Notifier.
 An example of the service configuration for SMTP Notifier can be found [in SMTP Notifier documentation](smtp/README.md).
 Note that any unset variables will be replaced with their
