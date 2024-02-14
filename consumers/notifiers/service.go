@@ -45,8 +45,7 @@ func (ns *notifierService) Consume(message interface{}) error {
 		return ErrMessage
 	}
 
-	to := msg.Profile.Notifier.Contacts
-	err := ns.notifier.Notify(ns.from, to, msg)
+	err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
 	if err != nil {
 		return errors.Wrap(ErrNotify, err)
 	}

@@ -19,9 +19,9 @@ const (
 	SubjectSenML = "channels.*.senml.>"
 	// SubjectJSON represents subject to subscribe for the JSON messages.
 	SubjectJSON = "channels.*.json.>"
-	// SubjectSmtp represents subject to subscribe for the SMTP messages.
+	// SubjectSmtp represents subject to subscribe for the SMTP notifications.
 	SubjectSmtp = "smtp"
-	// SubjectSmpp represents subject to subscribe for the SMPP messages.
+	// SubjectSmpp represents subject to subscribe for the SMPP notifications.
 	SubjectSmpp = "smpp"
 )
 

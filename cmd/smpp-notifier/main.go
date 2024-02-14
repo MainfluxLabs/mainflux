@@ -111,10 +111,7 @@ func main() {
 		defer close()
 	}
 
-	tracer, closer := initJaeger("smpp-notifier", cfg.jaegerURL, logger)
-	defer closer.Close()
-
-	svc := newService(tracer, auth, cfg, logger)
+	svc := newService(auth, cfg, logger)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
@@ -236,7 +233,7 @@ func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) 
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 
-func newService(tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
+func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
 	idp := ulid.New()
 	notifier := mfsmpp.New(c.smppConf)
 	svc := notifiers.New(ac, idp, notifier, c.from)
