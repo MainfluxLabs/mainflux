@@ -44,7 +44,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
-	msg, format, err := messaging.SetMessageProfile(conn, msg)
+	msg, format, err := messaging.AddProfileToMessage(conn, msg)
 	if err != nil {
 		return err
 	}
@@ -54,18 +54,6 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		return err
 	}
 
-	subjects := pub.generateSubjects(conn, msg, format)
-
-	for _, subject := range subjects {
-		if err := pub.conn.Publish(subject, data); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (pub *publisher) generateSubjects(conn *mainflux.ConnByKeyRes, msg messaging.Message, format string) []string {
 	var subjects []string
 	if msg.Profile.Retention {
 		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
@@ -80,7 +68,13 @@ func (pub *publisher) generateSubjects(conn *mainflux.ConnByKeyRes, msg messagin
 		subjects = append(subjects, sub)
 	}
 
-	return subjects
+	for _, subject := range subjects {
+		if err := pub.conn.Publish(subject, data); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (pub *publisher) Close() error {

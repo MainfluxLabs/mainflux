@@ -83,7 +83,7 @@ type PubSub interface {
 	Subscriber
 }
 
-func SetMessageProfile(conn *mainflux.ConnByKeyRes, msg Message) (Message, string, error) {
+func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, string, error) {
 	if conn.Profile == nil || conn.Profile.ContentType == "" {
 		msg.Profile = &Profile{
 			ContentType: senmlContentType,
