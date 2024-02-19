@@ -34,7 +34,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	msg, _, err := messaging.SetMessageProfile(conn, msg)
+	msg, _, err := messaging.AddProfileToMessage(conn, msg)
 	if err != nil {
 		return err
 	}

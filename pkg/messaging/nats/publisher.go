@@ -44,13 +44,9 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
-	msg, format, err := messaging.SetMessageProfile(conn, msg)
+	msg, format, err := messaging.AddProfileToMessage(conn, msg)
 	if err != nil {
 		return err
-	}
-
-	if !msg.Profile.Retention {
-		return nil
 	}
 
 	data, err := proto.Marshal(&msg)
@@ -58,19 +54,24 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		return err
 	}
 
-	var subject string
-	switch conn.Profile.Notifier.Type {
-	case subjectSMTP, subjectSMPP:
-		subject = conn.Profile.Notifier.Type
-	default:
-		subject = fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
+	var subjects []string
+	if msg.Profile.Retention {
+		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
+		subjects = append(subjects, subject)
 	}
 
-	if err := pub.conn.Publish(subject, data); err != nil {
-		return err
+	if conn.Profile.Notifier.Type == subjectSMTP || conn.Profile.Notifier.Type == subjectSMPP {
+		sub := conn.Profile.Notifier.Type
+		subjects = append(subjects, sub)
+	}
+
+	for _, subject := range subjects {
+		if err := pub.conn.Publish(subject, data); err != nil {
+			return err
+		}
 	}
 
 	return nil
