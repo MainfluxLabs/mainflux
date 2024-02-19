@@ -49,31 +49,38 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		return err
 	}
 
-	if !msg.Profile.Retention {
-		return nil
-	}
-
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
 
-	var subject string
-	switch conn.Profile.Notifier.Type {
-	case subjectSMTP, subjectSMPP:
-		subject = conn.Profile.Notifier.Type
-	default:
-		subject = fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
-		if msg.Subtopic != "" {
-			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	subjects := pub.generateSubjects(conn, msg, format)
+
+	for _, subject := range subjects {
+		if err := pub.conn.Publish(subject, data); err != nil {
+			return err
 		}
 	}
 
-	if err := pub.conn.Publish(subject, data); err != nil {
-		return err
+	return nil
+}
+
+func (pub *publisher) generateSubjects(conn *mainflux.ConnByKeyRes, msg messaging.Message, format string) []string {
+	var subjects []string
+	if msg.Profile.Retention {
+		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
+		if msg.Subtopic != "" {
+			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+		}
+		subjects = append(subjects, subject)
 	}
 
-	return nil
+	if conn.Profile.Notifier.Type == subjectSMTP || conn.Profile.Notifier.Type == subjectSMPP {
+		sub := conn.Profile.Notifier.Type
+		subjects = append(subjects, sub)
+	}
+
+	return subjects
 }
 
 func (pub *publisher) Close() error {
