@@ -35,15 +35,15 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		notifier := &mainflux.Notifier{
-			Type:     p.Notifier.Type,
-			Contacts: p.Notifier.Contacts,
-			Subject:  p.Notifier.Subject,
+			Type:      p.Notifier.Type,
+			Contacts:  p.Notifier.Contacts,
+			Subtopics: p.Notifier.Subtopics,
 		}
 
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			TimeField:   timeField,
-			Retention:   p.Retention,
+			Retain:      p.Retain,
 			Notifier:    notifier,
 		}
 
