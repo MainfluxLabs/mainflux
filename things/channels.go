@@ -21,14 +21,14 @@ type Channel struct {
 type Profile struct {
 	ContentType string         `json:"content_type"`
 	TimeField   json.TimeField `json:"time_field"`
-	Retention   bool           `json:"retention"`
+	Retain      bool           `json:"retain"`
 	Notifier    Notifier       `json:"notifier"`
 }
 
 type Notifier struct {
-	Type     string   `json:"type"`
-	Contacts []string `json:"contacts"`
-	Subject  string   `json:"subject"`
+	Protocol  string   `json:"protocol"`
+	Contacts  []string `json:"contacts"`
+	Subtopics []string `json:"subtopics"`
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

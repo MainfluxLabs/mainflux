@@ -28,8 +28,8 @@ const (
 var (
 	data       = []byte("payload")
 	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
-	profile    = &mainflux.Profile{ContentType: senmlContentType, Retention: true, Notifier: &mainflux.Notifier{}}
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Retention: true, Notifier: &messaging.Notifier{}}
+	profile    = &mainflux.Profile{ContentType: senmlContentType, Retain: true, Notifier: &mainflux.Notifier{}}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Retain: true, Notifier: &messaging.Notifier{}}
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.

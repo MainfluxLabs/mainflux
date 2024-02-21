@@ -42,7 +42,6 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
-
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
 	msg, format, err := messaging.AddProfileToMessage(conn, msg)
 	if err != nil {
@@ -55,7 +54,7 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 	}
 
 	var subjects []string
-	if msg.Profile.Retention {
+	if msg.Profile.Retain {
 		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
@@ -63,9 +62,13 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		subjects = append(subjects, subject)
 	}
 
-	if conn.Profile.Notifier.Type == subjectSMTP || conn.Profile.Notifier.Type == subjectSMPP {
-		sub := conn.Profile.Notifier.Type
-		subjects = append(subjects, sub)
+	if conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP {
+		sub := conn.Profile.Notifier.Protocol
+		for _, subtopic := range msg.Profile.Notifier.Subtopics {
+			if subtopic == msg.Subtopic {
+				subjects = append(subjects, sub)
+			}
+		}
 	}
 
 	for _, subject := range subjects {

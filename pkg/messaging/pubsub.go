@@ -88,7 +88,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 		msg.Profile = &Profile{
 			ContentType: senmlContentType,
 			TimeField:   &TimeField{},
-			Retention:   true,
+			Retain:      true,
 		}
 		return msg, senmlFormat, nil
 	}
@@ -102,11 +102,11 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 				Format:   conn.Profile.TimeField.Format,
 				Location: conn.Profile.TimeField.Location,
 			},
-			Retention: conn.Profile.Retention,
+			Retain: conn.Profile.Retain,
 			Notifier: &Notifier{
-				Type:     conn.Profile.Notifier.Type,
-				Contacts: conn.Profile.Notifier.Contacts,
-				Subject:  conn.Profile.Notifier.Subject,
+				Protocol:  conn.Profile.Notifier.Protocol,
+				Contacts:  conn.Profile.Notifier.Contacts,
+				Subtopics: conn.Profile.Notifier.Subtopics,
 			},
 		}
 		return msg, jsonFormat, nil
@@ -114,11 +114,11 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 		msg.Profile = &Profile{
 			ContentType: conn.Profile.ContentType,
 			TimeField:   &TimeField{},
-			Retention:   conn.Profile.Retention,
+			Retain:      conn.Profile.Retain,
 			Notifier: &Notifier{
-				Type:     conn.Profile.Notifier.Type,
-				Contacts: conn.Profile.Notifier.Contacts,
-				Subject:  conn.Profile.Notifier.Subject,
+				Protocol:  conn.Profile.Notifier.Protocol,
+				Contacts:  conn.Profile.Notifier.Contacts,
+				Subtopics: conn.Profile.Notifier.Subtopics,
 			},
 		}
 		return msg, senmlFormat, nil
