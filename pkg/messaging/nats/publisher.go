@@ -62,8 +62,8 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		subjects = append(subjects, subject)
 	}
 
-	if conn.Profile.Notifier.Type == subjectSMTP || conn.Profile.Notifier.Type == subjectSMPP {
-		sub := conn.Profile.Notifier.Type
+	if conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP {
+		sub := conn.Profile.Notifier.Protocol
 		for _, subtopic := range msg.Profile.Notifier.Subtopics {
 			if subtopic == msg.Subtopic {
 				subjects = append(subjects, sub)

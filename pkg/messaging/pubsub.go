@@ -104,7 +104,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 			},
 			Retain: conn.Profile.Retain,
 			Notifier: &Notifier{
-				Type:      conn.Profile.Notifier.Type,
+				Protocol:  conn.Profile.Notifier.Protocol,
 				Contacts:  conn.Profile.Notifier.Contacts,
 				Subtopics: conn.Profile.Notifier.Subtopics,
 			},
@@ -116,7 +116,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 			TimeField:   &TimeField{},
 			Retain:      conn.Profile.Retain,
 			Notifier: &Notifier{
-				Type:      conn.Profile.Notifier.Type,
+				Protocol:  conn.Profile.Notifier.Protocol,
 				Contacts:  conn.Profile.Notifier.Contacts,
 				Subtopics: conn.Profile.Notifier.Subtopics,
 			},

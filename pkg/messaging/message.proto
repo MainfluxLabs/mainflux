@@ -29,7 +29,7 @@ message TimeField {
 }
 
 message Notifier {
-    string type		      = 1;
+    string protocol	      = 1;
     repeated string subtopics = 2;
     repeated string contacts  = 3;
 }

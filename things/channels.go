@@ -26,7 +26,7 @@ type Profile struct {
 }
 
 type Notifier struct {
-	Type      string   `json:"type"`
+	Protocol  string   `json:"protocol"`
 	Contacts  []string `json:"contacts"`
 	Subtopics []string `json:"subtopics"`
 }
