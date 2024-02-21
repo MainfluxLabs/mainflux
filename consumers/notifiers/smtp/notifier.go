@@ -28,11 +28,7 @@ func New(agent *email.Agent) notifiers.Notifier {
 }
 
 func (n *notifier) Notify(from string, to []string, msg messaging.Message) error {
-	subject := fmt.Sprintf(`Mainflux notification: Channel %s - Publisher %s `, msg.Channel, msg.Publisher)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s and subtopic %s", subject, msg.Subtopic)
-	}
-
+	subject := fmt.Sprintf(`Mainflux notification: Channel %s, Thing %s and subtopic %s`, msg.Channel, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
 	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
 
