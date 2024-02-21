@@ -43,21 +43,9 @@ func (ns *notifierService) Consume(message interface{}) error {
 		return ErrMessage
 	}
 
-	switch len(msg.Profile.Notifier.Subtopics) {
-	case 0:
-		err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
-		default:
-		for _, subtopic := range msg.Profile.Notifier.Subtopics {
-			if subtopic == msg.Subtopic {
-				err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
-				if err != nil {
-					return errors.Wrap(ErrNotify, err)
-				}
-			}
-		}
+	err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
+	if err != nil {
+		return errors.Wrap(ErrNotify, err)
 	}
 
 	return nil

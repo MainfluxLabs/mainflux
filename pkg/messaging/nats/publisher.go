@@ -42,7 +42,6 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
-
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
 	msg, format, err := messaging.AddProfileToMessage(conn, msg)
 	if err != nil {
@@ -65,7 +64,11 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 
 	if conn.Profile.Notifier.Type == subjectSMTP || conn.Profile.Notifier.Type == subjectSMPP {
 		sub := conn.Profile.Notifier.Type
-		subjects = append(subjects, sub)
+		for _, subtopic := range msg.Profile.Notifier.Subtopics {
+			if subtopic == msg.Subtopic {
+				subjects = append(subjects, sub)
+			}
+		}
 	}
 
 	for _, subject := range subjects {
