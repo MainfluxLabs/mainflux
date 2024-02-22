@@ -39,7 +39,7 @@ func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message)
 		return err
 	}
 
-	if !msg.Profile.Retain {
+	if !msg.Profile.Writer.Retain {
 		return nil
 	}
 

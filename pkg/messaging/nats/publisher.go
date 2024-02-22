@@ -54,12 +54,22 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 	}
 
 	var subjects []string
-	if msg.Profile.Retain {
+	if msg.Profile.Writer == nil || msg.Profile.Writer.Retain {
 		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
-		subjects = append(subjects, subject)
+
+		switch len(msg.Profile.Writer.Subtopics) {
+		case 0:
+			subjects = append(subjects, subject)
+		default:
+			for _, s := range msg.Profile.Writer.Subtopics {
+				if s == msg.Subtopic {
+					subjects = append(subjects, subject)
+				}
+			}
+		}
 	}
 
 	if conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP {
