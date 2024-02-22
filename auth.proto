@@ -43,8 +43,13 @@ message ConnByKeyRes {
 message Profile {
     string    contentType = 1;
     TimeField timeField   = 2;
-    bool      retain      = 3;
+    Writer    writer      = 3;
     Notifier  notifier    = 4;
+}
+
+message Writer {
+    bool retain               = 1;
+    repeated string subtopics = 2;
 }
 
 message Notifier {

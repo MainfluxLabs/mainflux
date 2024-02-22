@@ -88,7 +88,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 		msg.Profile = &Profile{
 			ContentType: senmlContentType,
 			TimeField:   &TimeField{},
-			Retain:      true,
+			Writer:      &Writer{Retain: true},
 		}
 		return msg, senmlFormat, nil
 	}
@@ -102,7 +102,10 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 				Format:   conn.Profile.TimeField.Format,
 				Location: conn.Profile.TimeField.Location,
 			},
-			Retain: conn.Profile.Retain,
+			Writer: &Writer{
+				Retain:    conn.Profile.Writer.Retain,
+				Subtopics: conn.Profile.Writer.Subtopics,
+			},
 			Notifier: &Notifier{
 				Protocol:  conn.Profile.Notifier.Protocol,
 				Contacts:  conn.Profile.Notifier.Contacts,
@@ -114,7 +117,10 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, str
 		msg.Profile = &Profile{
 			ContentType: conn.Profile.ContentType,
 			TimeField:   &TimeField{},
-			Retain:      conn.Profile.Retain,
+			Writer: &Writer{
+				Retain:    conn.Profile.Writer.Retain,
+				Subtopics: conn.Profile.Writer.Subtopics,
+			},
 			Notifier: &Notifier{
 				Protocol:  conn.Profile.Notifier.Protocol,
 				Contacts:  conn.Profile.Notifier.Contacts,

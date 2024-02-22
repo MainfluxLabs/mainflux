@@ -40,10 +40,15 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			Subtopics: p.Notifier.Subtopics,
 		}
 
+		writer := &mainflux.Writer{
+			Retain:    p.Writer.Retain,
+			Subtopics: p.Writer.Subtopics,
+		}
+
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			TimeField:   timeField,
-			Retain:      p.Retain,
+			Writer:      writer,
 			Notifier:    notifier,
 		}
 
