@@ -231,6 +231,7 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) string {
 			op = "AND"
 		case "to":
 			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
+			op = "AND"
 		}
 	}
 	return condition
