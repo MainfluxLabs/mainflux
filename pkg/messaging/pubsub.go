@@ -95,38 +95,33 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 		return msg, nil
 	}
 
-	if conn.Profile.Writer != nil || conn.Profile.Notifier != nil {
-		msg.Profile = &Profile{
-			ContentType: conn.Profile.ContentType,
-			Writer: &Writer{
-				Retain:    conn.Profile.Writer.Retain,
-				Subtopics: conn.Profile.Writer.Subtopics,
-			},
-			Notifier: &Notifier{
-				Protocol:  conn.Profile.Notifier.Protocol,
-				Contacts:  conn.Profile.Notifier.Contacts,
-				Subtopics: conn.Profile.Notifier.Subtopics,
-			},
+	msg.Profile = &Profile{
+		ContentType: conn.Profile.ContentType,
+		TimeField:   &TimeField{},
+	}
+
+	if conn.Profile.Writer != nil {
+		msg.Profile.Writer = &Writer{
+			Retain:    conn.Profile.Writer.Retain,
+			Subtopics: conn.Profile.Writer.Subtopics,
 		}
 	}
 
-	switch conn.Profile.ContentType {
-	case JsonContentType:
-		if conn.Profile.TimeField != nil {
-			msg.Profile.TimeField = &TimeField{
-				Name:     conn.Profile.TimeField.Name,
-				Format:   conn.Profile.TimeField.Format,
-				Location: conn.Profile.TimeField.Location,
-			}
+	if conn.Profile.Notifier != nil {
+		msg.Profile.Notifier = &Notifier{
+			Protocol:  conn.Profile.Notifier.Protocol,
+			Contacts:  conn.Profile.Notifier.Contacts,
+			Subtopics: conn.Profile.Notifier.Subtopics,
 		}
-		return msg, nil
-	case SenmlContentType, CborContentType:
-		if conn.Profile.TimeField != nil {
-			msg.Profile.TimeField = &TimeField{}
-		}
-		return msg, nil
-
-	default:
-		return Message{}, ErrUnknownContent
 	}
+
+	if conn.Profile.TimeField != nil && conn.Profile.ContentType == JsonContentType {
+		msg.Profile.TimeField = &TimeField{
+			Name:     conn.Profile.TimeField.Name,
+			Format:   conn.Profile.TimeField.Format,
+			Location: conn.Profile.TimeField.Location,
+		}
+	}
+
+	return msg, nil
 }
