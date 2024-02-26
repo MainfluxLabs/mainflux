@@ -77,7 +77,7 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		}
 	}
 
-	if conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP {
+	if conn.Profile.Notifier != nil && (conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP) {
 		sub := conn.Profile.Notifier.Protocol
 		for _, subtopic := range msg.Profile.Notifier.Subtopics {
 			if subtopic == msg.Subtopic {
