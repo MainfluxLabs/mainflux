@@ -9,9 +9,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/ws"
+	"github.com/go-kit/kit/metrics"
 )
 
 var _ ws.Service = (*metricsMiddleware)(nil)

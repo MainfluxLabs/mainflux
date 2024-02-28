@@ -13,7 +13,7 @@ import (
 // Client represents Auth cache.
 type Client interface {
 	Identify(ctx context.Context, thingKey string) (string, error)
-	ConnectionIDS(ctx context.Context, thingKey string) (string, string, error)
+	ConnectionIDS(ctx context.Context, thingKey string) (*mainflux.ConnByKeyRes, error)
 }
 
 const (
@@ -51,15 +51,15 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	return thingID, nil
 }
 
-func (c client) ConnectionIDS(ctx context.Context, thingKey string) (string, string, error) {
+func (c client) ConnectionIDS(ctx context.Context, thingKey string) (*mainflux.ConnByKeyRes, error) {
 	req := &mainflux.ConnByKeyReq{
 		Key: thingKey,
 	}
 
 	conn, err := c.things.GetConnByKey(context.TODO(), req)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return conn.ThingID, conn.ChannelID, nil
+	return conn, nil
 }

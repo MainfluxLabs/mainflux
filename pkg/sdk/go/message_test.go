@@ -77,11 +77,11 @@ func TestSendMessage(t *testing.T) {
 			auth:   atoken,
 			err:    nil,
 		},
-		"publish message to wrong channel": {
+		"publish message without channel": {
 			chanID: "",
 			msg:    msg,
 			auth:   atoken,
-			err:    createError(sdk.ErrFailedPublish, http.StatusBadRequest),
+			err:    nil,
 		},
 		"publish message unable to authorize": {
 			chanID: chanID,

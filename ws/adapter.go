@@ -74,7 +74,7 @@ func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 
 // Publish publishes the message using the broker
 func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg messaging.Message) error {
-	conn, err := svc.authorize(ctx, thingKey, msg.GetChannel())
+	conn, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -84,7 +84,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg mes
 	}
 
 	msg.Publisher = conn.ThingID
-	conn.ChannelID = msg.GetChannel()
+	msg.Channel = conn.ChannelID
 
 	if err := svc.pubsub.Publish(conn, msg); err != nil {
 		return ErrFailedMessagePublish
@@ -99,7 +99,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, chanID, subt
 		return ErrUnauthorizedAccess
 	}
 
-	conn, err := svc.authorize(ctx, thingKey, chanID)
+	conn, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -124,7 +124,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 		return ErrUnauthorizedAccess
 	}
 
-	conn, err := svc.authorize(ctx, thingKey, chanID)
+	conn, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -137,7 +137,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 	return svc.pubsub.Unsubscribe(conn.ChannelID, subject)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey, chanID string) (*mainflux.ConnByKeyRes, error) {
+func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*mainflux.ConnByKeyRes, error) {
 	ar := &mainflux.ConnByKeyReq{
 		Key: thingKey,
 	}

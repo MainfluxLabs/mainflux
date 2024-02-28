@@ -23,9 +23,8 @@ import (
 var _ session.Handler = (*handler)(nil)
 
 const (
-	protocol     = "mqtt"
-	connected    = "connected"
-	disconnected = "disconnected"
+	protocol  = "mqtt"
+	connected = "connected"
 )
 
 const (
@@ -46,7 +45,7 @@ const (
 )
 
 var (
-	channelRegExp                = regexp.MustCompile(`^\/?channels\/([\w\-]+)\/messages(\/[^?]*)?(\?.*)?$`)
+	subtopicRegExp               = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 	ErrMalformedSubtopic         = errors.New("malformed subtopic")
 	ErrClientNotInitialized      = errors.New("client is not initialized")
 	ErrMalformedTopic            = errors.New("malformed topic")
@@ -115,7 +114,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if err := h.authAccess(c, *topic); err != nil {
+	if _, err := h.authAccess(c, *topic); err != nil {
 		return err
 	}
 
@@ -133,7 +132,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	}
 
 	for _, t := range *topics {
-		err := h.authAccess(c, t)
+		_, err := h.authAccess(c, t)
 		if err != nil {
 			return err
 		}
@@ -162,31 +161,31 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	channelParts := channelRegExp.FindStringSubmatch(*topic)
-	if len(channelParts) < 2 {
+	subtopicParts := subtopicRegExp.FindStringSubmatch(*topic)
+	if len(subtopicParts) < 2 {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
 	}
 
-	chanID := channelParts[1]
-	subtopic := channelParts[2]
-
-	subtopic, err := parseSubtopic(subtopic)
+	subtopic, err := parseSubtopic(subtopicParts[1])
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
 	}
 
+	conn, err := h.authAccess(c, *topic)
+	if err != nil {
+		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
+	}
+
 	msg := messaging.Message{
 		Protocol:  protocol,
-		Channel:   chanID,
+		Channel:   conn.ChannelID,
 		Subtopic:  subtopic,
 		Publisher: c.Username,
 		Payload:   *payload,
 		Created:   time.Now().UnixNano(),
 	}
-
-	conn := &mainflux.ConnByKeyRes{ChannelID: msg.Channel}
 
 	for _, pub := range h.publishers {
 		if err := pub.Publish(conn, msg); err != nil {
@@ -253,28 +252,28 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client, topic string) error {
+func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByKeyRes, error) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
-	if !channelRegExp.Match([]byte(topic)) {
-		return ErrMalformedTopic
+	if !subtopicRegExp.Match([]byte(topic)) {
+		return nil, ErrMalformedTopic
 	}
 
-	channelParts := channelRegExp.FindStringSubmatch(topic)
-	if len(channelParts) < 1 {
-		return ErrMalformedTopic
+	parts := subtopicRegExp.FindStringSubmatch(topic)
+	if len(parts) < 1 {
+		return nil, ErrMalformedTopic
 	}
 
-	thID, _, err := h.auth.ConnectionIDS(context.Background(), string(c.Password))
+	conn, err := h.auth.ConnectionIDS(context.Background(), string(c.Password))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if thID != c.Username {
-		return ErrAuthentication
+	if conn.ThingID != c.Username {
+		return nil, ErrAuthentication
 	}
 
-	return nil
+	return conn, nil
 }
 
 func parseSubtopic(subtopic string) (string, error) {
@@ -309,22 +308,24 @@ func parseSubtopic(subtopic string) (string, error) {
 func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
 	var subs []Subscription
 	for _, t := range *topics {
-		channelAndSubtopic := channelRegExp.FindStringSubmatch(t)
-		if len(channelAndSubtopic) < 2 {
+		subtopicParts := subtopicRegExp.FindStringSubmatch(t)
+		if len(subtopicParts) < 2 {
 			return nil, ErrMalformedTopic
 		}
 
-		chanID := channelAndSubtopic[1]
-		subtopic := channelAndSubtopic[2]
+		conn, err := h.authAccess(c, t)
+		if err != nil {
+			return nil, err
+		}
 
-		subtopic, err := parseSubtopic(subtopic)
+		subtopic, err := parseSubtopic(subtopicParts[1])
 		if err != nil {
 			return nil, err
 		}
 
 		sub := Subscription{
 			Subtopic:  subtopic,
-			ChanID:    chanID,
+			ChanID:    conn.ChannelID,
 			ThingID:   c.Username,
 			ClientID:  c.ID,
 			Status:    connected,

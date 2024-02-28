@@ -7,11 +7,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-zoo/bone"
-	"github.com/gorilla/websocket"
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/ws"
+	"github.com/go-zoo/bone"
+	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -41,6 +41,8 @@ func MakeHandler(svc ws.Service, l log.Logger) http.Handler {
 	mux := bone.New()
 	mux.GetFunc("/channels/:id/messages", handshake(svc))
 	mux.GetFunc("/channels/:id/messages/*", handshake(svc))
+	mux.GetFunc("/messages", handshake(svc))
+	mux.GetFunc("/messages/*", handshake(svc))
 	mux.GetFunc("/version", mainflux.Health(protocol))
 	mux.Handle("/metrics", promhttp.Handler())
 

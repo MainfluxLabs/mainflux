@@ -39,7 +39,7 @@ var (
 	errMalformedSubtopic = errors.New("malformed subtopic")
 )
 
-var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
+var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
@@ -55,7 +55,21 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 		opts...,
 	))
 
+	r.Post("/messages", kithttp.NewServer(
+		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/channels/:id/messages/*", kithttp.NewServer(
+		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/messages/*", kithttp.NewServer(
 		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
@@ -103,12 +117,12 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
-	if len(channelParts) < 2 {
+	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
+	if len(subtopicParts) < 2 {
 		return nil, apiutil.ErrMalformedEntity
 	}
 
-	subtopic, err := parseSubtopic(channelParts[2])
+	subtopic, err := parseSubtopic(subtopicParts[1])
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +145,6 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := publishReq{
 		msg: messaging.Message{
 			Protocol: protocol,
-			Channel:  bone.GetValue(r, "id"),
 			Subtopic: subtopic,
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),

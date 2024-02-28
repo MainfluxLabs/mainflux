@@ -42,6 +42,7 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 		return err
 	}
 	msg.Publisher = conn.ThingID
+	msg.Channel = conn.ChannelID
 
 	return as.publisher.Publish(conn, msg)
 }

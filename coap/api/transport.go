@@ -13,13 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-
-	"github.com/go-zoo/bone"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/go-zoo/bone"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
 	"github.com/plgd-dev/go-coap/v2/mux"
@@ -32,12 +31,7 @@ const (
 	startObserve = 0 // observe option value that indicates start of observation
 )
 
-var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
-
-const (
-	numGroups    = 3 // entire expression + channel group + subtopic group
-	channelGroup = 2 // channel group is second in channel regexp
-)
+var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	errMalformedSubtopic = errors.New("malformed subtopic")
@@ -49,7 +43,7 @@ var (
 	service coap.Service
 )
 
-// MakeHandler returns a HTTP handler for API endpoints.
+// MakeHTTPHandler returns a HTTP handler for API endpoints.
 func MakeHTTPHandler() http.Handler {
 	b := bone.New()
 	b.GetFunc("/health", mainflux.Health(protocol))
@@ -136,23 +130,25 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 	if msg.Options == nil {
 		return messaging.Message{}, errBadOptions
 	}
+
 	path, err := msg.Options.Path()
 	if err != nil {
 		return messaging.Message{}, err
 	}
-	channelParts := channelPartRegExp.FindStringSubmatch(path)
-	if len(channelParts) < numGroups {
+
+	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
+	if len(subtopicParts) < 2 {
 		return messaging.Message{}, errMalformedSubtopic
 	}
 
-	st, err := parseSubtopic(channelParts[channelGroup])
+	subtopic, err := parseSubtopic(subtopicParts[1])
 	if err != nil {
 		return messaging.Message{}, err
 	}
+
 	ret := messaging.Message{
 		Protocol: protocol,
-		Channel:  channelParts[1],
-		Subtopic: st,
+		Subtopic: subtopic,
 		Payload:  []byte{},
 		Created:  time.Now().UnixNano(),
 	}

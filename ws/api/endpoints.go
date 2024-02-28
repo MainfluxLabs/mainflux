@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
+var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 func handshake(svc ws.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -61,20 +61,17 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		authKey = authKeys[0]
 	}
 
-	chanID := bone.GetValue(r, "id")
-
 	req := getConnByKey{
 		thingKey: authKey,
-		chanID:   chanID,
 	}
 
-	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
-	if len(channelParts) < 2 {
-		logger.Warn("Empty channel id or malformed url")
+	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
+	if len(subtopicParts) < 2 {
+		logger.Warn("Malformed url")
 		return getConnByKey{}, apiutil.ErrMalformedEntity
 	}
 
-	subtopic, err := parseSubTopic(channelParts[2])
+	subtopic, err := parseSubTopic(subtopicParts[1])
 	if err != nil {
 		return getConnByKey{}, err
 	}
@@ -139,7 +136,6 @@ func listen(conn *websocket.Conn, msgs chan<- []byte) {
 func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 	for msg := range msgs {
 		m := messaging.Message{
-			Channel:  req.chanID,
 			Subtopic: req.subtopic,
 			Protocol: "websocket",
 			Payload:  msg,
