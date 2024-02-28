@@ -23,8 +23,9 @@ import (
 var _ session.Handler = (*handler)(nil)
 
 const (
-	protocol  = "mqtt"
-	connected = "connected"
+	protocol   = "mqtt"
+	connected  = "connected"
+	regExParts = 2
 )
 
 const (
@@ -162,7 +163,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
 	subtopicParts := subtopicRegExp.FindStringSubmatch(*topic)
-	if len(subtopicParts) < 2 {
+	if len(subtopicParts) < regExParts {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
 	}
@@ -309,7 +310,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 	var subs []Subscription
 	for _, t := range *topics {
 		subtopicParts := subtopicRegExp.FindStringSubmatch(t)
-		if len(subtopicParts) < 2 {
+		if len(subtopicParts) < regExParts {
 			return nil, ErrMalformedTopic
 		}
 

@@ -29,6 +29,7 @@ const (
 	protocol     = "coap"
 	authQuery    = "auth"
 	startObserve = 0 // observe option value that indicates start of observation
+	regExParts   = 2
 )
 
 var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
@@ -137,7 +138,7 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 	}
 
 	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
-	if len(subtopicParts) < 2 {
+	if len(subtopicParts) < regExParts {
 		return messaging.Message{}, errMalformedSubtopic
 	}
 

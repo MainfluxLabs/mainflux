@@ -19,6 +19,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const regExParts = 2
+
 var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 func handshake(svc ws.Service) http.HandlerFunc {
@@ -66,7 +68,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 	}
 
 	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
-	if len(subtopicParts) < 2 {
+	if len(subtopicParts) < regExParts {
 		logger.Warn("Malformed url")
 		return getConnByKey{}, apiutil.ErrMalformedEntity
 	}

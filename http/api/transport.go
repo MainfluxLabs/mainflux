@@ -33,6 +33,7 @@ const (
 	ctSenmlJSON = "application/senml+json"
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
+	regExParts  = 2
 )
 
 var (
@@ -118,7 +119,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
-	if len(subtopicParts) < 2 {
+	if len(subtopicParts) < regExParts {
 		return nil, apiutil.ErrMalformedEntity
 	}
 
