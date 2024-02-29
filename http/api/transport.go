@@ -82,12 +82,12 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, r.URL.Path)
+	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, r.URL.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicPart)
+	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := publishReq{
 		msg: messaging.Message{
 			Protocol: protocol,
-			Subtopic: subtopic,
+			Subtopic: subject,
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},

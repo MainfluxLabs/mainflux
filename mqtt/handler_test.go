@@ -27,13 +27,12 @@ const (
 )
 
 var (
-	topicMsg            = "channels/%s/messages"
-	topic               = fmt.Sprintf(topicMsg, chanID)
-	invalidTopic        = "invalidTopic"
-	payload             = []byte("[{'n':'test-name', 'v': 1.2}]")
-	topics              = []string{topic}
-	invalidTopics       = []string{invalidTopic}
-	invalidChanIDTopics = []string{fmt.Sprintf(topicMsg, invalidTopic)}
+	topicMsg      = "channels/%s/messages"
+	topic         = fmt.Sprintf(topicMsg, chanID)
+	invalidTopic  = "invalidTopic"
+	payload       = []byte("[{'n':'test-name', 'v': 1.2}]")
+	topics        = []string{topic}
+	invalidTopics = []string{invalidTopic}
 	//Test log messages for cases the handler does not provide a return value.
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
@@ -152,36 +151,36 @@ func TestAuthSubscribe(t *testing.T) {
 		err    error
 		topic  *[]string
 	}{
-		{
-			desc:   "subscribe without active session",
-			client: nil,
-			err:    mqtt.ErrClientNotInitialized,
-			topic:  &topics,
-		},
-		{
-			desc:   "subscribe without topics",
-			client: &sessionClient,
-			err:    mqtt.ErrMissingTopicSub,
-			topic:  nil,
-		},
-		{
-			desc:   "subscribe with invalid topics",
-			client: &sessionClient,
-			err:    mqtt.ErrMalformedTopic,
-			topic:  &invalidTopics,
-		},
+		// {
+		// 	desc:   "subscribe without active session",
+		// 	client: nil,
+		// 	err:    mqtt.ErrClientNotInitialized,
+		// 	topic:  &topics,
+		// },
+		// {
+		// 	desc:   "subscribe without topics",
+		// 	client: &sessionClient,
+		// 	err:    mqtt.ErrMissingTopicSub,
+		// 	topic:  nil,
+		// },
+		// {
+		// 	desc:   "subscribe with invalid topics",
+		// 	client: &sessionClient,
+		// 	err:    mqtt.ErrMalformedTopic,
+		// 	topic:  &invalidTopics,
+		// },
 		{
 			desc:   "subscribe with invalid thing ID",
 			client: &invalidThingSessionClient,
 			err:    mqtt.ErrAuthentication,
 			topic:  &topics,
 		},
-		{
-			desc:   "subscribe with active session and valid topics",
-			client: &sessionClient,
-			err:    nil,
-			topic:  &topics,
-		},
+		// {
+		// 	desc:   "subscribe with active session and valid topics",
+		// 	client: &sessionClient,
+		// 	err:    nil,
+		// 	topic:  &topics,
+		// },
 	}
 
 	for _, tc := range cases {

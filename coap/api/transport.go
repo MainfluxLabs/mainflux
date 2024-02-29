@@ -132,20 +132,20 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 		return messaging.Message{}, err
 	}
 
-	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, path)
+	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, path)
 	if err != nil {
 		return messaging.Message{}, messaging.ErrMalformedSubtopic
 
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicPart)
+	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
 		return messaging.Message{}, err
 	}
 
 	ret := messaging.Message{
 		Protocol: protocol,
-		Subtopic: subtopic,
+		Subtopic: subject,
 		Payload:  []byte{},
 		Created:  time.Now().UnixNano(),
 	}

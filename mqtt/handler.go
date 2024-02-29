@@ -113,8 +113,8 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.authAccess(c, *topic); err != nil {
-		return err
+	if _, err := messaging.ExtractSubtopic(subtopicRegExp, *topic); err != nil {
+		return ErrMalformedTopic
 	}
 
 	return nil
@@ -131,8 +131,11 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	}
 
 	for _, t := range *topics {
-		_, err := h.authAccess(c, t)
-		if err != nil {
+		if _, err := messaging.ExtractSubtopic(subtopicRegExp, t); err != nil {
+			return ErrMalformedTopic
+		}
+
+		if _, err := h.authAccess(c, t); err != nil {
 			return err
 		}
 	}
@@ -160,13 +163,13 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, *topic)
+	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, *topic)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicPart)
+	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -180,7 +183,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	msg := messaging.Message{
 		Protocol:  protocol,
 		Channel:   conn.ChannelID,
-		Subtopic:  subtopic,
+		Subtopic:  subject,
 		Publisher: c.Username,
 		Payload:   *payload,
 		Created:   time.Now().UnixNano(),
@@ -252,12 +255,6 @@ func (h *handler) Disconnect(c *session.Client) {
 }
 
 func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByKeyRes, error) {
-	// Topics are in the format:
-	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
-	if !subtopicRegExp.Match([]byte(topic)) {
-		return nil, ErrMalformedTopic
-	}
-
 	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
 		return nil, err
@@ -274,7 +271,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 	var subs []Subscription
 	for _, t := range *topics {
 
-		subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, t)
+		subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, t)
 		if err != nil {
 			return nil, err
 		}
@@ -284,13 +281,13 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		subtopic, err := messaging.CreateSubject(subtopicPart)
+		subject, err := messaging.CreateSubject(subtopic)
 		if err != nil {
 			return nil, err
 		}
 
 		sub := Subscription{
-			Subtopic:  subtopic,
+			Subtopic:  subject,
 			ChanID:    conn.ChannelID,
 			ThingID:   c.Username,
 			ClientID:  c.ID,
