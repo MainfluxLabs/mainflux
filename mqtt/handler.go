@@ -6,7 +6,6 @@ package mqtt
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -162,13 +161,13 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	subtopicParts := subtopicRegExp.FindStringSubmatch(*topic)
-	if len(subtopicParts) < regExParts {
+	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, *topic)
+	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
 	}
 
-	subtopic, err := parseSubtopic(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicParts[1])
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -265,7 +264,7 @@ func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByK
 		return nil, ErrMalformedTopic
 	}
 
-	conn, err := h.auth.ConnectionIDS(context.Background(), string(c.Password))
+	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
 		return nil, err
 	}
@@ -275,35 +274,6 @@ func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByK
 	}
 
 	return conn, nil
-}
-
-func parseSubtopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", ErrMalformedSubtopic
-	}
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", ErrMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-	return subtopic, nil
 }
 
 func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
@@ -319,7 +289,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		subtopic, err := parseSubtopic(subtopicParts[1])
+		subtopic, err := messaging.CreateSubject(subtopicParts[1])
 		if err != nil {
 			return nil, err
 		}

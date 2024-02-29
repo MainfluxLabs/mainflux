@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -29,15 +28,11 @@ const (
 	protocol     = "coap"
 	authQuery    = "auth"
 	startObserve = 0 // observe option value that indicates start of observation
-	regExParts   = 2
 )
 
 var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
-var (
-	errMalformedSubtopic = errors.New("malformed subtopic")
-	errBadOptions        = errors.New("bad options")
-)
+var errBadOptions = errors.New("bad options")
 
 var (
 	logger  log.Logger
@@ -137,12 +132,13 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 		return messaging.Message{}, err
 	}
 
-	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
-	if len(subtopicParts) < regExParts {
-		return messaging.Message{}, errMalformedSubtopic
+	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, path)
+	if err != nil {
+		return messaging.Message{}, messaging.ErrMalformedSubtopic
+
 	}
 
-	subtopic, err := parseSubtopic(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicParts[1])
 	if err != nil {
 		return messaging.Message{}, err
 	}
@@ -177,33 +173,4 @@ func parseKey(msg *mux.Message) (string, error) {
 		return "", errors.ErrAuthorization
 	}
 	return vars[1], nil
-}
-
-func parseSubtopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", errMalformedSubtopic
-	}
-	subtopic = strings.ReplaceAll(subtopic, "/", ".")
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", errMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-	return subtopic, nil
 }

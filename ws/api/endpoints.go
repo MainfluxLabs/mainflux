@@ -7,9 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
@@ -18,8 +16,6 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
-
-const regExParts = 2
 
 var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
@@ -67,13 +63,13 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		thingKey: authKey,
 	}
 
-	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
-	if len(subtopicParts) < regExParts {
+	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, r.RequestURI)
+	if err != nil {
 		logger.Warn("Malformed url")
-		return getConnByKey{}, apiutil.ErrMalformedEntity
+		return getConnByKey{}, err
 	}
 
-	subtopic, err := parseSubTopic(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicParts[1])
 	if err != nil {
 		return getConnByKey{}, err
 	}
@@ -81,37 +77,6 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 	req.subtopic = subtopic
 
 	return req, nil
-}
-
-func parseSubTopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", errMalformedSubtopic
-	}
-
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", errMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-
-	return subtopic, nil
 }
 
 func listen(conn *websocket.Conn, msgs chan<- []byte) {

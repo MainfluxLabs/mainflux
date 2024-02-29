@@ -8,9 +8,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -33,11 +31,6 @@ const (
 	ctSenmlJSON = "application/senml+json"
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
-	regExParts  = 2
-)
-
-var (
-	errMalformedSubtopic = errors.New("malformed subtopic")
 )
 
 var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
@@ -83,47 +76,18 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	return r
 }
 
-func parseSubtopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", errMalformedSubtopic
-	}
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", errMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-	return subtopic, nil
-}
-
 func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	ct := r.Header.Get("Content-Type")
 	if ct != ctSenmlJSON && ct != ctJSON && ct != ctSenmlCBOR {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	subtopicParts := subtopicRegExp.FindStringSubmatch(r.RequestURI)
-	if len(subtopicParts) < regExParts {
-		return nil, apiutil.ErrMalformedEntity
+	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, r.URL.Path)
+	if err != nil {
+		return nil, err
 	}
 
-	subtopic, err := parseSubtopic(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicParts[1])
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +134,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errMalformedSubtopic),
+	case errors.Contains(err, messaging.ErrMalformedSubtopic),
 		errors.Contains(err, apiutil.ErrMalformedEntity):
 		w.WriteHeader(http.StatusBadRequest)
 

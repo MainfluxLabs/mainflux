@@ -21,7 +21,7 @@ func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) ConnectionIDS(ctx context.Context, key string) (*mainflux.ConnByKeyRes, error) {
+func (cli MockClient) GetConnByKey(ctx context.Context, key string) (*mainflux.ConnByKeyRes, error) {
 	thID, ok := cli.key[key]
 	if !ok {
 		return nil, errors.ErrAuthentication
