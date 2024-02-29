@@ -61,9 +61,9 @@ func (c client) GetConnByKey(ctx context.Context, thingKey string) (mainflux.Con
 		return mainflux.ConnByKeyRes{}, err
 	}
 
-	if conn == nil {
-		return mainflux.ConnByKeyRes{}, err
+	if conn != nil {
+		return *conn, nil
 	}
 
-	return *conn, nil
+	return mainflux.ConnByKeyRes{}, nil
 }
