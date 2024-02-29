@@ -43,7 +43,12 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
-	msg, format, err := messaging.AddProfileToMessage(conn, msg)
+	msg, err = messaging.AddProfileToMessage(conn, msg)
+	if err != nil {
+		return err
+	}
+
+	format, err := getFormat(msg.Profile.ContentType)
 	if err != nil {
 		return err
 	}
@@ -72,7 +77,8 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		}
 	}
 
-	if conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP {
+	if conn.Profile.Notifier != nil &&
+		(conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP) {
 		sub := conn.Profile.Notifier.Protocol
 		for _, subtopic := range msg.Profile.Notifier.Subtopics {
 			if subtopic == msg.Subtopic {
@@ -93,4 +99,17 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
+}
+
+func getFormat(ct string) (format string, err error) {
+	switch ct {
+	case messaging.JsonContentType:
+		return messaging.JsonFormat, nil
+	case messaging.SenmlContentType:
+		return messaging.SenmlFormat, nil
+	case messaging.CborContentType:
+		return messaging.CborFormat, nil
+	default:
+		return "", messaging.ErrUnknownContent
+	}
 }

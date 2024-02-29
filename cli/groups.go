@@ -81,7 +81,7 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "assign <thing_ids> <group_id> <user_auth_token>",
+		Use:   "assign-thing <thing_ids> <group_id> <user_auth_token>",
 		Short: "Assign things",
 		Long: `Assign things to a group.
 				thing_ids - '["thing_id",...]`,
@@ -103,7 +103,7 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "unassign <thing_ids> <group_id> <user_auth_token>",
+		Use:   "unassign-thing <thing_ids> <group_id> <user_auth_token>",
 		Short: "Unassign things",
 		Long: `Unassign things from a group
 				thing_ids - '["things_id",...]`,
@@ -118,6 +118,50 @@ var cmdGroups = []cobra.Command{
 				return
 			}
 			if err := sdk.UnassignThing(args[2], args[1], ids...); err != nil {
+				logError(err)
+				return
+			}
+			logOK()
+		},
+	},
+	{
+		Use:   "assign-channel <channel_ids> <group_id> <user_auth_token>",
+		Short: "Assign channels",
+		Long: `Assign channels to a group.
+				channel_ids - '["channel_id",...]`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+			var ids []string
+			if err := json.Unmarshal([]byte(args[0]), &ids); err != nil {
+				logError(err)
+				return
+			}
+			if err := sdk.AssignChannel(ids, args[1], args[2]); err != nil {
+				logError(err)
+				return
+			}
+			logOK()
+		},
+	},
+	{
+		Use:   "unassign-channel <channel_ids> <group_id> <user_auth_token>",
+		Short: "Unassign channels",
+		Long: `Unassign channels from a group
+				channel_ids - '["channels_id",...]`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 3 {
+				logUsage(cmd.Use)
+				return
+			}
+			var ids []string
+			if err := json.Unmarshal([]byte(args[0]), &ids); err != nil {
+				logError(err)
+				return
+			}
+			if err := sdk.UnassignChannel(args[2], args[1], ids...); err != nil {
 				logError(err)
 				return
 			}

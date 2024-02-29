@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	senmlContentType = "application/senml+json"
-	cborContentType  = "application/senml+cbor"
-	jsonContentType  = "application/json"
-	senmlFormat      = "senml"
-	jsonFormat       = "json"
+	SenmlContentType = "application/senml+json"
+	CborContentType  = "application/senml+cbor"
+	JsonContentType  = "application/json"
+	SenmlFormat      = "senml"
+	JsonFormat       = "json"
+	CborFormat       = "cbor"
 	regExParts       = 2
 )
 
@@ -90,56 +91,46 @@ type PubSub interface {
 	Subscriber
 }
 
-func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, string, error) {
+func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, error) {
 	if conn.Profile == nil || conn.Profile.ContentType == "" {
 		msg.Profile = &Profile{
-			ContentType: senmlContentType,
+			ContentType: SenmlContentType,
 			TimeField:   &TimeField{},
 			Writer:      &Writer{Retain: true},
+			Notifier:    &Notifier{},
 		}
-		return msg, senmlFormat, nil
+		return msg, nil
 	}
 
-	switch conn.Profile.ContentType {
-	case jsonContentType:
-		msg.Profile = &Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField: &TimeField{
-				Name:     conn.Profile.TimeField.Name,
-				Format:   conn.Profile.TimeField.Format,
-				Location: conn.Profile.TimeField.Location,
-			},
-			Writer: &Writer{
-				Retain:    conn.Profile.Writer.Retain,
-				Subtopics: conn.Profile.Writer.Subtopics,
-			},
-			Notifier: &Notifier{
-				Protocol:  conn.Profile.Notifier.Protocol,
-				Contacts:  conn.Profile.Notifier.Contacts,
-				Subtopics: conn.Profile.Notifier.Subtopics,
-			},
-		}
-		return msg, jsonFormat, nil
-	case senmlContentType, cborContentType:
-		msg.Profile = &Profile{
-			ContentType: conn.Profile.ContentType,
-			TimeField:   &TimeField{},
-			Writer: &Writer{
-				Retain:    conn.Profile.Writer.Retain,
-				Subtopics: conn.Profile.Writer.Subtopics,
-			},
-			Notifier: &Notifier{
-				Protocol:  conn.Profile.Notifier.Protocol,
-				Contacts:  conn.Profile.Notifier.Contacts,
-				Subtopics: conn.Profile.Notifier.Subtopics,
-			},
-		}
-		return msg, senmlFormat, nil
-
-	default:
-		return Message{}, "", ErrUnknownContent
+	msg.Profile = &Profile{
+		ContentType: conn.Profile.ContentType,
+		TimeField:   &TimeField{},
 	}
 
+	if conn.Profile.Writer != nil {
+		msg.Profile.Writer = &Writer{
+			Retain:    conn.Profile.Writer.Retain,
+			Subtopics: conn.Profile.Writer.Subtopics,
+		}
+	}
+
+	if conn.Profile.Notifier != nil {
+		msg.Profile.Notifier = &Notifier{
+			Protocol:  conn.Profile.Notifier.Protocol,
+			Contacts:  conn.Profile.Notifier.Contacts,
+			Subtopics: conn.Profile.Notifier.Subtopics,
+		}
+	}
+
+	if conn.Profile.TimeField != nil && conn.Profile.ContentType == JsonContentType {
+		msg.Profile.TimeField = &TimeField{
+			Name:     conn.Profile.TimeField.Name,
+			Format:   conn.Profile.TimeField.Format,
+			Location: conn.Profile.TimeField.Location,
+		}
+	}
+
+	return msg, nil
 }
 
 func ValidateSubtopic(regExp *regexp.Regexp, path string) ([]string, error) {
