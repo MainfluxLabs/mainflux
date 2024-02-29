@@ -169,7 +169,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	conn, err := h.authAccess(c)
+	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
@@ -270,7 +270,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		conn, err := h.authAccess(c)
+		conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 		if err != nil {
 			return nil, err
 		}
