@@ -155,7 +155,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, *topic)
+	subtopic, err := messaging.ExtractSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
@@ -263,7 +263,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 	var subs []Subscription
 	for _, t := range *topics {
 
-		subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, t)
+		subtopic, err := messaging.ExtractSubtopic(t)
 		if err != nil {
 			return nil, err
 		}

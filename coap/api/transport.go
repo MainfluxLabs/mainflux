@@ -129,7 +129,7 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 		return messaging.Message{}, err
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, path)
+	subtopic, err := messaging.ExtractSubtopic(path)
 	if err != nil {
 		return messaging.Message{}, messaging.ErrMalformedSubtopic
 

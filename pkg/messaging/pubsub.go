@@ -22,7 +22,7 @@ const (
 	regExParts       = 2
 )
 
-var SubtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
+var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
@@ -135,8 +135,8 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 	return msg, nil
 }
 
-func ExtractSubtopic(regExp *regexp.Regexp, path string) (string, error) {
-	subtopicParts := regExp.FindStringSubmatch(path)
+func ExtractSubtopic(path string) (string, error) {
+	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
 	if len(subtopicParts) < regExParts {
 		return "", ErrMalformedSubtopic
 	}

@@ -60,7 +60,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		thingKey: authKey,
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, r.RequestURI)
+	subtopic, err := messaging.ExtractSubtopic(r.RequestURI)
 	if err != nil {
 		logger.Warn("Malformed url")
 		return getConnByKey{}, err
