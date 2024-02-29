@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
@@ -16,8 +15,6 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
-
-var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 func handshake(svc ws.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +60,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		thingKey: authKey,
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, r.RequestURI)
+	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, r.RequestURI)
 	if err != nil {
 		logger.Warn("Malformed url")
 		return getConnByKey{}, err

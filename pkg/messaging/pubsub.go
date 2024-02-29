@@ -22,6 +22,8 @@ const (
 	regExParts       = 2
 )
 
+var SubtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
+
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
 	ErrConnect = errors.New("failed to connect to MQTT broker")

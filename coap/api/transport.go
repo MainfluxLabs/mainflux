@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -29,8 +28,6 @@ const (
 	authQuery    = "auth"
 	startObserve = 0 // observe option value that indicates start of observation
 )
-
-var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var errBadOptions = errors.New("bad options")
 
@@ -132,7 +129,7 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 		return messaging.Message{}, err
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, path)
+	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, path)
 	if err != nil {
 		return messaging.Message{}, messaging.ErrMalformedSubtopic
 

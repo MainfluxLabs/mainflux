@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -32,8 +31,6 @@ const (
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
 )
-
-var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
@@ -82,7 +79,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, r.URL.Path)
+	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, r.URL.Path)
 	if err != nil {
 		return nil, err
 	}

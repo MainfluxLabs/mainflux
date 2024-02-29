@@ -6,7 +6,6 @@ package mqtt
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -44,7 +43,6 @@ const (
 )
 
 var (
-	subtopicRegExp               = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 	ErrMalformedSubtopic         = errors.New("malformed subtopic")
 	ErrClientNotInitialized      = errors.New("client is not initialized")
 	ErrMalformedTopic            = errors.New("malformed topic")
@@ -157,7 +155,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, *topic)
+	subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, *topic)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
@@ -184,7 +182,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	for _, pub := range h.publishers {
-		if err := pub.Publish(conn, msg); err != nil {
+		if err := pub.Publish(&conn, msg); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}
@@ -248,14 +246,14 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client) (*mainflux.ConnByKeyRes, error) {
+func (h *handler) authAccess(c *session.Client) (mainflux.ConnByKeyRes, error) {
 	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
-		return nil, err
+		return mainflux.ConnByKeyRes{}, err
 	}
 
 	if conn.ThingID != c.Username {
-		return nil, ErrAuthentication
+		return mainflux.ConnByKeyRes{}, ErrAuthentication
 	}
 
 	return conn, nil
@@ -265,7 +263,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 	var subs []Subscription
 	for _, t := range *topics {
 
-		subtopic, err := messaging.ExtractSubtopic(subtopicRegExp, t)
+		subtopic, err := messaging.ExtractSubtopic(messaging.SubtopicRegExp, t)
 		if err != nil {
 			return nil, err
 		}
