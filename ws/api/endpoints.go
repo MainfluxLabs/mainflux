@@ -63,13 +63,13 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		thingKey: authKey,
 	}
 
-	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, r.RequestURI)
+	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, r.RequestURI)
 	if err != nil {
 		logger.Warn("Malformed url")
 		return getConnByKey{}, err
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicPart)
 	if err != nil {
 		return getConnByKey{}, err
 	}
@@ -123,7 +123,7 @@ func encodeError(w http.ResponseWriter, err error) {
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:
 		statusCode = http.StatusForbidden
-	case errMalformedSubtopic, apiutil.ErrMalformedEntity:
+	case messaging.ErrMalformedSubtopic, apiutil.ErrMalformedEntity:
 		statusCode = http.StatusBadRequest
 	default:
 		statusCode = http.StatusNotFound

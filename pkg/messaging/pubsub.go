@@ -133,13 +133,13 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 	return msg, nil
 }
 
-func ValidateSubtopic(regExp *regexp.Regexp, path string) ([]string, error) {
+func ExtractSubtopic(regExp *regexp.Regexp, path string) (string, error) {
 	subtopicParts := regExp.FindStringSubmatch(path)
 	if len(subtopicParts) < regExParts {
-		return nil, ErrEmptyTopic
+		return "", ErrMalformedSubtopic
 	}
 
-	return subtopicParts, nil
+	return subtopicParts[1], nil
 }
 
 func CreateSubject(subtopic string) (string, error) {

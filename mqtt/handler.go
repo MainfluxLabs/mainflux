@@ -22,9 +22,8 @@ import (
 var _ session.Handler = (*handler)(nil)
 
 const (
-	protocol   = "mqtt"
-	connected  = "connected"
-	regExParts = 2
+	protocol  = "mqtt"
+	connected = "connected"
 )
 
 const (
@@ -161,13 +160,13 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	// Topics are in the format:
 	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
 
-	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, *topic)
+	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, *topic)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
 		return
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicPart)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -259,11 +258,6 @@ func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByK
 		return nil, ErrMalformedTopic
 	}
 
-	parts := subtopicRegExp.FindStringSubmatch(topic)
-	if len(parts) < 1 {
-		return nil, ErrMalformedTopic
-	}
-
 	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
 		return nil, err
@@ -279,9 +273,10 @@ func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByK
 func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
 	var subs []Subscription
 	for _, t := range *topics {
-		subtopicParts := subtopicRegExp.FindStringSubmatch(t)
-		if len(subtopicParts) < regExParts {
-			return nil, ErrMalformedTopic
+
+		subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, t)
+		if err != nil {
+			return nil, err
 		}
 
 		conn, err := h.authAccess(c, t)
@@ -289,7 +284,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		subtopic, err := messaging.CreateSubject(subtopicParts[1])
+		subtopic, err := messaging.CreateSubject(subtopicPart)
 		if err != nil {
 			return nil, err
 		}

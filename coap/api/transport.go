@@ -132,13 +132,13 @@ func decodeMessage(msg *mux.Message) (messaging.Message, error) {
 		return messaging.Message{}, err
 	}
 
-	subtopicParts, err := messaging.ValidateSubtopic(subtopicRegExp, path)
+	subtopicPart, err := messaging.ExtractSubtopic(subtopicRegExp, path)
 	if err != nil {
 		return messaging.Message{}, messaging.ErrMalformedSubtopic
 
 	}
 
-	subtopic, err := messaging.CreateSubject(subtopicParts[1])
+	subtopic, err := messaging.CreateSubject(subtopicPart)
 	if err != nil {
 		return messaging.Message{}, err
 	}
