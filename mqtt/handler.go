@@ -113,15 +113,15 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if _, err := messaging.ExtractSubtopic(subtopicRegExp, *topic); err != nil {
-		return ErrMalformedTopic
+	if _, err := h.authAccess(c); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// AuthSubscribe is called on device publish,
-// prior forwarding to the MQTT broker
+// AuthSubscribe is called on device subscribe,
+// prior creating a subscription on the MQTT broker
 func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	if c == nil {
 		return ErrClientNotInitialized
@@ -130,14 +130,8 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	for _, t := range *topics {
-		if _, err := messaging.ExtractSubtopic(subtopicRegExp, t); err != nil {
-			return ErrMalformedTopic
-		}
-
-		if _, err := h.authAccess(c, t); err != nil {
-			return err
-		}
+	if _, err := h.authAccess(c); err != nil {
+		return err
 	}
 
 	return nil
@@ -175,7 +169,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	conn, err := h.authAccess(c, *topic)
+	conn, err := h.authAccess(c)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
@@ -254,7 +248,7 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client, topic string) (*mainflux.ConnByKeyRes, error) {
+func (h *handler) authAccess(c *session.Client) (*mainflux.ConnByKeyRes, error) {
 	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
 		return nil, err
@@ -276,7 +270,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		conn, err := h.authAccess(c, t)
+		conn, err := h.authAccess(c)
 		if err != nil {
 			return nil, err
 		}
