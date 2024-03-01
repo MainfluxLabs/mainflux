@@ -108,7 +108,7 @@ func TestPublisher(t *testing.T) {
 		expectedMsg := msg
 		expectedMsg.Profile = msgProfile
 
-		err := pubsub.Publish(conn, msg)
+		err := pubsub.Publish(*conn.Profile, msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 		data, err := proto.Marshal(&expectedMsg)
@@ -275,7 +275,7 @@ func TestPubSub(t *testing.T) {
 			expectedMsg.Profile = msgProfile
 
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(conn, msg)
+			err := pubsub.Publish(*conn.Profile, msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan

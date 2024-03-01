@@ -33,8 +33,8 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	msg, err := messaging.AddProfileToMessage(conn, msg)
+func (pub publisher) Publish(profile mainflux.Profile, msg messaging.Message) error {
+	msg, err := messaging.AddProfileToMessage(profile, msg)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message)
 	if err != nil {
 		return err
 	}
-	token := pub.client.Publish(conn.ChannelID, qos, false, data)
+	token := pub.client.Publish(msg.Channel, qos, false, data)
 	if token.Error() != nil {
 		return token.Error()
 	}

@@ -181,8 +181,10 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Created:   time.Now().UnixNano(),
 	}
 
+	profile := messaging.IsProfileNil(conn.Profile)
+
 	for _, pub := range h.publishers {
-		if err := pub.Publish(&conn, msg); err != nil {
+		if err := pub.Publish(profile, msg); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}

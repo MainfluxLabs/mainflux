@@ -44,5 +44,7 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 	msg.Publisher = conn.ThingID
 	msg.Channel = conn.ChannelID
 
-	return as.publisher.Publish(conn, msg)
+	profile := messaging.IsProfileNil(conn.Profile)
+
+	return as.publisher.Publish(profile, msg)
 }

@@ -123,9 +123,10 @@ func (as *adapterService) Publish(ctx context.Context, m Message) error {
 		Created:   time.Now().UnixNano(),
 	}
 
-	conn := &mainflux.ConnByKeyRes{ChannelID: msg.Channel}
+	conn := &mainflux.ConnByKeyRes{}
+	profile := messaging.IsProfileNil(conn.Profile)
 
-	return as.publisher.Publish(conn, msg)
+	return as.publisher.Publish(profile, msg)
 }
 
 func (as *adapterService) CreateThing(ctx context.Context, thingID string, devEUI string) error {

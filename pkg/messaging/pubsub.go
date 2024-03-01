@@ -6,6 +6,7 @@ package messaging
 import (
 	"errors"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -59,7 +60,7 @@ var (
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publish publishes message to the message broker.
-	Publish(conn *mainflux.ConnByKeyRes, msg Message) error
+	Publish(profile mainflux.Profile, msg Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error
@@ -93,8 +94,8 @@ type PubSub interface {
 	Subscriber
 }
 
-func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, error) {
-	if conn.Profile == nil || conn.Profile.ContentType == "" {
+func AddProfileToMessage(profile mainflux.Profile, msg Message) (Message, error) {
+	if IsEmptyProfile(profile) || profile.ContentType == "" {
 		msg.Profile = &Profile{
 			ContentType: SenmlContentType,
 			TimeField:   &TimeField{},
@@ -105,30 +106,30 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 	}
 
 	msg.Profile = &Profile{
-		ContentType: conn.Profile.ContentType,
+		ContentType: profile.ContentType,
 		TimeField:   &TimeField{},
 	}
 
-	if conn.Profile.Writer != nil {
+	if profile.Writer != nil {
 		msg.Profile.Writer = &Writer{
-			Retain:    conn.Profile.Writer.Retain,
-			Subtopics: conn.Profile.Writer.Subtopics,
+			Retain:    profile.Writer.Retain,
+			Subtopics: profile.Writer.Subtopics,
 		}
 	}
 
-	if conn.Profile.Notifier != nil {
+	if profile.Notifier != nil {
 		msg.Profile.Notifier = &Notifier{
-			Protocol:  conn.Profile.Notifier.Protocol,
-			Contacts:  conn.Profile.Notifier.Contacts,
-			Subtopics: conn.Profile.Notifier.Subtopics,
+			Protocol:  profile.Notifier.Protocol,
+			Contacts:  profile.Notifier.Contacts,
+			Subtopics: profile.Notifier.Subtopics,
 		}
 	}
 
-	if conn.Profile.TimeField != nil && conn.Profile.ContentType == JsonContentType {
+	if profile.TimeField != nil && profile.ContentType == JsonContentType {
 		msg.Profile.TimeField = &TimeField{
-			Name:     conn.Profile.TimeField.Name,
-			Format:   conn.Profile.TimeField.Format,
-			Location: conn.Profile.TimeField.Location,
+			Name:     profile.TimeField.Name,
+			Format:   profile.TimeField.Format,
+			Location: profile.TimeField.Location,
 		}
 	}
 
@@ -172,4 +173,20 @@ func CreateSubject(subtopic string) (string, error) {
 	subtopic = strings.Join(filteredElems, ".")
 
 	return subtopic, nil
+}
+
+func IsProfileNil(profile *mainflux.Profile) mainflux.Profile {
+	if profile == nil {
+		profile = &mainflux.Profile{}
+	}
+
+	return *profile
+}
+
+func IsEmptyProfile(profile mainflux.Profile) bool {
+	emptyProfile := mainflux.Profile{}
+	return profile.ContentType == emptyProfile.ContentType &&
+		reflect.DeepEqual(profile.Writer, emptyProfile.Writer) &&
+		reflect.DeepEqual(profile.Notifier, emptyProfile.Notifier) &&
+		reflect.DeepEqual(profile.TimeField, emptyProfile.TimeField)
 }

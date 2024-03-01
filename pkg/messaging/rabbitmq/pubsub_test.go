@@ -89,7 +89,7 @@ func TestPublisher(t *testing.T) {
 			Payload:   tc.payload,
 		}
 
-		err = pubsub.Publish(c, expectedMsg)
+		err = pubsub.Publish(*c.Profile, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -404,7 +404,7 @@ func TestPubSub(t *testing.T) {
 				Payload: data,
 			}
 			conn := &mainflux.ConnByKeyRes{ChannelID: tc.topic}
-			err = pubsub.Publish(conn, expectedMsg)
+			err = pubsub.Publish(*conn.Profile, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan
