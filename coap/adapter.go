@@ -27,7 +27,7 @@ type Service interface {
 	// Publish Messssage
 	Publish(ctx context.Context, key string, msg messaging.Message) error
 
-	// Subscribes to channel with specified id, subtopic and adds subscription to
+	// Subscribe subscribes to channel with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
 	Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error
 
@@ -64,6 +64,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 	msg.Publisher = conn.ThingID
+	msg.Channel = conn.ChannelID
 
 	return svc.pubsub.Publish(conn, msg)
 }

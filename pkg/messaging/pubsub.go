@@ -5,6 +5,9 @@ package messaging
 
 import (
 	"errors"
+	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 )
@@ -16,7 +19,10 @@ const (
 	SenmlFormat      = "senml"
 	JsonFormat       = "json"
 	CborFormat       = "cbor"
+	regExParts       = 2
 )
+
+var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
@@ -39,6 +45,9 @@ var (
 
 	// ErrEmptyTopic indicates the absence of topic.
 	ErrEmptyTopic = errors.New("empty topic")
+
+	// ErrMalformedSubtopic indicates that the subtopic is malformed.
+	ErrMalformedSubtopic = errors.New("malformed subtopic")
 
 	// ErrEmptyID indicates the absence of ID.
 	ErrEmptyID = errors.New("empty ID")
@@ -124,4 +133,43 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 	}
 
 	return msg, nil
+}
+
+func ExtractSubtopic(path string) (string, error) {
+	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
+	if len(subtopicParts) < regExParts {
+		return "", ErrMalformedSubtopic
+	}
+
+	return subtopicParts[1], nil
+}
+
+func CreateSubject(subtopic string) (string, error) {
+	if subtopic == "" {
+		return subtopic, nil
+	}
+
+	subtopic, err := url.QueryUnescape(subtopic)
+	if err != nil {
+		return "", ErrMalformedSubtopic
+	}
+	subtopic = strings.Replace(subtopic, "/", ".", -1)
+
+	elems := strings.Split(subtopic, ".")
+	filteredElems := []string{}
+	for _, elem := range elems {
+		if elem == "" {
+			continue
+		}
+
+		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
+			return "", ErrMalformedSubtopic
+		}
+
+		filteredElems = append(filteredElems, elem)
+	}
+
+	subtopic = strings.Join(filteredElems, ".")
+
+	return subtopic, nil
 }

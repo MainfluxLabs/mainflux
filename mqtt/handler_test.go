@@ -27,13 +27,11 @@ const (
 )
 
 var (
-	topicMsg            = "channels/%s/messages"
-	topic               = fmt.Sprintf(topicMsg, chanID)
-	invalidTopic        = "invalidTopic"
-	payload             = []byte("[{'n':'test-name', 'v': 1.2}]")
-	topics              = []string{topic}
-	invalidTopics       = []string{invalidTopic}
-	invalidChanIDTopics = []string{fmt.Sprintf(topicMsg, invalidTopic)}
+	topicMsg     = "channels/%s/messages"
+	topic        = fmt.Sprintf(topicMsg, chanID)
+	invalidTopic = "invalidTopic"
+	payload      = []byte("[{'n':'test-name', 'v': 1.2}]")
+	topics       = []string{topic}
 	//Test log messages for cases the handler does not provide a return value.
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
@@ -122,13 +120,6 @@ func TestAuthPublish(t *testing.T) {
 			payload: payload,
 		},
 		{
-			desc:    "publish with malformed topic",
-			client:  &sessionClient,
-			err:     mqtt.ErrMalformedTopic,
-			topic:   &invalidTopic,
-			payload: payload,
-		},
-		{
 			desc:    "publish successfully",
 			client:  &sessionClient,
 			err:     nil,
@@ -163,12 +154,6 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    mqtt.ErrMissingTopicSub,
 			topic:  nil,
-		},
-		{
-			desc:   "subscribe with invalid topics",
-			client: &sessionClient,
-			err:    mqtt.ErrMalformedTopic,
-			topic:  &invalidTopics,
 		},
 		{
 			desc:   "subscribe with invalid thing ID",

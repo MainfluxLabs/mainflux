@@ -21,18 +21,23 @@ func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) ConnectionIDS(ctx context.Context, key string) (string, string, error) {
+func (cli MockClient) GetConnByKey(ctx context.Context, key string) (mainflux.ConnByKeyRes, error) {
 	thID, ok := cli.key[key]
 	if !ok {
-		return "", "", errors.ErrAuthentication
+		return mainflux.ConnByKeyRes{}, errors.ErrAuthentication
 	}
 
 	chID, ok := cli.conns[thID]
 	if !ok {
-		return "", "", errors.ErrAuthentication
+		return mainflux.ConnByKeyRes{}, errors.ErrAuthentication
 	}
 
-	return thID, chID, nil
+	conn := &mainflux.ConnByKeyRes{
+		ThingID:   thID,
+		ChannelID: chID,
+	}
+
+	return *conn, nil
 }
 
 func (cli MockClient) Identify(ctx context.Context, thingKey string) (string, error) {

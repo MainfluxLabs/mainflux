@@ -7,9 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
@@ -18,8 +15,6 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
-
-var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
 
 func handshake(svc ws.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -61,58 +56,24 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		authKey = authKeys[0]
 	}
 
-	chanID := bone.GetValue(r, "id")
-
 	req := getConnByKey{
 		thingKey: authKey,
-		chanID:   chanID,
 	}
 
-	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
-	if len(channelParts) < 2 {
-		logger.Warn("Empty channel id or malformed url")
-		return getConnByKey{}, apiutil.ErrMalformedEntity
+	subtopic, err := messaging.ExtractSubtopic(r.RequestURI)
+	if err != nil {
+		logger.Warn("Malformed url")
+		return getConnByKey{}, err
 	}
 
-	subtopic, err := parseSubTopic(channelParts[2])
+	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
 		return getConnByKey{}, err
 	}
 
-	req.subtopic = subtopic
+	req.subtopic = subject
 
 	return req, nil
-}
-
-func parseSubTopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", errMalformedSubtopic
-	}
-
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", errMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-
-	return subtopic, nil
 }
 
 func listen(conn *websocket.Conn, msgs chan<- []byte) {
@@ -139,7 +100,6 @@ func listen(conn *websocket.Conn, msgs chan<- []byte) {
 func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 	for msg := range msgs {
 		m := messaging.Message{
-			Channel:  req.chanID,
 			Subtopic: req.subtopic,
 			Protocol: "websocket",
 			Payload:  msg,
@@ -160,7 +120,7 @@ func encodeError(w http.ResponseWriter, err error) {
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:
 		statusCode = http.StatusForbidden
-	case errMalformedSubtopic, apiutil.ErrMalformedEntity:
+	case messaging.ErrMalformedSubtopic, apiutil.ErrMalformedEntity:
 		statusCode = http.StatusBadRequest
 	default:
 		statusCode = http.StatusNotFound

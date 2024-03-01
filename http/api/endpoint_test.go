@@ -143,12 +143,12 @@ func TestPublish(t *testing.T) {
 			key:         thingKey,
 			status:      http.StatusUnsupportedMediaType,
 		},
-		"publish message to invalid channel": {
+		"publish message without channel": {
 			chanID:      "",
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
-			status:      http.StatusBadRequest,
+			status:      http.StatusAccepted,
 		},
 		"publish message unable to authorize": {
 			chanID:      chanID,

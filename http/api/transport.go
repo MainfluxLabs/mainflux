@@ -8,9 +8,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -35,12 +32,6 @@ const (
 	ctJSON      = "application/json"
 )
 
-var (
-	errMalformedSubtopic = errors.New("malformed subtopic")
-)
-
-var channelPartRegExp = regexp.MustCompile(`^/channels/([\w\-]+)/messages(/[^?]*)?(\?.*)?$`)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -55,7 +46,21 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 		opts...,
 	))
 
+	r.Post("/messages", kithttp.NewServer(
+		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/channels/:id/messages/*", kithttp.NewServer(
+		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/messages/*", kithttp.NewServer(
 		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
@@ -68,47 +73,18 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	return r
 }
 
-func parseSubtopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
-	}
-
-	subtopic, err := url.QueryUnescape(subtopic)
-	if err != nil {
-		return "", errMalformedSubtopic
-	}
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
-
-	elems := strings.Split(subtopic, ".")
-	filteredElems := []string{}
-	for _, elem := range elems {
-		if elem == "" {
-			continue
-		}
-
-		if len(elem) > 1 && (strings.Contains(elem, "*") || strings.Contains(elem, ">")) {
-			return "", errMalformedSubtopic
-		}
-
-		filteredElems = append(filteredElems, elem)
-	}
-
-	subtopic = strings.Join(filteredElems, ".")
-	return subtopic, nil
-}
-
 func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	ct := r.Header.Get("Content-Type")
 	if ct != ctSenmlJSON && ct != ctJSON && ct != ctSenmlCBOR {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	channelParts := channelPartRegExp.FindStringSubmatch(r.RequestURI)
-	if len(channelParts) < 2 {
-		return nil, apiutil.ErrMalformedEntity
+	subtopic, err := messaging.ExtractSubtopic(r.URL.Path)
+	if err != nil {
+		return nil, err
 	}
 
-	subtopic, err := parseSubtopic(channelParts[2])
+	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +107,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := publishReq{
 		msg: messaging.Message{
 			Protocol: protocol,
-			Channel:  bone.GetValue(r, "id"),
-			Subtopic: subtopic,
+			Subtopic: subject,
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
@@ -156,7 +131,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errMalformedSubtopic),
+	case errors.Contains(err, messaging.ErrMalformedSubtopic),
 		errors.Contains(err, apiutil.ErrMalformedEntity):
 		w.WriteHeader(http.StatusBadRequest)
 

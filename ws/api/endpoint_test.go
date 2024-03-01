@@ -75,7 +75,7 @@ func handshake(tsURL, chanID, subtopic, thingKey string, addHeader bool) (*webso
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := thmocks.NewThingsServiceClient(map[string]string{thingKey: chanID},nil)
+	thingsClient := thmocks.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil)
 	svc, _ := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -145,13 +145,13 @@ func TestHandshake(t *testing.T) {
 			msg:      msg,
 		},
 		{
-			desc:     "connect to empty channel",
+			desc:     "connect and send message to subtopic without channel",
 			chanID:   "",
-			subtopic: "",
+			subtopic: "subtopic",
 			header:   true,
 			thingKey: thingKey,
-			status:   http.StatusBadRequest,
-			msg:      []byte{},
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
 			desc:     "connect with empty thingKey",
