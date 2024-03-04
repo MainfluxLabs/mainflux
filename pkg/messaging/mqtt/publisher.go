@@ -33,15 +33,11 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(msg messaging.Message) error {
-	if !msg.Profile.Writer.Retain {
-		return nil
-	}
-
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
-	token := pub.client.Publish(msg.Channel, qos, false, data)
+	token := pub.client.Publish(msg.Subtopic, qos, false, data)
 	if token.Error() != nil {
 		return token.Error()
 	}
