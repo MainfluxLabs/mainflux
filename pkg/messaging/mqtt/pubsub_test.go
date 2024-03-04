@@ -47,6 +47,14 @@ func TestPublisher(t *testing.T) {
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
+	token = client.Subscribe(fmt.Sprintf("%s.%s", channel, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
+		msgChan <- m.Payload()
+	})
+	if ok := token.WaitTimeout(tokenTimeout); !ok {
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", subtopic))
+	}
+	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
+
 	t.Cleanup(func() {
 		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", channel, subtopic))
 		token.WaitTimeout(tokenTimeout)
