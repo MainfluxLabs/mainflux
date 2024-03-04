@@ -32,11 +32,11 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-
+	topic := channel
 	format := senmlFormat + "." + messagesSuffix
-	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, channel, format), handler{})
+	err := pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, format), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s.%s", chansPrefix, channel, format, subtopic), handler{})
+	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s.%s.%s", chansPrefix, topic, format, subtopic), handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -53,16 +53,7 @@ func TestPublisher(t *testing.T) {
 			payload: data,
 		},
 		{
-			desc:    "publish message with channel",
-			payload: data,
-		},
-		{
 			desc:     "publish message with subtopic",
-			payload:  data,
-			subtopic: subtopic,
-		},
-		{
-			desc:     "publish message with channel and subtopic",
 			payload:  data,
 			subtopic: subtopic,
 		},

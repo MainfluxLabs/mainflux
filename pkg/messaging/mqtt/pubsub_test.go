@@ -73,35 +73,21 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:    "publish message with nil payload",
 			payload: nil,
-			channel: channel,
 		},
 		{
 			desc:    "publish message with string payload",
 			payload: data,
-			channel: channel,
-		},
-		{
-			desc:    "publish message with channel",
-			payload: data,
-			channel: channel,
 		},
 		{
 			desc:     "publish message with subtopic",
 			payload:  data,
-			subtopic: subtopic,
-			channel:  channel,
-		},
-		{
-			desc:     "publish message with channel and subtopic",
-			payload:  data,
-			channel:  channel,
 			subtopic: subtopic,
 		},
 	}
 	for _, tc := range cases {
 		msg := messaging.Message{
 			Publisher: "clientID11",
-			Channel:   tc.channel,
+			Channel:   channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 			Profile:   msgProfile,
@@ -264,7 +250,7 @@ func TestPubSub(t *testing.T) {
 
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
-			msg := messaging.Message{
+			expectedMsg := messaging.Message{
 				Publisher: "clientID",
 				Channel:   channel,
 				Subtopic:  subtopic,
@@ -273,11 +259,11 @@ func TestPubSub(t *testing.T) {
 			}
 
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(msg)
+			err := pubsub.Publish(expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, msg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, msg, receivedMsg))
+			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 		}
 	}
 }
