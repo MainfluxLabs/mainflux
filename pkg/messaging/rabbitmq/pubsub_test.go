@@ -32,13 +32,12 @@ var (
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
 func TestPublisher(t *testing.T) {
-	topic := channel
 	// Subscribing with topic, and with subtopic, so that we can publish messages.
 	conn, ch, err := newConn()
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	topicChan := subscribe(t, ch, fmt.Sprintf("%s.%s", chansPrefix, topic))
-	subtopicChan := subscribe(t, ch, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic))
+	topicChan := subscribe(t, ch, fmt.Sprintf("%s.%s", chansPrefix, channel))
+	subtopicChan := subscribe(t, ch, fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic))
 
 	go rabbitHandler(topicChan, handler{})
 	go rabbitHandler(subtopicChan, handler{})
@@ -50,7 +49,6 @@ func TestPublisher(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
 		subtopic string
 		payload  []byte
 	}{
@@ -343,7 +341,7 @@ func TestPubSub(t *testing.T) {
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    topic,
+			topic:    channel,
 			clientID: clientID,
 			err:      nil,
 			handler:  handler{false, clientID},
@@ -372,7 +370,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    topic,
+			topic:    channel,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, ""},

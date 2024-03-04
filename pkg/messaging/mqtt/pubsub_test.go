@@ -34,30 +34,29 @@ var errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
 func TestPublisher(t *testing.T) {
 	msgChan := make(chan []byte)
-	topic := channel
 
 	// Subscribing with topic, and with subtopic, so that we can publish messages.
 	client, err := newClient(address, "clientID1", brokerTimeout)
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	token := client.Subscribe(topic, qos, func(c mqtt.Client, m mqtt.Message) {
+	token := client.Subscribe(channel, qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", topic))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", channel))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
-	token = client.Subscribe(fmt.Sprintf("%s.%s", topic, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
+	token = client.Subscribe(fmt.Sprintf("%s.%s", channel, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", topic, subtopic)))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", channel, subtopic)))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
 	t.Cleanup(func() {
-		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", topic, subtopic))
+		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", channel, subtopic))
 		token.WaitTimeout(tokenTimeout)
 		assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
@@ -66,7 +65,6 @@ func TestPublisher(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
 		subtopic string
 		payload  []byte
 	}{
@@ -199,7 +197,6 @@ func TestSubscribe(t *testing.T) {
 
 func TestPubSub(t *testing.T) {
 	msgChan := make(chan messaging.Message)
-	topic := channel
 
 	cases := []struct {
 		desc     string
@@ -210,14 +207,14 @@ func TestPubSub(t *testing.T) {
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    topic,
+			topic:    channel,
 			clientID: "clientid7",
 			err:      nil,
 			handler:  handler{false, "clientid7", msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
-			topic:    topic,
+			topic:    channel,
 			clientID: "clientid8",
 			err:      nil,
 			handler:  handler{false, "clientid8", msgChan},
@@ -238,7 +235,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    topic,
+			topic:    channel,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, "", msgChan},
