@@ -6,7 +6,6 @@ package nats
 import (
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
@@ -42,12 +41,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
-func (pub *publisher) Publish(profile mainflux.Profile, msg messaging.Message) (err error) {
-	msg, err = messaging.AddProfileToMessage(profile, msg)
-	if err != nil {
-		return err
-	}
-
+func (pub *publisher) Publish(msg messaging.Message) (err error) {
 	format, err := getFormat(msg.Profile.ContentType)
 	if err != nil {
 		return err
@@ -77,9 +71,9 @@ func (pub *publisher) Publish(profile mainflux.Profile, msg messaging.Message) (
 		}
 	}
 
-	if profile.Notifier != nil &&
-		(profile.Notifier.Protocol == subjectSMTP || profile.Notifier.Protocol == subjectSMPP) {
-		sub := profile.Notifier.Protocol
+	if msg.Profile.Notifier != nil &&
+		(msg.Profile.Notifier.Protocol == subjectSMTP || msg.Profile.Notifier.Protocol == subjectSMPP) {
+		sub := msg.Profile.Notifier.Protocol
 		for _, subtopic := range msg.Profile.Notifier.Subtopics {
 			if subtopic == msg.Subtopic {
 				subjects = append(subjects, sub)

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -114,19 +113,13 @@ func (as *adapterService) Publish(ctx context.Context, m Message) error {
 		payload = []byte(jo)
 	}
 
-	// Publish on Mainflux Message broker
-	msg := messaging.Message{
-		Publisher: thingID,
-		Protocol:  protocol,
-		Channel:   chanID,
-		Payload:   payload,
-		Created:   time.Now().UnixNano(),
+	conn := &mainflux.ConnByKeyRes{
+		ThingID:   thingID,
+		ChannelID: chanID,
 	}
+	msg := messaging.CreateMessage(conn, protocol, "", &payload)
 
-	conn := &mainflux.ConnByKeyRes{}
-	profile := messaging.IsProfileNil(conn.Profile)
-
-	return as.publisher.Publish(profile, msg)
+	return as.publisher.Publish(msg)
 }
 
 func (as *adapterService) CreateThing(ctx context.Context, thingID string, devEUI string) error {

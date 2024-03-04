@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,9 +28,7 @@ var (
 	msgChan    = make(chan messaging.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	profile    = &mainflux.Profile{ContentType: senmlContentType, Writer: &mainflux.Writer{Retain: true}, Notifier: &mainflux.Notifier{}}
 	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Writer: &messaging.Writer{Retain: true}, Notifier: &messaging.Notifier{}}
-	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
 )
 
 func TestPublisher(t *testing.T) {
@@ -44,7 +41,6 @@ func TestPublisher(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
 		subtopic string
 		payload  []byte
 	}{
@@ -59,7 +55,6 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:    "publish message with channel",
 			payload: data,
-			channel: channel,
 		},
 		{
 			desc:     "publish message with subtopic",
@@ -69,22 +64,19 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:     "publish message with channel and subtopic",
 			payload:  data,
-			channel:  channel,
 			subtopic: subtopic,
 		},
 	}
 
 	for _, tc := range cases {
-		msg := messaging.Message{
-			Channel:  tc.channel,
+		expectedMsg := messaging.Message{
+			Channel:  channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
+			Profile:  msgProfile,
 		}
 
-		expectedMsg := msg
-		expectedMsg.Profile = msgProfile
-
-		err = pubsub.Publish(*profile, msg)
+		err = pubsub.Publish(expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan

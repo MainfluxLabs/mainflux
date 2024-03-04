@@ -6,9 +6,9 @@ package messaging
 import (
 	"errors"
 	"net/url"
-	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 )
@@ -60,7 +60,7 @@ var (
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publish publishes message to the message broker.
-	Publish(profile mainflux.Profile, msg Message) error
+	Publish(msg Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error
@@ -94,46 +94,55 @@ type PubSub interface {
 	Subscriber
 }
 
-func AddProfileToMessage(profile mainflux.Profile, msg Message) (Message, error) {
-	if IsEmptyProfile(profile) || profile.ContentType == "" {
+func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payload *[]byte) Message {
+	msg := Message{
+		Protocol:  protocol,
+		Channel:   conn.ChannelID,
+		Subtopic:  subject,
+		Publisher: conn.ThingID,
+		Payload:   *payload,
+		Created:   time.Now().UnixNano(),
+	}
+
+	if conn.Profile == nil || conn.Profile.ContentType == "" {
 		msg.Profile = &Profile{
 			ContentType: SenmlContentType,
 			TimeField:   &TimeField{},
 			Writer:      &Writer{Retain: true},
 			Notifier:    &Notifier{},
 		}
-		return msg, nil
+		return msg
 	}
 
 	msg.Profile = &Profile{
-		ContentType: profile.ContentType,
+		ContentType: conn.Profile.ContentType,
 		TimeField:   &TimeField{},
 	}
 
-	if profile.Writer != nil {
+	if conn.Profile.Writer != nil {
 		msg.Profile.Writer = &Writer{
-			Retain:    profile.Writer.Retain,
-			Subtopics: profile.Writer.Subtopics,
+			Retain:    conn.Profile.Writer.Retain,
+			Subtopics: conn.Profile.Writer.Subtopics,
 		}
 	}
 
-	if profile.Notifier != nil {
+	if conn.Profile.Notifier != nil {
 		msg.Profile.Notifier = &Notifier{
-			Protocol:  profile.Notifier.Protocol,
-			Contacts:  profile.Notifier.Contacts,
-			Subtopics: profile.Notifier.Subtopics,
+			Protocol:  conn.Profile.Notifier.Protocol,
+			Contacts:  conn.Profile.Notifier.Contacts,
+			Subtopics: conn.Profile.Notifier.Subtopics,
 		}
 	}
 
-	if profile.TimeField != nil && profile.ContentType == JsonContentType {
+	if conn.Profile.TimeField != nil && conn.Profile.ContentType == JsonContentType {
 		msg.Profile.TimeField = &TimeField{
-			Name:     profile.TimeField.Name,
-			Format:   profile.TimeField.Format,
-			Location: profile.TimeField.Location,
+			Name:     conn.Profile.TimeField.Name,
+			Format:   conn.Profile.TimeField.Format,
+			Location: conn.Profile.TimeField.Location,
 		}
 	}
 
-	return msg, nil
+	return msg
 }
 
 func ExtractSubtopic(path string) (string, error) {
@@ -173,20 +182,4 @@ func CreateSubject(subtopic string) (string, error) {
 	subtopic = strings.Join(filteredElems, ".")
 
 	return subtopic, nil
-}
-
-func IsProfileNil(profile *mainflux.Profile) mainflux.Profile {
-	if profile == nil {
-		profile = &mainflux.Profile{}
-	}
-
-	return *profile
-}
-
-func IsEmptyProfile(profile mainflux.Profile) bool {
-	emptyProfile := mainflux.Profile{}
-	return profile.ContentType == emptyProfile.ContentType &&
-		reflect.DeepEqual(profile.Writer, emptyProfile.Writer) &&
-		reflect.DeepEqual(profile.Notifier, emptyProfile.Notifier) &&
-		reflect.DeepEqual(profile.TimeField, emptyProfile.TimeField)
 }

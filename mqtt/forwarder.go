@@ -5,19 +5,10 @@ package mqtt
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-)
-
-const (
-	channels    = "channels"
-	messages    = "messages"
-	senmlFormat = "senml"
-	jsonFormat  = "json"
 )
 
 // Forwarder specifies MQTT forwarder interface API.
@@ -42,7 +33,7 @@ func NewForwarder(topics []string, logger log.Logger) Forwarder {
 
 func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
 	for _, topic := range f.topics {
-		if err := sub.Subscribe(id, topic, handle(topic, pub, f.logger)); err != nil {
+		if err := sub.Subscribe(id, topic, handle(pub, f.logger)); err != nil {
 			return err
 		}
 	}
@@ -50,31 +41,21 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return nil
 }
 
-func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc {
+func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 	return func(msg messaging.Message) error {
 		if msg.Protocol == protocol {
 			return nil
 		}
-		// Use concatenation instead of fmt.Sprintf for the
-		// sake of simplicity and performance.
-		switch topic {
-		case brokers.SubjectSenML:
-			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
-		case brokers.SubjectJSON:
-			topic = channels + "/" + msg.Channel + "/" + jsonFormat + "/" + messages
-		default:
-			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
-			return nil
+
+		conn := &mainflux.ConnByKeyRes{
+			ThingID:   msg.Publisher,
+			ChannelID: msg.Channel,
 		}
 
-		if msg.Subtopic != "" {
-			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
-		}
-
-		conn := &mainflux.ConnByKeyRes{ChannelID: topic}
+		m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
 
 		go func() {
-			if err := pub.Publish(conn, msg); err != nil {
+			if err := pub.Publish(m); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -28,7 +27,6 @@ const (
 var (
 	msgChan = make(chan messaging.Message)
 	data    = []byte("payload")
-	c       = &mainflux.ConnByKeyRes{ChannelID: topic}
 )
 
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -38,8 +36,8 @@ func TestPublisher(t *testing.T) {
 	conn, ch, err := newConn()
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	topicChan := subscribe(t, ch, fmt.Sprintf("%s.%s", chansPrefix, topic))
-	subtopicChan := subscribe(t, ch, fmt.Sprintf("%s.%s.%s", chansPrefix, topic, subtopic))
+	topicChan := subscribe(t, ch, fmt.Sprintf("%s.%s", chansPrefix, channel))
+	subtopicChan := subscribe(t, ch, fmt.Sprintf("%s.%s.%s", chansPrefix, channel, subtopic))
 
 	go rabbitHandler(topicChan, handler{})
 	go rabbitHandler(subtopicChan, handler{})
@@ -66,7 +64,6 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:    "publish message with channel",
 			payload: data,
-			channel: channel,
 		},
 		{
 			desc:     "publish message with subtopic",
@@ -76,7 +73,6 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:     "publish message with channel and subtopic",
 			payload:  data,
-			channel:  channel,
 			subtopic: subtopic,
 		},
 	}
@@ -84,12 +80,12 @@ func TestPublisher(t *testing.T) {
 	for _, tc := range cases {
 		expectedMsg := messaging.Message{
 			Publisher: clientID,
-			Channel:   tc.channel,
+			Channel:   channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
 		}
 
-		err = pubsub.Publish(*c.Profile, expectedMsg)
+		err = pubsub.Publish(expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -348,26 +344,28 @@ func TestPubSub(t *testing.T) {
 		desc     string
 		topic    string
 		clientID string
+		subtopic string
 		err      error
 		handler  messaging.MessageHandler
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    topic,
+			topic:    channel,
 			clientID: clientID,
 			err:      nil,
 			handler:  handler{false, clientID},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
-			topic:    topic,
+			topic:    channel,
 			clientID: clientID + "1",
 			err:      nil,
 			handler:  handler{false, clientID + "1"},
 		},
 		{
 			desc:     "Subscribe to a topic with a subtopic with an ID",
-			topic:    fmt.Sprintf("%s.%s", topic, subtopic),
+			topic:    fmt.Sprintf("%s.%s", channel, subtopic),
+			subtopic: subtopic,
 			clientID: clientID + "2",
 			err:      nil,
 			handler:  handler{false, clientID + "2"},
@@ -381,7 +379,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    topic,
+			topic:    channel,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, ""},
@@ -400,11 +398,12 @@ func TestPubSub(t *testing.T) {
 
 			// If no error, publish message, and receive after subscribing.
 			expectedMsg := messaging.Message{
-				Channel: channel,
-				Payload: data,
+				Channel:  channel,
+				Subtopic: tc.subtopic,
+				Payload:  data,
 			}
-			conn := &mainflux.ConnByKeyRes{ChannelID: tc.topic}
-			err = pubsub.Publish(*conn.Profile, expectedMsg)
+
+			err = pubsub.Publish(expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan

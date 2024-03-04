@@ -63,12 +63,9 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	msg.Publisher = conn.ThingID
-	msg.Channel = conn.ChannelID
+	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
 
-	profile := messaging.IsProfileNil(conn.Profile)
-
-	return svc.pubsub.Publish(profile, msg)
+	return svc.pubsub.Publish(m)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {

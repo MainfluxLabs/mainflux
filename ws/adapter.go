@@ -83,11 +83,9 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg mes
 		return ErrFailedMessagePublish
 	}
 
-	msg.Publisher = conn.ThingID
-	msg.Channel = conn.ChannelID
-	profile := messaging.IsProfileNil(conn.Profile)
+	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
 
-	if err := svc.pubsub.Publish(profile, msg); err != nil {
+	if err := svc.pubsub.Publish(m); err != nil {
 		return ErrFailedMessagePublish
 	}
 

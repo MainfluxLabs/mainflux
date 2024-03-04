@@ -6,7 +6,6 @@ package mqtt
 import (
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
@@ -33,12 +32,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(profile mainflux.Profile, msg messaging.Message) error {
-	msg, err := messaging.AddProfileToMessage(profile, msg)
-	if err != nil {
-		return err
-	}
-
+func (pub publisher) Publish(msg messaging.Message) error {
 	if !msg.Profile.Writer.Retain {
 		return nil
 	}

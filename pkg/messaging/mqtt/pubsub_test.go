@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
@@ -27,8 +26,6 @@ const (
 
 var (
 	data       = []byte("payload")
-	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
-	profile    = &mainflux.Profile{ContentType: senmlContentType, Writer: &mainflux.Writer{Retain: true}, Notifier: &mainflux.Notifier{}}
 	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Writer: &messaging.Writer{Retain: true}, Notifier: &messaging.Notifier{}}
 )
 
@@ -37,6 +34,7 @@ var errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
 func TestPublisher(t *testing.T) {
 	msgChan := make(chan []byte)
+	topic := channel
 
 	// Subscribing with topic, and with subtopic, so that we can publish messages.
 	client, err := newClient(address, "clientID1", brokerTimeout)
@@ -75,10 +73,12 @@ func TestPublisher(t *testing.T) {
 		{
 			desc:    "publish message with nil payload",
 			payload: nil,
+			channel: channel,
 		},
 		{
 			desc:    "publish message with string payload",
 			payload: data,
+			channel: channel,
 		},
 		{
 			desc:    "publish message with channel",
@@ -89,6 +89,7 @@ func TestPublisher(t *testing.T) {
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
+			channel:  channel,
 		},
 		{
 			desc:     "publish message with channel and subtopic",
@@ -103,15 +104,13 @@ func TestPublisher(t *testing.T) {
 			Channel:   tc.channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
+			Profile:   msgProfile,
 		}
 
-		expectedMsg := msg
-		expectedMsg.Profile = msgProfile
-
-		err := pubsub.Publish(*conn.Profile, msg)
+		err := pubsub.Publish(msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
-		data, err := proto.Marshal(&expectedMsg)
+		data, err := proto.Marshal(&msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -214,6 +213,7 @@ func TestSubscribe(t *testing.T) {
 
 func TestPubSub(t *testing.T) {
 	msgChan := make(chan messaging.Message)
+	topic := channel
 
 	cases := []struct {
 		desc     string
@@ -269,17 +269,15 @@ func TestPubSub(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
+				Profile:   msgProfile,
 			}
 
-			expectedMsg := msg
-			expectedMsg.Profile = msgProfile
-
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(*conn.Profile, msg)
+			err := pubsub.Publish(msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+			assert.Equal(t, msg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, msg, receivedMsg))
 		}
 	}
 }
