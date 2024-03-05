@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
@@ -27,8 +26,6 @@ const (
 
 var (
 	data       = []byte("payload")
-	conn       = &mainflux.ConnByKeyRes{ChannelID: topic, Profile: profile}
-	profile    = &mainflux.Profile{ContentType: senmlContentType, Writer: &mainflux.Writer{Retain: true}, Notifier: &mainflux.Notifier{}}
 	msgProfile = &messaging.Profile{ContentType: senmlContentType, TimeField: &messaging.TimeField{}, Writer: &messaging.Writer{Retain: true}, Notifier: &messaging.Notifier{}}
 )
 
@@ -42,24 +39,24 @@ func TestPublisher(t *testing.T) {
 	client, err := newClient(address, "clientID1", brokerTimeout)
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	token := client.Subscribe(topic, qos, func(c mqtt.Client, m mqtt.Message) {
+	token := client.Subscribe(subtopic, qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", topic))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", subtopic))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
-	token = client.Subscribe(fmt.Sprintf("%s.%s", topic, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
+	token = client.Subscribe(fmt.Sprintf("%s.%s", channel, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", topic, subtopic)))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", channel, subtopic)))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
 	t.Cleanup(func() {
-		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", topic, subtopic))
+		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", channel, subtopic))
 		token.WaitTimeout(tokenTimeout)
 		assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
@@ -68,50 +65,38 @@ func TestPublisher(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
 		subtopic string
 		payload  []byte
 	}{
 		{
-			desc:    "publish message with nil payload",
-			payload: nil,
+			desc:     "publish message with nil payload",
+			payload:  nil,
+			subtopic: subtopic,
 		},
 		{
-			desc:    "publish message with string payload",
-			payload: data,
-		},
-		{
-			desc:    "publish message with channel",
-			payload: data,
-			channel: channel,
+			desc:     "publish message with string payload",
+			payload:  data,
+			subtopic: subtopic,
 		},
 		{
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
 		},
-		{
-			desc:     "publish message with channel and subtopic",
-			payload:  data,
-			channel:  channel,
-			subtopic: subtopic,
-		},
 	}
 	for _, tc := range cases {
 		msg := messaging.Message{
 			Publisher: "clientID11",
-			Channel:   tc.channel,
+			Channel:   channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
+			Profile:   msgProfile,
 		}
 
-		expectedMsg := msg
-		expectedMsg.Profile = msgProfile
-
-		err := pubsub.Publish(conn, msg)
+		err := pubsub.Publish(msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
-		data, err := proto.Marshal(&expectedMsg)
+		data, err := proto.Marshal(&msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -224,14 +209,14 @@ func TestPubSub(t *testing.T) {
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    topic,
+			topic:    subtopic,
 			clientID: "clientid7",
 			err:      nil,
 			handler:  handler{false, "clientid7", msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
-			topic:    topic,
+			topic:    subtopic,
 			clientID: "clientid8",
 			err:      nil,
 			handler:  handler{false, "clientid8", msgChan},
@@ -252,7 +237,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    topic,
+			topic:    subtopic,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, "", msgChan},
@@ -264,18 +249,16 @@ func TestPubSub(t *testing.T) {
 
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
-			msg := messaging.Message{
+			expectedMsg := messaging.Message{
 				Publisher: "clientID",
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
+				Profile:   msgProfile,
 			}
 
-			expectedMsg := msg
-			expectedMsg.Profile = msgProfile
-
 			// Publish message, and then receive it on message channel.
-			err := pubsub.Publish(conn, msg)
+			err := pubsub.Publish(expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan

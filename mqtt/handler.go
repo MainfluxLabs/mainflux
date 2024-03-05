@@ -172,17 +172,10 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
 
-	msg := messaging.Message{
-		Protocol:  protocol,
-		Channel:   conn.ChannelID,
-		Subtopic:  subject,
-		Publisher: c.Username,
-		Payload:   *payload,
-		Created:   time.Now().UnixNano(),
-	}
+	m := messaging.CreateMessage(&conn, protocol, subject, payload)
 
 	for _, pub := range h.publishers {
-		if err := pub.Publish(&conn, msg); err != nil {
+		if err := pub.Publish(m); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}

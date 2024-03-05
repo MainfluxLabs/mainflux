@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -55,8 +54,7 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 		if msg.Protocol == protocol {
 			return nil
 		}
-		// Use concatenation instead of fmt.Sprintf for the
-		// sake of simplicity and performance.
+
 		switch topic {
 		case brokers.SubjectSenML:
 			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
@@ -71,13 +69,12 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
 		}
 
-		conn := &mainflux.ConnByKeyRes{ChannelID: topic}
-
 		go func() {
-			if err := pub.Publish(conn, msg); err != nil {
+			if err := pub.Publish(msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()
+
 		return nil
 	}
 }

@@ -6,7 +6,6 @@ package mqtt
 import (
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
@@ -33,21 +32,12 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) error {
-	msg, err := messaging.AddProfileToMessage(conn, msg)
-	if err != nil {
-		return err
-	}
-
-	if !msg.Profile.Writer.Retain {
-		return nil
-	}
-
+func (pub publisher) Publish(msg messaging.Message) error {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
-	token := pub.client.Publish(conn.ChannelID, qos, false, data)
+	token := pub.client.Publish(msg.Subtopic, qos, false, data)
 	if token.Error() != nil {
 		return token.Error()
 	}

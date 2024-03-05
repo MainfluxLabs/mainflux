@@ -41,8 +41,7 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg messaging
 	if err != nil {
 		return err
 	}
-	msg.Publisher = conn.ThingID
-	msg.Channel = conn.ChannelID
+	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
 
-	return as.publisher.Publish(conn, msg)
+	return as.publisher.Publish(m)
 }

@@ -6,7 +6,6 @@ package nats
 import (
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
@@ -42,12 +41,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
-func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message) (err error) {
-	msg, err = messaging.AddProfileToMessage(conn, msg)
-	if err != nil {
-		return err
-	}
-
+func (pub *publisher) Publish(msg messaging.Message) (err error) {
 	format, err := getFormat(msg.Profile.ContentType)
 	if err != nil {
 		return err
@@ -60,7 +54,7 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 
 	var subjects []string
 	if msg.Profile.Writer == nil || msg.Profile.Writer.Retain {
-		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, conn.ChannelID, format, messagesSuffix)
+		subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, msg.Channel, format, messagesSuffix)
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
@@ -77,9 +71,9 @@ func (pub *publisher) Publish(conn *mainflux.ConnByKeyRes, msg messaging.Message
 		}
 	}
 
-	if conn.Profile.Notifier != nil &&
-		(conn.Profile.Notifier.Protocol == subjectSMTP || conn.Profile.Notifier.Protocol == subjectSMPP) {
-		sub := conn.Profile.Notifier.Protocol
+	if msg.Profile.Notifier != nil &&
+		(msg.Profile.Notifier.Protocol == subjectSMTP || msg.Profile.Notifier.Protocol == subjectSMPP) {
+		sub := msg.Profile.Notifier.Protocol
 		for _, subtopic := range msg.Profile.Notifier.Subtopics {
 			if subtopic == msg.Subtopic {
 				subjects = append(subjects, sub)

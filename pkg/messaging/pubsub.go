@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 )
@@ -59,7 +60,7 @@ var (
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publish publishes message to the message broker.
-	Publish(conn *mainflux.ConnByKeyRes, msg Message) error
+	Publish(msg Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error
@@ -93,7 +94,16 @@ type PubSub interface {
 	Subscriber
 }
 
-func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, error) {
+func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payload *[]byte) Message {
+	msg := Message{
+		Protocol:  protocol,
+		Channel:   conn.ChannelID,
+		Subtopic:  subject,
+		Publisher: conn.ThingID,
+		Payload:   *payload,
+		Created:   time.Now().UnixNano(),
+	}
+
 	if conn.Profile == nil || conn.Profile.ContentType == "" {
 		msg.Profile = &Profile{
 			ContentType: SenmlContentType,
@@ -101,7 +111,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 			Writer:      &Writer{Retain: true},
 			Notifier:    &Notifier{},
 		}
-		return msg, nil
+		return msg
 	}
 
 	msg.Profile = &Profile{
@@ -132,7 +142,7 @@ func AddProfileToMessage(conn *mainflux.ConnByKeyRes, msg Message) (Message, err
 		}
 	}
 
-	return msg, nil
+	return msg
 }
 
 func ExtractSubtopic(path string) (string, error) {
