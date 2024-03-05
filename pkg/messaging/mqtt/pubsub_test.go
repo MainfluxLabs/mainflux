@@ -51,7 +51,7 @@ func TestPublisher(t *testing.T) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", subtopic))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", channel, subtopic)))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
@@ -69,12 +69,14 @@ func TestPublisher(t *testing.T) {
 		payload  []byte
 	}{
 		{
-			desc:    "publish message with nil payload",
-			payload: nil,
+			desc:     "publish message with nil payload",
+			payload:  nil,
+			subtopic: subtopic,
 		},
 		{
-			desc:    "publish message with string payload",
-			payload: data,
+			desc:     "publish message with string payload",
+			payload:  data,
+			subtopic: subtopic,
 		},
 		{
 			desc:     "publish message with subtopic",
@@ -207,14 +209,14 @@ func TestPubSub(t *testing.T) {
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    channel,
+			topic:    subtopic,
 			clientID: "clientid7",
 			err:      nil,
 			handler:  handler{false, "clientid7", msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
-			topic:    channel,
+			topic:    subtopic,
 			clientID: "clientid8",
 			err:      nil,
 			handler:  handler{false, "clientid8", msgChan},
@@ -235,7 +237,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    channel,
+			topic:    subtopic,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, "", msgChan},
