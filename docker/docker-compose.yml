@@ -519,3 +519,22 @@ services:
       MF_AUTH_GRPC_TIMMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     networks:
       - mainfluxlabs-base-net
+
+  ## WEBHOOKS
+  webhooks:
+    build:
+      context: ../../mainflux
+      dockerfile: ./webhooks/docker/Dockerfile
+    container_name: mainfluxlabs-webhooks
+    restart: on-failure
+    environment:
+      MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
+      MF_WEBHOOKS_HTTP_PORT: ${MF_WEBHOOKS_HTTP_PORT}
+      MF_WEBHOOKS_SERVER_CERT: ${MF_WEBHOOKS_SERVER_CERT}
+      MF_WEBHOOKS_SERVER_KEY: ${MF_WEBHOOKS_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_WEBHOOKS_SECRET: ${MF_WEBHOOKS_SECRET}
+    ports:
+      - ${MF_WEBHOOKS_HTTP_PORT}:${MF_WEBHOOKS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
