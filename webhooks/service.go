@@ -9,10 +9,6 @@ import (
 )
 
 var (
-	// ErrMalformedEntity indicates malformed entity specification (e.g.
-	// invalid username or password).
-	ErrMalformedEntity = errors.New("malformed entity specification")
-
 	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
 	// when accessing a protected resource.
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
@@ -22,7 +18,7 @@ var (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// Ping compares a given string with secret
-	Ping(string) (string, error)
+	CreateWebhook(string) (bool, error)
 }
 
 type webhooksService struct {
@@ -38,9 +34,9 @@ func New(secret string) Service {
 	}
 }
 
-func (ks *webhooksService) Ping(secret string) (string, error) {
+func (ks *webhooksService) CreateWebhook(secret string) (bool, error) {
 	if ks.secret != secret {
-		return "", ErrUnauthorizedAccess
+		return false, ErrUnauthorizedAccess
 	}
-	return "Hello World :)", nil
+	return true, nil
 }
