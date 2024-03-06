@@ -10,21 +10,21 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func pingEndpoint(svc webhooks.Service) endpoint.Endpoint {
+func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(pingReq)
+		req := request.(webhookReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		greeting, err := svc.Ping(req.Secret)
+		response, err := svc.CreateWebhook(req.name)
 		if err != nil {
 			return nil, err
 		}
 
-		res := pingRes{
-			Greeting: greeting,
+		res := webhookRes{
+			created: response,
 		}
 		return res, nil
 	}
