@@ -9,12 +9,15 @@ type apiReq interface {
 	validate() error
 }
 
-type pingReq struct {
-	Secret string `json:"secret"`
+type webhookReq struct {
+	name   string `json:"name"`
+	format string `json:"format"`
+	url    string `json:"url"`
+	token  string `json:"token"`
 }
 
-func (req pingReq) validate() error {
-	if req.Secret == "" {
+func (req webhookReq) validate() error {
+	if req.name == "" {
 		return webhooks.ErrMalformedEntity
 	}
 
