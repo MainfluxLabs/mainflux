@@ -8,20 +8,24 @@ import (
 	"net/http"
 )
 
-var _ mainflux.Response = (*pingRes)(nil)
+var _ mainflux.Response = (*webhookRes)(nil)
 
-type pingRes struct {
-	Greeting string `json:"greeting"`
+type webhookRes struct {
+	created bool `json:"created"`
 }
 
-func (res pingRes) Code() int {
+func (res webhookRes) Code() int {
+
+	if res.created {
+		return http.StatusCreated
+	}
 	return http.StatusOK
 }
 
-func (res pingRes) Headers() map[string]string {
+func (res webhookRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res pingRes) Empty() bool {
-	return false
+func (res webhookRes) Empty() bool {
+	return true
 }
