@@ -522,9 +522,7 @@ services:
 
   ## WEBHOOKS
   webhooks:
-    build:
-      context: ../../mainflux
-      dockerfile: ./webhooks/docker/Dockerfile
+    image: mainfluxlabs/webhooks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     restart: on-failure
     environment:
