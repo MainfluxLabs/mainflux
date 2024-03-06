@@ -33,7 +33,7 @@ func (req webhookReq) validate() error {
 
 	if req.format == "" {
 		return errors.New("missing type of format")
-	} else if req.format != formatJSON || req.format != formatSenML {
+	} else if req.format != formatJSON && req.format != formatSenML {
 		return errors.New("invalid type of format")
 	}
 
