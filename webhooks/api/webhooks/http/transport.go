@@ -39,7 +39,7 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	r := bone.New()
 
 	r.Post("/webhooks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "ping")(pingEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_webhook")(pingEndpoint(svc)),
 		decodePing,
 		encodeResponse,
 		opts...,
@@ -56,7 +56,7 @@ func decodePing(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, errUnsupportedContentType
 	}
 
-	req := pingReq{}
+	req := webhookReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
