@@ -6,13 +6,12 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -25,11 +24,6 @@ const (
 	contentType = "application/json"
 )
 
-var (
-	errUnsupportedContentType = errors.New("unsupported content type")
-	errInvalidQueryParams     = errors.New("invalid query params")
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -39,8 +33,8 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	r := bone.New()
 
 	r.Post("/webhooks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_webhook")(pingEndpoint(svc)),
-		decodePing,
+		kitot.TraceServer(tracer, "create_webhook")(createWebhookEndpoint(svc)),
+		decodeWebhook,
 		encodeResponse,
 		opts...,
 	))
@@ -51,9 +45,9 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	return r
 }
 
-func decodePing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, errUnsupportedContentType
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := webhookReq{}
@@ -86,13 +80,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", contentType)
 
 	switch err {
-	case webhooks.ErrMalformedEntity:
+	case apiutil.ErrMalformedEntity:
 		w.WriteHeader(http.StatusBadRequest)
 	case webhooks.ErrUnauthorizedAccess:
 		w.WriteHeader(http.StatusForbidden)
-	case errUnsupportedContentType:
+	case apiutil.ErrUnsupportedContentType:
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errInvalidQueryParams:
+	case apiutil.ErrInvalidQueryParams:
 		w.WriteHeader(http.StatusBadRequest)
 	case io.ErrUnexpectedEOF:
 		w.WriteHeader(http.StatusBadRequest)
@@ -108,36 +102,4 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
-}
-
-func readUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
-	vals := bone.GetQuery(r, key)
-	if len(vals) > 1 {
-		return 0, errInvalidQueryParams
-	}
-
-	if len(vals) == 0 {
-		return def, nil
-	}
-
-	strval := vals[0]
-	val, err := strconv.ParseUint(strval, 10, 64)
-	if err != nil {
-		return 0, errInvalidQueryParams
-	}
-
-	return val, nil
-}
-
-func readStringQuery(r *http.Request, key string) (string, error) {
-	vals := bone.GetQuery(r, key)
-	if len(vals) > 1 {
-		return "", errInvalidQueryParams
-	}
-
-	if len(vals) == 0 {
-		return "", nil
-	}
-
-	return vals[0], nil
 }
