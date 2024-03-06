@@ -31,11 +31,11 @@ func MetricsMiddleware(svc webhooks.Service, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) Ping(secret string) (response string, err error) {
+func (ms *metricsMiddleware) CreateWebhook(secret string) (response bool, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "ping").Add(1)
-		ms.latency.With("method", "ping").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_webhook").Add(1)
+		ms.latency.With("method", "create_webhook").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Ping(secret)
+	return ms.svc.CreateWebhook(secret)
 }
