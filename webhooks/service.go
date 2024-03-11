@@ -4,7 +4,9 @@
 package webhooks
 
 import (
+	"context"
 	//"errors"
+	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -18,25 +20,41 @@ var (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// Ping compares a given string with secret
-	CreateWebhook(string) (bool, error)
+	CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error)
 }
 
 type webhooksService struct {
-	secret string
+	auth       mainflux.AuthServiceClient
+	webhooks   WebhookRepository
+	idProvider mainflux.IDProvider
 }
 
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(secret string) Service {
+func New(auth mainflux.AuthServiceClient, webhooks WebhookRepository, idp mainflux.IDProvider) Service {
 	return &webhooksService{
-		secret: secret,
+		auth:       auth,
+		webhooks:   webhooks,
+		idProvider: idp,
 	}
 }
 
-func (ks *webhooksService) CreateWebhook(secret string) (bool, error) {
-	if ks.secret != secret {
-		return false, ErrUnauthorizedAccess
+func (ws *webhooksService) CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error) {
+	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Webhook{}, err
 	}
-	return true, nil
+
+	id, err := ws.idProvider.ID()
+	if err != nil {
+		return Webhook{}, err
+	}
+	webhook.ID = id
+
+	wh, err := ws.webhooks.Save(ctx, webhook)
+	if err != nil {
+		return Webhook{}, err
+	}
+	return wh, nil
 }
