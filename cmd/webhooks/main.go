@@ -23,7 +23,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -138,10 +137,6 @@ func main() {
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, "webhook-http", webhookshttpapi.MakeHandler(webhooksTracer, svc), cfg.httpPort, cfg, logger)
-	})
-
-	g.Go(func() error {
-		return startGRPCServer(ctx, svc, webhooksTracer, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -318,54 +313,6 @@ func startHTTPServer(ctx context.Context, typ string, handler http.Handler, port
 			return fmt.Errorf("webhooks %s service occurred during shutdown at %s: %w", typ, p, err)
 		}
 		logger.Info(fmt.Sprintf("Webhooks %s service  shutdown of http at %s", typ, p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
-}
-
-func startGRPCServer(ctx context.Context, svc webhooks.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.authGRPCPort)
-	errCh := make(chan error)
-	var server *grpc.Server
-
-	_, err := net.Listen("tcp", p)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.authGRPCPort, err)
-	}
-
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		creds, err := credentials.NewServerTLSFromFile(cfg.serverCert, cfg.serverKey)
-		if err != nil {
-			return fmt.Errorf("failed to load things certificates: %w", err)
-		}
-		logger.Info(fmt.Sprintf("Webhooks gRPC service started using https on port %s with cert %s key %s",
-			cfg.authGRPCPort, cfg.serverCert, cfg.serverKey))
-		server = grpc.NewServer(grpc.Creds(creds))
-	default:
-		logger.Info(fmt.Sprintf("Webhooks gRPC service started using http on port %s", cfg.authGRPCPort))
-		server = grpc.NewServer()
-	}
-
-	// TODO: RegisterWebhooksServiceServer
-	//mainflux.RegisterWebhooksServiceServer(server, authgrpcapi.NewServer(tracer, svc))
-	//go func() {
-	//	errCh <- server.Serve(listener)
-	//}()
-
-	select {
-	case <-ctx.Done():
-		c := make(chan bool)
-		go func() {
-			defer close(c)
-			server.GracefulStop()
-		}()
-		select {
-		case <-c:
-		case <-time.After(stopWaitTime):
-		}
-		logger.Info(fmt.Sprintf("Webhooks gRPC service shutdown at %s", p))
 		return nil
 	case err := <-errCh:
 		return err
