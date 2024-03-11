@@ -19,6 +19,7 @@ volumes:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-bootstrap-db-volume:
+  mainfluxlabs-webhooks-db-volume:
 
 services:
   ui:
@@ -521,9 +522,24 @@ services:
       - mainfluxlabs-base-net
 
   ## WEBHOOKS
+  webhooks-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-webhooks-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_WEBHOOKS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_WEBHOOKS_DB_PASS}
+      POSTGRES_DB: ${MF_WEBHOOKS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
+
   webhooks:
-    image: mainfluxlabs/webhooks:${MF_RELEASE_TAG}
+    image: mainfluxlabs/webhooks:latest
     container_name: mainfluxlabs-webhooks
+    depends_on:
+      - webhooks-db
     restart: on-failure
     environment:
       MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
