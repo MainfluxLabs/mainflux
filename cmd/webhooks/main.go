@@ -8,14 +8,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
+	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
+	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"strconv"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -30,34 +42,75 @@ import (
 )
 
 const (
-	defLogLevel   = "error"
-	defHTTPPort   = "9021"
-	defJaegerURL  = ""
-	defServerCert = ""
-	defServerKey  = ""
-	defSecret     = "secret"
+	stopWaitTime       = 5 * time.Second
+	defLogLevel        = "error"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "webhooks"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defClientTLS       = "false"
+	defCACerts         = ""
+	defHTTPPort        = "9021"
+	defAuthHTTPPort    = "8989"
+	defAuthGRPCPort    = "8181"
+	defJaegerURL       = ""
+	defServerCert      = ""
+	defServerKey       = ""
+	defStandaloneEmail = ""
+	defStandaloneToken = ""
+	defAuthGRPCURL     = "localhost:8181"
+	defAuthGRPCTimeout = "1s"
 
-	envLogLevel   = "MF_WEBHOOKS_LOG_LEVEL"
-	envHTTPPort   = "MF_WEBHOOKS_HTTP_PORT"
-	envServerCert = "MF_WEBHOOKS_SERVER_CERT"
-	envServerKey  = "MF_WEBHOOKS_SERVER_KEY"
-	envSecret     = "MF_WEBHOOKS_SECRET"
-	envJaegerURL  = "MF_JAEGER_URL"
+	envLogLevel        = "MF_WEBHOOKS_LOG_LEVEL"
+	envDBHost          = "MF_WEBHOOKS_DB_HOST"
+	envDBPort          = "MF_WEBHOOKS_DB_PORT"
+	envDBUser          = "MF_WEBHOOKS_DB_USER"
+	envDBPass          = "MF_WEBHOOKS_DB_PASS"
+	envDB              = "MF_WEBHOOKS_DB"
+	envDBSSLMode       = "MF_WEBHOOKS_DB_SSL_MODE"
+	envDBSSLCert       = "MF_WEBHOOKS_DB_SSL_CERT"
+	envDBSSLKey        = "MF_WEBHOOKS_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
+	envClientTLS       = "MF_WEBHOOKS_CLIENT_TLS"
+	envCACerts         = "MF_WEBHOOKS_CA_CERTS"
+	envAuthHTTPPort    = "MF_WEBHOOKS_AUTH_HTTP_PORT"
+	envAuthGRPCPort    = "MF_WEBHOOKS_AUTH_GRPC_PORT"
+	envHTTPPort        = "MF_WEBHOOKS_HTTP_PORT"
+	envServerCert      = "MF_WEBHOOKS_SERVER_CERT"
+	envServerKey       = "MF_WEBHOOKS_SERVER_KEY"
+	envStandaloneEmail = "MF_WEBHOOKS_STANDALONE_EMAIL"
+	envStandaloneToken = "MF_WEBHOOKS_STANDALONE_TOKEN"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
+	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel     string
-	httpPort     string
-	authHTTPPort string
-	authGRPCPort string
-	serverCert   string
-	serverKey    string
-	secret       string
-	jaegerURL    string
+	logLevel        string
+	dbConfig        postgres.Config
+	clientTLS       bool
+	caCerts         string
+	httpPort        string
+	authHTTPPort    string
+	authGRPCPort    string
+	serverCert      string
+	serverKey       string
+	standaloneEmail string
+	standaloneToken string
+	jaegerURL       string
+	authGRPCURL     string
+	authGRPCTimeout time.Duration
 }
 
 func main() {
 	cfg := loadConfig()
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
@@ -67,29 +120,80 @@ func main() {
 	webhooksTracer, webhooksCloser := initJaeger("webhooks", cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
 
-	svc := newService(cfg.secret, logger)
-	errs := make(chan error, 2)
+	db := connectToDB(cfg.dbConfig, logger)
+	defer db.Close()
 
-	go startHTTPServer(webhookshttpapi.MakeHandler(webhooksTracer, svc), cfg.httpPort, cfg, logger, errs)
+	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
 
-	go func() {
-		c := make(chan os.Signal)
-		signal.Notify(c, syscall.SIGINT)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
+	auth, close := createAuthClient(cfg, authTracer, logger)
+	if close != nil {
+		defer close()
+	}
 
-	err = <-errs
-	logger.Error(fmt.Sprintf("Webhooks service terminated: %s", err))
+	dbTracer, dbCloser := initJaeger("webhooks_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	svc := newService(auth, dbTracer, db, logger)
+
+	g.Go(func() error {
+		return startHTTPServer(ctx, "webhook-http", webhookshttpapi.MakeHandler(webhooksTracer, svc), cfg.httpPort, cfg, logger)
+	})
+
+	g.Go(func() error {
+		return startGRPCServer(ctx, svc, webhooksTracer, cfg, logger)
+	})
+
+	g.Go(func() error {
+		if sig := errors.SignalHandler(ctx); sig != nil {
+			cancel()
+			logger.Info(fmt.Sprintf("Webhooks service shutdown by signal: %s", sig))
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		logger.Error(fmt.Sprintf("Webhooks service terminated: %s", err))
+	}
 }
 
 func loadConfig() config {
+	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
+	if err != nil {
+		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+	}
+
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
+	}
+
+	dbConfig := postgres.Config{
+		Host:        mainflux.Env(envDBHost, defDBHost),
+		Port:        mainflux.Env(envDBPort, defDBPort),
+		User:        mainflux.Env(envDBUser, defDBUser),
+		Pass:        mainflux.Env(envDBPass, defDBPass),
+		Name:        mainflux.Env(envDB, defDB),
+		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
+		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
+		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
+		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
+	}
 	return config{
-		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert: mainflux.Env(envServerCert, defServerCert),
-		serverKey:  mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:  mainflux.Env(envJaegerURL, defJaegerURL),
-		secret:     mainflux.Env(envSecret, defSecret),
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		clientTLS:       tls,
+		caCerts:         mainflux.Env(envCACerts, defCACerts),
+		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
+		authHTTPPort:    mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
+		authGRPCPort:    mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
+		serverCert:      mainflux.Env(envServerCert, defServerCert),
+		serverKey:       mainflux.Env(envServerKey, defServerKey),
+		standaloneEmail: mainflux.Env(envStandaloneEmail, defStandaloneEmail),
+		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout: authGRPCTimeout,
 	}
 }
 
@@ -117,9 +221,55 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func newService(secret string, logger logger.Logger) webhooks.Service {
-	svc := webhooks.New(secret)
+func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
+	db, err := postgres.Connect(dbConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
+		os.Exit(1)
+	}
+	return db
+}
+func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
+	if cfg.standaloneEmail != "" && cfg.standaloneToken != "" {
+		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
+	}
 
+	conn := connectToAuth(cfg, logger)
+	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
+}
+func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.clientTLS {
+		if cfg.caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+		logger.Info("gRPC communication is not encrypted")
+	}
+
+	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
+		os.Exit(1)
+	}
+
+	return conn
+}
+
+func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+	database := postgres.NewDatabase(db)
+
+	webhooksRepo := postgres.NewWebhookRepository(database)
+	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
+	idProvider := uuid.New()
+
+	svc := webhooks.New(ac, webhooksRepo, idProvider)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
@@ -140,14 +290,84 @@ func newService(secret string, logger logger.Logger) webhooks.Service {
 	return svc
 }
 
-func startHTTPServer(handler http.Handler, port string, cfg config, logger logger.Logger, errs chan error) {
+func startHTTPServer(ctx context.Context, typ string, handler http.Handler, port string, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
-	if cfg.serverCert != "" || cfg.serverKey != "" {
-		logger.Info(fmt.Sprintf("Webhooks service started using https on port %s with cert %s key %s",
-			port, cfg.serverCert, cfg.serverKey))
-		errs <- http.ListenAndServeTLS(p, cfg.serverCert, cfg.serverKey, handler)
-		return
+	errCh := make(chan error)
+	server := &http.Server{Addr: p, Handler: handler}
+
+	switch {
+	case cfg.serverCert != "" || cfg.serverKey != "":
+		logger.Info(fmt.Sprintf("Webhooks %s service started using https on port %s with cert %s key %s",
+			typ, port, cfg.serverCert, cfg.serverKey))
+		go func() {
+			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
+		}()
+	default:
+		logger.Info(fmt.Sprintf("Webhooks %s service started using http on port %s", typ, cfg.httpPort))
+		go func() {
+			errCh <- server.ListenAndServe()
+		}()
 	}
-	logger.Info(fmt.Sprintf("Webhooks service started using http on port %s", cfg.httpPort))
-	errs <- http.ListenAndServe(p, handler)
+
+	select {
+	case <-ctx.Done():
+		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
+		defer cancelShutdown()
+		if err := server.Shutdown(ctxShutdown); err != nil {
+			logger.Error(fmt.Sprintf("Webhooks %s service error occurred during shutdown at %s: %s", typ, p, err))
+			return fmt.Errorf("webhooks %s service occurred during shutdown at %s: %w", typ, p, err)
+		}
+		logger.Info(fmt.Sprintf("Webhooks %s service  shutdown of http at %s", typ, p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
+}
+
+func startGRPCServer(ctx context.Context, svc webhooks.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
+	p := fmt.Sprintf(":%s", cfg.authGRPCPort)
+	errCh := make(chan error)
+	var server *grpc.Server
+
+	_, err := net.Listen("tcp", p)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %s: %w", cfg.authGRPCPort, err)
+	}
+
+	switch {
+	case cfg.serverCert != "" || cfg.serverKey != "":
+		creds, err := credentials.NewServerTLSFromFile(cfg.serverCert, cfg.serverKey)
+		if err != nil {
+			return fmt.Errorf("failed to load things certificates: %w", err)
+		}
+		logger.Info(fmt.Sprintf("Webhooks gRPC service started using https on port %s with cert %s key %s",
+			cfg.authGRPCPort, cfg.serverCert, cfg.serverKey))
+		server = grpc.NewServer(grpc.Creds(creds))
+	default:
+		logger.Info(fmt.Sprintf("Webhooks gRPC service started using http on port %s", cfg.authGRPCPort))
+		server = grpc.NewServer()
+	}
+
+	// TODO: RegisterWebhooksServiceServer
+	//mainflux.RegisterWebhooksServiceServer(server, authgrpcapi.NewServer(tracer, svc))
+	//go func() {
+	//	errCh <- server.Serve(listener)
+	//}()
+
+	select {
+	case <-ctx.Done():
+		c := make(chan bool)
+		go func() {
+			defer close(c)
+			server.GracefulStop()
+		}()
+		select {
+		case <-c:
+		case <-time.After(stopWaitTime):
+		}
+		logger.Info(fmt.Sprintf("Webhooks gRPC service shutdown at %s", p))
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
