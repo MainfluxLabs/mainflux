@@ -7,12 +7,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"net/url"
+	"strings"
 )
 
 const (
 	maxNameSize = 1024
-	formatJSON  = "JSON"
-	formatSenML = "SenML"
+	formatJSON  = "json"
+	formatSenML = "senml"
 )
 
 type apiReq interface {
@@ -31,9 +32,10 @@ func (req webhookReq) validate() error {
 		return errors.New("missing or invalid name ")
 	}
 
-	if req.format == "" {
+	f := strings.ToLower(req.format)
+	if f == "" {
 		return errors.New("missing type of format")
-	} else if req.format != formatJSON && req.format != formatSenML {
+	} else if f != formatJSON && f != formatSenML {
 		return errors.New("invalid type of format")
 	}
 
