@@ -7,6 +7,7 @@
 package api
 
 import (
+	"context"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -31,11 +32,11 @@ func MetricsMiddleware(svc webhooks.Service, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) CreateWebhook(secret string) (response bool, err error) {
+func (ms *metricsMiddleware) CreateWebhook(ctx context.Context, token string, webhook webhooks.Webhook) (response webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_webhook").Add(1)
 		ms.latency.With("method", "create_webhook").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateWebhook(secret)
+	return ms.svc.CreateWebhook(ctx, token, webhook)
 }
