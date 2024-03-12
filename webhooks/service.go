@@ -5,6 +5,7 @@ package webhooks
 
 import (
 	"context"
+
 	//"errors"
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -19,7 +20,6 @@ var (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// Ping compares a given string with secret
 	CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error)
 }
 
@@ -41,6 +41,7 @@ func New(auth mainflux.AuthServiceClient, webhooks WebhookRepository, idp mainfl
 }
 
 func (ws *webhooksService) CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error) {
+
 	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Webhook{}, err

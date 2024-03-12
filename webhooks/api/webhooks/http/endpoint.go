@@ -15,7 +15,7 @@ func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		req := request.(webhookReq)
 
 		if err := req.validate(); err != nil {
-			return webhookRes{created: false}, err
+			return nil, err
 		}
 
 		wh := webhooks.Webhook{

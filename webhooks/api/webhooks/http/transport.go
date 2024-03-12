@@ -39,7 +39,6 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 		opts...,
 	))
 
-	//r.GetFunc("/version", mainflux.Version("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
@@ -50,9 +49,11 @@ func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := webhookReq{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, err
+	req := webhookReq{
+		name:   bone.GetValue(r, "name"),
+		format: bone.GetValue(r, "format"),
+		url:    bone.GetValue(r, "url"),
+		token:  apiutil.ExtractBearerToken(r),
 	}
 
 	return req, nil
