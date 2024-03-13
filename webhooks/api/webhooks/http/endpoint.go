@@ -5,7 +5,6 @@ package http
 
 import (
 	"context"
-
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -19,9 +18,10 @@ func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		wh := webhooks.Webhook{
-			Name:   req.Name,
-			Format: req.Format,
-			Url:    req.Url,
+			Name:    req.Name,
+			Format:  req.Format,
+			Url:     req.Url,
+			ThingID: req.ThingID,
 		}
 		_, err := svc.CreateWebhook(ctx, req.Token, wh)
 		if err != nil {
@@ -35,14 +35,15 @@ func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	}
 }
 
-func listWebhooks(svc webhooks.Service) endpoint.Endpoint {
+func listWebhooksByThing(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listWebhooksReq)
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		webhooks, err := svc.ListWebhooks(ctx, req.token)
+		webhooks, err := svc.ListWebhooksByThing(ctx, req.Token, req.ThingID)
 		if err != nil {
 			return nil, err
 		}
@@ -55,10 +56,10 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook) webhooksRes {
 	res := webhooksRes{Webhooks: []webhookResponse{}}
 	for _, wh := range webhooks {
 		webhook := webhookResponse{
-			ID:     wh.ID,
-			Name:   wh.Name,
-			Format: wh.Format,
-			Url:    wh.Url,
+			ThingID: wh.ThingID,
+			Name:    wh.Name,
+			Format:  wh.Format,
+			Url:     wh.Url,
 		}
 		res.Webhooks = append(res.Webhooks, webhook)
 	}
