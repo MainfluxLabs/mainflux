@@ -32,12 +32,12 @@ func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, w webhooks.Webh
 	return wrm.repo.Save(ctx, w)
 }
 
-func (wrm webhookRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]webhooks.Webhook, error) {
-	span := createSpan(ctx, wrm.tracer, "retrieve_webhooks")
+func (wrm webhookRepositoryMiddleware) RetrieveByThingID(ctx context.Context, thingID string) ([]webhooks.Webhook, error) {
+	span := createSpan(ctx, wrm.tracer, "retrieve_webhooks_by_thing")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return wrm.repo.RetrieveAll(ctx)
+	return wrm.repo.RetrieveByThingID(ctx, thingID)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
