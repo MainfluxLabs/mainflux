@@ -6,7 +6,8 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"io"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/readers"
 	"net/http"
 	"strings"
 
@@ -26,6 +27,7 @@ const (
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
+
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
 	}
@@ -49,11 +51,9 @@ func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := webhookReq{
-		name:   bone.GetValue(r, "name"),
-		format: bone.GetValue(r, "format"),
-		url:    bone.GetValue(r, "url"),
-		token:  apiutil.ExtractBearerToken(r),
+	req := webhookReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, err
 	}
 
 	return req, nil
@@ -78,28 +78,36 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", contentType)
-
-	switch err {
-	case apiutil.ErrMalformedEntity:
+	switch {
+	case errors.Contains(err, nil):
+	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
+		errors.Contains(err, apiutil.ErrMalformedEntity),
+		err == apiutil.ErrLimitSize:
 		w.WriteHeader(http.StatusBadRequest)
-	case webhooks.ErrUnauthorizedAccess:
+	case errors.Contains(err, errors.ErrAuthentication),
+		err == apiutil.ErrBearerToken:
+		w.WriteHeader(http.StatusUnauthorized)
+	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case apiutil.ErrUnsupportedContentType:
+	case errors.Contains(err, errors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case apiutil.ErrInvalidQueryParams:
-		w.WriteHeader(http.StatusBadRequest)
-	case io.ErrUnexpectedEOF:
-		w.WriteHeader(http.StatusBadRequest)
-	case io.EOF:
-		w.WriteHeader(http.StatusBadRequest)
+	case errors.Contains(err, errors.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
+	case errors.Contains(err, errors.ErrScanMetadata):
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	case errors.Contains(err, readers.ErrReadMessages),
+		errors.Contains(err, errors.ErrCreateEntity):
+		w.WriteHeader(http.StatusInternalServerError)
+
 	default:
-		switch err.(type) {
-		case *json.SyntaxError:
-			w.WriteHeader(http.StatusBadRequest)
-		case *json.UnmarshalTypeError:
-			w.WriteHeader(http.StatusBadRequest)
-		default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	if errorVal, ok := err.(errors.Error); ok {
+		w.Header().Set("Content-Type", contentType)
+		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
