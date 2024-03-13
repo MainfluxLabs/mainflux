@@ -31,10 +31,10 @@ func (res webhookRes) Empty() bool {
 }
 
 type webhookResponse struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Format string `json:"format"`
-	Url    string `json:"url"`
+	ThingID string `json:"thingID"`
+	Name    string `json:"name"`
+	Format  string `json:"format"`
+	Url     string `json:"url"`
 }
 
 type webhooksRes struct {
