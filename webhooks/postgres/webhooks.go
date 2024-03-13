@@ -57,6 +57,32 @@ func (wr webhookRepository) Save(ctx context.Context, w webhooks.Webhook) (webho
 	return w, nil
 }
 
+func (wr webhookRepository) RetrieveAll(ctx context.Context) ([]webhooks.Webhook, error) {
+	q := `SELECT id, name, format, url FROM webhooks;`
+
+	rows, err := wr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []webhooks.Webhook
+	for rows.Next() {
+		dbWh := dbWebhook{}
+		if err := rows.StructScan(&dbWh); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		webhook, err := toWebhook(dbWh)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, webhook)
+	}
+	return items, nil
+}
+
 type dbWebhook struct {
 	ID     string `db:"id"`
 	Name   string `db:"name"`

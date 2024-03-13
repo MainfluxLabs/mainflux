@@ -39,3 +39,16 @@ func (lm *loggingMiddleware) CreateWebhook(ctx context.Context, token string, we
 
 	return lm.svc.CreateWebhook(ctx, token, webhook)
 }
+
+func (lm *loggingMiddleware) ListWebhooks(ctx context.Context, token string) (response []webhooks.Webhook, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_webhooks for token %s took %s to complete", token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListWebhooks(ctx, token)
+}

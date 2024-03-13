@@ -40,6 +40,12 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 		encodeResponse,
 		opts...,
 	))
+	r.Get("/webhooks", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_webhooks")(listWebhooks(svc)),
+		decodeList,
+		encodeResponse,
+		opts...,
+	))
 
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -55,6 +61,12 @@ func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
+
+	return req, nil
+}
+
+func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listWebhooksReq{token: apiutil.ExtractBearerToken(r)}
 
 	return req, nil
 }

@@ -40,22 +40,22 @@ import (
 )
 
 const (
-	stopWaitTime       = 5 * time.Second
-	defBrokerURL       = "nats://localhost:4222"
-	defLogLevel        = "error"
-	defDBHost          = "localhost"
-	defDBPort          = "5432"
-	defDBUser          = "mainflux"
-	defDBPass          = "mainflux"
-	defDB              = "webhooks"
-	defDBSSLMode       = "disable"
-	defDBSSLCert       = ""
-	defDBSSLKey        = ""
-	defDBSSLRootCert   = ""
-	defClientTLS       = "false"
-	defCACerts         = ""
-	defHTTPPort        = "9021"
-	defAuthHTTPPort    = "8989"
+	stopWaitTime     = 5 * time.Second
+	defBrokerURL     = "nats://localhost:4222"
+	defLogLevel      = "error"
+	defDBHost        = "localhost"
+	defDBPort        = "5432"
+	defDBUser        = "mainflux"
+	defDBPass        = "mainflux"
+	defDB            = "webhooks"
+	defDBSSLMode     = "disable"
+	defDBSSLCert     = ""
+	defDBSSLKey      = ""
+	defDBSSLRootCert = ""
+	defClientTLS     = "false"
+	defCACerts       = ""
+	defHTTPPort      = "9021"
+	//defAuthHTTPPort    = "8989"
 	defAuthGRPCPort    = "8181"
 	defJaegerURL       = ""
 	defServerCert      = ""
@@ -63,20 +63,20 @@ const (
 	defAuthGRPCURL     = "localhost:8181"
 	defAuthGRPCTimeout = "1s"
 
-	envBrokerURL       = "MF_BROKER_URL"
-	envLogLevel        = "MF_WEBHOOKS_LOG_LEVEL"
-	envDBHost          = "MF_WEBHOOKS_DB_HOST"
-	envDBPort          = "MF_WEBHOOKS_DB_PORT"
-	envDBUser          = "MF_WEBHOOKS_DB_USER"
-	envDBPass          = "MF_WEBHOOKS_DB_PASS"
-	envDB              = "MF_WEBHOOKS_DB"
-	envDBSSLMode       = "MF_WEBHOOKS_DB_SSL_MODE"
-	envDBSSLCert       = "MF_WEBHOOKS_DB_SSL_CERT"
-	envDBSSLKey        = "MF_WEBHOOKS_DB_SSL_KEY"
-	envDBSSLRootCert   = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
-	envClientTLS       = "MF_WEBHOOKS_CLIENT_TLS"
-	envCACerts         = "MF_WEBHOOKS_CA_CERTS"
-	envAuthHTTPPort    = "MF_WEBHOOKS_AUTH_HTTP_PORT"
+	envBrokerURL     = "MF_BROKER_URL"
+	envLogLevel      = "MF_WEBHOOKS_LOG_LEVEL"
+	envDBHost        = "MF_WEBHOOKS_DB_HOST"
+	envDBPort        = "MF_WEBHOOKS_DB_PORT"
+	envDBUser        = "MF_WEBHOOKS_DB_USER"
+	envDBPass        = "MF_WEBHOOKS_DB_PASS"
+	envDB            = "MF_WEBHOOKS_DB"
+	envDBSSLMode     = "MF_WEBHOOKS_DB_SSL_MODE"
+	envDBSSLCert     = "MF_WEBHOOKS_DB_SSL_CERT"
+	envDBSSLKey      = "MF_WEBHOOKS_DB_SSL_KEY"
+	envDBSSLRootCert = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
+	envClientTLS     = "MF_WEBHOOKS_CLIENT_TLS"
+	envCACerts       = "MF_WEBHOOKS_CA_CERTS"
+	//envAuthHTTPPort    = "MF_WEBHOOKS_AUTH_HTTP_PORT"
 	envAuthGRPCPort    = "MF_WEBHOOKS_AUTH_GRPC_PORT"
 	envHTTPPort        = "MF_WEBHOOKS_HTTP_PORT"
 	envServerCert      = "MF_WEBHOOKS_SERVER_CERT"
@@ -87,13 +87,13 @@ const (
 )
 
 type config struct {
-	brokerURL       string
-	logLevel        string
-	dbConfig        postgres.Config
-	clientTLS       bool
-	caCerts         string
-	httpPort        string
-	authHTTPPort    string
+	brokerURL string
+	logLevel  string
+	dbConfig  postgres.Config
+	clientTLS bool
+	caCerts   string
+	httpPort  string
+	//authHTTPPort    string
 	authGRPCPort    string
 	serverCert      string
 	serverKey       string

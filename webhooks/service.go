@@ -21,6 +21,7 @@ var (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error)
+	ListWebhooks(ctx context.Context, token string) ([]Webhook, error)
 }
 
 type webhooksService struct {
@@ -58,4 +59,17 @@ func (ws *webhooksService) CreateWebhook(ctx context.Context, token string, webh
 		return Webhook{}, err
 	}
 	return wh, nil
+}
+
+func (ws *webhooksService) ListWebhooks(ctx context.Context, token string) ([]Webhook, error) {
+	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	webhooks, err := ws.webhooks.RetrieveAll(ctx)
+	if err != nil {
+		return []Webhook{}, err
+	}
+	return webhooks, nil
 }

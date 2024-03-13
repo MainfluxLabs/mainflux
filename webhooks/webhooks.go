@@ -13,4 +13,5 @@ type WebhookRepository interface {
 	// Save persists webhook. A non-nil error is returned to indicate
 	// operation failure.
 	Save(ctx context.Context, w Webhook) (Webhook, error)
+	RetrieveAll(ctx context.Context) ([]Webhook, error)
 }

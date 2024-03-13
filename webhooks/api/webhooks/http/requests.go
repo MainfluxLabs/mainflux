@@ -50,3 +50,14 @@ func (req webhookReq) validate() error {
 
 	return nil
 }
+
+type listWebhooksReq struct {
+	token string `json:"token"`
+}
+
+func (req *listWebhooksReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}

@@ -40,3 +40,12 @@ func (ms *metricsMiddleware) CreateWebhook(ctx context.Context, token string, we
 
 	return ms.svc.CreateWebhook(ctx, token, webhook)
 }
+
+func (ms *metricsMiddleware) ListWebhooks(ctx context.Context, token string) ([]webhooks.Webhook, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_webhooks").Add(1)
+		ms.latency.With("method", "list_webhooks").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListWebhooks(ctx, token)
+}
