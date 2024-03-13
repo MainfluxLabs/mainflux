@@ -58,26 +58,26 @@ func (wr webhookRepository) Save(ctx context.Context, w webhooks.Webhook) (webho
 }
 
 type dbWebhook struct {
-	id     string `db:"id"`
-	name   string `db:"name"`
-	format string `db:"format"`
-	url    string `db:"url"`
+	ID     string `db:"id"`
+	Name   string `db:"name"`
+	Format string `db:"format"`
+	Url    string `db:"url"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	return dbWebhook{
-		id:     wh.ID,
-		name:   wh.Name,
-		format: wh.Format,
-		url:    wh.Url,
+		ID:     wh.ID,
+		Name:   wh.Name,
+		Format: wh.Format,
+		Url:    wh.Url,
 	}, nil
 }
 
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	return webhooks.Webhook{
-		ID:     dbW.id,
-		Name:   dbW.name,
-		Format: dbW.format,
-		Url:    dbW.url,
+		ID:     dbW.ID,
+		Name:   dbW.Name,
+		Format: dbW.Format,
+		Url:    dbW.Url,
 	}, nil
 }

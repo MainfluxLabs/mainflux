@@ -21,30 +21,30 @@ type apiReq interface {
 }
 
 type webhookReq struct {
-	name   string `json:"name"`
-	format string `json:"format"`
-	url    string `json:"url"`
-	token  string `json:"token"`
+	Name   string `json:"name"`
+	Format string `json:"format"`
+	Url    string `json:"url"`
+	Token  string `json:"token"`
 }
 
 func (req webhookReq) validate() error {
-	if req.name == "" || len(req.name) > maxNameSize {
+	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
-	f := strings.ToLower(req.format)
+	f := strings.ToLower(req.Format)
 	if f == "" {
-		return errors.New("missing type of format")
+		return errors.New("missing type of Format")
 	} else if f != formatJSON && f != formatSenML {
-		return errors.New("invalid type of format")
+		return errors.New("invalid type of Format")
 	}
 
-	if req.token == "" {
+	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	_, err := url.ParseRequestURI(req.url)
-	if req.url == "" || err != nil {
+	_, err := url.ParseRequestURI(req.Url)
+	if req.Url == "" || err != nil {
 		return errors.New("missing or invalid url")
 	}
 

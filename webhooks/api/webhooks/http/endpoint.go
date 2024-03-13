@@ -19,11 +19,11 @@ func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		wh := webhooks.Webhook{
-			Name:   req.name,
-			Format: req.format,
-			Url:    req.url,
+			Name:   req.Name,
+			Format: req.Format,
+			Url:    req.Url,
 		}
-		_, err := svc.CreateWebhook(ctx, req.token, wh)
+		_, err := svc.CreateWebhook(ctx, req.Token, wh)
 		if err != nil {
 			return nil, err
 		}
