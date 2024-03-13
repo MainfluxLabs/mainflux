@@ -13,7 +13,6 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
 	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
 	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
 	"github.com/jmoiron/sqlx"
@@ -42,6 +41,7 @@ import (
 
 const (
 	stopWaitTime       = 5 * time.Second
+	defBrokerURL       = "nats://localhost:4222"
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
 	defDBPort          = "5432"
@@ -60,11 +60,10 @@ const (
 	defJaegerURL       = ""
 	defServerCert      = ""
 	defServerKey       = ""
-	defStandaloneEmail = ""
-	defStandaloneToken = ""
 	defAuthGRPCURL     = "localhost:8181"
 	defAuthGRPCTimeout = "1s"
 
+	envBrokerURL       = "MF_BROKER_URL"
 	envLogLevel        = "MF_WEBHOOKS_LOG_LEVEL"
 	envDBHost          = "MF_WEBHOOKS_DB_HOST"
 	envDBPort          = "MF_WEBHOOKS_DB_PORT"
@@ -82,14 +81,13 @@ const (
 	envHTTPPort        = "MF_WEBHOOKS_HTTP_PORT"
 	envServerCert      = "MF_WEBHOOKS_SERVER_CERT"
 	envServerKey       = "MF_WEBHOOKS_SERVER_KEY"
-	envStandaloneEmail = "MF_WEBHOOKS_STANDALONE_EMAIL"
-	envStandaloneToken = "MF_WEBHOOKS_STANDALONE_TOKEN"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
+	brokerURL       string
 	logLevel        string
 	dbConfig        postgres.Config
 	clientTLS       bool
@@ -99,8 +97,6 @@ type config struct {
 	authGRPCPort    string
 	serverCert      string
 	serverKey       string
-	standaloneEmail string
-	standaloneToken string
 	jaegerURL       string
 	authGRPCURL     string
 	authGRPCTimeout time.Duration
@@ -175,17 +171,16 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		clientTLS:       tls,
-		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		authHTTPPort:    mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
+		brokerURL: mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:  mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:  dbConfig,
+		clientTLS: tls,
+		caCerts:   mainflux.Env(envCACerts, defCACerts),
+		httpPort:  mainflux.Env(envHTTPPort, defHTTPPort),
+		//authHTTPPort:    mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
 		authGRPCPort:    mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
 		serverCert:      mainflux.Env(envServerCert, defServerCert),
 		serverKey:       mainflux.Env(envServerKey, defServerKey),
-		standaloneEmail: mainflux.Env(envStandaloneEmail, defStandaloneEmail),
-		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authGRPCTimeout: authGRPCTimeout,
@@ -224,14 +219,12 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	}
 	return db
 }
-func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
-	if cfg.standaloneEmail != "" && cfg.standaloneToken != "" {
-		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
-	}
 
+func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
 	conn := connectToAuth(cfg, logger)
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
+
 func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	if cfg.clientTLS {
