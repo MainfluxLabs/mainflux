@@ -34,14 +34,14 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 
 	r := bone.New()
 
-	r.Post("/webhooks", kithttp.NewServer(
+	r.Post("/webhooks/:thingID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_webhook")(createWebhookEndpoint(svc)),
 		decodeWebhook,
 		encodeResponse,
 		opts...,
 	))
-	r.Get("/webhooks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_webhooks")(listWebhooks(svc)),
+	r.Get("/webhooks/:thingID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_webhooks")(listWebhooksByThing(svc)),
 		decodeList,
 		encodeResponse,
 		opts...,
@@ -57,7 +57,7 @@ func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := webhookReq{Token: apiutil.ExtractBearerToken(r)}
+	req := webhookReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -66,7 +66,7 @@ func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listWebhooksReq{token: apiutil.ExtractBearerToken(r)}
+	req := listWebhooksReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
 
 	return req, nil
 }
