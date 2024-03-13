@@ -11,17 +11,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-var (
-	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
-	// when accessing a protected resource.
-	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
-)
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error)
-	ListWebhooks(ctx context.Context, token string) ([]Webhook, error)
+	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
 }
 
 type webhooksService struct {
@@ -42,17 +36,10 @@ func New(auth mainflux.AuthServiceClient, webhooks WebhookRepository, idp mainfl
 }
 
 func (ws *webhooksService) CreateWebhook(ctx context.Context, token string, webhook Webhook) (Webhook, error) {
-
 	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Webhook{}, err
 	}
-
-	id, err := ws.idProvider.ID()
-	if err != nil {
-		return Webhook{}, err
-	}
-	webhook.ID = id
 
 	wh, err := ws.webhooks.Save(ctx, webhook)
 	if err != nil {
@@ -61,13 +48,13 @@ func (ws *webhooksService) CreateWebhook(ctx context.Context, token string, webh
 	return wh, nil
 }
 
-func (ws *webhooksService) ListWebhooks(ctx context.Context, token string) ([]Webhook, error) {
+func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error) {
 	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	webhooks, err := ws.webhooks.RetrieveAll(ctx)
+	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID)
 	if err != nil {
 		return []Webhook{}, err
 	}
