@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -28,7 +29,7 @@ func (wr webhookRepository) Save(ctx context.Context, w webhooks.Webhook) (webho
 		return webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (id, name, format, url) VALUES (:id, :name, :format, :url);`
+	q := `INSERT INTO webhooks (thing_id, name, format, url) VALUES (:thing_id, :name, :format, :url);`
 
 	dbWh, err := toDBWebhook(w)
 	if err != nil {
@@ -57,10 +58,17 @@ func (wr webhookRepository) Save(ctx context.Context, w webhooks.Webhook) (webho
 	return w, nil
 }
 
-func (wr webhookRepository) RetrieveAll(ctx context.Context) ([]webhooks.Webhook, error) {
-	q := `SELECT id, name, format, url FROM webhooks;`
+func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string) ([]webhooks.Webhook, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
+		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+	q := `SELECT thing_id, name, format, url FROM webhooks WHERE thing_id = :id;`
 
-	rows, err := wr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	params := map[string]interface{}{
+		"thing_id": thingID,
+	}
+
+	rows, err := wr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -84,26 +92,26 @@ func (wr webhookRepository) RetrieveAll(ctx context.Context) ([]webhooks.Webhook
 }
 
 type dbWebhook struct {
-	ID     string `db:"id"`
-	Name   string `db:"name"`
-	Format string `db:"format"`
-	Url    string `db:"url"`
+	ThingID string `db:"thing_id"`
+	Name    string `db:"name"`
+	Format  string `db:"format"`
+	Url     string `db:"url"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	return dbWebhook{
-		ID:     wh.ID,
-		Name:   wh.Name,
-		Format: wh.Format,
-		Url:    wh.Url,
+		ThingID: wh.ThingID,
+		Name:    wh.Name,
+		Format:  wh.Format,
+		Url:     wh.Url,
 	}, nil
 }
 
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	return webhooks.Webhook{
-		ID:     dbW.ID,
-		Name:   dbW.Name,
-		Format: dbW.Format,
-		Url:    dbW.Url,
+		ThingID: dbW.ThingID,
+		Name:    dbW.Name,
+		Format:  dbW.Format,
+		Url:     dbW.Url,
 	}, nil
 }
