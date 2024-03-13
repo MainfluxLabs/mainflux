@@ -29,7 +29,7 @@ type webhookReq struct {
 
 func (req webhookReq) validate() error {
 	if req.name == "" || len(req.name) > maxNameSize {
-		return errors.New("missing or invalid name ")
+		return apiutil.ErrNameSize
 	}
 
 	f := strings.ToLower(req.format)
