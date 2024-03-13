@@ -7,7 +7,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"net/url"
-	"strings"
 )
 
 const (
@@ -21,26 +20,26 @@ type apiReq interface {
 }
 
 type webhookReq struct {
-	Name   string `json:"name"`
-	Format string `json:"format"`
-	Url    string `json:"url"`
-	Token  string `json:"token"`
+	Name    string `json:"name"`
+	Format  string `json:"format"`
+	Url     string `json:"url"`
+	Token   string `json:"token"`
+	ThingID string `json:"thingID"`
 }
 
 func (req webhookReq) validate() error {
+	if req.Token == "" {
+		return apiutil.ErrBearerToken
+	}
+
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
-	f := strings.ToLower(req.Format)
-	if f == "" {
-		return errors.New("missing type of Format")
-	} else if f != formatJSON && f != formatSenML {
-		return errors.New("invalid type of Format")
-	}
-
-	if req.Token == "" {
-		return apiutil.ErrBearerToken
+	if req.Format == "" {
+		return errors.New("missing type of format")
+	} else if req.Format != formatJSON && req.Format != formatSenML {
+		return errors.New("invalid type of format")
 	}
 
 	_, err := url.ParseRequestURI(req.Url)
@@ -48,16 +47,23 @@ func (req webhookReq) validate() error {
 		return errors.New("missing or invalid url")
 	}
 
+	if req.ThingID == "" {
+		return apiutil.ErrMissingID
+	}
 	return nil
 }
 
 type listWebhooksReq struct {
-	token string `json:"token"`
+	Token   string `json:"token"`
+	ThingID string `json:"thingID"`
 }
 
 func (req *listWebhooksReq) validate() error {
-	if req.token == "" {
+	if req.Token == "" {
 		return apiutil.ErrBearerToken
+	}
+	if req.ThingID == "" {
+		return apiutil.ErrMissingID
 	}
 	return nil
 }
