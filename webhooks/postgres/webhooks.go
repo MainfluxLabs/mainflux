@@ -62,7 +62,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 	if _, err := uuid.FromString(thingID); err != nil {
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT thing_id, name, format, url FROM webhooks WHERE thing_id = :id;`
+	q := `SELECT thing_id, name, format, url FROM webhooks WHERE thing_id = :thing_id;`
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
@@ -80,7 +80,6 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 		if err := rows.StructScan(&dbWh); err != nil {
 			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-
 		webhook, err := toWebhook(dbWh)
 		if err != nil {
 			return nil, err
