@@ -9,21 +9,26 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func createWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
+func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(webhookReq)
+		req := request.(createWebhooksReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		wh := webhooks.Webhook{
-			Name:    req.Name,
-			Format:  req.Format,
-			Url:     req.Url,
-			ThingID: req.ThingID,
+		whs := []webhooks.Webhook{}
+		for _, wReq := range req.Webhooks {
+			wh := webhooks.Webhook{
+				ThingID: req.ThingID,
+				Name:    wReq.Name,
+				Format:  wReq.Format,
+				Url:     wReq.Url,
+			}
+			whs = append(whs, wh)
 		}
-		_, err := svc.CreateWebhook(ctx, req.Token, wh)
+
+		_, err := svc.CreateWebhooks(ctx, req.Token, whs...)
 		if err != nil {
 			return nil, err
 		}
@@ -63,5 +68,6 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook) webhooksRes {
 		}
 		res.Webhooks = append(res.Webhooks, webhook)
 	}
+
 	return res
 }

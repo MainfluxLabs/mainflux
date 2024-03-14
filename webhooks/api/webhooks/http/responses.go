@@ -50,5 +50,5 @@ func (res webhooksRes) Headers() map[string]string {
 }
 
 func (res webhooksRes) Empty() bool {
-	return true
+	return false
 }

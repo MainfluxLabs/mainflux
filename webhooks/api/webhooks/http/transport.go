@@ -6,9 +6,13 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -35,8 +39,8 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	r := bone.New()
 
 	r.Post("/webhooks/:thingID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_webhook")(createWebhookEndpoint(svc)),
-		decodeWebhook,
+		kitot.TraceServer(tracer, "create_webhook")(createWebhooksEndpoint(svc)),
+		decodeWebhooksCreation,
 		encodeResponse,
 		opts...,
 	))
@@ -52,13 +56,13 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
 	return r
 }
 
-func decodeWebhook(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeWebhooksCreation(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := webhookReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	req := createWebhooksReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
+	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
@@ -85,7 +89,11 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 			return nil
 		}
 	}
-
+	logger, err := logger.New(os.Stdout, "info")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	logger.Info(fmt.Sprintf("RESPONSE : %v", response))
 	return json.NewEncoder(w).Encode(response)
 }
 

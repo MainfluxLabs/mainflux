@@ -12,6 +12,6 @@ type Webhook struct {
 type WebhookRepository interface {
 	// Save persists webhook. A non-nil error is returned to indicate
 	// operation failure.
-	Save(ctx context.Context, w Webhook) (Webhook, error)
+	Save(ctx context.Context, whs ...Webhook) ([]Webhook, error)
 	RetrieveByThingID(ctx context.Context, thingID string) ([]Webhook, error)
 }

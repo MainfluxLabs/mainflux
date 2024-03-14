@@ -6,6 +6,7 @@ package http
 import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/gofrs/uuid"
 	"net/url"
 )
 
@@ -19,23 +20,44 @@ type apiReq interface {
 	validate() error
 }
 
-type webhookReq struct {
-	Name    string `json:"name"`
-	Format  string `json:"format"`
-	Url     string `json:"url"`
-	Token   string `json:"token"`
-	ThingID string `json:"thingID"`
+type createWebhookReq struct {
+	Name   string `json:"name"`
+	Format string `json:"format"`
+	Url    string `json:"url"`
 }
 
-func (req webhookReq) validate() error {
+type createWebhooksReq struct {
+	Token    string             `json:"token"`
+	ThingID  string             `json:"thingID"`
+	Webhooks []createWebhookReq `json:"webhooks"`
+}
+
+func (req createWebhooksReq) validate() error {
 	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}
 
+	if err := validateUUID(req.ThingID); err != nil {
+		return err
+	}
+
+	if len(req.Webhooks) <= 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, wh := range req.Webhooks {
+		if err := wh.validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (req createWebhookReq) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
-
 	if req.Format == "" {
 		return errors.New("missing type of format")
 	} else if req.Format != formatJSON && req.Format != formatSenML {
@@ -47,9 +69,6 @@ func (req webhookReq) validate() error {
 		return errors.New("missing or invalid url")
 	}
 
-	if req.ThingID == "" {
-		return apiutil.ErrMissingID
-	}
 	return nil
 }
 
@@ -62,8 +81,17 @@ func (req *listWebhooksReq) validate() error {
 	if req.Token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.ThingID == "" {
-		return apiutil.ErrMissingID
+	if err := validateUUID(req.ThingID); err != nil {
+		return err
 	}
+	return nil
+}
+
+func validateUUID(extID string) (err error) {
+	id, err := uuid.FromString(extID)
+	if id.String() != extID || err != nil {
+		return apiutil.ErrInvalidIDFormat
+	}
+
 	return nil
 }

@@ -23,39 +23,42 @@ func NewWebhookRepository(db Database) webhooks.WebhookRepository {
 	}
 }
 
-func (wr webhookRepository) Save(ctx context.Context, w webhooks.Webhook) (webhooks.Webhook, error) {
+func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) ([]webhooks.Webhook, error) {
 	tx, err := wr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO webhooks (thing_id, name, format, url) VALUES (:thing_id, :name, :format, :url);`
 
-	dbWh, err := toDBWebhook(w)
-	if err != nil {
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	if _, err := tx.NamedExecContext(ctx, q, dbWh); err != nil {
-		tx.Rollback()
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return webhooks.Webhook{}, errors.Wrap(errors.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationWarning:
-				return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
-			}
+	for _, webhook := range whs {
+		dbWh, err := toDBWebhook(webhook)
+		if err != nil {
+			return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 		}
 
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		if _, err := tx.NamedExecContext(ctx, q, dbWh); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return []webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return []webhooks.Webhook{}, errors.Wrap(errors.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationWarning:
+					return []webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				}
+			}
+
+			return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		}
 	}
+
 	if err = tx.Commit(); err != nil {
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
-	return w, nil
+	return whs, nil
 }
 
 func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string) ([]webhooks.Webhook, error) {

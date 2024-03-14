@@ -32,13 +32,13 @@ func MetricsMiddleware(svc webhooks.Service, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) CreateWebhook(ctx context.Context, token string, webhook webhooks.Webhook) (response webhooks.Webhook, err error) {
+func (ms *metricsMiddleware) CreateWebhooks(ctx context.Context, token string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_webhook").Add(1)
-		ms.latency.With("method", "create_webhook").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_webhooks").Add(1)
+		ms.latency.With("method", "create_webhooks").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateWebhook(ctx, token, webhook)
+	return ms.svc.CreateWebhooks(ctx, token, webhooks...)
 }
 
 func (ms *metricsMiddleware) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]webhooks.Webhook, error) {
