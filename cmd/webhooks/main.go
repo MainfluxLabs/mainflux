@@ -10,15 +10,6 @@ package main
 import (
 	"context"
 	"fmt"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
-	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
-	"github.com/jmoiron/sqlx"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"io"
 	"io/ioutil"
 	"log"
@@ -28,15 +19,23 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
 	webhookshttpapi "github.com/MainfluxLabs/mainflux/webhooks/api/webhooks/http"
-
+	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
+	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/jmoiron/sqlx"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -129,7 +128,7 @@ func main() {
 	svc := newService(auth, dbTracer, db, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, "webhook-http", webhookshttpapi.MakeHandler(webhooksTracer, svc), cfg.httpPort, cfg, logger)
+		return startHTTPServer(ctx, "webhook-http", webhookshttpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -274,7 +273,7 @@ func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *
 	return svc
 }
 
-func startHTTPServer(ctx context.Context, typ string, handler http.Handler, port string, cfg config, logger logger.Logger) error {
+func startHTTPServer(ctx context.Context, name string, handler http.Handler, port string, cfg config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", port)
 	errCh := make(chan error)
 	server := &http.Server{Addr: p, Handler: handler}
@@ -282,12 +281,12 @@ func startHTTPServer(ctx context.Context, typ string, handler http.Handler, port
 	switch {
 	case cfg.serverCert != "" || cfg.serverKey != "":
 		logger.Info(fmt.Sprintf("Webhooks %s service started using https on port %s with cert %s key %s",
-			typ, port, cfg.serverCert, cfg.serverKey))
+			name, port, cfg.serverCert, cfg.serverKey))
 		go func() {
 			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
 		}()
 	default:
-		logger.Info(fmt.Sprintf("Webhooks %s service started using http on port %s", typ, cfg.httpPort))
+		logger.Info(fmt.Sprintf("Webhooks %s service started using http on port %s", name, cfg.httpPort))
 		go func() {
 			errCh <- server.ListenAndServe()
 		}()
@@ -298,10 +297,10 @@ func startHTTPServer(ctx context.Context, typ string, handler http.Handler, port
 		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
 		defer cancelShutdown()
 		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Webhooks %s service error occurred during shutdown at %s: %s", typ, p, err))
-			return fmt.Errorf("webhooks %s service occurred during shutdown at %s: %w", typ, p, err)
+			logger.Error(fmt.Sprintf("Webhooks %s service error occurred during shutdown at %s: %s", name, p, err))
+			return fmt.Errorf("webhooks %s service occurred during shutdown at %s: %w", name, p, err)
 		}
-		logger.Info(fmt.Sprintf("Webhooks %s service  shutdown of http at %s", typ, p))
+		logger.Info(fmt.Sprintf("Webhooks %s service  shutdown of http at %s", name, p))
 		return nil
 	case err := <-errCh:
 		return err

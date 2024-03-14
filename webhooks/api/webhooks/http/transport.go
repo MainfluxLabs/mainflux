@@ -6,22 +6,20 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/MainfluxLabs/mainflux/logger"
+	"net/http"
+	"strings"
+
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"log"
-	"net/http"
-	"os"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -30,10 +28,9 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service) http.Handler {
-
+func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
-		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
 	r := bone.New()
@@ -89,11 +86,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 			return nil
 		}
 	}
-	logger, err := logger.New(os.Stdout, "info")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	logger.Info(fmt.Sprintf("RESPONSE : %v", response))
+
 	return json.NewEncoder(w).Encode(response)
 }
 

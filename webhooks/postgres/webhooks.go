@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/gofrs/uuid"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/jackc/pgerrcode"
 )
 
 var _ webhooks.WebhookRepository = (*webhookRepository)(nil)

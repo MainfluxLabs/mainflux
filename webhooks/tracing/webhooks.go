@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/opentracing/opentracing-go"
 )
@@ -25,7 +26,7 @@ func WebhookRepositoryMiddleware(tracer opentracing.Tracer, repo webhooks.Webhoo
 }
 
 func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks.Webhook) ([]webhooks.Webhook, error) {
-	span := createSpan(ctx, wrm.tracer, "save_webhook")
+	span := createSpan(ctx, wrm.tracer, "save_webhooks")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

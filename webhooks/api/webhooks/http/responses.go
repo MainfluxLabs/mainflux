@@ -4,8 +4,9 @@
 package http
 
 import (
-	"github.com/MainfluxLabs/mainflux"
 	"net/http"
+
+	"github.com/MainfluxLabs/mainflux"
 )
 
 var _ mainflux.Response = (*webhookRes)(nil)

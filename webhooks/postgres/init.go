@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"fmt"
+
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
+
 	migrate "github.com/rubenv/sql-migrate"
 )
 

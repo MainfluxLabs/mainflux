@@ -5,6 +5,7 @@ package http
 
 import (
 	"context"
+
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/endpoint"
 )
