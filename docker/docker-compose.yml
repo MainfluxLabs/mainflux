@@ -536,7 +536,7 @@ services:
       - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
 
   webhooks:
-    image: mainfluxlabs/webhooks:latest
+    image: mainfluxlabs/webhooks::${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     depends_on:
       - webhooks-db
