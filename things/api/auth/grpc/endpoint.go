@@ -68,6 +68,18 @@ func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func isThingOwnerEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(thingOwnerReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		err := svc.IsThingOwner(ctx, req.token, req.thingID)
+		return emptyRes{err: err}, err
+	}
+}
+
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(identifyReq)

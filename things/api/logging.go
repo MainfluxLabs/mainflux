@@ -279,6 +279,19 @@ func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner, chanID s
 	return lm.svc.IsChannelOwner(ctx, owner, chanID)
 }
 
+func (lm *loggingMiddleware) IsThingOwner(ctx context.Context, token, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method is_thing_owner for thing %s and user %s took %s to complete", thingID, token, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.IsThingOwner(ctx, token, thingID)
+}
+
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for token %s and thing %s took %s to complete", key, id, time.Since(begin))

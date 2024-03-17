@@ -13,7 +13,7 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,6 +23,7 @@ var _ mainflux.ThingsServiceServer = (*grpcServer)(nil)
 type grpcServer struct {
 	getConnByKey   kitgrpc.Handler
 	isChannelOwner kitgrpc.Handler
+	isThingOwner   kitgrpc.Handler
 	identify       kitgrpc.Handler
 	getGroupsByIDs kitgrpc.Handler
 }
@@ -38,6 +39,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsSer
 		isChannelOwner: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "is_channel_owner")(isChannelOwnerEndpoint(svc)),
 			decodeIsChannelOwnerRequest,
+			encodeEmptyResponse,
+		),
+		isThingOwner: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "is_thing_owner")(isThingOwnerEndpoint(svc)),
+			decodeIsThingOwnerRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -71,6 +77,15 @@ func (gs *grpcServer) IsChannelOwner(ctx context.Context, req *mainflux.ChannelO
 	return res.(*empty.Empty), nil
 }
 
+func (gs *grpcServer) IsThingOwner(ctx context.Context, req *mainflux.ThingOwnerReq) (*empty.Empty, error) {
+	_, res, err := gs.isThingOwner.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
 func (gs *grpcServer) Identify(ctx context.Context, req *mainflux.Token) (*mainflux.ThingID, error) {
 	_, res, err := gs.identify.ServeGRPC(ctx, req)
 	if err != nil {
@@ -97,6 +112,11 @@ func decodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interfac
 func decodeIsChannelOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.ChannelOwnerReq)
 	return channelOwnerReq{owner: req.GetOwner(), chanID: req.GetChanID()}, nil
+}
+
+func decodeIsThingOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.ThingOwnerReq)
+	return thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
