@@ -10,10 +10,12 @@ type Webhook struct {
 }
 
 type WebhookRepository interface {
-	// Save persists webhook. A non-nil error is returned to indicate
-	// operation failure.
+	// Save persists multiple webhooks. Webhooks are saved using a transaction.
+	// If one webhook fails then none will be saved.
+	// Successful operation is indicated by non-nil error response.
 	Save(ctx context.Context, whs ...Webhook) ([]Webhook, error)
 
-	// RetrieveByThingID returns webhooks for given thing id.
+	// RetrieveByThingID retrieves webhooks related to
+	// a certain thing identified by a given ID.
 	RetrieveByThingID(ctx context.Context, thingID string) ([]Webhook, error)
 }
