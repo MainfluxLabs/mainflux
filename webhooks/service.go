@@ -12,12 +12,18 @@ import (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
+	// CreateWebhooks creates webhooks for certain thing
+	// which belongs to the user identified by a given token
 	CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error)
+
+	// ListWebhooksByThing retrieves data about a subset of webhooks
+	// related to a certain thing identified by the provided ID.
 	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
 }
 
 type webhooksService struct {
 	auth       mainflux.AuthServiceClient
+	things     mainflux.ThingsServiceClient
 	webhooks   WebhookRepository
 	idProvider mainflux.IDProvider
 }
@@ -41,7 +47,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 
 	whs := []Webhook{}
 	for _, webhook := range webhooks {
-		wh, err := ws.createWebhook(ctx, &webhook)
+		wh, err := ws.createWebhook(ctx, &webhook, token)
 		if err != nil {
 			return []Webhook{}, err
 		}
@@ -51,7 +57,14 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 	return whs, nil
 }
 
-func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook) (Webhook, error) {
+func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
+	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: webhook.ThingID})
+	if err != nil {
+		if err != nil {
+			return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
+		}
+	}
+
 	whs, err := ws.webhooks.Save(ctx, *webhook)
 	if err != nil {
 		return Webhook{}, err
@@ -66,6 +79,13 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: thingID})
+	if err != nil {
+		if err != nil {
+			return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
+		}
 	}
 
 	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID)
