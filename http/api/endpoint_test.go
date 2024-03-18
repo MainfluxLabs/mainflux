@@ -72,7 +72,7 @@ func TestPublish(t *testing.T) {
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil, nil)
 	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()

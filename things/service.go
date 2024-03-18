@@ -90,6 +90,10 @@ type Service interface {
 	// the given user and returns error if it cannot.
 	IsChannelOwner(ctx context.Context, owner, chanID string) error
 
+	// IsThingOwner determines whether the thing can be accessed by
+	// the given user and returns error if it cannot.
+	IsThingOwner(ctx context.Context, token, thingID string) error
+
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
@@ -574,6 +578,19 @@ func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID strin
 	}
 
 	if ch.Owner != owner {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (ts *thingsService) IsThingOwner(ctx context.Context, token, thingID string) error {
+	th, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	if th.Owner != token {
 		return errors.ErrAuthorization
 	}
 

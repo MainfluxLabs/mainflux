@@ -43,6 +43,19 @@ func (req channelOwnerReq) validate() error {
 	return nil
 }
 
+type thingOwnerReq struct {
+	token   string
+	thingID string
+}
+
+func (req thingOwnerReq) validate() error {
+	if req.token == "" || req.thingID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type identifyReq struct {
 	key string
 }

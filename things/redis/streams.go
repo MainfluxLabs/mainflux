@@ -257,6 +257,10 @@ func (es eventStore) IsChannelOwner(ctx context.Context, owner, chanID string) e
 	return es.svc.IsChannelOwner(ctx, owner, chanID)
 }
 
+func (es eventStore) IsThingOwner(ctx context.Context, token, thingID string) error {
+	return es.svc.IsThingOwner(ctx, token, thingID)
+}
+
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }

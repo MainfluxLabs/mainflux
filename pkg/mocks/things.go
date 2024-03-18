@@ -223,6 +223,10 @@ func (svc *mainfluxThings) IsChannelOwner(context.Context, string, string) error
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) IsThingOwner(context.Context, string, string) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
