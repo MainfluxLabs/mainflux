@@ -201,6 +201,15 @@ func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner, chanID s
 	return ms.svc.IsChannelOwner(ctx, owner, chanID)
 }
 
+func (ms *metricsMiddleware) IsThingOwner(ctx context.Context, token, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "is_thing_owner").Add(1)
+		ms.latency.With("method", "is_thing_owner").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.IsThingOwner(ctx, token, thingID)
+}
+
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)

@@ -22,6 +22,7 @@ type grpcClient struct {
 	timeout        time.Duration
 	getConnByKey   endpoint.Endpoint
 	isChannelOwner endpoint.Endpoint
+	isThingOwner   endpoint.Endpoint
 	identify       endpoint.Endpoint
 	getGroupsByIDs endpoint.Endpoint
 }
@@ -45,6 +46,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"IsChannelOwner",
 			encodeIsChannelOwner,
+			decodeEmptyResponse,
+			empty.Empty{},
+		).Endpoint()),
+		isThingOwner: kitot.TraceClient(tracer, "is_thing_owner")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"IsThingOwner",
+			encodeIsThingOwner,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -94,6 +103,17 @@ func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.Chann
 	return &empty.Empty{}, er.err
 }
 
+func (client grpcClient) IsThingOwner(ctx context.Context, req *mainflux.ThingOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+	ar := thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}
+	res, err := client.isThingOwner(ctx, ar)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
 func (client grpcClient) Identify(ctx context.Context, req *mainflux.Token, _ ...grpc.CallOption) (*mainflux.ThingID, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
@@ -128,6 +148,11 @@ func encodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interfac
 func encodeIsChannelOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(channelOwnerReq)
 	return &mainflux.ChannelOwnerReq{Owner: req.owner, ChanID: req.chanID}, nil
+}
+
+func encodeIsThingOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(thingOwnerReq)
+	return &mainflux.ThingOwnerReq{Token: req.token, ThingID: req.thingID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
     rpc IsChannelOwner(ChannelOwnerReq) returns (google.protobuf.Empty) {}
+    rpc IsThingOwner(ThingOwnerReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
 }
@@ -67,6 +68,11 @@ message TimeField {
 message ChannelOwnerReq {
     string owner  = 1;
     string chanID = 2;
+}
+
+message ThingOwnerReq {
+    string token   = 1;
+    string thingID = 2;
 }
 
 message ThingID {

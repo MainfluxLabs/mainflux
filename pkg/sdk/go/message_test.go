@@ -35,7 +35,7 @@ func TestSendMessage(t *testing.T) {
 	atoken := "auth_token"
 	invalidToken := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil, nil)
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)
 	defer ts.Close()
@@ -99,7 +99,7 @@ func TestSendMessage(t *testing.T) {
 func TestSetContentType(t *testing.T) {
 	chanID := "1"
 	atoken := "auth_token"
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil, nil)
 
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)

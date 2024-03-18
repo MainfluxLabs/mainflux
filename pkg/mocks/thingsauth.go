@@ -19,12 +19,13 @@ var _ mainflux.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
 	channels map[string]string
+	things   map[string]string
 	groups   map[string]things.Group
 }
 
 // NewThingsService returns mock implementation of things service
-func NewThingsServiceClient(channels map[string]string, groups map[string]things.Group) mainflux.ThingsServiceClient {
-	return &thingsServiceMock{channels, groups}
+func NewThingsServiceClient(channels map[string]string, things map[string]string, groups map[string]things.Group) mainflux.ThingsServiceClient {
+	return &thingsServiceMock{channels, things, groups}
 }
 
 func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *mainflux.ConnByKeyReq, opts ...grpc.CallOption) (*mainflux.ConnByKeyRes, error) {
@@ -55,6 +56,15 @@ func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *mainflux.Conn
 func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *mainflux.ChannelOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
 	if id, ok := svc.channels[in.GetOwner()]; ok {
 		if id == in.ChanID {
+			return nil, nil
+		}
+	}
+	return nil, errors.ErrAuthorization
+}
+
+func (svc thingsServiceMock) IsThingOwner(ctx context.Context, in *mainflux.ThingOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	if id, ok := svc.things[in.GetToken()]; ok {
+		if id == in.ThingID {
 			return nil, nil
 		}
 	}
