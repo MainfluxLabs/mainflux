@@ -18,6 +18,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	webhookshttpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
+
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -25,7 +28,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
-	webhookshttpapi "github.com/MainfluxLabs/mainflux/webhooks/api/webhooks/http"
 	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
 	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -107,6 +109,12 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
+	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
+	}
+	defer pubSub.Close()
 
 	webhooksTracer, webhooksCloser := initJaeger("webhooks", cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
