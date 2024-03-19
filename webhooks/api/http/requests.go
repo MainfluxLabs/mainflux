@@ -59,9 +59,8 @@ func (req createWebhookReq) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
-	if req.Format == "" {
-		return errors.New("missing type of format")
-	} else if req.Format != formatJSON && req.Format != formatSenML {
+
+	if req.Format != formatJSON && req.Format != formatSenML {
 		return errors.New("invalid type of format")
 	}
 
