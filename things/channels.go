@@ -20,13 +20,15 @@ type Channel struct {
 
 type Profile struct {
 	ContentType string         `json:"content_type"`
+	Write       bool           `json:"write"`
+	Notify      bool           `json:"notify"`
+	Webhook     bool           `json:"webhook"`
 	TimeField   json.TimeField `json:"time_field"`
 	Writer      Writer         `json:"writer"`
 	Notifier    Notifier       `json:"notifier"`
 }
 
 type Writer struct {
-	Retain    bool     `json:"retain"`
 	Subtopics []string `json:"subtopics"`
 }
 
