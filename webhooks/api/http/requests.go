@@ -61,7 +61,7 @@ func (req createWebhookReq) validate() error {
 	}
 
 	if req.Format != formatJSON && req.Format != formatSenML {
-		return errors.New("invalid type of format")
+		return errors.New("invalid format")
 	}
 
 	_, err := url.ParseRequestURI(req.Url)
