@@ -26,7 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
-	webhookshttpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
+	httpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
 	"github.com/MainfluxLabs/mainflux/webhooks/postgres"
 	"github.com/MainfluxLabs/mainflux/webhooks/tracing"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -135,7 +135,7 @@ func main() {
 	svc := newService(auth, dbTracer, db, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, "webhook-http", webhookshttpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
+		return startHTTPServer(ctx, "webhook-http", httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
 	})
 
 	g.Go(func() error {
