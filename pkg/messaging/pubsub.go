@@ -108,7 +108,7 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 		msg.Profile = &Profile{
 			ContentType: SenmlContentType,
 			TimeField:   &TimeField{},
-			Writer:      &Writer{Retain: true},
+			Write:       true,
 			Notifier:    &Notifier{},
 		}
 		return msg
@@ -119,9 +119,9 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 		TimeField:   &TimeField{},
 	}
 
-	if conn.Profile.Writer != nil {
+	if conn.Profile.Write {
+		msg.Profile.Write = true
 		msg.Profile.Writer = &Writer{
-			Retain:    conn.Profile.Writer.Retain,
 			Subtopics: conn.Profile.Writer.Subtopics,
 		}
 	}

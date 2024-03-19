@@ -43,14 +43,16 @@ message ConnByKeyRes {
 
 message Profile {
     string    contentType = 1;
-    TimeField timeField   = 2;
-    Writer    writer      = 3;
-    Notifier  notifier    = 4;
+    bool      write       = 2;
+    bool      notify      = 3;
+    bool      webhook     = 4;
+    TimeField timeField   = 5;
+    Writer    writer      = 6;
+    Notifier  notifier    = 7;
 }
 
 message Writer {
-    bool retain               = 1;
-    repeated string subtopics = 2;
+    repeated string subtopics = 1;
 }
 
 message Notifier {
