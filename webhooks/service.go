@@ -5,6 +5,7 @@ package webhooks
 
 import (
 	"context"
+
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -31,23 +32,24 @@ type webhooksService struct {
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(auth mainflux.AuthServiceClient, webhooks WebhookRepository, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, webhooks WebhookRepository, idp mainflux.IDProvider) Service {
 	return &webhooksService{
 		auth:       auth,
+		things:     things,
 		webhooks:   webhooks,
 		idProvider: idp,
 	}
 }
 
 func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error) {
-	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return []Webhook{}, err
 	}
 
 	whs := []Webhook{}
 	for _, webhook := range webhooks {
-		wh, err := ws.createWebhook(ctx, &webhook, token)
+		wh, err := ws.createWebhook(ctx, &webhook, res)
 		if err != nil {
 			return []Webhook{}, err
 		}
@@ -57,8 +59,8 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 	return whs, nil
 }
 
-func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: webhook.ThingID})
+func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, identity *mainflux.UserIdentity) (Webhook, error) {
+	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: identity.GetId(), ThingID: webhook.ThingID})
 	if err != nil {
 		if err != nil {
 			return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
@@ -76,12 +78,12 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error) {
-	_, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: thingID})
+	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: res.GetId(), ThingID: thingID})
 	if err != nil {
 		if err != nil {
 			return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)

@@ -22,8 +22,8 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
 	httpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
@@ -40,63 +40,69 @@ import (
 )
 
 const (
-	stopWaitTime       = 5 * time.Second
-	defBrokerURL       = "nats://localhost:4222"
-	defLogLevel        = "error"
-	defDBHost          = "localhost"
-	defDBPort          = "5432"
-	defDBUser          = "mainflux"
-	defDBPass          = "mainflux"
-	defDB              = "webhooks"
-	defDBSSLMode       = "disable"
-	defDBSSLCert       = ""
-	defDBSSLKey        = ""
-	defDBSSLRootCert   = ""
-	defClientTLS       = "false"
-	defCACerts         = ""
-	defHTTPPort        = "9021"
-	defAuthGRPCPort    = "8181"
-	defJaegerURL       = ""
-	defServerCert      = ""
-	defServerKey       = ""
-	defAuthGRPCURL     = "localhost:8181"
-	defAuthGRPCTimeout = "1s"
+	stopWaitTime         = 5 * time.Second
+	defBrokerURL         = "nats://localhost:4222"
+	defLogLevel          = "error"
+	defDBHost            = "localhost"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "webhooks"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defClientTLS         = "false"
+	defCACerts           = ""
+	defHTTPPort          = "9021"
+	defAuthGRPCPort      = "8181"
+	defJaegerURL         = ""
+	defServerCert        = ""
+	defServerKey         = ""
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
 
-	envBrokerURL       = "MF_BROKER_URL"
-	envLogLevel        = "MF_WEBHOOKS_LOG_LEVEL"
-	envDBHost          = "MF_WEBHOOKS_DB_HOST"
-	envDBPort          = "MF_WEBHOOKS_DB_PORT"
-	envDBUser          = "MF_WEBHOOKS_DB_USER"
-	envDBPass          = "MF_WEBHOOKS_DB_PASS"
-	envDB              = "MF_WEBHOOKS_DB"
-	envDBSSLMode       = "MF_WEBHOOKS_DB_SSL_MODE"
-	envDBSSLCert       = "MF_WEBHOOKS_DB_SSL_CERT"
-	envDBSSLKey        = "MF_WEBHOOKS_DB_SSL_KEY"
-	envDBSSLRootCert   = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
-	envClientTLS       = "MF_WEBHOOKS_CLIENT_TLS"
-	envCACerts         = "MF_WEBHOOKS_CA_CERTS"
-	envAuthGRPCPort    = "MF_WEBHOOKS_AUTH_GRPC_PORT"
-	envHTTPPort        = "MF_WEBHOOKS_HTTP_PORT"
-	envServerCert      = "MF_WEBHOOKS_SERVER_CERT"
-	envServerKey       = "MF_WEBHOOKS_SERVER_KEY"
-	envJaegerURL       = "MF_JAEGER_URL"
-	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
-	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envBrokerURL         = "MF_BROKER_URL"
+	envLogLevel          = "MF_WEBHOOKS_LOG_LEVEL"
+	envDBHost            = "MF_WEBHOOKS_DB_HOST"
+	envDBPort            = "MF_WEBHOOKS_DB_PORT"
+	envDBUser            = "MF_WEBHOOKS_DB_USER"
+	envDBPass            = "MF_WEBHOOKS_DB_PASS"
+	envDB                = "MF_WEBHOOKS_DB"
+	envDBSSLMode         = "MF_WEBHOOKS_DB_SSL_MODE"
+	envDBSSLCert         = "MF_WEBHOOKS_DB_SSL_CERT"
+	envDBSSLKey          = "MF_WEBHOOKS_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
+	envClientTLS         = "MF_WEBHOOKS_CLIENT_TLS"
+	envCACerts           = "MF_WEBHOOKS_CA_CERTS"
+	envAuthGRPCPort      = "MF_WEBHOOKS_AUTH_GRPC_PORT"
+	envHTTPPort          = "MF_WEBHOOKS_HTTP_PORT"
+	envServerCert        = "MF_WEBHOOKS_SERVER_CERT"
+	envServerKey         = "MF_WEBHOOKS_SERVER_KEY"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	brokerURL       string
-	logLevel        string
-	dbConfig        postgres.Config
-	clientTLS       bool
-	caCerts         string
-	httpPort        string
-	authGRPCPort    string
-	serverCert      string
-	serverKey       string
-	jaegerURL       string
-	authGRPCURL     string
-	authGRPCTimeout time.Duration
+	brokerURL         string
+	logLevel          string
+	dbConfig          postgres.Config
+	clientTLS         bool
+	caCerts           string
+	httpPort          string
+	authGRPCPort      string
+	serverCert        string
+	serverKey         string
+	jaegerURL         string
+	authGRPCURL       string
+	authGRPCTimeout   time.Duration
+	thingsGRPCURL     string
+	thingsGRPCTimeout time.Duration
 }
 
 func main() {
@@ -108,12 +114,6 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
-	}
-	defer pubSub.Close()
 
 	webhooksTracer, webhooksCloser := initJaeger("webhooks", cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
@@ -129,10 +129,18 @@ func main() {
 		defer close()
 	}
 
+	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	defer thingsCloser.Close()
+
+	things, close := createThingsClient(cfg, thingsTracer, logger)
+	if close != nil {
+		defer close()
+	}
+
 	dbTracer, dbCloser := initJaeger("webhooks_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(auth, dbTracer, db, logger)
+	svc := newService(auth, things, dbTracer, db, logger)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, "webhook-http", httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
@@ -157,9 +165,14 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
+	thingsAuthGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -174,18 +187,20 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 	return config{
-		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		clientTLS:       tls,
-		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		authGRPCPort:    mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authGRPCTimeout: authGRPCTimeout,
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:          dbConfig,
+		clientTLS:         tls,
+		caCerts:           mainflux.Env(envCACerts, defCACerts),
+		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
+		authGRPCPort:      mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
+		serverCert:        mainflux.Env(envServerCert, defServerCert),
+		serverKey:         mainflux.Env(envServerKey, defServerKey),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout:   authGRPCTimeout,
+		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 	}
 }
 
@@ -252,14 +267,44 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+func createThingsClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.ThingsServiceClient, func() error) {
+	conn := connectToThings(cfg, logger)
+	return thingsapi.NewClient(conn, tracer, cfg.thingsGRPCTimeout), conn.Close
+}
+
+func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.clientTLS {
+		if cfg.caCerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+		logger.Info("gRPC communication is not encrypted")
+	}
+
+	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
+		os.Exit(1)
+	}
+
+	return conn
+}
+
+func newService(ac mainflux.AuthServiceClient, ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
 	database := postgres.NewDatabase(db)
 
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
 	idProvider := uuid.New()
 
-	svc := webhooks.New(ac, webhooksRepo, idProvider)
+	svc := webhooks.New(ac, ts, webhooksRepo, idProvider)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

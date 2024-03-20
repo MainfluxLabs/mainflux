@@ -536,7 +536,7 @@ services:
       - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
 
   webhooks:
-    image: mainfluxlabs/webhooks::${MF_RELEASE_TAG}
+    image: mainfluxlabs/webhooks:latest
     container_name: mainfluxlabs-webhooks
     depends_on:
       - webhooks-db
@@ -554,6 +554,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_WEBHOOKS_HTTP_PORT}:${MF_WEBHOOKS_HTTP_PORT}
     networks:
