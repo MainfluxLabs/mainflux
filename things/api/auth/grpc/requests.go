@@ -31,12 +31,16 @@ func (req accessByIDReq) validate() error {
 }
 
 type channelOwnerReq struct {
-	owner  string
+	token  string
 	chanID string
 }
 
 func (req channelOwnerReq) validate() error {
-	if req.owner == "" || req.chanID == "" {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.chanID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -44,12 +48,16 @@ func (req channelOwnerReq) validate() error {
 }
 
 type thingOwnerReq struct {
-	owner   string
+	token   string
 	thingID string
 }
 
 func (req thingOwnerReq) validate() error {
-	if req.owner == "" || req.thingID == "" {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
 

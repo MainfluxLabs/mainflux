@@ -64,12 +64,12 @@ message Notifier {
 }
 
 message ChannelOwnerReq {
-    string owner  = 1;
+    string token  = 1;
     string chanID = 2;
 }
 
 message ThingOwnerReq {
-    string owner   = 1;
+    string token   = 1;
     string thingID = 2;
 }
 

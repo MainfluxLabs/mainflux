@@ -377,16 +377,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		user, err := authc.Identify(ctx, &mainflux.Token{Value: token})
-		if err != nil {
-			return err
-		}
-
 		if err := authorizeAdmin(ctx, auth.RootSubject, token); err == nil {
 			return nil
 		}
 
-		if _, err = thingc.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
+		if _, err = thingc.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil

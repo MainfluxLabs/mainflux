@@ -194,7 +194,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 				},
 				Subscriptions: nil,
 			},
-			err: errors.ErrAuthentication,
+			err: errors.ErrAuthorization,
 		},
 		{
 			desc:      "retrieve subscriptions as user with empty token",

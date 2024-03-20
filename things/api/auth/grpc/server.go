@@ -111,12 +111,12 @@ func decodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interfac
 
 func decodeIsChannelOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.ChannelOwnerReq)
-	return channelOwnerReq{owner: req.GetOwner(), chanID: req.GetChanID()}, nil
+	return channelOwnerReq{token: req.GetToken(), chanID: req.GetChanID()}, nil
 }
 
 func decodeIsThingOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.ThingOwnerReq)
-	return thingOwnerReq{owner: req.GetOwner(), thingID: req.GetThingID()}, nil
+	return thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

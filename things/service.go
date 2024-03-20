@@ -250,7 +250,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	if err := ts.isThingOwner(ctx, res.GetId(), thing.ID); err != nil {
+	if err := ts.IsThingOwner(ctx, token, thing.ID); err != nil {
 		return err
 	}
 
@@ -509,12 +509,12 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 	}
 
 	for _, thID := range thIDs {
-		if err := ts.isThingOwner(ctx, res.GetId(), thID); err != nil {
+		if err := ts.IsThingOwner(ctx, token, thID); err != nil {
 			return err
 		}
 	}
 
-	if err := ts.IsChannelOwner(ctx, res.GetId(), chID); err != nil {
+	if err := ts.IsChannelOwner(ctx, token, chID); err != nil {
 		return err
 	}
 
@@ -571,13 +571,18 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
 }
 
-func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID string) error {
+func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID string) error {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
 	ch, err := ts.channels.RetrieveByID(ctx, chanID)
 	if err != nil {
 		return err
 	}
 
-	if ch.Owner != owner {
+	if ch.Owner != user.GetId() {
 		return errors.ErrAuthorization
 	}
 
@@ -585,12 +590,17 @@ func (ts *thingsService) IsChannelOwner(ctx context.Context, owner, chanID strin
 }
 
 func (ts *thingsService) IsThingOwner(ctx context.Context, token, thingID string) error {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
 	th, err := ts.things.RetrieveByID(ctx, thingID)
 	if err != nil {
 		return err
 	}
 
-	if th.Owner != token {
+	if th.Owner != user.GetId() {
 		return errors.ErrAuthorization
 	}
 
@@ -1050,19 +1060,6 @@ func (ts *thingsService) authorize(ctx context.Context, subject, token string) e
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
-}
-
-func (ts *thingsService) isThingOwner(ctx context.Context, owner string, thingID string) error {
-	thing, err := ts.things.RetrieveByID(ctx, thingID)
-	if err != nil {
-		return err
-	}
-
-	if thing.Owner != owner {
-		return errors.ErrNotFound
 	}
 
 	return nil
