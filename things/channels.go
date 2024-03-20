@@ -29,7 +29,10 @@ type Profile struct {
 }
 
 type Writer struct {
-	Subtopics []string `json:"subtopics"`
+	Subtopics    []string `json:"subtopics"`
+	TimeName     string   `json:"name"`
+	TimeFormat   string   `json:"format"`
+	TimeLocation string   `json:"location"`
 }
 
 type Notifier struct {

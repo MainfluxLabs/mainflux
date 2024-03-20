@@ -28,12 +28,6 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		timeField := &mainflux.TimeField{
-			Name:     p.TimeField.Name,
-			Format:   p.TimeField.Format,
-			Location: p.TimeField.Location,
-		}
-
 		notifier := &mainflux.Notifier{
 			Protocol:  p.Notifier.Protocol,
 			Contacts:  p.Notifier.Contacts,
@@ -41,13 +35,15 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		writer := &mainflux.Writer{
-			Subtopics: p.Writer.Subtopics,
+			Subtopics:    p.Writer.Subtopics,
+			TimeName:     p.Writer.TimeName,
+			TimeFormat:   p.Writer.TimeFormat,
+			TimeLocation: p.Writer.TimeLocation,
 		}
 
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			Write:       p.Write,
-			TimeField:   timeField,
 			Writer:      writer,
 			Notifier:    notifier,
 		}
