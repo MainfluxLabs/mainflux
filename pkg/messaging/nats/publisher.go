@@ -104,12 +104,12 @@ func (pub *publisher) Close() error {
 
 func getFormat(ct string) (format string, err error) {
 	switch ct {
-	case messaging.JsonContentType:
-		return messaging.JsonFormat, nil
-	case messaging.SenmlContentType:
-		return messaging.SenmlFormat, nil
-	case messaging.CborContentType:
-		return messaging.CborFormat, nil
+	case messaging.JSONContentType:
+		return messaging.JSONFormat, nil
+	case messaging.SenMLContentType:
+		return messaging.SenMLFormat, nil
+	case messaging.CBORContentType:
+		return messaging.CBORFormat, nil
 	default:
 		return "", messaging.ErrUnknownContent
 	}

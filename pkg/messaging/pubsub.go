@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	SenmlContentType = "application/senml+json"
-	CborContentType  = "application/senml+cbor"
-	JsonContentType  = "application/json"
-	SenmlFormat      = "senml"
-	JsonFormat       = "json"
-	CborFormat       = "cbor"
+	SenMLContentType = "application/senml+json"
+	CBORContentType  = "application/senml+cbor"
+	JSONContentType  = "application/json"
+	SenMLFormat      = "senml"
+	JSONFormat       = "json"
+	CBORFormat       = "cbor"
 	regExParts       = 2
 )
 
@@ -106,7 +106,7 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 
 	if conn.Profile == nil {
 		msg.Profile = &Profile{
-			ContentType: SenmlContentType,
+			ContentType: SenMLContentType,
 			Notifier:    &Notifier{},
 		}
 		return msg

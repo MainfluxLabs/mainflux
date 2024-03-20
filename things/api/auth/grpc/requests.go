@@ -44,12 +44,12 @@ func (req channelOwnerReq) validate() error {
 }
 
 type thingOwnerReq struct {
-	token   string
+	owner   string
 	thingID string
 }
 
 func (req thingOwnerReq) validate() error {
-	if req.token == "" || req.thingID == "" {
+	if req.owner == "" || req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
 
