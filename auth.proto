@@ -46,25 +46,21 @@ message Profile {
     bool      write       = 2;
     bool      notify      = 3;
     bool      webhook     = 4;
-    TimeField timeField   = 5;
-    Writer    writer      = 6;
-    Notifier  notifier    = 7;
+    Writer    writer      = 5;
+    Notifier  notifier    = 6;
 }
 
 message Writer {
     repeated string subtopics = 1;
+    string timeName           = 2;
+    string timeFormat         = 3;
+    string timeLocation       = 4;
 }
 
 message Notifier {
     string protocol           = 1;
     repeated string subtopics = 2;
     repeated string contacts  = 3;
-}
-
-message TimeField {
-    string name     = 1;
-    string format   = 2;
-    string location = 3;
 }
 
 message ChannelOwnerReq {

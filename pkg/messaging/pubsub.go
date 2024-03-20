@@ -104,41 +104,28 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 		Created:   time.Now().UnixNano(),
 	}
 
-	if conn.Profile == nil || conn.Profile.ContentType == "" {
+	if conn.Profile == nil {
 		msg.Profile = &Profile{
 			ContentType: SenmlContentType,
-			TimeField:   &TimeField{},
-			Write:       true,
 			Notifier:    &Notifier{},
 		}
 		return msg
 	}
 
-	msg.Profile = &Profile{
-		ContentType: conn.Profile.ContentType,
-		TimeField:   &TimeField{},
-	}
+	msg.Profile.ContentType = conn.Profile.ContentType
 
-	if conn.Profile.Write {
-		msg.Profile.Write = true
+	if conn.Profile.Writer != nil {
 		msg.Profile.Writer = &Writer{
-			Subtopics: conn.Profile.Writer.Subtopics,
+			TimeName:     conn.Profile.Writer.TimeName,
+			TimeFormat:   conn.Profile.Writer.TimeFormat,
+			TimeLocation: conn.Profile.Writer.TimeLocation,
 		}
 	}
 
 	if conn.Profile.Notifier != nil {
 		msg.Profile.Notifier = &Notifier{
-			Protocol:  conn.Profile.Notifier.Protocol,
-			Contacts:  conn.Profile.Notifier.Contacts,
-			Subtopics: conn.Profile.Notifier.Subtopics,
-		}
-	}
-
-	if conn.Profile.TimeField != nil && conn.Profile.ContentType == JsonContentType {
-		msg.Profile.TimeField = &TimeField{
-			Name:     conn.Profile.TimeField.Name,
-			Format:   conn.Profile.TimeField.Format,
-			Location: conn.Profile.TimeField.Location,
+			Protocol: conn.Profile.Notifier.Protocol,
+			Contacts: conn.Profile.Notifier.Contacts,
 		}
 	}
 
