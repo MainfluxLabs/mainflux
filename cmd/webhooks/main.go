@@ -22,7 +22,6 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
@@ -302,9 +301,8 @@ func newService(ac mainflux.AuthServiceClient, ts mainflux.ThingsServiceClient, 
 
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
-	idProvider := uuid.New()
 
-	svc := webhooks.New(ac, ts, webhooksRepo, idProvider)
+	svc := webhooks.New(ac, ts, webhooksRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

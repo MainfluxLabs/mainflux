@@ -23,21 +23,19 @@ type Service interface {
 }
 
 type webhooksService struct {
-	auth       mainflux.AuthServiceClient
-	things     mainflux.ThingsServiceClient
-	webhooks   WebhookRepository
-	idProvider mainflux.IDProvider
+	auth     mainflux.AuthServiceClient
+	things   mainflux.ThingsServiceClient
+	webhooks WebhookRepository
 }
 
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, webhooks WebhookRepository, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, webhooks WebhookRepository) Service {
 	return &webhooksService{
-		auth:       auth,
-		things:     things,
-		webhooks:   webhooks,
-		idProvider: idp,
+		auth:     auth,
+		things:   things,
+		webhooks: webhooks,
 	}
 }
 
