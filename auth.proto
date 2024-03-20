@@ -43,26 +43,24 @@ message ConnByKeyRes {
 
 message Profile {
     string    contentType = 1;
-    TimeField timeField   = 2;
-    Writer    writer      = 3;
-    Notifier  notifier    = 4;
+    bool      write       = 2;
+    bool      notify      = 3;
+    bool      webhook     = 4;
+    Writer    writer      = 5;
+    Notifier  notifier    = 6;
 }
 
 message Writer {
-    bool retain               = 1;
-    repeated string subtopics = 2;
+    repeated string subtopics = 1;
+    string timeName           = 2;
+    string timeFormat         = 3;
+    string timeLocation       = 4;
 }
 
 message Notifier {
     string protocol           = 1;
     repeated string subtopics = 2;
     repeated string contacts  = 3;
-}
-
-message TimeField {
-    string name     = 1;
-    string format   = 2;
-    string location = 3;
 }
 
 message ChannelOwnerReq {
