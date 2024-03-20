@@ -17,8 +17,7 @@ type webhookRepository struct {
 	db Database
 }
 
-// NewWebhookRepository instantiates a PostgreSQL implementation of webhook
-// repository.
+// NewWebhookRepository instantiates a PostgreSQL implementation of webhook repository.
 func NewWebhookRepository(db Database) webhooks.WebhookRepository {
 	return &webhookRepository{
 		db: db,

@@ -12,12 +12,11 @@ import (
 var _ mainflux.Response = (*webhookRes)(nil)
 
 type webhookRes struct {
-	Created bool `json:"created"`
+	created bool
 }
 
 func (res webhookRes) Code() int {
-
-	if res.Created {
+	if res.created {
 		return http.StatusCreated
 	}
 	return http.StatusOK

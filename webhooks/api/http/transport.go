@@ -35,7 +35,7 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 	r := bone.New()
 
 	r.Post("/webhooks/:thingID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_webhook")(createWebhooksEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_webhooks")(createWebhooksEndpoint(svc)),
 		decodeWebhooksCreation,
 		encodeResponse,
 		opts...,
