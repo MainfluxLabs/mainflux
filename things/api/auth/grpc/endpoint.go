@@ -59,7 +59,7 @@ func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.IsChannelOwner(ctx, req.owner, req.chanID)
+		err := svc.IsChannelOwner(ctx, req.token, req.chanID)
 		return emptyRes{err: err}, err
 	}
 }
@@ -71,7 +71,7 @@ func isThingOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.IsThingOwner(ctx, req.owner, req.thingID)
+		err := svc.IsThingOwner(ctx, req.token, req.thingID)
 		return emptyRes{err: err}, err
 	}
 }

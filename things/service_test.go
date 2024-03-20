@@ -1231,7 +1231,7 @@ func TestIsChannelOwner(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		err := svc.IsChannelOwner(context.Background(), user.ID, tc.channel)
+		err := svc.IsChannelOwner(context.Background(), token, tc.channel)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
