@@ -24,7 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
 	"github.com/MainfluxLabs/mproxy/pkg/session"

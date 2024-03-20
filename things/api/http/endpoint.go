@@ -629,9 +629,9 @@ func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		pm := things.PageMetadata{
-			Offset:     req.offset,
-			Limit:      req.limit,
-			Metadata:   req.metadata,
+			Offset:   req.offset,
+			Limit:    req.limit,
+			Metadata: req.metadata,
 		}
 
 		page, err := svc.ListGroupThings(ctx, req.token, req.id, pm)
@@ -707,9 +707,9 @@ func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		pm := things.PageMetadata{
-			Offset:     req.offset,
-			Limit:      req.limit,
-			Metadata:   req.metadata,
+			Offset:   req.offset,
+			Limit:    req.limit,
+			Metadata: req.metadata,
 		}
 
 		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
@@ -1009,4 +1009,45 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	}
 
 	return backup
+}
+
+func identifyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(identifyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		id, err := svc.Identify(ctx, req.Token)
+		if err != nil {
+			return nil, err
+		}
+
+		res := identityRes{
+			ID: id,
+		}
+
+		return res, nil
+	}
+}
+
+func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getConnByKeyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		conn, err := svc.GetConnByKey(ctx, req.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		res := connByKeyRes{
+			ChannelID: conn.ChannelID,
+			ThingID:   conn.ThingID,
+		}
+
+		return res, nil
+	}
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	grpcapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	grpcapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
