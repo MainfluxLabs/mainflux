@@ -23,21 +23,21 @@ import (
 )
 
 const (
-	contentType   = "application/json"
-	offsetKey     = "offset"
-	limitKey      = "limit"
-	nameKey       = "name"
-	orderKey      = "order"
-	dirKey        = "dir"
-	metadataKey   = "metadata"
-	disconnKey    = "disconnected"
-	groupIDKey    = "groupID"
-	thingIDKey    = "thingID"
-	channelIDKey  = "channelID"
+	contentType  = "application/json"
+	offsetKey    = "offset"
+	limitKey     = "limit"
+	nameKey      = "name"
+	orderKey     = "order"
+	dirKey       = "dir"
+	metadataKey  = "metadata"
+	disconnKey   = "disconnected"
+	groupIDKey   = "groupID"
+	thingIDKey   = "thingID"
+	channelIDKey = "channelID"
 
-	adminKey      = "admin"
-	defOffset     = 0
-	defLimit      = 10
+	adminKey  = "admin"
+	defOffset = 0
+	defLimit  = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -293,6 +293,20 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Post("/identify", kithttp.NewServer(
+		kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
+		decodeIdentify,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/identify/channels/:chanId/access-by-key", kithttp.NewServer(
+		kitot.TraceServer(tracer, "get_conn_by_key")(getConnByKeyEndpoint(svc)),
+		decodeGetConnByKey,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("things"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -388,7 +402,6 @@ func decodeRemoveChannels(_ context.Context, r *http.Request) (interface{}, erro
 
 	return req, nil
 }
-
 
 func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewResourceReq{
@@ -555,11 +568,11 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	req := listMembersReq{
-		token:      apiutil.ExtractBearerToken(r),
-		id:         bone.GetValue(r, groupIDKey),
-		offset:     o,
-		limit:      l,
-		metadata:   m,
+		token:    apiutil.ExtractBearerToken(r),
+		id:       bone.GetValue(r, groupIDKey),
+		offset:   o,
+		limit:    l,
+		metadata: m,
 	}
 
 	return req, nil
@@ -738,6 +751,34 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
+func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := identifyReq{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := getConnByKeyReq{
+		chanID: bone.GetValue(r, "chanId"),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
@@ -762,7 +803,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, errors.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
+		err == apiutil.ErrBearerToken,
+		err == apiutil.ErrBearerKey:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
@@ -774,7 +816,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrMissingEmail,
-		err == apiutil.ErrBearerKey,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrInvalidOrder,

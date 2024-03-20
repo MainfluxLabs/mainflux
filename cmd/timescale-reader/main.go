@@ -21,7 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"

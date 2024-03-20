@@ -22,7 +22,7 @@ import (
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
-	httpapi "github.com/MainfluxLabs/mainflux/things/api/things/http"
+	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-redis/redis/v8"
 	"github.com/opentracing/opentracing-go/mocktracer"

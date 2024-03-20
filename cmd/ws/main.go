@@ -22,7 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	adapter "github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/api"
 	opentracing "github.com/opentracing/opentracing-go"
