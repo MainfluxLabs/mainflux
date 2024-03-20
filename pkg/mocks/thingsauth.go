@@ -63,7 +63,7 @@ func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *mainflux.Ch
 }
 
 func (svc thingsServiceMock) IsThingOwner(ctx context.Context, in *mainflux.ThingOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	if id, ok := svc.things[in.GetToken()]; ok {
+	if id, ok := svc.things[in.GetOwner()]; ok {
 		if id == in.ThingID {
 			return nil, nil
 		}

@@ -104,7 +104,7 @@ func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.Chann
 }
 
 func (client grpcClient) IsThingOwner(ctx context.Context, req *mainflux.ThingOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	ar := thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}
+	ar := thingOwnerReq{owner: req.GetOwner(), thingID: req.GetThingID()}
 	res, err := client.isThingOwner(ctx, ar)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func encodeIsChannelOwner(_ context.Context, grpcReq interface{}) (interface{}, 
 
 func encodeIsThingOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingOwnerReq)
-	return &mainflux.ThingOwnerReq{Token: req.token, ThingID: req.thingID}, nil
+	return &mainflux.ThingOwnerReq{Owner: req.owner, ThingID: req.thingID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

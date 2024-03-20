@@ -69,7 +69,7 @@ message ChannelOwnerReq {
 }
 
 message ThingOwnerReq {
-    string token   = 1;
+    string owner   = 1;
     string thingID = 2;
 }
 

@@ -5,8 +5,6 @@ package things
 
 import (
 	"context"
-
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
 
 // Channel represents a Mainflux "communication group". This group contains the
@@ -19,20 +17,19 @@ type Channel struct {
 }
 
 type Profile struct {
-	ContentType string         `json:"content_type"`
-	Write       bool           `json:"write"`
-	Notify      bool           `json:"notify"`
-	Webhook     bool           `json:"webhook"`
-	TimeField   json.TimeField `json:"time_field"`
-	Writer      Writer         `json:"writer"`
-	Notifier    Notifier       `json:"notifier"`
+	ContentType string   `json:"content_type"`
+	Write       bool     `json:"write"`
+	Notify      bool     `json:"notify"`
+	Webhook     bool     `json:"webhook"`
+	Writer      Writer   `json:"writer"`
+	Notifier    Notifier `json:"notifier"`
 }
 
 type Writer struct {
 	Subtopics    []string `json:"subtopics"`
-	TimeName     string   `json:"name"`
-	TimeFormat   string   `json:"format"`
-	TimeLocation string   `json:"location"`
+	TimeName     string   `json:"time_name"`
+	TimeFormat   string   `json:"time_format"`
+	TimeLocation string   `json:"time_location"`
 }
 
 type Notifier struct {
