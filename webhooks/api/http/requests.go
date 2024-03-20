@@ -29,7 +29,7 @@ type createWebhookReq struct {
 
 type createWebhooksReq struct {
 	Token    string             `json:"token"`
-	ThingID  string             `json:"thingID"`
+	ThingID  string             `json:"thing_id"`
 	Webhooks []createWebhookReq `json:"webhooks"`
 }
 
@@ -74,7 +74,7 @@ func (req createWebhookReq) validate() error {
 
 type listWebhooksReq struct {
 	Token   string `json:"token"`
-	ThingID string `json:"thingID"`
+	ThingID string `json:"thing_id"`
 }
 
 func (req *listWebhooksReq) validate() error {

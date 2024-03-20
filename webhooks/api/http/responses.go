@@ -32,7 +32,7 @@ func (res webhookRes) Empty() bool {
 }
 
 type webhookResponse struct {
-	ThingID string `json:"thingID"`
+	ThingID string `json:"thing_id"`
 	Name    string `json:"name"`
 	Format  string `json:"format"`
 	Url     string `json:"url"`
