@@ -35,7 +35,7 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		res := webhookRes{
-			Created: true,
+			created: true,
 		}
 		return res, nil
 	}
