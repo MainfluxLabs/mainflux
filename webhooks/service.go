@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -23,19 +24,21 @@ type Service interface {
 }
 
 type webhooksService struct {
-	auth     mainflux.AuthServiceClient
-	things   mainflux.ThingsServiceClient
-	webhooks WebhookRepository
+	auth       mainflux.AuthServiceClient
+	things     mainflux.ThingsServiceClient
+	webhooks   WebhookRepository
+	subscriber messaging.Subscriber
 }
 
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, webhooks WebhookRepository) Service {
+func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, webhooks WebhookRepository, subscriber messaging.Subscriber) Service {
 	return &webhooksService{
-		auth:     auth,
-		things:   things,
-		webhooks: webhooks,
+		auth:       auth,
+		things:     things,
+		webhooks:   webhooks,
+		subscriber: subscriber,
 	}
 }
 
