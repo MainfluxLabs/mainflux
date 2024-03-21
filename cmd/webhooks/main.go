@@ -22,7 +22,6 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -41,6 +40,8 @@ import (
 )
 
 const (
+	subject              = "webhook"
+	svcName              = "webhooks"
 	stopWaitTime         = 5 * time.Second
 	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
@@ -148,7 +149,11 @@ func main() {
 	dbTracer, dbCloser := initJaeger("webhooks_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(auth, things, pubSub, dbTracer, db, logger)
+	svc := newService(auth, things, dbTracer, db, logger)
+
+	if err = webhooks.Start(ctx, svcName, subject, svc, pubSub); err != nil {
+		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
+	}
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, "webhook-http", httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
@@ -305,13 +310,12 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(ac mainflux.AuthServiceClient, ts mainflux.ThingsServiceClient, sub messaging.Subscriber, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+func newService(ac mainflux.AuthServiceClient, ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
 	database := postgres.NewDatabase(db)
-
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
 
-	svc := webhooks.New(ac, ts, webhooksRepo, sub)
+	svc := webhooks.New(ac, ts, webhooksRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
