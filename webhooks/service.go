@@ -69,7 +69,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, identity *mainflux.UserIdentity) (Webhook, error) {
-	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Owner: identity.GetId(), ThingID: webhook.ThingID})
+	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: identity.GetId(), ThingID: webhook.ThingID})
 	if err != nil {
 		if err != nil {
 			return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
@@ -92,7 +92,7 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Owner: res.GetId(), ThingID: thingID})
+	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: res.GetId(), ThingID: thingID})
 	if err != nil {
 		if err != nil {
 			return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)

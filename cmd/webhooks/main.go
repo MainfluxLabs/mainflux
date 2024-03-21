@@ -23,7 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
 	httpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
