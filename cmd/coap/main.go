@@ -20,7 +20,7 @@ import (
 	logger "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	thingsapi "github.com/MainfluxLabs/mainflux/things/api/auth/grpc"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"

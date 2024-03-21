@@ -148,7 +148,6 @@ func TestListChannelMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(map[string]string{user.ID: chanID}, nil, nil)
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
@@ -158,6 +157,8 @@ func TestListChannelMessages(t *testing.T) {
 
 	userToken := tok.GetValue()
 	adminToken := adminTok.GetValue()
+
+	thSvc := thmocks.NewThingsServiceClient(map[string]string{userToken: chanID}, nil, nil)
 
 	repo := rmocks.NewMessageRepository(chanID, fromSenml(messages))
 	ts := newServer(repo, thSvc, authSvc)
@@ -242,7 +243,7 @@ func TestListChannelMessages(t *testing.T) {
 			desc:   "read page with invalid token as thing",
 			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID),
 			token:  invalid,
-			status: http.StatusUnauthorized,
+			status: http.StatusForbidden,
 		},
 		{
 			desc:   "read page with multiple offset as thing",
@@ -540,7 +541,7 @@ func TestListChannelMessages(t *testing.T) {
 			desc:   "read page with invalid token as user",
 			url:    fmt.Sprintf("%s/channels/%s/messages?offset=0&limit=10", ts.URL, chanID),
 			token:  invalid,
-			status: http.StatusUnauthorized,
+			status: http.StatusForbidden,
 		},
 		{
 			desc:   "read page with multiple offset as user",

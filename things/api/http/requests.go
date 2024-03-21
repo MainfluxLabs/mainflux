@@ -463,11 +463,11 @@ func (req listGroupsReq) validate() error {
 }
 
 type listMembersReq struct {
-	token      string
-	id         string
-	offset     uint64
-	limit      uint64
-	metadata   things.GroupMetadata
+	token    string
+	id       string
+	offset   uint64
+	limit    uint64
+	metadata things.GroupMetadata
 }
 
 func (req listMembersReq) validate() error {
@@ -589,6 +589,31 @@ func (req removeGroupsReq) validate() error {
 		if groupID == "" {
 			return apiutil.ErrMissingID
 		}
+	}
+
+	return nil
+}
+
+type identifyReq struct {
+	Token string `json:"token"`
+}
+
+func (req identifyReq) validate() error {
+	if req.Token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
+type getConnByKeyReq struct {
+	chanID string
+	Key    string `json:"key"`
+}
+
+func (req getConnByKeyReq) validate() error {
+	if req.Key == "" {
+		return apiutil.ErrBearerKey
 	}
 
 	return nil

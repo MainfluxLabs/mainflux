@@ -75,16 +75,11 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		user, err := ms.auth.Identify(ctx, &mainflux.Token{Value: token})
-		if err != nil {
-			return err
-		}
-
 		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err == nil {
 			return nil
 		}
 
-		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Owner: user.Id, ChanID: chanID}); err != nil {
+		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil
