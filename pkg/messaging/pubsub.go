@@ -102,16 +102,16 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 		Publisher: conn.ThingID,
 		Payload:   *payload,
 		Created:   time.Now().UnixNano(),
+		Profile:   &Profile{},
 	}
 
 	if conn.Profile == nil {
-		msg.Profile = &Profile{
-			ContentType: SenMLContentType,
-			Notifier:    &Notifier{},
-		}
 		return msg
 	}
 
+	msg.Profile.Write = conn.Profile.Write
+	msg.Profile.Notify = conn.Profile.Notify
+	msg.Profile.Webhook = conn.Profile.Webhook
 	msg.Profile.ContentType = conn.Profile.ContentType
 
 	if conn.Profile.Writer != nil {
