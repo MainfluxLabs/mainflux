@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -53,7 +54,7 @@ func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token stri
 	return lm.svc.ListWebhooksByThing(ctx, token, thingID)
 }
 
-func (lm *loggingMiddleware) Forward(message interface{}) (err error) {
+func (lm *loggingMiddleware) Forward(message messaging.Message) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method forward took %s to complete", time.Since(begin))
 		if err != nil {

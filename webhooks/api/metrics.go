@@ -10,6 +10,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/metrics"
 )
@@ -50,7 +51,7 @@ func (ms *metricsMiddleware) ListWebhooksByThing(ctx context.Context, token stri
 	return ms.svc.ListWebhooksByThing(ctx, token, thingID)
 }
 
-func (ms *metricsMiddleware) Forward(message interface{}) error {
+func (ms *metricsMiddleware) Forward(message messaging.Message) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "forward").Add(1)
 		ms.latency.With("method", "forward").Observe(time.Since(begin).Seconds())

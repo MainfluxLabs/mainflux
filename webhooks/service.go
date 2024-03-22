@@ -28,7 +28,7 @@ type Service interface {
 	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
 
 	// Forward method is used to forward the received message to a certain url
-	Forward(message interface{}) error
+	Forward(message messaging.Message) error
 
 	consumers.Consumer
 }
@@ -54,14 +54,9 @@ func New(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, w
 }
 
 func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error) {
-	res, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return []Webhook{}, err
-	}
-
 	whs := []Webhook{}
 	for _, webhook := range webhooks {
-		wh, err := ws.createWebhook(ctx, &webhook, res)
+		wh, err := ws.createWebhook(ctx, &webhook, token)
 		if err != nil {
 			return []Webhook{}, err
 		}
@@ -71,8 +66,8 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 	return whs, nil
 }
 
-func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, identity *mainflux.UserIdentity) (Webhook, error) {
-	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: identity.GetId(), ThingID: webhook.ThingID})
+func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
+	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: webhook.ThingID})
 	if err != nil {
 		if err != nil {
 			return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
@@ -90,12 +85,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error) {
-	res, err := ws.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return []Webhook{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	_, err = ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: res.GetId(), ThingID: thingID})
+	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: thingID})
 	if err != nil {
 		if err != nil {
 			return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
@@ -110,12 +100,8 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 	return webhooks, nil
 }
 
-func (ws *webhooksService) Forward(message interface{}) error {
+func (ws *webhooksService) Forward(msg messaging.Message) error {
 	ctx := context.Background()
-	msg, ok := message.(messaging.Message)
-	if !ok {
-		return errors.New("failed to convert to Mainflux message")
-	}
 
 	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
 	if err != nil {
