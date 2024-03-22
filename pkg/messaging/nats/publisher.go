@@ -60,17 +60,7 @@ func (pub *publisher) Publish(msg messaging.Message) (err error) {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
 
-		if msg.Profile.Writer == nil {
-			subjects = append(subjects, subject)
-		}
-	}
-
-	if msg.Profile.Writer != nil {
-		for _, s := range msg.Profile.Writer.Subtopics {
-			if s == msg.Subtopic {
-				subjects = append(subjects, subject)
-			}
-		}
+		subjects = append(subjects, subject)
 	}
 
 	if msg.Profile.Notifier != nil {
