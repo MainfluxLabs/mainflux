@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
@@ -26,8 +27,10 @@ type Service interface {
 	// related to a certain thing identified by the provided ID.
 	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
 
-	//forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message interface{}) error
+	// Forward method is used to forward the received message to a certain url
+	Forward(message interface{}) error
+
+	consumers.Consumer
 }
 
 type webhooksService struct {
@@ -107,22 +110,8 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 	return webhooks, nil
 }
 
-// Start method starts consuming messages received from Message broker.
-func Start(ctx context.Context, id string, subject string, ws Service, sub messaging.Subscriber) error {
-	if err := sub.Subscribe(id, subject, handler(ctx, ws)); err != nil {
-		return err
-	}
-	return nil
-}
-
-func handler(ctx context.Context, service Service) handleFunc {
-	return func(msg messaging.Message) error {
-		m := interface{}(msg)
-		return service.Forward(ctx, m)
-	}
-}
-
-func (ws *webhooksService) Forward(ctx context.Context, message interface{}) error {
+func (ws *webhooksService) Forward(message interface{}) error {
+	ctx := context.Background()
 	msg, ok := message.(messaging.Message)
 	if !ok {
 		return errors.New("failed to convert to Mainflux message")
@@ -163,12 +152,16 @@ func (ws *webhooksService) sendReq(url string, msg messaging.Message) error {
 	return nil
 }
 
-type handleFunc func(msg messaging.Message) error
+func (ws *webhooksService) Consume(message interface{}) error {
+	msg, ok := message.(messaging.Message)
+	if !ok {
+		return errors.New("failed to convert to Mainflux message")
+	}
 
-func (h handleFunc) Handle(msg messaging.Message) error {
-	return h(msg)
-}
+	err := ws.Forward(msg)
+	if err != nil {
+		return err
+	}
 
-func (h handleFunc) Cancel() error {
 	return nil
 }

@@ -50,11 +50,20 @@ func (ms *metricsMiddleware) ListWebhooksByThing(ctx context.Context, token stri
 	return ms.svc.ListWebhooksByThing(ctx, token, thingID)
 }
 
-func (ms *metricsMiddleware) Forward(ctx context.Context, message interface{}) error {
+func (ms *metricsMiddleware) Forward(message interface{}) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "forward").Add(1)
 		ms.latency.With("method", "forward").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Forward(ctx, message)
+	return ms.svc.Forward(message)
+}
+
+func (ms *metricsMiddleware) Consume(message interface{}) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "consume").Add(1)
+		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Consume(message)
 }

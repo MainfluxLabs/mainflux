@@ -53,7 +53,7 @@ func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token stri
 	return lm.svc.ListWebhooksByThing(ctx, token, thingID)
 }
 
-func (lm *loggingMiddleware) Forward(ctx context.Context, message interface{}) (err error) {
+func (lm *loggingMiddleware) Forward(message interface{}) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method forward took %s to complete", time.Since(begin))
 		if err != nil {
@@ -63,5 +63,18 @@ func (lm *loggingMiddleware) Forward(ctx context.Context, message interface{}) (
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Forward(ctx, message)
+	return lm.svc.Forward(message)
+}
+
+func (lm *loggingMiddleware) Consume(message interface{}) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Consume(message)
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -151,8 +152,8 @@ func main() {
 
 	svc := newService(auth, things, dbTracer, db, logger)
 
-	if err = webhooks.Start(ctx, svcName, subject, svc, pubSub); err != nil {
-		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
+	if err = consumers.Start(svcName, pubSub, svc, subject); err != nil {
+		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 
 	g.Go(func() error {
