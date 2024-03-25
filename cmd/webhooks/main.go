@@ -41,7 +41,6 @@ import (
 )
 
 const (
-	subject              = "webhook"
 	svcName              = "webhooks"
 	stopWaitTime         = 5 * time.Second
 	defBrokerURL         = "nats://localhost:4222"
@@ -152,7 +151,7 @@ func main() {
 
 	svc := newService(auth, things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, subject); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectWebhook); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 
