@@ -6,7 +6,6 @@ package webhooks
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -109,7 +108,7 @@ func (ws *webhooksService) Forward(msg messaging.Message) error {
 	}
 
 	for _, wh := range whs {
-		err := ws.sendReq(wh.Url, msg)
+		err := ws.sendRequest(wh.Url, msg)
 		if err != nil {
 			return err
 		}
@@ -117,24 +116,20 @@ func (ws *webhooksService) Forward(msg messaging.Message) error {
 	return nil
 }
 
-func (ws *webhooksService) sendReq(url string, msg messaging.Message) error {
-	data, err := json.Marshal(msg.Payload)
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+func (ws *webhooksService) sendRequest(url string, msg messaging.Message) error {
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(msg.Payload))
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := ws.httpClient.Do(req)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("Response error : %v", err))
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return errors.Wrap(errors.New(fmt.Sprintf("error forwarding message, status : %s", resp.Status)), err)
-	}
 	return nil
 }
 
