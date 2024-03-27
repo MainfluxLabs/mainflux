@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -61,8 +60,6 @@ const (
 	defJaegerURL         = ""
 	defServerCert        = ""
 	defServerKey         = ""
-	defAuthGRPCURL       = "localhost:8181"
-	defAuthGRPCTimeout   = "1s"
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 
@@ -84,8 +81,6 @@ const (
 	envServerCert        = "MF_WEBHOOKS_SERVER_CERT"
 	envServerKey         = "MF_WEBHOOKS_SERVER_KEY"
 	envJaegerURL         = "MF_JAEGER_URL"
-	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 )
@@ -101,8 +96,6 @@ type config struct {
 	serverCert        string
 	serverKey         string
 	jaegerURL         string
-	authGRPCURL       string
-	authGRPCTimeout   time.Duration
 	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 }
@@ -130,14 +123,6 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
-	defer authCloser.Close()
-
-	auth, close := createAuthClient(cfg, authTracer, logger)
-	if close != nil {
-		defer close()
-	}
-
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
@@ -149,7 +134,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("webhooks_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(auth, things, dbTracer, db, logger)
+	svc := newService(things, dbTracer, db, logger)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectWebhook); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
@@ -176,11 +161,6 @@ func loadConfig() config {
 	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
-	}
-
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	thingsAuthGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
@@ -210,8 +190,6 @@ func loadConfig() config {
 		serverCert:        mainflux.Env(envServerCert, defServerCert),
 		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authGRPCTimeout:   authGRPCTimeout,
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 	}
@@ -250,36 +228,6 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
-	conn := connectToAuth(cfg, logger)
-	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
-}
-
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
-}
-
 func createThingsClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.ThingsServiceClient, func() error) {
 	conn := connectToThings(cfg, logger)
 	return thingsapi.NewClient(conn, tracer, cfg.thingsGRPCTimeout), conn.Close
@@ -310,12 +258,12 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(ac mainflux.AuthServiceClient, ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+func newService(ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
 	database := postgres.NewDatabase(db)
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
 
-	svc := webhooks.New(ac, ts, webhooksRepo)
+	svc := webhooks.New(ts, webhooksRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
