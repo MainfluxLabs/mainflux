@@ -46,6 +46,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			Write:       p.Write,
 			Writer:      writer,
 			Notifier:    notifier,
+			Webhook:     p.Webhook,
 		}
 
 		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
