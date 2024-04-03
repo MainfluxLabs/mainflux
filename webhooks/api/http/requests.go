@@ -17,6 +17,11 @@ const (
 	formatSenML = "senml"
 )
 
+var (
+	ErrInvalidUrl    = errors.New("missing or invalid url")
+	ErrInvalidFormat = errors.New("invalid format")
+)
+
 type apiReq interface {
 	validate() error
 }
@@ -61,12 +66,12 @@ func (req createWebhookReq) validate() error {
 	}
 
 	if req.Format != formatJSON && req.Format != formatSenML {
-		return errors.New("invalid format")
+		return ErrInvalidFormat
 	}
 
 	_, err := url.ParseRequestURI(req.Url)
-	if req.Url == "" || err != nil {
-		return errors.New("missing or invalid url")
+	if err != nil {
+		return ErrInvalidUrl
 	}
 
 	return nil

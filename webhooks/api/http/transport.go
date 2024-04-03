@@ -91,20 +91,26 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, nil):
-	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
-		errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrLimitSize:
-		w.WriteHeader(http.StatusBadRequest)
+	case errors.Contains(err, errors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
+		err == apiutil.ErrBearerToken,
+		err == apiutil.ErrBearerKey:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
+	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
+		errors.Contains(err, apiutil.ErrMalformedEntity),
+		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrInvalidIDFormat,
+		err == apiutil.ErrNameSize,
+		err == apiutil.ErrEmptyList,
+		err == apiutil.ErrMissingID,
+		err == ErrInvalidFormat,
+		err == ErrInvalidUrl:
+		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrScanMetadata):
@@ -112,7 +118,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, readers.ErrReadMessages),
 		errors.Contains(err, errors.ErrCreateEntity):
 		w.WriteHeader(http.StatusInternalServerError)
-
+	case errors.Contains(err, errors.ErrCreateEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity):
+		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}

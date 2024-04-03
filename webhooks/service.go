@@ -11,9 +11,13 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
+
+var ErrForward = errors.New("Error forwarding message")
+var ErrMessage = errors.New("Failed to convert to Mainflux message")
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -91,7 +95,7 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 
 	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID)
 	if err != nil {
-		return []Webhook{}, err
+		return []Webhook{}, errors.ErrAuthorization
 	}
 
 	return webhooks, nil
@@ -100,9 +104,13 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 func (ws *webhooksService) Forward(msg messaging.Message) error {
 	ctx := context.Background()
 
+	if msg.Publisher == "" {
+		return apiutil.ErrMissingID
+	}
+
 	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
 	if err != nil {
-		return err
+		return errors.ErrAuthorization
 	}
 
 	for _, wh := range whs {
@@ -134,12 +142,12 @@ func (ws *webhooksService) sendRequest(url string, msg messaging.Message) error 
 func (ws *webhooksService) Consume(message interface{}) error {
 	msg, ok := message.(messaging.Message)
 	if !ok {
-		return errors.New("failed to convert to Mainflux message")
+		return ErrMessage
 	}
 
 	err := ws.Forward(msg)
 	if err != nil {
-		return err
+		return errors.Wrap(ErrForward, err)
 	}
 
 	return nil
