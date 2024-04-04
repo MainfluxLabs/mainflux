@@ -6,7 +6,6 @@ package webhooks
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -16,8 +15,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-var ErrForward = errors.New("Error forwarding message")
-var ErrMessage = errors.New("Failed to convert to Mainflux message")
+const (
+	contentType = "Content-Type"
+	ctJSON      = "application/json"
+)
+
+var (
+	ErrForward     = errors.New("Error forwarding message")
+	ErrMessage     = errors.New("Failed to convert to Mainflux message")
+	ErrSendRequest = errors.New("Error sending request")
+)
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -31,7 +38,7 @@ type Service interface {
 	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
 
 	// Forward method is used to forward the received message to a certain url
-	Forward(message messaging.Message) error
+	Forward(ctx context.Context, message messaging.Message) error
 
 	consumers.Consumer
 }
@@ -82,6 +89,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	if len(whs) == 0 {
 		return Webhook{}, errors.ErrCreateEntity
 	}
+
 	return whs[0], nil
 }
 
@@ -101,9 +109,7 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 	return webhooks, nil
 }
 
-func (ws *webhooksService) Forward(msg messaging.Message) error {
-	ctx := context.Background()
-
+func (ws *webhooksService) Forward(ctx context.Context, msg messaging.Message) error {
 	if msg.Publisher == "" {
 		return apiutil.ErrMissingID
 	}
@@ -114,11 +120,11 @@ func (ws *webhooksService) Forward(msg messaging.Message) error {
 	}
 
 	for _, wh := range whs {
-		err := ws.sendRequest(wh.Url, msg)
-		if err != nil {
+		if err := ws.sendRequest(wh.Url, msg); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -128,11 +134,11 @@ func (ws *webhooksService) sendRequest(url string, msg messaging.Message) error 
 		return err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(contentType, ctJSON)
 
 	resp, err := ws.httpClient.Do(req)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Response error : %v", err))
+		return errors.Wrap(ErrSendRequest, err)
 	}
 	defer resp.Body.Close()
 
@@ -140,12 +146,14 @@ func (ws *webhooksService) sendRequest(url string, msg messaging.Message) error 
 }
 
 func (ws *webhooksService) Consume(message interface{}) error {
+	ctx := context.Background()
+
 	msg, ok := message.(messaging.Message)
 	if !ok {
 		return ErrMessage
 	}
 
-	err := ws.Forward(msg)
+	err := ws.Forward(ctx, msg)
 	if err != nil {
 		return errors.Wrap(ErrForward, err)
 	}

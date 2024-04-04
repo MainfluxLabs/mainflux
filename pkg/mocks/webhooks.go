@@ -54,7 +54,7 @@ func (svc *mainfluxWebhooks) ListWebhooksByThing(ctx context.Context, token stri
 	return whs, nil
 }
 
-func (svc *mainfluxWebhooks) Forward(message messaging.Message) error {
+func (svc *mainfluxWebhooks) Forward(ctx context.Context, message messaging.Message) error {
 	panic("not implemented")
 }
 

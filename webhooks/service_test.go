@@ -32,6 +32,13 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
+	validDataWebhooks := []webhooks.Webhook{{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}, {ThingID: "1", Name: "test2", Format: "json", Url: "https://test2.com"}}
+	validDataWebhook := []webhooks.Webhook{{ThingID: "1", Name: "test3", Format: "json", Url: "http://test3.com"}}
+	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test4", Format: "json", Url: "http://test4.com"}}
+	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test3.com"}}
+	invalidFormatData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: emptyValue, Url: "https://test3.com"}}
+	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test6", Format: "json", Url: emptyValue}}
+
 	cases := []struct {
 		desc     string
 		webhooks []webhooks.Webhook
@@ -40,37 +47,37 @@ func TestCreateWebhooks(t *testing.T) {
 	}{
 		{
 			desc:     "create new webhooks",
-			webhooks: []webhooks.Webhook{{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}, {ThingID: "1", Name: "test2", Format: "json", Url: "https://test2.com"}},
+			webhooks: validDataWebhooks,
 			token:    token,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with wrong credentials",
-			webhooks: []webhooks.Webhook{{ThingID: "1", Name: "test3", Format: "json", Url: "http://test3.com"}},
+			webhooks: validDataWebhook,
 			token:    wrongValue,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "create webhook with invalid thing id",
-			webhooks: []webhooks.Webhook{{ThingID: emptyValue, Name: "test4", Format: "json", Url: "http://test4.com"}},
+			webhooks: invalidThingData,
 			token:    token,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "create webhook with invalid name",
-			webhooks: []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test3.com"}},
+			webhooks: invalidNameData,
 			token:    token,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with invalid format",
-			webhooks: []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: emptyValue, Url: "https://test3.com"}},
+			webhooks: invalidFormatData,
 			token:    token,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with invalid url",
-			webhooks: []webhooks.Webhook{{ThingID: "1", Name: "test6", Format: "json", Url: emptyValue}},
+			webhooks: invalidUrlData,
 			token:    token,
 			err:      nil,
 		},
@@ -135,6 +142,9 @@ func TestListWebhooksByThing(t *testing.T) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
+	validData := messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)}
+	invalidThingData := messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)}
+
 	cases := []struct {
 		desc string
 		msg  messaging.Message
@@ -142,12 +152,12 @@ func TestConsume(t *testing.T) {
 	}{
 		{
 			desc: "forward message",
-			msg:  messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)},
+			msg:  validData,
 			err:  nil,
 		},
 		{
 			desc: "forward message invalid thing id",
-			msg:  messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)},
+			msg:  invalidThingData,
 			err:  apiutil.ErrMissingID,
 		},
 	}

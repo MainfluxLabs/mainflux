@@ -56,7 +56,6 @@ const (
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defHTTPPort          = "9021"
-	defAuthGRPCPort      = "8181"
 	defJaegerURL         = ""
 	defServerCert        = ""
 	defServerKey         = ""
@@ -76,7 +75,6 @@ const (
 	envDBSSLRootCert     = "MF_WEBHOOKS_DB_SSL_ROOT_CERT"
 	envClientTLS         = "MF_WEBHOOKS_CLIENT_TLS"
 	envCACerts           = "MF_WEBHOOKS_CA_CERTS"
-	envAuthGRPCPort      = "MF_WEBHOOKS_AUTH_GRPC_PORT"
 	envHTTPPort          = "MF_WEBHOOKS_HTTP_PORT"
 	envServerCert        = "MF_WEBHOOKS_SERVER_CERT"
 	envServerKey         = "MF_WEBHOOKS_SERVER_KEY"
@@ -186,7 +184,6 @@ func loadConfig() config {
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
-		authGRPCPort:      mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
 		serverCert:        mainflux.Env(envServerCert, defServerCert),
 		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
