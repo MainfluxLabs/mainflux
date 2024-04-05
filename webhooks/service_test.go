@@ -32,12 +32,13 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
-	validDataWebhooks := []webhooks.Webhook{{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}, {ThingID: "1", Name: "test2", Format: "json", Url: "https://test2.com"}}
-	validDataWebhook := []webhooks.Webhook{{ThingID: "1", Name: "test3", Format: "json", Url: "http://test3.com"}}
-	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test4", Format: "json", Url: "http://test4.com"}}
-	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test3.com"}}
-	invalidFormatData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: emptyValue, Url: "https://test3.com"}}
-	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test6", Format: "json", Url: emptyValue}}
+	validData := webhooks.Webhook{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}
+	validData2 := webhooks.Webhook{ThingID: "1", Name: "test2", Format: "json", Url: "http://test2.com"}
+	validDataWebhooks := []webhooks.Webhook{validData, validData2}
+	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test3", Format: "json", Url: "http://test3.com"}}
+	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test.com"}}
+	invalidFormatData := []webhooks.Webhook{{ThingID: "1", Name: "test4", Format: emptyValue, Url: "https://test4.com"}}
+	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: "json", Url: emptyValue}}
 
 	cases := []struct {
 		desc     string
@@ -53,7 +54,7 @@ func TestCreateWebhooks(t *testing.T) {
 		},
 		{
 			desc:     "create webhook with wrong credentials",
-			webhooks: validDataWebhook,
+			webhooks: []webhooks.Webhook{validData},
 			token:    wrongValue,
 			err:      errors.ErrAuthorization,
 		},
