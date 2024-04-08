@@ -198,7 +198,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: mainfluxlabs/things:latest
+    image: mainfluxlabs/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -302,7 +302,7 @@ services:
       - mainfluxlabs-base-net
 
   http-adapter:
-    image: mainfluxlabs/http:latest
+    image: mainfluxlabs/http:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-http
     depends_on:
       - things
