@@ -198,7 +198,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: mainfluxlabs/things:${MF_RELEASE_TAG}
+    image: mainfluxlabs/things:latest
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -302,7 +302,7 @@ services:
       - mainfluxlabs-base-net
 
   http-adapter:
-    image: mainfluxlabs/http:${MF_RELEASE_TAG}
+    image: mainfluxlabs/http:latest
     container_name: mainfluxlabs-http
     depends_on:
       - things
@@ -536,7 +536,7 @@ services:
       - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
 
   webhooks:
-    image: mainfluxlabs/webhooks:latest
+    image: mainfluxlabs/webhooks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     depends_on:
       - webhooks-db
