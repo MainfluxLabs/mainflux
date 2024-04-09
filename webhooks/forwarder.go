@@ -5,40 +5,28 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 type Forwarder interface {
 	// Forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message messaging.Message) error
+	Forward(ctx context.Context, message messaging.Message, whs []Webhook) error
 }
 
 var _ Forwarder = (*forwarder)(nil)
 
 type forwarder struct {
-	webhooks   WebhookRepository
 	httpClient *http.Client
 }
 
 func NewForwarder(webhooks WebhookRepository) Forwarder {
 	return &forwarder{
-		webhooks:   webhooks,
 		httpClient: &http.Client{},
 	}
 }
 
-func (fw *forwarder) Forward(ctx context.Context, msg messaging.Message) error {
-	if msg.Publisher == "" {
-		return apiutil.ErrMissingID
-	}
-
-	whs, err := fw.webhooks.RetrieveByThingID(ctx, msg.Publisher)
-	if err != nil {
-		return errors.ErrAuthorization
-	}
-
+func (fw *forwarder) Forward(_ context.Context, msg messaging.Message, whs []Webhook) error {
 	for _, wh := range whs {
 		if err := fw.sendRequest(wh.Url, msg); err != nil {
 			return err

@@ -16,7 +16,7 @@ func NewForwarder() webhooks.Forwarder {
 	return &forwarder{}
 }
 
-func (mf *forwarder) Forward(ctx context.Context, message messaging.Message) error {
+func (mf *forwarder) Forward(ctx context.Context, message messaging.Message, whs []webhooks.Webhook) error {
 	if message.Publisher == "" {
 		return apiutil.ErrMissingID
 	}

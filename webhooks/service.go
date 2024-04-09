@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
@@ -111,8 +112,16 @@ func (ws *webhooksService) Consume(message interface{}) error {
 		return ErrMessage
 	}
 
-	err := ws.forwarder.Forward(ctx, msg)
+	if msg.Publisher == "" {
+		return apiutil.ErrMissingID
+	}
+
+	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
 	if err != nil {
+		return errors.ErrAuthorization
+	}
+
+	if err := ws.forwarder.Forward(ctx, msg, whs); err != nil {
 		return errors.Wrap(ErrForward, err)
 	}
 
