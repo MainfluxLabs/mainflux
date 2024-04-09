@@ -25,8 +25,9 @@ const (
 func newService() webhooks.Service {
 	things := mocks.NewThingsServiceClient(nil, map[string]string{token: thingID}, nil)
 	webhookRepo := whMock.NewWebhookRepository()
+	forwarder := whMock.NewForwarder()
 
-	return webhooks.New(things, webhookRepo)
+	return webhooks.New(things, webhookRepo, forwarder)
 }
 
 func TestCreateWebhooks(t *testing.T) {
@@ -94,7 +95,7 @@ func TestListWebhooksByThing(t *testing.T) {
 	svc := newService()
 
 	w := webhooks.Webhook{
-		Name:    "test-webhook",
+		Name:    "TestWebhook",
 		ThingID: "1",
 		Format:  "json",
 		Url:     "https://api.webhook.com",
@@ -143,8 +144,8 @@ func TestListWebhooksByThing(t *testing.T) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validData := messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)}
-	invalidThingData := messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"api_key":"val1","field1":"val2","field2":"val3","field3":"val4"}`)}
+	validData := messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
+	invalidThingData := messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
 
 	cases := []struct {
 		desc string

@@ -39,8 +39,9 @@ func newHTTPServer(svc webhooks.Service) *httptest.Server {
 func newService() webhooks.Service {
 	things := mocks.NewThingsServiceClient(nil, map[string]string{token: thingID}, nil)
 	webhookRepo := whmocks.NewWebhookRepository()
+	forwarder := whmocks.NewForwarder()
 
-	return webhooks.New(things, webhookRepo)
+	return webhooks.New(things, webhookRepo, forwarder)
 }
 
 type testRequest struct {
@@ -74,10 +75,10 @@ func TestCreateWebhooks(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"name":"ThingSpeak","format":"json","url":"https://api.thingspeak.com/update"}]`
-	invalidName := fmt.Sprintf(`[{"name":"%s","format":"json","url":"https://api.thingspeak.com/update"}]`, emptyValue)
-	invalidFormat := fmt.Sprintf(`[{"name":"ThingSpeak","format":"%s","url":"https://api.thingspeak.com/update"}]`, emptyValue)
-	invalidUrl := fmt.Sprintf(`[{"name":"ThingSpeak","format":"json","url":"%s"}]`, invalidUrl)
+	validData := `[{"name":"value","format":"json","url":"https://api.example.com"}]`
+	invalidName := fmt.Sprintf(`[{"name":"%s","format":"json","url":"https://api.example.com"}]`, emptyValue)
+	invalidFormat := fmt.Sprintf(`[{"name":"value","format":"%s","url":"https://api.example.com"}]`, emptyValue)
+	invalidUrl := fmt.Sprintf(`[{"name":"value","format":"json","url":"%s"}]`, invalidUrl)
 
 	cases := []struct {
 		desc        string
