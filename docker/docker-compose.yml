@@ -19,6 +19,7 @@ volumes:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-bootstrap-db-volume:
+  mainfluxlabs-webhooks-db-volume:
 
 services:
   ui:
@@ -293,7 +294,7 @@ services:
       MF_MQTT_ADAPTER_DB_HOST: ${MF_MQTT_ADAPTER_DB_HOST}
       MF_MQTT_ADAPTER_DB_SSL_MODE: ${MF_MQTT_ADAPTER_DB_SSL_MODE}
       MF_MQTT_ADAPTER_DB_SSL_CERT: ${MF_MQTT_ADAPTER_DB_SSL_CERT}
-      MF_AUTH_GRPC_URL:  ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
     ports:
       - ${MF_MQTT_ADAPTER_HTTP_PORT}:${MF_MQTT_ADAPTER_HTTP_PORT}
 
@@ -427,7 +428,7 @@ services:
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT : ${MF_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_INFLUX_READER_PORT}:${MF_INFLUX_READER_PORT}
     networks:
@@ -440,19 +441,19 @@ services:
     container_name: mainfluxlabs-filestore-db
     restart: on-failure
     environment:
-        - POSTGRES_USER=${MF_FILESTORE_DB_USER}
-        - POSTGRES_PASSWORD=${MF_FILESTORE_DB_PASS}
-        - POSTGRES_DB=${MF_FILESTORE_DB}
+      - POSTGRES_USER=${MF_FILESTORE_DB_USER}
+      - POSTGRES_PASSWORD=${MF_FILESTORE_DB_PASS}
+      - POSTGRES_DB=${MF_FILESTORE_DB}
     networks:
-        - mainfluxlabs-base-net
+      - mainfluxlabs-base-net
     volumes:
-        - mainfluxlabs-filestore-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-filestore-db-volume:/var/lib/postgresql/data
 
   filestore:
     image: ${MF_RELEASE_PREFIX}/filestore:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-filestore
     depends_on:
-        - filestore-db
+      - filestore-db
     restart: on-failure
     environment:
       MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
@@ -517,5 +518,44 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+    networks:
+      - mainfluxlabs-base-net
+
+  ## WEBHOOKS
+  webhooks-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-webhooks-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_WEBHOOKS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_WEBHOOKS_DB_PASS}
+      POSTGRES_DB: ${MF_WEBHOOKS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
+
+  webhooks:
+    image: mainfluxlabs/webhooks:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-webhooks
+    depends_on:
+      - webhooks-db
+    restart: on-failure
+    environment:
+      MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_WEBHOOKS_DB_HOST: webhooks-db
+      MF_WEBHOOKS_DB_PORT: ${MF_WEBHOOKS_DB_PORT}
+      MF_WEBHOOKS_DB_USER: ${MF_WEBHOOKS_DB_USER}
+      MF_WEBHOOKS_DB_PASS: ${MF_WEBHOOKS_DB_PASS}
+      MF_WEBHOOKS_DB: ${MF_WEBHOOKS_DB}
+      MF_WEBHOOKS_HTTP_PORT: ${MF_WEBHOOKS_HTTP_PORT}
+      MF_WEBHOOKS_SERVER_CERT: ${MF_WEBHOOKS_SERVER_CERT}
+      MF_WEBHOOKS_SERVER_KEY: ${MF_WEBHOOKS_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_WEBHOOKS_HTTP_PORT}:${MF_WEBHOOKS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
