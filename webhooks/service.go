@@ -19,9 +19,8 @@ const (
 )
 
 var (
-	ErrForward     = errors.New("Error forwarding message")
-	ErrMessage     = errors.New("Failed to convert to Mainflux message")
-	ErrSendRequest = errors.New("Error sending request")
+	ErrForward     = errors.New("failed to forward message")
+	ErrSendRequest = errors.New("failed to send request")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -109,7 +108,7 @@ func (ws *webhooksService) Consume(message interface{}) error {
 
 	msg, ok := message.(messaging.Message)
 	if !ok {
-		return ErrMessage
+		return errors.ErrMessage
 	}
 
 	if msg.Publisher == "" {

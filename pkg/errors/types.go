@@ -36,4 +36,7 @@ var (
 
 	// ErrSaveMessage indicates failure occurred while saving message to database.
 	ErrSaveMessage = New("failed to save message to database")
+
+	// ErrMessage indicates an error converting a message to Mainflux message.
+	ErrMessage = New("failed to convert to Mainflux message")
 )

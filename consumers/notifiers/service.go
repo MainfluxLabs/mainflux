@@ -10,9 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-// ErrMessage indicates an error converting a message to Mainflux message.
-var ErrMessage = errors.New("failed to convert to Mainflux message")
-
 // Service reprents a notification service.
 type Service interface {
 	consumers.Consumer
@@ -40,7 +37,7 @@ func New(auth mainflux.AuthServiceClient, idp mainflux.IDProvider, notifier Noti
 func (ns *notifierService) Consume(message interface{}) error {
 	msg, ok := message.(messaging.Message)
 	if !ok {
-		return ErrMessage
+		return errors.ErrMessage
 	}
 
 	err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
