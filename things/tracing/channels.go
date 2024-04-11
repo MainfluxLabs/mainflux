@@ -100,20 +100,20 @@ func (crm channelRepositoryMiddleware) Remove(ctx context.Context, owner string,
 	return crm.repo.Remove(ctx, owner, ids...)
 }
 
-func (crm channelRepositoryMiddleware) Connect(ctx context.Context, owner, chID string, thIDs []string) error {
+func (crm channelRepositoryMiddleware) Connect(ctx context.Context, chID string, thIDs []string) error {
 	span := createSpan(ctx, crm.tracer, connectOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Connect(ctx, owner, chID, thIDs)
+	return crm.repo.Connect(ctx, chID, thIDs)
 }
 
-func (crm channelRepositoryMiddleware) Disconnect(ctx context.Context, owner, chID string, thIDs []string) error {
+func (crm channelRepositoryMiddleware) Disconnect(ctx context.Context, chID string, thIDs []string) error {
 	span := createSpan(ctx, crm.tracer, disconnectOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Disconnect(ctx, owner, chID, thIDs)
+	return crm.repo.Disconnect(ctx, chID, thIDs)
 }
 
 func (crm channelRepositoryMiddleware) RetrieveConnByThingKey(ctx context.Context, key string) (things.Connection, error) {

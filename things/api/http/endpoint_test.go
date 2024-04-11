@@ -2392,7 +2392,7 @@ func TestDisconnect(t *testing.T) {
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
-			status:      http.StatusNotFound,
+			status:      http.StatusForbidden,
 		},
 		{
 			desc:        "disconnect with invalid content type",
@@ -2638,10 +2638,8 @@ func TestBackup(t *testing.T) {
 
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
-		ChannelID:    ch.ID,
-		ChannelOwner: ch.Owner,
-		ThingID:      th.ID,
-		ThingOwner:   th.Owner,
+		ChannelID: ch.ID,
+		ThingID:   th.ID,
 	})
 
 	var thingsRes []backupThingRes
@@ -2693,10 +2691,8 @@ func TestBackup(t *testing.T) {
 	var connectionsRes []backupConnectionRes
 	for _, conn := range connections {
 		connectionsRes = append(connectionsRes, backupConnectionRes{
-			ChannelID:    conn.ChannelID,
-			ChannelOwner: conn.ChannelOwner,
-			ThingID:      conn.ThingID,
-			ThingOwner:   conn.ThingOwner,
+			ChannelID: conn.ChannelID,
+			ThingID:   conn.ThingID,
 		})
 	}
 
@@ -2831,10 +2827,8 @@ func TestRestore(t *testing.T) {
 	ch := channels[0]
 
 	connections := things.Connection{
-		ChannelID:    ch.ID,
-		ChannelOwner: ch.Owner,
-		ThingID:      testThing.ID,
-		ThingOwner:   testThing.Owner,
+		ChannelID: ch.ID,
+		ThingID:   testThing.ID,
 	}
 
 	thr := []restoreThingReq{
@@ -2860,10 +2854,8 @@ func TestRestore(t *testing.T) {
 	var cr []restoreConnectionReq
 
 	cr = append(cr, restoreConnectionReq{
-		ChannelID:    connections.ChannelID,
-		ChannelOwner: connections.ChannelOwner,
-		ThingID:      connections.ThingID,
-		ThingOwner:   connections.ThingOwner,
+		ChannelID: connections.ChannelID,
+		ThingID:   connections.ThingID,
 	})
 
 	var gr []restoreGroupReq

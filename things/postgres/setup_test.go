@@ -17,12 +17,11 @@ import (
 	dockertest "github.com/ory/dockertest/v3"
 )
 
-const (
-	wrongValue = "wrong-value"
-)
-
 var (
 	db *sqlx.DB
+
+	wrongID, _ = idProvider.ID()
+	invalidID  = "wrong"
 )
 
 func TestMain(m *testing.M) {

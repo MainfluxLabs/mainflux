@@ -266,20 +266,18 @@ func (cr channelRepository) Remove(ctx context.Context, owner string, ids ...str
 	return nil
 }
 
-func (cr channelRepository) Connect(ctx context.Context, owner, chID string, thIDs []string) error {
+func (cr channelRepository) Connect(ctx context.Context, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
 	}
 
-	q := `INSERT INTO connections (channel_id, channel_owner, thing_id, thing_owner)
-	      VALUES (:channel, :owner, :thing, :owner);`
+	q := `INSERT INTO connections (channel_id, thing_id) VALUES (:channel, :thing);`
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
 			Channel: chID,
 			Thing:   thID,
-			Owner:   owner,
 		}
 
 		_, err := tx.NamedExecContext(ctx, q, dbco)
@@ -306,21 +304,19 @@ func (cr channelRepository) Connect(ctx context.Context, owner, chID string, thI
 	return nil
 }
 
-func (cr channelRepository) Disconnect(ctx context.Context, owner, chID string, thIDs []string) error {
+func (cr channelRepository) Disconnect(ctx context.Context, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
 	}
 
 	q := `DELETE FROM connections
-	      WHERE channel_id = :channel AND channel_owner = :owner
-	      AND thing_id = :thing AND thing_owner = :owner`
+	      WHERE channel_id = :channel AND thing_id = :thing`
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
 			Channel: chID,
 			Thing:   thID,
-			Owner:   owner,
 		}
 
 		res, err := tx.NamedExecContext(ctx, q, dbco)
@@ -390,7 +386,7 @@ func (cr channelRepository) RetrieveConnByThingKey(ctx context.Context, thingKey
 }
 
 func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
-	q := `SELECT channel_id, channel_owner, thing_id, thing_owner FROM connections;`
+	q := `SELECT channel_id, thing_id FROM connections;`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -556,18 +552,14 @@ func toChannel(ch dbChannel) things.Channel {
 }
 
 type dbConn struct {
-	ChannelID    string `db:"channel_id"`
-	ChannelOwner string `db:"channel_owner"`
-	ThingID      string `db:"thing_id"`
-	ThingOwner   string `db:"thing_owner"`
+	ChannelID string `db:"channel_id"`
+	ThingID   string `db:"thing_id"`
 }
 
 func toConnection(co dbConn) things.Connection {
 	return things.Connection{
-		ChannelID:    co.ChannelID,
-		ChannelOwner: co.ChannelOwner,
-		ThingID:      co.ThingID,
-		ThingOwner:   co.ThingOwner,
+		ChannelID: co.ChannelID,
+		ThingID:   co.ThingID,
 	}
 }
 

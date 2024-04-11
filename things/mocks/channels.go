@@ -198,7 +198,7 @@ func (crm *channelRepositoryMock) Remove(_ context.Context, owner string, ids ..
 	return nil
 }
 
-func (crm *channelRepositoryMock) Connect(_ context.Context, owner, chID string, thIDs []string) error {
+func (crm *channelRepositoryMock) Connect(_ context.Context, chID string, thIDs []string) error {
 	ch, err := crm.RetrieveByID(context.Background(), chID)
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func (crm *channelRepositoryMock) Connect(_ context.Context, owner, chID string,
 	return nil
 }
 
-func (crm *channelRepositoryMock) Disconnect(_ context.Context, owner, chID string, thIDs []string) error {
+func (crm *channelRepositoryMock) Disconnect(_ context.Context, chID string, thIDs []string) error {
 	for _, thID := range thIDs {
 		if _, ok := crm.cconns[thID]; !ok {
 			return errors.ErrNotFound
@@ -238,7 +238,7 @@ func (crm *channelRepositoryMock) Disconnect(_ context.Context, owner, chID stri
 
 		crm.tconns <- Connection{
 			chanID:    chID,
-			thing:     things.Thing{ID: thID, Owner: owner},
+			thing:     things.Thing{ID: thID},
 			connected: false,
 		}
 		delete(crm.cconns[thID], chID)
@@ -302,10 +302,8 @@ func (crm *channelRepositoryMock) RetrieveAllConnections(ctx context.Context) ([
 	for thingID, con := range crm.cconns {
 		for _, v := range con {
 			con := things.Connection{
-				ChannelID:    v.ID,
-				ChannelOwner: v.Owner,
-				ThingID:      thingID,
-				ThingOwner:   v.Owner,
+				ChannelID: v.ID,
+				ThingID:   thingID,
 			}
 			conns = append(conns, con)
 		}

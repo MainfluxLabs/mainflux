@@ -1342,10 +1342,8 @@ func TestBackup(t *testing.T) {
 
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
-		ChannelID:    ch.ID,
-		ChannelOwner: ch.Owner,
-		ThingID:      th.ID,
-		ThingOwner:   th.Owner,
+		ChannelID: ch.ID,
+		ThingID:   th.ID,
 	})
 
 	backup := things.Backup{
@@ -1457,10 +1455,8 @@ func TestRestore(t *testing.T) {
 
 	var connections []things.Connection
 	conn := things.Connection{
-		ChannelID:    ch.ID,
-		ChannelOwner: ch.Owner,
-		ThingID:      th.ID,
-		ThingOwner:   th.Owner,
+		ChannelID: ch.ID,
+		ThingID:   th.ID,
 	}
 
 	connections = append(connections, conn)

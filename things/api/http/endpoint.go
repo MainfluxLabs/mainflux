@@ -899,10 +899,8 @@ func buildBackupResponse(backup things.Backup) backupRes {
 
 	for _, connection := range backup.Connections {
 		view := backupConnectionRes{
-			ChannelID:    connection.ChannelID,
-			ChannelOwner: connection.ChannelOwner,
-			ThingID:      connection.ThingID,
-			ThingOwner:   connection.ThingOwner,
+			ChannelID: connection.ChannelID,
+			ThingID:   connection.ThingID,
 		}
 		res.Connections = append(res.Connections, view)
 	}
@@ -967,10 +965,8 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 
 	for _, connection := range req.Connections {
 		conn := things.Connection{
-			ChannelID:    connection.ChannelID,
-			ChannelOwner: connection.ChannelOwner,
-			ThingID:      connection.ThingID,
-			ThingOwner:   connection.ThingOwner,
+			ChannelID: connection.ChannelID,
+			ThingID:   connection.ThingID,
 		}
 		backup.Connections = append(backup.Connections, conn)
 	}
