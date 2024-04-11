@@ -107,13 +107,13 @@ func (ms *metricsMiddleware) ViewOrg(ctx context.Context, token, id string) (aut
 	return ms.svc.ViewOrg(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, admin bool, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_orgs").Add(1)
 		ms.latency.With("method", "list_orgs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListOrgs(ctx, token, admin, pm)
+	return ms.svc.ListOrgs(ctx, token, pm)
 }
 
 func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {

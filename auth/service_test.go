@@ -418,7 +418,6 @@ func TestListOrgs(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		admin bool
 		meta  auth.PageMetadata
 		size  uint64
 		err   error
@@ -426,7 +425,6 @@ func TestListOrgs(t *testing.T) {
 		{
 			desc:  "list orgs",
 			token: ownerToken,
-			admin: false,
 			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -436,7 +434,6 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs as system admin",
 			token: superAdminToken,
-			admin: true,
 			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -446,21 +443,18 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs with wrong credentials",
 			token: invalid,
-			admin: false,
 			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list orgs without credentials",
 			token: "",
-			admin: false,
 			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list half of total orgs",
 			token: ownerToken,
-			admin: false,
 			meta: auth.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
@@ -470,7 +464,6 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list last org",
 			token: ownerToken,
-			admin: false,
 			meta: auth.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
@@ -481,7 +474,7 @@ func TestListOrgs(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListOrgs(context.Background(), tc.token, tc.admin, tc.meta)
+		page, err := svc.ListOrgs(context.Background(), tc.token, tc.meta)
 		size := uint64(len(page.Orgs))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))

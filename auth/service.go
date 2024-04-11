@@ -273,16 +273,14 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 	return org, nil
 }
 
-func (svc service) ListOrgs(ctx context.Context, token string, admin bool, pm PageMetadata) (OrgsPage, error) {
+func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.orgs.RetrieveByAdmin(ctx, pm)
+	}
+
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return OrgsPage{}, err
-	}
-
-	if admin {
-		if err := svc.isAdmin(ctx, token); err == nil {
-			return svc.orgs.RetrieveByAdmin(ctx, pm)
-		}
 	}
 
 	return svc.orgs.RetrieveByOwner(ctx, user.ID, pm)
@@ -620,13 +618,13 @@ func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string
 }
 
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
+	}
+
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return OrgsPage{}, err
-	}
-
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
 	}
 
 	if user.ID != memberID {
@@ -919,13 +917,13 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 }
 
 func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action string) error {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return nil
+	}
+
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
-	}
-
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return nil
 	}
 
 	role, err := svc.orgs.RetrieveRole(ctx, user.ID, orgID)

@@ -125,7 +125,7 @@ type Orgs interface {
 	ViewOrg(ctx context.Context, token, id string) (Org, error)
 
 	// ListOrgs retrieves orgs.
-	ListOrgs(ctx context.Context, token string, admin bool, pm PageMetadata) (OrgsPage, error)
+	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
 	// ListOrgMemberships retrieves all orgs for member that is identified with memberID belongs to.
 	ListOrgMemberships(ctx context.Context, token, memberID string, pm PageMetadata) (OrgsPage, error)
