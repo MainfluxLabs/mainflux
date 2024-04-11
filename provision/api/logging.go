@@ -27,7 +27,7 @@ func NewLoggingMiddleware(svc provision.Service, logger log.Logger) provision.Se
 
 func (lm *loggingMiddleware) Provision(token, name, externalID, externalKey string) (res provision.Result, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method provision for token: %s and things: %v took %s to complete", token, res.Things, time.Since(begin))
+		message := fmt.Sprintf("Method provision for things: %v took %s to complete", res.Things, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 			return
@@ -40,7 +40,7 @@ func (lm *loggingMiddleware) Provision(token, name, externalID, externalKey stri
 
 func (lm *loggingMiddleware) Cert(token, thingID, duration string, keyBits int) (cert string, key string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method cert for token: %s and thing: %v took %s to complete", token, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method cert for thing: %v took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 			return
