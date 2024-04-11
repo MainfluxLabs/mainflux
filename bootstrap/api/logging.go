@@ -28,7 +28,7 @@ func NewLoggingMiddleware(svc bootstrap.Service, logger log.Logger) bootstrap.Se
 
 func (lm *loggingMiddleware) Add(ctx context.Context, token string, cfg bootstrap.Config) (saved bootstrap.Config, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method add for token %s and thing %s took %s to complete", token, saved.ThingID, time.Since(begin))
+		message := fmt.Sprintf("Method add for thing %s took %s to complete", saved.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -41,7 +41,7 @@ func (lm *loggingMiddleware) Add(ctx context.Context, token string, cfg bootstra
 
 func (lm *loggingMiddleware) View(ctx context.Context, token, id string) (saved bootstrap.Config, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view for token %s and thing %s took %s to complete", token, saved.ThingID, time.Since(begin))
+		message := fmt.Sprintf("Method view for thing %s took %s to complete", saved.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -54,7 +54,7 @@ func (lm *loggingMiddleware) View(ctx context.Context, token, id string) (saved 
 
 func (lm *loggingMiddleware) Update(ctx context.Context, token string, cfg bootstrap.Config) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update for token %s and thing %s took %s to complete", token, cfg.ThingID, time.Since(begin))
+		message := fmt.Sprintf("Method update for thing %s took %s to complete", cfg.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -80,7 +80,7 @@ func (lm *loggingMiddleware) UpdateCert(ctx context.Context, token, thingID, cli
 
 func (lm *loggingMiddleware) UpdateConnections(ctx context.Context, token, id string, connections []string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_connections for token %s and thing %s took %s to complete", token, id, time.Since(begin))
+		message := fmt.Sprintf("Method update_connections for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -93,7 +93,7 @@ func (lm *loggingMiddleware) UpdateConnections(ctx context.Context, token, id st
 
 func (lm *loggingMiddleware) List(ctx context.Context, token string, filter bootstrap.Filter, offset, limit uint64) (res bootstrap.ConfigsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list for token %s and offset %d and limit %d took %s to complete", token, offset, limit, time.Since(begin))
+		message := fmt.Sprintf("Method list for offset %d and limit %d took %s to complete", offset, limit, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -106,7 +106,7 @@ func (lm *loggingMiddleware) List(ctx context.Context, token string, filter boot
 
 func (lm *loggingMiddleware) Remove(ctx context.Context, token, id string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove for token %s and thing %s took %s to complete", token, id, time.Since(begin))
+		message := fmt.Sprintf("Method remove for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -132,7 +132,7 @@ func (lm *loggingMiddleware) Bootstrap(ctx context.Context, externalKey, externa
 
 func (lm *loggingMiddleware) ChangeState(ctx context.Context, token, id string, state bootstrap.State) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method change_state for token %s and thing %s took %s to complete", token, id, time.Since(begin))
+		message := fmt.Sprintf("Method change_state for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

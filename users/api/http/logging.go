@@ -70,7 +70,7 @@ func (lm *loggingMiddleware) Register(ctx context.Context, token string, user us
 
 func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method login for user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method login for user %s and token %s took %s to complete", user.Email, token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -109,7 +109,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u u
 
 func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (e users.UserPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_users for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method list_users took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -239,7 +239,7 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
@@ -248,7 +248,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.Us
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 

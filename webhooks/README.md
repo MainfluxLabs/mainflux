@@ -60,9 +60,9 @@ To start the service outside of the container, execute the following shell scrip
 
 ```bash
 # download the latest version of the service
-go get github.com/mainflux/mainflux
+go get github.com/MainfluxLabs/mainflux
 
-cd $GOPATH/src/github.com/mainflux/mainflux
+cd $GOPATH/src/github.com/MainfluxLabs/mainflux
 
 # compile the webhooks
 make webhooks
@@ -71,24 +71,24 @@ make webhooks
 make install
 
 # set the environment variables and run the service
-MF_WEBHOOKS_LOG_LEVEL=[Webhooks log level] 
-MF_WEBHOOKS_DB_HOST=[Database host address] 
-MF_WEBHOOKS_DB_PORT=[Database host port] 
-MF_WEBHOOKS_DB_USER=[Database user] 
-MF_WEBHOOKS_DB_PASS=[Database password] 
-MF_WEBHOOKS_DB=[Name of the database used by the service] 
-MF_THINGS_DB_SSL_MODE=[SSL mode to connect to the database with] 
-MF_THINGS_DB_SSL_CERT=[Path to the PEM encoded certificate file] 
-MF_THINGS_DB_SSL_KEY=[Path to the PEM encoded key file] 
-MF_THINGS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] 
-MF_WEBHOOKS_HTTP_PORT=[Service HTTP port] 
-MF_WEBHOOKS_AUTH_GRPC_PORT=[Webhooks service Auth gRPC port] 
-MF_WEBHOOKS_SERVER_CERT=[String path to server cert in pem format] 
-MF_WEBHOOKS_SERVER_KEY=[String path to server key in pem format] 
-MF_JAEGER_URL=[Jaeger server URL] 
-MF_AUTH_GRPC_URL=[Auth service gRPC URL] 
-MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds] 
-$GOBIN/mainflux-kit 
+MF_WEBHOOKS_LOG_LEVEL=[Webhooks log level]
+MF_WEBHOOKS_DB_HOST=[Database host address]
+MF_WEBHOOKS_DB_PORT=[Database host port]
+MF_WEBHOOKS_DB_USER=[Database user]
+MF_WEBHOOKS_DB_PASS=[Database password]
+MF_WEBHOOKS_DB=[Name of the database used by the service]
+MF_THINGS_DB_SSL_MODE=[SSL mode to connect to the database with]
+MF_THINGS_DB_SSL_CERT=[Path to the PEM encoded certificate file]
+MF_THINGS_DB_SSL_KEY=[Path to the PEM encoded key file]
+MF_THINGS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file]
+MF_WEBHOOKS_HTTP_PORT=[Service HTTP port]
+MF_WEBHOOKS_AUTH_GRPC_PORT=[Webhooks service Auth gRPC port]
+MF_WEBHOOKS_SERVER_CERT=[String path to server cert in pem format]
+MF_WEBHOOKS_SERVER_KEY=[String path to server key in pem format]
+MF_JAEGER_URL=[Jaeger server URL]
+MF_AUTH_GRPC_URL=[Auth service gRPC URL]
+MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds]
+$GOBIN/mainflux-kit
 ```
 
 ## Usage

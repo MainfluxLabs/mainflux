@@ -96,7 +96,7 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (e
 
 func (lm *loggingMiddleware) CreateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_org for token %s and name %s took %s to complete", token, org.Name, time.Since(begin))
+		message := fmt.Sprintf("Method create_org for name %s took %s to complete", org.Name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -109,7 +109,7 @@ func (lm *loggingMiddleware) CreateOrg(ctx context.Context, token string, org au
 
 func (lm *loggingMiddleware) UpdateOrg(ctx context.Context, token string, org auth.Org) (o auth.Org, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_org for token %s and name %s took %s to complete", token, org.Name, time.Since(begin))
+		message := fmt.Sprintf("Method update_org for name %s took %s to complete", org.Name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -122,7 +122,7 @@ func (lm *loggingMiddleware) UpdateOrg(ctx context.Context, token string, org au
 
 func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_org for token %s and id %s took %s to complete", token, id, time.Since(begin))
+		message := fmt.Sprintf("Method remove_org for id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -135,7 +135,7 @@ func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id str
 
 func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o auth.Org, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_org for token %s and id %s took %s to complete", token, id, time.Since(begin))
+		message := fmt.Sprintf("Method view_org for id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -146,9 +146,9 @@ func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o a
 	return lm.svc.ViewOrg(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, admin bool, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
+func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_orgs for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method list_orgs took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -156,12 +156,12 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, admin b
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListOrgs(ctx, token, admin, pm)
+	return lm.svc.ListOrgs(ctx, token, pm)
 }
 
 func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (om auth.OrgMember, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_member for token %s and org id %s and member id %s took %s to complete", token, orgID, memberID, time.Since(begin))
+		message := fmt.Sprintf("Method view_member for org id %s and member id %s took %s to complete", orgID, memberID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -174,7 +174,7 @@ func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 
 func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgMembersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_members for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_members for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -187,7 +187,7 @@ func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID st
 
 func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (op auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_memberships for token %s and member id %s took %s to complete", token, memberID, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_memberships for member id %s took %s to complete", memberID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -200,7 +200,7 @@ func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, memb
 
 func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_members for token %s , members %s and org id %s took %s to complete", token, oms, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method assign_members for members %s and org id %s took %s to complete", oms, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -213,7 +213,7 @@ func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID str
 
 func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_members for token %s , member ids %s and org id %s took %s to complete", token, memberIDs, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_members for member ids %s and org id %s took %s to complete", memberIDs, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -226,7 +226,7 @@ func (lm *loggingMiddleware) UnassignMembers(ctx context.Context, token string, 
 
 func (lm *loggingMiddleware) UpdateMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_members for token %s , members %s and org id %s took %s to complete", token, oms, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method update_members for members %s and org id %s took %s to complete", oms, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -239,7 +239,7 @@ func (lm *loggingMiddleware) UpdateMembers(ctx context.Context, token, orgID str
 
 func (lm *loggingMiddleware) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_groups for token %s , group ids %s and org id %s took %s to complete", token, groupIDs, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method assign_groups for group ids %s and org id %s took %s to complete", groupIDs, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -252,7 +252,7 @@ func (lm *loggingMiddleware) AssignGroups(ctx context.Context, token, orgID stri
 
 func (lm *loggingMiddleware) UnassignGroups(ctx context.Context, token string, orgID string, groupIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_groups for token %s, group ids %s and org id %s took %s to complete", token, groupIDs, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_groups for group ids %s and org id %s took %s to complete", groupIDs, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -265,7 +265,7 @@ func (lm *loggingMiddleware) UnassignGroups(ctx context.Context, token string, o
 
 func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.GroupsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_groups for token %s and org id %s took %s to complete", token, orgID, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_groups for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -278,7 +278,7 @@ func (lm *loggingMiddleware) ListOrgGroups(ctx context.Context, token, orgID str
 
 func (lm *loggingMiddleware) ViewGroupMembership(ctx context.Context, token, groupID string) (o auth.Org, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_group_membership for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method view_group_membership for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 		}
@@ -290,7 +290,7 @@ func (lm *loggingMiddleware) ViewGroupMembership(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) AddPolicy(ctx context.Context, token, groupID, policy string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method add_policy for token %s and took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method add_policy for took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -303,7 +303,7 @@ func (lm *loggingMiddleware) AddPolicy(ctx context.Context, token, groupID, poli
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup auth.Backup, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -316,7 +316,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup a
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -353,7 +353,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 
 func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_group_policies for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -365,7 +365,7 @@ func (lm *loggingMiddleware) CreateGroupPolicies(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, groupID string, pm auth.PageMetadata) (gpp auth.GroupPoliciesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_group_policies for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 		}
@@ -377,7 +377,7 @@ func (lm *loggingMiddleware) ListGroupPolicies(ctx context.Context, token, group
 
 func (lm *loggingMiddleware) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...auth.GroupPolicyByID) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method update_group_policies for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -389,7 +389,7 @@ func (lm *loggingMiddleware) UpdateGroupPolicies(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_group_policies for token %s and group id %s took %s to complete", token, groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_group_policies for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

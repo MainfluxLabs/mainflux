@@ -29,7 +29,7 @@ func LoggingMiddleware(svc webhooks.Service, logger log.Logger) webhooks.Service
 
 func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_webhooks for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method create_webhooks took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -42,7 +42,7 @@ func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, w
 
 func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token string, thingID string) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_webhooks_by_thing for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method list_webhooks_by_thing took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
