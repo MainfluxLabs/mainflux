@@ -46,6 +46,11 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "auth_1",
 				Up: []string{
+					`CREATE TABLE IF NOT EXISTS users_roles (
+						role    VARCHAR(12) CHECK (role IN ('root', 'admin')),
+						user_id UUID NOT NULL,
+						PRIMARY KEY (user_id)
+					)`,
 					`CREATE TABLE IF NOT EXISTS keys (
 						id          VARCHAR(254) NOT NULL,
 						type        SMALLINT,
@@ -57,6 +62,7 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 				},
 				Down: []string{
+					"DROP TABLE users_roles",
 					`DROP TABLE IF EXISTS keys`,
 				},
 			},
@@ -64,87 +70,45 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "auth_2",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS orgs (
-							id          UUID UNIQUE NOT NULL,
-							owner_id    UUID,
-							name        VARCHAR(254) NOT NULL,
-							description VARCHAR(1024),
-							metadata    JSONB,
-							created_at  TIMESTAMPTZ,
-							updated_at  TIMESTAMPTZ,
-							PRIMARY KEY (id, owner_id)
-						 )`,
+						id          UUID UNIQUE NOT NULL,
+						owner_id    UUID,
+						name        VARCHAR(254) NOT NULL,
+						description VARCHAR(1024),
+						metadata    JSONB,
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						PRIMARY KEY (id, owner_id)
+					)`,
 					`CREATE TABLE IF NOT EXISTS member_relations (
-							member_id   UUID NOT NULL,
-							org_id      UUID NOT NULL,
-							role        VARCHAR(10) NOT NULL,
-							created_at  TIMESTAMPTZ,
-							updated_at  TIMESTAMPTZ,
-							FOREIGN KEY (org_id) REFERENCES orgs (id),
-							PRIMARY KEY (member_id, org_id)
-						 )`,
+						member_id   UUID NOT NULL,
+						org_id      UUID NOT NULL,
+						role        VARCHAR(10) NOT NULL,
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						FOREIGN KEY (org_id) REFERENCES orgs (id),
+						PRIMARY KEY (member_id, org_id)
+					)`,
+					`CREATE TABLE IF NOT EXISTS group_relations (
+						group_id    UUID UNIQUE NOT NULL,
+						org_id      UUID NOT NULL,
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						FOREIGN KEY (org_id) REFERENCES orgs (id),
+						PRIMARY KEY (group_id, org_id)
+					)`,
+					`CREATE TABLE IF NOT EXISTS group_policies (
+						group_id    UUID NOT NULL,
+						member_id   UUID NOT NULL,
+						policy      VARCHAR(15),
+						FOREIGN KEY (group_id) REFERENCES group_relations (group_id) ON DELETE CASCADE,
+						PRIMARY KEY (group_id, member_id)
+					)`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS orgs`,
 					`DROP TABLE IF EXISTS member_relations`,
-				},
-			},
-			{
-				Id: "auth_3",
-				Up: []string{
-					`CREATE TABLE IF NOT EXISTS group_relations (
-							group_id    UUID UNIQUE NOT NULL,
-							org_id      UUID NOT NULL,
-							created_at  TIMESTAMPTZ,
-							updated_at  TIMESTAMPTZ,
-							FOREIGN KEY (org_id) REFERENCES orgs (id),
-							PRIMARY KEY (group_id, org_id)
-						 )`,
-				},
-				Down: []string{
 					`DROP TABLE IF EXISTS group_relations`,
-				},
-			},
-			{
-				Id: "auth_4",
-				Up: []string{
-					`CREATE TABLE IF NOT EXISTS users_roles (
-					       	        role VARCHAR(12) CHECK (role IN ('root', 'admin')),
- 				           	        user_id UUID NOT NULL,
-				                        PRIMARY KEY (user_id)
-				                 )`,
-				},
-				Down: []string{
-					"DROP TABLE users_roles",
-				},
-			},
-			{
-				Id: "auth_5",
-				Up: []string{
-					`CREATE TABLE IF NOT EXISTS group_policies (
-							group_id    UUID UNIQUE NOT NULL,
-							member_id   UUID NOT NULL,
-							policy      VARCHAR(15),
-							FOREIGN KEY (group_id) REFERENCES group_relations (group_id) ON DELETE CASCADE ON UPDATE CASCADE
-						 )`,
-				},
-				Down: []string{
 					`DROP TABLE IF EXISTS group_policies`,
-				},
-			},
-			{
-				Id: "auth_6",
-				Up: []string{
-					`ALTER TABLE group_policies DROP CONSTRAINT IF EXISTS group_policies_group_id_key`,
-					`ALTER TABLE group_policies ADD CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id)`,
-				},
-			},
-			{
-				Id: "auth_7",
-				Up: []string{
-					`ALTER TABLE member_relations DROP CONSTRAINT IF EXISTS member_relations_org_id_fkey`,
-					`ALTER TABLE member_relations ADD CONSTRAINT member_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE ON UPDATE CASCADE`,
-					`ALTER TABLE group_relations DROP CONSTRAINT IF EXISTS group_relations_org_id_fkey`,
-					`ALTER TABLE group_relations ADD CONSTRAINT group_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE ON UPDATE CASCADE`,
 				},
 			},
 		},
