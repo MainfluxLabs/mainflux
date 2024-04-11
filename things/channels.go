@@ -47,10 +47,8 @@ type ChannelsPage struct {
 
 // Connection represents a connection between a channel and a thing.
 type Connection struct {
-	ChannelID    string
-	ChannelOwner string
-	ThingID      string
-	ThingOwner   string
+	ChannelID string
+	ThingID   string
 }
 
 // ChannelRepository specifies a channel persistence API.
@@ -84,10 +82,10 @@ type ChannelRepository interface {
 	Remove(ctx context.Context, owner string, id ...string) error
 
 	// Connect connects a list of things to a channel.
-	Connect(ctx context.Context, owner, chID string, thIDs []string) error
+	Connect(ctx context.Context, chID string, thIDs []string) error
 
 	// Disconnect disconnects a list of things from a channel.
-	Disconnect(ctx context.Context, owner, chID string, thIDs []string) error
+	Disconnect(ctx context.Context, chID string, thIDs []string) error
 
 	// RetrieveConnByThingKey retrieves connections IDs by ThingKey
 	RetrieveConnByThingKey(ctx context.Context, key string) (Connection, error)

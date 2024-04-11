@@ -503,11 +503,6 @@ func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (P
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	for _, thID := range thIDs {
 		if err := ts.IsThingOwner(ctx, token, thID); err != nil {
 			return err
@@ -538,13 +533,18 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		}
 	}
 
-	return ts.channels.Connect(ctx, res.GetId(), chID, thIDs)
+	return ts.channels.Connect(ctx, chID, thIDs)
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+	for _, thID := range thIDs {
+		if err := ts.IsThingOwner(ctx, token, thID); err != nil {
+			return err
+		}
+	}
+
+	if err := ts.IsChannelOwner(ctx, token, chID); err != nil {
+		return err
 	}
 
 	for _, thID := range thIDs {
@@ -553,7 +553,7 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 		}
 	}
 
-	return ts.channels.Disconnect(ctx, res.GetId(), chID, thIDs)
+	return ts.channels.Disconnect(ctx, chID, thIDs)
 }
 
 func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {
@@ -701,7 +701,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	}
 
 	for _, conn := range backup.Connections {
-		if err := ts.channels.Connect(ctx, conn.ThingOwner, conn.ChannelID, []string{conn.ThingID}); err != nil {
+		if err := ts.channels.Connect(ctx, conn.ChannelID, []string{conn.ThingID}); err != nil {
 			return err
 		}
 	}
@@ -801,7 +801,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 				thingIDs = append(thingIDs, th.ID)
 			}
 
-			if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, thingIDs); err != nil {
+			if err := ts.channels.Disconnect(ctx, ch.ID, thingIDs); err != nil {
 				return err
 			}
 		}
@@ -917,7 +917,7 @@ func (ts *thingsService) UnassignChannel(ctx context.Context, token string, grou
 			thingIDs = append(thingIDs, th.ID)
 		}
 
-		if err := ts.channels.Disconnect(ctx, user.GetId(), chID, thingIDs); err != nil {
+		if err := ts.channels.Disconnect(ctx, chID, thingIDs); err != nil {
 			return err
 		}
 	}
@@ -946,7 +946,7 @@ func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupI
 		}
 
 		if ch.ID != "" {
-			if err := ts.channels.Disconnect(ctx, user.GetId(), ch.ID, []string{thingID}); err != nil {
+			if err := ts.channels.Disconnect(ctx, ch.ID, []string{thingID}); err != nil {
 				return err
 			}
 		}

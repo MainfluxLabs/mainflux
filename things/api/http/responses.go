@@ -215,10 +215,8 @@ type backupChannelRes struct {
 }
 
 type backupConnectionRes struct {
-	ChannelID    string `json:"channel_id"`
-	ChannelOwner string `json:"channel_owner"`
-	ThingID      string `json:"thing_id"`
-	ThingOwner   string `json:"thing_owner"`
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
 }
 
 type backupGroupThingRelationRes struct {

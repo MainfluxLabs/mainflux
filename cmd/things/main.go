@@ -323,7 +323,7 @@ func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cach
 	channelsRepo := postgres.NewChannelRepository(database)
 	channelsRepo = tracing.ChannelRepositoryMiddleware(dbTracer, channelsRepo)
 
-	groupsRepo := postgres.NewGroupRepo(database)
+	groupsRepo := postgres.NewGroupRepository(database)
 	groupsRepo = tracing.GroupRepositoryMiddleware(dbTracer, groupsRepo)
 
 	chanCache := rediscache.NewChannelCache(cacheClient)

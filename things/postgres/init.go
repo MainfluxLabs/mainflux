@@ -49,28 +49,26 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "things_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS things (
-						id       UUID,
-						owner    VARCHAR(254),
-						key      VARCHAR(4096) UNIQUE NOT NULL,
-						name     VARCHAR(1024),
-						metadata JSON,
+						id        UUID UNIQUE NOT NULL,
+						owner     UUID NOT NULL,
+						key       VARCHAR(4096) UNIQUE NOT NULL,
+						name      VARCHAR(1024),
+						metadata  JSONB,
 						PRIMARY KEY (id, owner)
 					)`,
 					`CREATE TABLE IF NOT EXISTS channels (
-						id       UUID,
-						owner    VARCHAR(254),
-						name     VARCHAR(1024),
-						metadata JSON,
-						PRIMARY KEY (id, owner)
+						id        UUID UNIQUE NOT NULL,
+						owner     UUID NOT NULL,
+						name      VARCHAR(1024),
+						metadata  JSONB,
+						PRIMARY   KEY (id, owner)
 					)`,
 					`CREATE TABLE IF NOT EXISTS connections (
 						channel_id    UUID,
-						channel_owner VARCHAR(254),
 						thing_id      UUID,
-						thing_owner   VARCHAR(254),
-						FOREIGN KEY (channel_id, channel_owner) REFERENCES channels (id, owner) ON DELETE CASCADE ON UPDATE CASCADE,
-						FOREIGN KEY (thing_id, thing_owner) REFERENCES things (id, owner) ON DELETE CASCADE ON UPDATE CASCADE,
-						PRIMARY KEY (channel_id, channel_owner, thing_id, thing_owner)
+						FOREIGN KEY (channel_id) REFERENCES channels (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						PRIMARY KEY (channel_id, thing_id)
 					)`,
 				},
 				Down: []string{
@@ -82,26 +80,6 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_2",
 				Up: []string{
-					`ALTER TABLE IF EXISTS things ALTER COLUMN
-					 metadata TYPE JSONB using metadata::text::jsonb`,
-				},
-			},
-			{
-				Id: "things_3",
-				Up: []string{
-					`ALTER TABLE IF EXISTS channels ALTER COLUMN
-					 metadata TYPE JSONB using metadata::text::jsonb`,
-				},
-			},
-			{
-				Id: "things_4",
-				Up: []string{
-					`ALTER TABLE IF EXISTS things ADD CONSTRAINT things_id_key UNIQUE (id)`,
-				},
-			},
-			{
-				Id: "things_5",
-				Up: []string{
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID NOT NULL,
@@ -110,54 +88,33 @@ func migrateDB(db *sqlx.DB) error {
 						metadata    JSONB,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
-						UNIQUE (owner_id, name)
+						PRIMARY KEY (id, owner_id)
 					)`,
-					`CREATE TABLE IF NOT EXISTS group_relations (
-						member_id   UUID NOT NULL,
+					`CREATE TABLE IF NOT EXISTS group_things (
+						thing_id    UUID UNIQUE NOT NULL,
 						group_id    UUID NOT NULL,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (group_id) REFERENCES groups (id),
-						PRIMARY KEY (member_id, group_id)
-				        )`,
+						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE,
+						PRIMARY KEY (thing_id, group_id)
+          )`,
+					`CREATE TABLE IF NOT EXISTS group_channels (
+						channel_id  UUID UNIQUE NOT NULL,
+						group_id    UUID NOT NULL,
+						created_at  TIMESTAMPTZ,
+						updated_at  TIMESTAMPTZ,
+						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
+						FOREIGN KEY (channel_id) REFERENCES channels (id) ON DELETE CASCADE,
+						PRIMARY KEY (channel_id, group_id)
+          )`,
 				},
 				Down: []string{
 					"DROP TABLE groups",
-					"DROP TABLE group_relations",
-				},
-			},
-			{
-				Id: "things_6",
-				Up: []string{
-					`DROP TABLE group_relations`,
-					`CREATE TABLE IF NOT EXISTS group_things (
-                                                thing_id    UUID UNIQUE NOT NULL,
-                                                group_id    UUID NOT NULL,
-                                                created_at  TIMESTAMPTZ,
-                                                updated_at  TIMESTAMPTZ,
-                                                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-                                                PRIMARY KEY (thing_id, group_id)
-                                        )`,
-					`CREATE TABLE IF NOT EXISTS group_channels (
-                                                channel_id  UUID UNIQUE NOT NULL,
-                                                group_id    UUID NOT NULL,
-                                                created_at  TIMESTAMPTZ,
-                                                updated_at  TIMESTAMPTZ,
-                                                FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-                                                PRIMARY KEY (channel_id, group_id)
-                                        )`,
-				},
-				Down: []string{
 					"DROP TABLE group_channels",
 					"DROP TABLE group_things",
 				},
 			},
-			/*{
-				Id: "things_7",
-				Up: []string{
-					`ALTER TABLE IF EXISTS connections ADD CONSTRAINT unique_thing_id_constraint UNIQUE (thing_id);`,
-				},
-			},*/
 		},
 	}
 

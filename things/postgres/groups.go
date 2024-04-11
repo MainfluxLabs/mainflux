@@ -23,9 +23,9 @@ type groupRepository struct {
 	db Database
 }
 
-// NewGroupRepo instantiates a PostgreSQL implementation of group
+// NewGroupRepository instantiates a PostgreSQL implementation of group
 // repository.
-func NewGroupRepo(db Database) things.GroupRepository {
+func NewGroupRepository(db Database) things.GroupRepository {
 	return &groupRepository{
 		db: db,
 	}
