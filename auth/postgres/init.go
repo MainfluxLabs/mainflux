@@ -60,15 +60,6 @@ func migrateDB(db *sqlx.DB) error {
 						expires_at  TIMESTAMP,
 						PRIMARY KEY (id, issuer_id)
 					)`,
-				},
-				Down: []string{
-					"DROP TABLE users_roles",
-					`DROP TABLE IF EXISTS keys`,
-				},
-			},
-			{
-				Id: "auth_2",
-				Up: []string{
 					`CREATE TABLE IF NOT EXISTS orgs (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID,
@@ -105,6 +96,8 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 				},
 				Down: []string{
+					"DROP TABLE IF EXISTS users_roles",
+					`DROP TABLE IF EXISTS keys`,
 					`DROP TABLE IF EXISTS orgs`,
 					`DROP TABLE IF EXISTS member_relations`,
 					`DROP TABLE IF EXISTS group_relations`,
