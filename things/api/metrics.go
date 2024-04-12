@@ -66,13 +66,13 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.Page, error) {
+func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things").Add(1)
 		ms.latency.With("method", "list_things").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThings(ctx, token, admin, pm)
+	return ms.svc.ListThings(ctx, token, pm)
 }
 
 func (ms *metricsMiddleware) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {
@@ -129,13 +129,13 @@ func (ms *metricsMiddleware) ViewChannel(ctx context.Context, token, id string) 
 	return ms.svc.ViewChannel(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListChannels(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (ms *metricsMiddleware) ListChannels(ctx context.Context, token string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_channels").Add(1)
 		ms.latency.With("method", "list_channels").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListChannels(ctx, token, admin, pm)
+	return ms.svc.ListChannels(ctx, token, pm)
 }
 
 func (ms *metricsMiddleware) ViewChannelByThing(ctx context.Context, token, thID string) (things.Channel, error) {
@@ -264,13 +264,13 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (t
 	return ms.svc.ViewGroup(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.GroupPage, error) {
+func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_group").Add(1)
 		ms.latency.With("method", "list_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListGroups(ctx, token, admin, pm)
+	return ms.svc.ListGroups(ctx, token, pm)
 }
 
 func (ms *metricsMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {

@@ -161,7 +161,7 @@ func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThings(context.Context, string, bool, things.PageMetadata) (things.Page, error) {
+func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetadata) (things.Page, error) {
 	panic("not implemented")
 }
 
@@ -203,7 +203,7 @@ func (svc *mainfluxThings) UpdateChannel(context.Context, string, things.Channel
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannels(context.Context, string, bool, things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ListChannels(context.Context, string, things.PageMetadata) (things.ChannelsPage, error) {
 	panic("not implemented")
 }
 
@@ -257,7 +257,7 @@ func (svc *mainfluxThings) CreateGroups(ctx context.Context, token string, group
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, admin bool, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
