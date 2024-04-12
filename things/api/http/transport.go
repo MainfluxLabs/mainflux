@@ -35,7 +35,6 @@ const (
 	thingIDKey   = "thingID"
 	channelIDKey = "channelID"
 
-	adminKey  = "admin"
 	defOffset = 0
 	defLimit  = 10
 )
@@ -443,11 +442,6 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	a, err := apiutil.ReadBoolQuery(r, adminKey, false)
-	if err != nil {
-		return nil, err
-	}
-
 	req := listResourcesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
@@ -458,7 +452,6 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 			Dir:      d,
 			Metadata: m,
 		},
-		admin: a,
 	}
 
 	return req, nil
@@ -612,11 +605,6 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	a, err := apiutil.ReadBoolQuery(r, adminKey, false)
-	if err != nil {
-		return nil, err
-	}
-
 	req := listGroupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
@@ -625,8 +613,7 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 			Metadata: m,
 			Name:     n,
 		},
-		id:    bone.GetValue(r, groupIDKey),
-		admin: a,
+		id: bone.GetValue(r, groupIDKey),
 	}
 	return req, nil
 }
