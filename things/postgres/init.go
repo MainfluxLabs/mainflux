@@ -70,16 +70,6 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE,
 						PRIMARY KEY (channel_id, thing_id)
 					)`,
-				},
-				Down: []string{
-					"DROP TABLE connections",
-					"DROP TABLE things",
-					"DROP TABLE channels",
-				},
-			},
-			{
-				Id: "things_2",
-				Up: []string{
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID NOT NULL,
@@ -110,6 +100,9 @@ func migrateDB(db *sqlx.DB) error {
           )`,
 				},
 				Down: []string{
+					"DROP TABLE connections",
+					"DROP TABLE things",
+					"DROP TABLE channels",
 					"DROP TABLE groups",
 					"DROP TABLE group_channels",
 					"DROP TABLE group_things",
