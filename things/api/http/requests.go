@@ -104,6 +104,7 @@ func (req updateKeyReq) validate() error {
 type createChannelReq struct {
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -140,6 +141,7 @@ type updateChannelReq struct {
 	token    string
 	id       string
 	Name     string                 `json:"name,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 

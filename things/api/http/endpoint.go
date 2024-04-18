@@ -20,14 +20,14 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		ths := []things.Thing{}
-		for _, tReq := range req.Things {
-			th := things.Thing{
-				Name:     tReq.Name,
-				Key:      tReq.Key,
-				ID:       tReq.ID,
-				Metadata: tReq.Metadata,
+		for _, th := range req.Things {
+			t := things.Thing{
+				Name:     th.Name,
+				Key:      th.Key,
+				ID:       th.ID,
+				Metadata: th.Metadata,
 			}
-			ths = append(ths, th)
+			ths = append(ths, t)
 		}
 
 		saved, err := svc.CreateThings(ctx, req.token, ths...)
@@ -41,13 +41,13 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		for _, th := range saved {
-			tRes := thingRes{
+			t := thingRes{
 				ID:       th.ID,
 				Name:     th.Name,
 				Key:      th.Key,
 				Metadata: th.Metadata,
 			}
-			res.Things = append(res.Things, tRes)
+			res.Things = append(res.Things, t)
 		}
 
 		return res, nil
@@ -239,11 +239,12 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		chs := []things.Channel{}
-		for _, cReq := range req.Channels {
+		for _, c := range req.Channels {
 			ch := things.Channel{
-				Metadata: cReq.Metadata,
-				Name:     cReq.Name,
-				ID:       cReq.ID,
+				Name:     c.Name,
+				ID:       c.ID,
+				Profile:  c.Profile,
+				Metadata: c.Metadata,
 			}
 			chs = append(chs, ch)
 		}
@@ -282,6 +283,7 @@ func updateChannelEndpoint(svc things.Service) endpoint.Endpoint {
 		channel := things.Channel{
 			ID:       req.id,
 			Name:     req.Name,
+			Profile:  req.Profile,
 			Metadata: req.Metadata,
 		}
 		if err := svc.UpdateChannel(ctx, req.token, channel); err != nil {
@@ -854,13 +856,13 @@ func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRe
 		Channels: []channelRes{},
 	}
 
-	for _, c := range cp.Channels {
-		view := channelRes{
-			ID:       c.ID,
-			Metadata: c.Metadata,
-			Name:     c.Name,
+	for _, ch := range cp.Channels {
+		c := channelRes{
+			ID:       ch.ID,
+			Metadata: ch.Metadata,
+			Name:     ch.Name,
 		}
-		res.Channels = append(res.Channels, view)
+		res.Channels = append(res.Channels, c)
 	}
 
 	return res

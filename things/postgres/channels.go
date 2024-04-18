@@ -47,8 +47,8 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO channels (id, owner, name, metadata)
-		  VALUES (:id, :owner, :name, :metadata);`
+	q := `INSERT INTO channels (id, owner, name, metadata, profile)
+		  VALUES (:id, :owner, :name, :metadata, :profile);`
 
 	for _, channel := range channels {
 		dbch := toDBChannel(channel)
@@ -111,7 +111,7 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 }
 
 func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
-	q := `SELECT name, metadata, owner FROM channels WHERE id = $1;`
+	q := `SELECT name, metadata, owner, profile FROM channels WHERE id = $1;`
 
 	dbch := dbChannel{
 		ID: id,
@@ -491,6 +491,9 @@ func (cr channelRepository) retrieve(ctx context.Context, owner string, includeO
 // dbMetadata type for handling metadata properly in database/sql.
 type dbMetadata map[string]interface{}
 
+// dbProfile type for handling profile properly in database/sql.
+type dbProfile map[string]interface{}
+
 // Scan implements the database/sql scanner interface.
 // When interface is nil `m` is set to nil.
 // If error occurs on casting data then m points to empty metadata.
@@ -530,6 +533,7 @@ type dbChannel struct {
 	ID       string     `db:"id"`
 	Owner    string     `db:"owner"`
 	Name     string     `db:"name"`
+	Profile  dbMetadata `db:"profile"`
 	Metadata dbMetadata `db:"metadata"`
 }
 
@@ -538,6 +542,7 @@ func toDBChannel(ch things.Channel) dbChannel {
 		ID:       ch.ID,
 		Owner:    ch.Owner,
 		Name:     ch.Name,
+		Profile:  ch.Profile,
 		Metadata: ch.Metadata,
 	}
 }
@@ -547,6 +552,7 @@ func toChannel(ch dbChannel) things.Channel {
 		ID:       ch.ID,
 		Owner:    ch.Owner,
 		Name:     ch.Name,
+		Profile:  ch.Profile,
 		Metadata: ch.Metadata,
 	}
 }

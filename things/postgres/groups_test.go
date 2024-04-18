@@ -886,7 +886,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 
 	for desc, tc := range cases {
 		chs, err := groupRepo.RetrieveGroupChannels(context.Background(), tc.groupID, tc.pagemeta)
-		assert.Equal(t, tc.channels, chs.Channels, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.channels, chs.Channels))
+		assert.Equal(t, tc.channels, chs.Channels, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channels, chs.Channels))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

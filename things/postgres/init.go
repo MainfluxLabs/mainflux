@@ -57,12 +57,12 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (id, owner)
 					)`,
 					`CREATE TABLE IF NOT EXISTS channels (
-						id        UUID UNIQUE NOT NULL,
-						owner     UUID NOT NULL,
-						name      VARCHAR(1024),
-						metadata  JSONB,
-						profile   VARCHAR(64),
-						PRIMARY   KEY (id, owner)
+						id           UUID UNIQUE NOT NULL,
+						owner        UUID NOT NULL,
+						name         VARCHAR(1024),
+						profile      JSONB,
+						metadata     JSONB,
+						PRIMARY      KEY (id, owner)
 					)`,
 					`CREATE TABLE IF NOT EXISTS connections (
 						channel_id    UUID,

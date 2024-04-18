@@ -124,8 +124,9 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 
 	if conn.Profile.Notifier != nil {
 		msg.Profile.Notifier = &Notifier{
-			Protocol: conn.Profile.Notifier.Protocol,
-			Contacts: conn.Profile.Notifier.Contacts,
+			Protocol:  conn.Profile.Notifier.Protocol,
+			Contacts:  conn.Profile.Notifier.Contacts,
+			Subtopics: conn.Profile.Notifier.Subtopics,
 		}
 	}
 
