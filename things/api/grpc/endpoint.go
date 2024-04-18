@@ -46,6 +46,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			Write:       p.Write,
 			Writer:      writer,
 			Notifier:    notifier,
+			Notify:      p.Notify,
 			Webhook:     p.Webhook,
 		}
 

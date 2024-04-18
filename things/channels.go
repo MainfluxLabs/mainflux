@@ -13,6 +13,7 @@ type Channel struct {
 	ID       string
 	Owner    string
 	Name     string
+	Profile  map[string]interface{}
 	Metadata map[string]interface{}
 }
 

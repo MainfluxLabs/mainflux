@@ -13,8 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const profileKey = "profile"
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -485,7 +483,7 @@ func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (P
 		return Profile{}, err
 	}
 
-	meta, err := json.Marshal(channel.Metadata[profileKey])
+	meta, err := json.Marshal(channel.Profile)
 	if err != nil {
 		return Profile{}, err
 	}
