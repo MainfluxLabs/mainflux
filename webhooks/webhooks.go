@@ -3,10 +3,9 @@ package webhooks
 import "context"
 
 type Webhook struct {
-	ThingID   string
-	Name      string
-	Formatter Formatter
-	Url       string
+	ThingID string
+	Name    string
+	Url     string
 }
 
 type WebhookRepository interface {

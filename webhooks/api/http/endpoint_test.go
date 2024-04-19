@@ -75,9 +75,9 @@ func TestCreateWebhooks(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"name":"value","value_fields":"["value1","value2"]","url":"https://api.example.com"}]`
-	invalidName := fmt.Sprintf(`[{"name":"%s","value_fields":"["value1","value2"]","url":"https://api.example.com"}]`, emptyValue)
-	invalidUrl := fmt.Sprintf(`[{"name":"value","value_fields":"["value1","value2"]","url":"%s"}]`, invalidUrl)
+	validData := `[{"name":"value","url":"https://api.example.com"}]`
+	invalidName := fmt.Sprintf(`[{"name":"%s","url":"https://api.example.com"}]`, emptyValue)
+	invalidUrl := fmt.Sprintf(`[{"name":"value","url":"%s"}]`, invalidUrl)
 
 	cases := []struct {
 		desc        string
@@ -212,12 +212,10 @@ func TestListWebhooksByThing(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	formatter := webhooks.Formatter{Fields: []string{"value1", "value2"}}
 	webhook := webhooks.Webhook{
-		ThingID:   "50e6b371-60ff-45cf-bb52-8200e7cde536",
-		Name:      "test-webhook",
-		Formatter: formatter,
-		Url:       "https://test.webhook.com",
+		ThingID: "50e6b371-60ff-45cf-bb52-8200e7cde536",
+		Name:    "test-webhook",
+		Url:     "https://test.webhook.com",
 	}
 
 	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
@@ -228,10 +226,9 @@ func TestListWebhooksByThing(t *testing.T) {
 
 	for _, webhook := range whs {
 		whRes := webhookRes{
-			ThingID:     webhook.ThingID,
-			Name:        webhook.Name,
-			ValueFields: webhook.Formatter.Fields,
-			Url:         webhook.Url,
+			ThingID: webhook.ThingID,
+			Name:    webhook.Name,
+			Url:     webhook.Url,
 		}
 		data = append(data, whRes)
 	}

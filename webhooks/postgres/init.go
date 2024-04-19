@@ -48,7 +48,6 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS webhooks (
 						thing_id   		UUID NOT NULL,
 						name       		VARCHAR(1024) NOT NULL,
-						value_fields 	VARCHAR NOT NULL,
 						url        		VARCHAR(254) NOT NULL,
 						PRIMARY KEY (thing_id,url)
     				)`,

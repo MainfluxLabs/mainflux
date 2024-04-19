@@ -27,9 +27,8 @@ type apiReq interface {
 }
 
 type createWebhookReq struct {
-	Name        string   `json:"name"`
-	ValueFields []string `json:"value_fields"`
-	Url         string   `json:"url"`
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 type createWebhooksReq struct {
@@ -63,16 +62,6 @@ func (req createWebhooksReq) validate() error {
 func (req createWebhookReq) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
-	}
-
-	if len(req.ValueFields) < 1 {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, field := range req.ValueFields {
-		if field == "" || len(field) > maxNameSize {
-			return apiutil.ErrNameSize
-		}
 	}
 
 	_, err := url.ParseRequestURI(req.Url)
