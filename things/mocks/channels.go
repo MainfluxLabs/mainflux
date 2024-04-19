@@ -52,7 +52,7 @@ func (crm *channelRepositoryMock) Save(_ context.Context, channels ...things.Cha
 		if channels[i].ID == "" {
 			channels[i].ID = fmt.Sprintf("%03d", crm.counter)
 		}
-		crm.channels[key(channels[i].Owner, channels[i].ID)] = channels[i]
+		crm.channels[key(channels[i].OwnerID, channels[i].ID)] = channels[i]
 	}
 
 	return channels, nil
@@ -62,7 +62,7 @@ func (crm *channelRepositoryMock) Update(_ context.Context, channel things.Chann
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	dbKey := key(channel.Owner, channel.ID)
+	dbKey := key(channel.OwnerID, channel.ID)
 
 	if _, ok := crm.channels[dbKey]; !ok {
 		return errors.ErrNotFound

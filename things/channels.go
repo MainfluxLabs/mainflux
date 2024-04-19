@@ -11,7 +11,8 @@ import (
 // things that can exchange messages between each other.
 type Channel struct {
 	ID       string
-	Owner    string
+	OwnerID  string
+	GroupID  string
 	Name     string
 	Profile  map[string]interface{}
 	Metadata map[string]interface{}

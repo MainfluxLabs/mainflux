@@ -34,6 +34,7 @@ func TestThingsSave(t *testing.T) {
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	grID := createGroup(t, dbMiddleware, owID)
 
 	ths := []things.Thing{}
 	for i := 1; i <= 5; i++ {
@@ -43,9 +44,10 @@ func TestThingsSave(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		thing := things.Thing{
-			ID:    thID,
-			Owner: owID,
-			Key:   thkey,
+			ID:      thID,
+			OwnerID: owID,
+			GroupID: grID,
+			Key:     thkey,
 		}
 		ths = append(ths, thing)
 	}
@@ -70,21 +72,21 @@ func TestThingsSave(t *testing.T) {
 		{
 			desc: "create thing with invalid ID",
 			things: []things.Thing{
-				{ID: "invalid", Owner: owID, Key: thkey},
+				{ID: "invalid", OwnerID: owID, GroupID: grID, Key: thkey},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
 			desc: "create thing with invalid name",
 			things: []things.Thing{
-				{ID: thID, Owner: owID, Key: thkey, Name: invalidName},
+				{ID: thID, OwnerID: owID, GroupID: grID, Key: thkey, Name: invalidName},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
 			desc: "create thing with invalid Key",
 			things: []things.Thing{
-				{ID: thID, Owner: owID, Key: nonexistentThingKey},
+				{ID: thID, OwnerID: owID, GroupID: grID, Key: nonexistentThingKey},
 			},
 			err: errors.ErrConflict,
 		},
@@ -109,15 +111,18 @@ func TestThingUpdate(t *testing.T) {
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	grID := createGroup(t, dbMiddleware, owID)
+
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thkey, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	thing := things.Thing{
-		ID:    thID,
-		Owner: owID,
-		Key:   thkey,
+		ID:      thID,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     thkey,
 	}
 
 	sths, err := thingRepo.Save(context.Background(), thing)
@@ -141,44 +146,48 @@ func TestThingUpdate(t *testing.T) {
 		{
 			desc: "update non-existing thing with existing user",
 			thing: things.Thing{
-				ID:    nonexistentThingID,
-				Owner: owID,
+				ID:      nonexistentThingID,
+				OwnerID: owID,
+				GroupID: grID,
 			},
 			err: errors.ErrNotFound,
 		},
 		{
 			desc: "update existing thing ID with non-existing user",
 			thing: things.Thing{
-				ID:    thing.ID,
-				Owner: wrongID,
+				ID:      thing.ID,
+				OwnerID: wrongID,
+				GroupID: grID,
 			},
 			err: nil,
 		},
 		{
 			desc: "update non-existing thing with non-existing user",
 			thing: things.Thing{
-				ID:    nonexistentThingID,
-				Owner: wrongID,
+				ID:      nonexistentThingID,
+				OwnerID: wrongID,
+				GroupID: grID,
 			},
 			err: errors.ErrNotFound,
 		},
 		{
 			desc: "update thing with valid name",
 			thing: things.Thing{
-				ID:    thID,
-				Owner: owID,
-				Key:   thkey,
-				Name:  validName,
+				ID:      thID,
+				OwnerID: owID,
+				GroupID: grID,
+				Key:     thkey,
+				Name:    validName,
 			},
 			err: nil,
 		},
 		{
 			desc: "update thing with invalid name",
 			thing: things.Thing{
-				ID:    thID,
-				Owner: owID,
-				Key:   thkey,
-				Name:  invalidName,
+				ID:      thID,
+				OwnerID: owID,
+				Key:     thkey,
+				Name:    invalidName,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -197,14 +206,17 @@ func TestUpdateKey(t *testing.T) {
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	grID := createGroup(t, dbMiddleware, owID)
+
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	th1 := things.Thing{
-		ID:    id,
-		Owner: owID,
-		Key:   key,
+		ID:      id,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     key,
 	}
 	ths, err := thingRepo.Save(context.Background(), th1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -215,9 +227,10 @@ func TestUpdateKey(t *testing.T) {
 	key, err = idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	th2 := things.Thing{
-		ID:    id,
-		Owner: owID,
-		Key:   key,
+		ID:      id,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     key,
 	}
 	ths, err = thingRepo.Save(context.Background(), th2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -227,51 +240,51 @@ func TestUpdateKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc  string
-		owner string
-		id    string
-		key   string
-		err   error
+		desc    string
+		ownerID string
+		id      string
+		key     string
+		err     error
 	}{
 		{
-			desc:  "update key of an existing thing",
-			owner: th2.Owner,
-			id:    th2.ID,
-			key:   newKey,
-			err:   nil,
+			desc:    "update key of an existing thing",
+			ownerID: th2.OwnerID,
+			id:      th2.ID,
+			key:     newKey,
+			err:     nil,
 		},
 		{
-			desc:  "update key of a non-existing thing with existing user",
-			owner: th2.Owner,
-			id:    nonexistentThingID,
-			key:   newKey,
-			err:   errors.ErrNotFound,
+			desc:    "update key of a non-existing thing with existing user",
+			ownerID: th2.OwnerID,
+			id:      nonexistentThingID,
+			key:     newKey,
+			err:     errors.ErrNotFound,
 		},
 		{
-			desc:  "update key of an existing thing with non-existing user",
-			owner: wrongID,
-			id:    th2.ID,
-			key:   newKey,
-			err:   errors.ErrNotFound,
+			desc:    "update key of an existing thing with non-existing user",
+			ownerID: wrongID,
+			id:      th2.ID,
+			key:     newKey,
+			err:     errors.ErrNotFound,
 		},
 		{
-			desc:  "update key of a non-existing thing with non-existing user",
-			owner: wrongID,
-			id:    nonexistentThingID,
-			key:   newKey,
-			err:   errors.ErrNotFound,
+			desc:    "update key of a non-existing thing with non-existing user",
+			ownerID: wrongID,
+			id:      nonexistentThingID,
+			key:     newKey,
+			err:     errors.ErrNotFound,
 		},
 		{
-			desc:  "update key with existing key value",
-			owner: th2.Owner,
-			id:    th2.ID,
-			key:   th1.Key,
-			err:   errors.ErrConflict,
+			desc:    "update key with existing key value",
+			ownerID: th2.OwnerID,
+			id:      th2.ID,
+			key:     th1.Key,
+			err:     errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := thingRepo.UpdateKey(context.Background(), tc.owner, tc.id, tc.key)
+		err := thingRepo.UpdateKey(context.Background(), tc.ownerID, tc.id, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -282,14 +295,17 @@ func TestSingleThingRetrieval(t *testing.T) {
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	grID := createGroup(t, dbMiddleware, owID)
+
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	th := things.Thing{
-		ID:    id,
-		Owner: owID,
-		Key:   key,
+		ID:      id,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     key,
 	}
 
 	ths, err := thingRepo.Save(context.Background(), th)
@@ -323,21 +339,40 @@ func TestSingleThingRetrieval(t *testing.T) {
 	}
 }
 
+func createGroup(t *testing.T, dbMiddleware postgres.Database, owID string) string {
+	groupRepo := postgres.NewGroupRepository(dbMiddleware)
+
+	grID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	_, err = groupRepo.Save(context.Background(), things.Group{
+		ID:      grID,
+		OwnerID: owID,
+		Name:    "gr-name",
+	})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	return grID
+}
+
 func TestThingRetrieveByKey(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	grID := createGroup(t, dbMiddleware, owID)
+
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	th := things.Thing{
-		ID:    id,
-		Owner: owID,
-		Key:   key,
+		ID:      id,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     key,
 	}
 
 	ths, err := thingRepo.Save(context.Background(), th)
@@ -396,6 +431,8 @@ func TestMultiThingRetrieval(t *testing.T) {
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	grID := createGroup(t, dbMiddleware, owID)
+
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		id, err := idProvider.ID()
@@ -403,9 +440,10 @@ func TestMultiThingRetrieval(t *testing.T) {
 		key, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			Owner: owID,
-			ID:    id,
-			Key:   key,
+			OwnerID: owID,
+			GroupID: grID,
+			ID:      id,
+			Key:     key,
 		}
 
 		// Create Things with name.
@@ -577,6 +615,8 @@ func TestBackupThings(t *testing.T) {
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	grID := createGroup(t, dbMiddleware, owID)
+
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
 		id, err := idProvider.ID()
@@ -584,9 +624,10 @@ func TestBackupThings(t *testing.T) {
 		key, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			Owner: owID,
-			ID:    id,
-			Key:   key,
+			OwnerID: owID,
+			GroupID: grID,
+			ID:      id,
+			Key:     key,
 		}
 
 		// Create Things with name.
@@ -637,12 +678,15 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
+	grID := createGroup(t, dbMiddleware, owID)
+
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	_, err = channelRepo.Save(context.Background(), things.Channel{
-		ID:    chID,
-		Owner: owID,
+		ID:      chID,
+		OwnerID: owID,
+		GroupID: grID,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -652,9 +696,10 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 		thkey, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			ID:    thID,
-			Owner: owID,
-			Key:   thkey,
+			ID:      thID,
+			OwnerID: owID,
+			GroupID: grID,
+			Key:     thkey,
 		}
 
 		ths, err := thingRepo.Save(context.Background(), th)
@@ -818,14 +863,18 @@ func TestThingRemoval(t *testing.T) {
 
 	owID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	grID := createGroup(t, dbMiddleware, owID)
+
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thing := things.Thing{
-		ID:    id,
-		Owner: owID,
-		Key:   key,
+		ID:      id,
+		OwnerID: owID,
+		GroupID: grID,
+		Key:     key,
 	}
 
 	ths, _ := thingRepo.Save(context.Background(), thing)

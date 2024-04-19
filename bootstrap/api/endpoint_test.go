@@ -183,7 +183,7 @@ func generateChannels() map[string]things.Channel {
 		id := strconv.Itoa(i + 1)
 		channels[id] = things.Channel{
 			ID:       id,
-			Owner:    email,
+			OwnerID:  email,
 			Metadata: metadata,
 		}
 	}

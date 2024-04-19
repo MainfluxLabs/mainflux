@@ -246,7 +246,7 @@ func TestListThings(t *testing.T) {
 	var ths2 []things.Thing
 	for i := uint64(0); i < n; i++ {
 		th := thingList[i]
-		th.Owner = userEmail
+		th.OwnerID = userEmail
 		th.Key = fmt.Sprintf("%s2%011d", prefix, i+1)
 		th.ID = fmt.Sprintf("%s2%012d", prefix, i+1)
 		ths2 = append(ths2, th)
@@ -374,6 +374,11 @@ func TestListThings(t *testing.T) {
 func TestListThingsByChannel(t *testing.T) {
 	svc := newService()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	ch := chs[0]
@@ -383,6 +388,7 @@ func TestListThingsByChannel(t *testing.T) {
 	var ths []things.Thing
 	for i := uint64(0); i < n; i++ {
 		th := thingList[i]
+		th.GroupID = gr.ID
 		ths = append(ths, th)
 	}
 
@@ -393,16 +399,6 @@ func TestListThingsByChannel(t *testing.T) {
 	for _, thID := range thsc {
 		thIDs = append(thIDs, thID.ID)
 	}
-
-	grs, err := svc.CreateGroups(context.Background(), token, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-
-	err = svc.AssignThing(context.Background(), token, gr.ID, thIDs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = svc.Connect(context.Background(), token, ch.ID, thIDs[0:n-thsDisconNum])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -881,26 +877,22 @@ func TestListChannels(t *testing.T) {
 func TestViewChannelByThing(t *testing.T) {
 	svc := newService()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thingList[0].GroupID = grs[0].ID
+
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
 	c := channel
 	c.Name = "test-channel"
+	c.GroupID = grs[0].ID
 
 	chs, err := svc.CreateChannels(context.Background(), token, c)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	ch := chs[0]
-
-	grs, err := svc.CreateGroups(context.Background(), token, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1000,22 +992,19 @@ func TestRemoveChannel(t *testing.T) {
 func TestConnect(t *testing.T) {
 	svc := newService()
 
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thingList[0].GroupID = gr.ID
+	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	channel.GroupID = gr.ID
+	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	ch := chs[0]
 
 	cases := []struct {
 		desc    string
@@ -1063,23 +1052,19 @@ func TestConnect(t *testing.T) {
 func TestDisconnect(t *testing.T) {
 	svc := newService()
 
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thingList[0].GroupID = gr.ID
+	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	channel.GroupID = gr.ID
+	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	ch := chs[0]
 
 	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1138,23 +1123,19 @@ func TestDisconnect(t *testing.T) {
 func TestGetConnByKey(t *testing.T) {
 	svc := newService()
 
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-
-	chs, err := svc.CreateChannels(context.Background(), token, channel, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	thingList[0].GroupID = gr.ID
+	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	channel.GroupID = gr.ID
+	chs, err := svc.CreateChannels(context.Background(), token, channel, channel)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	ch := chs[0]
 
 	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1262,6 +1243,7 @@ func TestBackup(t *testing.T) {
 	}
 	gr := groups[0]
 
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
@@ -1271,6 +1253,7 @@ func TestBackup(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		ch := channel
 		ch.Name = fmt.Sprintf("name-%d", i)
+		ch.GroupID = gr.ID
 		chs = append(chs, ch)
 	}
 
@@ -1278,43 +1261,11 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	ch := chsc[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, th.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	// Wait for things and channels to connect.
 	time.Sleep(time.Second)
-
-	for _, group := range groups {
-		err := svc.AssignThing(context.Background(), token, group.ID, th.ID)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	gtr := []things.GroupThingRelation{}
-	for _, group := range groups {
-		grRel := things.GroupThingRelation{
-			GroupID: group.ID,
-			ThingID: th.ID,
-		}
-		gtr = append(gtr, grRel)
-	}
-	grRel1 := things.GroupThingRelation{
-		GroupID: gr.ID,
-		ThingID: th.ID,
-	}
-	gtr = append(gtr, grRel1)
-
-	gcr := []things.GroupChannelRelation{
-		{
-			GroupID:   gr.ID,
-			ChannelID: ch.ID,
-		},
-	}
 
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
@@ -1323,12 +1274,10 @@ func TestBackup(t *testing.T) {
 	})
 
 	backup := things.Backup{
-		Groups:                groups,
-		Things:                ths,
-		Channels:              chsc,
-		Connections:           connections,
-		GroupThingRelations:   gtr,
-		GroupChannelRelations: gcr,
+		Groups:      groups,
+		Things:      ths,
+		Channels:    chsc,
+		Connections: connections,
 	}
 
 	cases := map[string]struct {
@@ -1359,14 +1308,11 @@ func TestBackup(t *testing.T) {
 		thingsSize := len(backup.Things)
 		channelsSize := len(backup.Channels)
 		connectionsSize := len(backup.Connections)
-		groupThingRelationsSize := len(backup.GroupThingRelations)
-		groupChannelRelationsSize := len(backup.GroupChannelRelations)
+
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
-		assert.Equal(t, len(tc.backup.GroupThingRelations), groupThingRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupThingRelations), groupThingRelationsSize))
-		assert.Equal(t, len(tc.backup.GroupChannelRelations), groupChannelRelationsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.GroupChannelRelations), groupChannelRelationsSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}
@@ -1395,20 +1341,11 @@ func TestRestore(t *testing.T) {
 		groups = append(groups, gr)
 	}
 
-	var gtr []things.GroupThingRelation
-	for _, group := range groups {
-		grRel := things.GroupThingRelation{
-			GroupID: group.ID,
-			ThingID: thID,
-		}
-		gtr = append(gtr, grRel)
-	}
-
 	ths := []things.Thing{
 		{
 			ID:       thID,
 			Name:     "testThing",
-			Owner:    adminEmail,
+			OwnerID:  adminEmail,
 			Key:      thkey,
 			Metadata: map[string]interface{}{},
 		},
@@ -1421,7 +1358,7 @@ func TestRestore(t *testing.T) {
 		ch := things.Channel{
 			ID:       chID,
 			Name:     "testChannel",
-			Owner:    adminEmail,
+			OwnerID:  adminEmail,
 			Metadata: map[string]interface{}{},
 		}
 		ch.Name = fmt.Sprintf("name-%d", i)
@@ -1438,11 +1375,10 @@ func TestRestore(t *testing.T) {
 	connections = append(connections, conn)
 
 	backup := things.Backup{
-		Groups:              groups,
-		Things:              ths,
-		Channels:            chs,
-		Connections:         connections,
-		GroupThingRelations: gtr,
+		Groups:      groups,
+		Things:      ths,
+		Channels:    chs,
+		Connections: connections,
 	}
 
 	cases := map[string]struct {

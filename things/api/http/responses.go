@@ -56,6 +56,7 @@ func (res shareThingRes) Empty() bool {
 
 type thingRes struct {
 	ID       string                 `json:"id"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -85,7 +86,8 @@ func (res thingsRes) Empty() bool {
 
 type viewThingRes struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"-"`
+	OwnerID  string                 `json:"-"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -122,6 +124,7 @@ func (res thingsPageRes) Empty() bool {
 
 type channelRes struct {
 	ID       string                 `json:"id"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
@@ -150,7 +153,8 @@ func (res channelsRes) Empty() bool {
 
 type viewChannelRes struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"-"`
+	OwnerID  string                 `json:"-"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Things   []viewThingRes         `json:"connected,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -201,7 +205,8 @@ func (res connectionsRes) Empty() bool {
 
 type backupThingRes struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"owner,omitempty"`
+	OwnerID  string                 `json:"owner_id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -209,7 +214,8 @@ type backupThingRes struct {
 
 type backupChannelRes struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"owner,omitempty"`
+	OwnerID  string                 `json:"owner_id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

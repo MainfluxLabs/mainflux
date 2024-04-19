@@ -28,7 +28,8 @@ type Metadata map[string]interface{}
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
 	ID       string
-	Owner    string
+	OwnerID  string
+	GroupID  string
 	Name     string
 	Key      string
 	Metadata Metadata

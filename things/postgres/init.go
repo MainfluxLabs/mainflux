@@ -48,29 +48,6 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_1",
 				Up: []string{
-					`CREATE TABLE IF NOT EXISTS things (
-						id        UUID UNIQUE NOT NULL,
-						owner     UUID NOT NULL,
-						key       VARCHAR(4096) UNIQUE NOT NULL,
-						name      VARCHAR(1024),
-						metadata  JSONB,
-						PRIMARY KEY (id, owner)
-					)`,
-					`CREATE TABLE IF NOT EXISTS channels (
-						id           UUID UNIQUE NOT NULL,
-						owner        UUID NOT NULL,
-						name         VARCHAR(1024),
-						profile      JSONB,
-						metadata     JSONB,
-						PRIMARY      KEY (id, owner)
-					)`,
-					`CREATE TABLE IF NOT EXISTS connections (
-						channel_id    UUID,
-						thing_id      UUID,
-						FOREIGN KEY (channel_id) REFERENCES channels (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						PRIMARY KEY (channel_id, thing_id)
-					)`,
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID NOT NULL,
@@ -81,24 +58,33 @@ func migrateDB(db *sqlx.DB) error {
 						updated_at  TIMESTAMPTZ,
 						PRIMARY KEY (id, owner_id)
 					)`,
-					`CREATE TABLE IF NOT EXISTS group_things (
-						thing_id    UUID UNIQUE NOT NULL,
+					`CREATE TABLE IF NOT EXISTS things (
+						id          UUID UNIQUE NOT NULL,
+						owner_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
+						key         VARCHAR(4096) UNIQUE NOT NULL,
+						name        VARCHAR(1024),
+						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE,
-						PRIMARY KEY (thing_id, group_id)
-          )`,
-					`CREATE TABLE IF NOT EXISTS group_channels (
-						channel_id  UUID UNIQUE NOT NULL,
+						PRIMARY KEY (id, owner_id)
+					)`,
+					`CREATE TABLE IF NOT EXISTS channels (
+						id          UUID UNIQUE NOT NULL,
+						owner_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-						FOREIGN KEY (channel_id) REFERENCES channels (id) ON DELETE CASCADE,
-						PRIMARY KEY (channel_id, group_id)
-          )`,
+						name        VARCHAR(1024),
+						profile     JSONB,
+						metadata    JSONB,
+						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						PRIMARY KEY (id, owner_id)
+					)`,
+					`CREATE TABLE IF NOT EXISTS connections (
+						channel_id  UUID NOT NULL,
+						thing_id    UUID UNIQUE NOT NULL,
+						FOREIGN KEY (channel_id) REFERENCES channels (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE,
+						PRIMARY KEY (channel_id, thing_id)
+					)`,
 				},
 				Down: []string{
 					"DROP TABLE connections",

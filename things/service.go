@@ -122,29 +122,17 @@ type Service interface {
 	// ListGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
 	ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
 
-	// ViewThingMembership retrieves group that thing belongs to.
-	ViewThingMembership(ctx context.Context, token, thingID string) (Group, error)
+	// ViewThingGroup retrieves group that thing belongs to.
+	ViewThingGroup(ctx context.Context, token, thingID string) (Group, error)
 
 	// RemoveGroups removes the groups identified with the provided IDs.
 	RemoveGroups(ctx context.Context, token string, ids ...string) error
 
-	// AssignThing adds a thing with thingID into the group identified by groupID.
-	AssignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
-
-	// UnassignThing removes thing with thingID from group identified by groupID.
-	UnassignThing(ctx context.Context, token, groupID string, thingIDs ...string) error
-
 	// ListGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
 	ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (GroupChannelsPage, error)
 
-	// ViewChannelMembership retrieves group that channel belongs to.
-	ViewChannelMembership(ctx context.Context, token, channelID string) (Group, error)
-
-	// AssignChannel adds channel to the group identified by groupID.
-	AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error
-
-	// UnassignChannel removes channels from the group identified by groupID.
-	UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error
+	// ViewChannelGroup retrieves group that channel belongs to.
+	ViewChannelGroup(ctx context.Context, token, channelID string) (Group, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -160,12 +148,10 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Things                []Thing
-	Channels              []Channel
-	Connections           []Connection
-	Groups                []Group
-	GroupThingRelations   []GroupThingRelation
-	GroupChannelRelations []GroupChannelRelation
+	Things      []Thing
+	Channels    []Channel
+	Connections []Connection
+	Groups      []Group
 }
 
 var _ Service = (*thingsService)(nil)
@@ -213,7 +199,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 }
 
 func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *mainflux.UserIdentity) (Thing, error) {
-	thing.Owner = identity.GetId()
+	thing.OwnerID = identity.GetId()
 
 	if thing.ID == "" {
 		id, err := ts.idProvider.ID()
@@ -252,7 +238,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	thing.Owner = res.GetId()
+	thing.OwnerID = res.GetId()
 
 	return ts.things.Update(ctx, thing)
 }
@@ -283,16 +269,16 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	if thing.Owner == res.GetId() {
+	if thing.OwnerID == res.GetId() {
 		return thing, nil
 	}
 
-	groupID, err := ts.groups.RetrieveThingMembership(ctx, id)
+	th, err := ts.things.RetrieveByID(ctx, id)
 	if err != nil {
 		return Thing{}, errors.ErrAuthorization
 	}
 
-	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
+	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: th.GroupID, Action: auth.ReadAction}); err == nil {
 		return thing, nil
 	}
 
@@ -373,7 +359,7 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 		}
 		channel.ID = chID
 	}
-	channel.Owner = identity.GetId()
+	channel.OwnerID = identity.GetId()
 
 	chs, err := ts.channels.Save(ctx, *channel)
 	if err != nil {
@@ -392,7 +378,7 @@ func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channe
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	channel.Owner = res.GetId()
+	channel.OwnerID = res.GetId()
 	return ts.channels.Update(ctx, channel)
 }
 
@@ -411,7 +397,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return channel, nil
 	}
 
-	if channel.Owner != res.GetId() {
+	if channel.OwnerID != res.GetId() {
 		return Channel{}, errors.ErrAuthorization
 	}
 
@@ -446,16 +432,16 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
-	if thing.Owner == res.GetId() {
+	if thing.OwnerID == res.GetId() {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
-	groupID, err := ts.groups.RetrieveThingMembership(ctx, thID)
+	th, err := ts.things.RetrieveByID(ctx, thID)
 	if err != nil {
 		return Channel{}, err
 	}
 
-	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: groupID, Action: auth.ReadAction}); err == nil {
+	if _, err = ts.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.GroupSubject, Object: th.GroupID, Action: auth.ReadAction}); err == nil {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
@@ -507,22 +493,18 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		return err
 	}
 
-	cgrID, err := ts.groups.RetrieveChannelMembership(ctx, chID)
+	ch, err := ts.channels.RetrieveByID(ctx, chID)
 	if err != nil {
 		return err
 	}
 
-	if cgrID == "" {
-		return errors.ErrAuthorization
-	}
-
 	for _, thID := range thIDs {
-		tgrID, err := ts.groups.RetrieveThingMembership(ctx, thID)
+		th, err := ts.things.RetrieveByID(ctx, thID)
 		if err != nil {
 			return err
 		}
 
-		if tgrID != cgrID {
+		if th.GroupID != ch.GroupID {
 			return errors.ErrAuthorization
 		}
 	}
@@ -576,7 +558,7 @@ func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID strin
 		return err
 	}
 
-	if ch.Owner != user.GetId() {
+	if ch.OwnerID != user.GetId() {
 		return errors.ErrAuthorization
 	}
 
@@ -594,7 +576,7 @@ func (ts *thingsService) IsThingOwner(ctx context.Context, token, thingID string
 		return err
 	}
 
-	if th.Owner != user.GetId() {
+	if th.OwnerID != user.GetId() {
 		return errors.ErrAuthorization
 	}
 
@@ -628,16 +610,6 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupThingRelations, err := ts.groups.RetrieveAllThingRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
-	groupChannelRelations, err := ts.groups.RetrieveAllChannelRelations(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
 	things, err := ts.things.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
@@ -654,12 +626,10 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:                things,
-		Channels:              channels,
-		Connections:           connections,
-		Groups:                groups,
-		GroupThingRelations:   groupThingRelations,
-		GroupChannelRelations: groupChannelRelations,
+		Things:      things,
+		Channels:    channels,
+		Connections: connections,
+		Groups:      groups,
 	}, nil
 }
 
@@ -670,18 +640,6 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 
 	for _, group := range backup.Groups {
 		if _, err := ts.groups.Save(ctx, group); err != nil {
-			return err
-		}
-	}
-
-	for _, gtr := range backup.GroupThingRelations {
-		if err := ts.groups.AssignThing(ctx, gtr.GroupID, gtr.ThingID); err != nil {
-			return err
-		}
-	}
-
-	for _, gcr := range backup.GroupChannelRelations {
-		if err := ts.groups.AssignChannel(ctx, gcr.GroupID, gcr.ChannelID); err != nil {
 			return err
 		}
 	}
@@ -837,116 +795,6 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 	return gr, nil
 }
 
-func (ts *thingsService) AssignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
-		return err
-	}
-
-	for _, thingID := range thingIDs {
-		thing, err := ts.things.RetrieveByID(ctx, thingID)
-		if err != nil {
-			return err
-		}
-
-		if thing.ID == "" {
-			return errors.ErrNotFound
-		}
-	}
-
-	if err := ts.groups.AssignThing(ctx, groupID, thingIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ts *thingsService) AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	if err := ts.isGroupOwner(ctx, user.GetId(), groupID); err != nil {
-		return err
-	}
-
-	for _, channelID := range channelIDs {
-		ch, err := ts.channels.RetrieveByID(ctx, channelID)
-		if err != nil {
-			return err
-		}
-
-		if ch.ID == "" {
-			return errors.ErrNotFound
-		}
-	}
-
-	if err := ts.groups.AssignChannel(ctx, groupID, channelIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ts *thingsService) UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	if err := ts.isGroupOwner(ctx, user.GetId(), groupID); err != nil {
-		return err
-	}
-
-	for _, chID := range channelIDs {
-		tp, err := ts.things.RetrieveByChannel(ctx, user.GetId(), chID, PageMetadata{})
-		if err != nil {
-			return err
-		}
-
-		var thingIDs []string
-		for _, th := range tp.Things {
-			thingIDs = append(thingIDs, th.ID)
-		}
-
-		if err := ts.channels.Disconnect(ctx, chID, thingIDs); err != nil {
-			return err
-		}
-	}
-
-	if err := ts.groups.UnassignChannel(ctx, groupID, channelIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ts *thingsService) UnassignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	if err := ts.isGroupOwner(ctx, user.GetId(), groupID); err != nil {
-		return err
-	}
-
-	for _, thingID := range thingIDs {
-		ch, err := ts.channels.RetrieveByThing(ctx, user.GetId(), thingID)
-		if err != nil {
-			return err
-		}
-
-		if ch.ID != "" {
-			if err := ts.channels.Disconnect(ctx, ch.ID, []string{thingID}); err != nil {
-				return err
-			}
-		}
-	}
-
-	return ts.groups.UnassignThing(ctx, groupID, thingIDs...)
-}
-
 func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
@@ -1000,21 +848,17 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 	return ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
 }
 
-func (ts *thingsService) ViewThingMembership(ctx context.Context, token string, thingID string) (Group, error) {
+func (ts *thingsService) ViewThingGroup(ctx context.Context, token string, thingID string) (Group, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
 
-	groupID, err := ts.groups.RetrieveThingMembership(ctx, thingID)
+	th, err := ts.things.RetrieveByID(ctx, thingID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	if groupID == "" {
-		return Group{}, nil
-	}
-
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	group, err := ts.groups.RetrieveByID(ctx, th.GroupID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -1022,21 +866,17 @@ func (ts *thingsService) ViewThingMembership(ctx context.Context, token string, 
 	return group, nil
 }
 
-func (ts *thingsService) ViewChannelMembership(ctx context.Context, token string, channelID string) (Group, error) {
+func (ts *thingsService) ViewChannelGroup(ctx context.Context, token string, channelID string) (Group, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
 
-	groupID, err := ts.groups.RetrieveChannelMembership(ctx, channelID)
+	ch, err := ts.channels.RetrieveByID(ctx, channelID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	if groupID == "" {
-		return Group{}, errors.Wrap(errors.ErrNotFound, err)
-	}
-
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	group, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
 	if err != nil {
 		return Group{}, err
 	}

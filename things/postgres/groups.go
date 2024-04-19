@@ -238,11 +238,9 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
-			FROM group_things gr, things t
-			WHERE gr.group_id = :group_id and gr.thing_id = t.id
-			%s %s;`, mq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr WHERE gr.group_id = :group_id %s;`, mq)
+	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, metadata, key FROM things
+			WHERE group_id = :group_id %s %s;`, mq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM things WHERE group_id = :group_id %s;`, mq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -300,7 +298,7 @@ func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, grou
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT t.id, t.owner, t.name, t.metadata, t.key
+	q := fmt.Sprintf(`SELECT t.id, t.owner_id, t.group_id, t.name, t.metadata, t.key
 		FROM group_things gr, things t, group_channels gc
 		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
 		NOT IN (SELECT c.thing_id FROM connections c)
@@ -356,134 +354,6 @@ func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, grou
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
-	q := `SELECT group_id FROM group_things WHERE thing_id = :thing_id;`
-
-	params := map[string]interface{}{"thing_id": thingID}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return "", errors.Wrap(things.ErrRetrieveThingMembership, err)
-	}
-	defer rows.Close()
-
-	var groupID string
-	for rows.Next() {
-		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(things.ErrRetrieveThingMembership, err)
-		}
-	}
-
-	return groupID, nil
-}
-
-func (gr groupRepository) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
-	q := `SELECT group_id, thing_id, created_at, updated_at FROM group_things`
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
-	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	grRel := []things.GroupThingRelation{}
-	for rows.Next() {
-		dbg := dbThingRelation{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		gr, err := toThingRelation(dbg)
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		grRel = append(grRel, gr)
-	}
-
-	return grRel, nil
-}
-
-func (gr groupRepository) AssignThing(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignGroupThing, err)
-	}
-
-	qIns := `INSERT INTO group_things (group_id, thing_id, created_at, updated_at)
-		VALUES(:group_id, :thing_id, :created_at, :updated_at)`
-
-	for _, id := range ids {
-		created := time.Now()
-
-		dbt, err := toDBThingRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignGroupThing, err)
-		}
-		dbt.CreatedAt = created
-		dbt.UpdatedAt = created
-
-		if _, err := tx.NamedExecContext(ctx, qIns, dbt); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrThingAlreadyAssigned, errors.New(pgErr.Detail))
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignGroupThing, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignGroupThing, err)
-	}
-
-	return nil
-}
-
-func (gr groupRepository) UnassignThing(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrUnassignGroupThing, err)
-	}
-
-	qDel := `DELETE from group_things WHERE group_id = :group_id AND thing_id = :thing_id`
-
-	for _, id := range ids {
-		dbt, err := toDBThingRelation(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrUnassignGroupThing, err)
-		}
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dbt); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				}
-			}
-
-			return errors.Wrap(things.ErrUnassignGroupThing, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrUnassignGroupThing, err)
-	}
-
-	return nil
-}
-
 func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
@@ -495,11 +365,9 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT c.id, c.owner, c.name, c.metadata
-			FROM group_channels gr, channels c
-			WHERE gr.group_id = :group_id and gr.channel_id = c.id
-			%s %s;`, mq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_channels gr WHERE gr.group_id = :group_id %s;`, mq)
+	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, metadata FROM channels
+			WHERE group_id = :group_id %s %s;`, mq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM channels WHERE group_id = :group_id %s;`, mq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -541,134 +409,6 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	}
 
 	return page, nil
-}
-
-func (gr groupRepository) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	q := `SELECT group_id FROM group_channels WHERE channel_id = :channel_id;`
-
-	params := map[string]interface{}{"channel_id": channelID}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return "", errors.Wrap(things.ErrRetrieveChannelMembership, err)
-	}
-	defer rows.Close()
-
-	var groupID string
-	for rows.Next() {
-		if err := rows.Scan(&groupID); err != nil {
-			return "", errors.Wrap(things.ErrRetrieveChannelMembership, err)
-		}
-	}
-
-	return groupID, nil
-}
-
-func (gr groupRepository) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
-	q := `SELECT group_id, channel_id, created_at, updated_at FROM group_channels`
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
-	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	grRel := []things.GroupChannelRelation{}
-	for rows.Next() {
-		dbg := dbChannelRelation{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		gr, err := toChannelRelation(dbg)
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		grRel = append(grRel, gr)
-	}
-
-	return grRel, nil
-}
-
-func (gr groupRepository) AssignChannel(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrAssignGroupChannel, err)
-	}
-
-	qIns := `INSERT INTO group_channels (group_id, channel_id, created_at, updated_at)
-			VALUES(:group_id, :channel_id, :created_at, :updated_at)`
-
-	for _, id := range ids {
-		created := time.Now()
-
-		dgc, err := todbGroupChannels(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrAssignGroupChannel, err)
-		}
-		dgc.CreatedAt = created
-		dgc.UpdatedAt = created
-
-		if _, err := tx.NamedExecContext(ctx, qIns, dgc); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrChannelAlreadyAssigned, errors.New(pgErr.Detail))
-				}
-			}
-
-			return errors.Wrap(things.ErrAssignGroupChannel, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrAssignGroupChannel, err)
-	}
-
-	return nil
-}
-
-func (gr groupRepository) UnassignChannel(ctx context.Context, groupID string, ids ...string) error {
-	tx, err := gr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrUnassignGroupChannel, err)
-	}
-
-	qDel := `DELETE from group_channels WHERE group_id = :group_id AND channel_id = :channel_id`
-
-	for _, id := range ids {
-		dgc, err := todbGroupChannels(id, groupID)
-		if err != nil {
-			return errors.Wrap(things.ErrUnassignGroupChannel, err)
-		}
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dgc); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
-				}
-			}
-
-			return errors.Wrap(things.ErrUnassignGroupChannel, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrUnassignGroupChannel, err)
-	}
-
-	return nil
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
@@ -788,71 +528,5 @@ func toGroup(dbu dbGroup) (things.Group, error) {
 		Metadata:    things.GroupMetadata(dbu.Metadata),
 		UpdatedAt:   dbu.UpdatedAt,
 		CreatedAt:   dbu.CreatedAt,
-	}, nil
-}
-
-type dbThingRelation struct {
-	GroupID   sql.NullString `db:"group_id"`
-	ThingID   sql.NullString `db:"thing_id"`
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at"`
-}
-
-func toDBThingRelation(thingID, groupID string) (dbThingRelation, error) {
-	var grID sql.NullString
-	if groupID != "" {
-		grID = sql.NullString{String: groupID, Valid: true}
-	}
-
-	var tID sql.NullString
-	if thingID != "" {
-		tID = sql.NullString{String: thingID, Valid: true}
-	}
-
-	return dbThingRelation{
-		GroupID: grID,
-		ThingID: tID,
-	}, nil
-}
-
-func toThingRelation(dbgr dbThingRelation) (things.GroupThingRelation, error) {
-	return things.GroupThingRelation{
-		GroupID:   dbgr.GroupID.String,
-		ThingID:   dbgr.ThingID.String,
-		CreatedAt: dbgr.CreatedAt,
-		UpdatedAt: dbgr.UpdatedAt,
-	}, nil
-}
-
-type dbChannelRelation struct {
-	GroupID   sql.NullString `db:"group_id"`
-	ChannelID sql.NullString `db:"channel_id"`
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at"`
-}
-
-func toChannelRelation(dbgr dbChannelRelation) (things.GroupChannelRelation, error) {
-	return things.GroupChannelRelation{
-		GroupID:   dbgr.GroupID.String,
-		ChannelID: dbgr.ChannelID.String,
-		CreatedAt: dbgr.CreatedAt,
-		UpdatedAt: dbgr.UpdatedAt,
-	}, nil
-}
-
-func todbGroupChannels(channelID, groupID string) (dbChannelRelation, error) {
-	var grID sql.NullString
-	if groupID != "" {
-		grID = sql.NullString{String: groupID, Valid: true}
-	}
-
-	var chID sql.NullString
-	if channelID != "" {
-		chID = sql.NullString{String: channelID, Valid: true}
-	}
-
-	return dbChannelRelation{
-		GroupID:   grID,
-		ChannelID: chID,
 	}, nil
 }
