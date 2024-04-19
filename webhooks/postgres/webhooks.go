@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -30,7 +31,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (thing_id, name, format, url) VALUES (:thing_id, :name, :format, :url);`
+	q := `INSERT INTO webhooks (thing_id, name, value_fields, url) VALUES (:thing_id, :name, :value_fields, :url);`
 
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
@@ -66,7 +67,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 	if _, err := uuid.FromString(thingID); err != nil {
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT thing_id, name, format, url FROM webhooks WHERE thing_id = :thing_id;`
+	q := `SELECT thing_id, name, value_fields, url FROM webhooks WHERE thing_id = :thing_id;`
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
@@ -95,26 +96,30 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 }
 
 type dbWebhook struct {
-	ThingID string `db:"thing_id"`
-	Name    string `db:"name"`
-	Format  string `db:"format"`
-	Url     string `db:"url"`
+	ThingID     string `db:"thing_id"`
+	Name        string `db:"name"`
+	ValueFields string `db:"value_fields"`
+	Url         string `db:"url"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
+	valueFields := strings.Join(wh.Formatter.Fields, ",")
+
 	return dbWebhook{
-		ThingID: wh.ThingID,
-		Name:    wh.Name,
-		Format:  wh.Format,
-		Url:     wh.Url,
+		ThingID:     wh.ThingID,
+		Name:        wh.Name,
+		ValueFields: valueFields,
+		Url:         wh.Url,
 	}, nil
 }
 
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
+	valueFields := strings.Split(dbW.ValueFields, ",")
+
 	return webhooks.Webhook{
-		ThingID: dbW.ThingID,
-		Name:    dbW.Name,
-		Format:  dbW.Format,
-		Url:     dbW.Url,
+		ThingID:   dbW.ThingID,
+		Name:      dbW.Name,
+		Formatter: webhooks.Formatter{Fields: valueFields},
+		Url:       dbW.Url,
 	}, nil
 }

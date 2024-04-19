@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
@@ -27,8 +28,27 @@ func NewForwarder(webhooks WebhookRepository) Forwarder {
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg messaging.Message, whs []Webhook) error {
+	payloadCT := msg.Profile.ContentType
+	var formattedPayload []byte
+	var err error
+
 	for _, wh := range whs {
-		if err := fw.sendRequest(wh.Url, msg); err != nil {
+		switch payloadCT {
+		case ctJSON:
+			formattedPayload, err = wh.Formatter.FormatJSONPayload(msg.Payload, wh.Formatter.Fields)
+			if err != nil {
+				return err
+			}
+		case senmlJson, senmlCbor:
+			formattedPayload, err = wh.Formatter.FormatSenMLPayload(msg.Payload, wh.Formatter.Fields, payloadCT)
+			if err != nil {
+				return err
+			}
+		default:
+			return apiutil.ErrUnsupportedContentType
+		}
+
+		if err := fw.sendRequest(wh.Url, formattedPayload); err != nil {
 			return err
 		}
 	}
@@ -36,8 +56,8 @@ func (fw *forwarder) Forward(_ context.Context, msg messaging.Message, whs []Web
 	return nil
 }
 
-func (fw *forwarder) sendRequest(url string, msg messaging.Message) error {
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(msg.Payload))
+func (fw *forwarder) sendRequest(url string, payload []byte) error {
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}

@@ -33,13 +33,13 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
-	validData := webhooks.Webhook{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}
-	validData2 := webhooks.Webhook{ThingID: "1", Name: "test2", Format: "json", Url: "http://test2.com"}
+	formatter := webhooks.Formatter{Fields: []string{"value1", "value2"}}
+	validData := webhooks.Webhook{ThingID: "1", Name: "test1", Formatter: formatter, Url: "http://test1.com"}
+	validData2 := webhooks.Webhook{ThingID: "1", Name: "test2", Formatter: formatter, Url: "http://test2.com"}
 	validDataWebhooks := []webhooks.Webhook{validData, validData2}
-	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test3", Format: "json", Url: "http://test3.com"}}
-	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test.com"}}
-	invalidFormatData := []webhooks.Webhook{{ThingID: "1", Name: "test4", Format: emptyValue, Url: "https://test4.com"}}
-	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: "json", Url: emptyValue}}
+	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test3", Formatter: formatter, Url: "http://test3.com"}}
+	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Formatter: formatter, Url: "https://test.com"}}
+	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Formatter: formatter, Url: emptyValue}}
 
 	cases := []struct {
 		desc     string
@@ -72,12 +72,6 @@ func TestCreateWebhooks(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "create webhook with invalid format",
-			webhooks: invalidFormatData,
-			token:    token,
-			err:      nil,
-		},
-		{
 			desc:     "create webhook with invalid url",
 			webhooks: invalidUrlData,
 			token:    token,
@@ -94,11 +88,12 @@ func TestCreateWebhooks(t *testing.T) {
 func TestListWebhooksByThing(t *testing.T) {
 	svc := newService()
 
+	formatter := webhooks.Formatter{Fields: []string{"value1", "value2"}}
 	w := webhooks.Webhook{
-		Name:    "TestWebhook",
-		ThingID: "1",
-		Format:  "json",
-		Url:     "https://api.webhook.com",
+		Name:      "TestWebhook",
+		ThingID:   "1",
+		Formatter: formatter,
+		Url:       "https://api.webhook.com",
 	}
 
 	whs, err := svc.CreateWebhooks(context.Background(), token, w)
