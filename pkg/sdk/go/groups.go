@@ -401,7 +401,7 @@ func (sdk mfSDK) UpdateGroup(t Group, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error) {
+func (sdk mfSDK) ViewThingGroup(thingID, token string, offset, limit uint64) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d", sdk.thingsURL, thingsEndpoint, thingID, groupsEndpoint, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -431,7 +431,7 @@ func (sdk mfSDK) ViewThingMembership(thingID, token string, offset, limit uint64
 	return g, nil
 }
 
-func (sdk mfSDK) ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error) {
+func (sdk mfSDK) ViewChannelGroup(channelID, token string, offset, limit uint64) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s?offset=%d&limit=%d", sdk.thingsURL, channelsEndpoint, channelID, groupsEndpoint, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

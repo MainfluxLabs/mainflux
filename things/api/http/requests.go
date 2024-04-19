@@ -24,6 +24,7 @@ type createThingReq struct {
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key,omitempty"`
 	ID       string                 `json:"id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -104,6 +105,7 @@ func (req updateKeyReq) validate() error {
 type createChannelReq struct {
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
 	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -329,7 +331,7 @@ func (req backupReq) validate() error {
 
 type restoreThingReq struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"owner"`
+	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata"`
@@ -337,7 +339,7 @@ type restoreThingReq struct {
 
 type restoreChannelReq struct {
 	ID       string                 `json:"id"`
-	Owner    string                 `json:"owner"`
+	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
@@ -374,13 +376,11 @@ type restoreGroupChannelRelationReq struct {
 }
 
 type restoreReq struct {
-	token                 string
-	Things                []restoreThingReq                `json:"things"`
-	Channels              []restoreChannelReq              `json:"channels"`
-	Connections           []restoreConnectionReq           `json:"connections"`
-	Groups                []restoreGroupReq                `json:"groups"`
-	GroupThingRelations   []restoreGroupThingRelationReq   `json:"group_thing_relations"`
-	GroupChannelRelations []restoreGroupChannelRelationReq `json:"group_channel_relations"`
+	token       string
+	Things      []restoreThingReq      `json:"things"`
+	Channels    []restoreChannelReq    `json:"channels"`
+	Connections []restoreConnectionReq `json:"connections"`
+	Groups      []restoreGroupReq      `json:"groups"`
 }
 
 func (req restoreReq) validate() error {
@@ -388,7 +388,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 && len(req.GroupThingRelations) == 0 {
+	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

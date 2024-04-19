@@ -114,6 +114,8 @@ type Group struct {
 // Thing represents mainflux thing.
 type Thing struct {
 	ID       string                 `json:"id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
+	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -122,6 +124,8 @@ type Thing struct {
 // Channel represents mainflux channel.
 type Channel struct {
 	ID       string                 `json:"id,omitempty"`
+	GroupID  string                 `json:"group_id,omitempty"`
+	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -201,17 +205,11 @@ type SDK interface {
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
 
-	// AssignThing assigns thing to a group.
-	AssignThing(thingIDs []string, groupID string, token string) error
-
-	// UnassignThing removes thing from a group.
-	UnassignThing(token, groupID string, thingIDs ...string) error
-
 	// ListGroupThings lists things that are members of specified group.
 	ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error)
 
-	// ViewThingMembership retrieves a group that the specified thing is a member of.
-	ViewThingMembership(thingID, token string, offset, limit uint64) (Group, error)
+	// ViewThingGroup retrieves a group that the specified thing is a member of.
+	ViewThingGroup(thingID, token string, offset, limit uint64) (Group, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
@@ -246,17 +244,11 @@ type SDK interface {
 	// DeleteChannels removes existing channel.
 	DeleteChannels(ids []string, token string) error
 
-	// AssignChannel assigns channel to a group.
-	AssignChannel(channelIDs []string, groupID string, token string) error
-
-	// UnassignChannel removes channel from a group.
-	UnassignChannel(token, groupID string, channelIDs ...string) error
-
 	// ListGroupChannels lists channels that are members of specified group.
 	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
 
-	// ViewChannelMembership retrieves a group that the specified channel is a member of.
-	ViewChannelMembership(channelID, token string, offset, limit uint64) (Group, error)
+	// ViewChannelGroup retrieves a group that the specified channel is a member of.
+	ViewChannelGroup(channelID, token string, offset, limit uint64) (Group, error)
 
 	// SendMessage send message to specified channel.
 	SendMessage(chanID, msg, token string) error

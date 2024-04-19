@@ -39,13 +39,13 @@ func (svc *mainfluxThings) CreateThings(_ context.Context, owner string, ths ...
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return []things.Thing{}, errors.ErrAuthentication
 	}
 	for i := range ths {
 		svc.counter++
-		ths[i].Owner = userID.Email
+		ths[i].OwnerID = user.Email
 		ths[i].ID = strconv.FormatUint(svc.counter, 10)
 		ths[i].Key = ths[i].ID
 		svc.things[ths[i].ID] = ths[i]
@@ -58,12 +58,12 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, owner, id string) (thing
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return things.Thing{}, errors.ErrAuthentication
 	}
 
-	if t, ok := svc.things[id]; ok && t.Owner == userID.Email {
+	if t, ok := svc.things[id]; ok && t.OwnerID == user.Email {
 		return t, nil
 
 	}
@@ -75,12 +75,12 @@ func (svc *mainfluxThings) Connect(_ context.Context, owner, chID string, thIDs 
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
 
-	if svc.channels[chID].Owner != userID.Email {
+	if svc.channels[chID].OwnerID != user.Email {
 		return errors.ErrAuthentication
 	}
 	svc.connections[chID] = append(svc.connections[chID], thIDs...)
@@ -92,12 +92,12 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner, chID string, thI
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
 
-	if svc.channels[chID].Owner != userID.Email {
+	if svc.channels[chID].OwnerID != user.Email {
 		return errors.ErrAuthentication
 	}
 
@@ -130,13 +130,13 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, owner string, ids ...
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
 
 	for _, id := range ids {
-		if t, ok := svc.things[id]; !ok || t.Owner != userID.Email {
+		if t, ok := svc.things[id]; !ok || t.OwnerID != user.Email {
 			return errors.ErrNotFound
 		}
 
@@ -185,13 +185,13 @@ func (svc *mainfluxThings) CreateChannels(_ context.Context, owner string, chs .
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	userID, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
 	if err != nil {
 		return []things.Channel{}, errors.ErrAuthentication
 	}
 	for i := range chs {
 		svc.counter++
-		chs[i].Owner = userID.Email
+		chs[i].OwnerID = user.Id
 		chs[i].ID = strconv.FormatUint(svc.counter, 10)
 		svc.channels[chs[i].ID] = chs[i]
 	}
@@ -285,7 +285,7 @@ func (svc *mainfluxThings) UnassignThing(ctx context.Context, token string, grou
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewThingMembership(ctx context.Context, token string, thingID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewThingGroup(ctx context.Context, token string, thingID string) (things.Group, error) {
 	panic("not implemented")
 }
 
@@ -297,7 +297,7 @@ func (svc *mainfluxThings) UnassignChannel(ctx context.Context, token string, gr
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelMembership(ctx context.Context, token string, channelID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewChannelGroup(ctx context.Context, token string, channelID string) (things.Group, error) {
 	panic("not implemented")
 }
 

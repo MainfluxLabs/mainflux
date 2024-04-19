@@ -215,20 +215,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/groups/:groupID/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_things")(assignThingsEndpoint(svc)),
-		decodeGroupThingsRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Patch("/groups/:groupID/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign_things")(unassignThingsEndpoint(svc)),
-		decodeGroupThingsRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	r.Get("/groups/:groupID/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_group_things")(listGroupThingsEndpoint(svc)),
 		decodeListMembersRequest,
@@ -237,22 +223,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/things/:thingID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_thing_membership")(viewThingMembershipEndpoint(svc)),
-		decodeViewThingMembershipRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/groups/:groupID/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_channels")(assignChannelsEndpoint(svc)),
-		decodeGroupChannelsRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Patch("/groups/:groupID/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign_channels")(unassignChannelsEndpoint(svc)),
-		decodeGroupChannelsRequest,
+		kitot.TraceServer(tracer, "view_thing_group")(viewThingGroupEndpoint(svc)),
+		decodeViewThingGroupRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -272,8 +244,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Get("/channels/:channelID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_channel_membership")(viewChannelMembershipEndpoint(svc)),
-		decodeViewChannelMembershipRequest,
+		kitot.TraceServer(tracer, "view_channel_group")(viewChannelGroupEndpoint(svc)),
+		decodeViewChannelGroupRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -685,7 +657,7 @@ func decodeGroupChannelsRequest(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeViewThingMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewThingGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, thingIDKey),
@@ -710,7 +682,7 @@ func decodeRemoveThings(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeViewChannelMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewChannelGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listMembersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, channelIDKey),

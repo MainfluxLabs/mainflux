@@ -19,8 +19,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const ownerDbId = "owner_id"
-
 var _ auth.OrgRepository = (*orgRepository)(nil)
 
 type orgRepository struct {
@@ -638,7 +636,7 @@ func (or orgRepository) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGro
 }
 
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	ownq := dbutil.GetOwnerQuery(ownerID, ownerDbId)
+	ownq := dbutil.GetOwnerQuery(ownerID)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {

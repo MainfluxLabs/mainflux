@@ -108,9 +108,9 @@ func newThingsService(auth mainflux.AuthServiceClient) things.Service {
 	for i := 0; i < thingsNum; i++ {
 		id := strconv.Itoa(i + 1)
 		ths[id] = things.Thing{
-			ID:    id,
-			Key:   thingKey,
-			Owner: email,
+			ID:      id,
+			Key:     thingKey,
+			OwnerID: email,
 		}
 	}
 

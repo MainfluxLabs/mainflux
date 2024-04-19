@@ -133,51 +133,6 @@ func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID str
 	}, nil
 }
 
-func (grm *groupRepositoryMock) UnassignThing(ctx context.Context, groupID string, thingIDs ...string) error {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-	if _, ok := grm.groups[groupID]; !ok {
-		return errors.ErrNotFound
-	}
-
-	for _, thingID := range thingIDs {
-		things, ok := grm.things[groupID]
-		if !ok {
-			return errors.ErrNotFound
-		}
-
-		for i, th := range things {
-			if th == thingID {
-				grm.things[groupID] = append(things[:i], things[i+1:]...)
-				delete(grm.thingMembership, thingID)
-				break
-			}
-		}
-	}
-
-	return nil
-}
-
-func (grm *groupRepositoryMock) AssignThing(ctx context.Context, groupID string, thingIDs ...string) error {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	if _, ok := grm.groups[groupID]; !ok {
-		return errors.ErrNotFound
-	}
-
-	if _, ok := grm.things[groupID]; !ok {
-		grm.things[groupID] = []string{}
-	}
-
-	for _, thingID := range thingIDs {
-		grm.things[groupID] = append(grm.things[groupID], thingID)
-		grm.thingMembership[thingID] = groupID
-	}
-
-	return nil
-}
-
 func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
@@ -215,82 +170,6 @@ func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID
 			Total: uint64(len(items)),
 		},
 	}, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	var gtr []things.GroupThingRelation
-	for grID, thIDs := range grm.things {
-		for _, thID := range thIDs {
-			gtr = append(gtr, things.GroupThingRelation{
-				GroupID: grID,
-				ThingID: thID,
-			})
-		}
-	}
-
-	return gtr, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	var gcr []things.GroupChannelRelation
-	for grID, chIDs := range grm.channels {
-		for _, chID := range chIDs {
-			gcr = append(gcr, things.GroupChannelRelation{
-				GroupID:   grID,
-				ChannelID: chID,
-			})
-		}
-	}
-
-	return gcr, nil
-}
-
-func (grm *groupRepositoryMock) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	if _, ok := grm.groups[groupID]; !ok {
-		return errors.ErrNotFound
-	}
-
-	for _, channelID := range channelIDs {
-		grm.channels[groupID] = append(grm.channels[groupID], channelID)
-		grm.channelMembership[channelID] = groupID
-	}
-
-	return nil
-}
-
-func (grm *groupRepositoryMock) UnassignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	if _, ok := grm.groups[groupID]; !ok {
-		return errors.ErrNotFound
-	}
-
-	for _, channelID := range channelIDs {
-		channels, ok := grm.channels[groupID]
-		if !ok {
-			return errors.ErrNotFound
-		}
-
-		for i, ch := range channels {
-			if ch == channelID {
-				grm.channels[groupID] = append(channels[:i], channels[i+1:]...)
-				delete(grm.channelMembership, channelID)
-				break
-			}
-		}
-	}
-
-	return nil
 }
 
 func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {

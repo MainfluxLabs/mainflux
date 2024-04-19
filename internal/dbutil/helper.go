@@ -21,12 +21,12 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
-func GetOwnerQuery(owner, ownerDbId string) string {
-	if owner == "" {
+func GetOwnerQuery(ownerID string) string {
+	if ownerID == "" {
 		return ""
 	}
 
-	return fmt.Sprintf("%s = :%s", ownerDbId, ownerDbId)
+	return "owner_id = :owner_id"
 }
 
 func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {

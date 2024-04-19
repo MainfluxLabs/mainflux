@@ -29,24 +29,20 @@ var (
 )
 
 func TestGetConnByKey(t *testing.T) {
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th1 := ths[0]
 	th2 := ths[1]
 
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
-
-	grs, err := svc.CreateGroups(context.Background(), token, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-
-	err = svc.AssignThing(context.Background(), token, gr.ID, th1.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, ch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = svc.Connect(context.Background(), token, ch.ID, []string{th1.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))

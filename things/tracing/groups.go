@@ -106,14 +106,6 @@ func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerI
 	return grm.repo.RetrieveByOwner(ctx, ownerID, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
-	span := createSpan(ctx, grm.tracer, retrieveThingMembershipOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveThingMembership(ctx, thingID)
-}
-
 func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupThingsOp)
 	defer span.Finish()
@@ -130,66 +122,10 @@ func (grm groupRepositoryMiddleware) RetrieveGroupThingsByChannel(ctx context.Co
 	return grm.repo.RetrieveGroupThingsByChannel(ctx, groupID, channelID, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveAllThingRelations(ctx context.Context) ([]things.GroupThingRelation, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAllThingRelationsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveAllThingRelations(ctx)
-}
-
-func (grm groupRepositoryMiddleware) AssignThing(ctx context.Context, groupID string, thingIDs ...string) error {
-	span := createSpan(ctx, grm.tracer, assignThingOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.AssignThing(ctx, groupID, thingIDs...)
-}
-
-func (grm groupRepositoryMiddleware) UnassignThing(ctx context.Context, groupID string, thingIDs ...string) error {
-	span := createSpan(ctx, grm.tracer, unassignThingOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.UnassignThing(ctx, groupID, thingIDs...)
-}
-
-func (grm groupRepositoryMiddleware) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
-	span := createSpan(ctx, grm.tracer, retrieveChannelMembershipOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveChannelMembership(ctx, channelID)
-}
-
 func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupChannelsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveGroupChannels(ctx, groupID, pm)
-}
-
-func (grm groupRepositoryMiddleware) RetrieveAllChannelRelations(ctx context.Context) ([]things.GroupChannelRelation, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAllChannelRelationsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveAllChannelRelations(ctx)
-}
-
-func (grm groupRepositoryMiddleware) AssignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	span := createSpan(ctx, grm.tracer, assignChannelOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.AssignChannel(ctx, groupID, channelIDs...)
-}
-
-func (grm groupRepositoryMiddleware) UnassignChannel(ctx context.Context, groupID string, channelIDs ...string) error {
-	span := createSpan(ctx, grm.tracer, unassignChannelOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.UnassignChannel(ctx, groupID, channelIDs...)
 }

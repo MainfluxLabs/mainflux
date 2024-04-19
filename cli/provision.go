@@ -136,12 +136,29 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
+			g := mfxsdk.Group{
+				Name: "gr",
+			}
+
+			grID, err := sdk.CreateGroup(g, ut)
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			gr, err := sdk.Group(grID, ut)
+			if err != nil {
+				logError(err)
+				return
+			}
+
 			// Create things
 			for i := 0; i < numThings; i++ {
 				n := fmt.Sprintf("d%d", i)
 
 				t := mfxsdk.Thing{
-					Name: n,
+					Name:    n,
+					GroupID: grID,
 				}
 
 				things = append(things, t)
@@ -162,7 +179,8 @@ var cmdProvision = []cobra.Command{
 				n := fmt.Sprintf("c%d", i)
 
 				c := mfxsdk.Channel{
-					Name: n,
+					Name:    n,
+					GroupID: grID,
 				}
 
 				channels = append(channels, c)
@@ -176,32 +194,6 @@ var cmdProvision = []cobra.Command{
 			var chIDs []string
 			for _, ch := range channels {
 				chIDs = append(chIDs, ch.ID)
-			}
-
-			g := mfxsdk.Group{
-				Name: "gr",
-			}
-
-			grID, err := sdk.CreateGroup(g, ut)
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			gr, err := sdk.Group(grID, ut)
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			if err := sdk.AssignChannel(chIDs, grID, ut); err != nil {
-				logError(err)
-				return
-			}
-
-			if err := sdk.AssignThing(thIDs, grID, ut); err != nil {
-				logError(err)
-				return
 			}
 
 			conIDs := mfxsdk.ConnectionIDs{

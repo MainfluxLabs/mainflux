@@ -86,7 +86,8 @@ func TestCreateThings(t *testing.T) {
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
-				"owner":     user.ID,
+				"owner_id":  user.ID,
+				"group_id":  group.ID,
 				"metadata":  "{\"test\":\"test\"}",
 				"operation": thingCreate,
 			},
@@ -215,24 +216,19 @@ func TestListThingsByChannel(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
-	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sth := sths[0]
-
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	// Create thing without sending event.
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sth := sths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, sch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sch := schs[0]
 
 	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
@@ -318,20 +314,21 @@ func TestCreateChannels(t *testing.T) {
 	}{
 		{
 			desc: "create channels successfully",
-			chs:  []things.Channel{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			chs:  []things.Channel{{GroupID: group.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:  token,
 			err:  nil,
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
-				"owner":     user.ID,
+				"owner_id":  user.ID,
+				"group_id":  group.ID,
 				"operation": channelCreate,
 			},
 		},
 		{
 			desc:  "create channels with invalid credentials",
-			chs:   []things.Channel{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			chs:   []things.Channel{{GroupID: group.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:   "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -463,24 +460,19 @@ func TestListChannelsByThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
-	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sth := sths[0]
-
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	// Create thing without sending event.
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sth := sths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, sch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sch := schs[0]
 
 	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
@@ -555,23 +547,18 @@ func TestConnectEvent(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
-	// Create thing and channel that will be connected.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sth := sths[0]
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = svc.AssignChannel(context.Background(), token, gr.ID, sch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	// Create thing and channel that will be connected.
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sth := sths[0]
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sch := schs[0]
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
@@ -631,24 +618,19 @@ func TestDisconnectEvent(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
-	// Create thing and channel that will be connected.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sth := sths[0]
-
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	err = svc.AssignThing(context.Background(), token, gr.ID, sth.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	// Create thing and channel that will be connected.
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sth := sths[0]
 
-	err = svc.AssignChannel(context.Background(), token, gr.ID, sch.ID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	sch := schs[0]
 
 	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))

@@ -58,7 +58,7 @@ func (trm *thingRepositoryMock) Save(_ context.Context, ths ...things.Thing) ([]
 		if ths[i].ID == "" {
 			ths[i].ID = fmt.Sprintf("%03d", trm.counter)
 		}
-		trm.things[key(ths[i].Owner, ths[i].ID)] = ths[i]
+		trm.things[key(ths[i].OwnerID, ths[i].ID)] = ths[i]
 	}
 
 	return ths, nil
@@ -68,7 +68,7 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	dbKey := key(thing.Owner, thing.ID)
+	dbKey := key(thing.OwnerID, thing.ID)
 
 	if _, ok := trm.things[dbKey]; !ok {
 		return errors.ErrNotFound

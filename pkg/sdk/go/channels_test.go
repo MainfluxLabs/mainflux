@@ -324,21 +324,15 @@ func TestViewChannelByThing(t *testing.T) {
 	}
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
-	gr, err := mainfluxSDK.CreateGroup(group, token)
+	grID, err := mainfluxSDK.CreateGroup(group, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: name}
+	th := sdk.Thing{Name: name, GroupID: grID}
 	tid, err := mainfluxSDK.CreateThing(th, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = mainfluxSDK.AssignThing([]string{tid}, gr, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	ch := sdk.Channel{Name: name}
+	ch := sdk.Channel{Name: name, GroupID: grID}
 	cid, err := mainfluxSDK.CreateChannel(ch, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = mainfluxSDK.AssignChannel([]string{cid}, gr, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
@@ -347,8 +341,9 @@ func TestViewChannelByThing(t *testing.T) {
 	}
 
 	resChan := sdk.Channel{
-		ID:   cid,
-		Name: name,
+		ID:      cid,
+		GroupID: grID,
+		Name:    name,
 	}
 
 	err = mainfluxSDK.Connect(connIDs, token)

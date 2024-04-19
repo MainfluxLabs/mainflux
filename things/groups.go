@@ -22,9 +22,6 @@ var (
 	// ErrRetrieveGroupThingsByChannel indicates failure to retrieve group things by channel.
 	ErrRetrieveGroupThingsByChannel = errors.New("failed to retrieve group things by channel")
 
-	// ErrRetrieveThingMembership indicates failure to retrieve thing membership
-	ErrRetrieveThingMembership = errors.New("failed to retrieve thing membership")
-
 	// ErrAssignGroupChannel indicates failure to assign channel to a group.
 	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
 
@@ -36,9 +33,6 @@ var (
 
 	// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
 	ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
-
-	// ErrRetrieveChannelMembership indicates failure to retrieve channel membership
-	ErrRetrieveChannelMembership = errors.New("failed to retrieve channel membership")
 )
 
 // Identity contains ID and Email.
@@ -59,22 +53,6 @@ type Group struct {
 	Metadata    GroupMetadata
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-}
-
-// GroupThingRelation represents a relation between a group and a thing.
-type GroupThingRelation struct {
-	GroupID   string
-	ThingID   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-// GroupChannelRelation represents a relation between a group and a channel.
-type GroupChannelRelation struct {
-	GroupID   string
-	ChannelID string
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
 // GroupPage contains page related metadata as well as list of groups that
@@ -116,42 +94,18 @@ type GroupRepository interface {
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveThingMembership retrieves group that thing belongs to.
-	RetrieveThingMembership(ctx context.Context, thingID string) (string, error)
-
 	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
 	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
 
 	// RetrieveGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
 	RetrieveGroupThingsByChannel(ctx context.Context, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
 
-	// AssignThing adds a thing to a group
-	AssignThing(ctx context.Context, groupID string, thingIDs ...string) error
-
-	// UnassignThing removes a thing from a group
-	UnassignThing(ctx context.Context, groupID string, thingIDs ...string) error
-
-	// RetrieveChannelMembership retrieves group that channel belongs to.
-	RetrieveChannelMembership(ctx context.Context, channelID string) (string, error)
-
 	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
 	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
-
-	// AssignChannel assigns a channel to a group
-	AssignChannel(ctx context.Context, groupID string, ids ...string) error
-
-	// UnassignChannel unassigns a channel from a group
-	UnassignChannel(ctx context.Context, groupID string, ids ...string) error
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
 	// RetrieveByAdmin retrieves all groups with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (GroupPage, error)
-
-	// RetrieveAllThingRelations retrieves all thing relations.
-	RetrieveAllThingRelations(ctx context.Context) ([]GroupThingRelation, error)
-
-	// RetrieveAllChannelRelations retrieves all thing relations.
-	RetrieveAllChannelRelations(ctx context.Context) ([]GroupChannelRelation, error)
 }

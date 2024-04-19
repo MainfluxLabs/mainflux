@@ -40,7 +40,7 @@ func (es eventStore) CreateThings(ctx context.Context, token string, ths ...thin
 	for _, thing := range sths {
 		event := createThingEvent{
 			id:       thing.ID,
-			owner:    thing.Owner,
+			ownerID:  thing.OwnerID,
 			name:     thing.Name,
 			metadata: thing.Metadata,
 		}
@@ -135,7 +135,7 @@ func (es eventStore) CreateChannels(ctx context.Context, token string, channels 
 	for _, channel := range schs {
 		event := createChannelEvent{
 			id:       channel.ID,
-			owner:    channel.Owner,
+			ownerID:  channel.OwnerID,
 			name:     channel.Name,
 			metadata: channel.Metadata,
 		}
@@ -297,30 +297,14 @@ func (es eventStore) ViewGroup(ctx context.Context, token, id string) (things.Gr
 	return es.svc.ViewGroup(ctx, token, id)
 }
 
-func (es eventStore) AssignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	return es.svc.AssignThing(ctx, token, groupID, thingIDs...)
-}
-
-func (es eventStore) UnassignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	return es.svc.UnassignThing(ctx, token, groupID, thingIDs...)
-}
-
-func (es eventStore) ViewThingMembership(ctx context.Context, token string, thingID string) (things.Group, error) {
-	return es.svc.ViewThingMembership(ctx, token, thingID)
-}
-
-func (es eventStore) AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
-	return es.svc.AssignChannel(ctx, token, groupID, channelIDs...)
-}
-
-func (es eventStore) UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
-	return es.svc.UnassignChannel(ctx, token, groupID, channelIDs...)
+func (es eventStore) ViewThingGroup(ctx context.Context, token string, thingID string) (things.Group, error) {
+	return es.svc.ViewThingGroup(ctx, token, thingID)
 }
 
 func (es eventStore) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
 	return es.svc.ListGroupChannels(ctx, token, groupID, pm)
 }
 
-func (es eventStore) ViewChannelMembership(ctx context.Context, token string, channelID string) (things.Group, error) {
-	return es.svc.ViewChannelMembership(ctx, token, channelID)
+func (es eventStore) ViewChannelGroup(ctx context.Context, token string, channelID string) (things.Group, error) {
+	return es.svc.ViewChannelGroup(ctx, token, channelID)
 }
