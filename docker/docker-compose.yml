@@ -559,3 +559,30 @@ services:
       - ${MF_WEBHOOKS_HTTP_PORT}:${MF_WEBHOOKS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
+
+  smtp-notifier:
+    image: mainfluxlabs/smtp-notifier:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-smtp-notifier
+    restart: on-failure
+    environment:
+      MF_SMTP_NOTIFIER_LOG_LEVEL: ${MF_SMTP_NOTIFIER_LOG_LEVEL}
+      MF_SMTP_NOTIFIER_PORT: ${MF_SMTP_NOTIFIER_PORT}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
+      MF_SMTP_NOTIFIER_TEMPLATE: ${MF_SMTP_NOTIFIER_TEMPLATE}
+      MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
+    ports:
+      - ${MF_SMTP_NOTIFIER_PORT}:${MF_SMTP_NOTIFIER_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - ./templates/${MF_SMTP_NOTIFIER_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
