@@ -19,17 +19,17 @@ type Channel struct {
 }
 
 type Profile struct {
-	ContentType string   `json:"content_type"`
-	Write       bool     `json:"write"`
-	Notify      bool     `json:"notify"`
-	Webhook     bool     `json:"webhook"`
-	Writer      Writer   `json:"writer"`
-	Notifier    Notifier `json:"notifier"`
+	ContentType string      `json:"content_type"`
+	Write       bool        `json:"write"`
+	Notify      bool        `json:"notify"`
+	Webhook     bool        `json:"webhook"`
+	Transformer Transformer `json:"transformner"`
+	Notifier    Notifier    `json:"notifier"`
 }
 
-type Writer struct {
-	Subtopics    []string `json:"subtopics"`
-	TimeName     string   `json:"time_name"`
+type Transformer struct {
+	ValueFields  []string `json:"value_fields"`
+	TimeField    string   `json:"time_field"`
 	TimeFormat   string   `json:"time_format"`
 	TimeLocation string   `json:"time_location"`
 }

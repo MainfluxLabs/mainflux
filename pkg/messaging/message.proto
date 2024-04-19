@@ -16,19 +16,19 @@ message Message {
 }
 
 message Profile {
-    string    contentType = 1;
-    bool      write       = 2;
-    bool      notify      = 3;
-    bool      webhook     = 4;
-    Writer    writer      = 5;
-    Notifier  notifier    = 6;
+    string      contentType = 1;
+    bool        write       = 2;
+    bool        notify      = 3;
+    bool        webhook     = 4;
+    Transformer transformer = 5;
+    Notifier    notifier    = 6;
 }
 
-message Writer {
-    repeated string subtopics = 1;
-    string timeName           = 2;
-    string timeFormat         = 3;
-    string timeLocation       = 4;
+message Transformer {
+    repeated string valueFields = 1;
+    string timeField            = 2;
+    string timeFormat           = 3;
+    string timeLocation         = 4;
 }
 
 message Notifier {

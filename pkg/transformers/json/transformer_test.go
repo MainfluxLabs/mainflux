@@ -28,7 +28,7 @@ const (
 	timeFieldName     = "custom_ts_key"
 )
 
-var profile = &messaging.Profile{Writer: &messaging.Writer{TimeName: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
+var profile = &messaging.Profile{Transformer: &messaging.Transformer{TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
 
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
@@ -51,18 +51,18 @@ func TestTransformJSON(t *testing.T) {
 
 	tsMsg := msg
 	tsMsg.Payload = []byte(tsPayload)
-	tsMsg.Profile.Writer.TimeName = timeFieldName
+	tsMsg.Profile.Transformer.TimeField = timeFieldName
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.Profile = &messaging.Profile{Writer: &messaging.Writer{TimeName: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
+	microsMsg.Profile = &messaging.Profile{Transformer: &messaging.Transformer{TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
 
 	invalidFmt := msg
 	invalidFmt.Subtopic = ""
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
-	invalidTimeField.Profile.Writer.TimeName = timeFieldName
+	invalidTimeField.Profile.Transformer.TimeField = timeFieldName
 
 	jsonMsgs := json.Messages{
 		Data: []json.Message{
