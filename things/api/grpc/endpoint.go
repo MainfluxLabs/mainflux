@@ -34,17 +34,17 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			Subtopics: p.Notifier.Subtopics,
 		}
 
-		writer := &mainflux.Writer{
-			Subtopics:    p.Writer.Subtopics,
-			TimeName:     p.Writer.TimeName,
-			TimeFormat:   p.Writer.TimeFormat,
-			TimeLocation: p.Writer.TimeLocation,
+		transformer := &mainflux.Transformer{
+			ValueFields:  p.Transformer.ValueFields,
+			TimeField:    p.Transformer.TimeField,
+			TimeFormat:   p.Transformer.TimeFormat,
+			TimeLocation: p.Transformer.TimeLocation,
 		}
 
 		profile := &mainflux.Profile{
 			ContentType: p.ContentType,
 			Write:       p.Write,
-			Writer:      writer,
+			Transformer: transformer,
 			Notifier:    notifier,
 			Notify:      p.Notify,
 			Webhook:     p.Webhook,

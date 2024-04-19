@@ -75,7 +75,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 		ret.Payload = p
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.Profile.Writer)
+		ts, err := ts.transformTimeField(p, *msg.Profile.Transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -95,7 +95,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 			newMsg := ret
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.Profile.Writer)
+			ts, err := ts.transformTimeField(v, *msg.Profile.Transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
@@ -174,13 +174,13 @@ func flatten(prefix string, m, m1 map[string]interface{}) (map[string]interface{
 	return m, nil
 }
 
-func (ts *transformerService) transformTimeField(payload map[string]interface{}, writer messaging.Writer) (int64, error) {
-	if writer.TimeName == "" {
+func (ts *transformerService) transformTimeField(payload map[string]interface{}, transformer messaging.Transformer) (int64, error) {
+	if transformer.TimeField == "" {
 		return 0, nil
 	}
 
-	if val, ok := payload[writer.TimeName]; ok {
-		t, err := parseTimestamp(writer.TimeFormat, val, writer.TimeLocation)
+	if val, ok := payload[transformer.TimeField]; ok {
+		t, err := parseTimestamp(transformer.TimeFormat, val, transformer.TimeLocation)
 		if err != nil {
 			return 0, err
 		}

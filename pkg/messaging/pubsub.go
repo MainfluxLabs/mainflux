@@ -114,11 +114,12 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 	msg.Profile.Webhook = conn.Profile.Webhook
 	msg.Profile.ContentType = conn.Profile.ContentType
 
-	if conn.Profile.Writer != nil {
-		msg.Profile.Writer = &Writer{
-			TimeName:     conn.Profile.Writer.TimeName,
-			TimeFormat:   conn.Profile.Writer.TimeFormat,
-			TimeLocation: conn.Profile.Writer.TimeLocation,
+	if conn.Profile.Transformer != nil {
+		msg.Profile.Transformer = &Transformer{
+			ValueFields:  conn.Profile.Transformer.ValueFields,
+			TimeField:    conn.Profile.Transformer.TimeField,
+			TimeFormat:   conn.Profile.Transformer.TimeFormat,
+			TimeLocation: conn.Profile.Transformer.TimeLocation,
 		}
 	}
 
