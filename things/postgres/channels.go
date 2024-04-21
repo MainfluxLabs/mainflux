@@ -78,7 +78,7 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 }
 
 func (cr channelRepository) Update(ctx context.Context, channel things.Channel) error {
-	q := `UPDATE channels SET name = :name, metadata = :metadata WHERE owner_id = :owner_id AND id = :id;`
+	q := `UPDATE channels SET name = :name, metadata = :metadata, profile = :profile WHERE owner_id = :owner_id AND id = :id;`
 
 	dbch := toDBChannel(channel)
 
@@ -156,7 +156,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, ownerID, thID s
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels ch
+	q = fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE ch.owner_id = :owner_id AND conn.thing_id = :thing;`)
@@ -199,7 +199,7 @@ func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm t
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels ch
+	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE conn.thing_id = :thing
@@ -436,7 +436,7 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	if includeOwner {
 		q = "SELECT id, name, owner_id, metadata FROM channels;"
