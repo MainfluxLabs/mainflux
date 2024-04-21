@@ -20,7 +20,7 @@ type forwarder struct {
 	httpClient *http.Client
 }
 
-func NewForwarder(webhooks WebhookRepository) Forwarder {
+func NewForwarder() Forwarder {
 	return &forwarder{
 		httpClient: &http.Client{},
 	}

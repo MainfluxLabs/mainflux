@@ -19,7 +19,7 @@ const (
 	tsPayload         = `{"custom_ts_key": "1638310819", "key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}`
 	microsPayload     = `{"custom_ts_micro_key": "1638310819000000", "key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}`
 	invalidTsPayload  = `{"custom_ts_key": "abc", "key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}`
-	listPayload       = `[{"key1": "val1", "key2": 123, "keylist3": "val3", "key4": {"key5": "val5"}}, {"key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}]`
+	listPayload       = `[{"key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}, {"key1": "val1", "key2": 123, "key3": "val3", "key4": {"key5": "val5"}}]`
 	invalidPayload    = `{"key1": }`
 	subtopic          = "subtopic"
 	format            = "format"
@@ -28,7 +28,11 @@ const (
 	timeFieldName     = "custom_ts_key"
 )
 
-var profile = &messaging.Profile{Transformer: &messaging.Transformer{TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
+var (
+	valueFields = []string{"key1", "key2", "key4"}
+)
+
+var profile = &messaging.Profile{Transformer: &messaging.Transformer{ValueFields: valueFields, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
 
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
@@ -55,7 +59,7 @@ func TestTransformJSON(t *testing.T) {
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.Profile = &messaging.Profile{Transformer: &messaging.Transformer{TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
+	microsMsg.Profile = &messaging.Profile{Transformer: &messaging.Transformer{ValueFields: valueFields, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
 
 	invalidFmt := msg
 	invalidFmt.Subtopic = ""
@@ -75,7 +79,6 @@ func TestTransformJSON(t *testing.T) {
 				Payload: map[string]interface{}{
 					"key1": "val1",
 					"key2": float64(123),
-					"key3": "val3",
 					"key4": map[string]interface{}{
 						"key5": "val5",
 					},
@@ -94,10 +97,8 @@ func TestTransformJSON(t *testing.T) {
 				Protocol:  msg.Protocol,
 				Created:   int64(1638310819000000000),
 				Payload: map[string]interface{}{
-					timeFieldName: "1638310819",
-					"key1":        "val1",
-					"key2":        float64(123),
-					"key3":        "val3",
+					"key1": "val1",
+					"key2": float64(123),
 					"key4": map[string]interface{}{
 						"key5": "val5",
 					},
@@ -116,10 +117,8 @@ func TestTransformJSON(t *testing.T) {
 				Protocol:  msg.Protocol,
 				Created:   int64(1638310819000000000),
 				Payload: map[string]interface{}{
-					"custom_ts_micro_key": "1638310819000000",
-					"key1":                "val1",
-					"key2":                float64(123),
-					"key3":                "val3",
+					"key1": "val1",
+					"key2": float64(123),
 					"key4": map[string]interface{}{
 						"key5": "val5",
 					},
@@ -138,9 +137,9 @@ func TestTransformJSON(t *testing.T) {
 				Protocol:  msg.Protocol,
 				Created:   msg.Created,
 				Payload: map[string]interface{}{
-					"key1":     "val1",
-					"key2":     float64(123),
-					"keylist3": "val3",
+					"key1": "val1",
+					"key2": float64(123),
+					//	"keylist3": "val3",
 					"key4": map[string]interface{}{
 						"key5": "val5",
 					},
@@ -155,7 +154,7 @@ func TestTransformJSON(t *testing.T) {
 				Payload: map[string]interface{}{
 					"key1": "val1",
 					"key2": float64(123),
-					"key3": "val3",
+					//	"key3": "val3",
 					"key4": map[string]interface{}{
 						"key5": "val5",
 					},
