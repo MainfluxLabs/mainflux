@@ -38,9 +38,9 @@ const (
 var (
 	metadata   = map[string]interface{}{"meta": "data"}
 	metadata2  = map[string]interface{}{"meta": "data2"}
-	th1        = sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
-	th2        = sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
-	emptyThing = sdk.Thing{}
+	th1        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
+	th2        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
+	emptyThing = sdk.Thing{GroupID: "1"}
 	group      = sdk.Group{Name: "test_group", Metadata: metadata}
 )
 
@@ -144,8 +144,8 @@ func TestCreateThings(t *testing.T) {
 		th2,
 	}
 	thsExtID := []sdk.Thing{
-		{ID: th1.ID, Name: "1", Key: "1", Metadata: metadata},
-		{ID: th2.ID, Name: "2", Key: "2", Metadata: metadata},
+		{GroupID: "1", ID: th1.ID, Name: "1", Key: "1", Metadata: metadata},
+		{GroupID: "1", ID: th2.ID, Name: "2", Key: "2", Metadata: metadata},
 	}
 	thsWrongExtID := []sdk.Thing{
 		{ID: "b0aa-000000000001", Name: "1", Key: "1", Metadata: metadata},
@@ -280,7 +280,7 @@ func TestThings(t *testing.T) {
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		th := sdk.Thing{ID: id, Name: name, Metadata: metadata}
+		th := sdk.Thing{GroupID: "1", ID: id, Name: name, Metadata: metadata}
 		_, err := mainfluxSDK.CreateThing(th, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th.Key = fmt.Sprintf("%s%012d", uuid.Prefix, i)
@@ -736,7 +736,7 @@ func TestIdentifyThing(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	mainfluxAuthSDK := sdk.NewSDK(authSdkConf)
-	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
+	th := sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
 	id, err := mainfluxSDK.CreateThing(th, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thing, err := mainfluxSDK.Thing(th.ID, token)
