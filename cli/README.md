@@ -176,33 +176,6 @@ mainfluxlabs-cli messages send <channel_id> '[{"bn":"Dev1","n":"temp","v":20}, {
 mainfluxlabs-cli messages read <channel_id> <thing_auth_token>
 ```
 
-### Bootstrap
-
-#### Add configuration
-```bash
-mainfluxlabs-cli bootstrap add '{"external_id": "myExtID", "external_key": "myExtKey", "name": "myName", "content": "myContent"}' <user_auth_token>
-```
-
-#### View configuration
-```bash
-mainfluxlabs-cli bootstrap view <thing_id> <user_auth_token>
-```
-
-#### Update configuration
-```bash
-mainfluxlabs-cli bootstrap update '{"MFThing":"<thing_id>", "name": "newName", "content": "newContent"}' <user_auth_token>
-```
-
-#### Remove configuration
-```bash
-mainfluxlabs-cli bootstrap remove <thing_id> <user_auth_token>
-```
-
-#### Bootstrap configuration
-```bash
-mainfluxlabs-cli bootstrap bootstrap <external_id> <external_key>
-```
-
 ### Groups
 #### Create new group
 ```bash

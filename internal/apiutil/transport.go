@@ -46,7 +46,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingMemberType),
 			errors.Contains(err, ErrInvalidAPIKey),
 			errors.Contains(err, ErrMaxLevelExceeded),
-			errors.Contains(err, ErrBootstrapState),
 			errors.Contains(err, ErrUnsupportedContentType),
 			errors.Contains(err, ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidPolicy),

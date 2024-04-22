@@ -96,9 +96,6 @@ var (
 	// ErrMaxLevelExceeded indicates an invalid group level.
 	ErrMaxLevelExceeded = errors.New("invalid group level (should be lower than 5)")
 
-	// ErrBootstrapState indicates an invalid boostrap state.
-	ErrBootstrapState = errors.New("invalid bootstrap state")
-
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
 	ErrUnsupportedContentType = errors.New("unsupported content type")
 
