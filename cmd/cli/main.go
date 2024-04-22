@@ -48,7 +48,6 @@ func main() {
 	channelsCmd := cli.NewChannelsCmd()
 	messagesCmd := cli.NewMessagesCmd()
 	provisionCmd := cli.NewProvisionCmd()
-	bootstrapCmd := cli.NewBootstrapCmd()
 	certsCmd := cli.NewCertsCmd()
 	keysCmd := cli.NewKeysCmd()
 
@@ -60,7 +59,6 @@ func main() {
 	rootCmd.AddCommand(channelsCmd)
 	rootCmd.AddCommand(messagesCmd)
 	rootCmd.AddCommand(provisionCmd)
-	rootCmd.AddCommand(bootstrapCmd)
 	rootCmd.AddCommand(certsCmd)
 	rootCmd.AddCommand(keysCmd)
 
@@ -71,14 +69,6 @@ func main() {
 		"a",
 		sdkConf.AuthURL,
 		"Auth service URL",
-	)
-
-	rootCmd.PersistentFlags().StringVarP(
-		&sdkConf.BootstrapURL,
-		"bootstrap-url",
-		"b",
-		sdkConf.BootstrapURL,
-		"Bootstrap service URL",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(
