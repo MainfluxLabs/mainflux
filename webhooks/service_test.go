@@ -7,8 +7,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	whMock "github.com/MainfluxLabs/mainflux/webhooks/mocks"
 	"github.com/stretchr/testify/assert"
@@ -136,22 +136,43 @@ func TestListWebhooksByThing(t *testing.T) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validData := messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
-	invalidThingData := messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
+	validJson := json.Messages{
+		Data: []json.Message{
+			{
+				Publisher: thingID,
+				Payload: map[string]interface{}{
+					"key1": "val1",
+					"key2": float64(123),
+				},
+			},
+		},
+	}
+
+	invalidJson := json.Messages{
+		Data: []json.Message{
+			{
+				Publisher: emptyValue,
+				Payload: map[string]interface{}{
+					"key1": "val1",
+					"key2": float64(123),
+				},
+			},
+		},
+	}
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  json.Messages
 		err  error
 	}{
 		{
 			desc: "forward message",
-			msg:  validData,
+			msg:  validJson,
 			err:  nil,
 		},
 		{
 			desc: "forward message invalid thing id",
-			msg:  invalidThingData,
+			msg:  invalidJson,
 			err:  apiutil.ErrMissingID,
 		},
 	}
