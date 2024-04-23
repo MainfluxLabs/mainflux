@@ -198,10 +198,9 @@ func TestCreateWebhooks(t *testing.T) {
 }
 
 type webhookRes struct {
-	ThingID     string   `json:"thing_id"`
-	Name        string   `json:"name"`
-	ValueFields []string `json:"value_fields"`
-	Url         string   `json:"url"`
+	ThingID string `json:"thing_id"`
+	Name    string `json:"name"`
+	Url     string `json:"url"`
 }
 type webhooksRes struct {
 	Webhooks []webhookRes `json:"webhooks"`
