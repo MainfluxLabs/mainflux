@@ -487,16 +487,13 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 	return page, nil
 }
 
-// dbMetadata type for handling metadata properly in database/sql.
-type dbMetadata map[string]interface{}
-
-// dbProfile type for handling profile properly in database/sql.
-type dbProfile map[string]interface{}
+// dbJSONB type for handling JSONB data properly in database/sql.
+type dbJSONB map[string]interface{}
 
 // Scan implements the database/sql scanner interface.
 // When interface is nil `m` is set to nil.
 // If error occurs on casting data then m points to empty metadata.
-func (m *dbMetadata) Scan(value interface{}) error {
+func (m *dbJSONB) Scan(value interface{}) error {
 	if value == nil {
 		m = nil
 		return nil
@@ -504,7 +501,7 @@ func (m *dbMetadata) Scan(value interface{}) error {
 
 	b, ok := value.([]byte)
 	if !ok {
-		m = &dbMetadata{}
+		m = &dbJSONB{}
 		return errors.ErrScanMetadata
 	}
 
@@ -516,7 +513,7 @@ func (m *dbMetadata) Scan(value interface{}) error {
 }
 
 // Value implements database/sql valuer interface.
-func (m dbMetadata) Value() (driver.Value, error) {
+func (m dbJSONB) Value() (driver.Value, error) {
 	if len(m) == 0 {
 		return nil, nil
 	}
@@ -529,12 +526,12 @@ func (m dbMetadata) Value() (driver.Value, error) {
 }
 
 type dbChannel struct {
-	ID       string     `db:"id"`
-	OwnerID  string     `db:"owner_id"`
-	GroupID  string     `db:"group_id"`
-	Name     string     `db:"name"`
-	Profile  dbMetadata `db:"profile"`
-	Metadata dbMetadata `db:"metadata"`
+	ID       string  `db:"id"`
+	OwnerID  string  `db:"owner_id"`
+	GroupID  string  `db:"group_id"`
+	Name     string  `db:"name"`
+	Profile  dbJSONB `db:"profile"`
+	Metadata dbJSONB `db:"metadata"`
 }
 
 func toDBChannel(ch things.Channel) dbChannel {

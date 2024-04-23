@@ -498,13 +498,13 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 }
 
 type dbGroup struct {
-	ID          string     `db:"id"`
-	OwnerID     string     `db:"owner_id"`
-	Name        string     `db:"name"`
-	Description string     `db:"description"`
-	Metadata    dbMetadata `db:"metadata"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
+	ID          string    `db:"id"`
+	OwnerID     string    `db:"owner_id"`
+	Name        string    `db:"name"`
+	Description string    `db:"description"`
+	Metadata    dbJSONB   `db:"metadata"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 func toDBGroup(g things.Group) (dbGroup, error) {
@@ -513,7 +513,7 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 		Name:        g.Name,
 		OwnerID:     g.OwnerID,
 		Description: g.Description,
-		Metadata:    dbMetadata(g.Metadata),
+		Metadata:    dbJSONB(g.Metadata),
 		CreatedAt:   g.CreatedAt,
 		UpdatedAt:   g.UpdatedAt,
 	}, nil
