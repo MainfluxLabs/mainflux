@@ -3,15 +3,16 @@ package webhooks
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
 
 type Forwarder interface {
 	// Forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message messaging.Message, whs []Webhook) error
+	Forward(ctx context.Context, message mfjson.Message, whs []Webhook) error
 }
 
 var _ Forwarder = (*forwarder)(nil)
@@ -26,7 +27,7 @@ func NewForwarder() Forwarder {
 	}
 }
 
-func (fw *forwarder) Forward(_ context.Context, msg messaging.Message, whs []Webhook) error {
+func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, whs []Webhook) error {
 	for _, wh := range whs {
 		if err := fw.sendRequest(wh.Url, msg); err != nil {
 			return err
@@ -36,8 +37,13 @@ func (fw *forwarder) Forward(_ context.Context, msg messaging.Message, whs []Web
 	return nil
 }
 
-func (fw *forwarder) sendRequest(url string, msg messaging.Message) error {
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(msg.Payload))
+func (fw *forwarder) sendRequest(url string, msg mfjson.Message) error {
+	jsonBytes, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBytes))
 	if err != nil {
 		return err
 	}

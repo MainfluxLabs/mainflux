@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
 
 const (
@@ -106,22 +107,23 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string
 func (ws *webhooksService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	msg, ok := message.(messaging.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
+	if v, ok := message.(json.Messages); ok {
+		msgs := v.Data
 
-	if msg.Publisher == "" {
-		return apiutil.ErrMissingID
-	}
+		for _, msg := range msgs {
+			if msg.Publisher == "" {
+				return apiutil.ErrMissingID
+			}
 
-	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
-	if err != nil {
-		return errors.ErrAuthorization
-	}
+			whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
+			if err != nil {
+				return errors.ErrAuthorization
+			}
 
-	if err := ws.forwarder.Forward(ctx, msg, whs); err != nil {
-		return errors.Wrap(ErrForward, err)
+			if err := ws.forwarder.Forward(ctx, msg, whs); err != nil {
+				return errors.Wrap(ErrForward, err)
+			}
+		}
 	}
 
 	return nil

@@ -812,6 +812,7 @@ func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRe
 	for _, ch := range cp.Channels {
 		c := channelRes{
 			ID:       ch.ID,
+			Profile:  ch.Profile,
 			Metadata: ch.Metadata,
 			Name:     ch.Name,
 		}
