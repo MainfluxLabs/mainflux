@@ -18,6 +18,9 @@ var (
 	// ErrMissingID indicates missing entity ID.
 	ErrMissingID = errors.New("missing entity id")
 
+	// ErrMissingGroupID indicates missing entity group ID.
+	ErrMissingGroupID = errors.New("missing entity group id")
+
 	// ErrMissingRole indicates missing role.
 	ErrMissingRole = errors.New("missing role")
 
@@ -95,9 +98,6 @@ var (
 
 	// ErrMaxLevelExceeded indicates an invalid group level.
 	ErrMaxLevelExceeded = errors.New("invalid group level (should be lower than 5)")
-
-	// ErrBootstrapState indicates an invalid boostrap state.
-	ErrBootstrapState = errors.New("invalid bootstrap state")
 
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
 	ErrUnsupportedContentType = errors.New("unsupported content type")

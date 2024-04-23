@@ -108,6 +108,6 @@ To run service in a standalone mode, set `MF_THINGS_STANDALONE_EMAIL` and `MF_TH
 ## Usage
 
 For more information about service capabilities and its usage, please check out
-the [API documentation](https://api.mainflux.io/?urls.primaryName=things-openapi.yml).
+the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/things.yml).
 
 [doc]: https://mainfluxlabs.github.io/docs

@@ -69,9 +69,6 @@ var (
 	// ErrCertsRemove indicates failure while cleaning up from the Certs service.
 	ErrCertsRemove = errors.New("failed to remove certificate")
 
-	// ErrFailedCertUpdate failed to update certs in bootstrap config
-	ErrFailedCertUpdate = errors.New("failed to update certs in bootstrap config")
-
 	// ErrMemberAdd failed to add member to a group.
 	ErrMemberAdd = errors.New("failed to add member to group")
 )
@@ -261,27 +258,6 @@ type SDK interface {
 
 	// Health returns things service health check.
 	Health() (mainflux.HealthInfo, error)
-
-	// AddBootstrap add bootstrap configuration
-	AddBootstrap(token string, cfg BootstrapConfig) (string, error)
-
-	// View returns Thing Config with given ID belonging to the user identified by the given token.
-	ViewBootstrap(token, id string) (BootstrapConfig, error)
-
-	// Update updates editable fields of the provided Config.
-	UpdateBootstrap(token string, cfg BootstrapConfig) error
-
-	// Update boostrap config certificates
-	UpdateBootstrapCerts(token string, id string, clientCert, clientKey, ca string) error
-
-	// Remove removes Config with specified token that belongs to the user identified by the given token.
-	RemoveBootstrap(token, id string) error
-
-	// Bootstrap returns Config to the Thing with provided external ID using external key.
-	Bootstrap(externalKey, externalID string) (BootstrapConfig, error)
-
-	// Whitelist updates Thing state Config with given ID belonging to the user identified by the given token.
-	Whitelist(token string, cfg BootstrapConfig) error
 
 	// IssueCert issues a certificate for a thing required for mtls.
 	IssueCert(thingID string, keyBits int, keyType, valid, token string) (Cert, error)

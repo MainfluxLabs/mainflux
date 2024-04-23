@@ -761,13 +761,6 @@ paths:
 
 components:
   schemas:
-    Key:
-      type: string
-      format: uuid
-      description: |
-        Thing key that is used for thing auth. If there is
-        not one provided service will generate one in UUID
-        format.
     Identity:
       type: object
       properties:
@@ -782,13 +775,23 @@ components:
       type: object
       properties:
         key:
-          $ref: "#/components/schemas/Key"
+          type: string
+          format: uuid
+          description: |
+            Thing key that is used for thing auth. If there is
+            not one provided service will generate one in UUID
+            format.
         name:
           type: string
           description: Free-form thing name.
+        group_id:
+          type: string
+          format: uuid
         metadata:
           type: object
           description: Arbitrary, object-encoded thing's data.
+      required:
+        - group_id
     ThingsReqSchema:
       type: object
       properties:
@@ -884,6 +887,9 @@ components:
         name:
           type: string
           description: Free-form channel name.
+        group_id:
+          type: string
+          format: uuid
         metadata:
           type: object
           description: Arbitrary, object-encoded channel's data.
@@ -1267,8 +1273,6 @@ components:
           schema:
             type: object
             properties:
-              key:
-                $ref: "#/components/schemas/Key"
               things:
                 type: array
                 items:
@@ -1320,8 +1324,6 @@ components:
           schema:
             type: object
             properties:
-              key:
-                $ref: "#/components/schemas/Key"
               things:
                 type: array
                 items:

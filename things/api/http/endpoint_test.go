@@ -130,7 +130,7 @@ func TestCreateThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	data := `[{"name": "1", "key": "1"}, {"name": "2", "key": "2"}]`
+	data := `[{"name": "1", "key": "1", "group_id": "1"}, {"name": "2", "key": "2", "group_id": "1"}]`
 	invalidData := fmt.Sprintf(`[{"name": "%s", "key": "10"}]`, invalidName)
 
 	cases := []struct {
@@ -1303,7 +1303,7 @@ func TestCreateChannels(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	data := `[{"name": "1"}, {"name": "2"}]`
+	data := `[{"name": "1", "group_id": "1"}, {"name": "2", "group_id": "1"}]`
 	invalidData := fmt.Sprintf(`[{"name": "%s"}]`, invalidName)
 
 	cases := []struct {

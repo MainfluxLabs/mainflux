@@ -21,7 +21,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`http-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L245-L262) service section in 
+The service itself is distributed as Docker container. Check the [`http-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L245-L262) service section in
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
@@ -56,6 +56,6 @@ Setting `MF_HTTP_ADAPTER_CA_CERTS` expects a file in PEM format of trusted CAs. 
 HTTP Authorization request header contains the credentials to authenticate a Thing. The authorization header can be a plain Thing key
 or a Thing key encoded as a password for Basic Authentication. In case the Basic Authentication schema is used, the username is ignored.
 For more information about service capabilities and its usage, please check out
-the [API documentation](https://api.mainflux.io/?urls.primaryName=http.yml).
+the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/http.yml).
 
 [doc]: https://mainfluxlabs.github.io/docs

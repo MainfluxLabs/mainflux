@@ -52,6 +52,10 @@ func (req createThingsReq) validate() error {
 		if len(thing.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
+
+		if thing.GroupID == "" {
+			return apiutil.ErrMissingGroupID
+		}
 	}
 
 	return nil
@@ -133,6 +137,10 @@ func (req createChannelsReq) validate() error {
 
 		if len(channel.Name) > maxNameSize {
 			return apiutil.ErrNameSize
+		}
+
+		if channel.GroupID == "" {
+			return apiutil.ErrMissingGroupID
 		}
 	}
 

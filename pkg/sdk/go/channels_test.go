@@ -17,11 +17,11 @@ import (
 const name = "name"
 
 var (
-	ch1          = sdk.Channel{Name: "test1"}
-	ch2          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	ch1          = sdk.Channel{GroupID: "1", Name: "test1"}
+	ch2          = sdk.Channel{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	ch3          = sdk.Channel{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
 	chPrefix     = "fe6b4e92-cc98-425e-b0aa-"
-	emptyChannel = sdk.Channel{}
+	emptyChannel = sdk.Channel{GroupID: "1"}
 )
 
 func TestCreateChannel(t *testing.T) {
@@ -227,7 +227,7 @@ func TestChannels(t *testing.T) {
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		ch := sdk.Channel{ID: id, Name: name}
+		ch := sdk.Channel{GroupID: "1", ID: id, Name: name}
 		_, err := mainfluxSDK.CreateChannel(ch, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		channels = append(channels, ch)

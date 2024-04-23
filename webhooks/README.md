@@ -93,6 +93,6 @@ $GOBIN/mainflux-kit
 
 ## Usage
 
-For more information about service capabilities and its usage, please check out the [API documentation](swagger.yaml).
+For more information about service capabilities and its usage, please check out the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/webhooks.yml).
 
 [doc]: http://mainflux.readthedocs.io

@@ -112,6 +112,7 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 		res := viewThingRes{
 			ID:       thing.ID,
 			OwnerID:  thing.OwnerID,
+			GroupID:  thing.GroupID,
 			Name:     thing.Name,
 			Key:      thing.Key,
 			Metadata: thing.Metadata,
