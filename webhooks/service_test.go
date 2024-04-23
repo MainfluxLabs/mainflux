@@ -137,26 +137,22 @@ func TestConsume(t *testing.T) {
 	svc := newService()
 
 	validJson := json.Messages{
-		Data: []json.Message{
-			{
-				Publisher: thingID,
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-				},
-			},
+		Data: []json.Message{{
+			Publisher: thingID,
+			Payload: map[string]interface{}{
+				"key1": "val1",
+				"key2": float64(123),
+			}},
 		},
 	}
 
 	invalidJson := json.Messages{
-		Data: []json.Message{
-			{
-				Publisher: emptyValue,
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-				},
-			},
+		Data: []json.Message{{
+			Publisher: emptyValue,
+			Payload: map[string]interface{}{
+				"key1": "val1",
+				"key2": float64(123),
+			}},
 		},
 	}
 
