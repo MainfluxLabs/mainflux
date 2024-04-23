@@ -13,6 +13,6 @@ For an in-depth explanation of the usage of `consumers`, as well as thorough
 understanding of Mainflux, please check out the [official documentation][doc].
 
 For more information about service capabilities and its usage, please check out
-the [API documentation](https://api.mainflux.io/?urls.primaryName=consumers-notifiers-openapi.yml).
+the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/consumers.yml).
 
 [doc]: https://mainfluxlabs.github.io/docs

@@ -45,7 +45,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`users`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in 
+The service itself is distributed as Docker container. Check the [`users`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L109-L143) service section in
 docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
@@ -93,6 +93,6 @@ If `MF_EMAIL_TEMPLATE` doesn't point to any file service will function but passw
 ## Usage
 
 For more information about service capabilities and its usage, please check out
-the [API documentation](https://api.mainflux.io/?urls.primaryName=users-openapi.yml).
+the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/users.yml).
 
 [doc]: https://mainfluxlabs.github.io/docs
