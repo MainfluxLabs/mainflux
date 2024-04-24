@@ -74,7 +74,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 
 	switch p := payload.(type) {
 	case map[string]interface{}:
-		formattedPayload, err := formatJsonPayload(p, msg.Profile.Transformer.ValueFields)
+		formattedPayload, err := transformPayload(p, msg.Profile.Transformer.ValueFields)
 		if err != nil {
 			return nil, errors.Wrap(ErrFormatPayload, err)
 		}
@@ -100,7 +100,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 			}
 			newMsg := ret
 
-			formattedPayload, err := formatJsonPayload(v, msg.Profile.Transformer.ValueFields)
+			formattedPayload, err := transformPayload(v, msg.Profile.Transformer.ValueFields)
 			if err != nil {
 				return nil, errors.Wrap(ErrFormatPayload, err)
 			}
@@ -201,7 +201,7 @@ func (ts *transformerService) transformTimeField(payload map[string]interface{},
 	return 0, nil
 }
 
-func formatJsonPayload(payload map[string]interface{}, fieldValues []string) (map[string]interface{}, error) {
+func transformPayload(payload map[string]interface{}, fieldValues []string) (map[string]interface{}, error) {
 	formattedPayload := make(map[string]interface{})
 
 	for _, fv := range fieldValues {
