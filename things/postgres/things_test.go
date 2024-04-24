@@ -32,21 +32,19 @@ func TestThingsSave(t *testing.T) {
 	nonexistentThingKey, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
 	ths := []things.Thing{}
 	for i := 1; i <= 5; i++ {
 		thID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		thkey, err := idProvider.ID()
+		thkey := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		thing := things.Thing{
 			ID:      thID,
-			OwnerID: owID,
-			GroupID: grID,
+			OwnerID: group.OwnerID,
+			GroupID: group.ID,
 			Key:     thkey,
 		}
 		ths = append(ths, thing)
@@ -72,21 +70,21 @@ func TestThingsSave(t *testing.T) {
 		{
 			desc: "create thing with invalid ID",
 			things: []things.Thing{
-				{ID: "invalid", OwnerID: owID, GroupID: grID, Key: thkey},
+				{ID: "invalid", OwnerID: group.OwnerID, GroupID: group.ID, Key: thkey},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
 			desc: "create thing with invalid name",
 			things: []things.Thing{
-				{ID: thID, OwnerID: owID, GroupID: grID, Key: thkey, Name: invalidName},
+				{ID: thID, OwnerID: group.OwnerID, GroupID: group.ID, Key: thkey, Name: invalidName},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
 			desc: "create thing with invalid Key",
 			things: []things.Thing{
-				{ID: thID, OwnerID: owID, GroupID: grID, Key: nonexistentThingKey},
+				{ID: thID, OwnerID: group.OwnerID, GroupID: group.ID, Key: nonexistentThingKey},
 			},
 			err: errors.ErrConflict,
 		},
@@ -109,19 +107,17 @@ func TestThingUpdate(t *testing.T) {
 
 	validName := "mfx_device"
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey, err := idProvider.ID()
+	thkey := generateUUID(t)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	thing := things.Thing{
 		ID:      thID,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     thkey,
 	}
 
@@ -147,8 +143,8 @@ func TestThingUpdate(t *testing.T) {
 			desc: "update non-existing thing with existing user",
 			thing: things.Thing{
 				ID:      nonexistentThingID,
-				OwnerID: owID,
-				GroupID: grID,
+				OwnerID: group.OwnerID,
+				GroupID: group.ID,
 			},
 			err: errors.ErrNotFound,
 		},
@@ -157,7 +153,7 @@ func TestThingUpdate(t *testing.T) {
 			thing: things.Thing{
 				ID:      thing.ID,
 				OwnerID: wrongID,
-				GroupID: grID,
+				GroupID: group.ID,
 			},
 			err: nil,
 		},
@@ -166,7 +162,7 @@ func TestThingUpdate(t *testing.T) {
 			thing: things.Thing{
 				ID:      nonexistentThingID,
 				OwnerID: wrongID,
-				GroupID: grID,
+				GroupID: group.ID,
 			},
 			err: errors.ErrNotFound,
 		},
@@ -174,8 +170,8 @@ func TestThingUpdate(t *testing.T) {
 			desc: "update thing with valid name",
 			thing: things.Thing{
 				ID:      thID,
-				OwnerID: owID,
-				GroupID: grID,
+				OwnerID: group.OwnerID,
+				GroupID: group.ID,
 				Key:     thkey,
 				Name:    validName,
 			},
@@ -185,7 +181,7 @@ func TestThingUpdate(t *testing.T) {
 			desc: "update thing with invalid name",
 			thing: things.Thing{
 				ID:      thID,
-				OwnerID: owID,
+				OwnerID: group.OwnerID,
 				Key:     thkey,
 				Name:    invalidName,
 			},
@@ -204,18 +200,15 @@ func TestUpdateKey(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
-	id, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	key, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	id := generateUUID(t)
+	key := generateUUID(t)
+
 	th1 := things.Thing{
 		ID:      id,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     key,
 	}
 	ths, err := thingRepo.Save(context.Background(), th1)
@@ -228,8 +221,8 @@ func TestUpdateKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	th2 := things.Thing{
 		ID:      id,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     key,
 	}
 	ths, err = thingRepo.Save(context.Background(), th2)
@@ -293,18 +286,15 @@ func TestSingleThingRetrieval(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
-	id, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	key, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	id := generateUUID(t)
+	key := generateUUID(t)
+
 	th := things.Thing{
 		ID:      id,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     key,
 	}
 
@@ -339,39 +329,19 @@ func TestSingleThingRetrieval(t *testing.T) {
 	}
 }
 
-func createGroup(t *testing.T, dbMiddleware postgres.Database, owID string) string {
-	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-
-	grID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	_, err = groupRepo.Save(context.Background(), things.Group{
-		ID:      grID,
-		OwnerID: owID,
-		Name:    "gr-name",
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	return grID
-}
-
 func TestThingRetrieveByKey(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	group := createGroup(t, dbMiddleware)
 
-	grID := createGroup(t, dbMiddleware, owID)
-
-	id, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	key, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	id := generateUUID(t)
+	key := generateUUID(t)
 
 	th := things.Thing{
 		ID:      id,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     key,
 	}
 
@@ -428,20 +398,17 @@ func TestMultiThingRetrieval(t *testing.T) {
 	metaNum := uint64(3)
 	nameMetaNum := uint64(2)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
-		id, err := idProvider.ID()
+		id := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		key, err := idProvider.ID()
+		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			OwnerID: owID,
-			GroupID: grID,
+			OwnerID: group.OwnerID,
+			GroupID: group.ID,
 			ID:      id,
 			Key:     key,
 		}
@@ -465,12 +432,12 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		owner        string
+		ownerID      string
 		pageMetadata things.PageMetadata
 		size         uint64
 	}{
 		"retrieve all things": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -479,7 +446,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: n,
 		},
 		"retrieve all things with no limit": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 				Total: n,
@@ -487,7 +454,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: n,
 		},
 		"retrieve subset of things with existing owner": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
@@ -496,7 +463,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: n - offset,
 		},
 		"retrieve things with existing name": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
@@ -506,7 +473,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: nameNum + nameMetaNum - offset,
 		},
 		"retrieve things with non-existing name": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -516,7 +483,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things with existing metadata": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -526,7 +493,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: metaNum + nameMetaNum,
 		},
 		"retrieve things with partial metadata": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -536,7 +503,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: metaNum + nameMetaNum,
 		},
 		"retrieve things with non-existing metadata": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -546,7 +513,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: 0,
 		},
 		"retrieve all things with existing name and metadata": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -557,7 +524,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: nameMetaNum,
 		},
 		"retrieve things sorted by name ascendent": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -568,7 +535,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			size: n,
 		},
 		"retrieve things sorted by name descendent": {
-			owner: owID,
+			ownerID: group.OwnerID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -581,7 +548,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveByOwner(context.Background(), tc.owner, tc.pageMetadata)
+		page, err := thingRepo.RetrieveByOwner(context.Background(), tc.ownerID, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
@@ -612,20 +579,17 @@ func TestBackupThings(t *testing.T) {
 	metaNum := uint64(3)
 	nameMetaNum := uint64(2)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
-		id, err := idProvider.ID()
+		id := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		key, err := idProvider.ID()
+		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			OwnerID: owID,
-			GroupID: grID,
+			OwnerID: group.OwnerID,
+			GroupID: group.ID,
 			ID:      id,
 			Key:     key,
 		}
@@ -675,30 +639,27 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	n := uint64(101)
 	thsDisconNum := uint64(1)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	grID := createGroup(t, dbMiddleware, owID)
+	group := createGroup(t, dbMiddleware)
 
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	_, err = channelRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for i := uint64(0); i < n; i++ {
 		thID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		thkey, err := idProvider.ID()
+		thkey := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
 			ID:      thID,
-			OwnerID: owID,
-			GroupID: grID,
+			OwnerID: group.OwnerID,
+			GroupID: group.ID,
 			Key:     thkey,
 		}
 
@@ -719,15 +680,15 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		owner        string
+		ownerID      string
 		chID         string
 		pageMetadata things.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"retrieve all things by channel with existing owner": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -735,16 +696,16 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 		},
 		"retrieve all things by channel without limit": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
 			size: n - thsDisconNum,
 		},
 		"retrieve subset of things by channel with existing owner": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
@@ -752,8 +713,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: (n - (n / 2)) - thsDisconNum,
 		},
 		"retrieve things by channel with non-existing owner": {
-			owner: wrongID,
-			chID:  chID,
+			ownerID: wrongID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -761,8 +722,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things by non-existing channel": {
-			owner: owID,
-			chID:  nonexistentChanID,
+			ownerID: group.OwnerID,
+			chID:    nonexistentChanID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -770,8 +731,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things with malformed UUID": {
-			owner: owID,
-			chID:  "wrong",
+			ownerID: group.OwnerID,
+			chID:    "wrong",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -780,8 +741,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			err:  errors.ErrNotFound,
 		},
 		"retrieve all non connected things by channel with existing owner": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
@@ -790,8 +751,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: thsDisconNum,
 		},
 		"retrieve all non connected things by channel without limit": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Limit:        0,
 				Disconnected: true,
@@ -799,8 +760,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: thsDisconNum,
 		},
 		"retrieve all things by channel sorted by name ascendent": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -810,8 +771,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 		},
 		"retrieve all non-connected things by channel sorted by name ascendent": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
@@ -822,8 +783,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: thsDisconNum,
 		},
 		"retrieve all things by channel sorted by name descendent": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -833,8 +794,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 		},
 		"retrieve all non-connected things by channel sorted by name descendent": {
-			owner: owID,
-			chID:  chID,
+			ownerID: group.OwnerID,
+			chID:    chID,
 			pageMetadata: things.PageMetadata{
 				Offset:       0,
 				Limit:        n,
@@ -847,7 +808,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveByChannel(context.Background(), tc.owner, tc.chID, tc.pageMetadata)
+		page, err := thingRepo.RetrieveByChannel(context.Background(), tc.ownerID, tc.chID, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected no error got %d\n", desc, err))
@@ -861,19 +822,15 @@ func TestThingRemoval(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	owID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	group := createGroup(t, dbMiddleware)
 
-	grID := createGroup(t, dbMiddleware, owID)
+	id := generateUUID(t)
+	key := generateUUID(t)
 
-	id, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	key, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thing := things.Thing{
 		ID:      id,
-		OwnerID: owID,
-		GroupID: grID,
+		OwnerID: group.OwnerID,
+		GroupID: group.ID,
 		Key:     key,
 	}
 
@@ -886,12 +843,12 @@ func TestThingRemoval(t *testing.T) {
 		err     error
 	}{
 		"remove non-existing thing": {
-			owner:   owID,
+			owner:   group.OwnerID,
 			thingID: "wrong",
 			err:     errors.ErrRemoveEntity,
 		},
 		"remove thing": {
-			owner:   owID,
+			owner:   group.OwnerID,
 			thingID: thing.ID,
 			err:     nil,
 		},
