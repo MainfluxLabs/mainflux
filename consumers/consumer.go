@@ -29,9 +29,9 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...s
 		switch subject {
 		case brokers.SubjectSenML:
 			transformer = senml.New()
-		case brokers.SubjectJSON:
+		case brokers.SubjectJSON, brokers.SubjectWebhook:
 			transformer = json.New()
-		case brokers.SubjectSmtp, brokers.SubjectSmpp, brokers.SubjectWebhook:
+		case brokers.SubjectSmtp, brokers.SubjectSmpp:
 			transformer = nil
 		default:
 			return errUnkownSubject

@@ -30,7 +30,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (thing_id, name, format, url) VALUES (:thing_id, :name, :format, :url);`
+	q := `INSERT INTO webhooks (thing_id, name, url) VALUES (:thing_id, :name, :url);`
 
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
@@ -66,7 +66,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 	if _, err := uuid.FromString(thingID); err != nil {
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT thing_id, name, format, url FROM webhooks WHERE thing_id = :thing_id;`
+	q := `SELECT thing_id, name, url FROM webhooks WHERE thing_id = :thing_id;`
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
@@ -97,7 +97,6 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 type dbWebhook struct {
 	ThingID string `db:"thing_id"`
 	Name    string `db:"name"`
-	Format  string `db:"format"`
 	Url     string `db:"url"`
 }
 
@@ -105,7 +104,6 @@ func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	return dbWebhook{
 		ThingID: wh.ThingID,
 		Name:    wh.Name,
-		Format:  wh.Format,
 		Url:     wh.Url,
 	}, nil
 }
@@ -114,7 +112,6 @@ func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	return webhooks.Webhook{
 		ThingID: dbW.ThingID,
 		Name:    dbW.Name,
-		Format:  dbW.Format,
 		Url:     dbW.Url,
 	}, nil
 }

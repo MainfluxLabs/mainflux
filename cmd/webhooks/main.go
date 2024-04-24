@@ -259,7 +259,7 @@ func newService(ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db
 	database := postgres.NewDatabase(db)
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
-	forwarder := webhooks.NewForwarder(webhooksRepo)
+	forwarder := webhooks.NewForwarder()
 
 	svc := webhooks.New(ts, webhooksRepo, forwarder)
 	svc = api.LoggingMiddleware(svc, logger)

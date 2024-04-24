@@ -27,9 +27,8 @@ type apiReq interface {
 }
 
 type createWebhookReq struct {
-	Name   string `json:"name"`
-	Format string `json:"format"`
-	Url    string `json:"url"`
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 type createWebhooksReq struct {
@@ -63,10 +62,6 @@ func (req createWebhooksReq) validate() error {
 func (req createWebhookReq) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
-	}
-
-	if req.Format != formatJSON && req.Format != formatSenML {
-		return ErrInvalidFormat
 	}
 
 	_, err := url.ParseRequestURI(req.Url)

@@ -19,6 +19,8 @@ var (
 
 	// ErrTransform represents an error during parsing message.
 	ErrTransform = errors.New("unable to parse JSON object")
+	// ErrFormatPayload represents an error during formatting message payload.
+	ErrFormatPayload = errors.New("unable to format payload")
 	// ErrInvalidKey represents the use of a reserved message field.
 	ErrInvalidKey = errors.New("invalid object key")
 	// ErrInvalidTimeField represents the use an invalid time field.
@@ -72,7 +74,11 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 
 	switch p := payload.(type) {
 	case map[string]interface{}:
-		ret.Payload = p
+		formattedPayload, err := transformPayload(p, msg.Profile.Transformer.ValueFields)
+		if err != nil {
+			return nil, errors.Wrap(ErrFormatPayload, err)
+		}
+		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
 		ts, err := ts.transformTimeField(p, *msg.Profile.Transformer)
@@ -94,6 +100,12 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 			}
 			newMsg := ret
 
+			formattedPayload, err := transformPayload(v, msg.Profile.Transformer.ValueFields)
+			if err != nil {
+				return nil, errors.Wrap(ErrFormatPayload, err)
+			}
+			newMsg.Payload = formattedPayload
+
 			// Apply timestamp transformation rules depending on key/unit pairs
 			ts, err := ts.transformTimeField(v, *msg.Profile.Transformer)
 			if err != nil {
@@ -103,7 +115,6 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 				ret.Created = ts
 			}
 
-			newMsg.Payload = v
 			res = append(res, newMsg)
 		}
 		return Messages{res, format}, nil
@@ -188,4 +199,16 @@ func (ts *transformerService) transformTimeField(payload map[string]interface{},
 	}
 
 	return 0, nil
+}
+
+func transformPayload(payload map[string]interface{}, fieldValues []string) (map[string]interface{}, error) {
+	formattedPayload := make(map[string]interface{})
+
+	for _, fv := range fieldValues {
+		if value, ok := payload[fv]; ok {
+			formattedPayload[fv] = value
+		}
+	}
+
+	return formattedPayload, nil
 }

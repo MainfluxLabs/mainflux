@@ -78,7 +78,7 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 }
 
 func (cr channelRepository) Update(ctx context.Context, channel things.Channel) error {
-	q := `UPDATE channels SET name = :name, metadata = :metadata WHERE owner_id = :owner_id AND id = :id;`
+	q := `UPDATE channels SET name = :name, metadata = :metadata, profile = :profile WHERE owner_id = :owner_id AND id = :id;`
 
 	dbch := toDBChannel(channel)
 
@@ -156,7 +156,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, ownerID, thID s
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels ch
+	q = fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE ch.owner_id = :owner_id AND conn.thing_id = :thing;`)
@@ -199,7 +199,7 @@ func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm t
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels ch
+	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE conn.thing_id = :thing
@@ -436,7 +436,7 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	if includeOwner {
 		q = "SELECT id, name, owner_id, metadata FROM channels;"
@@ -487,16 +487,13 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 	return page, nil
 }
 
-// dbMetadata type for handling metadata properly in database/sql.
-type dbMetadata map[string]interface{}
-
-// dbProfile type for handling profile properly in database/sql.
-type dbProfile map[string]interface{}
+// dbJSONB type for handling JSONB data properly in database/sql.
+type dbJSONB map[string]interface{}
 
 // Scan implements the database/sql scanner interface.
 // When interface is nil `m` is set to nil.
 // If error occurs on casting data then m points to empty metadata.
-func (m *dbMetadata) Scan(value interface{}) error {
+func (m *dbJSONB) Scan(value interface{}) error {
 	if value == nil {
 		m = nil
 		return nil
@@ -504,7 +501,7 @@ func (m *dbMetadata) Scan(value interface{}) error {
 
 	b, ok := value.([]byte)
 	if !ok {
-		m = &dbMetadata{}
+		m = &dbJSONB{}
 		return errors.ErrScanMetadata
 	}
 
@@ -516,7 +513,7 @@ func (m *dbMetadata) Scan(value interface{}) error {
 }
 
 // Value implements database/sql valuer interface.
-func (m dbMetadata) Value() (driver.Value, error) {
+func (m dbJSONB) Value() (driver.Value, error) {
 	if len(m) == 0 {
 		return nil, nil
 	}
@@ -529,12 +526,12 @@ func (m dbMetadata) Value() (driver.Value, error) {
 }
 
 type dbChannel struct {
-	ID       string     `db:"id"`
-	OwnerID  string     `db:"owner_id"`
-	GroupID  string     `db:"group_id"`
-	Name     string     `db:"name"`
-	Profile  dbMetadata `db:"profile"`
-	Metadata dbMetadata `db:"metadata"`
+	ID       string  `db:"id"`
+	OwnerID  string  `db:"owner_id"`
+	GroupID  string  `db:"group_id"`
+	Name     string  `db:"name"`
+	Profile  dbJSONB `db:"profile"`
+	Metadata dbJSONB `db:"metadata"`
 }
 
 func toDBChannel(ch things.Channel) dbChannel {

@@ -393,6 +393,7 @@ func TestRetrieveByThing(t *testing.T) {
 		ID:       chID,
 		OwnerID:  group.OwnerID,
 		GroupID:  group.ID,
+		Profile:  things.Metadata{},
 		Metadata: things.Metadata{},
 	}
 

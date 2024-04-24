@@ -5,7 +5,6 @@ import "context"
 type Webhook struct {
 	ThingID string
 	Name    string
-	Format  string
 	Url     string
 }
 

@@ -270,6 +270,7 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				ID:       c.ID,
 				Name:     c.Name,
 				GroupID:  c.GroupID,
+				Profile:  c.Profile,
 				Metadata: c.Metadata,
 			}
 			res.Channels = append(res.Channels, ch)
@@ -324,6 +325,7 @@ func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
 			Metadata: ch.Metadata,
+			Profile:  ch.Profile,
 		}
 
 		return res, nil
@@ -360,6 +362,7 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				OwnerID:  ch.OwnerID,
 				GroupID:  ch.GroupID,
 				Name:     ch.Name,
+				Profile:  ch.Profile,
 				Metadata: ch.Metadata,
 			}
 
@@ -388,6 +391,7 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			OwnerID:  ch.OwnerID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
+			Profile:  ch.Profile,
 			Metadata: ch.Metadata,
 		}
 
@@ -809,6 +813,7 @@ func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRe
 	for _, ch := range cp.Channels {
 		c := channelRes{
 			ID:       ch.ID,
+			Profile:  ch.Profile,
 			Metadata: ch.Metadata,
 			Name:     ch.Name,
 		}

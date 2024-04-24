@@ -7,8 +7,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	whMock "github.com/MainfluxLabs/mainflux/webhooks/mocks"
 	"github.com/stretchr/testify/assert"
@@ -33,13 +33,12 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
-	validData := webhooks.Webhook{ThingID: "1", Name: "test1", Format: "json", Url: "http://test1.com"}
-	validData2 := webhooks.Webhook{ThingID: "1", Name: "test2", Format: "json", Url: "http://test2.com"}
+	validData := webhooks.Webhook{ThingID: "1", Name: "test1", Url: "http://test1.com"}
+	validData2 := webhooks.Webhook{ThingID: "1", Name: "test2", Url: "http://test2.com"}
 	validDataWebhooks := []webhooks.Webhook{validData, validData2}
-	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test3", Format: "json", Url: "http://test3.com"}}
-	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Format: "json", Url: "https://test.com"}}
-	invalidFormatData := []webhooks.Webhook{{ThingID: "1", Name: "test4", Format: emptyValue, Url: "https://test4.com"}}
-	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Format: "json", Url: emptyValue}}
+	invalidThingData := []webhooks.Webhook{{ThingID: emptyValue, Name: "test3", Url: "http://test3.com"}}
+	invalidNameData := []webhooks.Webhook{{ThingID: "1", Name: emptyValue, Url: "https://test.com"}}
+	invalidUrlData := []webhooks.Webhook{{ThingID: "1", Name: "test5", Url: emptyValue}}
 
 	cases := []struct {
 		desc     string
@@ -72,12 +71,6 @@ func TestCreateWebhooks(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "create webhook with invalid format",
-			webhooks: invalidFormatData,
-			token:    token,
-			err:      nil,
-		},
-		{
 			desc:     "create webhook with invalid url",
 			webhooks: invalidUrlData,
 			token:    token,
@@ -97,7 +90,6 @@ func TestListWebhooksByThing(t *testing.T) {
 	w := webhooks.Webhook{
 		Name:    "TestWebhook",
 		ThingID: "1",
-		Format:  "json",
 		Url:     "https://api.webhook.com",
 	}
 
@@ -144,22 +136,39 @@ func TestListWebhooksByThing(t *testing.T) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validData := messaging.Message{Publisher: thingID, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
-	invalidThingData := messaging.Message{Publisher: emptyValue, Profile: &messaging.Profile{Webhook: true}, Payload: []byte(`{"field1":"val1","field2":"val2","field3":"val3"}`)}
+	validJson := json.Messages{
+		Data: []json.Message{{
+			Publisher: thingID,
+			Payload: map[string]interface{}{
+				"key1": "val1",
+				"key2": float64(123),
+			}},
+		},
+	}
+
+	invalidJson := json.Messages{
+		Data: []json.Message{{
+			Publisher: emptyValue,
+			Payload: map[string]interface{}{
+				"key1": "val1",
+				"key2": float64(123),
+			}},
+		},
+	}
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  json.Messages
 		err  error
 	}{
 		{
 			desc: "forward message",
-			msg:  validData,
+			msg:  validJson,
 			err:  nil,
 		},
 		{
 			desc: "forward message invalid thing id",
-			msg:  invalidThingData,
+			msg:  invalidJson,
 			err:  apiutil.ErrMissingID,
 		},
 	}

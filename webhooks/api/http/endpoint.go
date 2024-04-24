@@ -23,7 +23,6 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			wh := webhooks.Webhook{
 				ThingID: req.ThingID,
 				Name:    wReq.Name,
-				Format:  wReq.Format,
 				Url:     wReq.Url,
 			}
 			whs = append(whs, wh)
@@ -64,7 +63,6 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook) webhooksRes {
 		webhook := webhookResponse{
 			ThingID: wh.ThingID,
 			Name:    wh.Name,
-			Format:  wh.Format,
 			Url:     wh.Url,
 		}
 		res.Webhooks = append(res.Webhooks, webhook)

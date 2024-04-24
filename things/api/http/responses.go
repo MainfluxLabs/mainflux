@@ -126,6 +126,7 @@ type channelRes struct {
 	ID       string                 `json:"id"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
 }
@@ -157,6 +158,7 @@ type viewChannelRes struct {
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Things   []viewThingRes         `json:"connected,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -217,6 +219,7 @@ type backupChannelRes struct {
 	OwnerID  string                 `json:"owner_id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
