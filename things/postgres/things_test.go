@@ -109,10 +109,8 @@ func TestThingUpdate(t *testing.T) {
 
 	group := createGroup(t, dbMiddleware)
 
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thID := generateUUID(t)
 	thkey := generateUUID(t)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	thing := things.Thing{
 		ID:      thID,

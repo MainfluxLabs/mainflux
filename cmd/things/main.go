@@ -393,7 +393,7 @@ func newService(ac mainflux.AuthServiceClient, uc mainflux.UsersServiceClient, d
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 	idProvider := uuid.New()
 
-	policiesRepo := postgres.NewPoliciesRepo(db)
+	policiesRepo := postgres.NewPoliciesRepository(db)
 	policiesRepo = tracing.PoliciesRepositoryMiddleware(dbTracer, policiesRepo)
 
 	svc := things.New(ac, uc, thingsRepo, channelsRepo, groupsRepo, policiesRepo, chanCache, thingCache, idProvider)

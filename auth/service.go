@@ -18,10 +18,7 @@ const (
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
 	RootSubject      = "root"
-	ReadAction       = "read"
-	WriteAction      = "read_write"
-	RPolicy          = "read"
-	RwPolicy         = "read_write"
+	OrgSubject       = "org"
 )
 
 var (

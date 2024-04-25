@@ -15,8 +15,8 @@ type policiesRepository struct {
 	db Database
 }
 
-// NewPoliciesRepo instantiates a PostgreSQL implementation of policies repository.
-func NewPoliciesRepo(db Database) things.PoliciesRepository {
+// NewPoliciesRepository instantiates a PostgreSQL implementation of policies repository.
+func NewPoliciesRepository(db Database) things.PoliciesRepository {
 	return &policiesRepository{
 		db: db,
 	}

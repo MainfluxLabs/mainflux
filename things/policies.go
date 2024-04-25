@@ -58,7 +58,7 @@ type Policies interface {
 }
 
 func (ts *thingsService) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (ts *thingsService) CreateGroupPolicies(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return GroupPoliciesPage{}, err
 	}
 
@@ -126,7 +126,7 @@ func (ts *thingsService) ListGroupPolicies(ctx context.Context, token, groupID s
 }
 
 func (ts *thingsService) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
 
@@ -149,7 +149,7 @@ func (ts *thingsService) UpdateGroupPolicies(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
 

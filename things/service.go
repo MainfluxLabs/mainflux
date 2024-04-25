@@ -14,10 +14,8 @@ import (
 )
 
 const (
-	ReadAction      = "r"
-	WriteAction     = "r_w"
-	ReadPolicy      = "r"
-	ReadWritePolicy = "r_w"
+	Read      = "r"
+	ReadWrite = "r_w"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -264,7 +262,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	if err != nil {
 		return Thing{}, err
 	}
-	if p != ReadPolicy && p != ReadWritePolicy {
+	if p != Read && p != ReadWrite {
 		return Thing{}, errors.ErrAuthorization
 	}
 
@@ -660,7 +658,7 @@ func getTimestmap() time.Time {
 }
 
 func (ts *thingsService) ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -668,7 +666,7 @@ func (ts *thingsService) ListGroupThings(ctx context.Context, token string, grou
 }
 
 func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return ChannelsPage{}, err
 	}
 

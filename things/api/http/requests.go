@@ -6,7 +6,6 @@ package http
 import (
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -653,7 +652,7 @@ func (req groupPoliciesReq) validate() error {
 	}
 
 	for _, gp := range req.GroupPolicies {
-		if gp.Policy != auth.RPolicy && gp.Policy != auth.RwPolicy {
+		if gp.Policy != things.Read && gp.Policy != things.ReadWrite {
 			return apiutil.ErrInvalidPolicy
 		}
 
