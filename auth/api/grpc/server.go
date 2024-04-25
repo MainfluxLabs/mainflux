@@ -49,21 +49,6 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 			decodeAuthorizeRequest,
 			encodeEmptyResponse,
 		),
-		addPolicy: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "add_policy")(addPolicyEndpoint(svc)),
-			decodeAddPolicyRequest,
-			encodeEmptyResponse,
-		),
-		assign: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "assign")(assignEndpoint(svc)),
-			decodeAssignRequest,
-			encodeEmptyResponse,
-		),
-		members: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "members")(membersEndpoint(svc)),
-			decodeMembersRequest,
-			encodeMembersResponse,
-		),
 		assignRole: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "assign_role")(assignRoleEndpoint(svc)),
 			decodeAssignRoleRequest,
@@ -99,30 +84,6 @@ func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) 
 		return nil, encodeError(err)
 	}
 	return res.(*empty.Empty), nil
-}
-
-func (s *grpcServer) AddPolicy(ctx context.Context, req *mainflux.PolicyReq) (*empty.Empty, error) {
-	_, res, err := s.addPolicy.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-	return res.(*empty.Empty), nil
-}
-
-func (s *grpcServer) Assign(ctx context.Context, token *mainflux.Assignment) (*empty.Empty, error) {
-	_, res, err := s.assign.ServeGRPC(ctx, token)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-	return res.(*empty.Empty), nil
-}
-
-func (s *grpcServer) Members(ctx context.Context, req *mainflux.MembersReq) (*mainflux.MembersRes, error) {
-	_, res, err := s.members.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-	return res.(*mainflux.MembersRes), nil
 }
 
 func (s *grpcServer) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq) (*empty.Empty, error) {
@@ -179,37 +140,6 @@ func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*mainflux.AuthorizeReq)
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.Subject, Action: req.GetAction()}, nil
-}
-
-func decodeAssignRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.Token)
-	return assignReq{token: req.GetValue()}, nil
-}
-
-func decodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.PolicyReq)
-	return policyReq{Token: req.GetToken(), Object: req.GetObject(), Policy: req.GetPolicy()}, nil
-}
-
-func decodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.MembersReq)
-	return membersReq{
-		token:      req.GetToken(),
-		groupID:    req.GetGroupID(),
-		memberType: req.GetType(),
-		offset:     req.Offset,
-		limit:      req.Limit,
-	}, nil
-}
-
-func encodeMembersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(orgMembersRes)
-	return &mainflux.MembersRes{
-		Total:   res.total,
-		Offset:  res.offset,
-		Limit:   res.limit,
-		Members: res.orgMemberIDs,
-	}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

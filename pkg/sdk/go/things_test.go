@@ -41,7 +41,7 @@ var (
 	th1        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
 	th2        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
 	emptyThing = sdk.Thing{GroupID: "1"}
-	group      = sdk.Group{Name: "test_group", Metadata: metadata}
+	group      = sdk.Group{OrgID: "1", Name: "test_group", Metadata: metadata}
 )
 
 func newThingsService() things.Service {
@@ -50,11 +50,12 @@ func newThingsService() things.Service {
 	thingsRepo := thmocks.NewThingRepository(conns)
 	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
 	groupsRepo := thmocks.NewGroupRepository()
+	policiesRepo := thmocks.NewPoliciesRepository()
 	chanCache := thmocks.NewChannelCache()
 	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, policiesRepo, chanCache, thingCache, idProvider)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {

@@ -24,9 +24,6 @@ service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
-    rpc AddPolicy(PolicyReq) returns (google.protobuf.Empty) {}
-    rpc Assign(Assignment) returns (google.protobuf.Empty) {}
-    rpc Members(MembersReq) returns (MembersRes) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
 }
@@ -108,35 +105,6 @@ message AuthorizeReq {
 
 message AuthorizeRes {
     bool authorized = 1;
-}
-
-message PolicyReq {
-    string token    = 1;
-    string policy   = 2;
-    string subject  = 3;
-    string object   = 4;
-}
-
-message Assignment {
-    string token    = 1;
-    string groupID  = 2;
-    string memberID = 3;
-}
-
-message MembersReq {
-    string token    = 1;
-    string groupID  = 2;
-    uint64 offset   = 3;
-    uint64 limit    = 4;
-    string type     = 5;
-}
-
-message MembersRes {
-    uint64 total            = 1;
-    uint64 offset           = 2;
-    uint64 limit            = 3;
-    string type             = 4;
-    repeated string members = 5;
 }
 
 message User {

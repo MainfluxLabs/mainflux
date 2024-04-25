@@ -13,20 +13,18 @@ import (
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 
 type orgRepositoryMock struct {
-	mu           sync.Mutex
-	orgs         map[string]auth.Org
-	orgMembers   map[string]auth.OrgMember
-	orgGroups    map[string]auth.OrgGroup
-	groupMembers map[string]auth.GroupPolicyByID
+	mu         sync.Mutex
+	orgs       map[string]auth.Org
+	orgMembers map[string]auth.OrgMember
+	orgGroups  map[string]auth.OrgGroup
 }
 
 // NewOrgRepository returns mock of org repository
 func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
-		orgs:         make(map[string]auth.Org),
-		orgMembers:   make(map[string]auth.OrgMember),
-		orgGroups:    make(map[string]auth.OrgGroup),
-		groupMembers: make(map[string]auth.GroupPolicyByID),
+		orgs:       make(map[string]auth.Org),
+		orgMembers: make(map[string]auth.OrgMember),
+		orgGroups:  make(map[string]auth.OrgGroup),
 	}
 }
 

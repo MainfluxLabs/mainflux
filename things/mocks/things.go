@@ -115,12 +115,12 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string, pm things.PageMetadata) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	if pm.Limit < 0 {
-		return things.Page{}, nil
+		return things.ThingsPage{}, nil
 	}
 
 	first := uint64(pm.Offset) + 1
@@ -145,7 +145,7 @@ func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string,
 	// Sort Things list
 	ths = sortThings(pm, ths)
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: ths,
 		PageMetadata: things.PageMetadata{
 			Total:  trm.counter,
@@ -157,14 +157,14 @@ func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string,
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []string, pm things.PageMetadata) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	items := make([]things.Thing, 0)
 
 	if pm.Limit == 0 {
-		return things.Page{}, nil
+		return things.ThingsPage{}, nil
 	}
 
 	first := uint64(pm.Offset) + 1
@@ -184,7 +184,7 @@ func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []stri
 
 	items = sortThings(pm, items)
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  trm.counter,
@@ -196,12 +196,12 @@ func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []stri
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID string, pm things.PageMetadata) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	if pm.Limit < 0 {
-		return things.Page{}, nil
+		return things.ThingsPage{}, nil
 	}
 
 	first := uint64(pm.Offset) + 1
@@ -240,7 +240,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 	// Sort Things by Channel list
 	ths = sortThings(pm, ths)
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: ths,
 		PageMetadata: things.PageMetadata{
 			Total:  trm.counter,
@@ -312,7 +312,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, 
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
+func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -325,7 +325,7 @@ func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.P
 		i++
 	}
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: ths,
 		PageMetadata: things.PageMetadata{
 			Total:  trm.counter,

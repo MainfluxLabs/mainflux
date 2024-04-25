@@ -39,14 +39,19 @@ mainfluxlabs-cli users password <old_password> <password> <user_auth_token>
 ```
 
 ### System Provisioning
+#### Create Group
+```bash
+mainfluxlabs-cli groups create '{"name":"myGroup"}' <user_auth_token>
+```
+
 #### Create Thing
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing"}' <user_auth_token>
+mainfluxlabs-cli things create '{"name":"myThing", "group_id": "<group_id>"}' <user_auth_token>
 ```
 
 #### Create Thing with metadata
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing", "metadata": {\"key1\":\"value1\"}}' <user_auth_token>
+mainfluxlabs-cli things create '{"name":"myThing", "group_id": "<group_id>", "metadata": {\"key1\":\"value1\"}}' <user_auth_token>
 ```
 
 #### Bulk Provision Things
@@ -179,7 +184,7 @@ mainfluxlabs-cli messages read <channel_id> <thing_auth_token>
 ### Groups
 #### Create new group
 ```bash
-mainfluxlabs-cli groups create '{"name":"<group_name>","parent_id":"<parent_group_id>","description":"<description>","metadata":{"key":"value",...}}' <user_auth_token>
+mainfluxlabs-cli groups create '{"name":"<group_name>","org_id":"<org_id>","description":"<description>","metadata":{"key":"value",...}}' <user_auth_token>
 ```
 #### Delete group
 ```bash
@@ -193,25 +198,22 @@ mainfluxlabs-cli groups get <group_id> <user_auth_token>
 ```bash
 mainfluxlabs-cli groups get all <user_auth_token>
 ```
-#### List children groups for some group
+
+#### Assign user to an org
 ```bash
-mainfluxlabs-cli groups get children <parent_group_id> <user_auth_token>
+mainfluxlabs-cli orgs assign <user_id> <group_id> <user_auth_token>
 ```
-#### Assign user to a group
+#### Unassign user from org
 ```bash
-mainfluxlabs-cli groups assign <user_id> <group_id> <user_auth_token>
+mainfluxlabs-cli orgs unassign <user_id> <group_id> <user_auth_token>
 ```
-#### Unassign user from group
+#### List users for an org
 ```bash
-mainfluxlabs-cli groups unassign <user_id> <group_id> <user_auth_token>
+mainfluxlabs-cli orgs members <group_id> <user_auth_token>
 ```
-#### List users for a group
+#### List orgs that user belongs to
 ```bash
-mainfluxlabs-cli groups members <group_id> <user_auth_token>
-```
-#### List groups that user belongs to
-```bash
-mainfluxlabs-cli groups membership <user_id> <user_auth_token>
+mainfluxlabs-cli orgs membership <user_id> <user_auth_token>
 ```
 
 ### Keys management

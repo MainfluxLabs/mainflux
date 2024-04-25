@@ -106,10 +106,9 @@ type OrgGroup struct {
 }
 
 type Backup struct {
-	Orgs          []Org
-	OrgMembers    []OrgMember
-	OrgGroups     []OrgGroup
-	GroupPolicies []GroupPolicy
+	Orgs       []Org
+	OrgMembers []OrgMember
+	OrgGroups  []OrgGroup
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -147,18 +146,6 @@ type Orgs interface {
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
-
-	// AssignGroups adds groups with groupIDs into the org identified by orgID.
-	AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
-
-	// UnassignGroups removes groups with groupIDs from org identified by orgID.
-	UnassignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error
-
-	//ViewGroupMembership retrieves orgs where group is assigned.
-	ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error)
-
-	// ListOrgGroups retrieves groups assigned to an org identified by orgID.
-	ListOrgGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupsPage, error)
 
 	// Backup retrieves all orgs, org members and org groups. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -210,15 +197,6 @@ type OrgRepository interface {
 
 	// RetrieveAllOrgMembers retrieves all org members.
 	RetrieveAllOrgMembers(ctx context.Context) ([]OrgMember, error)
-
-	// AssignGroups adds groups to an org.
-	AssignGroups(ctx context.Context, ogs ...OrgGroup) error
-
-	// UnassignGroups removes groups from an org
-	UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error
-
-	// RetrieveGroups retrieves groups assigned to an org identified by orgID.
-	RetrieveGroups(ctx context.Context, orgID string, pm PageMetadata) (OrgGroupsPage, error)
 
 	// RetrieveByGroupID retrieves org where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)

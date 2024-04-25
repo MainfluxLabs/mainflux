@@ -34,6 +34,7 @@ const (
 	groupIDKey   = "groupID"
 	thingIDKey   = "thingID"
 	channelIDKey = "channelID"
+	orgKey       = "org"
 
 	defOffset = 0
 	defLimit  = 10
@@ -236,16 +237,37 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/channels/:channelID/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_things_by_channel")(listGroupThingsByChannelEndpoint(svc)),
-		decodeListGroupThingsByChannel,
+	r.Get("/channels/:channelID/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_channel_group")(viewChannelGroupEndpoint(svc)),
+		decodeViewChannelGroupRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels/:channelID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_channel_group")(viewChannelGroupEndpoint(svc)),
-		decodeViewChannelGroupRequest,
+	r.Post("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_group_policies")(createGroupPoliciesEndpoint(svc)),
+		decodeGroupPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_policies")(listGroupPoliciesEndpoint(svc)),
+		decodeListGroupPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_group_policies")(updateGroupPoliciesEndpoint(svc)),
+		decodeGroupPoliciesRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Patch("/groups/:groupID/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_group_policies")(removeGroupPoliciesEndpoint(svc)),
+		decodeRemoveGroupPoliciesRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -479,30 +501,6 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeListGroupThingsByChannel(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listGroupThingsByChannelReq{
-		token:     apiutil.ExtractBearerToken(r),
-		groupID:   bone.GetValue(r, groupIDKey),
-		channelID: bone.GetValue(r, channelIDKey),
-		pageMetadata: things.PageMetadata{
-			Offset: o,
-			Limit:  l,
-		},
-	}
-
-	return req, nil
-}
-
 func decodeConnectionsList(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -577,6 +575,11 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
+	orgID, err := apiutil.ReadStringQuery(r, orgKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listGroupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
@@ -585,7 +588,7 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 			Metadata: m,
 			Name:     n,
 		},
-		id: bone.GetValue(r, groupIDKey),
+		orgID: orgID,
 	}
 	return req, nil
 }
@@ -731,6 +734,61 @@ func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error)
 	req := getConnByKeyReq{
 		chanID: bone.GetValue(r, "chanId"),
 	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := groupPoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listGroupMembersReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+		offset:  o,
+		limit:   l,
+	}
+
+	return req, nil
+}
+
+func decodeRemoveGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeGroupPoliciesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, groupIDKey),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

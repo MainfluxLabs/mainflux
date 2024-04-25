@@ -12,10 +12,12 @@ import (
 
 var (
 	group1 = sdk.Group{
-		Name: "test",
+		Name:  "test",
+		OrgID: "1",
 	}
 	group2 = sdk.Group{
-		Name: "test2",
+		Name:  "test2",
+		OrgID: "1",
 	}
 )
 

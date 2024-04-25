@@ -26,9 +26,6 @@ type grpcClient struct {
 	issue        endpoint.Endpoint
 	identify     endpoint.Endpoint
 	authorize    endpoint.Endpoint
-	addPolicy    endpoint.Endpoint
-	assign       endpoint.Endpoint
-	members      endpoint.Endpoint
 	retrieveRole endpoint.Endpoint
 	assignRole   endpoint.Endpoint
 	timeout      time.Duration
@@ -60,30 +57,6 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			encodeAuthorizeRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
-		).Endpoint()),
-		addPolicy: kitot.TraceClient(tracer, "add_policy")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"AddPolicy",
-			encodeAddPolicyRequest,
-			decodeEmptyResponse,
-			empty.Empty{},
-		).Endpoint()),
-		assign: kitot.TraceClient(tracer, "assign")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"Assign",
-			encodeAssignRequest,
-			decodeAssignResponse,
-			mainflux.AuthorizeRes{},
-		).Endpoint()),
-		members: kitot.TraceClient(tracer, "members")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"Members",
-			encodeMembersRequest,
-			decodeMembersResponse,
-			mainflux.MembersRes{},
 		).Endpoint()),
 		retrieveRole: kitot.TraceClient(tracer, "retrieve_role")(kitgrpc.NewClient(
 			conn,
@@ -175,53 +148,6 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	}, nil
 }
 
-func (client grpcClient) AddPolicy(ctx context.Context, req *mainflux.PolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
-	ctx, close := context.WithTimeout(ctx, client.timeout)
-	defer close()
-
-	res, err := client.addPolicy(ctx, policyReq{Token: req.GetToken(), Object: req.GetObject(), Policy: req.GetPolicy()})
-	if err != nil {
-		return nil, err
-	}
-
-	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
-}
-
-func encodeAddPolicyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(policyReq)
-	return &mainflux.PolicyReq{
-		Token:  req.Token,
-		Object: req.Object,
-		Policy: req.Policy,
-	}, nil
-}
-
-func (client grpcClient) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {
-	ctx, close := context.WithTimeout(ctx, client.timeout)
-	defer close()
-
-	res, err := client.members(ctx, membersReq{
-		token:      req.GetToken(),
-		groupID:    req.GetGroupID(),
-		memberType: req.GetType(),
-		offset:     req.GetOffset(),
-		limit:      req.GetLimit(),
-	})
-	if err != nil {
-		return &mainflux.MembersRes{}, err
-	}
-
-	omr := res.(orgMembersRes)
-
-	return &mainflux.MembersRes{
-		Offset:  omr.offset,
-		Limit:   omr.limit,
-		Total:   omr.total,
-		Members: omr.orgMemberIDs,
-	}, err
-}
-
 func (client grpcClient) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
@@ -266,48 +192,6 @@ func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interfac
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*mainflux.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
-}
-
-func encodeMembersRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(membersReq)
-	return &mainflux.MembersReq{
-		Token:   req.token,
-		Offset:  req.offset,
-		Limit:   req.limit,
-		GroupID: req.groupID,
-		Type:    req.memberType,
-	}, nil
-}
-
-func decodeMembersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.MembersRes)
-	return orgMembersRes{
-		offset:       res.Offset,
-		limit:        res.Limit,
-		total:        res.Total,
-		orgMemberIDs: res.Members,
-	}, nil
-}
-
-func (client grpcClient) Assign(ctx context.Context, req *mainflux.Assignment, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	ctx, close := context.WithTimeout(ctx, client.timeout)
-	defer close()
-
-	_, err = client.assign(ctx, assignReq{token: req.GetToken(), groupID: req.GetGroupID(), memberID: req.GetMemberID()})
-	if err != nil {
-		return &empty.Empty{}, err
-	}
-
-	return &empty.Empty{}, err
-}
-
-func encodeAssignRequest(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	req := grpcRes.(assignReq)
-	return &mainflux.Assignment{
-		Token:    req.token,
-		GroupID:  req.groupID,
-		MemberID: req.memberID,
-	}, nil
 }
 
 func decodeAssignResponse(_ context.Context, grpcReq interface{}) (interface{}, error) {

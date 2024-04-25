@@ -32,9 +32,9 @@ func NewGroupRepository(db Database) things.GroupRepository {
 }
 
 func (gr groupRepository) Save(ctx context.Context, g things.Group) (things.Group, error) {
-	q := `INSERT INTO groups (name, description, id, owner_id, metadata, created_at, updated_at)
-		  VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at)
-		  RETURNING id, name, owner_id, description, metadata, created_at, updated_at`
+	q := `INSERT INTO groups (name, description, id, owner_id, org_id, metadata, created_at, updated_at)
+		  VALUES (:name, :description, :id, :owner_id, :org_id, :metadata, :created_at, :updated_at)
+		  RETURNING id, name, owner_id, org_id, description, metadata, created_at, updated_at`
 
 	dbg, err := toDBGroup(g)
 	if err != nil {
@@ -147,7 +147,7 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 }
 
 func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	gp, err := gr.retrieve(ctx, "", things.PageMetadata{})
+	gp, err := gr.retrieve(ctx, "", "", things.PageMetadata{})
 	if err != nil {
 		return nil, err
 	}
@@ -215,22 +215,22 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string) 
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	if ownerID == "" {
 		return things.GroupPage{}, errors.ErrRetrieveEntity
 	}
 
-	return gr.retrieve(ctx, ownerID, pm)
+	return gr.retrieve(ctx, ownerID, orgID, pm)
 }
 
 func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
-	return gr.retrieve(ctx, "", pm)
+	return gr.retrieve(ctx, "", "", pm)
 }
 
-func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
+		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
@@ -251,7 +251,7 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
+		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 	defer rows.Close()
 
@@ -259,12 +259,12 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	for rows.Next() {
 		dbmem := dbThing{}
 		if err := rows.StructScan(&dbmem); err != nil {
-			return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
+			return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 		}
 
 		th, err := toThing(dbmem)
 		if err != nil {
-			return things.GroupThingsPage{}, err
+			return things.ThingsPage{}, err
 		}
 
 		items = append(items, th)
@@ -272,10 +272,10 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 
 	total, err := total(ctx, gr.db, qc, params)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
+		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
 	}
 
-	page := things.GroupThingsPage{
+	page := things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
@@ -287,77 +287,10 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT t.id, t.owner_id, t.group_id, t.name, t.metadata, t.key
-		FROM group_things gr, things t, group_channels gc
-		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
-		NOT IN (SELECT c.thing_id FROM connections c)
-		%s %s;`, mq, olq)
-
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM group_things gr, things t, group_channels gc
-		WHERE gr.group_id = :group_id and gr.thing_id = t.id and gc.group_id = gr.group_id and gc.channel_id = :channel_id and t.id
-		NOT IN (SELECT ct.thing_id FROM connections ct)
-		%s;`, mq)
-
-	params := map[string]interface{}{
-		"group_id":   groupID,
-		"channel_id": channelID,
-		"limit":      pm.Limit,
-		"offset":     pm.Offset,
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
-	}
-	defer rows.Close()
-
-	var items []things.Thing
-	for rows.Next() {
-		dbt := dbThing{}
-		if err := rows.StructScan(&dbt); err != nil {
-			return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
-		}
-
-		th, err := toThing(dbt)
-		if err != nil {
-			return things.GroupThingsPage{}, err
-		}
-
-		items = append(items, th)
-	}
-
-	total, err := total(ctx, gr.db, qc, params)
-	if err != nil {
-		return things.GroupThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThingsByChannel, err)
-	}
-
-	page := things.GroupThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
-	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
+		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
@@ -378,7 +311,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
+		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 	defer rows.Close()
 
@@ -386,7 +319,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	for rows.Next() {
 		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
+			return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 		}
 
 		ch := toChannel(dbch)
@@ -396,10 +329,10 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 
 	total, err := total(ctx, gr.db, qc, params)
 	if err != nil {
-		return things.GroupChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
+		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
-	page := things.GroupChannelsPage{
+	page := things.ChannelsPage{
 		Channels: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
@@ -411,7 +344,7 @@ func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID str
 	return page, nil
 }
 
-func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) retrieve(ctx context.Context, ownerID, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	var ownq string
 	if ownerID != "" {
 		ownq = "owner_id = :owner_id"
@@ -438,6 +371,11 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 		query = append(query, nq)
 	}
 
+	if orgID != "" {
+		orgq := "org_id = :org_id"
+		query = append(query, orgq)
+	}
+
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
@@ -451,6 +389,7 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 
 	params := map[string]interface{}{
 		"owner_id": ownerID,
+		"org_id":   orgID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
@@ -500,6 +439,7 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID string, pm thing
 type dbGroup struct {
 	ID          string    `db:"id"`
 	OwnerID     string    `db:"owner_id"`
+	OrgID       string    `db:"org_id"`
 	Name        string    `db:"name"`
 	Description string    `db:"description"`
 	Metadata    dbJSONB   `db:"metadata"`
@@ -512,6 +452,7 @@ func toDBGroup(g things.Group) (dbGroup, error) {
 		ID:          g.ID,
 		Name:        g.Name,
 		OwnerID:     g.OwnerID,
+		OrgID:       g.OrgID,
 		Description: g.Description,
 		Metadata:    dbJSONB(g.Metadata),
 		CreatedAt:   g.CreatedAt,
@@ -524,6 +465,7 @@ func toGroup(dbu dbGroup) (things.Group, error) {
 		ID:          dbu.ID,
 		Name:        dbu.Name,
 		OwnerID:     dbu.OwnerID,
+		OrgID:       dbu.OrgID,
 		Description: dbu.Description,
 		Metadata:    things.GroupMetadata(dbu.Metadata),
 		UpdatedAt:   dbu.UpdatedAt,

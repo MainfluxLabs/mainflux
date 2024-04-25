@@ -35,9 +35,9 @@ type Thing struct {
 	Metadata Metadata
 }
 
-// Page contains page related metadata as well as list of things that
+// ThingsPage contains page related metadata as well as list of things that
 // belong to this page.
-type Page struct {
+type ThingsPage struct {
 	PageMetadata
 	Things []Thing
 }
@@ -65,14 +65,14 @@ type ThingRepository interface {
 	RetrieveByKey(ctx context.Context, key string) (string, error)
 
 	// RetrieveByOwner retrieves the subset of things owned by the specified user
-	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (Page, error)
+	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveByIDs retrieves the subset of things specified by given thing ids.
-	RetrieveByIDs(ctx context.Context, thingIDs []string, pm PageMetadata) (Page, error)
+	RetrieveByIDs(ctx context.Context, thingIDs []string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveByChannel retrieves the subset of things owned by the specified
 	// user and connected or not connected to specified channel.
-	RetrieveByChannel(ctx context.Context, owner, chID string, pm PageMetadata) (Page, error)
+	RetrieveByChannel(ctx context.Context, owner, chID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
@@ -82,7 +82,7 @@ type ThingRepository interface {
 	RetrieveAll(ctx context.Context) ([]Thing, error)
 
 	// RetrieveByAdmin retrieves all things for all users with pagination.
-	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (Page, error)
+	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ThingsPage, error)
 }
 
 // ThingCache contains thing caching interface.

@@ -16,9 +16,6 @@ var (
 	_ mainflux.Response = (*unassignRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
 	_ mainflux.Response = (*restoreRes)(nil)
-	_ mainflux.Response = (*listGroupPoliciesRes)(nil)
-	_ mainflux.Response = (*updateGroupPoliciesRes)(nil)
-	_ mainflux.Response = (*createGroupPoliciesRes)(nil)
 )
 
 type viewMemberRes struct {
@@ -53,30 +50,6 @@ func (res memberPageRes) Headers() map[string]string {
 }
 
 func (res memberPageRes) Empty() bool {
-	return false
-}
-
-type viewGroupRes struct {
-	ID          string `json:"id"`
-	OwnerID     string `json:"owner_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type groupsPageRes struct {
-	pageRes
-	Groups []viewGroupRes `json:"groups"`
-}
-
-func (res groupsPageRes) Code() int {
-	return http.StatusOK
-}
-
-func (res groupsPageRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res groupsPageRes) Empty() bool {
 	return false
 }
 
@@ -203,24 +176,9 @@ type viewOrgMembers struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type viewOrgGroups struct {
-	GroupID   string    `json:"group_id"`
-	OrgID     string    `json:"org_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type viewGroupPolicies struct {
-	GroupID  string `json:"group_id"`
-	MemberID string `json:"member_id"`
-	Policy   string `json:"policy"`
-}
-
 type backupRes struct {
-	Orgs          []viewOrgRes        `json:"orgs"`
-	OrgMembers    []viewOrgMembers    `json:"org_members"`
-	OrgGroups     []viewOrgGroups     `json:"org_groups"`
-	GroupPolicies []viewGroupPolicies `json:"group_policies"`
+	Orgs       []viewOrgRes     `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
 }
 
 func (res backupRes) Code() int {
@@ -235,29 +193,6 @@ func (res backupRes) Empty() bool {
 	return false
 }
 
-type groupPolicy struct {
-	ID     string `json:"id"`
-	Email  string `json:"email"`
-	Policy string `json:"policy"`
-}
-
-type listGroupPoliciesRes struct {
-	pageRes
-	GroupPolicies []groupPolicy `json:"group_policies"`
-}
-
-func (res listGroupPoliciesRes) Code() int {
-	return http.StatusOK
-}
-
-func (res listGroupPoliciesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res listGroupPoliciesRes) Empty() bool {
-	return false
-}
-
 type restoreRes struct{}
 
 func (res restoreRes) Code() int {
@@ -269,33 +204,5 @@ func (res restoreRes) Headers() map[string]string {
 }
 
 func (res restoreRes) Empty() bool {
-	return true
-}
-
-type createGroupPoliciesRes struct{}
-
-func (res createGroupPoliciesRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res createGroupPoliciesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res createGroupPoliciesRes) Empty() bool {
-	return true
-}
-
-type updateGroupPoliciesRes struct{}
-
-func (res updateGroupPoliciesRes) Code() int {
-	return http.StatusOK
-}
-
-func (res updateGroupPoliciesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res updateGroupPoliciesRes) Empty() bool {
 	return true
 }

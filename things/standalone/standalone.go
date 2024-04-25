@@ -49,18 +49,6 @@ func (repo singleUserRepo) Authorize(ctx context.Context, req *mainflux.Authoriz
 	return &empty.Empty{}, errUnsupported
 }
 
-func (repo singleUserRepo) AddPolicy(ctx context.Context, in *mainflux.PolicyReq, opts ...grpc.CallOption) (r *empty.Empty, err error) {
-	return &empty.Empty{}, errUnsupported
-}
-
-func (repo singleUserRepo) Members(ctx context.Context, req *mainflux.MembersReq, _ ...grpc.CallOption) (r *mainflux.MembersRes, err error) {
-	return &mainflux.MembersRes{}, errUnsupported
-}
-
-func (repo singleUserRepo) Assign(ctx context.Context, req *mainflux.Assignment, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	return &empty.Empty{}, errUnsupported
-}
-
 func (repo singleUserRepo) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	return &empty.Empty{}, errUnsupported
 }

@@ -6,6 +6,7 @@ package http
 import (
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -405,6 +406,7 @@ func (req restoreReq) validate() error {
 
 type createGroupReq struct {
 	Name        string                 `json:"name,omitempty"`
+	OrgID       string                 `json:"org_id,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -424,6 +426,10 @@ func (req createGroupsReq) validate() error {
 	}
 
 	for _, group := range req.Groups {
+		if group.OrgID == "" {
+			return apiutil.ErrMissingOrgID
+		}
+
 		if len(group.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
@@ -454,7 +460,7 @@ func (req updateGroupReq) validate() error {
 
 type listGroupsReq struct {
 	token        string
-	id           string
+	orgID        string
 	pageMetadata things.PageMetadata
 }
 
@@ -622,6 +628,85 @@ type getConnByKeyReq struct {
 func (req getConnByKeyReq) validate() error {
 	if req.Key == "" {
 		return apiutil.ErrBearerKey
+	}
+
+	return nil
+}
+
+type groupPoliciesReq struct {
+	token         string
+	groupID       string
+	GroupPolicies []groupPolicy `json:"group_policies"`
+}
+
+func (req groupPoliciesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.GroupPolicies) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, gp := range req.GroupPolicies {
+		if gp.Policy != auth.RPolicy && gp.Policy != auth.RwPolicy {
+			return apiutil.ErrInvalidPolicy
+		}
+
+		if gp.ID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
+type removeGroupPoliciesReq struct {
+	token     string
+	groupID   string
+	MemberIDs []string `json:"member_ids"`
+}
+
+func (req removeGroupPoliciesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.MemberIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, id := range req.MemberIDs {
+		if id == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
+	return nil
+}
+
+type listGroupMembersReq struct {
+	token   string
+	groupID string
+	offset  uint64
+	limit   uint64
+}
+
+func (req listGroupMembersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil

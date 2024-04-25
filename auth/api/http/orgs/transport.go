@@ -106,62 +106,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/groups/:groupID/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group_membership")(viewGroupMembershipEndpoint(svc)),
-		decodeViewGroupMembershipRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_group_policies")(createGroupPoliciesEndpoint(svc)),
-		decodeGroupPoliciesRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_policies")(listGroupPoliciesEndpoint(svc)),
-		decodeListGroupPoliciesRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Put("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_group_policies")(updateGroupPoliciesEndpoint(svc)),
-		decodeGroupPoliciesRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group_policies")(removeGroupPoliciesEndpoint(svc)),
-		decodeRemoveGroupPoliciesRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/orgs/:orgID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_groups")(assignOrgGroupsEndpoint(svc)),
-		decodeGroupsRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Delete("/orgs/:orgID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign_groups")(unassignOrgGroupsEndpoint(svc)),
-		decodeGroupsRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/orgs/:orgID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
-		decodeListGroupsRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/members/:memberID/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_memberships")(listMemberships(svc)),
 		decodeListMembershipsRequest,
@@ -242,58 +186,6 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 		limit:    l,
 		metadata: m,
 	}
-	return req, nil
-}
-
-func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listOrgGroupsReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, orgIDKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
-	return req, nil
-}
-
-func decodeViewGroupMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewGroupMembershipReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	return req, nil
-}
-
-func decodeGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := groupPoliciesReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
 	return req, nil
 }
 
@@ -403,57 +295,6 @@ func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeUnassignMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := unassignMembersReq{
-		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, orgIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listGroupMembersReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-		offset:  o,
-		limit:   l,
-	}
-
-	return req, nil
-}
-
-func decodeRemoveGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := removeGroupPoliciesReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := groupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, orgIDKey),
 	}

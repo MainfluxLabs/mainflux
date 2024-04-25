@@ -319,9 +319,8 @@ func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := viewChannelRes{
+		res := channelRes{
 			ID:       ch.ID,
-			OwnerID:  ch.OwnerID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
 			Metadata: ch.Metadata,
@@ -353,13 +352,12 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				Order:  page.Order,
 				Dir:    page.Dir,
 			},
-			Channels: []viewChannelRes{},
+			Channels: []channelRes{},
 		}
 		// Cast channels
 		for _, ch := range page.Channels {
-			view := viewChannelRes{
+			view := channelRes{
 				ID:       ch.ID,
-				OwnerID:  ch.OwnerID,
 				GroupID:  ch.GroupID,
 				Name:     ch.Name,
 				Profile:  ch.Profile,
@@ -386,9 +384,8 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := viewChannelRes{
+		res := channelRes{
 			ID:       ch.ID,
-			OwnerID:  ch.OwnerID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
 			Profile:  ch.Profile,
@@ -509,11 +506,12 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		grs := []things.Group{}
-		for _, gReq := range req.Groups {
+		for _, g := range req.Groups {
 			group := things.Group{
-				Name:        gReq.Name,
-				Description: gReq.Description,
-				Metadata:    gReq.Metadata,
+				Name:        g.Name,
+				OrgID:       g.OrgID,
+				Description: g.Description,
+				Metadata:    g.Metadata,
 			}
 			grs = append(grs, group)
 		}
@@ -531,6 +529,7 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, gr := range groups {
 			gRes := groupRes{
 				ID:          gr.ID,
+				OrgID:       gr.OrgID,
 				Name:        gr.Name,
 				Description: gr.Description,
 				Metadata:    gr.Metadata,
@@ -629,7 +628,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token, req.orgID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -707,22 +706,6 @@ func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listGroupThingsByChannelReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.ListGroupThingsByChannel(ctx, req.token, req.groupID, req.channelID, req.pageMetadata)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildGroupThingsResponse(page), nil
-	}
-}
-
 func viewChannelGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
@@ -775,8 +758,8 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	return res
 }
 
-func buildGroupThingsResponse(tp things.GroupThingsPage) groupThingsPageRes {
-	res := groupThingsPageRes{
+func buildGroupThingsResponse(tp things.ThingsPage) ThingsPageRes {
+	res := ThingsPageRes{
 		pageRes: pageRes{
 			Total:  tp.Total,
 			Offset: tp.Offset,
@@ -799,8 +782,8 @@ func buildGroupThingsResponse(tp things.GroupThingsPage) groupThingsPageRes {
 	return res
 }
 
-func buildGroupChannelsResponse(cp things.GroupChannelsPage) groupChannelsPageRes {
-	res := groupChannelsPageRes{
+func buildGroupChannelsResponse(cp things.ChannelsPage) channelsPageRes {
+	res := channelsPageRes{
 		pageRes: pageRes{
 			Total:  cp.Total,
 			Offset: cp.Offset,
@@ -963,4 +946,110 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return res, nil
 	}
+}
+
+func createGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var gps []things.GroupPolicyByID
+		for _, g := range req.GroupPolicies {
+			gp := things.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
+			}
+			gps = append(gps, gp)
+		}
+
+		if err := svc.CreateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
+			return nil, err
+		}
+
+		return createGroupPoliciesRes{}, nil
+	}
+}
+
+func updateGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		var gps []things.GroupPolicyByID
+		for _, g := range req.GroupPolicies {
+			gp := things.GroupPolicyByID{
+				MemberID: g.ID,
+				Policy:   g.Policy,
+			}
+			gps = append(gps, gp)
+		}
+
+		if err := svc.UpdateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
+			return nil, err
+		}
+
+		return updateGroupPoliciesRes{}, nil
+	}
+}
+
+func removeGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeGroupPoliciesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveGroupPolicies(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
+func listGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listGroupMembersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		pm := things.PageMetadata{
+			Offset: req.offset,
+			Limit:  req.limit,
+		}
+
+		gpp, err := svc.ListGroupPolicies(ctx, req.token, req.groupID, pm)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupPoliciesResponse(gpp), nil
+	}
+}
+
+func buildGroupPoliciesResponse(gpp things.GroupPoliciesPage) listGroupPoliciesRes {
+	res := listGroupPoliciesRes{
+		pageRes: pageRes{
+			Total:  gpp.Total,
+			Limit:  gpp.Limit,
+			Offset: gpp.Offset,
+		},
+		GroupPolicies: []groupPolicy{},
+	}
+
+	for _, g := range gpp.GroupPolicies {
+		gp := groupPolicy{
+			Email:  g.Email,
+			ID:     g.MemberID,
+			Policy: g.Policy,
+		}
+		res.GroupPolicies = append(res.GroupPolicies, gp)
+	}
+
+	return res
 }

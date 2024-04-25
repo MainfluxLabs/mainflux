@@ -98,15 +98,15 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	return grm.repo.RetrieveByIDs(ctx, groupIDs)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveByOwnerOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveByOwner(ctx, ownerID, pm)
+	return grm.repo.RetrieveByOwner(ctx, ownerID, orgID, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -114,15 +114,7 @@ func (grm groupRepositoryMiddleware) RetrieveGroupThings(ctx context.Context, gr
 	return grm.repo.RetrieveGroupThings(ctx, groupID, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupThingsByChannelOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveGroupThingsByChannel(ctx, groupID, channelID, pm)
-}
-
-func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupChannelsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

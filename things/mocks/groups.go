@@ -118,7 +118,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, groupIDs []st
 	panic("not implemented")
 }
 
-func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []things.Group
@@ -144,13 +144,13 @@ func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thi
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []things.Thing
 	ths, ok := grm.things[groupID]
 	if !ok {
-		return things.GroupThingsPage{}, errors.ErrNotFound
+		return things.ThingsPage{}, errors.ErrNotFound
 	}
 
 	first := uint64(pm.Offset)
@@ -164,7 +164,7 @@ func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID
 		items = append(items, things.Thing{ID: ths[i]})
 	}
 
-	return things.GroupThingsPage{
+	return things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total: uint64(len(items)),
@@ -184,14 +184,14 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
+func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
 	var items []things.Channel
 	chs, ok := grm.channels[groupID]
 	if !ok {
-		return things.GroupChannelsPage{}, nil
+		return things.ChannelsPage{}, nil
 	}
 
 	first := uint64(pm.Offset)
@@ -205,7 +205,7 @@ func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, group
 		items = append(items, things.Channel{ID: chs[i]})
 	}
 
-	return things.GroupChannelsPage{
+	return things.ChannelsPage{
 		Channels: items,
 		PageMetadata: things.PageMetadata{
 			Total: uint64(len(items)),
@@ -213,7 +213,7 @@ func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, group
 	}, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (grm *groupRepositoryMock) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 

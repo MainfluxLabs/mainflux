@@ -79,29 +79,12 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (org_id) REFERENCES orgs (id),
 						PRIMARY KEY (member_id, org_id)
 					)`,
-					`CREATE TABLE IF NOT EXISTS group_relations (
-						group_id    UUID UNIQUE NOT NULL,
-						org_id      UUID NOT NULL,
-						created_at  TIMESTAMPTZ,
-						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (org_id) REFERENCES orgs (id),
-						PRIMARY KEY (group_id, org_id)
-					)`,
-					`CREATE TABLE IF NOT EXISTS group_policies (
-						group_id    UUID NOT NULL,
-						member_id   UUID NOT NULL,
-						policy      VARCHAR(15),
-						FOREIGN KEY (group_id) REFERENCES group_relations (group_id) ON DELETE CASCADE,
-						PRIMARY KEY (group_id, member_id)
-					)`,
 				},
 				Down: []string{
 					"DROP TABLE IF EXISTS users_roles",
 					`DROP TABLE IF EXISTS keys`,
 					`DROP TABLE IF EXISTS orgs`,
 					`DROP TABLE IF EXISTS member_relations`,
-					`DROP TABLE IF EXISTS group_relations`,
-					`DROP TABLE IF EXISTS group_policies`,
 				},
 			},
 		},
