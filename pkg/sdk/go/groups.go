@@ -175,31 +175,31 @@ func (sdk mfSDK) UnassignThing(token, groupID string, thingIDs ...string) error 
 	return nil
 }
 
-func (sdk mfSDK) ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error) {
+func (sdk mfSDK) ListGroupThings(groupID, token string, offset, limit uint64) (ThingsPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/things?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return GroupThingsPage{}, err
+		return ThingsPage{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return GroupThingsPage{}, err
+		return ThingsPage{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return GroupThingsPage{}, err
+		return ThingsPage{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ThingsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var gtp GroupThingsPage
+	var gtp ThingsPage
 	if err := json.Unmarshal(body, &gtp); err != nil {
-		return GroupThingsPage{}, err
+		return ThingsPage{}, err
 	}
 
 	return gtp, nil
@@ -265,31 +265,31 @@ func (sdk mfSDK) UnassignChannel(token, groupID string, thingIDs ...string) erro
 	return nil
 }
 
-func (sdk mfSDK) ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error) {
+func (sdk mfSDK) ListGroupChannels(groupID, token string, offset, limit uint64) (ChannelsPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/channels?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return GroupChannelsPage{}, err
+		return ChannelsPage{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return GroupChannelsPage{}, err
+		return ChannelsPage{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return GroupChannelsPage{}, err
+		return ChannelsPage{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var gcp GroupChannelsPage
+	var gcp ChannelsPage
 	if err := json.Unmarshal(body, &gcp); err != nil {
-		return GroupChannelsPage{}, err
+		return ChannelsPage{}, err
 	}
 
 	return gcp, nil

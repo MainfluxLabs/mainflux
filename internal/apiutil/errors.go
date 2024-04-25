@@ -18,8 +18,11 @@ var (
 	// ErrMissingID indicates missing entity ID.
 	ErrMissingID = errors.New("missing entity id")
 
-	// ErrMissingGroupID indicates missing entity group ID.
-	ErrMissingGroupID = errors.New("missing entity group id")
+	// ErrMissingGroupID indicates missing group ID.
+	ErrMissingGroupID = errors.New("missing group id")
+
+	// ErrMissingOrgID indicates missing org ID.
+	ErrMissingOrgID = errors.New("missing org id")
 
 	// ErrMissingRole indicates missing role.
 	ErrMissingRole = errors.New("missing role")

@@ -18,11 +18,7 @@ const (
 	OwnerRole        = "owner"
 	EditorRole       = "editor"
 	RootSubject      = "root"
-	GroupSubject     = "group"
-	ReadAction       = "read"
-	WriteAction      = "read_write"
-	RPolicy          = "read"
-	RwPolicy         = "read_write"
+	OrgSubject       = "org"
 )
 
 var (
@@ -82,7 +78,6 @@ type AuthzReq struct {
 // functionalities through `auth` to perform authorization.
 type Authz interface {
 	Authorize(ctx context.Context, ar AuthzReq) error
-	AddPolicy(ctx context.Context, token, groupID, policy string) error
 }
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -94,7 +89,6 @@ type Service interface {
 	Authz
 	Roles
 	Orgs
-	Policies
 }
 
 var _ Service = (*service)(nil)
@@ -105,14 +99,13 @@ type service struct {
 	things        mainflux.ThingsServiceClient
 	keys          KeyRepository
 	roles         RolesRepository
-	policies      PoliciesRepository
 	idProvider    mainflux.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, policies PoliciesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -120,7 +113,6 @@ func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 		users:         uc,
 		keys:          keys,
 		roles:         roles,
-		policies:      policies,
 		idProvider:    idp,
 		loginDuration: duration,
 	}
@@ -168,8 +160,6 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
 	case RootSubject:
 		return svc.isAdmin(ctx, ar.Token)
-	case GroupSubject:
-		return svc.canAccessGroup(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
 	}
@@ -382,7 +372,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	grs, err := svc.orgs.RetrieveGroups(ctx, orgID, PageMetadata{})
+	/*grs, err := svc.orgs.RetrieveGroups(ctx, orgID, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -391,7 +381,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		if err := svc.policies.RemoveGroupPolicies(ctx, gr.GroupID, memberIDs...); err != nil {
 			return err
 		}
-	}
+	}*/
 
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
 		return err
@@ -518,105 +508,6 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 	return mpg, nil
 }
 
-func (svc service) AssignGroups(ctx context.Context, token, orgID string, groupIDs ...string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.orgRolesAuth(ctx, token, orgID, EditorRole); err != nil {
-		return err
-	}
-
-	timestamp := getTimestmap()
-	var ogs []OrgGroup
-	for _, groupID := range groupIDs {
-		og := OrgGroup{
-			OrgID:     orgID,
-			GroupID:   groupID,
-			CreatedAt: timestamp,
-			UpdatedAt: timestamp,
-		}
-
-		ogs = append(ogs, og)
-	}
-
-	if err := svc.orgs.AssignGroups(ctx, ogs...); err != nil {
-		return err
-	}
-
-	for _, groupID := range groupIDs {
-		gpByIDs := GroupPolicyByID{
-			MemberID: user.ID,
-			Policy:   RwPolicy,
-		}
-
-		if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (svc service) UnassignGroups(ctx context.Context, token string, orgID string, groupIDs ...string) error {
-	if err := svc.orgRolesAuth(ctx, token, orgID, EditorRole); err != nil {
-		return err
-	}
-
-	if err := svc.orgs.UnassignGroups(ctx, orgID, groupIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) ListOrgGroups(ctx context.Context, token string, orgID string, pm PageMetadata) (GroupsPage, error) {
-	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
-		return GroupsPage{}, err
-	}
-
-	ogp, err := svc.orgs.RetrieveGroups(ctx, orgID, pm)
-	if err != nil {
-		return GroupsPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
-	}
-
-	var groupIDs []string
-	for _, g := range ogp.OrgGroups {
-		groupIDs = append(groupIDs, g.GroupID)
-	}
-
-	var groups []Group
-	if len(groupIDs) > 0 {
-		greq := mainflux.GroupsReq{Ids: groupIDs}
-		resp, err := svc.things.GetGroupsByIDs(ctx, &greq)
-		if err != nil {
-			return GroupsPage{}, err
-		}
-
-		for _, g := range resp.Groups {
-			gr := Group{
-				ID:          g.Id,
-				OwnerID:     g.OwnerID,
-				Name:        g.Name,
-				Description: g.Description,
-			}
-			groups = append(groups, gr)
-		}
-	}
-
-	pg := GroupsPage{
-		Groups: groups,
-		PageMetadata: PageMetadata{
-			Total:  ogp.Total,
-			Offset: ogp.Offset,
-			Limit:  ogp.Limit,
-		},
-	}
-
-	return pg, nil
-}
-
 func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
 		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
@@ -632,196 +523,6 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 	}
 
 	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
-}
-
-func (svc service) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
-	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
-		return err
-	}
-
-	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gps...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
-	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
-		return GroupPoliciesPage{}, err
-	}
-
-	gpp, err := svc.policies.RetrieveGroupPolicies(ctx, groupID, pm)
-	if err != nil {
-		return GroupPoliciesPage{}, err
-	}
-
-	var memberIDs []string
-	for _, gp := range gpp.GroupPolicies {
-		memberIDs = append(memberIDs, gp.MemberID)
-	}
-
-	var groupPolicies []GroupPolicy
-	if len(gpp.GroupPolicies) > 0 {
-		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
-		up, err := svc.users.GetUsersByIDs(ctx, &usrReq)
-		if err != nil {
-			return GroupPoliciesPage{}, err
-		}
-
-		emails := make(map[string]string)
-		for _, user := range up.Users {
-			emails[user.Id] = user.GetEmail()
-		}
-
-		for _, gp := range gpp.GroupPolicies {
-			email, ok := emails[gp.MemberID]
-			if !ok {
-				return GroupPoliciesPage{}, err
-			}
-
-			groupPolicy := GroupPolicy{
-				MemberID: gp.MemberID,
-				Email:    email,
-				Policy:   gp.Policy,
-			}
-
-			groupPolicies = append(groupPolicies, groupPolicy)
-		}
-	}
-
-	page := GroupPoliciesPage{
-		GroupPolicies: groupPolicies,
-		PageMetadata: PageMetadata{
-			Total:  gpp.Total,
-			Offset: gpp.Offset,
-			Limit:  gpp.Limit,
-		},
-	}
-
-	return page, nil
-}
-
-func (svc service) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
-	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
-		return err
-	}
-
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	for _, gp := range gps {
-		if gp.MemberID == org.OwnerID {
-			return errors.ErrAuthorization
-		}
-	}
-
-	if err := svc.policies.UpdateGroupPolicies(ctx, groupID, gps...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	if err := svc.canAccessGroup(ctx, token, groupID, WriteAction); err != nil {
-		return err
-	}
-
-	org, err := svc.orgs.RetrieveByGroupID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range memberIDs {
-		if m == org.OwnerID {
-			return errors.ErrAuthorization
-		}
-	}
-
-	if err := svc.policies.RemoveGroupPolicies(ctx, groupID, memberIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) ViewGroupMembership(ctx context.Context, token, groupID string) (Org, error) {
-	if err := svc.canAccessGroup(ctx, token, groupID, ReadAction); err != nil {
-		return Org{}, err
-	}
-
-	return svc.orgs.RetrieveByGroupID(ctx, groupID)
-}
-
-func (svc service) canAccessGroup(ctx context.Context, token, Object, action string) error {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return nil
-	}
-
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	gp := GroupPolicy{
-		MemberID: user.ID,
-		GroupID:  Object,
-	}
-
-	policy, err := svc.policies.RetrieveGroupPolicy(ctx, gp)
-	if err != nil {
-		return err
-	}
-
-	org, err := svc.orgs.RetrieveByGroupID(ctx, Object)
-	if err != nil {
-		return err
-	}
-
-	role, err := svc.orgs.RetrieveRole(ctx, user.ID, org.ID)
-	if err != nil {
-		return err
-	}
-
-	if role == OwnerRole || role == AdminRole {
-		return nil
-	}
-
-	if role == "" || policy == "" {
-		return errors.ErrAuthorization
-	}
-
-	switch action {
-	case WriteAction:
-		if policy == RPolicy || role == ViewerRole {
-			return errors.ErrAuthorization
-		}
-	default:
-		return nil
-	}
-
-	return nil
-}
-
-func (svc service) AddPolicy(ctx context.Context, token, groupID, policy string) error {
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	gpByIDs := GroupPolicyByID{
-		MemberID: user.ID,
-		Policy:   policy,
-	}
-
-	if err := svc.policies.SaveGroupPolicies(ctx, groupID, gpByIDs); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
@@ -844,16 +545,10 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	gps, err := svc.policies.RetrieveAllGroupPolicies(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
 	backup := Backup{
-		Orgs:          orgs,
-		OrgMembers:    mrs,
-		OrgGroups:     ogs,
-		GroupPolicies: gps,
+		Orgs:       orgs,
+		OrgMembers: mrs,
+		OrgGroups:  ogs,
 	}
 
 	return backup, nil
@@ -870,21 +565,6 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 
 	if err := svc.orgs.AssignMembers(ctx, backup.OrgMembers...); err != nil {
 		return err
-	}
-
-	if err := svc.orgs.AssignGroups(ctx, backup.OrgGroups...); err != nil {
-		return err
-	}
-
-	for _, g := range backup.GroupPolicies {
-		gp := GroupPolicyByID{
-			MemberID: g.MemberID,
-			Policy:   g.Policy,
-		}
-
-		if err := svc.policies.SaveGroupPolicies(ctx, g.GroupID, gp); err != nil {
-			return err
-		}
 	}
 
 	return nil

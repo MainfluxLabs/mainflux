@@ -45,43 +45,6 @@ func (req issueReq) validate() error {
 	return nil
 }
 
-type assignReq struct {
-	token    string
-	groupID  string
-	memberID string
-}
-
-func (req assignReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.groupID == "" || req.memberID == "" {
-		return apiutil.ErrMissingID
-	}
-	return nil
-}
-
-type membersReq struct {
-	token      string
-	groupID    string
-	offset     uint64
-	limit      uint64
-	memberType string
-}
-
-func (req membersReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-	if req.memberType == "" {
-		return apiutil.ErrMissingMemberType
-	}
-	return nil
-}
-
 type authReq struct {
 	Token   string
 	Object  string
@@ -94,35 +57,8 @@ func (req authReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
+	if req.Subject != auth.RootSubject {
 		return apiutil.ErrInvalidSubject
-	}
-
-	return nil
-}
-
-type policyReq struct {
-	Token   string
-	Policy  string
-	Subject string
-	Object  string
-}
-
-func (req policyReq) validate() error {
-	if req.Token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.Object == "" {
-		return apiutil.ErrMissingObject
-	}
-
-	if req.Subject != auth.RootSubject && req.Subject != auth.GroupSubject {
-		return apiutil.ErrInvalidSubject
-	}
-
-	if req.Policy != auth.RPolicy && req.Policy != auth.RwPolicy && req.Policy != "" {
-		return apiutil.ErrInvalidPolicy
 	}
 
 	return nil

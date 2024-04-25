@@ -86,15 +86,15 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.Page, error) {
+func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThings(ctx, token, pm)
 }
 
-func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.Page, error) {
+func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.ThingsPage, error) {
 	return es.svc.ListThingsByIDs(ctx, ids)
 }
 
-func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.Page, error) {
+func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
 }
 
@@ -265,20 +265,20 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) ListGroupThings(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
+func (es eventStore) ListGroupThings(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListGroupThings(ctx, token, groupID, pm)
 }
 
-func (es eventStore) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (things.GroupThingsPage, error) {
-	return es.svc.ListGroupThingsByChannel(ctx, token, grID, chID, pm)
+func (es eventStore) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	return es.svc.ListGroupChannels(ctx, token, groupID, pm)
 }
 
 func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
 	return es.svc.CreateGroups(ctx, token, grs...)
 }
 
-func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
-	return es.svc.ListGroups(ctx, token, pm)
+func (es eventStore) ListGroups(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroups(ctx, token, orgID, pm)
 }
 
 func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
@@ -301,10 +301,22 @@ func (es eventStore) ViewThingGroup(ctx context.Context, token string, thingID s
 	return es.svc.ViewThingGroup(ctx, token, thingID)
 }
 
-func (es eventStore) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupChannelsPage, error) {
-	return es.svc.ListGroupChannels(ctx, token, groupID, pm)
-}
-
 func (es eventStore) ViewChannelGroup(ctx context.Context, token string, channelID string) (things.Group, error) {
 	return es.svc.ViewChannelGroup(ctx, token, channelID)
+}
+
+func (es eventStore) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+	return es.svc.CreateGroupPolicies(ctx, token, groupID, gps...)
+}
+
+func (es eventStore) ListGroupPolicies(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+	return es.svc.ListGroupPolicies(ctx, token, groupID, pm)
+}
+
+func (es eventStore) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+	return es.svc.UpdateGroupPolicies(ctx, token, groupID, gps...)
+}
+
+func (es eventStore) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	return es.svc.RemoveGroupPolicies(ctx, token, groupID, memberIDs...)
 }

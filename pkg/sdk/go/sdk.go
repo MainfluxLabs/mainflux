@@ -102,6 +102,7 @@ type Group struct {
 	ID          string                 `json:"id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
 	OwnerID     string                 `json:"owner_id,omitempty"`
+	OrgID       string                 `json:"org_id,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	CreatedAt   time.Time              `json:"created_at,omitempty"`
@@ -203,7 +204,7 @@ type SDK interface {
 	Group(id, token string) (Group, error)
 
 	// ListGroupThings lists things that are members of specified group.
-	ListGroupThings(groupID, token string, offset, limit uint64) (GroupThingsPage, error)
+	ListGroupThings(groupID, token string, offset, limit uint64) (ThingsPage, error)
 
 	// ViewThingGroup retrieves a group that the specified thing is a member of.
 	ViewThingGroup(thingID, token string, offset, limit uint64) (Group, error)
@@ -242,7 +243,7 @@ type SDK interface {
 	DeleteChannels(ids []string, token string) error
 
 	// ListGroupChannels lists channels that are members of specified group.
-	ListGroupChannels(groupID, token string, offset, limit uint64) (GroupChannelsPage, error)
+	ListGroupChannels(groupID, token string, offset, limit uint64) (ChannelsPage, error)
 
 	// ViewChannelGroup retrieves a group that the specified channel is a member of.
 	ViewChannelGroup(channelID, token string, offset, limit uint64) (Group, error)

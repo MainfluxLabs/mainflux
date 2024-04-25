@@ -60,16 +60,6 @@ type UsersPage struct {
 	pageRes
 }
 
-type GroupThingsPage struct {
-	Things []string `json:"things"`
-	pageRes
-}
-
-type GroupChannelsPage struct {
-	Channels []string `json:"channels"`
-	pageRes
-}
-
 type KeyRes struct {
 	ID        string     `json:"id,omitempty"`
 	Value     string     `json:"value,omitempty"`

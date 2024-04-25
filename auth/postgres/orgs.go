@@ -835,22 +835,6 @@ type dbGroupPolicy struct {
 	Policy   string `db:"policy"`
 }
 
-func toDBGroupPolicy(gp auth.GroupPolicy) dbGroupPolicy {
-	return dbGroupPolicy{
-		MemberID: gp.MemberID,
-		GroupID:  gp.GroupID,
-		Policy:   gp.Policy,
-	}
-}
-
-func toGroupPolicy(dbgp dbGroupPolicy) auth.GroupPolicy {
-	return auth.GroupPolicy{
-		GroupID:  dbgp.GroupID,
-		MemberID: dbgp.MemberID,
-		Policy:   dbgp.Policy,
-	}
-}
-
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {

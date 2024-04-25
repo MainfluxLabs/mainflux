@@ -51,12 +51,20 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
 						owner_id    UUID NOT NULL,
+						org_id      UUID NOT NULL,
 						name        VARCHAR(254) NOT NULL,
 						description VARCHAR(1024),
 						metadata    JSONB,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
 						PRIMARY KEY (id, owner_id)
+					)`,
+					`CREATE TABLE IF NOT EXISTS group_policies (
+						group_id    UUID NOT NULL,
+						member_id   UUID NOT NULL,
+						policy      VARCHAR(15),
+						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
+						PRIMARY KEY (group_id, member_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS things (
 						id          UUID UNIQUE NOT NULL,

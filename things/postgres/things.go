@@ -177,9 +177,9 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	if len(thingIDs) == 0 {
-		return things.Page{}, nil
+		return things.ThingsPage{}, nil
 	}
 
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -189,7 +189,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, key, metadata FROM things
@@ -204,7 +204,7 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -212,12 +212,12 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	for rows.Next() {
 		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -227,10 +227,10 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 
 	total, err := total(ctx, tr.db, cq, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
@@ -244,9 +244,9 @@ func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, 
 	return page, nil
 }
 
-func (tr thingRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	if ownerID == "" {
-		return things.Page{}, errors.ErrRetrieveEntity
+		return things.ThingsPage{}, errors.ErrRetrieveEntity
 	}
 
 	return tr.retrieve(ctx, ownerID, false, pm)
@@ -261,17 +261,17 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	return thPage.Things, nil
 }
 
-func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
 	return tr.retrieve(ctx, "", false, pm)
 }
 
-func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID string, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	oq := getConnOrderQuery(pm.Order, "th")
 	dq := getDirQuery(pm.Dir)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(chID); err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrNotFound, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	olq := "LIMIT :limit OFFSET :offset"
@@ -322,7 +322,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -330,12 +330,12 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 	for rows.Next() {
 		dbth := dbThing{OwnerID: ownerID}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -343,10 +343,10 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 
 	var total uint64
 	if err := tr.db.GetContext(ctx, &total, qc, ownerID, chID); err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return things.Page{
+	return things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
@@ -372,14 +372,14 @@ func (tr thingRepository) Remove(ctx context.Context, ownerID string, ids ...str
 	return nil
 }
 
-func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeOwner bool, pm things.PageMetadata) (things.Page, error) {
+func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeOwner bool, pm things.PageMetadata) (things.ThingsPage, error) {
 	ownq := dbutil.GetOwnerQuery(ownerID)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := getOrderQuery(pm.Order)
 	dq := getDirQuery(pm.Dir)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var query []string
@@ -419,7 +419,7 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 
 	rows, err := tr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -427,12 +427,12 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 	for rows.Next() {
 		dbth := dbThing{OwnerID: ownerID}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -442,10 +442,10 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 
 	total, err := total(ctx, tr.db, cq, params)
 	if err != nil {
-		return things.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.Page{
+	page := things.ThingsPage{
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,

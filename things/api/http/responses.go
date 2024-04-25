@@ -13,17 +13,16 @@ import (
 var (
 	_ mainflux.Response = (*viewThingRes)(nil)
 	_ mainflux.Response = (*thingsPageRes)(nil)
-	_ mainflux.Response = (*viewChannelRes)(nil)
 	_ mainflux.Response = (*channelsPageRes)(nil)
 	_ mainflux.Response = (*connectionsRes)(nil)
 	_ mainflux.Response = (*shareThingRes)(nil)
 	_ mainflux.Response = (*backupRes)(nil)
-	_ mainflux.Response = (*groupThingsPageRes)(nil)
-	_ mainflux.Response = (*groupChannelsPageRes)(nil)
+	_ mainflux.Response = (*ThingsPageRes)(nil)
 	_ mainflux.Response = (*groupsRes)(nil)
 	_ mainflux.Response = (*removeRes)(nil)
-	_ mainflux.Response = (*assignRes)(nil)
-	_ mainflux.Response = (*unassignRes)(nil)
+	_ mainflux.Response = (*listGroupPoliciesRes)(nil)
+	_ mainflux.Response = (*updateGroupPoliciesRes)(nil)
+	_ mainflux.Response = (*createGroupPoliciesRes)(nil)
 )
 
 type removeRes struct{}
@@ -152,31 +151,9 @@ func (res channelsRes) Empty() bool {
 	return false
 }
 
-type viewChannelRes struct {
-	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"-"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Things   []viewThingRes         `json:"connected,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
-
-func (res viewChannelRes) Code() int {
-	return http.StatusOK
-}
-
-func (res viewChannelRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res viewChannelRes) Empty() bool {
-	return false
-}
-
 type channelsPageRes struct {
 	pageRes
-	Channels []viewChannelRes `json:"channels"`
+	Channels []channelRes `json:"channels"`
 }
 
 func (res channelsPageRes) Code() int {
@@ -286,37 +263,20 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type groupThingsPageRes struct {
+type ThingsPageRes struct {
 	pageRes
 	Things []thingRes `json:"things"`
 }
 
-func (res groupThingsPageRes) Code() int {
+func (res ThingsPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res groupThingsPageRes) Headers() map[string]string {
+func (res ThingsPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res groupThingsPageRes) Empty() bool {
-	return false
-}
-
-type groupChannelsPageRes struct {
-	pageRes
-	Channels []channelRes `json:"channels"`
-}
-
-func (res groupChannelsPageRes) Code() int {
-	return http.StatusOK
-}
-
-func (res groupChannelsPageRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res groupChannelsPageRes) Empty() bool {
+func (res ThingsPageRes) Empty() bool {
 	return false
 }
 
@@ -344,6 +304,7 @@ func (res viewGroupRes) Empty() bool {
 
 type groupRes struct {
 	ID          string                 `json:"id"`
+	OrgID       string                 `json:"org_id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
@@ -388,34 +349,6 @@ func (res groupPageRes) Empty() bool {
 	return false
 }
 
-type assignRes struct{}
-
-func (res assignRes) Code() int {
-	return http.StatusOK
-}
-
-func (res assignRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res assignRes) Empty() bool {
-	return true
-}
-
-type unassignRes struct{}
-
-func (res unassignRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res unassignRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res unassignRes) Empty() bool {
-	return true
-}
-
 type identityRes struct {
 	ID string `json:"id"`
 }
@@ -446,5 +379,56 @@ func (res connByKeyRes) Headers() map[string]string {
 }
 
 func (res connByKeyRes) Empty() bool {
+	return false
+}
+
+type groupPolicy struct {
+	ID     string `json:"id"`
+	Email  string `json:"email"`
+	Policy string `json:"policy"`
+}
+
+type createGroupPoliciesRes struct{}
+
+func (res createGroupPoliciesRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res createGroupPoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createGroupPoliciesRes) Empty() bool {
+	return true
+}
+
+type updateGroupPoliciesRes struct{}
+
+func (res updateGroupPoliciesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res updateGroupPoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res updateGroupPoliciesRes) Empty() bool {
+	return true
+}
+
+type listGroupPoliciesRes struct {
+	pageRes
+	GroupPolicies []groupPolicy `json:"group_policies"`
+}
+
+func (res listGroupPoliciesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res listGroupPoliciesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res listGroupPoliciesRes) Empty() bool {
 	return false
 }

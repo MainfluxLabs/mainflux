@@ -80,26 +80,6 @@ func (req listOrgMembersReq) validate() error {
 	return nil
 }
 
-type listOrgGroupsReq struct {
-	token    string
-	id       string
-	offset   uint64
-	limit    uint64
-	metadata auth.OrgMetadata
-}
-
-func (req listOrgGroupsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 type listOrgMembershipsReq struct {
 	token    string
 	id       string
@@ -189,28 +169,6 @@ func (req unassignMembersReq) validate() error {
 	return nil
 }
 
-type groupsReq struct {
-	token    string
-	orgID    string
-	GroupIDs []string `json:"group_ids"`
-}
-
-func (req groupsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.orgID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.GroupIDs) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
 type orgReq struct {
 	token string
 	id    string
@@ -222,25 +180,6 @@ func (req orgReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type listGroupMembersReq struct {
-	token   string
-	groupID string
-	offset  uint64
-	limit   uint64
-}
-
-func (req listGroupMembersReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -259,89 +198,10 @@ func (req backupReq) validate() error {
 	return nil
 }
 
-type groupPoliciesReq struct {
-	token         string
-	groupID       string
-	GroupPolicies []groupPolicy `json:"group_policies"`
-}
-
-func (req groupPoliciesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.GroupPolicies) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, gp := range req.GroupPolicies {
-		if gp.Policy != auth.RPolicy && gp.Policy != auth.RwPolicy {
-			return apiutil.ErrInvalidPolicy
-		}
-
-		if gp.ID == "" {
-			return apiutil.ErrMissingID
-		}
-	}
-
-	return nil
-}
-
-type removeGroupPoliciesReq struct {
-	token     string
-	groupID   string
-	MemberIDs []string `json:"member_ids"`
-}
-
-func (req removeGroupPoliciesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.MemberIDs) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, id := range req.MemberIDs {
-		if id == "" {
-			return apiutil.ErrMissingID
-		}
-	}
-
-	return nil
-}
-
-type viewGroupMembershipReq struct {
-	token   string
-	groupID string
-}
-
-func (req viewGroupMembershipReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 type restoreReq struct {
-	token         string
-	Orgs          []viewOrgRes        `json:"orgs"`
-	OrgMembers    []viewOrgMembers    `json:"org_members"`
-	OrgGroups     []viewOrgGroups     `json:"org_groups"`
-	GroupPolicies []viewGroupPolicies `json:"group_policies"`
+	token      string
+	Orgs       []viewOrgRes     `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
 }
 
 func (req restoreReq) validate() error {
@@ -349,7 +209,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 && len(req.OrgGroups) == 0 && len(req.GroupPolicies) == 0 {
+	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

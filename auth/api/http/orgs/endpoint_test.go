@@ -20,7 +20,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -34,8 +33,6 @@ const (
 	adminID       = "adminID"
 	editorID      = "editorID"
 	viewerID      = "viewerID"
-	groupID       = "groupID"
-	groupID2      = "groupID2"
 	email         = "user@example.com"
 	adminEmail    = "admin@example.com"
 	editorEmail   = "editor@example.com"
@@ -59,7 +56,6 @@ var (
 	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.AdminRole}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
-	groups        = map[string]things.Group{groupID: {ID: groupID, OwnerID: id, Name: name, Description: description}, groupID2: {ID: groupID2, OwnerID: id, Name: name, Description: description}}
 )
 
 type testRequest struct {
@@ -92,13 +88,13 @@ func (tr testRequest) make() (*http.Response, error) {
 func newService() auth.Service {
 	orgsRepo := mocks.NewOrgRepository()
 	rolesRepo := mocks.NewRolesRepository()
-	policiesRepo := mocks.NewPoliciesRepository()
+
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
-	tc := thmocks.NewThingsServiceClient(nil, nil, groups)
+	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, policiesRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
@@ -1196,349 +1192,6 @@ func TestListMembers(t *testing.T) {
 	}
 }
 
-func TestAssignOrgGroups(t *testing.T) {
-	svc := newService()
-	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	ts := newServer(svc)
-	defer ts.Close()
-	client := ts.Client()
-
-	or, err := svc.CreateOrg(context.Background(), token, org)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	var groupIDs []string
-	for i := 0; i < n; i++ {
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-		groupIDs = append(groupIDs, groupID)
-	}
-
-	data := toJSON(groupsReq{GroupIDs: groupIDs})
-
-	cases := []struct {
-		desc   string
-		token  string
-		orgID  string
-		req    string
-		status int
-	}{
-		{
-			desc:   "assign groups to org",
-			token:  token,
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusOK,
-		},
-		{
-			desc:   "assign groups to org with invalid auth token",
-			token:  wrongValue,
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "assign groups to org without auth token",
-			token:  "",
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "assign groups to org without org id",
-			token:  token,
-			orgID:  "",
-			req:    data,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "assign groups to org with invalid org id",
-			token:  token,
-			orgID:  wrongValue,
-			req:    data,
-			status: http.StatusNotFound,
-		},
-		{
-			desc:   "assign groups to org with invalid request body",
-			token:  token,
-			orgID:  or.ID,
-			req:    "}",
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "assign groups to org without request body",
-			token:  token,
-			orgID:  or.ID,
-			req:    "",
-			status: http.StatusBadRequest,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client: client,
-			method: http.MethodPost,
-			url:    fmt.Sprintf("%s/orgs/%s/groups", ts.URL, tc.orgID),
-			token:  tc.token,
-			body:   strings.NewReader(tc.req),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-
-	}
-}
-
-func TestUnassignOrgGroups(t *testing.T) {
-	svc := newService()
-	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	ts := newServer(svc)
-	defer ts.Close()
-	client := ts.Client()
-
-	or, err := svc.CreateOrg(context.Background(), token, org)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	var groupIDs []string
-	for i := 0; i < n; i++ {
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-		groupIDs = append(groupIDs, groupID)
-	}
-
-	err = svc.AssignGroups(context.Background(), token, or.ID, groupIDs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	data := toJSON(groupsReq{GroupIDs: groupIDs})
-
-	cases := []struct {
-		desc   string
-		token  string
-		orgID  string
-		req    string
-		status int
-	}{
-		{
-			desc:   "unassign groups from org",
-			token:  token,
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusNoContent,
-		},
-		{
-			desc:   "unassign groups from org with invalid auth token",
-			token:  wrongValue,
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "unassign groups from org without auth token",
-			token:  "",
-			orgID:  or.ID,
-			req:    data,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "unassign groups from org without org id",
-			token:  token,
-			orgID:  "",
-			req:    data,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "unassign groups from org with invalid org id",
-			token:  token,
-			orgID:  wrongValue,
-			req:    data,
-			status: http.StatusNotFound,
-		},
-		{
-			desc:   "unassign groups from org with invalid request body",
-			token:  token,
-			orgID:  or.ID,
-			req:    "}",
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "unassign groups from org without request body",
-			token:  token,
-			orgID:  or.ID,
-			req:    "",
-			status: http.StatusBadRequest,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client: client,
-			method: http.MethodDelete,
-			url:    fmt.Sprintf("%s/orgs/%s/groups", ts.URL, tc.orgID),
-			token:  tc.token,
-			body:   strings.NewReader(tc.req),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-
-	}
-}
-
-func TestListGroups(t *testing.T) {
-	svc := newService()
-	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	ts := newServer(svc)
-	defer ts.Close()
-	client := ts.Client()
-
-	or, err := svc.CreateOrg(context.Background(), token, org)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	groupIDs := []string{groupID, groupID2}
-
-	err = svc.AssignGroups(context.Background(), token, or.ID, groupIDs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	data := []viewGroupRes{
-		{
-			ID:          groupID,
-			OwnerID:     id,
-			Name:        name,
-			Description: description,
-		},
-		{
-			ID:          groupID2,
-			OwnerID:     id,
-			Name:        name,
-			Description: description,
-		},
-	}
-
-	cases := []struct {
-		desc   string
-		token  string
-		status int
-		url    string
-		res    []viewGroupRes
-	}{
-		{
-			desc:   "list org groups",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, or.ID, n, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list org groups with invalid auth token",
-			token:  wrongValue,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, or.ID, n, 0),
-			status: http.StatusUnauthorized,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups with empty auth token",
-			token:  "",
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, or.ID, n, 0),
-			status: http.StatusUnauthorized,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups with negative offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, or.ID, n, -5),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups with negative limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, or.ID, -5, 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups without offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d", ts.URL, or.ID, n),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list org groups without limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?offset=%d", ts.URL, or.ID, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list org groups with redundant query params",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d&value=value", ts.URL, or.ID, n, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list org groups with default URL",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups", ts.URL, or.ID),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list org groups with invalid limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%s&offset=%d", ts.URL, or.ID, "i", 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups with invalid offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%s", ts.URL, or.ID, n, "i"),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups with invalid org id",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
-			status: http.StatusOK,
-			res:    nil,
-		},
-		{
-			desc:   "list org groups without org id",
-			token:  token,
-			url:    fmt.Sprintf("%s/orgs/%s/groups?limit=%d&offset=%d", ts.URL, "", n, 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client: client,
-			method: http.MethodGet,
-			url:    tc.url,
-			token:  tc.token,
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data groupsPageRes
-		err = json.NewDecoder(res.Body).Decode(&data)
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, data.Groups, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Groups))
-
-	}
-}
-
 func TestBackup(t *testing.T) {
 	svc := newService()
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
@@ -1553,29 +1206,11 @@ func TestBackup(t *testing.T) {
 	o, err := svc.CreateOrg(context.Background(), adminToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	var grIDs []string
-	for i := 0; i < 2; i++ {
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		grIDs = append(grIDs, groupID)
-	}
-
-	err = svc.AssignGroups(context.Background(), adminToken, o.ID, grIDs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
 	members := []auth.OrgMember{viewerMember, editorMember, adminMember}
 	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	groupPolicy := auth.GroupPolicyByID{
-		MemberID: viewerID,
-		Policy:   auth.RPolicy,
-	}
-
-	err = svc.CreateGroupPolicies(context.Background(), adminToken, grIDs[0], groupPolicy)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	or := []orgRes{
@@ -1607,33 +1242,7 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	g := []viewOrgGroups{
-		{
-			GroupID: grIDs[0],
-			OrgID:   o.ID,
-		},
-		{
-			GroupID: grIDs[1],
-			OrgID:   o.ID,
-		},
-	}
-
-	gp := []viewGroupPolicies{
-		{
-			MemberID: o.OwnerID,
-			Policy:   auth.RwPolicy,
-		},
-		{
-			MemberID: viewerID,
-			Policy:   auth.RPolicy,
-		},
-	}
-
-	sort.Slice(g, func(i, j int) bool {
-		return g[i].GroupID < g[j].GroupID
-	})
-
-	data := backup{or, m, g, gp}
+	data := backup{or, m}
 
 	cases := []struct {
 		desc   string
@@ -1683,14 +1292,6 @@ func TestBackup(t *testing.T) {
 			return data.OrgMembers[i].MemberID < data.OrgMembers[j].MemberID
 		})
 
-		sort.Slice(data.OrgGroups, func(i, j int) bool {
-			return data.OrgGroups[i].GroupID < data.OrgGroups[j].GroupID
-		})
-
-		sort.Slice(data.GroupPolicies, func(i, j int) bool {
-			return data.GroupPolicies[i].MemberID < data.GroupPolicies[j].MemberID
-		})
-
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
@@ -1710,13 +1311,6 @@ func TestRestore(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-
-	var grIDs []string
-	for i := 0; i < 2; i++ {
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		grIDs = append(grIDs, groupID)
-	}
 
 	orgID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1749,30 +1343,9 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	g := []viewOrgGroups{
-		{
-			GroupID: grIDs[0],
-			OrgID:   orgID,
-		},
-		{
-			GroupID: grIDs[1],
-			OrgID:   orgID,
-		},
-	}
-
-	gp := []viewGroupPolicies{
-		{
-			GroupID:  grIDs[0],
-			MemberID: viewerID,
-			Policy:   auth.ViewerRole,
-		},
-	}
-
 	data := toJSON(backup{
-		Orgs:          or,
-		OrgMembers:    m,
-		OrgGroups:     g,
-		GroupPolicies: gp,
+		Orgs:       or,
+		OrgMembers: m,
 	})
 
 	cases := []struct {
@@ -1873,42 +1446,12 @@ type memberPageRes struct {
 	Members []viewMemberRes `json:"members"`
 }
 
-type groupsReq struct {
-	GroupIDs []string `json:"group_ids"`
-}
-
-type viewGroupRes struct {
-	ID          string `json:"id"`
-	OwnerID     string `json:"owner_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type groupsPageRes struct {
-	pageRes
-	Groups []viewGroupRes `json:"groups"`
-}
-
 type viewOrgMembers struct {
 	MemberID string `json:"member_id"`
 	OrgID    string `json:"org_id"`
 	Role     string `json:"role"`
 }
-
-type viewOrgGroups struct {
-	GroupID string `json:"group_id"`
-	OrgID   string `json:"org_id"`
-}
-
-type viewGroupPolicies struct {
-	GroupID  string `json:"group_id"`
-	MemberID string `json:"member_id"`
-	Policy   string `json:"policy"`
-}
-
 type backup struct {
-	Orgs          []orgRes            `json:"orgs"`
-	OrgMembers    []viewOrgMembers    `json:"org_members"`
-	OrgGroups     []viewOrgGroups     `json:"org_groups"`
-	GroupPolicies []viewGroupPolicies `json:"group_policies"`
+	Orgs       []orgRes         `json:"orgs"`
+	OrgMembers []viewOrgMembers `json:"org_members"`
 }

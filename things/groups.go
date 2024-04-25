@@ -2,8 +2,11 @@ package things
 
 import (
 	"context"
-	"errors"
 	"time"
+
+	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var (
@@ -48,6 +51,7 @@ type GroupMetadata map[string]interface{}
 type Group struct {
 	ID          string
 	OwnerID     string
+	OrgID       string
 	Name        string
 	Description string
 	Metadata    GroupMetadata
@@ -60,18 +64,6 @@ type Group struct {
 type GroupPage struct {
 	PageMetadata
 	Groups []Group
-}
-
-// GroupThingsPage contains page related metadata as well as list of members that
-// belong to this page.
-type GroupThingsPage struct {
-	PageMetadata
-	Things []Thing
-}
-
-type GroupChannelsPage struct {
-	PageMetadata
-	Channels []Channel
 }
 
 // GroupRepository specifies a group persistence API.
@@ -92,20 +84,220 @@ type GroupRepository interface {
 	RetrieveByIDs(ctx context.Context, groupIDs []string) (GroupPage, error)
 
 	// RetrieveByOwner retrieves all groups.
-	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (GroupPage, error)
+	RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm PageMetadata) (GroupPage, error)
 
 	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
-	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (GroupThingsPage, error)
-
-	// RetrieveGroupThingsByChannel retrieves page of disconnected things by channel that are assigned to a group same as channel.
-	RetrieveGroupThingsByChannel(ctx context.Context, grID, chID string, pm PageMetadata) (GroupThingsPage, error)
+	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (GroupChannelsPage, error)
+	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
 	// RetrieveByAdmin retrieves all groups with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (GroupPage, error)
+}
+
+type Groups interface {
+	// CreateGroups adds groups to the user identified by the provided key.
+	CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error)
+
+	// UpdateGroup updates the group identified by the provided ID.
+	UpdateGroup(ctx context.Context, token string, g Group) (Group, error)
+
+	// ViewGroup retrieves data about the group identified by ID.
+	ViewGroup(ctx context.Context, token, id string) (Group, error)
+
+	// ListGroups retrieves groups.
+	ListGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error)
+
+	// ListGroupsByIDs retrieves groups by their IDs.
+	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
+
+	// ListGroupThings retrieves page of things that are assigned to a group identified by groupID.
+	ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error)
+
+	// ListGroupThings retrieves page of channels that are assigned to a group identified by groupID.
+	ListGroupChannels(ctx context.Context, token string, groupID string, pm PageMetadata) (ChannelsPage, error)
+
+	// ViewThingGroup retrieves group that thing belongs to.
+	ViewThingGroup(ctx context.Context, token, thingID string) (Group, error)
+
+	// RemoveGroups removes the groups identified with the provided IDs.
+	RemoveGroups(ctx context.Context, token string, ids ...string) error
+
+	// ViewChannelGroup retrieves group that channel belongs to.
+	ViewChannelGroup(ctx context.Context, token, channelID string) (Group, error)
+}
+
+func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	ownerID := user.GetId()
+	timestamp := getTimestmap()
+
+	grs := []Group{}
+	for _, group := range groups {
+		group.OwnerID = ownerID
+		group.CreatedAt = timestamp
+		group.UpdatedAt = timestamp
+
+		gr, err := ts.createGroup(ctx, group)
+		if err != nil {
+			return []Group{}, err
+		}
+
+		policy := GroupPolicyByID{
+			MemberID: ownerID,
+			Policy:   ReadWrite,
+		}
+
+		if err := ts.policies.SaveGroupPolicies(ctx, gr.ID, policy); err != nil {
+			return []Group{}, err
+		}
+
+		grs = append(grs, gr)
+	}
+
+	return grs, nil
+}
+
+func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, error) {
+	id, err := ts.idProvider.ID()
+	if err != nil {
+		return Group{}, err
+	}
+	group.ID = id
+
+	group, err = ts.groups.Save(ctx, group)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
+}
+
+func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error) {
+	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+		return ts.groups.RetrieveByAdmin(ctx, pm)
+	}
+
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return GroupPage{}, err
+	}
+
+	return ts.groups.RetrieveByOwner(ctx, user.GetId(), orgID, pm)
+}
+
+func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error) {
+	page, err := ts.groups.RetrieveByIDs(ctx, ids)
+	if err != nil {
+		return []Group{}, err
+	}
+
+	return page.Groups, nil
+}
+
+func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		if err := ts.canAccessGroup(ctx, token, id, ReadWrite); err != nil {
+			return err
+		}
+	}
+
+	return ts.groups.Remove(ctx, ids...)
+}
+
+func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
+	if err := ts.canAccessGroup(ctx, token, group.ID, ReadWrite); err != nil {
+		return Group{}, err
+	}
+
+	group.UpdatedAt = getTimestmap()
+
+	return ts.groups.Update(ctx, group)
+}
+
+func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
+	if err := ts.canAccessGroup(ctx, token, id, Read); err != nil {
+		return Group{}, err
+	}
+
+	gr, err := ts.groups.RetrieveByID(ctx, id)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return gr, nil
+}
+
+func (ts *thingsService) ViewChannelGroup(ctx context.Context, token string, channelID string) (Group, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return Group{}, err
+	}
+
+	ch, err := ts.channels.RetrieveByID(ctx, channelID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
+}
+
+func (ts *thingsService) ViewThingGroup(ctx context.Context, token string, thingID string) (Group, error) {
+	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+		return Group{}, err
+	}
+
+	th, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	group, err := ts.groups.RetrieveByID(ctx, th.GroupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return group, nil
+}
+
+func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, policy string) error {
+	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	gp := GroupPolicy{
+		MemberID: user.Id,
+		GroupID:  groupID,
+	}
+
+	p, err := ts.policies.RetrieveGroupPolicy(ctx, gp)
+	if err != nil {
+		return err
+	}
+
+	switch policy {
+	case Read:
+		if p != Read && p != ReadWrite {
+			return errors.ErrAuthorization
+		}
+	case ReadWrite:
+		if p != ReadWrite {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return nil
 }

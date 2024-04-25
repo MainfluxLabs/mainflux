@@ -55,11 +55,12 @@ func newService(tokens map[string]string) things.Service {
 	thingsRepo := thmocks.NewThingRepository(conns)
 	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
 	groupsRepo := thmocks.NewGroupRepository()
+	policiesRepo := thmocks.NewPoliciesRepository()
 	chanCache := thmocks.NewChannelCache()
 	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, policiesRepo, chanCache, thingCache, idProvider)
 }
 
 func TestCreateThings(t *testing.T) {

@@ -29,6 +29,7 @@ import (
 	rediscache "github.com/MainfluxLabs/mainflux/things/redis"
 	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
 	"github.com/MainfluxLabs/mainflux/things/tracing"
+	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
@@ -71,58 +72,70 @@ const (
 	defJaegerURL       = ""
 	defAuthGRPCURL     = "localhost:8181"
 	defAuthGRPCTimeout = "1s"
+	defUsersCACerts    = ""
+	defUsersClientTLS  = "false"
+	defUsersGRPCURL    = "localhost:8184"
+	defTimeout         = "1s"
 
-	envLogLevel        = "MF_THINGS_LOG_LEVEL"
-	envDBHost          = "MF_THINGS_DB_HOST"
-	envDBPort          = "MF_THINGS_DB_PORT"
-	envDBUser          = "MF_THINGS_DB_USER"
-	envDBPass          = "MF_THINGS_DB_PASS"
-	envDB              = "MF_THINGS_DB"
-	envDBSSLMode       = "MF_THINGS_DB_SSL_MODE"
-	envDBSSLCert       = "MF_THINGS_DB_SSL_CERT"
-	envDBSSLKey        = "MF_THINGS_DB_SSL_KEY"
-	envDBSSLRootCert   = "MF_THINGS_DB_SSL_ROOT_CERT"
-	envClientTLS       = "MF_THINGS_CLIENT_TLS"
-	envCACerts         = "MF_THINGS_CA_CERTS"
-	envCacheURL        = "MF_THINGS_CACHE_URL"
-	envCachePass       = "MF_THINGS_CACHE_PASS"
-	envCacheDB         = "MF_THINGS_CACHE_DB"
-	envESURL           = "MF_THINGS_ES_URL"
-	envESPass          = "MF_THINGS_ES_PASS"
-	envESDB            = "MF_THINGS_ES_DB"
-	envHTTPPort        = "MF_THINGS_HTTP_PORT"
-	envAuthHTTPPort    = "MF_THINGS_AUTH_HTTP_PORT"
-	envAuthGRPCPort    = "MF_THINGS_AUTH_GRPC_PORT"
-	envServerCert      = "MF_THINGS_SERVER_CERT"
-	envServerKey       = "MF_THINGS_SERVER_KEY"
-	envStandaloneEmail = "MF_THINGS_STANDALONE_EMAIL"
-	envStandaloneToken = "MF_THINGS_STANDALONE_TOKEN"
-	envJaegerURL       = "MF_JAEGER_URL"
-	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
-	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
+	envLogLevel         = "MF_THINGS_LOG_LEVEL"
+	envDBHost           = "MF_THINGS_DB_HOST"
+	envDBPort           = "MF_THINGS_DB_PORT"
+	envDBUser           = "MF_THINGS_DB_USER"
+	envDBPass           = "MF_THINGS_DB_PASS"
+	envDB               = "MF_THINGS_DB"
+	envDBSSLMode        = "MF_THINGS_DB_SSL_MODE"
+	envDBSSLCert        = "MF_THINGS_DB_SSL_CERT"
+	envDBSSLKey         = "MF_THINGS_DB_SSL_KEY"
+	envDBSSLRootCert    = "MF_THINGS_DB_SSL_ROOT_CERT"
+	envClientTLS        = "MF_THINGS_CLIENT_TLS"
+	envCACerts          = "MF_THINGS_CA_CERTS"
+	envCacheURL         = "MF_THINGS_CACHE_URL"
+	envCachePass        = "MF_THINGS_CACHE_PASS"
+	envCacheDB          = "MF_THINGS_CACHE_DB"
+	envESURL            = "MF_THINGS_ES_URL"
+	envESPass           = "MF_THINGS_ES_PASS"
+	envESDB             = "MF_THINGS_ES_DB"
+	envHTTPPort         = "MF_THINGS_HTTP_PORT"
+	envAuthHTTPPort     = "MF_THINGS_AUTH_HTTP_PORT"
+	envAuthGRPCPort     = "MF_THINGS_AUTH_GRPC_PORT"
+	envServerCert       = "MF_THINGS_SERVER_CERT"
+	envServerKey        = "MF_THINGS_SERVER_KEY"
+	envStandaloneEmail  = "MF_THINGS_STANDALONE_EMAIL"
+	envStandaloneToken  = "MF_THINGS_STANDALONE_TOKEN"
+	envJaegerURL        = "MF_JAEGER_URL"
+	envAuthGRPCURL      = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout  = "MF_AUTH_GRPC_TIMEOUT"
+	envUsersGRPCURL     = "MF_USERS_GRPC_URL"
+	envUsersCACerts     = "MF_USERS_CA_CERTS"
+	envUsersClientTLS   = "MF_USERS_CLIENT_TLS"
+	envUsersGRPCTimeout = "MF_USERS_GRPC_TIMEOUT"
 )
 
 type config struct {
-	logLevel        string
-	dbConfig        postgres.Config
-	clientTLS       bool
-	caCerts         string
-	cacheURL        string
-	cachePass       string
-	cacheDB         string
-	esURL           string
-	esPass          string
-	esDB            string
-	httpPort        string
-	authHTTPPort    string
-	authGRPCPort    string
-	serverCert      string
-	serverKey       string
-	standaloneEmail string
-	standaloneToken string
-	jaegerURL       string
-	authGRPCURL     string
-	authGRPCTimeout time.Duration
+	logLevel         string
+	dbConfig         postgres.Config
+	clientTLS        bool
+	caCerts          string
+	cacheURL         string
+	cachePass        string
+	cacheDB          string
+	esURL            string
+	esPass           string
+	esDB             string
+	httpPort         string
+	authHTTPPort     string
+	authGRPCPort     string
+	serverCert       string
+	serverKey        string
+	standaloneEmail  string
+	standaloneToken  string
+	jaegerURL        string
+	authGRPCURL      string
+	authGRPCTimeout  time.Duration
+	usersClientTLS   bool
+	usersCACerts     string
+	usersGRPCURL     string
+	usersGRPCTimeout time.Duration
 }
 
 func main() {
@@ -159,7 +172,15 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	svc := newService(auth, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
+	usrConn := connectToUsers(cfg, logger)
+	defer usrConn.Close()
+
+	usersTracer, usersCloser := initJaeger("users", cfg.jaegerURL, logger)
+	defer usersCloser.Close()
+
+	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
+
+	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
 		return startHTTPServer(ctx, "thing-http", thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.httpPort, cfg, logger)
@@ -192,9 +213,19 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envauthGRPCTimeout, defAuthGRPCTimeout))
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envauthGRPCTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
+	usersClientTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
+	if err != nil {
+		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+	}
+
+	usersGRPCTimeout, err := time.ParseDuration(mainflux.Env(envUsersGRPCTimeout, defTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -210,26 +241,30 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		clientTLS:       tls,
-		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		cacheURL:        mainflux.Env(envCacheURL, defCacheURL),
-		cachePass:       mainflux.Env(envCachePass, defCachePass),
-		cacheDB:         mainflux.Env(envCacheDB, defCacheDB),
-		esURL:           mainflux.Env(envESURL, defESURL),
-		esPass:          mainflux.Env(envESPass, defESPass),
-		esDB:            mainflux.Env(envESDB, defESDB),
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		authHTTPPort:    mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
-		authGRPCPort:    mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
-		standaloneEmail: mainflux.Env(envStandaloneEmail, defStandaloneEmail),
-		standaloneToken: mainflux.Env(envStandaloneToken, defStandaloneToken),
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authGRPCTimeout: authGRPCTimeout,
+		logLevel:         mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:         dbConfig,
+		clientTLS:        tls,
+		caCerts:          mainflux.Env(envCACerts, defCACerts),
+		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
+		cachePass:        mainflux.Env(envCachePass, defCachePass),
+		cacheDB:          mainflux.Env(envCacheDB, defCacheDB),
+		esURL:            mainflux.Env(envESURL, defESURL),
+		esPass:           mainflux.Env(envESPass, defESPass),
+		esDB:             mainflux.Env(envESDB, defESDB),
+		httpPort:         mainflux.Env(envHTTPPort, defHTTPPort),
+		authHTTPPort:     mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
+		authGRPCPort:     mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
+		serverCert:       mainflux.Env(envServerCert, defServerCert),
+		serverKey:        mainflux.Env(envServerKey, defServerKey),
+		standaloneEmail:  mainflux.Env(envStandaloneEmail, defStandaloneEmail),
+		standaloneToken:  mainflux.Env(envStandaloneToken, defStandaloneToken),
+		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCURL:      mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		authGRPCTimeout:  authGRPCTimeout,
+		usersClientTLS:   usersClientTLS,
+		usersCACerts:     mainflux.Env(envUsersCACerts, defUsersCACerts),
+		usersGRPCURL:     mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		usersGRPCTimeout: usersGRPCTimeout,
 	}
 }
 
@@ -314,7 +349,32 @@ func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
+func connectToUsers(cfg config, logger logger.Logger) *grpc.ClientConn {
+	var opts []grpc.DialOption
+	if cfg.usersClientTLS {
+		if cfg.usersCACerts != "" {
+			tpc, err := credentials.NewClientTLSFromFile(cfg.usersCACerts, "")
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
+				os.Exit(1)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(tpc))
+		}
+	} else {
+		logger.Info("gRPC communication is not encrypted")
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	conn, err := grpc.Dial(cfg.usersGRPCURL, opts...)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to users service: %s", err))
+		os.Exit(1)
+	}
+
+	return conn
+}
+
+func newService(ac mainflux.AuthServiceClient, uc mainflux.UsersServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
 	database := postgres.NewDatabase(db)
 
 	thingsRepo := postgres.NewThingRepository(database)
@@ -333,7 +393,10 @@ func newService(ac mainflux.AuthServiceClient, dbTracer opentracing.Tracer, cach
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 	idProvider := uuid.New()
 
-	svc := things.New(ac, thingsRepo, channelsRepo, groupsRepo, chanCache, thingCache, idProvider)
+	policiesRepo := postgres.NewPoliciesRepository(db)
+	policiesRepo = tracing.PoliciesRepositoryMiddleware(dbTracer, policiesRepo)
+
+	svc := things.New(ac, uc, thingsRepo, channelsRepo, groupsRepo, policiesRepo, chanCache, thingCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

@@ -41,6 +41,7 @@ define make_docker
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
 		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		--output type=docker \
 		-f docker/Dockerfile .
 endef
 

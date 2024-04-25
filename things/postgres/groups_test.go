@@ -36,6 +36,7 @@ func TestGroupSave(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 	grID := generateUUID(t)
 
 	cases := []struct {
@@ -48,6 +49,7 @@ func TestGroupSave(t *testing.T) {
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
+				OrgID:   orgID,
 				Name:    groupName,
 			},
 			err: nil,
@@ -57,6 +59,7 @@ func TestGroupSave(t *testing.T) {
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
+				OrgID:   orgID,
 				Name:    groupName,
 			},
 			err: errors.ErrConflict,
@@ -66,6 +69,7 @@ func TestGroupSave(t *testing.T) {
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
+				OrgID:   orgID,
 				Name:    invalidName,
 			},
 			err: errors.ErrMalformedEntity,
@@ -75,6 +79,7 @@ func TestGroupSave(t *testing.T) {
 			group: things.Group{
 				ID:          grID,
 				OwnerID:     owID,
+				OrgID:       orgID,
 				Name:        groupName,
 				Description: invalidDesc,
 			},
@@ -93,11 +98,13 @@ func TestGroupRetrieveByID(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	group1 := things.Group{
 		ID:      generateUUID(t),
 		Name:    groupName + "TestGroupRetrieveByID1",
 		OwnerID: owID,
+		OrgID:   orgID,
 	}
 
 	_, err := groupRepo.Save(context.Background(), group1)
@@ -114,6 +121,7 @@ func TestGroupRetrieveByID(t *testing.T) {
 		ID:          generateUUID(t),
 		Name:        groupName + "TestGroupRetrieveByID",
 		OwnerID:     owID,
+		OrgID:       orgID,
 		CreatedAt:   creationTime,
 		UpdatedAt:   creationTime,
 		Description: description,
@@ -139,6 +147,7 @@ func TestGroupUpdate(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	wrongUid := generateUUID(t)
 
@@ -150,6 +159,7 @@ func TestGroupUpdate(t *testing.T) {
 		ID:          groupID,
 		Name:        groupName + "TestGroupUpdate",
 		OwnerID:     owID,
+		OrgID:       orgID,
 		CreatedAt:   creationTime,
 		UpdatedAt:   creationTime,
 		Description: description,
@@ -227,12 +237,14 @@ func TestGroupRemove(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	creationTime := time.Now().UTC()
 	group1 := things.Group{
 		ID:        generateUUID(t),
 		Name:      groupName + "child1",
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -242,6 +254,7 @@ func TestGroupRemove(t *testing.T) {
 		ID:        generateUUID(t),
 		Name:      groupName + "child2",
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -276,6 +289,7 @@ func TestRetrieveByOwner(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	metadata := things.PageMetadata{
 		Metadata: things.GroupMetadata{
@@ -295,6 +309,7 @@ func TestRetrieveByOwner(t *testing.T) {
 			ID:        generateUUID(t),
 			Name:      fmt.Sprintf("%s-%d", groupName, i),
 			OwnerID:   owID,
+			OrgID:     orgID,
 			CreatedAt: creationTime,
 			UpdatedAt: creationTime,
 		}
@@ -337,7 +352,7 @@ func TestRetrieveByOwner(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := groupRepo.RetrieveByOwner(context.Background(), owID, tc.Metadata)
+		page, err := groupRepo.RetrieveByOwner(context.Background(), owID, "", tc.Metadata)
 		size := len(page.Groups)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Equal(t, tc.Metadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.Metadata.Total, page.Total))
@@ -350,6 +365,7 @@ func TestRetrieveByIDs(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	metadata := things.PageMetadata{
 		Metadata: things.GroupMetadata{
@@ -366,6 +382,7 @@ func TestRetrieveByIDs(t *testing.T) {
 			ID:        generateUUID(t),
 			Name:      fmt.Sprintf("%s-%d", groupName, i),
 			OwnerID:   owID,
+			OrgID:     orgID,
 			CreatedAt: creationTime,
 			UpdatedAt: creationTime,
 		}
@@ -419,6 +436,7 @@ func TestRetrieveAllGroups(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	metadata := things.PageMetadata{
 		Metadata: things.GroupMetadata{
@@ -433,6 +451,7 @@ func TestRetrieveAllGroups(t *testing.T) {
 			ID:        generateUUID(t),
 			Name:      fmt.Sprintf("%s-%d", groupName, i),
 			OwnerID:   owID,
+			OrgID:     orgID,
 			CreatedAt: creationTime,
 			UpdatedAt: creationTime,
 		}
@@ -467,12 +486,14 @@ func TestRetrieveGroupThings(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
 		Name:      groupName,
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -480,6 +501,7 @@ func TestRetrieveGroupThings(t *testing.T) {
 		ID:        generateUUID(t),
 		Name:      groupName,
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -570,12 +592,14 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
 	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
 		Name:      groupName,
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -583,6 +607,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 		ID:        generateUUID(t),
 		Name:      groupName + "2",
 		OwnerID:   owID,
+		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
 	}
@@ -676,12 +701,14 @@ func generateUUID(t *testing.T) string {
 func createGroup(t *testing.T, dbMiddleware postgres.Database) things.Group {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	grID := generateUUID(t)
+	owID := generateUUID(t)
+	orgID := generateUUID(t)
 
 	group, err := groupRepo.Save(context.Background(), things.Group{
 		ID:      grID,
 		OwnerID: owID,
+		OrgID:   orgID,
 		Name:    "gr-name",
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
