@@ -76,7 +76,7 @@ func migrateDB(db *sqlx.DB) error {
 						role        VARCHAR(10) NOT NULL,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
-						FOREIGN KEY (org_id) REFERENCES orgs (id),
+						FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
 						PRIMARY KEY (member_id, org_id)
 					)`,
 				},
