@@ -159,7 +159,7 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	dbu := dbGroup{
 		ID: id,
 	}
-	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM groups WHERE id = $1`
+	q := `SELECT id, name, owner_id, org_id, description, metadata, created_at, updated_at FROM groups WHERE id = $1`
 	if err := gr.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
 		if err == sql.ErrNoRows {
 			return things.Group{}, errors.Wrap(errors.ErrNotFound, err)

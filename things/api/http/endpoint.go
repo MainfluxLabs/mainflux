@@ -559,6 +559,7 @@ func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Description: group.Description,
 			Metadata:    group.Metadata,
 			OwnerID:     group.OwnerID,
+			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
 		}
@@ -676,6 +677,7 @@ func viewThingGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Description: group.Description,
 			Metadata:    group.Metadata,
 			OwnerID:     group.OwnerID,
+			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
 		}
@@ -724,6 +726,7 @@ func viewChannelGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Description: group.Description,
 			Metadata:    group.Metadata,
 			OwnerID:     group.OwnerID,
+			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
 		}
@@ -746,6 +749,7 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 		view := viewGroupRes{
 			ID:          group.ID,
 			OwnerID:     group.OwnerID,
+			OrgID:       group.OrgID,
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,
@@ -852,6 +856,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			Description: group.Description,
 			Metadata:    group.Metadata,
 			OwnerID:     group.OwnerID,
+			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
 		}
