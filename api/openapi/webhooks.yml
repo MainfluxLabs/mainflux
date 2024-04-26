@@ -1,0 +1,143 @@
+openapi: 3.0.1
+info:
+  title: Mainflux webhooks service
+  description: HTTP API for managing platform webhooks.
+  version: 1.0.0
+
+paths:
+  /webhooks/{thingID}:
+    post:
+      summary: Adds new Webhooks
+      description: |
+        Adds new webhooks to the list of webhooks for certain thing 
+        owned by user identified using the provided access token.
+      tags:
+        - webhooks
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/WebhooksCreateReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/WebhooksCreateRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves webhooks
+      description: Retrieves list of webhooks related to a certain thing identified by the provided ID.
+      tags:
+        - webhooks
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/WebhooksListRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    WebhookReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of webhook.
+        url:
+          type: string
+          description: The url to which the message will be forwarded.
+      required:
+        - name
+        - url
+    WebhookResSchema:
+      type: object
+      properties:
+        thing_id:
+          type: string
+          description: The thing identifier refers to the thing for which the webhook was created.
+        name:
+          type: string
+          description: Name of webhook.
+        url:
+          type: string
+          description: The url to which the message will be forwarded.
+      required:
+        - thing_id
+        - name
+        - url
+
+  parameters:
+    ThingId:
+      name: thingId
+      description: Thing identifier refers to the thing for which the webhook is being created.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+
+  requestBodies:
+    WebhooksCreateReq:
+      description: JSON-formatted document describing the new webhooks.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              webhooks:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WebhookReqSchema"
+
+  responses:
+    WebhooksCreateRes:
+      description: Webhooks created.
+    WebhooksListRes:
+      description: Webhooks retrieved.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              webhooks:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WebhookResSchema"
+            required:
+              - webhooks
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: [ ]
+  
