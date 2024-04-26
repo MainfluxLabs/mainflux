@@ -52,9 +52,6 @@ var (
 
 	// ErrEmptyID indicates the absence of ID.
 	ErrEmptyID = errors.New("empty ID")
-
-	// ErrUnknownContent indicates that the content type is unknown.
-	ErrUnknownContent = errors.New("unknown content type")
 )
 
 // Publisher specifies message publishing API.

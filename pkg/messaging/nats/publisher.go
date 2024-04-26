@@ -101,6 +101,6 @@ func getFormat(ct string) (format string, err error) {
 	case messaging.CBORContentType:
 		return messaging.CBORFormat, nil
 	default:
-		return "", messaging.ErrUnknownContent
+		return messaging.SenMLFormat, nil
 	}
 }
