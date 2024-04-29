@@ -13,12 +13,12 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-	ViewerRole       = "viewer"
-	AdminRole        = "admin"
-	OwnerRole        = "owner"
-	EditorRole       = "editor"
+	Admin            = "admin"
+	Owner            = "owner"
+	Editor           = "editor"
+	Viewer           = "viewer"
 	RootSubject      = "root"
-	OrgSubject       = "org"
+	OrgsSubject      = "orgs"
 )
 
 var (
@@ -160,6 +160,8 @@ func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
 	case RootSubject:
 		return svc.isAdmin(ctx, ar.Token)
+	case OrgsSubject:
+		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
 	}
@@ -251,7 +253,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 	om := OrgMember{
 		OrgID:     id,
 		MemberID:  user.ID,
-		Role:      OwnerRole,
+		Role:      Owner,
 		CreatedAt: timestamp,
 		UpdatedAt: timestamp,
 	}
@@ -282,7 +284,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	if err := svc.orgRolesAuth(ctx, token, id, OwnerRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, id, Owner); err != nil {
 		return err
 	}
 
@@ -295,7 +297,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	if err := svc.orgRolesAuth(ctx, token, o.ID, AdminRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, o.ID, Admin); err != nil {
 		return Org{}, err
 	}
 
@@ -316,7 +318,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 }
 
 func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
-	if err := svc.orgRolesAuth(ctx, token, id, ViewerRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, id, Viewer); err != nil {
 		return Org{}, err
 	}
 
@@ -329,7 +331,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 }
 
 func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error {
-	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
 	}
 
@@ -372,17 +374,6 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	/*grs, err := svc.orgs.RetrieveGroups(ctx, orgID, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	for _, gr := range grs.OrgGroups {
-		if err := svc.policies.RemoveGroupPolicies(ctx, gr.GroupID, memberIDs...); err != nil {
-			return err
-		}
-	}*/
-
 	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
@@ -391,7 +382,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 }
 
 func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error) {
-	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMember{}, err
 	}
 
@@ -416,7 +407,7 @@ func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string
 }
 
 func (svc service) UpdateMembers(ctx context.Context, token, orgID string, members ...OrgMember) error {
-	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
 	}
 
@@ -462,7 +453,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 }
 
 func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
-	if err := svc.orgRolesAuth(ctx, token, orgID, ViewerRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembersPage{}, err
 	}
 
@@ -596,7 +587,7 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action string) error {
+func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {
 	if err := svc.isAdmin(ctx, token); err == nil {
 		return nil
 	}
@@ -612,18 +603,18 @@ func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action
 	}
 
 	switch role {
-	case OwnerRole:
+	case Owner:
 		return nil
-	case AdminRole:
-		if action == ViewerRole || action == EditorRole || action == AdminRole {
+	case Admin:
+		if action != Owner {
 			return nil
 		}
-	case EditorRole:
-		if action == ViewerRole || action == EditorRole {
+	case Editor:
+		if action == Viewer || action == Editor {
 			return nil
 		}
-	case ViewerRole:
-		if action == ViewerRole {
+	case Viewer:
+		if action == Viewer {
 			return nil
 		}
 	}
@@ -632,7 +623,7 @@ func (svc service) orgRolesAuth(ctx context.Context, token, orgID string, action
 }
 
 func (svc service) canAssignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
-	if err := svc.orgRolesAuth(ctx, token, orgID, AdminRole); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
 	}
 
@@ -642,7 +633,7 @@ func (svc service) canAssignMembers(ctx context.Context, token, orgID string, me
 			return err
 		}
 
-		if role == OwnerRole {
+		if role == Owner {
 			return errors.ErrAuthorization
 		}
 	}

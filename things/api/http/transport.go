@@ -34,7 +34,7 @@ const (
 	groupIDKey   = "groupID"
 	thingIDKey   = "thingID"
 	channelIDKey = "channelID"
-	orgKey       = "org"
+	orgKey       = "org_id"
 
 	defOffset = 0
 	defLimit  = 10

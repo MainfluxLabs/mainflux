@@ -637,6 +637,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		return buildGroupsResponse(page), nil
 	}
 }
+
 func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)

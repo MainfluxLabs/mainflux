@@ -507,7 +507,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
-			Role:      auth.EditorRole,
+			Role:      auth.Editor,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -642,7 +642,7 @@ func TestAssignMembers(t *testing.T) {
 		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
-			Role:      auth.EditorRole,
+			Role:      auth.Editor,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -746,7 +746,7 @@ func TestUnassignMembers(t *testing.T) {
 		orgMember := auth.OrgMember{
 			OrgID:     orgID,
 			MemberID:  memberID,
-			Role:      auth.EditorRole,
+			Role:      auth.Editor,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -832,7 +832,7 @@ func TestRetrieveRole(t *testing.T) {
 	orgMember := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
-		Role:      auth.AdminRole,
+		Role:      auth.Admin,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -851,7 +851,7 @@ func TestRetrieveRole(t *testing.T) {
 			desc:     "retrieve role",
 			orgID:    org.ID,
 			memberID: memberID,
-			role:     auth.AdminRole,
+			role:     auth.Admin,
 			err:      nil,
 		},
 		{
@@ -916,7 +916,7 @@ func TestUpdateMembers(t *testing.T) {
 	orgMember := auth.OrgMember{
 		OrgID:     org.ID,
 		MemberID:  memberID,
-		Role:      auth.EditorRole,
+		Role:      auth.Editor,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -927,43 +927,43 @@ func TestUpdateMembers(t *testing.T) {
 	updateMrel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: memberID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	invalidOrgIDmRel := auth.OrgMember{
 		OrgID:    invalidID,
 		MemberID: memberID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	unknownOrgIDmRel := auth.OrgMember{
 		OrgID:    unknownID,
 		MemberID: memberID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	emptyOrgIDmRel := auth.OrgMember{
 		OrgID:    "",
 		MemberID: memberID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	invalidMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: invalidID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	unknownMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: unknownID,
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	emptyMemberIDmRel := auth.OrgMember{
 		OrgID:    org.ID,
 		MemberID: "",
-		Role:     auth.ViewerRole,
+		Role:     auth.Viewer,
 	}
 
 	cases := []struct {
@@ -1038,7 +1038,7 @@ func TestRetrieveMembers(t *testing.T) {
 		orgMember := auth.OrgMember{
 			OrgID:    orgID,
 			MemberID: memberID,
-			Role:     auth.EditorRole,
+			Role:     auth.Editor,
 		}
 
 		orgMembers = append(orgMembers, orgMember)
@@ -1140,7 +1140,7 @@ func TestRetrieveAllOrgMembers(t *testing.T) {
 		orgMember := auth.OrgMember{
 			OrgID:    org.ID,
 			MemberID: memberID,
-			Role:     auth.EditorRole,
+			Role:     auth.Editor,
 		}
 
 		orgMembers = append(orgMembers, orgMember)

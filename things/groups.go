@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -96,7 +95,7 @@ type GroupRepository interface {
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
 	// RetrieveByAdmin retrieves all groups with pagination.
-	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (GroupPage, error)
+	RetrieveByAdmin(ctx context.Context, orgID string, pm PageMetadata) (GroupPage, error)
 }
 
 type Groups interface {
@@ -182,8 +181,14 @@ func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, e
 }
 
 func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error) {
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
-		return ts.groups.RetrieveByAdmin(ctx, pm)
+	if orgID != "" {
+		if err := ts.canAccessOrg(ctx, token, orgID); err == nil {
+			return ts.groups.RetrieveByAdmin(ctx, orgID, pm)
+		}
+	}
+
+	if err := ts.isAdmin(ctx, token); err == nil {
+		return ts.groups.RetrieveByAdmin(ctx, orgID, pm)
 	}
 
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
@@ -272,7 +277,7 @@ func (ts *thingsService) ViewThingGroup(ctx context.Context, token string, thing
 	return group, nil
 }
 
-func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, policy string) error {
+func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
@@ -288,14 +293,16 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, pol
 		return err
 	}
 
-	switch policy {
+	switch p {
 	case Read:
-		if p != Read && p != ReadWrite {
+		if action == Read {
 			return errors.ErrAuthorization
 		}
 	case ReadWrite:
-		if p != ReadWrite {
-			return errors.ErrAuthorization
+		return nil
+	default:
+		if err := ts.isAdmin(ctx, token); err != nil {
+			return err
 		}
 	}
 

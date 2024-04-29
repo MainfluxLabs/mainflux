@@ -75,12 +75,12 @@ func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.
 	return grm.repo.RetrieveAll(ctx)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	span := createSpan(ctx, grm.tracer, retrieveAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveByAdmin(ctx, pm)
+	return grm.repo.RetrieveByAdmin(ctx, orgID, pm)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Group, error) {

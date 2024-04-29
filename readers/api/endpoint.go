@@ -9,7 +9,6 @@ import (
 	"encoding/csv"
 	"fmt"
 
-	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -64,7 +63,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, auth.RootSubject, req.token); err != nil {
+		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -88,7 +87,7 @@ func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := authorizeAdmin(ctx, auth.RootSubject, req.token); err != nil {
+		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -114,7 +113,7 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// Check if user is authorized to read all messages
-		if err := authorizeAdmin(ctx, auth.RootSubject, req.token); err != nil {
+		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -172,7 +171,6 @@ func convertSenMLToCSV(page readers.MessagesPage, writer *csv.Writer) error {
 	}
 	return nil
 }
-
 
 func getValue(ptr interface{}, defaultValue string) string {
 	switch v := ptr.(type) {

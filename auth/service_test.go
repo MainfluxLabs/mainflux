@@ -45,7 +45,7 @@ const (
 
 var (
 	org           = auth.Org{Name: name, Description: description}
-	members       = []auth.OrgMember{{Email: adminEmail, Role: auth.AdminRole}, {Email: editorEmail, Role: auth.EditorRole}, {Email: viewerEmail, Role: auth.ViewerRole}}
+	members       = []auth.OrgMember{{Email: adminEmail, Role: auth.Admin}, {Email: editorEmail, Role: auth.Editor}, {Email: viewerEmail, Role: auth.Viewer}}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
 	idProvider    = uuid.New()
@@ -779,11 +779,11 @@ func TestAssignMembers(t *testing.T) {
 	mb := []auth.OrgMember{
 		{
 			MemberID: "member1",
-			Role:     auth.ViewerRole,
+			Role:     auth.Viewer,
 		},
 		{
 			MemberID: "member2",
-			Role:     auth.ViewerRole,
+			Role:     auth.Viewer,
 		},
 	}
 	cases := []struct {
@@ -964,7 +964,7 @@ func TestUpdateMembers(t *testing.T) {
 	err = svc.AssignMembers(context.Background(), ownerToken, or.ID, members...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	orgOwner := auth.OrgMember{Email: ownerEmail, Role: auth.OwnerRole}
+	orgOwner := auth.OrgMember{Email: ownerEmail, Role: auth.Owner}
 
 	cases := []struct {
 		desc   string

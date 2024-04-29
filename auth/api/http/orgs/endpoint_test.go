@@ -51,9 +51,9 @@ var (
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
 	idProvider    = uuid.New()
-	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.ViewerRole}
-	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.EditorRole}
-	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.AdminRole}
+	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
+	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
+	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 )
@@ -954,10 +954,10 @@ func TestUpdateMembers(t *testing.T) {
 	client := ts.Client()
 
 	updtToEditor := viewerMember
-	updtToEditor.Role = auth.EditorRole
+	updtToEditor.Role = auth.Editor
 
 	updtToOwner := viewerMember
-	updtToOwner.Role = auth.OwnerRole
+	updtToOwner.Role = auth.Owner
 
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1077,7 +1077,7 @@ func TestListMembers(t *testing.T) {
 	owner := viewMemberRes{
 		ID:    id,
 		Email: email,
-		Role:  auth.OwnerRole,
+		Role:  auth.Owner,
 	}
 
 	data = append(data, owner)
@@ -1329,17 +1329,17 @@ func TestRestore(t *testing.T) {
 		{
 			MemberID: viewerID,
 			OrgID:    orgID,
-			Role:     auth.ViewerRole,
+			Role:     auth.Viewer,
 		},
 		{
 			MemberID: editorID,
 			OrgID:    orgID,
-			Role:     auth.EditorRole,
+			Role:     auth.Editor,
 		},
 		{
 			MemberID: adminID,
 			OrgID:    orgID,
-			Role:     auth.AdminRole,
+			Role:     auth.Admin,
 		},
 	}
 
