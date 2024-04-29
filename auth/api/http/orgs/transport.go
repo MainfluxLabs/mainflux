@@ -272,10 +272,10 @@ func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, erro
 
 	for i := range req.OrgMembers {
 		if req.OrgMembers[i].Role == "" {
-			req.OrgMembers[i].Role = auth.ViewerRole
+			req.OrgMembers[i].Role = auth.Viewer
 		}
 
-		if req.OrgMembers[i].Role == auth.OwnerRole {
+		if req.OrgMembers[i].Role == auth.Owner {
 			return nil, apiutil.ErrMalformedEntity
 		}
 	}

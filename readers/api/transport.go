@@ -377,7 +377,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		if err := authorizeAdmin(ctx, auth.RootSubject, token); err == nil {
+		if err := isAdmin(ctx, token); err == nil {
 			return nil
 		}
 
@@ -393,10 +393,10 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
-func authorizeAdmin(ctx context.Context, subject, token string) error {
+func isAdmin(ctx context.Context, token string) error {
 	req := &mainflux.AuthorizeReq{
 		Token:   token,
-		Subject: subject,
+		Subject: auth.RootSubject,
 	}
 
 	if _, err := authc.Authorize(ctx, req); err != nil {

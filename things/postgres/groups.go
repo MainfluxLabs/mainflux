@@ -223,8 +223,8 @@ func (gr groupRepository) RetrieveByOwner(ctx context.Context, ownerID, orgID st
 	return gr.retrieve(ctx, ownerID, orgID, pm)
 }
 
-func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
-	return gr.retrieve(ctx, "", "", pm)
+func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+	return gr.retrieve(ctx, "", orgID, pm)
 }
 
 func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {

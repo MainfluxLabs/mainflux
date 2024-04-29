@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -23,7 +24,7 @@ type authServiceMock struct {
 // NewAuthService creates mock of users service.
 func NewAuthService(adminID string, userList []users.User) mainflux.AuthServiceClient {
 	usersByEmail := make(map[string]users.User)
-	roles := map[string]string{"root": adminID}
+	roles := map[string]string{auth.RootSubject: adminID}
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
@@ -59,8 +60,8 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 	}
 
 	switch req.Subject {
-	case "root":
-		if svc.roles["root"] != u.ID {
+	case auth.RootSubject:
+		if svc.roles[auth.RootSubject] != u.ID {
 			return &empty.Empty{}, errors.ErrAuthorization
 		}
 	default:

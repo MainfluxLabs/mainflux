@@ -241,10 +241,6 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
-		return thing, nil
-	}
-
 	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
@@ -254,23 +250,15 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return thing, nil
 	}
 
-	gp := GroupPolicy{
-		MemberID: res.GetId(),
-		GroupID:  thing.GroupID,
-	}
-	p, err := ts.policies.RetrieveGroupPolicy(ctx, gp)
-	if err != nil {
+	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Read); err != nil {
 		return Thing{}, err
-	}
-	if p != Read && p != ReadWrite {
-		return Thing{}, errors.ErrAuthorization
 	}
 
 	return thing, nil
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.things.RetrieveByAdmin(ctx, pm)
 	}
 
@@ -377,7 +365,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+	if err := ts.isAdmin(ctx, token); err == nil {
 		return channel, nil
 	}
 
@@ -389,7 +377,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 }
 
 func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.channels.RetrieveByAdmin(ctx, pm)
 	}
 
@@ -412,7 +400,7 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 		return Channel{}, err
 	}
 
-	if err := ts.authorize(ctx, auth.RootSubject, token); err == nil {
+	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
 	}
 
@@ -516,9 +504,11 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 	if err := ts.thingCache.Save(ctx, thingKey, conn.ThingID); err != nil {
 		return Connection{}, err
 	}
+
 	if err := ts.channelCache.Connect(ctx, conn.ChannelID, conn.ThingID); err != nil {
 		return Connection{}, err
 	}
+
 	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
 }
 
@@ -576,7 +566,7 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
+	if err := ts.isAdmin(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -615,7 +605,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := ts.authorize(ctx, auth.RootSubject, token); err != nil {
+	if err := ts.isAdmin(ctx, token); err != nil {
 		return err
 	}
 
@@ -673,10 +663,25 @@ func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID s
 	return ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
 }
 
-func (ts *thingsService) authorize(ctx context.Context, subject, token string) error {
+func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	req := &mainflux.AuthorizeReq{
 		Token:   token,
-		Subject: subject,
+		Subject: auth.RootSubject,
+	}
+
+	if _, err := ts.auth.Authorize(ctx, req); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return nil
+}
+
+func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID string) error {
+	req := &mainflux.AuthorizeReq{
+		Token:   token,
+		Subject: auth.OrgsSubject,
+		Object:  orgID,
+		Action:  auth.Viewer,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
