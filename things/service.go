@@ -365,12 +365,12 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if channel.OwnerID == res.GetId() {
 		return channel, nil
 	}
 
-	if channel.OwnerID != res.GetId() {
-		return Channel{}, errors.ErrAuthorization
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Read); err != nil {
+		return Channel{}, err
 	}
 
 	return channel, nil
