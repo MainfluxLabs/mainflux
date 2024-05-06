@@ -481,18 +481,7 @@ func TestListThingsByChannel(t *testing.T) {
 				Limit:  n,
 			},
 			size: 0,
-			err:  nil,
-		},
-		"list all non connected things by existing channel": {
-			token: token,
-			chID:  ch.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-			},
-			size: thsDisconNum,
-			err:  nil,
+			err:  errors.ErrNotFound,
 		},
 		"list all things by channel sorted by name ascendent": {
 			token: token,
@@ -506,19 +495,6 @@ func TestListThingsByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 			err:  nil,
 		},
-		"list all non-connected things by channel sorted by name ascendent": {
-			token: token,
-			chID:  ch.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "asc",
-			},
-			size: thsDisconNum,
-			err:  nil,
-		},
 		"list all things by channel sorted by name descendent": {
 			token: token,
 			chID:  ch.ID,
@@ -529,19 +505,6 @@ func TestListThingsByChannel(t *testing.T) {
 				Dir:    "desc",
 			},
 			size: n - thsDisconNum,
-			err:  nil,
-		},
-		"list all non-connected things by channel sorted by name descendent": {
-			token: token,
-			chID:  ch.ID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "desc",
-			},
-			size: thsDisconNum,
 			err:  nil,
 		},
 	}
@@ -691,7 +654,7 @@ func TestViewChannel(t *testing.T) {
 		id       string
 		token    string
 		err      error
-		metadata things.Metadata
+		metadata map[string]interface{}
 	}{
 		"view existing channel": {
 			id:    ch.ID,
@@ -1083,13 +1046,6 @@ func TestDisconnect(t *testing.T) {
 			chanID:  ch.ID,
 			thingID: th.ID,
 			err:     nil,
-		},
-		{
-			desc:    "disconnect disconnected thing",
-			token:   token,
-			chanID:  ch.ID,
-			thingID: th.ID,
-			err:     errors.ErrNotFound,
 		},
 		{
 			desc:    "disconnect with wrong credentials",

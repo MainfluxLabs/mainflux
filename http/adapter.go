@@ -15,7 +15,7 @@ import (
 // Service specifies coap service API.
 type Service interface {
 	// Publish Messssage
-	Publish(ctx context.Context, token string, msg messaging.Message) error
+	Publish(ctx context.Context, token string, msg messaging.Message) (m messaging.Message, err error)
 }
 
 var _ Service = (*adapterService)(nil)
@@ -33,15 +33,16 @@ func New(publisher messaging.Publisher, things mainflux.ThingsServiceClient) Ser
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) error {
+func (as *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) (m messaging.Message, err error) {
 	cr := &mainflux.ConnByKeyReq{
 		Key: key,
 	}
 	conn, err := as.things.GetConnByKey(ctx, cr)
 	if err != nil {
-		return err
+		return messaging.Message{}, err
 	}
-	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
 
-	return as.publisher.Publish(m)
+	m = messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
+
+	return m, as.publisher.Publish(m)
 }

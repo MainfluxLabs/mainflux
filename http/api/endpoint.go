@@ -6,8 +6,8 @@ package api
 import (
 	"context"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/MainfluxLabs/mainflux/http"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func sendMessageEndpoint(svc http.Service) endpoint.Endpoint {
@@ -18,7 +18,7 @@ func sendMessageEndpoint(svc http.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Publish(ctx, req.token, req.msg)
+		_, err := svc.Publish(ctx, req.token, req.msg)
 		return nil, err
 	}
 }

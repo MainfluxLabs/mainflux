@@ -407,31 +407,21 @@ func TestRetrieveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		ownerID string
 		thID    string
 		channel things.Channel
 		err     error
 	}{
 		"retrieve channel by thing with existing owner": {
-			ownerID: group.OwnerID,
 			thID:    thID,
 			channel: ch,
 			err:     nil,
 		},
-		"retrieve channel by thing with non-existing owner": {
-			ownerID: wrongID,
-			thID:    thID,
-			channel: things.Channel{},
-			err:     nil,
-		},
 		"retrieve channel by non-existent thing": {
-			ownerID: group.OwnerID,
 			thID:    nonexistentThingID,
 			channel: things.Channel{},
 			err:     nil,
 		},
 		"retrieve channel with malformed UUID": {
-			ownerID: group.OwnerID,
 			thID:    "wrong",
 			channel: things.Channel{},
 			err:     errors.ErrNotFound,
@@ -439,7 +429,7 @@ func TestRetrieveByThing(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		ch, err := chanRepo.RetrieveByThing(context.Background(), tc.ownerID, tc.thID)
+		ch, err := chanRepo.RetrieveByThing(context.Background(), tc.thID)
 		assert.Equal(t, tc.channel, ch, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channel, ch))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}

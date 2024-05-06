@@ -76,20 +76,12 @@ func (crm channelRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owne
 	return crm.repo.RetrieveByOwner(ctx, owner, pm)
 }
 
-func (crm channelRepositoryMiddleware) RetrieveByThing(ctx context.Context, owner, thID string) (things.Channel, error) {
+func (crm channelRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Channel, error) {
 	span := createSpan(ctx, crm.tracer, retrieveByThingOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByThing(ctx, owner, thID)
-}
-
-func (crm channelRepositoryMiddleware) RetrieveConns(ctx context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	span := createSpan(ctx, crm.tracer, retrieveChannelConnsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.RetrieveConns(ctx, thID, pm)
+	return crm.repo.RetrieveByThing(ctx, thID)
 }
 
 func (crm channelRepositoryMiddleware) Remove(ctx context.Context, owner string, ids ...string) error {

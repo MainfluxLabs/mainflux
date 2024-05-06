@@ -208,7 +208,7 @@ func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections | not-connected]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Channel and get the list of Channels connected or disconnected from a Thing`,
+		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Channel and get the list of Things connected to a Channel`,
 	}
 
 	for i := range cmdThings {
