@@ -629,7 +629,7 @@ func TestBackupThings(t *testing.T) {
 	}
 }
 
-func TestMultiThingRetrievalByChannel(t *testing.T) {
+func TestRetrieveByChannel(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
@@ -678,15 +678,13 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
-		ownerID      string
 		chID         string
 		pageMetadata things.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"retrieve all things by channel with existing owner": {
-			ownerID: group.OwnerID,
-			chID:    chID,
+			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -694,34 +692,22 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 		},
 		"retrieve all things by channel without limit": {
-			ownerID: group.OwnerID,
-			chID:    chID,
+			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
 			size: n - thsDisconNum,
 		},
 		"retrieve subset of things by channel with existing owner": {
-			ownerID: group.OwnerID,
-			chID:    chID,
+			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
 			},
 			size: (n - (n / 2)) - thsDisconNum,
 		},
-		"retrieve things by channel with non-existing owner": {
-			ownerID: wrongID,
-			chID:    chID,
-			pageMetadata: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
-		},
 		"retrieve things by non-existing channel": {
-			ownerID: group.OwnerID,
-			chID:    nonexistentChanID,
+			chID: nonexistentChanID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -729,8 +715,7 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things with malformed UUID": {
-			ownerID: group.OwnerID,
-			chID:    "wrong",
+			chID: "wrong",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -738,28 +723,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			size: 0,
 			err:  errors.ErrNotFound,
 		},
-		"retrieve all non connected things by channel with existing owner": {
-			ownerID: group.OwnerID,
-			chID:    chID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-			},
-			size: thsDisconNum,
-		},
-		"retrieve all non connected things by channel without limit": {
-			ownerID: group.OwnerID,
-			chID:    chID,
-			pageMetadata: things.PageMetadata{
-				Limit:        0,
-				Disconnected: true,
-			},
-			size: thsDisconNum,
-		},
 		"retrieve all things by channel sorted by name ascendent": {
-			ownerID: group.OwnerID,
-			chID:    chID,
+			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -768,21 +733,8 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve all non-connected things by channel sorted by name ascendent": {
-			ownerID: group.OwnerID,
-			chID:    chID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "asc",
-			},
-			size: thsDisconNum,
-		},
 		"retrieve all things by channel sorted by name descendent": {
-			ownerID: group.OwnerID,
-			chID:    chID,
+			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -791,22 +743,10 @@ func TestMultiThingRetrievalByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve all non-connected things by channel sorted by name descendent": {
-			ownerID: group.OwnerID,
-			chID:    chID,
-			pageMetadata: things.PageMetadata{
-				Offset:       0,
-				Limit:        n,
-				Disconnected: true,
-				Order:        "name",
-				Dir:          "desc",
-			},
-			size: thsDisconNum,
-		},
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveByChannel(context.Background(), tc.ownerID, tc.chID, tc.pageMetadata)
+		page, err := thingRepo.RetrieveByChannel(context.Background(), tc.chID, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected no error got %d\n", desc, err))

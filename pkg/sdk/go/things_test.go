@@ -420,14 +420,13 @@ func TestThingsByChannel(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc         string
-		channel      string
-		token        string
-		offset       uint64
-		limit        uint64
-		disconnected bool
-		err          error
-		response     []sdk.Thing
+		desc     string
+		channel  string
+		token    string
+		offset   uint64
+		limit    uint64
+		err      error
+		response []sdk.Thing
 	}{
 		{
 			desc:     "get a list of things by channel",
@@ -492,19 +491,9 @@ func TestThingsByChannel(t *testing.T) {
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
 		},
-		{
-			desc:         "get a list of not connected things by channel",
-			channel:      cid,
-			token:        token,
-			offset:       offset,
-			limit:        100,
-			disconnected: true,
-			err:          nil,
-			response:     []sdk.Thing{ths[n-thsDiscoNum]},
-		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ThingsByChannel(tc.token, tc.channel, tc.offset, tc.limit, tc.disconnected)
+		page, err := mainfluxSDK.ThingsByChannel(tc.token, tc.channel, tc.offset, tc.limit)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Things))
 	}

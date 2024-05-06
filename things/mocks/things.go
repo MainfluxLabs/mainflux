@@ -196,7 +196,7 @@ func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []stri
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -209,31 +209,10 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, owner, chID
 
 	var ths []things.Thing
 
-	// Append connected or not connected channels
-	switch pm.Disconnected {
-	case false:
-		for _, co := range trm.tconns[chID] {
-			id := parseID(co.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				ths = append(ths, co)
-			}
-		}
-	default:
-		for _, th := range trm.things {
-			conn := false
-			id := parseID(th.ID)
-			if id >= first && id < last || pm.Limit == 0 {
-				for _, co := range trm.tconns[chID] {
-					if th.ID == co.ID {
-						conn = true
-					}
-				}
-
-				// Append if not found in connections list
-				if !conn {
-					ths = append(ths, th)
-				}
-			}
+	for _, co := range trm.tconns[chID] {
+		id := parseID(co.ID)
+		if id >= first && id < last || pm.Limit == 0 {
+			ths = append(ths, co)
 		}
 	}
 

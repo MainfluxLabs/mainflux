@@ -113,14 +113,13 @@ type Service interface {
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total        uint64
-	Offset       uint64                 `json:"offset,omitempty"`
-	Limit        uint64                 `json:"limit,omitempty"`
-	Name         string                 `json:"name,omitempty"`
-	Order        string                 `json:"order,omitempty"`
-	Dir          string                 `json:"dir,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	Disconnected bool                   // Used for connected or disconnected lists
+	Total    uint64
+	Offset   uint64                 `json:"offset,omitempty"`
+	Limit    uint64                 `json:"limit,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type Backup struct {
@@ -279,12 +278,21 @@ func (ts *thingsService) ListThingsByIDs(ctx context.Context, ids []string) (Thi
 }
 
 func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	channel, err := ts.channels.RetrieveByID(ctx, chID)
 	if err != nil {
-		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ThingsPage{}, err
 	}
 
-	return ts.things.RetrieveByChannel(ctx, res.GetId(), chID, pm)
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Read); err != nil {
+		return ThingsPage{}, err
+	}
+
+	tp, err := ts.things.RetrieveByChannel(ctx, chID, pm)
+	if err != nil {
+		return ThingsPage{}, err
+	}
+
+	return tp, nil
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
@@ -355,14 +363,14 @@ func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channe
 }
 
 func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Channel, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	channel, err := ts.channels.RetrieveByID(ctx, id)
 	if err != nil {
 		return Channel{}, err
+	}
+
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	if channel.OwnerID == res.GetId() {
@@ -390,25 +398,16 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 }
 
 func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	thing, err := ts.things.RetrieveByID(ctx, thID)
+	channel, err := ts.channels.RetrieveByThing(ctx, thID)
 	if err != nil {
 		return Channel{}, err
 	}
 
-	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Read); err != nil {
+		return Channel{}, err
 	}
 
-	if thing.OwnerID == res.GetId() {
-		return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
-	}
-
-	return ts.channels.RetrieveByThing(ctx, res.GetId(), thID)
+	return channel, nil
 }
 
 func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids ...string) error {

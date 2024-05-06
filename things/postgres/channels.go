@@ -149,21 +149,20 @@ func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageM
 	return cr.retrieve(ctx, "", false, pm)
 }
 
-func (cr channelRepository) RetrieveByThing(ctx context.Context, ownerID, thID string) (things.Channel, error) {
+func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (things.Channel, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(thID); err != nil {
 		return things.Channel{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
+	q = fmt.Sprintf(`SELECT id, name, metadata, owner_id, group_id, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
-		        WHERE ch.owner_id = :owner_id AND conn.thing_id = :thing;`)
+		        WHERE conn.thing_id = :thing;`)
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
-		"thing":    thID,
+		"thing": thID,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -174,7 +173,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, ownerID, thID s
 
 	var item things.Channel
 	for rows.Next() {
-		dbch := dbChannel{OwnerID: ownerID}
+		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
 			return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -183,70 +182,6 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, ownerID, thID s
 	}
 
 	return item, nil
-}
-
-func (cr channelRepository) RetrieveConns(ctx context.Context, thID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	oq := getConnOrderQuery(pm.Order, "ch")
-	dq := getDirQuery(pm.Dir)
-
-	// Verify if UUID format is valid to avoid internal Postgres error
-	if _, err := uuid.FromString(thID); err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrNotFound, err)
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels ch
-		        INNER JOIN connections conn
-		        ON ch.id = conn.channel_id
-		        WHERE conn.thing_id = :thing
-		        ORDER BY %s %s %s;`, oq, dq, olq)
-
-	qc := `SELECT COUNT(*)
-		        FROM channels ch
-		        INNER JOIN connections conn
-		        ON ch.id = conn.channel_id
-		        WHERE conn.thing_id = $1`
-
-	params := map[string]interface{}{
-		"thing":  thID,
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
-	}
-
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	items := []things.Channel{}
-	for rows.Next() {
-		dbch := dbChannel{}
-		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		ch := toChannel(dbch)
-		items = append(items, ch)
-	}
-
-	var total uint64
-	if err := cr.db.GetContext(ctx, &total, qc, thID); err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return things.ChannelsPage{
-		Channels: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}, nil
 }
 
 func (cr channelRepository) Remove(ctx context.Context, ownerID string, ids ...string) error {

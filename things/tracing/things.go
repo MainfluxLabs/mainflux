@@ -101,12 +101,12 @@ func (trm thingRepositoryMiddleware) RetrieveByIDs(ctx context.Context, thingIDs
 	return trm.repo.RetrieveByIDs(ctx, thingIDs, pm)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, owner, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingsByChannelOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByChannel(ctx, owner, chID, pm)
+	return trm.repo.RetrieveByChannel(ctx, chID, pm)
 }
 
 func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner string, ids ...string) error {

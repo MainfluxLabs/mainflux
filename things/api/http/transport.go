@@ -30,7 +30,6 @@ const (
 	orderKey     = "order"
 	dirKey       = "dir"
 	metadataKey  = "metadata"
-	disconnKey   = "disconnected"
 	groupIDKey   = "groupID"
 	thingIDKey   = "thingID"
 	channelIDKey = "channelID"
@@ -471,11 +470,6 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	c, err := apiutil.ReadBoolQuery(r, disconnKey, false)
-	if err != nil {
-		return nil, err
-	}
-
 	or, err := apiutil.ReadStringQuery(r, orderKey, "")
 	if err != nil {
 		return nil, err
@@ -490,11 +484,10 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
 		pageMetadata: things.PageMetadata{
-			Offset:       o,
-			Limit:        l,
-			Disconnected: c,
-			Order:        or,
-			Dir:          d,
+			Offset: o,
+			Limit:  l,
+			Order:  or,
+			Dir:    d,
 		},
 	}
 

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -21,8 +22,6 @@ import (
 	"github.com/go-zoo/bone"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -35,7 +34,7 @@ const (
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
-		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
 	r := bone.New()
@@ -75,7 +74,9 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 
 func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	ct := r.Header.Get("Content-Type")
-	if ct != ctSenmlJSON && ct != ctJSON && ct != ctSenmlCBOR {
+	if !strings.Contains(ct, ctSenmlJSON) &&
+		!strings.Contains(ct, ctJSON) &&
+		!strings.Contains(ct, ctSenmlCBOR) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -136,21 +137,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 
 	default:
-		switch e, ok := status.FromError(err); {
-		case ok:
-			switch e.Code() {
-			case codes.Unauthenticated:
-				w.WriteHeader(http.StatusUnauthorized)
-			case codes.PermissionDenied:
-				w.WriteHeader(http.StatusForbidden)
-			case codes.Internal:
-				w.WriteHeader(http.StatusInternalServerError)
-			default:
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {

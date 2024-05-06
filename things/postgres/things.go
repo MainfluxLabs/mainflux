@@ -265,7 +265,7 @@ func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return tr.retrieve(ctx, "", false, pm)
 }
 
-func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	oq := getConnOrderQuery(pm.Order, "th")
 	dq := getDirQuery(pm.Dir)
 
@@ -280,41 +280,21 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 	}
 
 	var q, qc string
-	switch pm.Disconnected {
-	case true:
-		q = fmt.Sprintf(`SELECT id, name, key, metadata, group_id
-		        FROM things th
-		        WHERE th.owner_id = :owner_id AND th.id NOT IN
-		        (SELECT id FROM things th
-		          INNER JOIN connections conn
-		          ON th.id = conn.thing_id
-		          WHERE th.owner_id = :owner_id AND conn.channel_id = :channel_id)
-		        ORDER BY %s %s %s;`, oq, dq, olq)
 
-		qc = `SELECT COUNT(*)
-		        FROM things th
-		        WHERE th.owner_id = $1 AND th.id NOT IN
-		        (SELECT id FROM things th
-		          INNER JOIN connections conn
-		          ON th.id = conn.thing_id
-		          WHERE th.owner_id = $1 AND conn.channel_id = $2);`
-	default:
-		q = fmt.Sprintf(`SELECT id, name, key, metadata, group_id
+	q = fmt.Sprintf(`SELECT id, name, key, metadata, group_id
 		        FROM things th
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
-		        WHERE th.owner_id = :owner_id AND conn.channel_id = :channel_id
+		        WHERE conn.channel_id = :channel_id
 		        ORDER BY %s %s %s;`, oq, dq, olq)
 
-		qc = `SELECT COUNT(*)
+	qc = `SELECT COUNT(*)
 		        FROM things th
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
-		        WHERE th.owner_id = $1 AND conn.channel_id = $2;`
-	}
+		        WHERE conn.channel_id = $1;`
 
 	params := map[string]interface{}{
-		"owner_id":   ownerID,
 		"channel_id": chID,
 		"limit":      pm.Limit,
 		"offset":     pm.Offset,
@@ -328,7 +308,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 
 	var items []things.Thing
 	for rows.Next() {
-		dbth := dbThing{OwnerID: ownerID}
+		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
 			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -342,7 +322,7 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, ownerID, chID s
 	}
 
 	var total uint64
-	if err := tr.db.GetContext(ctx, &total, qc, ownerID, chID); err != nil {
+	if err := tr.db.GetContext(ctx, &total, qc, chID); err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 

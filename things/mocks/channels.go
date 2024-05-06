@@ -156,7 +156,7 @@ func (crm *channelRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things
 	return page, nil
 }
 
-func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, owner, thID string) (things.Channel, error) {
+func (crm *channelRepositoryMock) RetrieveByThing(_ context.Context, thID string) (things.Channel, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
