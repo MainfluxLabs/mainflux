@@ -295,7 +295,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 
 	switch p {
 	case Read:
-		if action == Read {
+		if action != Read {
 			return errors.ErrAuthorization
 		}
 	case ReadWrite:
