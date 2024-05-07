@@ -201,13 +201,13 @@ func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner, chanID s
 	return ms.svc.IsChannelOwner(ctx, owner, chanID)
 }
 
-func (ms *metricsMiddleware) IsThingOwner(ctx context.Context, token, thingID string) error {
+func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "is_thing_owner").Add(1)
-		ms.latency.With("method", "is_thing_owner").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "can_access_group").Add(1)
+		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.IsThingOwner(ctx, token, thingID)
+	return ms.svc.CanAccessGroup(ctx, token, groupID, action)
 }
 
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {

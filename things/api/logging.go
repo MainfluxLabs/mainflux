@@ -271,9 +271,9 @@ func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner, chanID s
 	return lm.svc.IsChannelOwner(ctx, owner, chanID)
 }
 
-func (lm *loggingMiddleware) IsThingOwner(ctx context.Context, token, thingID string) (err error) {
+func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method is_thing_owner for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method can_access_group for group %s and action %s took %s to complete", groupID, action, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -281,7 +281,7 @@ func (lm *loggingMiddleware) IsThingOwner(ctx context.Context, token, thingID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.IsThingOwner(ctx, token, thingID)
+	return lm.svc.CanAccessGroup(ctx, token, groupID, action)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {

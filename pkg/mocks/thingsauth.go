@@ -62,9 +62,9 @@ func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *mainflux.Ch
 	return nil, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) IsThingOwner(ctx context.Context, in *mainflux.ThingOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (svc thingsServiceMock) CanAccessGroup(ctx context.Context, in *mainflux.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
 	if id, ok := svc.things[in.GetToken()]; ok {
-		if id == in.ThingID {
+		if id == in.GroupID {
 			return nil, nil
 		}
 	}

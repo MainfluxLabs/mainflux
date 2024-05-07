@@ -22,7 +22,7 @@ type grpcClient struct {
 	timeout        time.Duration
 	getConnByKey   endpoint.Endpoint
 	isChannelOwner endpoint.Endpoint
-	isThingOwner   endpoint.Endpoint
+	canAccessGroup endpoint.Endpoint
 	identify       endpoint.Endpoint
 	getGroupsByIDs endpoint.Endpoint
 }
@@ -49,11 +49,11 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
-		isThingOwner: kitot.TraceClient(tracer, "is_thing_owner")(kitgrpc.NewClient(
+		canAccessGroup: kitot.TraceClient(tracer, "can_access_group")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"IsThingOwner",
-			encodeIsThingOwner,
+			"CanAccessGroup",
+			encodeCanAccessGroup,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -103,9 +103,9 @@ func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.Chann
 	return &empty.Empty{}, er.err
 }
 
-func (client grpcClient) IsThingOwner(ctx context.Context, req *mainflux.ThingOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	ar := thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}
-	res, err := client.isThingOwner(ctx, ar)
+func (client grpcClient) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+	ar := accessGroupReq{token: req.GetToken(), groupID: req.GetGroupID(), action: req.GetAction()}
+	res, err := client.canAccessGroup(ctx, ar)
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +150,9 @@ func encodeIsChannelOwner(_ context.Context, grpcReq interface{}) (interface{}, 
 	return &mainflux.ChannelOwnerReq{Token: req.token, ChanID: req.chanID}, nil
 }
 
-func encodeIsThingOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(thingOwnerReq)
-	return &mainflux.ThingOwnerReq{Token: req.token, ThingID: req.thingID}, nil
+func encodeCanAccessGroup(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(accessGroupReq)
+	return &mainflux.AccessGroupReq{Token: req.token, GroupID: req.groupID, Action: req.action}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

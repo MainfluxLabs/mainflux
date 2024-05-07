@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -70,11 +71,10 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: webhook.ThingID})
+	// TODO: Replace ThingID by GroupID
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.ThingID, Action: things.ReadWrite})
 	if err != nil {
-		if err != nil {
-			return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
-		}
+		return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	whs, err := ws.webhooks.Save(ctx, *webhook)
@@ -89,11 +89,10 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error) {
-	_, err := ws.things.IsThingOwner(ctx, &mainflux.ThingOwnerReq{Token: token, ThingID: thingID})
+	// TODO: Replace ThingID by GroupID
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: thingID, Action: things.Read})
 	if err != nil {
-		if err != nil {
-			return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
-		}
+		return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID)

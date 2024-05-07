@@ -2075,9 +2075,12 @@ func TestConnect(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	group2 := group
+	group2.Name = "group-2"
+	grs, err := svc.CreateGroups(context.Background(), token, group, group2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
+	gr2 := grs[1]
 
 	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
@@ -2093,7 +2096,7 @@ func TestConnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch1 := chs1[0]
 
-	channel.GroupID = gr.ID
+	channel.GroupID = gr2.ID
 	chs2, err := svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch2 := chs2[0]
@@ -2262,9 +2265,12 @@ func TestDisconnect(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	group2 := group
+	group2.Name = "group-2"
+	grs, err := svc.CreateGroups(context.Background(), token, group, group2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
+	gr2 := grs[1]
 
 	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
@@ -2279,7 +2285,7 @@ func TestDisconnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
 
-	channel.GroupID = gr.ID
+	channel.GroupID = gr2.ID
 	uCh, err := svc.CreateChannels(context.Background(), otherToken, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	usrCh := uCh[0]
@@ -2374,7 +2380,7 @@ func TestDisconnect(t *testing.T) {
 			thingIDs:    thIDs,
 			auth:        token,
 			contentType: contentType,
-			status:      http.StatusForbidden,
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "disconnect with invalid content type",

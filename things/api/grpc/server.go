@@ -23,7 +23,7 @@ var _ mainflux.ThingsServiceServer = (*grpcServer)(nil)
 type grpcServer struct {
 	getConnByKey   kitgrpc.Handler
 	isChannelOwner kitgrpc.Handler
-	isThingOwner   kitgrpc.Handler
+	canAccessGroup kitgrpc.Handler
 	identify       kitgrpc.Handler
 	getGroupsByIDs kitgrpc.Handler
 }
@@ -41,9 +41,9 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) mainflux.ThingsSer
 			decodeIsChannelOwnerRequest,
 			encodeEmptyResponse,
 		),
-		isThingOwner: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "is_thing_owner")(isThingOwnerEndpoint(svc)),
-			decodeIsThingOwnerRequest,
+		canAccessGroup: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_access_group")(canAccessGroupEndpoint(svc)),
+			decodeCanAccessGroupRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -77,8 +77,8 @@ func (gs *grpcServer) IsChannelOwner(ctx context.Context, req *mainflux.ChannelO
 	return res.(*empty.Empty), nil
 }
 
-func (gs *grpcServer) IsThingOwner(ctx context.Context, req *mainflux.ThingOwnerReq) (*empty.Empty, error) {
-	_, res, err := gs.isThingOwner.ServeGRPC(ctx, req)
+func (gs *grpcServer) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq) (*empty.Empty, error) {
+	_, res, err := gs.canAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -114,9 +114,9 @@ func decodeIsChannelOwnerRequest(_ context.Context, grpcReq interface{}) (interf
 	return channelOwnerReq{token: req.GetToken(), chanID: req.GetChanID()}, nil
 }
 
-func decodeIsThingOwnerRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.ThingOwnerReq)
-	return thingOwnerReq{token: req.GetToken(), thingID: req.GetThingID()}, nil
+func decodeCanAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*mainflux.AccessGroupReq)
+	return accessGroupReq{token: req.GetToken(), groupID: req.GetGroupID(), action: req.GetAction()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
