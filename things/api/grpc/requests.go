@@ -47,17 +47,18 @@ func (req channelOwnerReq) validate() error {
 	return nil
 }
 
-type thingOwnerReq struct {
+type accessGroupReq struct {
 	token   string
-	thingID string
+	groupID string
+	action  string
 }
 
-func (req thingOwnerReq) validate() error {
+func (req accessGroupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.thingID == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingID
 	}
 

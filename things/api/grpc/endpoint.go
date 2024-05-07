@@ -66,14 +66,14 @@ func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func isThingOwnerEndpoint(svc things.Service) endpoint.Endpoint {
+func canAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(thingOwnerReq)
+		req := request.(accessGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		err := svc.IsThingOwner(ctx, req.token, req.thingID)
+		err := svc.CanAccessGroup(ctx, req.token, req.groupID, req.action)
 		return emptyRes{err: err}, err
 	}
 }

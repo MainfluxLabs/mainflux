@@ -223,7 +223,7 @@ func (svc *mainfluxThings) IsChannelOwner(context.Context, string, string) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) IsThingOwner(context.Context, string, string) error {
+func (svc *mainfluxThings) CanAccessGroup(context.Context, string, string, string) error {
 	panic("not implemented")
 }
 
@@ -277,23 +277,7 @@ func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) AssignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) UnassignThing(ctx context.Context, token string, groupID string, thingIDs ...string) error {
-	panic("not implemented")
-}
-
 func (svc *mainfluxThings) ViewThingGroup(ctx context.Context, token string, thingID string) (things.Group, error) {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) AssignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) UnassignChannel(ctx context.Context, token string, groupID string, channelIDs ...string) error {
 	panic("not implemented")
 }
 

@@ -93,9 +93,9 @@ type Service interface {
 	// the given user and returns error if it cannot.
 	IsChannelOwner(ctx context.Context, owner, chanID string) error
 
-	// IsThingOwner determines whether the thing can be accessed by
+	// CanAccessGroup determines whether the thing can be accessed by
 	// the given user and returns error if it cannot.
-	IsThingOwner(ctx context.Context, token, thingID string) error
+	CanAccessGroup(ctx context.Context, token, groupID, action string) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
@@ -209,16 +209,23 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	thing, err := ts.things.RetrieveByID(ctx, thing.ID)
 	if err != nil {
 		return err
 	}
 
-	if err := ts.IsThingOwner(ctx, token, thing.ID); err != nil {
-		return err
+	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	thing.OwnerID = res.GetId()
+	if thing.OwnerID == res.GetId() {
+		return ts.things.Update(ctx, thing)
+	}
+
+	if err := ts.canAccessGroup(ctx, token, thing.GroupID, ReadWrite); err != nil {
+		return err
+	}
 
 	return ts.things.Update(ctx, thing)
 }
@@ -445,18 +452,12 @@ func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (P
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
-	for _, thID := range thIDs {
-		if err := ts.IsThingOwner(ctx, token, thID); err != nil {
-			return err
-		}
-	}
-
-	if err := ts.IsChannelOwner(ctx, token, chID); err != nil {
+	ch, err := ts.channels.RetrieveByID(ctx, chID)
+	if err != nil {
 		return err
 	}
 
-	ch, err := ts.channels.RetrieveByID(ctx, chID)
-	if err != nil {
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Read); err != nil {
 		return err
 	}
 
@@ -475,13 +476,12 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
-	for _, thID := range thIDs {
-		if err := ts.IsThingOwner(ctx, token, thID); err != nil {
-			return err
-		}
+	ch, err := ts.channels.RetrieveByID(ctx, chID)
+	if err != nil {
+		return err
 	}
 
-	if err := ts.IsChannelOwner(ctx, token, chID); err != nil {
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Read); err != nil {
 		return err
 	}
 
@@ -529,19 +529,9 @@ func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID strin
 	return nil
 }
 
-func (ts *thingsService) IsThingOwner(ctx context.Context, token, thingID string) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
+func (ts *thingsService) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
+	if err := ts.canAccessGroup(ctx, token, groupID, action); err != nil {
 		return err
-	}
-
-	th, err := ts.things.RetrieveByID(ctx, thingID)
-	if err != nil {
-		return err
-	}
-
-	if th.OwnerID != user.GetId() {
-		return errors.ErrAuthorization
 	}
 
 	return nil
