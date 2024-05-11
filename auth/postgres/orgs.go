@@ -174,7 +174,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	return orPage.Orgs, nil
 }
 
-func (or orgRepository) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (or orgRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembers, err)
@@ -236,7 +236,7 @@ func toMember(dbmb dbMember) (auth.OrgMember, error) {
 	}, nil
 }
 
-func (or orgRepository) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveOrgsByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembership, err)
@@ -591,7 +591,7 @@ func (or orgRepository) RetrieveByGroupID(ctx context.Context, groupID string) (
 	return org, nil
 }
 
-func (or orgRepository) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (or orgRepository) RetrieveAllMembersByOrg(ctx context.Context) ([]auth.OrgMember, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -613,7 +613,7 @@ func (or orgRepository) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMe
 	return oms, nil
 }
 
-func (or orgRepository) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGroup, error) {
+func (or orgRepository) RetrieveAllGroupsByOrg(ctx context.Context) ([]auth.OrgGroup, error) {
 	q := `SELECT org_id, group_id, created_at, updated_at FROM group_relations;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})

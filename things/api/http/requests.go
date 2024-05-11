@@ -24,18 +24,22 @@ type createThingReq struct {
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key,omitempty"`
 	ID       string                 `json:"id,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
-	token  string
-	Things []createThingReq
+	token   string
+	groupID string
+	Things  []createThingReq
 }
 
 func (req createThingsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.Things) <= 0 {
@@ -51,10 +55,6 @@ func (req createThingsReq) validate() error {
 
 		if len(thing.Name) > maxNameSize {
 			return apiutil.ErrNameSize
-		}
-
-		if thing.GroupID == "" {
-			return apiutil.ErrMissingGroupID
 		}
 	}
 
@@ -109,19 +109,23 @@ func (req updateKeyReq) validate() error {
 type createChannelReq struct {
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
 	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createChannelsReq struct {
 	token    string
+	groupID  string
 	Channels []createChannelReq
 }
 
 func (req createChannelsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.Channels) <= 0 {
@@ -137,10 +141,6 @@ func (req createChannelsReq) validate() error {
 
 		if len(channel.Name) > maxNameSize {
 			return apiutil.ErrNameSize
-		}
-
-		if channel.GroupID == "" {
-			return apiutil.ErrMissingGroupID
 		}
 	}
 
@@ -217,12 +217,12 @@ func (req removeChannelsReq) validate() error {
 	return nil
 }
 
-type viewResourceReq struct {
+type resourceReq struct {
 	token string
 	id    string
 }
 
-func (req viewResourceReq) validate() error {
+func (req resourceReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -405,13 +405,13 @@ func (req restoreReq) validate() error {
 
 type createGroupReq struct {
 	Name        string                 `json:"name,omitempty"`
-	OrgID       string                 `json:"org_id,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createGroupsReq struct {
 	token  string
+	orgID  string
 	Groups []createGroupReq
 }
 
@@ -420,15 +420,15 @@ func (req createGroupsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
 	if len(req.Groups) <= 0 {
 		return apiutil.ErrEmptyList
 	}
 
 	for _, group := range req.Groups {
-		if group.OrgID == "" {
-			return apiutil.ErrMissingOrgID
-		}
-
 		if len(group.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
@@ -495,86 +495,6 @@ func (req listMembersReq) validate() error {
 	return nil
 }
 
-type groupThingsReq struct {
-	token   string
-	groupID string
-	Things  []string `json:"things"`
-}
-
-func (req groupThingsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type groupChannelsReq struct {
-	token    string
-	groupID  string
-	Channels []string `json:"channels"`
-}
-
-func (req groupChannelsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	if len(req.Channels) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type listGroupThingsByChannelReq struct {
-	token        string
-	groupID      string
-	channelID    string
-	pageMetadata things.PageMetadata
-}
-
-func (req listGroupThingsByChannelReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.channelID == "" || req.groupID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type groupReq struct {
-	token string
-	id    string
-}
-
-func (req groupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 func validateUUID(extID string) (err error) {
 	id, err := uuid.FromString(extID)
 	if id.String() != extID || err != nil {
@@ -620,8 +540,7 @@ func (req identifyReq) validate() error {
 }
 
 type getConnByKeyReq struct {
-	chanID string
-	Key    string `json:"key"`
+	Key string `json:"key"`
 }
 
 func (req getConnByKeyReq) validate() error {

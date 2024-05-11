@@ -25,7 +25,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 				Name:     t.Name,
 				Key:      t.Key,
 				ID:       t.ID,
-				GroupID:  t.GroupID,
+				GroupID:  req.groupID,
 				Metadata: t.Metadata,
 			}
 			ths = append(ths, th)
@@ -98,7 +98,7 @@ func updateKeyEndpoint(svc things.Service) endpoint.Endpoint {
 
 func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewResourceReq)
+		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -199,7 +199,7 @@ func listThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 
 func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewResourceReq)
+		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
 			if err == errors.ErrNotFound {
@@ -249,7 +249,7 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				Name:     c.Name,
 				ID:       c.ID,
 				Profile:  c.Profile,
-				GroupID:  c.GroupID,
+				GroupID:  req.groupID,
 				Metadata: c.Metadata,
 			}
 			chs = append(chs, ch)
@@ -308,7 +308,7 @@ func updateChannelEndpoint(svc things.Service) endpoint.Endpoint {
 
 func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewResourceReq)
+		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -373,7 +373,7 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewResourceReq)
+		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -398,7 +398,7 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 
 func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewResourceReq)
+		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
 			if err == errors.ErrNotFound {
@@ -509,7 +509,7 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, g := range req.Groups {
 			group := things.Group{
 				Name:        g.Name,
-				OrgID:       g.OrgID,
+				OrgID:       req.orgID,
 				Description: g.Description,
 				Metadata:    g.Metadata,
 			}
@@ -543,7 +543,7 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupReq)
+		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -594,7 +594,7 @@ func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 func removeGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupReq)
+		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -638,7 +638,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
+func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
@@ -651,23 +651,23 @@ func listGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			Metadata: req.metadata,
 		}
 
-		page, err := svc.ListGroupThings(ctx, req.token, req.id, pm)
+		page, err := svc.ListThingsByGroup(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupThingsResponse(page), nil
+		return buildThingsByGroupResponse(page), nil
 	}
 }
 
-func viewThingGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
+		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		group, err := svc.ViewThingGroup(ctx, req.token, req.id)
+		group, err := svc.ViewGroupByThing(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -687,7 +687,7 @@ func viewThingGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+func listChannelsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
@@ -700,23 +700,23 @@ func listGroupChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			Metadata: req.metadata,
 		}
 
-		page, err := svc.ListGroupChannels(ctx, req.token, req.id, pm)
+		page, err := svc.ListChannelsByGroup(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupChannelsResponse(page), nil
+		return buildChannelsByGroupResponse(page), nil
 	}
 }
 
-func viewChannelGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func viewGroupByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
+		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		group, err := svc.ViewChannelGroup(ctx, req.token, req.id)
+		group, err := svc.ViewGroupByChannel(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -763,7 +763,7 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	return res
 }
 
-func buildGroupThingsResponse(tp things.ThingsPage) ThingsPageRes {
+func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
 	res := ThingsPageRes{
 		pageRes: pageRes{
 			Total:  tp.Total,
@@ -787,7 +787,7 @@ func buildGroupThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildGroupChannelsResponse(cp things.ChannelsPage) channelsPageRes {
+func buildChannelsByGroupResponse(cp things.ChannelsPage) channelsPageRes {
 	res := channelsPageRes{
 		pageRes: pageRes{
 			Total:  cp.Total,
@@ -954,7 +954,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+func createPoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupPoliciesReq)
 		if err := req.validate(); err != nil {
@@ -970,7 +970,7 @@ func createGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 			gps = append(gps, gp)
 		}
 
-		if err := svc.CreateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.CreatePoliciesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
@@ -978,7 +978,7 @@ func createGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func updateGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+func updatePoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupPoliciesReq)
 		if err := req.validate(); err != nil {
@@ -994,7 +994,7 @@ func updateGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 			gps = append(gps, gp)
 		}
 
-		if err := svc.UpdateGroupPolicies(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.UpdatePoliciesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
@@ -1002,14 +1002,14 @@ func updateGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func removeGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+func removePoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removeGroupPoliciesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveGroupPolicies(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemovePoliciesByGroup(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -1017,7 +1017,7 @@ func removeGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
+func listPoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listGroupMembersReq)
 		if err := req.validate(); err != nil {
@@ -1029,7 +1029,7 @@ func listGroupPoliciesEndpoint(svc things.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		gpp, err := svc.ListGroupPolicies(ctx, req.token, req.groupID, pm)
+		gpp, err := svc.ListPoliciesByGroup(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}

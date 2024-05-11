@@ -27,18 +27,18 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 	defer wrm.mu.Unlock()
 
 	for i := range whs {
-		wrm.webhooks[key(whs[i].ThingID, whs[i].Url)] = whs[i]
+		wrm.webhooks[key(whs[i].GroupID, whs[i].Url)] = whs[i]
 	}
 	return whs, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, thingID string) ([]webhooks.Webhook, error) {
+func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string) ([]webhooks.Webhook, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
 	var whs []webhooks.Webhook
 	for _, i := range wrm.webhooks {
-		if i.ThingID == thingID {
+		if i.GroupID == groupID {
 			whs = append(whs, i)
 		}
 	}
@@ -46,6 +46,6 @@ func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, thingID s
 	return whs, nil
 }
 
-func key(thingId string, url string) string {
-	return fmt.Sprintf("%s-%s", thingId, url)
+func key(groupID string, url string) string {
+	return fmt.Sprintf("%s-%s", groupID, url)
 }

@@ -30,7 +30,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (thing_id, name, url) VALUES (:thing_id, :name, :url);`
+	q := `INSERT INTO webhooks (id, group_id, name, url, headers) VALUES (:id, :group_id, :name, :url, :headers);`
 
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
@@ -62,14 +62,14 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	return whs, nil
 }
 
-func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string) ([]webhooks.Webhook, error) {
-	if _, err := uuid.FromString(thingID); err != nil {
+func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string) ([]webhooks.Webhook, error) {
+	if _, err := uuid.FromString(groupID); err != nil {
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT thing_id, name, url FROM webhooks WHERE thing_id = :thing_id;`
+	q := `SELECT id, group_id, name, url, headers FROM webhooks WHERE group_id = :group_id;`
 
 	params := map[string]interface{}{
-		"thing_id": thingID,
+		"group_id": groupID,
 	}
 
 	rows, err := wr.db.NamedQueryContext(ctx, q, params)
@@ -95,23 +95,29 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 }
 
 type dbWebhook struct {
-	ThingID string `db:"thing_id"`
+	ID      string `db:"id"`
+	GroupID string `db:"group_id"`
 	Name    string `db:"name"`
 	Url     string `db:"url"`
+	Headers string `db:"headers"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	return dbWebhook{
-		ThingID: wh.ThingID,
+		ID:      wh.ID,
+		GroupID: wh.GroupID,
 		Name:    wh.Name,
 		Url:     wh.Url,
+		Headers: wh.Headers,
 	}, nil
 }
 
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	return webhooks.Webhook{
-		ThingID: dbW.ThingID,
+		ID:      dbW.ID,
+		GroupID: dbW.GroupID,
 		Name:    dbW.Name,
 		Url:     dbW.Url,
+		Headers: dbW.Headers,
 	}, nil
 }

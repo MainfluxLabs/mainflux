@@ -144,7 +144,7 @@ func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thi
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (grm *groupRepositoryMock) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 	var items []things.Thing
@@ -184,7 +184,7 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (grm *groupRepositoryMock) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 

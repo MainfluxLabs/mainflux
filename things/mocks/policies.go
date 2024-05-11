@@ -23,7 +23,7 @@ func NewPoliciesRepository() things.PoliciesRepository {
 	}
 }
 
-func (mrm *policiesRepositoryMock) SaveGroupPolicies(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (mrm *policiesRepositoryMock) SavePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -38,18 +38,18 @@ func (mrm *policiesRepositoryMock) SaveGroupPolicies(ctx context.Context, groupI
 	return nil
 }
 
-func (mrm *policiesRepositoryMock) RetrieveGroupPolicy(ctx context.Context, gp things.GroupPolicy) (string, error) {
+func (mrm *policiesRepositoryMock) RetrievePolicyByGroup(ctx context.Context, gp things.GroupPolicy) (string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
 	return mrm.groupPoliciesByID[gp.MemberID].Policy, nil
 }
 
-func (mrm *policiesRepositoryMock) RetrieveGroupPolicies(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (mrm *policiesRepositoryMock) RetrievePoliciesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
 	panic("not implemented")
 }
 
-func (mrm *policiesRepositoryMock) RetrieveAllGroupPolicies(ctx context.Context) ([]things.GroupPolicy, error) {
+func (mrm *policiesRepositoryMock) RetrieveAllPoliciesByGroup(ctx context.Context) ([]things.GroupPolicy, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -60,10 +60,10 @@ func (mrm *policiesRepositoryMock) RetrieveAllGroupPolicies(ctx context.Context)
 
 	return gps, nil
 }
-func (mrm *policiesRepositoryMock) UpdateGroupPolicies(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (mrm *policiesRepositoryMock) UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
 	panic("not implemented")
 }
 
-func (mrm *policiesRepositoryMock) RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error {
+func (mrm *policiesRepositoryMock) RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

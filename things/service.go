@@ -564,7 +564,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupsPolicies, err := ts.policies.RetrieveAllGroupPolicies(ctx)
+	groupsPolicies, err := ts.policies.RetrieveAllPoliciesByGroup(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -624,7 +624,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 			Policy:   g.Policy,
 		}
 
-		if err := ts.policies.SaveGroupPolicies(ctx, g.GroupID, gp); err != nil {
+		if err := ts.policies.SavePoliciesByGroup(ctx, g.GroupID, gp); err != nil {
 			return err
 		}
 	}
@@ -636,20 +636,20 @@ func getTimestmap() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
-func (ts *thingsService) ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
 	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return ThingsPage{}, err
 	}
 
-	return ts.groups.RetrieveGroupThings(ctx, groupID, pm)
+	return ts.groups.RetrieveThingsByGroup(ctx, groupID, pm)
 }
 
-func (ts *thingsService) ListGroupChannels(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
 	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return ChannelsPage{}, err
 	}
 
-	return ts.groups.RetrieveGroupChannels(ctx, groupID, pm)
+	return ts.groups.RetrieveChannelsByGroup(ctx, groupID, pm)
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {

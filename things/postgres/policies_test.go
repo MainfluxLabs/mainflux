@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSaveGroupPolicies(t *testing.T) {
+func TestSavePoliciesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
@@ -85,12 +85,12 @@ func TestSaveGroupPolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.SaveGroupPolicies(context.Background(), tc.groupID, tc.gps...)
+		err := policiesRepo.SavePoliciesByGroup(context.Background(), tc.groupID, tc.gps...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrieveGroupPolicy(t *testing.T) {
+func TestRetrievePolicyByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
@@ -118,7 +118,7 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 		Policy:   things.Read,
 	}
 
-	err = policiesRepo.SaveGroupPolicies(context.Background(), group.ID, gpByID)
+	err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gpByID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -154,13 +154,13 @@ func TestRetrieveGroupPolicy(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		policy, err := policiesRepo.RetrieveGroupPolicy(context.Background(), tc.gp)
+		policy, err := policiesRepo.RetrievePolicyByGroup(context.Background(), tc.gp)
 		assert.Equal(t, tc.policy, policy, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.policy, policy))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrieveGroupPolicies(t *testing.T) {
+func TestRetrievePoliciesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
@@ -182,7 +182,7 @@ func TestRetrieveGroupPolicies(t *testing.T) {
 			MemberID: memberID,
 			Policy:   things.Read,
 		}
-		err = policiesRepo.SaveGroupPolicies(context.Background(), group.ID, gp)
+		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -240,14 +240,14 @@ func TestRetrieveGroupPolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gpp, err := policiesRepo.RetrieveGroupPolicies(context.Background(), tc.groupID, tc.pageMeta)
+		gpp, err := policiesRepo.RetrievePoliciesByGroup(context.Background(), tc.groupID, tc.pageMeta)
 		size := len(gpp.GroupPolicies)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRemoveGroupPolicies(t *testing.T) {
+func TestRemovePoliciesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
@@ -272,7 +272,7 @@ func TestRemoveGroupPolicies(t *testing.T) {
 			Policy:   things.Read,
 		}
 
-		err = policiesRepo.SaveGroupPolicies(context.Background(), group.ID, gp)
+		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -305,12 +305,12 @@ func TestRemoveGroupPolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.RemoveGroupPolicies(context.Background(), tc.groupID, tc.memberIDs...)
+		err := policiesRepo.RemovePoliciesByGroup(context.Background(), tc.groupID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdateGroupPolicies(t *testing.T) {
+func TestUpdatePoliciesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
@@ -339,7 +339,7 @@ func TestUpdateGroupPolicies(t *testing.T) {
 		},
 	}
 
-	err = policiesRepo.SaveGroupPolicies(context.Background(), group.ID, gpByIDs...)
+	err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gpByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -378,7 +378,7 @@ func TestUpdateGroupPolicies(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.UpdateGroupPolicies(context.Background(), tc.groupID, tc.gpByID)
+		err := policiesRepo.UpdatePoliciesByGroup(context.Background(), tc.groupID, tc.gpByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

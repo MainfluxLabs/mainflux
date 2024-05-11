@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	httpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
 	whmocks "github.com/MainfluxLabs/mainflux/webhooks/mocks"
@@ -27,7 +28,7 @@ const (
 	invalidUrl  = "invalid-url"
 	contentType = "application/json"
 	emptyValue  = ""
-	thingID     = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	groupID     = "50e6b371-60ff-45cf-bb52-8200e7cde536"
 )
 
 func newHTTPServer(svc webhooks.Service) *httptest.Server {
@@ -37,11 +38,12 @@ func newHTTPServer(svc webhooks.Service) *httptest.Server {
 }
 
 func newService() webhooks.Service {
-	things := mocks.NewThingsServiceClient(nil, map[string]string{token: thingID}, nil)
+	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
 	webhookRepo := whmocks.NewWebhookRepository()
 	forwarder := whmocks.NewForwarder()
+	idProvider := uuid.NewMock()
 
-	return webhooks.New(things, webhookRepo, forwarder)
+	return webhooks.New(things, webhookRepo, forwarder, idProvider)
 }
 
 type testRequest struct {
@@ -75,14 +77,14 @@ func TestCreateWebhooks(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"name":"value","url":"https://api.example.com"}]`
-	invalidName := fmt.Sprintf(`[{"name":"%s","url":"https://api.example.com"}]`, emptyValue)
-	invalidUrl := fmt.Sprintf(`[{"name":"value","url":"%s"}]`, invalidUrl)
+	validData := `[{"name":"value","url":"https://api.example.com","headers":""}]`
+	invalidName := fmt.Sprintf(`[{"name":"%s","url":"https://api.example.com","headers":""}]`, emptyValue)
+	invalidUrl := fmt.Sprintf(`[{"name":"value","url":"%s","headers":""}]`, invalidUrl)
 
 	cases := []struct {
 		desc        string
 		data        string
-		thingID     string
+		groupID     string
 		contentType string
 		auth        string
 		status      int
@@ -91,7 +93,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create valid webhooks",
 			data:        validData,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusCreated,
@@ -100,7 +102,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with empty request",
 			data:        emptyValue,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -109,16 +111,16 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid request format",
 			data:        "}{",
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
 		},
 		{
-			desc:        "create webhooks with invalid thing id",
+			desc:        "create webhooks with invalid group id",
 			data:        validData,
-			thingID:     wrongValue,
+			groupID:     wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -127,7 +129,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid name",
 			data:        invalidName,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -136,7 +138,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid url",
 			data:        invalidUrl,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -145,7 +147,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with empty JSON array",
 			data:        "[]",
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -154,7 +156,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook with wrong auth token",
 			data:        validData,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        wrongValue,
 			status:      http.StatusForbidden,
@@ -163,7 +165,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook with empty auth token",
 			data:        validData,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: contentType,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
@@ -172,7 +174,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook without content type",
 			data:        validData,
-			thingID:     thingID,
+			groupID:     groupID,
 			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
@@ -183,7 +185,7 @@ func TestCreateWebhooks(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/webhooks/%s", ts.URL, tc.thingID),
+			url:         fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, tc.groupID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -198,23 +200,26 @@ func TestCreateWebhooks(t *testing.T) {
 }
 
 type webhookRes struct {
-	ThingID string `json:"thing_id"`
-	Name    string `json:"name"`
-	Url     string `json:"url"`
+	ID             string `json:"id"`
+	GroupID        string `json:"group_id"`
+	Name           string `json:"name"`
+	Url            string `json:"url"`
+	WebhookHeaders string `json:"headers"`
 }
 type webhooksRes struct {
 	Webhooks []webhookRes `json:"webhooks"`
 }
 
-func TestListWebhooksByThing(t *testing.T) {
+func TestListWebhooksByGroup(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
 	webhook := webhooks.Webhook{
-		ThingID: "50e6b371-60ff-45cf-bb52-8200e7cde536",
+		GroupID: "50e6b371-60ff-45cf-bb52-8200e7cde536",
 		Name:    "test-webhook",
 		Url:     "https://test.webhook.com",
+		Headers: "",
 	}
 
 	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
@@ -225,9 +230,11 @@ func TestListWebhooksByThing(t *testing.T) {
 
 	for _, webhook := range whs {
 		whRes := webhookRes{
-			ThingID: webhook.ThingID,
-			Name:    webhook.Name,
-			Url:     webhook.Url,
+			ID:             webhook.ID,
+			GroupID:        webhook.GroupID,
+			Name:           webhook.Name,
+			Url:            webhook.Url,
+			WebhookHeaders: webhook.Headers,
 		}
 		data = append(data, whRes)
 	}
@@ -240,31 +247,31 @@ func TestListWebhooksByThing(t *testing.T) {
 		res    []webhookRes
 	}{
 		{
-			desc:   "view webhooks by thing",
+			desc:   "view webhooks by group",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/webhooks/%s", ts.URL, wh.ThingID),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
 			res:    data,
 		},
 		{
-			desc:   "view webhooks by thing with invalid token",
+			desc:   "view webhooks by group with invalid token",
 			auth:   wrongValue,
 			status: http.StatusForbidden,
-			url:    fmt.Sprintf("%s/webhooks/%s", ts.URL, wh.ThingID),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
 			res:    []webhookRes{},
 		},
 		{
-			desc:   "view webhooks by thing with empty token",
+			desc:   "view webhooks by group with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/webhooks/%s", ts.URL, wh.ThingID),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
 			res:    []webhookRes{},
 		},
 		{
-			desc:   "view webhooks by thing with invalid thing id",
+			desc:   "view webhooks by group with invalid thing id",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/webhooks/%s", ts.URL, wrongValue),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wrongValue),
 			res:    []webhookRes{},
 		},
 	}

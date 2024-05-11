@@ -106,7 +106,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveOrgsByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -192,7 +192,7 @@ func (orm *orgRepositoryMock) RetrieveRole(ctx context.Context, memberID, orgID 
 	return orm.orgMembers[memberID].Role, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (orm *orgRepositoryMock) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -331,7 +331,7 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (orm *orgRepositoryMock) RetrieveAllMembersByOrg(ctx context.Context) ([]auth.OrgMember, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -348,7 +348,7 @@ func (orm *orgRepositoryMock) RetrieveAllOrgMembers(ctx context.Context) ([]auth
 	return mrs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGroup, error) {
+func (orm *orgRepositoryMock) RetrieveAllGroupsByOrg(ctx context.Context) ([]auth.OrgGroup, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 

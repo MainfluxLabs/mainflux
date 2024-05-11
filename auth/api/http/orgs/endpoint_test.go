@@ -600,7 +600,7 @@ func TestListOrgs(t *testing.T) {
 	}
 }
 
-func TestListMemberships(t *testing.T) {
+func TestListOrgsByMember(t *testing.T) {
 	svc := newService()
 	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -637,84 +637,84 @@ func TestListMemberships(t *testing.T) {
 		res    []orgRes
 	}{
 		{
-			desc:   "list org memberships",
+			desc:   "list orgs by member",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, n, 0),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list memberships filtering with name",
+			desc:   "list orgs by member filtering with name",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d&name=%s", ts.URL, id, n, 0, "1"),
 			status: http.StatusOK,
 			res:    data[1:2],
 		},
 		{
-			desc:   "list memberships with invalid auth token",
+			desc:   "list orgs by member with invalid auth token",
 			token:  wrongValue,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, n, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
-			desc:   "list memberships with empty auth token",
+			desc:   "list orgs by member with empty auth token",
 			token:  "",
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, 5, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
-			desc:   "list memberships with negative offset",
+			desc:   "list orgs by member with negative offset",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, 0, -5),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list memberships with negative limit",
+			desc:   "list orgs by member with negative limit",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, -5, 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list memberships without offset",
+			desc:   "list orgs by member without offset",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d", ts.URL, id, n),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list memberships without limit",
+			desc:   "list orgs by member without limit",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?offset=%d", ts.URL, id, 0),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list memberships with redundant query params",
+			desc:   "list orgs by member with redundant query params",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d&value=something", ts.URL, id, n, 0),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list memberships with default URL",
+			desc:   "list orgs by member with default URL",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs", ts.URL, id),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list memberships with invalid limit",
+			desc:   "list orgs by member with invalid limit",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%s&offset=%d", ts.URL, id, "i", 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list memberships with invalid offset",
+			desc:   "list orgs by member with invalid offset",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%s", ts.URL, id, n, "i"),
 			status: http.StatusBadRequest,
@@ -728,7 +728,7 @@ func TestListMemberships(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "list memberships without member id",
+			desc:   "list orgs by member without member id",
 			token:  token,
 			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, "", n, 0),
 			status: http.StatusBadRequest,

@@ -22,7 +22,7 @@ func NewPoliciesRepository(db Database) things.PoliciesRepository {
 	}
 }
 
-func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (pr policiesRepository) SavePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (pr policiesRepository) SaveGroupPolicies(ctx context.Context, groupID stri
 	return nil
 }
 
-func (pr policiesRepository) RetrieveGroupPolicy(ctc context.Context, gp things.GroupPolicy) (string, error) {
+func (pr policiesRepository) RetrievePolicyByGroup(ctc context.Context, gp things.GroupPolicy) (string, error) {
 	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
@@ -86,7 +86,7 @@ func (pr policiesRepository) RetrieveGroupPolicy(ctc context.Context, gp things.
 	return policy, nil
 }
 
-func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (pr policiesRepository) RetrievePoliciesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
 	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
@@ -131,7 +131,7 @@ func (pr policiesRepository) RetrieveGroupPolicies(ctx context.Context, groupID 
 	return page, nil
 }
 
-func (pr policiesRepository) RetrieveAllGroupPolicies(ctx context.Context) ([]things.GroupPolicy, error) {
+func (pr policiesRepository) RetrieveAllPoliciesByGroup(ctx context.Context) ([]things.GroupPolicy, error) {
 	q := `SELECT member_id, group_id, policy FROM group_policies;`
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -154,7 +154,7 @@ func (pr policiesRepository) RetrieveAllGroupPolicies(ctx context.Context) ([]th
 	return items, nil
 }
 
-func (pr policiesRepository) RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error {
+func (pr policiesRepository) RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
@@ -170,7 +170,7 @@ func (pr policiesRepository) RemoveGroupPolicies(ctx context.Context, groupID st
 	return nil
 }
 
-func (pr policiesRepository) UpdateGroupPolicies(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (pr policiesRepository) UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
 	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gps {

@@ -21,49 +21,49 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		whs := []webhooks.Webhook{}
 		for _, wReq := range req.Webhooks {
 			wh := webhooks.Webhook{
-				ThingID: req.ThingID,
+				GroupID: req.groupID,
 				Name:    wReq.Name,
 				Url:     wReq.Url,
+				Headers: wReq.Headers,
 			}
 			whs = append(whs, wh)
 		}
 
-		_, err := svc.CreateWebhooks(ctx, req.Token, whs...)
+		saved, err := svc.CreateWebhooks(ctx, req.token, whs...)
 		if err != nil {
 			return nil, err
 		}
 
-		res := webhookRes{
-			created: true,
-		}
-		return res, nil
+		return buildWebhooksResponse(saved, true), nil
 	}
 }
 
-func listWebhooksByThing(svc webhooks.Service) endpoint.Endpoint {
+func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listWebhooksReq)
+		req := request.(webhookReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		webhooks, err := svc.ListWebhooksByThing(ctx, req.Token, req.ThingID)
+		whs, err := svc.ListWebhooksByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildWebhooksResponse(webhooks), nil
+		return buildWebhooksResponse(whs, false), nil
 	}
 }
 
-func buildWebhooksResponse(webhooks []webhooks.Webhook) webhooksRes {
-	res := webhooksRes{Webhooks: []webhookResponse{}}
+func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRes {
+	res := webhooksRes{Webhooks: []webhookResponse{}, created: created}
 	for _, wh := range webhooks {
 		webhook := webhookResponse{
-			ThingID: wh.ThingID,
-			Name:    wh.Name,
-			Url:     wh.Url,
+			ID:             wh.ID,
+			GroupID:        wh.GroupID,
+			Name:           wh.Name,
+			Url:            wh.Url,
+			WebhookHeaders: wh.Headers,
 		}
 		res.Webhooks = append(res.Webhooks, webhook)
 	}

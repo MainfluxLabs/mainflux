@@ -41,13 +41,13 @@ func (ms *metricsMiddleware) CreateWebhooks(ctx context.Context, token string, w
 	return ms.svc.CreateWebhooks(ctx, token, webhooks...)
 }
 
-func (ms *metricsMiddleware) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]webhooks.Webhook, error) {
+func (ms *metricsMiddleware) ListWebhooksByGroup(ctx context.Context, token string, thingID string) ([]webhooks.Webhook, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_webhooks_by_thing").Add(1)
-		ms.latency.With("method", "list_webhooks_by_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_webhooks_by_group").Add(1)
+		ms.latency.With("method", "list_webhooks_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListWebhooksByThing(ctx, token, thingID)
+	return ms.svc.ListWebhooksByGroup(ctx, token, thingID)
 }
 
 func (ms *metricsMiddleware) Consume(message interface{}) error {

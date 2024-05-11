@@ -23,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/MainfluxLabs/mainflux/webhooks/api"
@@ -260,8 +261,9 @@ func newService(ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
 	forwarder := webhooks.NewForwarder()
+	idProvider := uuid.New()
 
-	svc := webhooks.New(ts, webhooksRepo, forwarder)
+	svc := webhooks.New(ts, webhooksRepo, forwarder, idProvider)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

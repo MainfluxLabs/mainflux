@@ -245,7 +245,7 @@ func findIndex(list []string, val string) int {
 	return -1
 }
 
-func (svc *mainfluxThings) ListGroupThings(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -277,30 +277,30 @@ func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewThingGroup(ctx context.Context, token string, thingID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByThing(ctx context.Context, token string, thingID string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelGroup(ctx context.Context, token string, channelID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByChannel(ctx context.Context, token string, channelID string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupChannels(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ListChannelsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (svc *mainfluxThings) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupPolicies(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (svc *mainfluxThings) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (svc *mainfluxThings) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

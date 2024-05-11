@@ -227,7 +227,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm 
 	return gr.retrieve(ctx, "", orgID, pm)
 }
 
-func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (gr groupRepository) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
@@ -287,7 +287,7 @@ func (gr groupRepository) RetrieveGroupThings(ctx context.Context, groupID strin
 	return page, nil
 }
 
-func (gr groupRepository) RetrieveGroupChannels(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (gr groupRepository) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)

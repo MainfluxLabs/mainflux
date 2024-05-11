@@ -24,6 +24,7 @@ import (
 
 const (
 	contentType = "application/json"
+	idKey       = "id"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -34,15 +35,15 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 
 	r := bone.New()
 
-	r.Post("/webhooks/:thingID", kithttp.NewServer(
+	r.Post("/groups/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_webhooks")(createWebhooksEndpoint(svc)),
-		decodeWebhooksCreation,
+		decodeCreateWebhooks,
 		encodeResponse,
 		opts...,
 	))
-	r.Get("/webhooks/:thingID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_webhooks")(listWebhooksByThing(svc)),
-		decodeList,
+	r.Get("/groups/:id/webhooks", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
+		decodeListByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -52,12 +53,12 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 	return r
 }
 
-func decodeWebhooksCreation(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createWebhooksReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
+	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, idKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -65,8 +66,8 @@ func decodeWebhooksCreation(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listWebhooksReq{Token: apiutil.ExtractBearerToken(r), ThingID: bone.GetValue(r, "thingID")}
+func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := webhookReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, idKey)}
 
 	return req, nil
 }
@@ -108,7 +109,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
-		err == ErrInvalidFormat,
 		err == ErrInvalidUrl:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrConflict):

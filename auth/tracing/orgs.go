@@ -102,12 +102,12 @@ func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm auth.
 	return orm.repo.RetrieveByAdmin(ctx, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveMemberships(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveOrgsByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, orgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveMemberships(ctx, memberID, pm)
+	return orm.repo.RetrieveOrgsByMember(ctx, memberID, pm)
 }
 
 func (orm orgRepositoryMiddleware) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
@@ -142,20 +142,20 @@ func (orm orgRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memb
 	return orm.repo.RetrieveRole(ctx, orgID, memberID)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveMembers(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	span := createSpan(ctx, orm.tracer, orgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveMembers(ctx, orgID, pm)
+	return orm.repo.RetrieveMembersByOrg(ctx, orgID, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAllOrgMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (orm orgRepositoryMiddleware) RetrieveAllMembersByOrg(ctx context.Context) ([]auth.OrgMember, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAllOrgMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAllOrgMembers(ctx)
+	return orm.repo.RetrieveAllMembersByOrg(ctx)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
@@ -166,10 +166,10 @@ func (orm orgRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupI
 	return orm.repo.RetrieveByGroupID(ctx, groupID)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAllOrgGroups(ctx context.Context) ([]auth.OrgGroup, error) {
+func (orm orgRepositoryMiddleware) RetrieveAllGroupsByOrg(ctx context.Context) ([]auth.OrgGroup, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAllOrgGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAllOrgGroups(ctx)
+	return orm.repo.RetrieveAllGroupsByOrg(ctx)
 }
