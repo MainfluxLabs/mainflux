@@ -12,12 +12,10 @@ import (
 
 var (
 	group1 = sdk.Group{
-		Name:  "test",
-		OrgID: "1",
+		Name: "test",
 	}
 	group2 = sdk.Group{
-		Name:  "test2",
-		OrgID: "1",
+		Name: "test2",
 	}
 )
 
@@ -32,9 +30,9 @@ func TestDeleteGroups(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id1, err := mainfluxSDK.CreateGroup(group1, token)
+	id1, err := mainfluxSDK.CreateGroup(group1, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateGroup(group2, token)
+	id2, err := mainfluxSDK.CreateGroup(group2, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	grIDs := []string{id1, id2}

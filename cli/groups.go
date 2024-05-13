@@ -12,7 +12,7 @@ import (
 
 var cmdGroups = []cobra.Command{
 	{
-		Use:   "create <JSON_group> <user_auth_token>",
+		Use:   "create <JSON_group> <org_id> <user_auth_token>",
 		Short: "Create group",
 		Long: `Creates new group:
 		{
@@ -32,7 +32,7 @@ var cmdGroups = []cobra.Command{
 				logError(err)
 				return
 			}
-			id, err := sdk.CreateGroup(group, args[1])
+			id, err := sdk.CreateGroup(group, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return

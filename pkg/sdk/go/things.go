@@ -28,8 +28,8 @@ type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
 
-func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
-	things, err := sdk.CreateThings([]Thing{t}, token)
+func (sdk mfSDK) CreateThing(t Thing, groupID, token string) (string, error) {
+	things, err := sdk.CreateThings([]Thing{t}, groupID, token)
 	if err != nil {
 		return "", err
 	}
@@ -41,13 +41,13 @@ func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
 	return things[0].ID, nil
 }
 
-func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
+func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, error) {
 	data, err := json.Marshal(things)
 	if err != nil {
 		return []Thing{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsEndpoint)
+	url := fmt.Sprintf("%s/groups/%s/%s", sdk.thingsURL, groupID, thingsEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {

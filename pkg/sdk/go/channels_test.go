@@ -14,12 +14,15 @@ import (
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 )
 
-const name = "name"
+const (
+	name    = "name"
+	groupID = "1"
+)
 
 var (
-	ch1          = sdk.Channel{GroupID: "1", Name: "test1"}
-	ch2          = sdk.Channel{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3          = sdk.Channel{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	ch1          = sdk.Channel{GroupID: groupID, Name: "test1"}
+	ch2          = sdk.Channel{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	ch3          = sdk.Channel{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
 	chPrefix     = "fe6b4e92-cc98-425e-b0aa-"
 	emptyChannel = sdk.Channel{GroupID: "1"}
 )
@@ -29,7 +32,7 @@ func TestCreateChannel(t *testing.T) {
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
-	chWrongExtID := sdk.Channel{ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
+	chWrongExtID := sdk.Channel{GroupID: groupID, ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
 
 	sdkConf := sdk.Config{
 		ThingsURL:       ts.URL,
@@ -43,6 +46,7 @@ func TestCreateChannel(t *testing.T) {
 		desc    string
 		channel sdk.Channel
 		token   string
+		groupID string
 		err     error
 		empty   bool
 	}{
@@ -50,6 +54,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new channel",
 			channel: ch1,
 			token:   token,
+			groupID: groupID,
 			err:     nil,
 			empty:   false,
 		},
@@ -57,6 +62,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new channel with empty token",
 			channel: ch1,
 			token:   "",
+			groupID: groupID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
@@ -64,6 +70,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new channel with invalid token",
 			channel: ch1,
 			token:   wrongValue,
+			groupID: groupID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
@@ -71,6 +78,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new empty channel",
 			channel: emptyChannel,
 			token:   token,
+			groupID: groupID,
 			err:     nil,
 			empty:   false,
 		},
@@ -78,6 +86,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create a new channel with external UUID",
 			channel: ch2,
 			token:   token,
+			groupID: groupID,
 			err:     nil,
 			empty:   false,
 		},
@@ -85,13 +94,14 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create a new channel with wrong external UUID",
 			channel: chWrongExtID,
 			token:   token,
+			groupID: groupID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 			empty:   true,
 		},
 	}
 
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateChannel(tc.channel, tc.token)
+		loc, err := mainfluxSDK.CreateChannel(tc.channel, groupID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.empty, loc == "", fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
 	}
@@ -152,7 +162,7 @@ func TestCreateChannels(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateChannels(tc.channels, tc.token)
+		res, err := mainfluxSDK.CreateChannels(tc.channels, groupID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {
@@ -172,7 +182,7 @@ func TestChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, token)
+	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -228,7 +238,7 @@ func TestChannels(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		ch := sdk.Channel{GroupID: "1", ID: id, Name: name}
-		_, err := mainfluxSDK.CreateChannel(ch, token)
+		_, err := mainfluxSDK.CreateChannel(ch, groupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		channels = append(channels, ch)
 	}
@@ -324,15 +334,15 @@ func TestViewChannelByThing(t *testing.T) {
 	}
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
-	grID, err := mainfluxSDK.CreateGroup(group, token)
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: name, GroupID: grID}
-	tid, err := mainfluxSDK.CreateThing(th, token)
+	th := sdk.Thing{Name: name}
+	tid, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	ch := sdk.Channel{Name: name, GroupID: grID}
-	cid, err := mainfluxSDK.CreateChannel(ch, token)
+	ch := sdk.Channel{Name: name}
+	cid, err := mainfluxSDK.CreateChannel(ch, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
@@ -411,7 +421,7 @@ func TestUpdateChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, token)
+	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	cases := []struct {
@@ -469,7 +479,7 @@ func TestDeleteChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, token)
+	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -533,9 +543,9 @@ func TestDeleteChannels(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id1, err := mainfluxSDK.CreateChannel(ch1, token)
+	id1, err := mainfluxSDK.CreateChannel(ch1, groupID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateChannel(ch2, token)
+	id2, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chIDs := []string{id1, id2}

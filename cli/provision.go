@@ -24,7 +24,7 @@ const csvExt = ".csv"
 
 var cmdProvision = []cobra.Command{
 	{
-		Use:   "things <things_file> <user_token>",
+		Use:   "things <things_file> <group_id> <user_token>",
 		Short: "Provision things",
 		Long:  `Bulk create things`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -44,7 +44,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			things, err = sdk.CreateThings(things, args[1])
+			things, err = sdk.CreateThings(things, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -54,7 +54,7 @@ var cmdProvision = []cobra.Command{
 		},
 	},
 	{
-		Use:   "channels <channels_file> <user_token>",
+		Use:   "channels <channels_file> <group_id> <user_token>",
 		Short: "Provision channels",
 		Long:  `Bulk create channels`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -69,7 +69,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			channels, err = sdk.CreateChannels(channels, args[1])
+			channels, err = sdk.CreateChannels(channels, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -112,6 +112,7 @@ var cmdProvision = []cobra.Command{
 			numChan := 2
 			things := []mfxsdk.Thing{}
 			channels := []mfxsdk.Channel{}
+			orgID := "1"
 
 			if len(args) != 0 {
 				logUsage(cmd.Use)
@@ -140,7 +141,7 @@ var cmdProvision = []cobra.Command{
 				Name: "gr",
 			}
 
-			grID, err := sdk.CreateGroup(g, ut)
+			grID, err := sdk.CreateGroup(g, orgID, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -163,7 +164,7 @@ var cmdProvision = []cobra.Command{
 
 				things = append(things, t)
 			}
-			things, err = sdk.CreateThings(things, ut)
+			things, err = sdk.CreateThings(things, grID, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -185,7 +186,7 @@ var cmdProvision = []cobra.Command{
 
 				channels = append(channels, c)
 			}
-			channels, err = sdk.CreateChannels(channels, ut)
+			channels, err = sdk.CreateChannels(channels, grID, ut)
 			if err != nil {
 				logError(err)
 				return

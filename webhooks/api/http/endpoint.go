@@ -59,14 +59,27 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 	res := webhooksRes{Webhooks: []webhookResponse{}, created: created}
 	for _, wh := range webhooks {
 		webhook := webhookResponse{
-			ID:             wh.ID,
-			GroupID:        wh.GroupID,
-			Name:           wh.Name,
-			Url:            wh.Url,
-			WebhookHeaders: wh.Headers,
+			ID:         wh.ID,
+			GroupID:    wh.GroupID,
+			Name:       wh.Name,
+			Url:        wh.Url,
+			ResHeaders: wh.Headers,
 		}
 		res.Webhooks = append(res.Webhooks, webhook)
 	}
 
 	return res
+}
+
+func buildWebhookResponse(webhook webhooks.Webhook, updated bool) webhookResponse {
+	wh := webhookResponse{
+		ID:         webhook.ID,
+		GroupID:    webhook.GroupID,
+		Name:       webhook.Name,
+		Url:        webhook.Url,
+		ResHeaders: webhook.Headers,
+		updated:    updated,
+	}
+
+	return wh
 }

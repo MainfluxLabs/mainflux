@@ -33,7 +33,7 @@ type Service interface {
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
-	ListWebhooksByGroup(ctx context.Context, token string, thingID string) ([]Webhook, error)
+	ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error)
 
 	consumers.Consumer
 }
@@ -115,7 +115,7 @@ func (ws *webhooksService) Consume(message interface{}) error {
 		msgs := v.Data
 
 		for _, msg := range msgs {
-			if msg.Channel == "" {
+			if msg.Publisher == "" {
 				return apiutil.ErrMissingID
 			}
 

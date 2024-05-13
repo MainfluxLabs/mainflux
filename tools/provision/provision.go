@@ -128,20 +128,22 @@ func Provision(conf Config) {
 	channels := make([]sdk.Channel, conf.Num)
 	cIDs := []string{}
 	tIDs := []string{}
+	var gID string
 
 	fmt.Println("# List of things that can be connected to MQTT broker")
 
 	for i := 0; i < conf.Num; i++ {
 		things[i] = sdk.Thing{Name: fmt.Sprintf("%s-thing-%d", conf.Prefix, i)}
 		channels[i] = sdk.Channel{Name: fmt.Sprintf("%s-channel-%d", conf.Prefix, i)}
+		gID = channels[i].GroupID
 	}
 
-	things, err = s.CreateThings(things, token)
+	things, err = s.CreateThings(things, gID, token)
 	if err != nil {
 		log.Fatalf("Failed to create the things: %s", err.Error())
 	}
 
-	channels, err = s.CreateChannels(channels, token)
+	channels, err = s.CreateChannels(channels, gID, token)
 	if err != nil {
 		log.Fatalf("Failed to create the chennels: %s", err.Error())
 	}

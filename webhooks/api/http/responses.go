@@ -8,11 +8,27 @@ import (
 )
 
 type webhookResponse struct {
-	ID             string `json:"id"`
-	GroupID        string `json:"group_id"`
-	Name           string `json:"name"`
-	Url            string `json:"url"`
-	WebhookHeaders string `json:"headers"`
+	ID         string `json:"id"`
+	GroupID    string `json:"group_id"`
+	Name       string `json:"name"`
+	Url        string `json:"url"`
+	ResHeaders string `json:"headers"`
+	updated    bool
+}
+
+func (res webhookResponse) Code() int {
+	return http.StatusOK
+}
+
+func (res webhookResponse) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res webhookResponse) Empty() bool {
+	if res.updated {
+		return true
+	}
+	return false
 }
 
 type webhooksRes struct {
@@ -34,4 +50,18 @@ func (res webhooksRes) Headers() map[string]string {
 
 func (res webhooksRes) Empty() bool {
 	return false
+}
+
+type removeRes struct{}
+
+func (res removeRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res removeRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res removeRes) Empty() bool {
+	return true
 }

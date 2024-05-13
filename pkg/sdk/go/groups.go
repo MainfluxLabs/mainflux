@@ -21,8 +21,8 @@ const (
 	MinLevel       = uint64(1)
 )
 
-func (sdk mfSDK) CreateGroup(g Group, token string) (string, error) {
-	groups, err := sdk.CreateGroups([]Group{g}, token)
+func (sdk mfSDK) CreateGroup(g Group, orgID, token string) (string, error) {
+	groups, err := sdk.CreateGroups([]Group{g}, orgID, token)
 	if err != nil {
 		return "", err
 	}
@@ -34,13 +34,13 @@ func (sdk mfSDK) CreateGroup(g Group, token string) (string, error) {
 	return groups[0].ID, nil
 }
 
-func (sdk mfSDK) CreateGroups(groups []Group, token string) ([]Group, error) {
+func (sdk mfSDK) CreateGroups(groups []Group, orgID, token string) ([]Group, error) {
 	data, err := json.Marshal(groups)
 	if err != nil {
 		return []Group{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, groupsEndpoint)
+	url := fmt.Sprintf("%s/orgs/%s/%s", sdk.thingsURL, orgID, groupsEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {

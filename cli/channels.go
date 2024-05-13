@@ -12,7 +12,7 @@ import (
 
 var cmdChannels = []cobra.Command{
 	{
-		Use:   "create <JSON_channel> <user_auth_token>",
+		Use:   "create <JSON_channel> <group_id> <user_auth_token>",
 		Short: "Create channel",
 		Long:  `Creates new channel and generates it's UUID`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -27,7 +27,7 @@ var cmdChannels = []cobra.Command{
 				return
 			}
 
-			id, err := sdk.CreateChannel(channel, args[1])
+			id, err := sdk.CreateChannel(channel, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return

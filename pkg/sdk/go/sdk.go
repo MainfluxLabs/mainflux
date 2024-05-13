@@ -161,10 +161,10 @@ type SDK interface {
 	UpdatePassword(oldPass, newPass, token string) error
 
 	// CreateThing registers new thing and returns its id.
-	CreateThing(thing Thing, token string) (string, error)
+	CreateThing(thing Thing, groupID, token string) (string, error)
 
 	// CreateThings registers new things and returns their ids.
-	CreateThings(things []Thing, token string) ([]Thing, error)
+	CreateThings(things []Thing, groupID, token string) ([]Thing, error)
 
 	// Things returns page of things.
 	Things(token string, pm PageMetadata) (ThingsPage, error)
@@ -188,7 +188,7 @@ type SDK interface {
 	IdentifyThing(key string) (string, error)
 
 	// CreateGroup creates new group and returns its id.
-	CreateGroup(group Group, token string) (string, error)
+	CreateGroup(group Group, orgID, token string) (string, error)
 
 	// DeleteGroup deletes users group.
 	DeleteGroup(id, token string) error
@@ -218,10 +218,10 @@ type SDK interface {
 	Disconnect(conns ConnectionIDs, token string) error
 
 	// CreateChannel creates new channel and returns its id.
-	CreateChannel(channel Channel, token string) (string, error)
+	CreateChannel(channel Channel, groupID, token string) (string, error)
 
 	// CreateChannels registers new channels and returns their ids.
-	CreateChannels(channels []Channel, token string) ([]Channel, error)
+	CreateChannels(channels []Channel, groupID, token string) ([]Channel, error)
 
 	// Channels returns page of channels.
 	Channels(token string, pm PageMetadata) (ChannelsPage, error)

@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	things2 "github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	whMock "github.com/MainfluxLabs/mainflux/webhooks/mocks"
 	"github.com/stretchr/testify/assert"
@@ -18,38 +17,19 @@ import (
 )
 
 const (
-	groupID     = "testID"
-	token       = "admin@example.com"
-	wrongValue  = "wrong-value"
-	emptyValue  = ""
-	ownerID     = "ownerID"
-	orgID       = "orgID"
-	name        = "name"
-	description = "description"
+	token      = "admin@example.com"
+	wrongValue = "wrong-value"
+	emptyValue = ""
+	groupID    = "1"
 )
 
 func newService() webhooks.Service {
-	things := mocks.NewThingsServiceClient(nil, nil, createGroup())
+	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
 	webhookRepo := whMock.NewWebhookRepository()
 	forwarder := whMock.NewForwarder()
 	idProvider := uuid.NewMock()
 
 	return webhooks.New(things, webhookRepo, forwarder, idProvider)
-}
-
-func createGroup() map[string]things2.Group {
-	group := map[string]things2.Group{}
-
-	group[groupID] = things2.Group{
-		ID:          groupID,
-		OwnerID:     ownerID,
-		OrgID:       orgID,
-		Name:        name,
-		Description: description,
-		Metadata:    map[string]interface{}{"meta": "data"},
-	}
-
-	return group
 }
 
 func TestCreateWebhooks(t *testing.T) {
@@ -111,7 +91,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 
 	w := webhooks.Webhook{
 		Name:    "TestWebhook",
-		GroupID: "1",
+		GroupID: groupID,
 		Url:     "https://api.webhook.com",
 		Headers: "",
 	}
@@ -122,28 +102,27 @@ func TestListWebhooksByGroup(t *testing.T) {
 	cases := []struct {
 		desc     string
 		webhooks []webhooks.Webhook
-		grID     string
 		token    string
+		grID     string
 		err      error
 	}{
 		{
 			desc:     "list the webhooks",
 			webhooks: whs,
-			grID:     groupID,
 			token:    token,
+			grID:     groupID,
 			err:      nil,
 		},
 		{
 			desc:     "list webhooks with invalid auth token",
 			webhooks: []webhooks.Webhook{},
-			grID:     groupID,
 			token:    wrongValue,
+			grID:     groupID,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "list webhooks with invalid group id",
 			webhooks: []webhooks.Webhook{},
-			grID:     wrongValue,
 			token:    token,
 			err:      errors.ErrAuthorization,
 		},
@@ -161,7 +140,7 @@ func TestConsume(t *testing.T) {
 
 	validJson := json.Messages{
 		Data: []json.Message{{
-			Channel: "1",
+			Publisher: "1",
 			Payload: map[string]interface{}{
 				"key1": "val1",
 				"key2": float64(123),
@@ -171,7 +150,7 @@ func TestConsume(t *testing.T) {
 
 	invalidJson := json.Messages{
 		Data: []json.Message{{
-			Channel: emptyValue,
+			Publisher: emptyValue,
 			Payload: map[string]interface{}{
 				"key1": "val1",
 				"key2": float64(123),

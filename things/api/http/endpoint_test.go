@@ -2989,7 +2989,7 @@ func TestGetConnByThingKey(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/identify/channels/%s/access-by-key", ts.URL, ""),
+			url:         fmt.Sprintf("%s/connections", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}

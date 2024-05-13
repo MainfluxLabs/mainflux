@@ -15,8 +15,8 @@ import (
 
 const channelsEndpoint = "channels"
 
-func (sdk mfSDK) CreateChannel(c Channel, token string) (string, error) {
-	channels, err := sdk.CreateChannels([]Channel{c}, token)
+func (sdk mfSDK) CreateChannel(c Channel, groupID, token string) (string, error) {
+	channels, err := sdk.CreateChannels([]Channel{c}, groupID, token)
 	if err != nil {
 		return "", err
 	}
@@ -28,13 +28,13 @@ func (sdk mfSDK) CreateChannel(c Channel, token string) (string, error) {
 	return channels[0].ID, nil
 }
 
-func (sdk mfSDK) CreateChannels(chs []Channel, token string) ([]Channel, error) {
+func (sdk mfSDK) CreateChannels(chs []Channel, groupID, token string) ([]Channel, error) {
 	data, err := json.Marshal(chs)
 	if err != nil {
 		return []Channel{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
+	url := fmt.Sprintf("%s/groups/%s/%s", sdk.thingsURL, groupID, channelsEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return []Channel{}, err
