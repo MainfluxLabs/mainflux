@@ -22,7 +22,7 @@ type Profile struct {
 	ContentType string      `json:"content_type"`
 	Write       bool        `json:"write"`
 	Notify      bool        `json:"notify"`
-	Webhook     bool        `json:"webhook"`
+	WebhookID   string      `json:"webhook_id"`
 	Transformer Transformer `json:"transformer"`
 	Notifier    Notifier    `json:"notifier"`
 }
