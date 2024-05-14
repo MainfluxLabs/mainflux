@@ -25,7 +25,7 @@ var (
 	// ErrFailedToRetrieveMembersByOrg failed to retrieve members by org.
 	ErrFailedToRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
 
-	// ErrFailedToRetrieveOrgsByMember failed to retrieve memberships
+	// ErrFailedToRetrieveOrgsByMember failed to retrieve orgs by member
 	ErrFailedToRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
 
 	errIssueUser      = errors.New("failed to issue new login key")
