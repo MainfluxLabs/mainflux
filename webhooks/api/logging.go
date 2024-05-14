@@ -42,7 +42,7 @@ func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, w
 
 func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token string, groupID string) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_webhooks_by_group took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method list_webhooks_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

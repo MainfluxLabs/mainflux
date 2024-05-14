@@ -22,11 +22,11 @@ const (
 )
 
 var (
-	// ErrFailedToRetrieveMembers failed to retrieve group members.
-	ErrFailedToRetrieveMembers = errors.New("failed to retrieve org members")
+	// ErrFailedToRetrieveMembersByOrg failed to retrieve members by org.
+	ErrFailedToRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
 
-	// ErrFailedToRetrieveMembership failed to retrieve memberships
-	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
+	// ErrFailedToRetrieveOrgsByMember failed to retrieve memberships
+	ErrFailedToRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
 
 	errIssueUser      = errors.New("failed to issue new login key")
 	errIssueTmp       = errors.New("failed to issue new temporary key")
@@ -459,7 +459,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 
 	omp, err := svc.orgs.RetrieveMembersByOrg(ctx, orgID, pm)
 	if err != nil {
-		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembersByOrg, err)
 	}
 
 	var oms []OrgMember

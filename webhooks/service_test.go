@@ -35,12 +35,12 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
-	validData := webhooks.Webhook{GroupID: "1", Name: "test1", Url: "http://test1.com", Headers: "test1"}
-	validData2 := webhooks.Webhook{GroupID: "1", Name: "test2", Url: "http://test2.com", Headers: "test2"}
+	validData := webhooks.Webhook{GroupID: groupID, Name: "test1", Url: "http://test1.com", Headers: "Content-Type: application/json"}
+	validData2 := webhooks.Webhook{GroupID: groupID, Name: "test2", Url: "http://test2.com", Headers: "Content-Type: application/json"}
 	validDataWebhooks := []webhooks.Webhook{validData, validData2}
-	invalidGroupData := []webhooks.Webhook{{GroupID: emptyValue, Name: "test3", Url: "http://test3.com", Headers: "test1"}}
-	invalidNameData := []webhooks.Webhook{{GroupID: "1", Name: emptyValue, Url: "https://test.com", Headers: "test1"}}
-	invalidUrlData := []webhooks.Webhook{{GroupID: "1", Name: "test5", Url: emptyValue, Headers: "test1"}}
+	invalidGroupData := []webhooks.Webhook{{GroupID: emptyValue, Name: "test3", Url: "http://test3.com", Headers: "Content-Type: application/json"}}
+	invalidNameData := []webhooks.Webhook{{GroupID: groupID, Name: emptyValue, Url: "https://test.com", Headers: "Content-Type: application/json"}}
+	invalidUrlData := []webhooks.Webhook{{GroupID: groupID, Name: "test5", Url: emptyValue, Headers: "Content-Type: application/json"}}
 
 	cases := []struct {
 		desc     string
@@ -93,7 +93,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		Name:    "TestWebhook",
 		GroupID: groupID,
 		Url:     "https://api.webhook.com",
-		Headers: "",
+		Headers: "Content-Type: application/json",
 	}
 
 	whs, err := svc.CreateWebhooks(context.Background(), token, w)

@@ -590,7 +590,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembership,
+			err:  auth.ErrFailedToRetrieveOrgsByMember,
 		},
 		{
 			desc:     "retrieve orgs by member without member id",
@@ -601,7 +601,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembership,
+			err:  auth.ErrFailedToRetrieveOrgsByMember,
 		},
 	}
 
@@ -1055,7 +1055,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 		err          error
 	}{
 		{
-			desc:  "retrieve org members",
+			desc:  "retrieve members by org",
 			orgID: orgID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1066,7 +1066,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve org members with unknown org id",
+			desc:  "retrieve members by org with unknown org id",
 			orgID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1077,7 +1077,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve org members with invalid org id",
+			desc:  "retrieve members by org with invalid org id",
 			orgID: invalidID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1085,10 +1085,10 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembers,
+			err:  auth.ErrFailedToRetrieveMembersByOrg,
 		},
 		{
-			desc:  "retrieve org members without org id",
+			desc:  "retrieve members by org without org id",
 			orgID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1096,7 +1096,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembers,
+			err:  auth.ErrFailedToRetrieveMembersByOrg,
 		},
 	}
 

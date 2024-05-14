@@ -179,7 +179,7 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	req := listOrgMembersReq{
+	req := listMembersByOrgReq{
 		token:    apiutil.ExtractBearerToken(r),
 		id:       bone.GetValue(r, idKey),
 		offset:   o,
@@ -210,7 +210,7 @@ func decodeListOrgsByMember(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	req := listOrgMembershipsReq{
+	req := listOrgsByMemberReq{
 		token:    apiutil.ExtractBearerToken(r),
 		id:       bone.GetValue(r, idKey),
 		name:     n,
@@ -227,7 +227,7 @@ func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createOrgReq{token: apiutil.ExtractBearerToken(r)}
+	req := createOrgsReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

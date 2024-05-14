@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	saveGroupOp             = "save_group"
-	updateGroupOp           = "update_group"
-	removeGroupOp           = "remove_group"
-	retrieveAllOp           = "retrieve_all"
-	retrieveGroupByIDOp     = "retrieve_group_by_id"
-	retrieveGroupByIDsOp    = "retrieve_group_by_ids"
-	retrieveByOwnerOp       = "retrieve_by_owner"
-	retrieveGroupThingsOp   = "retrieve_group_things"
-	retrieveGroupChannelsOp = "retrieve_group_channels"
+	saveGroupOp               = "save_group"
+	updateGroupOp             = "update_group"
+	removeGroupOp             = "remove_group"
+	retrieveAllOp             = "retrieve_all"
+	retrieveGroupByIDOp       = "retrieve_group_by_id"
+	retrieveGroupByIDsOp      = "retrieve_group_by_ids"
+	retrieveByOwnerOp         = "retrieve_by_owner"
+	retrieveThingsByGroupOp   = "retrieve_things_by_group"
+	retrieveChannelsByGroupOp = "retrieve_channels_by_group"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -98,7 +98,7 @@ func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerI
 }
 
 func (grm groupRepositoryMiddleware) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupThingsOp)
+	span := createSpan(ctx, grm.tracer, retrieveThingsByGroupOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -106,7 +106,7 @@ func (grm groupRepositoryMiddleware) RetrieveThingsByGroup(ctx context.Context, 
 }
 
 func (grm groupRepositoryMiddleware) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupChannelsOp)
+	span := createSpan(ctx, grm.tracer, retrieveChannelsByGroupOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

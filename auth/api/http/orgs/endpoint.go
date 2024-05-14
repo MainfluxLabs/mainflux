@@ -9,7 +9,7 @@ import (
 
 func createOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createOrgReq)
+		req := request.(createOrgsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func listOrgsByMemberEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listOrgMembershipsReq)
+		req := request.(listOrgsByMemberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func updateMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listOrgMembersReq)
+		req := request.(listMembersByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
