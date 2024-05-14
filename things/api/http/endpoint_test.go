@@ -131,7 +131,11 @@ func TestCreateThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	data := `[{"name": "1", "key": "1", "group_id": "1"}, {"name": "2", "key": "2", "group_id": "1"}]`
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := `[{"name": "1", "key": "1"}, {"name": "2", "key": "2"}]`
 	invalidData := fmt.Sprintf(`[{"name": "%s", "key": "10"}]`, invalidName)
 
 	cases := []struct {
@@ -220,7 +224,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/things", ts.URL),
+			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, gr.ID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -1304,7 +1308,11 @@ func TestCreateChannels(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	data := `[{"name": "1", "group_id": "1"}, {"name": "2", "group_id": "1"}]`
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := `[{"name": "1"}, {"name": "2"}]`
 	invalidData := fmt.Sprintf(`[{"name": "%s"}]`, invalidName)
 
 	cases := []struct {
@@ -1384,7 +1392,7 @@ func TestCreateChannels(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/channels", ts.URL),
+			url:         fmt.Sprintf("%s/groups/%s/channels", ts.URL, gr.ID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -2981,7 +2989,7 @@ func TestGetConnByThingKey(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/identify/channels/%s/access-by-key", ts.URL, ""),
+			url:         fmt.Sprintf("%s/connections", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}

@@ -116,13 +116,13 @@ func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm auth
 	return ms.svc.ListOrgs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (ms *metricsMiddleware) ListOrgsByMember(ctx context.Context, token, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_org_memberships").Add(1)
-		ms.latency.With("method", "list_org_memberships").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_orgs_by_member").Add(1)
+		ms.latency.With("method", "list_orgs_by_member").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListOrgMemberships(ctx, token, memberID, pm)
+	return ms.svc.ListOrgsByMember(ctx, token, memberID, pm)
 }
 
 func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) error {
@@ -161,13 +161,13 @@ func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 	return ms.svc.ViewMember(ctx, token, orgID, memberID)
 }
 
-func (ms *metricsMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (ms *metricsMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_org_members").Add(1)
-		ms.latency.With("method", "list_org_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_members_by_org").Add(1)
+		ms.latency.With("method", "list_members_by_org").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListOrgMembers(ctx, token, orgID, pm)
+	return ms.svc.ListMembersByOrg(ctx, token, orgID, pm)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Backup, error) {

@@ -30,31 +30,8 @@ The service is configured using the environment variables from the following tab
 
 ## Deployment
 
-The service is distributed as a Docker container. The following snippet provides a compose file template that can be used to deploy the service container locally:
-
-```yaml
-version: "3"
-services:
-  webhooks:
-    image: mainfluxlabs/webhooks:[version]
-    container_name: [instance name]
-    ports:
-      - [host machine port]:[configured HTTP port]
-    environment:
-      MF_WEBHOOKS_LOG_LEVEL: [Webhooks log level]
-      MF_BROKER_URL: [Message broker URL]
-      MF_WEBHOOKS_DB_HOST: [Database host address]
-      MF_WEBHOOKS_DB_PORT: [Database host port]
-      MF_WEBHOOKS_DB_USER: [Database user]
-      MF_WEBHOOKS_DB_PASS: [Database password]
-      MF_WEBHOOKS_DB: [Name of the database used by the service]
-      MF_WEBHOOKS_HTTP_PORT: [Service HTTP port]
-      MF_WEBHOOKS_SERVER_CERT: [String path to server cert in pem format]
-      MF_WEBHOOKS_SERVER_KEY: [String path to server key in pem format]
-      MF_JAEGER_URL: [Jaeger server URL]
-      MF_THINGS_AUTH_GRPC_URL: [Things auth service gRPC URL]
-      MF_THINGS_AUTH_GRPC_TIMEOUT: [Things auth service gRPC request timeout in seconds]
-```
+The service is distributed as a Docker container. Check the [`webhooks `](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L500-L523) service section in
+docker-compose to see how service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
@@ -77,17 +54,19 @@ MF_WEBHOOKS_DB_PORT=[Database host port]
 MF_WEBHOOKS_DB_USER=[Database user]
 MF_WEBHOOKS_DB_PASS=[Database password]
 MF_WEBHOOKS_DB=[Name of the database used by the service]
-MF_THINGS_DB_SSL_MODE=[SSL mode to connect to the database with]
-MF_THINGS_DB_SSL_CERT=[Path to the PEM encoded certificate file]
-MF_THINGS_DB_SSL_KEY=[Path to the PEM encoded key file]
-MF_THINGS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file]
+MF_WEBHOOKS_DB_SSL_MODE=[SSL mode to connect to the database with]
+MF_WEBHOOKS_DB_SSL_CERT=[Path to the PEM encoded certificate file]
+MF_WEBHOOKS_DB_SSL_KEY=[Path to the PEM encoded key file]
+MF_WEBHOOKS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file]
+MF_WEBHOOKS_CLIENT_TLS=[Flag that indicates if TLS should be turned on]                                           
+MF_WEBHOOKS_CA_CERTS=[Path to trusted CAs in PEM format]                            
 MF_WEBHOOKS_HTTP_PORT=[Service HTTP port]
-MF_WEBHOOKS_AUTH_GRPC_PORT=[Webhooks service Auth gRPC port]
 MF_WEBHOOKS_SERVER_CERT=[String path to server cert in pem format]
 MF_WEBHOOKS_SERVER_KEY=[String path to server key in pem format]
 MF_JAEGER_URL=[Jaeger server URL]
-MF_AUTH_GRPC_URL=[Auth service gRPC URL]
-MF_AUTH_GRPC_TIMEOUT=[Auth service gRPC request timeout in seconds]
+MF_BROKER_URL=[Message broker URL]
+MF_THINGS_AUTH_GRPC_URL=[Things auth service gRPC URL]
+MF_THINGS_AUTH_GRPC_TIMEOUT=[Things auth service gRPC request timeout in seconds]
 $GOBIN/mainflux-kit
 ```
 

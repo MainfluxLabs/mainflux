@@ -857,7 +857,7 @@ func TestAssignMembers(t *testing.T) {
 	}
 }
 
-func TestUnAssignMembers(t *testing.T) {
+func TestUnassignMembers(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
@@ -1044,7 +1044,7 @@ func TestUpdateMembers(t *testing.T) {
 	}
 }
 
-func TestListOrgMembers(t *testing.T) {
+func TestListMembersByOrg(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
@@ -1180,14 +1180,14 @@ func TestListOrgMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListOrgMembers(context.Background(), tc.token, tc.orgID, tc.meta)
+		page, err := svc.ListMembersByOrg(context.Background(), tc.token, tc.orgID, tc.meta)
 		size := uint64(len(page.OrgMembers))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestListOrgMemberships(t *testing.T) {
+func TestListOrgsByMember(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
@@ -1328,7 +1328,7 @@ func TestListOrgMemberships(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListOrgMemberships(context.Background(), tc.token, tc.memberID, tc.meta)
+		page, err := svc.ListOrgsByMember(context.Background(), tc.token, tc.memberID, tc.meta)
 		size := uint64(len(page.Orgs))
 		assert.Equal(t, tc.size, int(size), fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))

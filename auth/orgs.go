@@ -126,8 +126,8 @@ type Orgs interface {
 	// ListOrgs retrieves orgs.
 	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
-	// ListOrgMemberships retrieves all orgs for member that is identified with memberID belongs to.
-	ListOrgMemberships(ctx context.Context, token, memberID string, pm PageMetadata) (OrgsPage, error)
+	// ListOrgsByMember retrieves all orgs for member that is identified with memberID belongs to.
+	ListOrgsByMember(ctx context.Context, token, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
@@ -141,8 +141,8 @@ type Orgs interface {
 	// UpdateMembers updates members role in an org.
 	UpdateMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
 
-	// ListOrgMembers retrieves members assigned to an org identified by orgID.
-	ListOrgMembers(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	// ListMembersByOrg retrieves members assigned to an org identified by orgID.
+	ListMembersByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
@@ -177,8 +177,8 @@ type OrgRepository interface {
 	// RetrieveByAdmin retrieves all orgs with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (OrgsPage, error)
 
-	// RetrieveMemberships list of orgs that member belongs to
-	RetrieveMemberships(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
+	// RetrieveOrgsByMember list of orgs that member belongs to
+	RetrieveOrgsByMember(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 
 	// AssignMembers adds members to an org.
 	AssignMembers(ctx context.Context, oms ...OrgMember) error
@@ -192,15 +192,15 @@ type OrgRepository interface {
 	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
-	// RetrieveMembers retrieves members assigned to an org identified by orgID.
-	RetrieveMembers(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	// RetrieveMembersByOrg retrieves members assigned to an org identified by orgID.
+	RetrieveMembersByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
-	// RetrieveAllOrgMembers retrieves all org members.
-	RetrieveAllOrgMembers(ctx context.Context) ([]OrgMember, error)
+	// RetrieveAllMembersByOrg retrieves all org members.
+	RetrieveAllMembersByOrg(ctx context.Context) ([]OrgMember, error)
 
 	// RetrieveByGroupID retrieves org where group is assigned.
 	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)
 
-	// RetrieveAllOrgGroups retrieves all org groups.
-	RetrieveAllOrgGroups(ctx context.Context) ([]OrgGroup, error)
+	// RetrieveAllGroupsByOrg retrieves all org groups.
+	RetrieveAllGroupsByOrg(ctx context.Context) ([]OrgGroup, error)
 }

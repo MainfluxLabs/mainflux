@@ -28,13 +28,12 @@ var (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// CreateWebhooks creates webhooks for certain thing
-	// which belongs to the user identified by a given token
+	// CreateWebhooks creates webhooks for certain group identified by the provided ID
 	CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error)
 
-	// ListWebhooksByThing retrieves data about a subset of webhooks
-	// related to a certain thing identified by the provided ID.
-	ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error)
+	// ListWebhooksByGroup retrieves data about a subset of webhooks
+	// related to a certain group identified by the provided ID.
+	ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error)
 
 	consumers.Consumer
 }
@@ -44,16 +43,18 @@ type webhooksService struct {
 	webhooks   WebhookRepository
 	subscriber messaging.Subscriber
 	forwarder  Forwarder
+	idProvider mainflux.IDProvider
 }
 
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(things mainflux.ThingsServiceClient, webhooks WebhookRepository, forwarder Forwarder) Service {
+func New(things mainflux.ThingsServiceClient, webhooks WebhookRepository, forwarder Forwarder, idp mainflux.IDProvider) Service {
 	return &webhooksService{
-		things:    things,
-		webhooks:  webhooks,
-		forwarder: forwarder,
+		things:     things,
+		webhooks:   webhooks,
+		forwarder:  forwarder,
+		idProvider: idp,
 	}
 }
 
@@ -71,11 +72,16 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	// TODO: Replace ThingID by GroupID
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.ThingID, Action: things.ReadWrite})
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.ReadWrite})
 	if err != nil {
 		return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
+
+	id, err := ws.idProvider.ID()
+	if err != nil {
+		return Webhook{}, err
+	}
+	webhook.ID = id
 
 	whs, err := ws.webhooks.Save(ctx, *webhook)
 	if err != nil {
@@ -88,14 +94,13 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	return whs[0], nil
 }
 
-func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token string, thingID string) ([]Webhook, error) {
-	// TODO: Replace ThingID by GroupID
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: thingID, Action: things.Read})
+func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error) {
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Read})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID)
+	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID)
 	if err != nil {
 		return []Webhook{}, errors.ErrAuthorization
 	}
@@ -114,7 +119,8 @@ func (ws *webhooksService) Consume(message interface{}) error {
 				return apiutil.ErrMissingID
 			}
 
-			whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher)
+			//TODO: Need to get a WebhookID from Channel Profile and replace to RetrieveByID
+			whs, err := ws.webhooks.RetrieveByGroupID(ctx, msg.Publisher)
 			if err != nil {
 				return errors.ErrAuthorization
 			}

@@ -3,9 +3,11 @@ package webhooks
 import "context"
 
 type Webhook struct {
-	ThingID string
+	ID      string
+	GroupID string
 	Name    string
 	Url     string
+	Headers string
 }
 
 type WebhookRepository interface {
@@ -14,7 +16,7 @@ type WebhookRepository interface {
 	// Successful operation is indicated by non-nil error response.
 	Save(ctx context.Context, whs ...Webhook) ([]Webhook, error)
 
-	// RetrieveByThingID retrieves webhooks related to
-	// a certain thing identified by a given ID.
-	RetrieveByThingID(ctx context.Context, thingID string) ([]Webhook, error)
+	// RetrieveByGroupID retrieves webhooks related to
+	// a certain group identified by a given ID.
+	RetrieveByGroupID(ctx context.Context, groupID string) ([]Webhook, error)
 }

@@ -172,9 +172,9 @@ func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 	return lm.svc.ViewMember(ctx, token, orgID, memberID)
 }
 
-func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgMembersPage, err error) {
+func (lm *loggingMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgMembersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_members for org id %s took %s to complete", orgID, time.Since(begin))
+		message := fmt.Sprintf("Method list_members_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -182,12 +182,12 @@ func (lm *loggingMiddleware) ListOrgMembers(ctx context.Context, token, orgID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListOrgMembers(ctx, token, orgID, pm)
+	return lm.svc.ListMembersByOrg(ctx, token, orgID, pm)
 }
 
-func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, memberID string, pm auth.PageMetadata) (op auth.OrgsPage, err error) {
+func (lm *loggingMiddleware) ListOrgsByMember(ctx context.Context, token, memberID string, pm auth.PageMetadata) (op auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_memberships for member id %s took %s to complete", memberID, time.Since(begin))
+		message := fmt.Sprintf("Method list_orgs_by_member for member id %s took %s to complete", memberID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -195,7 +195,7 @@ func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, memb
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListOrgMemberships(ctx, token, memberID, pm)
+	return lm.svc.ListOrgsByMember(ctx, token, memberID, pm)
 }
 
 func (lm *loggingMiddleware) AssignMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) (err error) {

@@ -11,38 +11,33 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-const (
-	maxNameSize = 1024
-	formatJSON  = "json"
-	formatSenML = "senml"
-)
+const maxNameSize = 1024
 
-var (
-	ErrInvalidUrl    = errors.New("missing or invalid url")
-	ErrInvalidFormat = errors.New("invalid format")
-)
+var ErrInvalidUrl = errors.New("missing or invalid url")
 
 type apiReq interface {
 	validate() error
 }
 
 type createWebhookReq struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name"`
+	Url     string `json:"url"`
+	Headers string `json:"headers,omitempty"`
 }
 
 type createWebhooksReq struct {
-	Token    string             `json:"token"`
-	ThingID  string             `json:"thing_id"`
+	token    string
+	groupID  string
 	Webhooks []createWebhookReq `json:"webhooks"`
 }
 
 func (req createWebhooksReq) validate() error {
-	if req.Token == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := validateUUID(req.ThingID); err != nil {
+	if err := validateUUID(req.groupID); err != nil {
 		return err
 	}
 
@@ -72,16 +67,16 @@ func (req createWebhookReq) validate() error {
 	return nil
 }
 
-type listWebhooksReq struct {
-	Token   string `json:"token"`
-	ThingID string `json:"thing_id"`
+type webhookReq struct {
+	token string
+	id    string
 }
 
-func (req *listWebhooksReq) validate() error {
-	if req.Token == "" {
+func (req *webhookReq) validate() error {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if err := validateUUID(req.ThingID); err != nil {
+	if err := validateUUID(req.id); err != nil {
 		return err
 	}
 	return nil

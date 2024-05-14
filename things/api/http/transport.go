@@ -23,20 +23,18 @@ import (
 )
 
 const (
-	contentType  = "application/json"
-	offsetKey    = "offset"
-	limitKey     = "limit"
-	nameKey      = "name"
-	orderKey     = "order"
-	dirKey       = "dir"
-	metadataKey  = "metadata"
-	groupIDKey   = "groupID"
-	thingIDKey   = "thingID"
-	channelIDKey = "channelID"
-	orgKey       = "org_id"
-
-	defOffset = 0
-	defLimit  = 10
+	contentType = "application/json"
+	offsetKey   = "offset"
+	limitKey    = "limit"
+	nameKey     = "name"
+	orderKey    = "order"
+	dirKey      = "dir"
+	metadataKey = "metadata"
+	groupIDKey  = "groupID"
+	orgKey      = "org_id"
+	idKey       = "id"
+	defOffset   = 0
+	defLimit    = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -47,9 +45,9 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r := bone.New()
 
-	r.Post("/things", kithttp.NewServer(
+	r.Post("/groups/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
-		decodeThingsCreation,
+		decodeCreateThings,
 		encodeResponse,
 		opts...,
 	))
@@ -63,35 +61,35 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Patch("/things/:id/key", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_key")(updateKeyEndpoint(svc)),
-		decodeKeyUpdate,
+		decodeUpdateKey,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_thing")(updateThingEndpoint(svc)),
-		decodeThingUpdate,
+		decodeUpdateThing,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_thing")(removeThingEndpoint(svc)),
-		decodeView,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing")(viewThingEndpoint(svc)),
-		decodeView,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/things/:id/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_channel_by_thing")(viewChannelByThingEndpoint(svc)),
-		decodeView,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -110,9 +108,9 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/channels", kithttp.NewServer(
+	r.Post("/groups/:id/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_channels")(createChannelsEndpoint(svc)),
-		decodeChannelsCreation,
+		decodeCreateChannels,
 		encodeResponse,
 		opts...,
 	))
@@ -126,21 +124,21 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Put("/channels/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_channel")(updateChannelEndpoint(svc)),
-		decodeChannelUpdate,
+		decodeUpdateChannel,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/channels/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_channel")(removeChannelEndpoint(svc)),
-		decodeView,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/channels/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_channel")(viewChannelEndpoint(svc)),
-		decodeView,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -173,100 +171,100 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/groups", kithttp.NewServer(
+	r.Post("/orgs/:id/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_groups")(createGroupsEndpoint(svc)),
-		decodeGroupsCreation,
+		decodeCreateGroups,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/groups/:groupID", kithttp.NewServer(
+	r.Get("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_group")(viewGroupEndpoint(svc)),
-		decodeGroupRequest,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Put("/groups/:groupID", kithttp.NewServer(
+	r.Put("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
-		decodeGroupUpdate,
+		decodeUpdateGroup,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/groups/:groupID", kithttp.NewServer(
+	r.Delete("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_group")(removeGroupEndpoint(svc)),
-		decodeGroupRequest,
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
-		decodeListGroupsRequest,
+		decodeListGroups,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Patch("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_groups")(removeGroupsEndpoint(svc)),
-		decodeRemoveGroupsRequest,
+		decodeRemoveGroups,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_things")(listGroupThingsEndpoint(svc)),
-		decodeListMembersRequest,
+	r.Get("/groups/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_things_by_group")(listThingsByGroupEndpoint(svc)),
+		decodeListMembers,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/things/:thingID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_thing_group")(viewThingGroupEndpoint(svc)),
-		decodeViewThingGroupRequest,
+	r.Get("/things/:id/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group_by_thing")(viewGroupByThingEndpoint(svc)),
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_channels")(listGroupChannelsEndpoint(svc)),
-		decodeListMembersRequest,
+	r.Get("/groups/:id/channels", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_channels_by_group")(listChannelsByGroupEndpoint(svc)),
+		decodeListMembers,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels/:channelID/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_channel_group")(viewChannelGroupEndpoint(svc)),
-		decodeViewChannelGroupRequest,
+	r.Get("/channels/:id/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group_by_channel")(viewGroupByChannelEndpoint(svc)),
+		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Post("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_group_policies")(createGroupPoliciesEndpoint(svc)),
-		decodeGroupPoliciesRequest,
+	r.Post("/groups/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_policies_by_group")(createPoliciesByGroupEndpoint(svc)),
+		decodeGroupPolicies,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_policies")(listGroupPoliciesEndpoint(svc)),
-		decodeListGroupPoliciesRequest,
+	r.Get("/groups/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_policies_by_group")(listPoliciesByGroupEndpoint(svc)),
+		decodeListGroupPolicies,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Put("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_group_policies")(updateGroupPoliciesEndpoint(svc)),
-		decodeGroupPoliciesRequest,
+	r.Put("/groups/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_policies_by_group")(updatePoliciesByGroupEndpoint(svc)),
+		decodeGroupPolicies,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Patch("/groups/:groupID/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group_policies")(removeGroupPoliciesEndpoint(svc)),
-		decodeRemoveGroupPoliciesRequest,
+	r.Patch("/groups/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_policies_by_group")(removePoliciesByGroupEndpoint(svc)),
+		decodeRemoveGroupPolicies,
 		encodeResponse,
 		opts...,
 	))
@@ -292,7 +290,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/identify/channels/:chanId/access-by-key", kithttp.NewServer(
+	r.Post("/connections", kithttp.NewServer(
 		kitot.TraceServer(tracer, "get_conn_by_key")(getConnByKeyEndpoint(svc)),
 		decodeGetConnByKey,
 		encodeResponse,
@@ -305,12 +303,15 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	return r
 }
 
-func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createThingsReq{token: apiutil.ExtractBearerToken(r)}
+	req := createThingsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, idKey),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -318,14 +319,14 @@ func decodeThingsCreation(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateThingReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "id"),
+		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -334,14 +335,14 @@ func decodeThingUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeKeyUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateKeyReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "id"),
+		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -350,12 +351,15 @@ func decodeKeyUpdate(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateChannels(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createChannelsReq{token: apiutil.ExtractBearerToken(r)}
+	req := createChannelsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, idKey),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Channels); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -363,14 +367,14 @@ func decodeChannelsCreation(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeChannelUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateChannel(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateChannelReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "id"),
+		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -395,10 +399,10 @@ func decodeRemoveChannels(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeView(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewResourceReq{
+func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := resourceReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "id"),
+		id:    bone.GetValue(r, idKey),
 	}
 
 	return req, nil
@@ -482,7 +486,7 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 
 	req := listByConnectionReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, "id"),
+		id:    bone.GetValue(r, idKey),
 		pageMetadata: things.PageMetadata{
 			Offset: o,
 			Limit:  l,
@@ -507,7 +511,7 @@ func decodeConnectionsList(_ context.Context, r *http.Request) (interface{}, err
 	return req, nil
 }
 
-func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListMembers(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -525,7 +529,7 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 
 	req := listMembersReq{
 		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, groupIDKey),
+		id:       bone.GetValue(r, idKey),
 		offset:   o,
 		limit:    l,
 		metadata: m,
@@ -534,12 +538,15 @@ func decodeListMembersRequest(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeGroupsCreation(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateGroups(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createGroupsReq{token: apiutil.ExtractBearerToken(r)}
+	req := createGroupsReq{
+		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, idKey),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Groups); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -547,7 +554,7 @@ func decodeGroupsCreation(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -586,13 +593,13 @@ func decodeListGroupsRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateGroup(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateGroupReq{
-		id:    bone.GetValue(r, groupIDKey),
+		id:    bone.GetValue(r, idKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -602,7 +609,7 @@ func decodeGroupUpdate(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeRemoveGroupsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroups(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -613,50 +620,6 @@ func decodeRemoveGroupsRequest(_ context.Context, r *http.Request) (interface{},
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := groupReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, groupIDKey),
-	}
-
-	return req, nil
-}
-
-func decodeGroupThingsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := groupThingsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeGroupChannelsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := groupChannelsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeViewThingGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listMembersReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, thingIDKey),
 	}
 
 	return req, nil
@@ -673,15 +636,6 @@ func decodeRemoveThings(_ context.Context, r *http.Request) (interface{}, error)
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeViewChannelGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listMembersReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, channelIDKey),
 	}
 
 	return req, nil
@@ -724,9 +678,7 @@ func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := getConnByKeyReq{
-		chanID: bone.GetValue(r, "chanId"),
-	}
+	req := getConnByKeyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -734,7 +686,7 @@ func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -751,7 +703,7 @@ func decodeGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeListGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -772,7 +724,7 @@ func decodeListGroupPoliciesRequest(_ context.Context, r *http.Request) (interfa
 	return req, nil
 }
 
-func decodeRemoveGroupPoliciesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}

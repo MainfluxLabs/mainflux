@@ -24,57 +24,57 @@ type GroupPoliciesPage struct {
 }
 
 type PoliciesRepository interface {
-	// SaveGroupPolicies saves group policies.
-	SaveGroupPolicies(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
+	// SavePoliciesByGroup saves group policies by group ID.
+	SavePoliciesByGroup(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
 
-	// RetrieveGroupPolicy retrieves group policy.
-	RetrieveGroupPolicy(ctc context.Context, gp GroupPolicy) (string, error)
+	// RetrievePolicyByGroup retrieves group policy by group ID.
+	RetrievePolicyByGroup(ctc context.Context, gp GroupPolicy) (string, error)
 
-	// RetrieveGroupPolicies retrieves page of group policies.
-	RetrieveGroupPolicies(ctx context.Context, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
+	// RetrievePoliciesByGroup retrieves page of group policies by groupID.
+	RetrievePoliciesByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
 
-	// RetrieveAllGroupPolicies retrieves all group policies. This is used for backup.
-	RetrieveAllGroupPolicies(ctx context.Context) ([]GroupPolicy, error)
+	// RetrieveAllPoliciesByGroup retrieves all group policies by group ID. This is used for backup.
+	RetrieveAllPoliciesByGroup(ctx context.Context) ([]GroupPolicy, error)
 
-	// RemoveGroupPolicies removes group policies.
-	RemoveGroupPolicies(ctx context.Context, groupID string, memberIDs ...string) error
+	// RemovePoliciesByGroup removes group policies by group ID.
+	RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdateGroupPolicies updates group policies.
-	UpdateGroupPolicies(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
+	// UpdatePoliciesByGroup updates group policies by group ID.
+	UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
 }
 
 type Policies interface {
-	// CreateGroupPolicies creates group policies.
-	CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
+	// CreatePoliciesByGroup creates policies of the group identified by the provided ID.
+	CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
 
-	// ListGroupPolicies retrieves page of group policies.
-	ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
+	// ListPoliciesByGroup retrieves a page of policies for a group that is identified by the provided ID.
+	ListPoliciesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
 
-	// UpdateGroupPolicies updates group policies.
-	UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
+	// UpdatePoliciesByGroup updates policies of the group identified by the provided ID.
+	UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
 
-	// RemoveGroupPolicies removes group policies.
-	RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error
+	// RemovePoliciesByGroup removes policies of the group identified by the provided ID.
+	RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
-func (ts *thingsService) CreateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
+func (ts *thingsService) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
 
-	if err := ts.policies.SaveGroupPolicies(ctx, groupID, gps...); err != nil {
+	if err := ts.policies.SavePoliciesByGroup(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) ListGroupPolicies(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
+func (ts *thingsService) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
 	if err := ts.canAccessGroup(ctx, token, groupID, Read); err != nil {
 		return GroupPoliciesPage{}, err
 	}
 
-	gpp, err := ts.policies.RetrieveGroupPolicies(ctx, groupID, pm)
+	gpp, err := ts.policies.RetrievePoliciesByGroup(ctx, groupID, pm)
 	if err != nil {
 		return GroupPoliciesPage{}, err
 	}
@@ -125,7 +125,7 @@ func (ts *thingsService) ListGroupPolicies(ctx context.Context, token, groupID s
 	return page, nil
 }
 
-func (ts *thingsService) UpdateGroupPolicies(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
+func (ts *thingsService) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
@@ -141,14 +141,14 @@ func (ts *thingsService) UpdateGroupPolicies(ctx context.Context, token, groupID
 		}
 	}
 
-	if err := ts.policies.UpdateGroupPolicies(ctx, groupID, gps...); err != nil {
+	if err := ts.policies.UpdatePoliciesByGroup(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) RemoveGroupPolicies(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ts *thingsService) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, ReadWrite); err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (ts *thingsService) RemoveGroupPolicies(ctx context.Context, token, groupID
 		}
 	}
 
-	if err := ts.policies.RemoveGroupPolicies(ctx, groupID, memberIDs...); err != nil {
+	if err := ts.policies.RemovePoliciesByGroup(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 

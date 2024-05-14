@@ -5,42 +5,42 @@ package http
 
 import (
 	"net/http"
-
-	"github.com/MainfluxLabs/mainflux"
 )
 
-var _ mainflux.Response = (*webhookRes)(nil)
-
-type webhookRes struct {
-	created bool
+type webhookResponse struct {
+	ID         string `json:"id"`
+	GroupID    string `json:"group_id"`
+	Name       string `json:"name"`
+	Url        string `json:"url"`
+	ResHeaders string `json:"headers"`
+	updated    bool
 }
 
-func (res webhookRes) Code() int {
-	if res.created {
-		return http.StatusCreated
-	}
+func (res webhookResponse) Code() int {
 	return http.StatusOK
 }
 
-func (res webhookRes) Headers() map[string]string {
+func (res webhookResponse) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res webhookRes) Empty() bool {
-	return true
-}
-
-type webhookResponse struct {
-	ThingID string `json:"thing_id"`
-	Name    string `json:"name"`
-	Url     string `json:"url"`
+func (res webhookResponse) Empty() bool {
+	if res.updated {
+		return true
+	}
+	return false
 }
 
 type webhooksRes struct {
 	Webhooks []webhookResponse `json:"webhooks"`
+	created  bool
 }
 
 func (res webhooksRes) Code() int {
+	if res.created {
+		return http.StatusCreated
+	}
+
 	return http.StatusOK
 }
 
@@ -50,4 +50,18 @@ func (res webhooksRes) Headers() map[string]string {
 
 func (res webhooksRes) Empty() bool {
 	return false
+}
+
+type removeRes struct{}
+
+func (res removeRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res removeRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res removeRes) Empty() bool {
+	return true
 }

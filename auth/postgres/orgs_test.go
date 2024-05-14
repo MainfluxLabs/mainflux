@@ -478,7 +478,7 @@ func TestRetrieveAll(t *testing.T) {
 	}
 }
 
-func TestRetrieveMemberships(t *testing.T) {
+func TestRetrieveOrgsByMember(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -524,7 +524,7 @@ func TestRetrieveMemberships(t *testing.T) {
 		err          error
 	}{
 		{
-			desc:     "retrieve memberships",
+			desc:     "retrieve orgs by member",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -535,7 +535,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:     "retrieve memberships filtered by metadata",
+			desc:     "retrieve orgs by member filtered by metadata",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
 				Offset:   0,
@@ -547,7 +547,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:     "retrieve memberships filter by name",
+			desc:     "retrieve orgs by member filter by name",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -559,7 +559,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:     "retrieve memberships filter by part of the name",
+			desc:     "retrieve orgs by member filter by part of the name",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -571,7 +571,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:     "retrieve memberships with unknown member id",
+			desc:     "retrieve orgs by member with unknown member id",
 			memberID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -582,7 +582,7 @@ func TestRetrieveMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:     "retrieve memberships with invalid member id",
+			desc:     "retrieve orgs by member with invalid member id",
 			memberID: invalidID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -590,10 +590,10 @@ func TestRetrieveMemberships(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembership,
+			err:  auth.ErrFailedToRetrieveOrgsByMember,
 		},
 		{
-			desc:     "retrieve memberships without member id",
+			desc:     "retrieve orgs by member without member id",
 			memberID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -601,12 +601,12 @@ func TestRetrieveMemberships(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembership,
+			err:  auth.ErrFailedToRetrieveOrgsByMember,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := repo.RetrieveMemberships(context.Background(), tc.memberID, tc.pageMetadata)
+		page, err := repo.RetrieveOrgsByMember(context.Background(), tc.memberID, tc.pageMetadata)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
@@ -1008,7 +1008,7 @@ func TestUpdateMembers(t *testing.T) {
 	}
 }
 
-func TestRetrieveMembers(t *testing.T) {
+func TestRetrieveMembersByOrg(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -1055,7 +1055,7 @@ func TestRetrieveMembers(t *testing.T) {
 		err          error
 	}{
 		{
-			desc:  "retrieve org members",
+			desc:  "retrieve members by org",
 			orgID: orgID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1066,7 +1066,7 @@ func TestRetrieveMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve org members with unknown org id",
+			desc:  "retrieve members by org with unknown org id",
 			orgID: unknownID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1077,7 +1077,7 @@ func TestRetrieveMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "retrieve org members with invalid org id",
+			desc:  "retrieve members by org with invalid org id",
 			orgID: invalidID,
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1085,10 +1085,10 @@ func TestRetrieveMembers(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembers,
+			err:  auth.ErrFailedToRetrieveMembersByOrg,
 		},
 		{
-			desc:  "retrieve org members without org id",
+			desc:  "retrieve members by org without org id",
 			orgID: "",
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
@@ -1096,12 +1096,12 @@ func TestRetrieveMembers(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveMembers,
+			err:  auth.ErrFailedToRetrieveMembersByOrg,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := repo.RetrieveMembers(context.Background(), tc.orgID, tc.pageMetadata)
+		page, err := repo.RetrieveMembersByOrg(context.Background(), tc.orgID, tc.pageMetadata)
 		size := len(page.OrgMembers)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
@@ -1109,7 +1109,7 @@ func TestRetrieveMembers(t *testing.T) {
 	}
 }
 
-func TestRetrieveAllOrgMembers(t *testing.T) {
+func TestRetrieveAllMembersByOrg(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -1162,7 +1162,7 @@ func TestRetrieveAllOrgMembers(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := repo.RetrieveAllOrgMembers(context.Background())
+		page, err := repo.RetrieveAllMembersByOrg(context.Background())
 		size := len(page)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

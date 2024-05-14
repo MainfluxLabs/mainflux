@@ -43,14 +43,14 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 
 	mux.Post("/users", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
-		decodeCreateUserReq,
+		decodeRegisterUser,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
-		decodeSelfRegisterUserReq,
+		decodeSelfRegisterUser,
 		encodeResponse,
 		opts...,
 	))
@@ -218,7 +218,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 	return userReq{user}, nil
 }
 
-func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -237,7 +237,7 @@ func decodeCreateUserReq(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeSelfRegisterUserReq(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}

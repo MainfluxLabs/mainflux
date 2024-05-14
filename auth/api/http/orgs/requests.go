@@ -5,14 +5,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
-type createOrgReq struct {
+type createOrgsReq struct {
 	token       string
 	Name        string                 `json:"name,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func (req createOrgReq) validate() error {
+func (req createOrgsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -60,7 +60,7 @@ func (req listOrgsReq) validate() error {
 	return nil
 }
 
-type listOrgMembersReq struct {
+type listMembersByOrgReq struct {
 	token    string
 	id       string
 	offset   uint64
@@ -68,7 +68,7 @@ type listOrgMembersReq struct {
 	metadata auth.OrgMetadata
 }
 
-func (req listOrgMembersReq) validate() error {
+func (req listMembersByOrgReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -80,7 +80,7 @@ func (req listOrgMembersReq) validate() error {
 	return nil
 }
 
-type listOrgMembershipsReq struct {
+type listOrgsByMemberReq struct {
 	token    string
 	id       string
 	name     string
@@ -89,7 +89,7 @@ type listOrgMembershipsReq struct {
 	metadata auth.OrgMetadata
 }
 
-func (req listOrgMembershipsReq) validate() error {
+func (req listOrgsByMemberReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

@@ -9,29 +9,8 @@ import (
 )
 
 var (
-	// ErrAssignGroupThing indicates failure to assign thing to a group.
-	ErrAssignGroupThing = errors.New("failed to assign thing to a group")
-
-	// ErrUnassignGroupThing indicates failure to unassign thing from a group.
-	ErrUnassignGroupThing = errors.New("failed to unassign thing from a group")
-
-	// ErrThingAlreadyAssigned indicates that thing is already assigned.
-	ErrThingAlreadyAssigned = errors.New("thing is already assigned")
-
 	// ErrRetrieveGroupThings indicates failure to retrieve group things.
 	ErrRetrieveGroupThings = errors.New("failed to retrieve group things")
-
-	// ErrRetrieveGroupThingsByChannel indicates failure to retrieve group things by channel.
-	ErrRetrieveGroupThingsByChannel = errors.New("failed to retrieve group things by channel")
-
-	// ErrAssignGroupChannel indicates failure to assign channel to a group.
-	ErrAssignGroupChannel = errors.New("failed to assign channel to a group")
-
-	// ErrUnassignGroupChannel indicates failure to unassign channel from a group.
-	ErrUnassignGroupChannel = errors.New("failed to unassign channel from a group")
-
-	// ErrChannelAlreadyAssigned indicates that thing is already assigned.
-	ErrChannelAlreadyAssigned = errors.New("channel is already assigned")
 
 	// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
 	ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
@@ -85,11 +64,11 @@ type GroupRepository interface {
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveGroupThings retrieves page of things that are assigned to a group identified by groupID.
-	RetrieveGroupThings(ctx context.Context, groupID string, pm PageMetadata) (ThingsPage, error)
+	// RetrieveThingsByGroup retrieves page of things that are assigned to a group identified by ID.
+	RetrieveThingsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ThingsPage, error)
 
-	// RetrieveGroupChannels retrieves page of channels that are assigned to a group identified by groupID.
-	RetrieveGroupChannels(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)
+	// RetrieveChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
+	RetrieveChannelsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
@@ -114,20 +93,20 @@ type Groups interface {
 	// ListGroupsByIDs retrieves groups by their IDs.
 	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
 
-	// ListGroupThings retrieves page of things that are assigned to a group identified by groupID.
-	ListGroupThings(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error)
+	// ListThingsByGroup retrieves page of things that are assigned to a group identified by ID.
+	ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error)
 
-	// ListGroupThings retrieves page of channels that are assigned to a group identified by groupID.
-	ListGroupChannels(ctx context.Context, token string, groupID string, pm PageMetadata) (ChannelsPage, error)
+	// ListChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
+	ListChannelsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ChannelsPage, error)
 
-	// ViewThingGroup retrieves group that thing belongs to.
-	ViewThingGroup(ctx context.Context, token, thingID string) (Group, error)
+	// ViewGroupByThing retrieves group that thing belongs to.
+	ViewGroupByThing(ctx context.Context, token, thingID string) (Group, error)
 
 	// RemoveGroups removes the groups identified with the provided IDs.
 	RemoveGroups(ctx context.Context, token string, ids ...string) error
 
-	// ViewChannelGroup retrieves group that channel belongs to.
-	ViewChannelGroup(ctx context.Context, token, channelID string) (Group, error)
+	// ViewGroupByChannel retrieves group that channel belongs to.
+	ViewGroupByChannel(ctx context.Context, token, channelID string) (Group, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
@@ -155,7 +134,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			Policy:   ReadWrite,
 		}
 
-		if err := ts.policies.SaveGroupPolicies(ctx, gr.ID, policy); err != nil {
+		if err := ts.policies.SavePoliciesByGroup(ctx, gr.ID, policy); err != nil {
 			return []Group{}, err
 		}
 
@@ -241,7 +220,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 	return gr, nil
 }
 
-func (ts *thingsService) ViewChannelGroup(ctx context.Context, token string, channelID string) (Group, error) {
+func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, channelID string) (Group, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
@@ -259,7 +238,7 @@ func (ts *thingsService) ViewChannelGroup(ctx context.Context, token string, cha
 	return group, nil
 }
 
-func (ts *thingsService) ViewThingGroup(ctx context.Context, token string, thingID string) (Group, error) {
+func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
 	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
@@ -288,7 +267,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		GroupID:  groupID,
 	}
 
-	p, err := ts.policies.RetrieveGroupPolicy(ctx, gp)
+	p, err := ts.policies.RetrievePolicyByGroup(ctx, gp)
 	if err != nil {
 		return err
 	}

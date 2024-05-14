@@ -7,9 +7,9 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func createOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+func createOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createOrgReq)
+		req := request.(createOrgsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -116,9 +116,9 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listMemberships(svc auth.Service) endpoint.Endpoint {
+func listOrgsByMemberEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listOrgMembershipsReq)
+		req := request.(listOrgsByMemberReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -130,7 +130,7 @@ func listMemberships(svc auth.Service) endpoint.Endpoint {
 			Metadata: req.metadata,
 		}
 
-		page, err := svc.ListOrgMemberships(ctx, req.token, req.id, pm)
+		page, err := svc.ListOrgsByMember(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
@@ -207,9 +207,9 @@ func updateMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listOrgMembersReq)
+		req := request.(listMembersByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -219,7 +219,7 @@ func listMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:    req.limit,
 			Metadata: req.metadata,
 		}
-		page, err := svc.ListOrgMembers(ctx, req.token, req.id, pm)
+		page, err := svc.ListMembersByOrg(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}

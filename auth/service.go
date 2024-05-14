@@ -22,11 +22,11 @@ const (
 )
 
 var (
-	// ErrFailedToRetrieveMembers failed to retrieve group members.
-	ErrFailedToRetrieveMembers = errors.New("failed to retrieve org members")
+	// ErrFailedToRetrieveMembersByOrg failed to retrieve members by org.
+	ErrFailedToRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
 
-	// ErrFailedToRetrieveMembership failed to retrieve memberships
-	ErrFailedToRetrieveMembership = errors.New("failed to retrieve memberships")
+	// ErrFailedToRetrieveOrgsByMember failed to retrieve orgs by member
+	ErrFailedToRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
 
 	errIssueUser      = errors.New("failed to issue new login key")
 	errIssueTmp       = errors.New("failed to issue new temporary key")
@@ -452,14 +452,14 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 	return nil
 }
 
-func (svc service) ListOrgMembers(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
+func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembersPage{}, err
 	}
 
-	omp, err := svc.orgs.RetrieveMembers(ctx, orgID, pm)
+	omp, err := svc.orgs.RetrieveMembersByOrg(ctx, orgID, pm)
 	if err != nil {
-		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembers, err)
+		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembersByOrg, err)
 	}
 
 	var oms []OrgMember
@@ -499,9 +499,9 @@ func (svc service) ListOrgMembers(ctx context.Context, token string, orgID strin
 	return mpg, nil
 }
 
-func (svc service) ListOrgMemberships(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
+func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
+		return svc.orgs.RetrieveOrgsByMember(ctx, memberID, pm)
 	}
 
 	user, err := svc.Identify(ctx, token)
@@ -513,7 +513,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, memberI
 		return OrgsPage{}, errors.ErrAuthorization
 	}
 
-	return svc.orgs.RetrieveMemberships(ctx, memberID, pm)
+	return svc.orgs.RetrieveOrgsByMember(ctx, memberID, pm)
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
@@ -526,12 +526,12 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.orgs.RetrieveAllOrgMembers(ctx)
+	mrs, err := svc.orgs.RetrieveAllMembersByOrg(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	ogs, err := svc.orgs.RetrieveAllOrgGroups(ctx)
+	ogs, err := svc.orgs.RetrieveAllGroupsByOrg(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
