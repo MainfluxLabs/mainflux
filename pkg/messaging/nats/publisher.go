@@ -74,7 +74,7 @@ func (pub *publisher) Publish(msg messaging.Message) (err error) {
 		}
 	}
 
-	if msg.Profile.Webhook {
+	if msg.Profile.WebhookID != "" {
 		subjects = append(subjects, subjectWebhook)
 	}
 

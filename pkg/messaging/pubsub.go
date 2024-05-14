@@ -108,7 +108,7 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 
 	msg.Profile.Write = conn.Profile.Write
 	msg.Profile.Notify = conn.Profile.Notify
-	msg.Profile.Webhook = conn.Profile.Webhook
+	msg.Profile.WebhookID = conn.Profile.WebhookID
 	msg.Profile.ContentType = conn.Profile.ContentType
 
 	if conn.Profile.Transformer != nil {

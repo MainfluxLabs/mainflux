@@ -19,7 +19,7 @@ message Profile {
     string      contentType = 1;
     bool        write       = 2;
     bool        notify      = 3;
-    bool        webhook     = 4;
+    string      webhookID   = 4;
     Transformer transformer = 5;
     Notifier    notifier    = 6;
 }

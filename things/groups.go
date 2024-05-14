@@ -257,6 +257,10 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		return nil
+	}
+
 	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return err
@@ -280,9 +284,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 	case ReadWrite:
 		return nil
 	default:
-		if err := ts.isAdmin(ctx, token); err != nil {
-			return err
-		}
+		return errors.ErrAuthorization
 	}
 
 	return nil
