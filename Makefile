@@ -35,8 +35,6 @@ define make_docker
 	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg GOARM=$(GOARM) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
@@ -113,13 +111,11 @@ release:
 		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(version); \
 	done
 
-release-labs:
+release-push:
 	for svc in $(SERVICES); do \
 		docker buildx build --platform=linux/amd64,linux/arm64 \
 			--no-cache \
 			--build-arg SVC=$$svc \
-			--build-arg GOARCH=$(GOARCH) \
-			--build-arg GOARM=$(GOARM) \
 			--build-arg VERSION=$(VERSION) \
 			--build-arg COMMIT=$(COMMIT) \
 			--build-arg TIME=$(TIME) \
