@@ -30,7 +30,6 @@ const (
 	orderKey    = "order"
 	dirKey      = "dir"
 	metadataKey = "metadata"
-	groupIDKey  = "groupID"
 	orgKey      = "org_id"
 	idKey       = "id"
 	defOffset   = 0
@@ -693,7 +692,7 @@ func decodeGroupPolicies(_ context.Context, r *http.Request) (interface{}, error
 
 	req := groupPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -716,7 +715,7 @@ func decodeListGroupPolicies(_ context.Context, r *http.Request) (interface{}, e
 
 	req := listGroupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 		offset:  o,
 		limit:   l,
 	}
@@ -731,7 +730,7 @@ func decodeRemoveGroupPolicies(_ context.Context, r *http.Request) (interface{},
 
 	req := removeGroupPoliciesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
