@@ -7,63 +7,63 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-var _ things.PoliciesRepository = (*policiesRepositoryMock)(nil)
+var _ things.RolesRepository = (*rolesRepositoryMock)(nil)
 
-type policiesRepositoryMock struct {
-	mu                sync.Mutex
-	groupPolicies     map[string]things.GroupPolicy
-	groupPoliciesByID map[string]things.GroupPolicyByID
+type rolesRepositoryMock struct {
+	mu             sync.Mutex
+	groupRoles     map[string]things.GroupMembers
+	groupRolesByID map[string]things.GroupRoles
 }
 
-// NewPoliciesRepository returns mock of policies repository
-func NewPoliciesRepository() things.PoliciesRepository {
-	return &policiesRepositoryMock{
-		groupPolicies:     make(map[string]things.GroupPolicy),
-		groupPoliciesByID: make(map[string]things.GroupPolicyByID),
+// NewRolesRepository returns mock of policies repository
+func NewRolesRepository() things.RolesRepository {
+	return &rolesRepositoryMock{
+		groupRoles:     make(map[string]things.GroupMembers),
+		groupRolesByID: make(map[string]things.GroupRoles),
 	}
 }
 
-func (mrm *policiesRepositoryMock) SavePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (mrm *rolesRepositoryMock) SaveRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
 	for _, gp := range gps {
-		mrm.groupPolicies[groupID] = things.GroupPolicy{
+		mrm.groupRoles[groupID] = things.GroupMembers{
 			MemberID: gp.MemberID,
-			Policy:   gp.Policy,
+			Role:     gp.Role,
 		}
-		mrm.groupPoliciesByID[gp.MemberID] = gp
+		mrm.groupRolesByID[gp.MemberID] = gp
 	}
 
 	return nil
 }
 
-func (mrm *policiesRepositoryMock) RetrievePolicyByGroup(ctx context.Context, gp things.GroupPolicy) (string, error) {
+func (mrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, gp things.GroupMembers) (string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	return mrm.groupPoliciesByID[gp.MemberID].Policy, nil
+	return mrm.groupRolesByID[gp.MemberID].Role, nil
 }
 
-func (mrm *policiesRepositoryMock) RetrievePoliciesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
 	panic("not implemented")
 }
 
-func (mrm *policiesRepositoryMock) RetrieveAllPoliciesByGroup(ctx context.Context) ([]things.GroupPolicy, error) {
+func (mrm *rolesRepositoryMock) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	var gps []things.GroupPolicy
-	for _, gp := range mrm.groupPolicies {
+	var gps []things.GroupMembers
+	for _, gp := range mrm.groupRoles {
 		gps = append(gps, gp)
 	}
 
 	return gps, nil
 }
-func (mrm *policiesRepositoryMock) UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (mrm *rolesRepositoryMock) UpdateRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (mrm *policiesRepositoryMock) RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
+func (mrm *rolesRepositoryMock) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

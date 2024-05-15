@@ -7,89 +7,89 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-type GroupPolicy struct {
+type GroupMembers struct {
 	GroupID  string
 	MemberID string
 	Email    string
-	Policy   string
+	Role     string
 }
 
-type GroupPolicyByID struct {
+type GroupRoles struct {
 	MemberID string
-	Policy   string
+	Role     string
 }
-type GroupPoliciesPage struct {
+type GroupRolesPage struct {
 	PageMetadata
-	GroupPolicies []GroupPolicy
+	GroupRoles []GroupMembers
 }
 
-type PoliciesRepository interface {
-	// SavePoliciesByGroup saves group policies by group ID.
-	SavePoliciesByGroup(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
+type RolesRepository interface {
+	// SaveRolesByGroup saves group roles by group ID.
+	SaveRolesByGroup(ctx context.Context, groupID string, gps ...GroupRoles) error
 
-	// RetrievePolicyByGroup retrieves group policy by group ID.
-	RetrievePolicyByGroup(ctc context.Context, gp GroupPolicy) (string, error)
+	// RetrieveRole retrieves group role by group ID.
+	RetrieveRole(ctc context.Context, gp GroupMembers) (string, error)
 
-	// RetrievePoliciesByGroup retrieves page of group policies by groupID.
-	RetrievePoliciesByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
+	// RetrieveRolesByGroup retrieves page of group roles by groupID.
+	RetrieveRolesByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupRolesPage, error)
 
-	// RetrieveAllPoliciesByGroup retrieves all group policies by group ID. This is used for backup.
-	RetrieveAllPoliciesByGroup(ctx context.Context) ([]GroupPolicy, error)
+	// RetrieveAllRolesByGroup retrieves all group roles by group ID. This is used for backup.
+	RetrieveAllRolesByGroup(ctx context.Context) ([]GroupMembers, error)
 
-	// RemovePoliciesByGroup removes group policies by group ID.
-	RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
+	// RemoveRolesByGroup removes group roles by group ID.
+	RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdatePoliciesByGroup updates group policies by group ID.
-	UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...GroupPolicyByID) error
+	// UpdateRolesByGroup updates group roles by group ID.
+	UpdateRolesByGroup(ctx context.Context, groupID string, gps ...GroupRoles) error
 }
 
 type Policies interface {
-	// CreatePoliciesByGroup creates policies of the group identified by the provided ID.
-	CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
+	// CreateRolesByGroup creates policies of the group identified by the provided ID.
+	CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
 
-	// ListPoliciesByGroup retrieves a page of policies for a group that is identified by the provided ID.
-	ListPoliciesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error)
+	// ListRolesByGroup retrieves a page of policies for a group that is identified by the provided ID.
+	ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupRolesPage, error)
 
-	// UpdatePoliciesByGroup updates policies of the group identified by the provided ID.
-	UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error
+	// UpdateRolesByGroup updates policies of the group identified by the provided ID.
+	UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
 
-	// RemovePoliciesByGroup removes policies of the group identified by the provided ID.
-	RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
+	// RemoveRolesByGroup removes policies of the group identified by the provided ID.
+	RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
-func (ts *thingsService) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
+func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
 		return err
 	}
 
-	if err := ts.policies.SavePoliciesByGroup(ctx, groupID, gps...); err != nil {
+	if err := ts.roles.SaveRolesByGroup(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupPoliciesPage, error) {
+func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupRolesPage, error) {
 	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
-		return GroupPoliciesPage{}, err
+		return GroupRolesPage{}, err
 	}
 
-	gpp, err := ts.policies.RetrievePoliciesByGroup(ctx, groupID, pm)
+	gpp, err := ts.roles.RetrieveRolesByGroup(ctx, groupID, pm)
 	if err != nil {
-		return GroupPoliciesPage{}, err
+		return GroupRolesPage{}, err
 	}
 
 	var memberIDs []string
-	for _, gp := range gpp.GroupPolicies {
+	for _, gp := range gpp.GroupRoles {
 		memberIDs = append(memberIDs, gp.MemberID)
 	}
 
-	var groupPolicies []GroupPolicy
-	if len(gpp.GroupPolicies) > 0 {
+	var groupRoles []GroupMembers
+	if len(gpp.GroupRoles) > 0 {
 		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
-			return GroupPoliciesPage{}, err
+			return GroupRolesPage{}, err
 		}
 
 		emails := make(map[string]string)
@@ -97,24 +97,24 @@ func (ts *thingsService) ListPoliciesByGroup(ctx context.Context, token, groupID
 			emails[user.Id] = user.GetEmail()
 		}
 
-		for _, gp := range gpp.GroupPolicies {
+		for _, gp := range gpp.GroupRoles {
 			email, ok := emails[gp.MemberID]
 			if !ok {
-				return GroupPoliciesPage{}, err
+				return GroupRolesPage{}, err
 			}
 
-			groupPolicy := GroupPolicy{
+			groupMember := GroupMembers{
 				MemberID: gp.MemberID,
 				Email:    email,
-				Policy:   gp.Policy,
+				Role:     gp.Role,
 			}
 
-			groupPolicies = append(groupPolicies, groupPolicy)
+			groupRoles = append(groupRoles, groupMember)
 		}
 	}
 
-	page := GroupPoliciesPage{
-		GroupPolicies: groupPolicies,
+	page := GroupRolesPage{
+		GroupRoles: groupRoles,
 		PageMetadata: PageMetadata{
 			Total:  gpp.Total,
 			Offset: gpp.Offset,
@@ -125,7 +125,7 @@ func (ts *thingsService) ListPoliciesByGroup(ctx context.Context, token, groupID
 	return page, nil
 }
 
-func (ts *thingsService) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...GroupPolicyByID) error {
+func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
 		return err
 	}
@@ -141,14 +141,14 @@ func (ts *thingsService) UpdatePoliciesByGroup(ctx context.Context, token, group
 		}
 	}
 
-	if err := ts.policies.UpdatePoliciesByGroup(ctx, groupID, gps...); err != nil {
+	if err := ts.roles.UpdateRolesByGroup(ctx, groupID, gps...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (ts *thingsService) RemovePoliciesByGroup(ctx context.Context, token, group
 		}
 	}
 
-	if err := ts.policies.RemovePoliciesByGroup(ctx, groupID, memberIDs...); err != nil {
+	if err := ts.roles.RemoveRolesByGroup(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 

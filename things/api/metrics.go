@@ -327,38 +327,38 @@ func (ms *metricsMiddleware) ViewGroupByChannel(ctx context.Context, token, chan
 	return ms.svc.ViewGroupByChannel(ctx, token, channelID)
 }
 
-func (ms *metricsMiddleware) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_policies_by_group").Add(1)
-		ms.latency.With("method", "create_policies_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_roles_by_group").Add(1)
+		ms.latency.With("method", "create_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreatePoliciesByGroup(ctx, token, groupID, gps...)
+	return ms.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (ms *metricsMiddleware) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_policies_by_group").Add(1)
-		ms.latency.With("method", "list_policies_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_roles_by_group").Add(1)
+		ms.latency.With("method", "list_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListPoliciesByGroup(ctx, token, groupID, pm)
+	return ms.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (ms *metricsMiddleware) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_policies_by_group").Add(1)
-		ms.latency.With("method", "update_policies_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_roles_by_group").Add(1)
+		ms.latency.With("method", "update_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdatePoliciesByGroup(ctx, token, groupID, gps...)
+	return ms.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (ms *metricsMiddleware) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ms *metricsMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_policies_by_group").Add(1)
-		ms.latency.With("method", "remove_policies_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_roles_by_group").Add(1)
+		ms.latency.With("method", "remove_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemovePoliciesByGroup(ctx, token, groupID, memberIDs...)
+	return ms.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
 }

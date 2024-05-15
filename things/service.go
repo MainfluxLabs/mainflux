@@ -124,11 +124,11 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Things        []Thing
-	Channels      []Channel
-	Connections   []Connection
-	Groups        []Group
-	GroupPolicies []GroupPolicy
+	Things      []Thing
+	Channels    []Channel
+	Connections []Connection
+	Groups      []Group
+	GroupRoles  []GroupMembers
 }
 
 var _ Service = (*thingsService)(nil)
@@ -139,21 +139,21 @@ type thingsService struct {
 	things       ThingRepository
 	channels     ChannelRepository
 	groups       GroupRepository
-	policies     PoliciesRepository
+	roles        RolesRepository
 	channelCache ChannelCache
 	thingCache   ThingCache
 	idProvider   mainflux.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth mainflux.AuthServiceClient, users mainflux.UsersServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, policies PoliciesRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
+func New(auth mainflux.AuthServiceClient, users mainflux.UsersServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, roles RolesRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		users:        users,
 		things:       things,
 		channels:     channels,
 		groups:       groups,
-		policies:     policies,
+		roles:        roles,
 		channelCache: ccache,
 		thingCache:   tcache,
 		idProvider:   idp,
@@ -565,7 +565,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupsPolicies, err := ts.policies.RetrieveAllPoliciesByGroup(ctx)
+	groupsPolicies, err := ts.roles.RetrieveAllRolesByGroup(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -586,11 +586,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:        things,
-		Channels:      channels,
-		Connections:   connections,
-		Groups:        groups,
-		GroupPolicies: groupsPolicies,
+		Things:      things,
+		Channels:    channels,
+		Connections: connections,
+		Groups:      groups,
+		GroupRoles:  groupsPolicies,
 	}, nil
 }
 
@@ -619,13 +619,13 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		}
 	}
 
-	for _, g := range backup.GroupPolicies {
-		gp := GroupPolicyByID{
+	for _, g := range backup.GroupRoles {
+		gp := GroupRoles{
 			MemberID: g.MemberID,
-			Policy:   g.Policy,
+			Role:     g.Role,
 		}
 
-		if err := ts.policies.SavePoliciesByGroup(ctx, g.GroupID, gp); err != nil {
+		if err := ts.roles.SaveRolesByGroup(ctx, g.GroupID, gp); err != nil {
 			return err
 		}
 	}

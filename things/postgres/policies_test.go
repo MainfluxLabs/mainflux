@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSavePoliciesByGroup(t *testing.T) {
+func TestSaveRolesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
+	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:      generateUUID(t),
@@ -30,54 +30,54 @@ func TestSavePoliciesByGroup(t *testing.T) {
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
 
-	gps := []things.GroupPolicyByID{
+	gps := []things.GroupRoles{
 		{
 			MemberID: memberID,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 		{
 			MemberID: memberID1,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 	}
 
-	gpsWithoutMemberIDs := []things.GroupPolicyByID{
+	gpsWithoutMemberIDs := []things.GroupRoles{
 		{
 			MemberID: "",
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 		{
 			MemberID: "",
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 	}
 
 	cases := []struct {
 		desc    string
 		groupID string
-		gps     []things.GroupPolicyByID
+		gps     []things.GroupRoles
 		err     error
 	}{
 		{
-			desc:    "save group policies",
+			desc:    "save group roles",
 			gps:     gps,
 			groupID: group.ID,
 			err:     nil,
 		},
 		{
-			desc:    "save group policies without group ids",
+			desc:    "save group roles without group ids",
 			gps:     gps,
 			groupID: "",
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save group policies without member id",
+			desc:    "save group roles without member id",
 			gps:     gpsWithoutMemberIDs,
 			groupID: group.ID,
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save existing group policies",
+			desc:    "save existing group roles",
 			gps:     gps,
 			groupID: group.ID,
 			err:     errors.ErrConflict,
@@ -85,15 +85,15 @@ func TestSavePoliciesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.SavePoliciesByGroup(context.Background(), tc.groupID, tc.gps...)
+		err := rolesRepo.SaveRolesByGroup(context.Background(), tc.groupID, tc.gps...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrievePolicyByGroup(t *testing.T) {
+func TestRetrieveRole(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
+	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:      generateUUID(t),
@@ -107,63 +107,63 @@ func TestRetrievePolicyByGroup(t *testing.T) {
 
 	memberID := generateUUID(t)
 
-	gp := things.GroupPolicy{
+	gp := things.GroupMembers{
 		GroupID:  group.ID,
-		Policy:   things.Viewer,
+		Role:     things.Viewer,
 		MemberID: memberID,
 	}
 
-	gpByID := things.GroupPolicyByID{
+	gpByID := things.GroupRoles{
 		MemberID: memberID,
-		Policy:   things.Viewer,
+		Role:     things.Viewer,
 	}
 
-	err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gpByID)
+	err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gpByID)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc   string
-		gp     things.GroupPolicy
-		policy string
-		err    error
+		desc string
+		gp   things.GroupMembers
+		role string
+		err  error
 	}{
 		{
-			desc:   "retrieve group policy",
-			gp:     gp,
-			policy: things.Viewer,
-			err:    nil,
+			desc: "retrieve group role",
+			gp:   gp,
+			role: things.Viewer,
+			err:  nil,
 		},
 		{
-			desc: "retrieve group policy without group id",
-			gp: things.GroupPolicy{
+			desc: "retrieve group role without group id",
+			gp: things.GroupMembers{
 				GroupID:  "",
 				MemberID: memberID,
 			},
-			policy: "",
-			err:    errors.ErrRetrieveEntity,
+			role: "",
+			err:  errors.ErrRetrieveEntity,
 		},
 		{
-			desc: "retrieve group policy without member id",
-			gp: things.GroupPolicy{
+			desc: "retrieve group role without member id",
+			gp: things.GroupMembers{
 				GroupID:  group.ID,
 				MemberID: "",
 			},
-			policy: "",
-			err:    errors.ErrRetrieveEntity,
+			role: "",
+			err:  errors.ErrRetrieveEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		policy, err := policiesRepo.RetrievePolicyByGroup(context.Background(), tc.gp)
-		assert.Equal(t, tc.policy, policy, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.policy, policy))
+		role, err := rolesRepo.RetrieveRole(context.Background(), tc.gp)
+		assert.Equal(t, tc.role, role, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.role, role))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRetrievePoliciesByGroup(t *testing.T) {
+func TestRetrieveRolesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
+	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:      generateUUID(t),
@@ -178,11 +178,11 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		gp := things.GroupPolicyByID{
+		gp := things.GroupRoles{
 			MemberID: memberID,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		}
-		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
+		err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -194,7 +194,7 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "retrieve group policies",
+			desc:    "retrieve group roles",
 			groupID: group.ID,
 			pageMeta: things.PageMetadata{
 				Offset: 0,
@@ -205,7 +205,7 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve last group policy",
+			desc:    "retrieve last group role",
 			groupID: group.ID,
 			pageMeta: things.PageMetadata{
 				Offset: n - 1,
@@ -216,7 +216,7 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve group policies with invalid group id",
+			desc:    "retrieve group roles with invalid group id",
 			groupID: invalidID,
 			pageMeta: things.PageMetadata{
 				Offset: 0,
@@ -226,7 +226,7 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 			err: errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve group policies without group id",
+			desc:    "retrieve group roles without group id",
 			groupID: "",
 			pageMeta: things.PageMetadata{
 				Offset: 0,
@@ -240,17 +240,17 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gpp, err := policiesRepo.RetrievePoliciesByGroup(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(gpp.GroupPolicies)
+		gpp, err := rolesRepo.RetrieveRolesByGroup(context.Background(), tc.groupID, tc.pageMeta)
+		size := len(gpp.GroupRoles)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRemovePoliciesByGroup(t *testing.T) {
+func TestRemoveRolesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
+	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:      generateUUID(t),
@@ -267,12 +267,12 @@ func TestRemovePoliciesByGroup(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		gp := things.GroupPolicyByID{
+		gp := things.GroupRoles{
 			MemberID: memberID,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		}
 
-		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
+		err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -285,19 +285,19 @@ func TestRemovePoliciesByGroup(t *testing.T) {
 		err       error
 	}{
 		{
-			desc:      "remove group policies without group id",
+			desc:      "remove group roles without group id",
 			groupID:   "",
 			memberIDs: memberIDs,
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group policies without member ids",
+			desc:      "remove group roles without member ids",
 			groupID:   group.ID,
 			memberIDs: []string{""},
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group policies",
+			desc:      "remove group roles",
 			groupID:   group.ID,
 			memberIDs: memberIDs,
 			err:       nil,
@@ -305,15 +305,15 @@ func TestRemovePoliciesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.RemovePoliciesByGroup(context.Background(), tc.groupID, tc.memberIDs...)
+		err := rolesRepo.RemoveRolesByGroup(context.Background(), tc.groupID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdatePoliciesByGroup(t *testing.T) {
+func TestUpdateRolesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	policiesRepo := postgres.NewPoliciesRepository(dbMiddleware)
+	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
@@ -328,57 +328,57 @@ func TestUpdatePoliciesByGroup(t *testing.T) {
 	group, err := groupRepo.Save(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	gpByIDs := []things.GroupPolicyByID{
+	gpByIDs := []things.GroupRoles{
 		{
 			MemberID: memberID,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 		{
 			MemberID: memberID1,
-			Policy:   things.Viewer,
+			Role:     things.Viewer,
 		},
 	}
 
-	err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gpByIDs...)
+	err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gpByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc    string
 		groupID string
-		gpByID  things.GroupPolicyByID
+		gpByID  things.GroupRoles
 		err     error
 	}{
 		{
-			desc:    "update group policies without group id",
+			desc:    "update group roles without group id",
 			groupID: "",
-			gpByID: things.GroupPolicyByID{
+			gpByID: things.GroupRoles{
 				MemberID: "",
-				Policy:   things.Viewer,
+				Role:     things.Viewer,
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "update group policies without member id",
+			desc:    "update group roles without member id",
 			groupID: group.ID,
-			gpByID: things.GroupPolicyByID{
+			gpByID: things.GroupRoles{
 				MemberID: "",
-				Policy:   things.Viewer,
+				Role:     things.Viewer,
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "update group policies",
+			desc:    "update group roles",
 			groupID: group.ID,
-			gpByID: things.GroupPolicyByID{
+			gpByID: things.GroupRoles{
 				MemberID: memberID,
-				Policy:   things.Viewer,
+				Role:     things.Viewer,
 			},
 			err: nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := policiesRepo.UpdatePoliciesByGroup(context.Background(), tc.groupID, tc.gpByID)
+		err := rolesRepo.UpdateRolesByGroup(context.Background(), tc.groupID, tc.gpByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

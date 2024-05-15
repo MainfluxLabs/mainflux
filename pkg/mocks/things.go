@@ -289,18 +289,18 @@ func (svc *mainfluxThings) ListChannelsByGroup(ctx context.Context, token, group
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (svc *mainfluxThings) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
+func (svc *mainfluxThings) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
+func (svc *mainfluxThings) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

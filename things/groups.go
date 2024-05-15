@@ -129,12 +129,12 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		policy := GroupPolicyByID{
+		role := GroupRoles{
 			MemberID: ownerID,
-			Policy:   Admin,
+			Role:     Admin,
 		}
 
-		if err := ts.policies.SavePoliciesByGroup(ctx, gr.ID, policy); err != nil {
+		if err := ts.roles.SaveRolesByGroup(ctx, gr.ID, role); err != nil {
 			return []Group{}, err
 		}
 
@@ -266,30 +266,30 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
-	gp := GroupPolicy{
+	gp := GroupMembers{
 		MemberID: user.Id,
 		GroupID:  groupID,
 	}
 
-	p, err := ts.policies.RetrievePolicyByGroup(ctx, gp)
+	p, err := ts.roles.RetrieveRole(ctx, gp)
 	if err != nil {
 		return err
 	}
 
 	switch p {
 	case Viewer:
-		if action != Viewer {
-			return errors.ErrAuthorization
+		if action == Viewer {
+			return nil
 		}
+		return errors.ErrAuthorization
 	case Editor:
-		if action != Admin {
-			return errors.ErrAuthorization
+		if action == Viewer || action == Editor {
+			return nil
 		}
+		return errors.ErrAuthorization
 	case Admin:
 		return nil
 	default:
 		return errors.ErrAuthorization
 	}
-
-	return nil
 }

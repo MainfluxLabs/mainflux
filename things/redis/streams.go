@@ -305,18 +305,18 @@ func (es eventStore) ViewGroupByChannel(ctx context.Context, token string, chann
 	return es.svc.ViewGroupByChannel(ctx, token, channelID)
 }
 
-func (es eventStore) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
-	return es.svc.CreatePoliciesByGroup(ctx, token, groupID, gps...)
+func (es eventStore) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
+	return es.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (es eventStore) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
-	return es.svc.ListPoliciesByGroup(ctx, token, groupID, pm)
+func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+	return es.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) error {
-	return es.svc.UpdatePoliciesByGroup(ctx, token, groupID, gps...)
+func (es eventStore) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
+	return es.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (es eventStore) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	return es.svc.RemovePoliciesByGroup(ctx, token, groupID, memberIDs...)
+func (es eventStore) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	return es.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
 }

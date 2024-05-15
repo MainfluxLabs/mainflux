@@ -48,7 +48,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMaxLevelExceeded),
 			errors.Contains(err, ErrUnsupportedContentType),
 			errors.Contains(err, ErrMalformedEntity),
-			errors.Contains(err, ErrInvalidPolicy),
+			errors.Contains(err, ErrInvalidRole),
 			errors.Contains(err, ErrInvalidQueryParams):
 			logger.Error(err.Error())
 		}

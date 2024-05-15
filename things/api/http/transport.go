@@ -30,7 +30,6 @@ const (
 	orderKey    = "order"
 	dirKey      = "dir"
 	metadataKey = "metadata"
-	groupIDKey  = "groupID"
 	orgKey      = "org_id"
 	idKey       = "id"
 	defOffset   = 0
@@ -242,29 +241,29 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Post("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_policies_by_group")(createPoliciesByGroupEndpoint(svc)),
-		decodeGroupPolicies,
+		kitot.TraceServer(tracer, "create_roles_by_group")(createRolesByGroupEndpoint(svc)),
+		decodeGroupRoles,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_policies_by_group")(listPoliciesByGroupEndpoint(svc)),
-		decodeListGroupPolicies,
+		kitot.TraceServer(tracer, "list_roles_by_group")(listRolesByGroupEndpoint(svc)),
+		decodeListGroupRoles,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_policies_by_group")(updatePoliciesByGroupEndpoint(svc)),
-		decodeGroupPolicies,
+		kitot.TraceServer(tracer, "update_roles_by_group")(updateRolesByGroupEndpoint(svc)),
+		decodeGroupRoles,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Patch("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_policies_by_group")(removePoliciesByGroupEndpoint(svc)),
-		decodeRemoveGroupPolicies,
+		kitot.TraceServer(tracer, "remove_roles_by_group")(removeRolesByGroupEndpoint(svc)),
+		decodeRemoveGroupRoles,
 		encodeResponse,
 		opts...,
 	))
@@ -686,14 +685,14 @@ func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := groupPoliciesReq{
+	req := groupRolesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -703,7 +702,7 @@ func decodeGroupPolicies(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeListGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
@@ -716,7 +715,7 @@ func decodeListGroupPolicies(_ context.Context, r *http.Request) (interface{}, e
 
 	req := listGroupMembersReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 		offset:  o,
 		limit:   l,
 	}
@@ -724,14 +723,14 @@ func decodeListGroupPolicies(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeRemoveGroupPolicies(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removeGroupPoliciesReq{
+	req := removeGroupRolesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, groupIDKey),
+		groupID: bone.GetValue(r, idKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
