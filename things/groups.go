@@ -131,7 +131,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 
 		policy := GroupPolicyByID{
 			MemberID: ownerID,
-			Policy:   ReadWrite,
+			Policy:   Admin,
 		}
 
 		if err := ts.policies.SavePoliciesByGroup(ctx, gr.ID, policy); err != nil {
@@ -189,7 +189,7 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 
 func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		if err := ts.canAccessGroup(ctx, token, id, ReadWrite); err != nil {
+		if err := ts.canAccessGroup(ctx, token, id, Admin); err != nil {
 			return err
 		}
 	}
@@ -198,7 +198,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, group.ID, ReadWrite); err != nil {
+	if err := ts.canAccessGroup(ctx, token, group.ID, Admin); err != nil {
 		return Group{}, err
 	}
 
@@ -208,7 +208,7 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, id, Read); err != nil {
+	if err := ts.canAccessGroup(ctx, token, id, Viewer); err != nil {
 		return Group{}, err
 	}
 
@@ -277,11 +277,15 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 	}
 
 	switch p {
-	case Read:
-		if action != Read {
+	case Viewer:
+		if action != Viewer {
 			return errors.ErrAuthorization
 		}
-	case ReadWrite:
+	case Editor:
+		if action != Admin {
+			return errors.ErrAuthorization
+		}
+	case Admin:
 		return nil
 	default:
 		return errors.ErrAuthorization

@@ -571,7 +571,7 @@ func (req groupPoliciesReq) validate() error {
 	}
 
 	for _, gp := range req.GroupPolicies {
-		if gp.Policy != things.Read && gp.Policy != things.ReadWrite {
+		if gp.Policy != things.Viewer && gp.Policy != things.Editor {
 			return apiutil.ErrInvalidPolicy
 		}
 

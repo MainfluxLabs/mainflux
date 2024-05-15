@@ -33,22 +33,22 @@ func TestSavePoliciesByGroup(t *testing.T) {
 	gps := []things.GroupPolicyByID{
 		{
 			MemberID: memberID,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 		{
 			MemberID: memberID1,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 	}
 
 	gpsWithoutMemberIDs := []things.GroupPolicyByID{
 		{
 			MemberID: "",
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 		{
 			MemberID: "",
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 	}
 
@@ -109,13 +109,13 @@ func TestRetrievePolicyByGroup(t *testing.T) {
 
 	gp := things.GroupPolicy{
 		GroupID:  group.ID,
-		Policy:   things.Read,
+		Policy:   things.Viewer,
 		MemberID: memberID,
 	}
 
 	gpByID := things.GroupPolicyByID{
 		MemberID: memberID,
-		Policy:   things.Read,
+		Policy:   things.Viewer,
 	}
 
 	err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gpByID)
@@ -130,7 +130,7 @@ func TestRetrievePolicyByGroup(t *testing.T) {
 		{
 			desc:   "retrieve group policy",
 			gp:     gp,
-			policy: things.Read,
+			policy: things.Viewer,
 			err:    nil,
 		},
 		{
@@ -180,7 +180,7 @@ func TestRetrievePoliciesByGroup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		gp := things.GroupPolicyByID{
 			MemberID: memberID,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		}
 		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -269,7 +269,7 @@ func TestRemovePoliciesByGroup(t *testing.T) {
 
 		gp := things.GroupPolicyByID{
 			MemberID: memberID,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		}
 
 		err = policiesRepo.SavePoliciesByGroup(context.Background(), group.ID, gp)
@@ -331,11 +331,11 @@ func TestUpdatePoliciesByGroup(t *testing.T) {
 	gpByIDs := []things.GroupPolicyByID{
 		{
 			MemberID: memberID,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 		{
 			MemberID: memberID1,
-			Policy:   things.Read,
+			Policy:   things.Viewer,
 		},
 	}
 
@@ -353,7 +353,7 @@ func TestUpdatePoliciesByGroup(t *testing.T) {
 			groupID: "",
 			gpByID: things.GroupPolicyByID{
 				MemberID: "",
-				Policy:   things.Read,
+				Policy:   things.Viewer,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -362,7 +362,7 @@ func TestUpdatePoliciesByGroup(t *testing.T) {
 			groupID: group.ID,
 			gpByID: things.GroupPolicyByID{
 				MemberID: "",
-				Policy:   things.Read,
+				Policy:   things.Viewer,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -371,7 +371,7 @@ func TestUpdatePoliciesByGroup(t *testing.T) {
 			groupID: group.ID,
 			gpByID: things.GroupPolicyByID{
 				MemberID: memberID,
-				Policy:   things.Read,
+				Policy:   things.Viewer,
 			},
 			err: nil,
 		},

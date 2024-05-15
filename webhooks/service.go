@@ -72,7 +72,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.ReadWrite})
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Editor})
 	if err != nil {
 		return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -95,7 +95,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Read})
+	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
