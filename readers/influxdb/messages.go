@@ -94,12 +94,12 @@ func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (
 	var sb strings.Builder
 
 	condition, timeRange := fmtCondition(chanID, rpm)
-	sb.WriteString(`import "influxdata/influxdb/v1"`)
+	sb.WriteString(`import "influxdata/influxdb/schema"`)
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
 	// FluxQL syntax requires timeRange filter in this position, do not change.
 	sb.WriteString(timeRange)
 	// This is required to get messsage structure. Otherwise query returns fields in seperate rows.
-	sb.WriteString(`|> v1.fieldsAsCols()`)
+	sb.WriteString(` |> schema.fieldsAsCols() `)
 	sb.WriteString(`|> group()`)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, format))
 	sb.WriteString(condition)
@@ -146,10 +146,10 @@ func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (
 func (repo *influxRepository) count(measurement, condition string, timeRange string) (uint64, error) {
 
 	var sb strings.Builder
-	sb.WriteString(`import "influxdata/influxdb/v1"`)
+	sb.WriteString(`import "influxdata/influxdb/schema" `)
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
 	sb.WriteString(timeRange)
-	sb.WriteString(`|> v1.fieldsAsCols()`)
+	sb.WriteString(` |> schema.fieldsAsCols() `)
 	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r._measurement == "%s")`, measurement))
 	sb.WriteString(condition)
 	sb.WriteString(`|> group()`)
