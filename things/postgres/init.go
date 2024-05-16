@@ -107,9 +107,9 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "things_2",
 				Up: []string{
 					`ALTER TABLE IF EXISTS group_policies RENAME TO group_roles;
-					ALTER TABLE IF EXISTS group_roles RENAME COLUMN policy to role;
-					UPDATE group_roles SET role = REPLACE(role, 'r', 'viewer');
-					UPDATE group_roles SET role = REPLACE(role, 'r_w', 'admin');`,
+						ALTER TABLE IF EXISTS group_roles RENAME COLUMN policy to role;
+						UPDATE group_roles SET role = REPLACE(role, 'r', 'viewer');
+						UPDATE group_roles SET role = REPLACE(role, 'r_w', 'admin');`,
 				},
 				Down: []string{
 					"DROP TABLE group_roles",
