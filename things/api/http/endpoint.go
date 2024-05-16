@@ -954,62 +954,62 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createPoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupPoliciesReq)
+		req := request.(groupRolesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var gps []things.GroupPolicyByID
-		for _, g := range req.GroupPolicies {
-			gp := things.GroupPolicyByID{
+		var gps []things.GroupRoles
+		for _, g := range req.GroupRoles {
+			gp := things.GroupRoles{
 				MemberID: g.ID,
-				Policy:   g.Policy,
+				Role:     g.Role,
 			}
 			gps = append(gps, gp)
 		}
 
-		if err := svc.CreatePoliciesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.CreateRolesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
-		return createGroupPoliciesRes{}, nil
+		return createGroupRolesRes{}, nil
 	}
 }
 
-func updatePoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupPoliciesReq)
+		req := request.(groupRolesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var gps []things.GroupPolicyByID
-		for _, g := range req.GroupPolicies {
-			gp := things.GroupPolicyByID{
+		var gps []things.GroupRoles
+		for _, g := range req.GroupRoles {
+			gp := things.GroupRoles{
 				MemberID: g.ID,
-				Policy:   g.Policy,
+				Role:     g.Role,
 			}
 			gps = append(gps, gp)
 		}
 
-		if err := svc.UpdatePoliciesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.UpdateRolesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
 			return nil, err
 		}
 
-		return updateGroupPoliciesRes{}, nil
+		return updateGroupRolesRes{}, nil
 	}
 }
 
-func removePoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func removeRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(removeGroupPoliciesReq)
+		req := request.(removeGroupRolesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemovePoliciesByGroup(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemoveRolesByGroup(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -1017,7 +1017,7 @@ func removePoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listPoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func listRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listGroupMembersReq)
 		if err := req.validate(); err != nil {
@@ -1029,32 +1029,32 @@ func listPoliciesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 		}
 
-		gpp, err := svc.ListPoliciesByGroup(ctx, req.token, req.groupID, pm)
+		gpp, err := svc.ListRolesByGroup(ctx, req.token, req.groupID, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildGroupPoliciesResponse(gpp), nil
+		return buildGroupRolesResponse(gpp), nil
 	}
 }
 
-func buildGroupPoliciesResponse(gpp things.GroupPoliciesPage) listGroupPoliciesRes {
-	res := listGroupPoliciesRes{
+func buildGroupRolesResponse(gpp things.GroupRolesPage) listGroupRolesRes {
+	res := listGroupRolesRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,
 			Limit:  gpp.Limit,
 			Offset: gpp.Offset,
 		},
-		GroupPolicies: []groupPolicy{},
+		GroupRoles: []groupMember{},
 	}
 
-	for _, g := range gpp.GroupPolicies {
-		gp := groupPolicy{
-			Email:  g.Email,
-			ID:     g.MemberID,
-			Policy: g.Policy,
+	for _, g := range gpp.GroupRoles {
+		gp := groupMember{
+			Email: g.Email,
+			ID:    g.MemberID,
+			Role:  g.Role,
 		}
-		res.GroupPolicies = append(res.GroupPolicies, gp)
+		res.GroupRoles = append(res.GroupRoles, gp)
 	}
 
 	return res

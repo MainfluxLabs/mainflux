@@ -829,12 +829,6 @@ func toOrgGroup(og dbOrgGroup) auth.OrgGroup {
 	}
 }
 
-type dbGroupPolicy struct {
-	MemberID string `db:"member_id"`
-	GroupID  string `db:"group_id"`
-	Policy   string `db:"policy"`
-}
-
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {

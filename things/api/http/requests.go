@@ -551,13 +551,13 @@ func (req getConnByKeyReq) validate() error {
 	return nil
 }
 
-type groupPoliciesReq struct {
-	token         string
-	groupID       string
-	GroupPolicies []groupPolicy `json:"group_policies"`
+type groupRolesReq struct {
+	token      string
+	groupID    string
+	GroupRoles []groupMember `json:"group_roles"`
 }
 
-func (req groupPoliciesReq) validate() error {
+func (req groupRolesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -566,13 +566,13 @@ func (req groupPoliciesReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.GroupPolicies) == 0 {
+	if len(req.GroupRoles) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gp := range req.GroupPolicies {
-		if gp.Policy != things.Read && gp.Policy != things.ReadWrite {
-			return apiutil.ErrInvalidPolicy
+	for _, gp := range req.GroupRoles {
+		if gp.Role != things.Viewer && gp.Role != things.Editor {
+			return apiutil.ErrInvalidRole
 		}
 
 		if gp.ID == "" {
@@ -583,13 +583,13 @@ func (req groupPoliciesReq) validate() error {
 	return nil
 }
 
-type removeGroupPoliciesReq struct {
+type removeGroupRolesReq struct {
 	token     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req removeGroupPoliciesReq) validate() error {
+func (req removeGroupRolesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

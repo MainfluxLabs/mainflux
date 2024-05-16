@@ -453,50 +453,50 @@ func (lm *loggingMiddleware) ListChannelsByGroup(ctx context.Context, token, gro
 	return lm.svc.ListChannelsByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) CreatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) (err error) {
+func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_policies_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreatePoliciesByGroup(ctx, token, groupID, gps...)
+	return lm.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) ListPoliciesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gpp things.GroupPoliciesPage, err error) {
+func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gpp things.GroupRolesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_policies_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListPoliciesByGroup(ctx, token, groupID, pm)
+	return lm.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) UpdatePoliciesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupPolicyByID) (err error) {
+func (lm *loggingMiddleware) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_policies_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method update_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.UpdatePoliciesByGroup(ctx, token, groupID, gps...)
+	return lm.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) RemovePoliciesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_policies_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.RemovePoliciesByGroup(ctx, token, groupID, memberIDs...)
+	return lm.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
 }

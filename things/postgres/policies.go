@@ -9,34 +9,34 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ things.PoliciesRepository = (*policiesRepository)(nil)
+var _ things.RolesRepository = (*rolesRepository)(nil)
 
-type policiesRepository struct {
+type rolesRepository struct {
 	db Database
 }
 
-// NewPoliciesRepository instantiates a PostgreSQL implementation of policies repository.
-func NewPoliciesRepository(db Database) things.PoliciesRepository {
-	return &policiesRepository{
+// NewRolesRepository instantiates a PostgreSQL implementation of policies repository.
+func NewRolesRepository(db Database) things.RolesRepository {
+	return &rolesRepository{
 		db: db,
 	}
 }
 
-func (pr policiesRepository) SavePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
+func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	q := `INSERT INTO group_policies (member_id, group_id, policy) VALUES (:member_id, :group_id, :policy);`
+	q := `INSERT INTO group_roles (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
 	for _, g := range gps {
-		gp := things.GroupPolicy{
+		gp := things.GroupMembers{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
-			Policy:   g.Policy,
+			Role:     g.Role,
 		}
-		dbgp := toDBGroupPolicy(gp)
+		dbgp := toDBGroupMembers(gp)
 
 		if _, err := pr.db.NamedExecContext(ctx, q, dbgp); err != nil {
 			tx.Rollback()
@@ -62,8 +62,8 @@ func (pr policiesRepository) SavePoliciesByGroup(ctx context.Context, groupID st
 	return nil
 }
 
-func (pr policiesRepository) RetrievePolicyByGroup(ctc context.Context, gp things.GroupPolicy) (string, error) {
-	q := `SELECT policy FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
+func (pr rolesRepository) RetrieveRole(ctc context.Context, gp things.GroupMembers) (string, error) {
+	q := `SELECT role FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
 		"member_id": gp.MemberID,
@@ -76,18 +76,18 @@ func (pr policiesRepository) RetrievePolicyByGroup(ctc context.Context, gp thing
 	}
 	defer rows.Close()
 
-	var policy string
+	var role string
 	for rows.Next() {
-		if err := rows.Scan(&policy); err != nil {
+		if err := rows.Scan(&role); err != nil {
 			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 	}
 
-	return policy, nil
+	return role, nil
 }
 
-func (pr policiesRepository) RetrievePoliciesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupPoliciesPage, error) {
-	q := `SELECT member_id, policy FROM group_policies WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
+func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+	q := `SELECT member_id, role FROM group_roles WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -97,30 +97,30 @@ func (pr policiesRepository) RetrievePoliciesByGroup(ctx context.Context, groupI
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []things.GroupPolicy
+	var items []things.GroupMembers
 	for rows.Next() {
-		dbgp := dbGroupPolicy{}
+		dbgp := dbGroupMembers{}
 		if err := rows.StructScan(&dbgp); err != nil {
-			return things.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		gp := toGroupPolicy(dbgp)
+		gp := toGroupMembers(dbgp)
 		items = append(items, gp)
 	}
 
-	cq := `SELECT COUNT(*) FROM group_policies WHERE group_id = :group_id;`
+	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
 
 	total, err := total(ctx, pr.db, cq, params)
 	if err != nil {
-		return things.GroupPoliciesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.GroupPoliciesPage{
-		GroupPolicies: items,
+	page := things.GroupRolesPage{
+		GroupRoles: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -131,8 +131,8 @@ func (pr policiesRepository) RetrievePoliciesByGroup(ctx context.Context, groupI
 	return page, nil
 }
 
-func (pr policiesRepository) RetrieveAllPoliciesByGroup(ctx context.Context) ([]things.GroupPolicy, error) {
-	q := `SELECT member_id, group_id, policy FROM group_policies;`
+func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {
+	q := `SELECT member_id, group_id, role FROM group_roles;`
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -140,25 +140,25 @@ func (pr policiesRepository) RetrieveAllPoliciesByGroup(ctx context.Context) ([]
 	}
 	defer rows.Close()
 
-	var items []things.GroupPolicy
+	var items []things.GroupMembers
 	for rows.Next() {
-		dbgp := dbGroupPolicy{}
+		dbgp := dbGroupMembers{}
 		if err := rows.StructScan(&dbgp); err != nil {
 			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		gp := toGroupPolicy(dbgp)
+		gp := toGroupMembers(dbgp)
 		items = append(items, gp)
 	}
 
 	return items, nil
 }
 
-func (pr policiesRepository) RemovePoliciesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
-	q := `DELETE FROM group_policies WHERE member_id = :member_id AND group_id = :group_id;`
+func (pr rolesRepository) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
+	q := `DELETE FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
-		dbgp := dbGroupPolicy{
+		dbgp := dbGroupMembers{
 			MemberID: memberID,
 			GroupID:  groupID,
 		}
@@ -170,16 +170,16 @@ func (pr policiesRepository) RemovePoliciesByGroup(ctx context.Context, groupID 
 	return nil
 }
 
-func (pr policiesRepository) UpdatePoliciesByGroup(ctx context.Context, groupID string, gps ...things.GroupPolicyByID) error {
-	q := `UPDATE group_policies SET policy = :policy WHERE member_id = :member_id AND group_id = :group_id;`
+func (pr rolesRepository) UpdateRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gps {
-		gp := things.GroupPolicy{
+		gp := things.GroupMembers{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
-			Policy:   g.Policy,
+			Role:     g.Role,
 		}
-		dbgp := toDBGroupPolicy(gp)
+		dbgp := toDBGroupMembers(gp)
 
 		row, err := pr.db.NamedExecContext(ctx, q, dbgp)
 		if err != nil {
@@ -209,24 +209,24 @@ func (pr policiesRepository) UpdatePoliciesByGroup(ctx context.Context, groupID 
 	return nil
 }
 
-type dbGroupPolicy struct {
+type dbGroupMembers struct {
 	MemberID string `db:"member_id"`
 	GroupID  string `db:"group_id"`
-	Policy   string `db:"policy"`
+	Role     string `db:"role"`
 }
 
-func toDBGroupPolicy(gp things.GroupPolicy) dbGroupPolicy {
-	return dbGroupPolicy{
+func toDBGroupMembers(gp things.GroupMembers) dbGroupMembers {
+	return dbGroupMembers{
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
-		Policy:   gp.Policy,
+		Role:     gp.Role,
 	}
 }
 
-func toGroupPolicy(dbgp dbGroupPolicy) things.GroupPolicy {
-	return things.GroupPolicy{
+func toGroupMembers(dbgp dbGroupMembers) things.GroupMembers {
+	return things.GroupMembers{
 		GroupID:  dbgp.GroupID,
 		MemberID: dbgp.MemberID,
-		Policy:   dbgp.Policy,
+		Role:     dbgp.Role,
 	}
 }
