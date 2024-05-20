@@ -6,7 +6,6 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -14,7 +13,6 @@ import (
 func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createWebhooksReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -42,7 +40,6 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(webhookReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -59,7 +56,6 @@ func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 func viewWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(webhookReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -76,7 +72,6 @@ func viewWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 func updateWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateWebhookReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -92,18 +87,14 @@ func updateWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return webhookResponse{ID: webhook.ID, updated: true}, nil
+		return webhookResponse{updated: true}, nil
 	}
 }
 
 func removeWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removeWebhooksReq)
-
 		if err := req.validate(); err != nil {
-			if err == errors.ErrNotFound {
-				return removeRes{}, nil
-			}
 			return nil, err
 		}
 
