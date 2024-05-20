@@ -12,7 +12,7 @@ import (
 
 type Forwarder interface {
 	// Forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message mfjson.Message, whs []Webhook) error
+	Forward(ctx context.Context, message mfjson.Message, wh Webhook) error
 }
 
 var _ Forwarder = (*forwarder)(nil)
@@ -27,28 +27,26 @@ func NewForwarder() Forwarder {
 	}
 }
 
-func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, whs []Webhook) error {
-	for _, wh := range whs {
-		if err := fw.sendRequest(wh.Url, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (fw *forwarder) sendRequest(url string, msg mfjson.Message) error {
+func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, wh Webhook) error {
 	jsonBytes, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBytes))
+	req, err := http.NewRequest(http.MethodPost, wh.Url, bytes.NewReader(jsonBytes))
 	if err != nil {
 		return err
 	}
 
-	req.Header.Set(contentType, ctJSON)
+	if len(wh.Headers) > 0 {
+		for k, v := range wh.Headers {
+			req.Header.Set(k, v)
+		}
+	}
+
+	if req.Header.Get(contentType) == "" {
+		req.Header.Set(contentType, ctJSON)
+	}
 
 	resp, err := fw.httpClient.Do(req)
 	if err != nil {

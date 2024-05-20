@@ -50,7 +50,7 @@ func migrateDB(db *sqlx.DB) error {
 						group_id    UUID NOT NULL,
 						name        VARCHAR(1024) NOT NULL,
 						url         VARCHAR(254) NOT NULL,
-						headers     VARCHAR(1024),
+						headers     JSONB,
 						PRIMARY KEY (id)
 					)`,
 				},

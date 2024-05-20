@@ -43,11 +43,30 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 	))
 	r.Get("/groups/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
-		decodeListByGroup,
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+	r.Get("/webhooks/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_webhook")(viewWebhookEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+	r.Put("/webhooks/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_webhook")(updateWebhookEndpoint(svc)),
+		decodeUpdateWebhook,
+		encodeResponse,
+		opts...,
+	))
+	r.Patch("/groups/:id/webhooks", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_webhooks")(removeWebhooksEndpoint(svc)),
+		decodeRemoveWebhooks,
 		encodeResponse,
 		opts...,
 	))
 
+	r.GetFunc("/health", mainflux.Health("webhooks"))
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
@@ -66,8 +85,41 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := webhookReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, idKey)}
+
+	return req, nil
+}
+
+func decodeUpdateWebhook(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateWebhookReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, idKey),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRemoveWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeWebhooksReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, idKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
 
 	return req, nil
 }

@@ -49,11 +49,18 @@ func New() transformers.Transformer {
 
 // Transform transforms Mainflux message to a list of JSON messages.
 func (ts *transformerService) Transform(msg messaging.Message) (interface{}, error) {
+	profile := Profile{
+		"write":     msg.Profile.Write,
+		"notify":    msg.Profile.Notify,
+		"webhookID": msg.Profile.WebhookID,
+	}
+
 	ret := Message{
 		Publisher: msg.Publisher,
 		Created:   msg.Created,
 		Protocol:  msg.Protocol,
 		Channel:   msg.Channel,
+		Profile:   profile,
 	}
 
 	subs := strings.Split(msg.Subtopic, ".")

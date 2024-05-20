@@ -8,11 +8,11 @@ import (
 )
 
 type webhookResponse struct {
-	ID         string `json:"id"`
-	GroupID    string `json:"group_id"`
-	Name       string `json:"name"`
-	Url        string `json:"url"`
-	ResHeaders string `json:"headers"`
+	ID         string            `json:"id"`
+	GroupID    string            `json:"group_id"`
+	Name       string            `json:"name"`
+	Url        string            `json:"url"`
+	ResHeaders map[string]string `json:"headers"`
 	updated    bool
 }
 
