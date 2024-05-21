@@ -58,7 +58,7 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 
 	if msg.Profile.WebhookID != "" {
 		ret.Profile = map[string]interface{}{
-			"webhookID": msg.Profile.WebhookID,
+			"webhook_id": msg.Profile.WebhookID,
 		}
 	}
 
