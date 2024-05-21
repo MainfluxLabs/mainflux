@@ -2,9 +2,9 @@ package mocks
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -27,7 +27,7 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 	defer wrm.mu.Unlock()
 
 	for i := range whs {
-		wrm.webhooks[key(whs[i].GroupID, whs[i].Url)] = whs[i]
+		wrm.webhooks[whs[i].ID] = whs[i]
 	}
 	return whs, nil
 }
@@ -46,6 +46,41 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 	return whs, nil
 }
 
-func key(groupID string, url string) string {
-	return fmt.Sprintf("%s-%s", groupID, url)
+func (wrm *webhookRepositoryMock) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
+	wrm.mu.Lock()
+	defer wrm.mu.Unlock()
+
+	for _, wh := range wrm.webhooks {
+		if wh.ID == id {
+			return wh, nil
+		}
+	}
+
+	return webhooks.Webhook{}, errors.ErrNotFound
+}
+
+func (wrm *webhookRepositoryMock) Update(ctx context.Context, w webhooks.Webhook) error {
+	wrm.mu.Lock()
+	defer wrm.mu.Unlock()
+
+	if _, ok := wrm.webhooks[w.ID]; !ok {
+		return errors.ErrNotFound
+	}
+	wrm.webhooks[w.ID] = w
+
+	return nil
+}
+
+func (wrm *webhookRepositoryMock) Remove(ctx context.Context, ids ...string) error {
+	wrm.mu.Lock()
+	defer wrm.mu.Unlock()
+
+	for _, id := range ids {
+		if _, ok := wrm.webhooks[id]; !ok {
+			return errors.ErrNotFound
+		}
+		delete(wrm.webhooks, wrm.webhooks[id].ID)
+	}
+
+	return nil
 }

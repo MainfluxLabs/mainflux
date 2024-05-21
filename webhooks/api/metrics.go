@@ -50,6 +50,33 @@ func (ms *metricsMiddleware) ListWebhooksByGroup(ctx context.Context, token stri
 	return ms.svc.ListWebhooksByGroup(ctx, token, thingID)
 }
 
+func (ms *metricsMiddleware) ViewWebhook(ctx context.Context, token, id string) (webhooks.Webhook, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_webhook").Add(1)
+		ms.latency.With("method", "view_webhook").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewWebhook(ctx, token, id)
+}
+
+func (ms *metricsMiddleware) UpdateWebhook(ctx context.Context, token string, webhook webhooks.Webhook) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_webhook").Add(1)
+		ms.latency.With("method", "update_webhook").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateWebhook(ctx, token, webhook)
+}
+
+func (ms *metricsMiddleware) RemoveWebhooks(ctx context.Context, token, groupID string, id ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_webhooks").Add(1)
+		ms.latency.With("method", "remove_webhooks").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveWebhooks(ctx, token, groupID, id...)
+}
+
 func (ms *metricsMiddleware) Consume(message interface{}) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)

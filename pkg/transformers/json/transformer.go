@@ -56,6 +56,12 @@ func (ts *transformerService) Transform(msg messaging.Message) (interface{}, err
 		Channel:   msg.Channel,
 	}
 
+	if msg.Profile.WebhookID != "" {
+		ret.Profile = map[string]interface{}{
+			"webhookID": msg.Profile.WebhookID,
+		}
+	}
+
 	subs := strings.Split(msg.Subtopic, ".")
 	switch {
 	case msg.Subtopic == "":

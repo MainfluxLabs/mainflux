@@ -35,6 +35,18 @@ type Service interface {
 	// related to a certain group identified by the provided ID.
 	ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error)
 
+	// ViewWebhook retrieves data about the webhook identified with the provided
+	// ID, that belongs to the user identified by the provided key.
+	ViewWebhook(ctx context.Context, token, id string) (Webhook, error)
+
+	// UpdateWebhook updates the webhook identified by the provided ID, that
+	// belongs to the user identified by the provided key.
+	UpdateWebhook(ctx context.Context, token string, webhook Webhook) error
+
+	// RemoveWebhooks removes the webhooks identified with the provided IDs, that
+	// belongs to the user identified by the provided key.
+	RemoveWebhooks(ctx context.Context, token, groupID string, id ...string) error
+
 	consumers.Consumer
 }
 
@@ -87,6 +99,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	if err != nil {
 		return Webhook{}, err
 	}
+
 	if len(whs) == 0 {
 		return Webhook{}, errors.ErrCreateEntity
 	}
@@ -102,10 +115,49 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string
 
 	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID)
 	if err != nil {
-		return []Webhook{}, errors.ErrAuthorization
+		return []Webhook{}, err
 	}
 
 	return webhooks, nil
+}
+
+func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (Webhook, error) {
+	webhook, err := ws.webhooks.RetrieveByID(ctx, id)
+	if err != nil {
+		return Webhook{}, err
+	}
+
+	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Viewer}); err != nil {
+		return Webhook{}, err
+	}
+
+	return webhook, nil
+}
+
+func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webhook Webhook) error {
+	wh, err := ws.webhooks.RetrieveByID(ctx, webhook.ID)
+	if err != nil {
+		return err
+	}
+
+	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: wh.GroupID, Action: things.Viewer}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+
+	}
+
+	return ws.webhooks.Update(ctx, webhook)
+}
+
+func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID string, ids ...string) error {
+	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	if err := ws.webhooks.Remove(ctx, ids...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ws *webhooksService) Consume(message interface{}) error {
@@ -113,19 +165,17 @@ func (ws *webhooksService) Consume(message interface{}) error {
 
 	if v, ok := message.(json.Messages); ok {
 		msgs := v.Data
-
 		for _, msg := range msgs {
-			if msg.Publisher == "" {
+			if msg.Profile["webhookID"] == nil {
 				return apiutil.ErrMissingID
 			}
 
-			//TODO: Need to get a WebhookID from Channel Profile and replace to RetrieveByID
-			whs, err := ws.webhooks.RetrieveByGroupID(ctx, msg.Publisher)
+			wh, err := ws.webhooks.RetrieveByID(ctx, msg.Profile["webhookID"].(string))
 			if err != nil {
-				return errors.ErrAuthorization
+				return err
 			}
 
-			if err := ws.forwarder.Forward(ctx, msg, whs); err != nil {
+			if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
 				return errors.Wrap(ErrForward, err)
 			}
 		}

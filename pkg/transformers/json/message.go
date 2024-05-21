@@ -6,6 +6,9 @@ package json
 // Payload represents JSON Message payload.
 type Payload map[string]interface{}
 
+// Profile represents JSON Message Channel Profile.
+type Profile map[string]interface{}
+
 // Message represents a JSON messages.
 type Message struct {
 	Channel   string  `json:"channel,omitempty" db:"channel" bson:"channel"`
@@ -14,6 +17,7 @@ type Message struct {
 	Publisher string  `json:"publisher,omitempty" db:"publisher" bson:"publisher"`
 	Protocol  string  `json:"protocol,omitempty" db:"protocol" bson:"protocol"`
 	Payload   Payload `json:"payload,omitempty" db:"payload" bson:"payload,omitempty"`
+	Profile   Profile `json:"profile,omitempty" db:"profile" bson:"profile,omitempty"`
 }
 
 // Messages represents a list of JSON messages.

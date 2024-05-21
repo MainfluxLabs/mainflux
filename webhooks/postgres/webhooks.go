@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -66,7 +68,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	if _, err := uuid.FromString(groupID); err != nil {
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT id, group_id, name, url, headers FROM webhooks WHERE group_id = :group_id;`
+	q := `SELECT id, name, url, headers FROM webhooks WHERE group_id = :group_id;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -80,7 +82,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 
 	var items []webhooks.Webhook
 	for rows.Next() {
-		dbWh := dbWebhook{}
+		dbWh := dbWebhook{GroupID: groupID}
 		if err := rows.StructScan(&dbWh); err != nil {
 			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -94,30 +96,110 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	return items, nil
 }
 
+func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
+	q := `SELECT group_id, name, url, headers FROM webhooks WHERE id = $1;`
+
+	dbwh := dbWebhook{ID: id}
+	if err := wr.db.QueryRowxContext(ctx, q, id).StructScan(&dbwh); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		//  If there is no result or ID is in an invalid format, return ErrNotFound.
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+		return webhooks.Webhook{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return toWebhook(dbwh)
+}
+
+func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) error {
+	q := `UPDATE webhooks SET name = :name, url = :url, headers = :headers WHERE id = :id;`
+
+	dbwh, err := toDBWebhook(w)
+	if err != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	res, errdb := wr.db.NamedExecContext(ctx, q, dbwh)
+	if errdb != nil {
+		pgErr, ok := errdb.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrMalformedEntity, errdb)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+	}
+
+	cnt, errdb := res.RowsAffected()
+	if errdb != nil {
+		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+	}
+
+	if cnt == 0 {
+		return errors.ErrNotFound
+	}
+
+	return nil
+}
+
+func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
+	for _, id := range ids {
+		dbwh := dbWebhook{
+			ID: id,
+		}
+		q := `DELETE FROM webhooks WHERE id = :id;`
+		_, err := wr.db.NamedExecContext(ctx, q, dbwh)
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+	}
+
+	return nil
+}
+
 type dbWebhook struct {
 	ID      string `db:"id"`
 	GroupID string `db:"group_id"`
 	Name    string `db:"name"`
 	Url     string `db:"url"`
-	Headers string `db:"headers"`
+	Headers []byte `db:"headers"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
+	data := []byte("{}")
+	if len(wh.Headers) > 0 {
+		b, err := json.Marshal(wh.Headers)
+		if err != nil {
+			return dbWebhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+		data = b
+	}
+
 	return dbWebhook{
 		ID:      wh.ID,
 		GroupID: wh.GroupID,
 		Name:    wh.Name,
 		Url:     wh.Url,
-		Headers: wh.Headers,
+		Headers: data,
 	}, nil
 }
 
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
+	var headers map[string]string
+	if err := json.Unmarshal([]byte(dbW.Headers), &headers); err != nil {
+		return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
 	return webhooks.Webhook{
 		ID:      dbW.ID,
 		GroupID: dbW.GroupID,
 		Name:    dbW.Name,
 		Url:     dbW.Url,
-		Headers: dbW.Headers,
+		Headers: headers,
 	}, nil
 }

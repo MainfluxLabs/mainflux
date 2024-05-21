@@ -20,10 +20,10 @@ type apiReq interface {
 }
 
 type createWebhookReq struct {
-	ID      string `json:"id,omitempty"`
-	Name    string `json:"name"`
-	Url     string `json:"url"`
-	Headers string `json:"headers,omitempty"`
+	ID      string            `json:"id,omitempty"`
+	Name    string            `json:"name"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 type createWebhooksReq struct {
@@ -79,6 +79,59 @@ func (req *webhookReq) validate() error {
 	if err := validateUUID(req.id); err != nil {
 		return err
 	}
+	return nil
+}
+
+type updateWebhookReq struct {
+	token   string
+	id      string
+	Name    string            `json:"name"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+}
+
+func (req updateWebhookReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	_, err := url.ParseRequestURI(req.Url)
+	if err != nil {
+		return ErrInvalidUrl
+	}
+
+	return nil
+}
+
+type removeWebhooksReq struct {
+	groupID    string
+	token      string
+	WebhookIDs []string `json:"webhook_ids,omitempty"`
+}
+
+func (req removeWebhooksReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.WebhookIDs) < 1 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, whID := range req.WebhookIDs {
+		if whID == "" {
+			return apiutil.ErrMissingID
+		}
+	}
+
 	return nil
 }
 

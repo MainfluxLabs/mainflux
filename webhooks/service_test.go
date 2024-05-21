@@ -23,6 +23,11 @@ const (
 	groupID    = "1"
 )
 
+var (
+	headers = map[string]string{"Content-Type:": "application/json"}
+	webhook = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers}
+)
+
 func newService() webhooks.Service {
 	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
 	webhookRepo := whMock.NewWebhookRepository()
@@ -35,12 +40,12 @@ func newService() webhooks.Service {
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
 
-	validData := webhooks.Webhook{GroupID: groupID, Name: "test1", Url: "http://test1.com", Headers: "Content-Type: application/json"}
-	validData2 := webhooks.Webhook{GroupID: groupID, Name: "test2", Url: "http://test2.com", Headers: "Content-Type: application/json"}
+	validData := webhooks.Webhook{GroupID: groupID, Name: "test1", Url: "http://test1.com", Headers: headers}
+	validData2 := webhooks.Webhook{GroupID: groupID, Name: "test2", Url: "http://test2.com", Headers: headers}
 	validDataWebhooks := []webhooks.Webhook{validData, validData2}
-	invalidGroupData := []webhooks.Webhook{{GroupID: emptyValue, Name: "test3", Url: "http://test3.com", Headers: "Content-Type: application/json"}}
-	invalidNameData := []webhooks.Webhook{{GroupID: groupID, Name: emptyValue, Url: "https://test.com", Headers: "Content-Type: application/json"}}
-	invalidUrlData := []webhooks.Webhook{{GroupID: groupID, Name: "test5", Url: emptyValue, Headers: "Content-Type: application/json"}}
+	invalidGroupData := []webhooks.Webhook{{GroupID: emptyValue, Name: "test3", Url: "http://test3.com", Headers: headers}}
+	invalidNameData := []webhooks.Webhook{{GroupID: groupID, Name: emptyValue, Url: "https://test.com", Headers: headers}}
+	invalidUrlData := []webhooks.Webhook{{GroupID: groupID, Name: "test5", Url: emptyValue, Headers: headers}}
 
 	cases := []struct {
 		desc     string
@@ -88,15 +93,7 @@ func TestCreateWebhooks(t *testing.T) {
 
 func TestListWebhooksByGroup(t *testing.T) {
 	svc := newService()
-
-	w := webhooks.Webhook{
-		Name:    "TestWebhook",
-		GroupID: groupID,
-		Url:     "https://api.webhook.com",
-		Headers: "Content-Type: application/json",
-	}
-
-	whs, err := svc.CreateWebhooks(context.Background(), token, w)
+	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -135,12 +132,123 @@ func TestListWebhooksByGroup(t *testing.T) {
 	}
 }
 
+func TestUpdateWebhook(t *testing.T) {
+	svc := newService()
+	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	wh := whs[0]
+
+	invalidWh := webhooks.Webhook{ID: emptyValue, Name: wh.Name, Url: wh.Url, GroupID: wh.GroupID, Headers: wh.Headers}
+
+	cases := []struct {
+		desc    string
+		webhook webhooks.Webhook
+		token   string
+		err     error
+	}{
+		{
+			desc:    "update existing webhook",
+			webhook: wh,
+			token:   token,
+			err:     nil,
+		},
+		{
+			desc:    "update webhook with wrong credentials",
+			webhook: wh,
+			token:   emptyValue,
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "update non-existing webhook",
+			webhook: invalidWh,
+			token:   token,
+			err:     errors.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UpdateWebhook(context.Background(), tc.token, tc.webhook)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestViewWebhook(t *testing.T) {
+	svc := newService()
+	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	wh := whs[0]
+
+	cases := map[string]struct {
+		id    string
+		token string
+		err   error
+	}{
+		"view existing webhook": {
+			id:    wh.ID,
+			token: token,
+			err:   nil,
+		},
+		"view webhook with wrong credentials": {
+			id:    wh.ID,
+			token: wrongValue,
+			err:   errors.ErrAuthorization,
+		},
+		"view non-existing webhook": {
+			id:    wrongValue,
+			token: token,
+			err:   errors.ErrNotFound,
+		},
+	}
+
+	for desc, tc := range cases {
+		_, err := svc.ViewWebhook(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestRemoveWebhooks(t *testing.T) {
+	svc := newService()
+	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	wh := whs[0]
+
+	cases := []struct {
+		desc  string
+		id    string
+		token string
+		err   error
+	}{
+		{
+			desc:  "remove existing webhook",
+			id:    wh.ID,
+			token: token,
+			err:   nil,
+		},
+		{
+			desc:  "remove webhook with wrong credentials",
+			id:    wh.ID,
+			token: wrongValue,
+			err:   errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RemoveWebhooks(context.Background(), tc.token, groupID, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestConsume(t *testing.T) {
 	svc := newService()
+	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	wh := whs[0]
 
 	validJson := json.Messages{
 		Data: []json.Message{{
-			Publisher: "1",
+			Profile: map[string]interface{}{
+				"webhookID": wh.ID,
+			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
 				"key2": float64(123),
@@ -148,9 +256,20 @@ func TestConsume(t *testing.T) {
 		},
 	}
 
-	invalidJson := json.Messages{
+	withoutWh := json.Messages{
 		Data: []json.Message{{
-			Publisher: emptyValue,
+			Payload: map[string]interface{}{
+				"key1": "val1",
+				"key2": float64(123),
+			}},
+		},
+	}
+
+	emptyWh := json.Messages{
+		Data: []json.Message{{
+			Profile: map[string]interface{}{
+				"webhookID": emptyValue,
+			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
 				"key2": float64(123),
@@ -169,9 +288,14 @@ func TestConsume(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "forward message with invalid channel id",
-			msg:  invalidJson,
+			desc: "forward message without webhook id",
+			msg:  withoutWh,
 			err:  apiutil.ErrMissingID,
+		},
+		{
+			desc: "forward message with empty webhook id",
+			msg:  emptyWh,
+			err:  errors.ErrNotFound,
 		},
 	}
 
