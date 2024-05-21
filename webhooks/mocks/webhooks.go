@@ -46,7 +46,7 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 	return whs, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
+func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (webhooks.Webhook, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
@@ -59,7 +59,7 @@ func (wrm *webhookRepositoryMock) RetrieveByID(ctx context.Context, id string) (
 	return webhooks.Webhook{}, errors.ErrNotFound
 }
 
-func (wrm *webhookRepositoryMock) Update(ctx context.Context, w webhooks.Webhook) error {
+func (wrm *webhookRepositoryMock) Update(_ context.Context, w webhooks.Webhook) error {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
@@ -71,7 +71,7 @@ func (wrm *webhookRepositoryMock) Update(ctx context.Context, w webhooks.Webhook
 	return nil
 }
 
-func (wrm *webhookRepositoryMock) Remove(ctx context.Context, ids ...string) error {
+func (wrm *webhookRepositoryMock) Remove(_ context.Context, groupID string, ids ...string) error {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
@@ -79,7 +79,7 @@ func (wrm *webhookRepositoryMock) Remove(ctx context.Context, ids ...string) err
 		if _, ok := wrm.webhooks[id]; !ok {
 			return errors.ErrNotFound
 		}
-		delete(wrm.webhooks, wrm.webhooks[id].ID)
+		delete(wrm.webhooks, id)
 	}
 
 	return nil

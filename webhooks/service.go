@@ -153,7 +153,7 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID st
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := ws.webhooks.Remove(ctx, ids...); err != nil {
+	if err := ws.webhooks.Remove(ctx, groupID, ids...); err != nil {
 		return err
 	}
 
