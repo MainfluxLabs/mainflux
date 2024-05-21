@@ -247,7 +247,7 @@ func TestConsume(t *testing.T) {
 	validJson := json.Messages{
 		Data: []json.Message{{
 			Profile: map[string]interface{}{
-				"webhookID": wh.ID,
+				"webhook_id": wh.ID,
 			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
@@ -268,7 +268,7 @@ func TestConsume(t *testing.T) {
 	emptyWh := json.Messages{
 		Data: []json.Message{{
 			Profile: map[string]interface{}{
-				"webhookID": emptyValue,
+				"webhook_id": emptyValue,
 			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
