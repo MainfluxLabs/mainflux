@@ -28,5 +28,5 @@ type WebhookRepository interface {
 	Update(ctx context.Context, w Webhook) error
 
 	// Remove removes the webhooks having the provided identifiers
-	Remove(ctx context.Context, ids ...string) error
+	Remove(ctx context.Context, groupID string, ids ...string) error
 }

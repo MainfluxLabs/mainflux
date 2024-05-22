@@ -57,12 +57,12 @@ func (wrm webhookRepositoryMiddleware) Update(ctx context.Context, w webhooks.We
 	return wrm.repo.Update(ctx, w)
 }
 
-func (wrm webhookRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
+func (wrm webhookRepositoryMiddleware) Remove(ctx context.Context, groupID string, ids ...string) error {
 	span := createSpan(ctx, wrm.tracer, "remove_webhooks")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return wrm.repo.Remove(ctx, ids...)
+	return wrm.repo.Remove(ctx, groupID, ids...)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
