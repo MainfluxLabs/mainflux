@@ -23,7 +23,6 @@ For more details, check out the [official documentation][docs].
 - Platform logging and instrumentation support (Grafana, Prometheus and OpenTracing)
 - Event sourcing
 - Container-based deployment using [Docker][docker] and [Kubernetes][kubernetes]
-- [LoRaWAN][lora] network integration
 - Edge [Agent](agent) and [Export](export) services for remote IoT gateway management and edge computing
 - SDK
 - CLI
@@ -136,7 +135,6 @@ Thank you for your interest in Mainflux and the desire to contribute!
 [cov-badge]: https://codecov.io/gh/MainfluxLabs/mainflux/branch/master/graph/badge.svg
 [cov-url]: https://codecov.io/gh/MainfluxLabs/mainflux
 [license]: https://img.shields.io/badge/license-Apache%20v2.0-blue.svg
-[lora]: https://lora-alliance.org/
 [agent]: https://github.com/MainfluxLabs/agent
 [export]: https://github.com/MainfluxLabs/export
 [kubernetes]: https://kubernetes.io/
