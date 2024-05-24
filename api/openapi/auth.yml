@@ -171,7 +171,7 @@ paths:
         - $ref: "#/components/parameters/MemberId"
       responses:
         '200':
-          description: Member retrieved.
+          $ref: "#/components/responses/OrgMemberRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -266,174 +266,7 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/orgs:
-    get:
-      summary: Retrieves group membership.
-      description: |
-        Retrieves organizations where group is assigned.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      responses:
-        '200':
-          $ref: "#/components/responses/OrgRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Group does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/members:
-    post:
-      summary: Create group members.
-      description: |
-        Create group members for the given group and member IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      requestBody:
-        $ref: "#/components/requestBodies/GroupMembersReq"
-      responses:
-        '201':
-          description: Group member created.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization or group.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    get:
-      summary: Retrieves group members.
-      description: |
-        Retrieves page of group members for the given group ID.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      responses:
-        '200':
-           $ref: "#/components/responses/GroupMembersRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Organization or group does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    put:
-      summary: Update group members.
-      description: |
-        Updates group members identified by group and member IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      requestBody:
-        $ref: "#/components/requestBodies/GroupMembersReq"
-      responses:
-        '200':
-          description: Group member updated.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization or group.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    patch:
-      summary: Remove group members.
-      description: |
-          Removes group members identified by group and member IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      requestBody:
-        $ref: "#/components/requestBodies/RemoveGroupPoliciesReq"
-      responses:
-        '204':
-          description: Group member removed.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization or group.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /orgs/{orgId}/groups:
-    post:
-      summary: Assigns groups to organization.
-      description: |
-        Assigns new groups to organization identified by the given IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-      requestBody:
-        $ref: "#/components/requestBodies/OrgGroupsReq"
-      responses:
-        '200':
-          description: Groups assigned to organization.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    get:
-      summary: Retrieves all groups of organization.
-      description: |
-        Retrieves all groups of organization.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-        - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Metadata"
-      responses:
-        '200':
-          $ref: "#/components/responses/OrgGroupsRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    patch:
-      summary: Unassigns groups from organization.
-      description: |
-        Unassigns groups from organization identified by the given IDs.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-      requestBody:
-        $ref: "#/components/requestBodies/OrgGroupsReq"
-      responses:
-        '204':
-          description: Groups unassigned from organization.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing organization.
-        '500':
-          $ref: "#/components/responses/ServiceError"
+
   /members/{memberId}/orgs:
     get:
       summary: Retrieves all organizations of member.
@@ -548,7 +381,7 @@ components:
           description: Organization unique identifier
         name:
           type: string
-          example: "test"
+          example: "Test"
           description: Organization name.
         owner_id:
           type: string
@@ -557,7 +390,7 @@ components:
           description: In ID of the entity that owns the organization.
         description:
           type: string
-          example: "test"
+          example: "Test"
           description: Organization description.
         metadata:
           type: object
@@ -566,12 +399,12 @@ components:
         created_at:
           type: string
           format: date-time
-          example: "2019-11-26 13:31:52"
+          example: "2024-05-16 16:05:01"
           description: Time when the organization is created.
         updated_at:
           type: string
           format: date-time
-          example: "2019-11-26 13:31:52"
+          example: "2024-05-16 16:05:01"
           description: Time when the organization is updated.
     OrgSchema:
       type: object
@@ -606,6 +439,9 @@ components:
     OrgMember:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
         email:
           type: string
           example: "test@example.com"
@@ -657,7 +493,7 @@ components:
     OrgMembersResSchema:
       type: object
       properties:
-        member_id:
+        id:
           type: string
           format: uuid
           description: Unique member identifier generated by the service
@@ -680,15 +516,6 @@ components:
         - role
         - created_at
         - updated_at
-    OrgGroupsSchema:
-      type: object
-      properties:
-        group_ids:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            type: string
     GroupResSchema:
       type: object
       properties:
@@ -750,63 +577,7 @@ components:
         - org_id
         - created_at
         - updated_at
-    RemoveGroupPoliciesSchema:
-      type: object
-      properties:
-        member_ids:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          example: ["c5747f2f-2a7c-4fe1-b41a-51a5ae290945"]
-          items:
-            type: string
-            format: uuid
-    GroupMembersSchema:
-      type: object
-      properties:
-        group_members:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            type: object
-            properties:
-              member_id:
-                type: string
-                format: uuid
-                description: Unique member identifier generated by the service
-              policy:
-                type: string
-                description: Member policy in the group.
-            required:
-              - member_id
-              - policy
-    GroupPoliciesPageSchema:
-      type: object
-      properties:
-        total:
-          type: integer
-          description: Total number of group members.
-        offset:
-          type: integer
-          description: Offset of the page.
-        limit:
-          type: integer
-          description: Limit of the page.
-        group_members:
-          type: array
-          items:
-            properties:
-              member_id:
-                type: string
-                format: uuid
-                description: Unique member identifier generated by the service
-              email:
-                type: string
-                description: Member email.
-              policy:
-                type: string
-                description: Member policy in the group.
+
     BackupAndResponseSchema:
       type: object
       properties:
@@ -939,27 +710,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMemberIDsSchema"
-    OrgGroupsReq:
-      description: JSON-formatted document describing adding groups request.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/OrgGroupsSchema"
-    GroupMembersReq:
-      description: JSON-formatted document describing group members request.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/GroupMembersSchema"
-    RemoveGroupPoliciesReq:
-      description: JSON-formatted document describing remove group member request.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/RemoveGroupPoliciesSchema"
     RestoreReq:
       description: JSON-formatted document describing restore request.
       required: true
@@ -994,18 +744,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMemberPageSchema"
-    OrgGroupsRes:
+    OrgMemberRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/OrgGroupsPageSchema"
-    GroupMembersRes:
-      description: JSON-formatted document describing group members page response.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/GroupPoliciesPageSchema"
+            $ref: "#/components/schemas/OrgMember"
     HealthRes:
       description: Service Health Check.
       content:
