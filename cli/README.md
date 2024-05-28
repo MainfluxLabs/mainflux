@@ -25,109 +25,109 @@ mainfluxlabs-cli users token <user_email> <user_password>
 
 #### Retrieve User
 ```bash
-mainfluxlabs-cli users get <user_auth_token>
+mainfluxlabs-cli users get <user_token>
 ```
 
 #### Update User Metadata
 ```bash
-mainfluxlabs-cli users update '{"key1":"value1", "key2":"value2"}' <user_auth_token>
+mainfluxlabs-cli users update '{"key1":"value1", "key2":"value2"}' <user_token>
 ```
 
 #### Update User Password
 ```bash
-mainfluxlabs-cli users password <old_password> <password> <user_auth_token>
+mainfluxlabs-cli users password <old_password> <password> <user_token>
 ```
 
 ### System Provisioning
 #### Create Group
 ```bash
-mainfluxlabs-cli groups create '{"name":"myGroup"}' <user_auth_token>
+mainfluxlabs-cli groups create '{"name":"myGroup"}' <org_id> <user_token>
 ```
 
 #### Create Thing
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing", "group_id": "<group_id>"}' <user_auth_token>
+mainfluxlabs-cli things create '{"name":"myThing"}' <group_id> <user_token>
 ```
 
 #### Create Thing with metadata
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing", "group_id": "<group_id>", "metadata": {\"key1\":\"value1\"}}' <user_auth_token>
+mainfluxlabs-cli things create '{"name":"myThing", "metadata": {\"key1\":\"value1\"}}' <group_id> <user_token>
 ```
 
 #### Bulk Provision Things
 ```bash
-mainfluxlabs-cli provision things <file> <user_auth_token>
+mainfluxlabs-cli provision things <file> <user_token>
 ```
 
 * `file` - A CSV or JSON file containing things
-* `user_auth_token` - A valid user auth token for the current system
+* `user_token` - A valid user auth token for the current system
 
 #### Update Thing
 ```bash
-mainfluxlabs-cli things update '{"id":"<thing_id>", "name":"myNewName"}' <user_auth_token>
+mainfluxlabs-cli things update '{"id":"<thing_id>", "name":"myNewName"}' <user_token>
 ```
 
 #### Remove Thing
 ```bash
-mainfluxlabs-cli things delete <thing_id> <user_auth_token>
+mainfluxlabs-cli things delete <thing_id> <user_token>
 ```
 
 #### Retrieve a subset list of provisioned Things
 ```bash
-mainfluxlabs-cli things get all --offset=1 --limit=5 <user_auth_token>
+mainfluxlabs-cli things get all --offset=1 --limit=5 <user_token>
 ```
 
 #### Retrieve Thing By ID
 ```bash
-mainfluxlabs-cli things get <thing_id> <user_auth_token>
+mainfluxlabs-cli things get <thing_id> <user_token>
 ```
 
 #### Create Channel
 ```bash
-mainfluxlabs-cli channels create '{"name":"myChannel"}' <user_auth_token>
+mainfluxlabs-cli channels create '{"name":"myChannel"}' <group_id> <user_token>
 ```
 
 #### Bulk Provision Channels
 ```bash
-mainfluxlabs-cli provision channels <file> <user_auth_token>
+mainfluxlabs-cli provision channels <file> <user_token>
 ```
 
 * `file` - A CSV or JSON file containing channels
-* `user_auth_token` - A valid user auth token for the current system
+* `user_token` - A valid user auth token for the current system
 
 #### Update Channel
 ```bash
-mainfluxlabs-cli channels update '{"id":"<channel_id>","name":"myNewName"}' <user_auth_token>
+mainfluxlabs-cli channels update '{"id":"<channel_id>","name":"myNewName"}' <user_token>
 ```
 
 #### Remove Channel
 ```bash
-mainfluxlabs-cli channels delete <channel_id> <user_auth_token>
+mainfluxlabs-cli channels delete <channel_id> <user_token>
 ```
 
 #### Retrieve a subset list of provisioned Channels
 ```bash
-mainfluxlabs-cli channels get all --offset=1 --limit=5 <user_auth_token>
+mainfluxlabs-cli channels get all --offset=1 --limit=5 <user_token>
 ```
 
 #### Retrieve Channel By ID
 ```bash
-mainfluxlabs-cli channels get <channel_id> <user_auth_token>
+mainfluxlabs-cli channels get <channel_id> <user_token>
 ```
 
 ### Access control
 #### Connect Thing to Channel
 ```bash
-mainfluxlabs-cli things connect <thing_id> <channel_id> <user_auth_token>
+mainfluxlabs-cli things connect <thing_id> <channel_id> <user_token>
 ```
 
 #### Bulk Connect Things to Channels
 ```bash
-mainfluxlabs-cli provision connect <file> <user_auth_token>
+mainfluxlabs-cli provision connect <file> <user_token>
 ```
 
 * `file` - A CSV or JSON file containing thing and channel ids
-* `user_auth_token` - A valid user auth token for the current system
+* `user_token` - A valid user auth token for the current system
 
 An example CSV file might be
 
@@ -136,7 +136,7 @@ An example CSV file might be
 <thing_id>,<channel_id>
 ```
 
-in which the first column is thing IDs and the second column is channel IDs.  A connection will be created for each thing to each channel.  This example would result in 4 connections being created.
+in which the first column is thing IDs and the second column is channel IDs. A connection will be created for each thing to each channel. This example would result in 4 connections being created.
 
 A comparable JSON file would be
 
@@ -155,20 +155,19 @@ A comparable JSON file would be
 
 #### Disconnect Thing from Channel
 ```bash
-mainfluxlabs-cli things disconnect <thing_id> <channel_id> <user_auth_token>
+mainfluxlabs-cli things disconnect <thing_id> <channel_id> <user_token>
 
 ```
 
-#### Retrieve a subset list of Channels connected to Thing
+#### Retrieve a Channel by Thing
 ```bash
-mainfluxlabs-cli things connections <thing_id> <user_auth_token>
+mainfluxlabs-cli things connections <thing_id> <user_token>
 ```
 
 #### Retrieve a subset list of Things connected to Channel
 ```bash
-mainfluxlabs-cli channels connections <channel_id> <user_auth_token>
+mainfluxlabs-cli channels connections <channel_id> <user_token>
 ```
-
 
 ### Messaging
 #### Send a message over HTTP
@@ -184,48 +183,138 @@ mainfluxlabs-cli messages read <channel_id> <thing_auth_token>
 ### Groups
 #### Create new group
 ```bash
-mainfluxlabs-cli groups create '{"name":"<group_name>","org_id":"<org_id>","description":"<description>","metadata":{"key":"value",...}}' <user_auth_token>
+mainfluxlabs-cli groups create '{"name":"<group_name>","description":"<description>","metadata":{"key":"value",...}}' <org_id> <user_token>
 ```
+
 #### Delete group
 ```bash
-mainfluxlabs-cli groups delete <group_id> <user_auth_token>
+mainfluxlabs-cli groups delete <group_id> <user_token>
 ```
-#### Get group with id
+
+#### Get group by id
 ```bash
-mainfluxlabs-cli groups get <group_id> <user_auth_token>
+mainfluxlabs-cli groups get <group_id> <user_token>
 ```
+
 #### List all groups
 ```bash
-mainfluxlabs-cli groups get all <user_auth_token>
+mainfluxlabs-cli groups get all <user_token>
+```
+
+#### Update group
+```bash
+mainfluxlabs-cli groups update '{"id":"<group_id>","name":"newName"}' <user_token>
+```
+
+#### List things by group
+```bash
+mainfluxlabs-cli groups things <group_id> <user_token>
+```
+
+#### View group by thing
+```bash
+mainfluxlabs-cli groups thing <thing_id> <user_token>
+```
+
+#### List channels by group
+```bash
+mainfluxlabs-cli groups channels <group_id> <user_token>
+```
+
+#### View group by channel
+```bash
+mainfluxlabs-cli groups thing <channel_id> <user_token>
+```
+
+### Orgs
+#### Create new org
+```bash
+mainfluxlabs-cli orgs create '{"name":"<org_name>","description":"<description>","metadata":{"key":"value",...}}' <user_token>
+```
+
+#### Get org by id
+```bash
+mainfluxlabs-cli orgs get <org_id> <user_token>
+```
+
+#### List all orgs
+```bash
+mainfluxlabs-cli orgs get all <user_token>
+```
+
+#### Update org
+```bash
+mainfluxlabs-cli orgs update-org '{"id":"<org_id>","name":"new_name"}' <user_token>
+```
+
+#### Delete org
+```bash
+mainfluxlabs-cli orgs delete <org_id> <user_token>
 ```
 
 #### Assign user to an org
 ```bash
-mainfluxlabs-cli orgs assign <user_id> <group_id> <user_auth_token>
+mainfluxlabs-cli orgs assign '{"members": ["member_id":"<member_id>","email":"<email>","role":"<role>"]}' <org_id> <user_token>
 ```
+
 #### Unassign user from org
 ```bash
-mainfluxlabs-cli orgs unassign <user_id> <group_id> <user_auth_token>
+mainfluxlabs-cli orgs unassign '{"member_ids":["<member_id>"]}' <org_id> <user_token>
 ```
-#### List users for an org
+
+#### Update member
 ```bash
-mainfluxlabs-cli orgs members <group_id> <user_auth_token>
+mainfluxlabs-cli orgs update-member '{"id":"<member_id>","email":"<email>","role":"<new_role>"}' <user_token>
 ```
+
+#### List users by org
+```bash
+mainfluxlabs-cli orgs members <org_id> <user_token>
+```
+
 #### List orgs that user belongs to
 ```bash
-mainfluxlabs-cli orgs membership <user_id> <user_auth_token>
+mainfluxlabs-cli orgs memberships <member_id> <user_token>
+```
+
+### Webhooks
+#### Create new webhooks
+```bash
+mainfluxlabs-cli webhooks create '{[{"name":"<webhook_name>","url":"<url>","headers":{"key":"value",...}}]}' <group_id> <user_token>
+```
+
+#### Get webhook by id
+```bash
+mainfluxlabs-cli webhooks get by-id <id> <user_token>
+```
+
+#### Get webhooks by group
+```bash
+mainfluxlabs-cli webhooks get by-group <group_id> <user_token>
+```
+
+#### Update webhook
+```bash
+mainfluxlabs-cli webhooks update '{"id":"<webhook_id>","name":"new_name"}' <user_token>
+```
+
+#### Delete webhooks
+```bash
+mainfluxlabs-cli webhooks delete '{["<webhook_id>"]}' <group_id> <user_token>
 ```
 
 ### Keys management
 #### Issue a new Key
 ```bash
-mainfluxlabs-cli keys issue <duration> <user_auth_token>
+mainfluxlabs-cli keys issue <duration> <user_token>
 ```
+
 #### Remove API key from database
 ```bash
-mainfluxlabs-cli keys revoke <key_id> <user_auth_token>
+mainfluxlabs-cli keys revoke <key_id> <user_token>
 ```
+
 #### Retrieve API key with given id
 ```bash
-mainfluxlabs-cli keys retrieve <key_id> <user_auth_token>
+mainfluxlabs-cli keys retrieve <key_id> <user_token>
 ```

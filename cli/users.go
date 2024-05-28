@@ -12,7 +12,7 @@ import (
 
 var cmdUsers = []cobra.Command{
 	{
-		Use:   "create <username> <password> <user_auth_token>",
+		Use:   "create <username> <password> <user_token>",
 		Short: "Create user",
 		Long:  `Creates new user`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -38,7 +38,7 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <user_id> ] <user_auth_token>",
+		Use:   "get [all | <user_id> ] <user_token>",
 		Short: "Get users",
 		Long: `Get all users or get user by id. Users can be filtered by name or metadata
 		all - lists all users
@@ -125,7 +125,7 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_string> <user_auth_token>",
+		Use:   "update <JSON_string> <user_token>",
 		Short: "Update user",
 		Long:  `Update user metadata`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -149,7 +149,7 @@ var cmdUsers = []cobra.Command{
 		},
 	},
 	{
-		Use:   "password <old_password> <password> <user_auth_token>",
+		Use:   "password <old_password> <password> <user_token>",
 		Short: "Update password",
 		Long:  `Update user password`,
 		Run: func(cmd *cobra.Command, args []string) {

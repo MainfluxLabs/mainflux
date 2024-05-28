@@ -12,11 +12,11 @@ import (
 
 var cmdChannels = []cobra.Command{
 	{
-		Use:   "create <JSON_channel> <group_id> <user_auth_token>",
+		Use:   "create <JSON_channel> <group_id> <user_token>",
 		Short: "Create channel",
 		Long:  `Creates new channel and generates it's UUID`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -37,7 +37,7 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <channel_id>] <user_auth_token>",
+		Use:   "get [all | <channel_id>] <user_token>",
 		Short: "Get channel",
 		Long: `Get all channels or get channel by id. Channels can be filtered by name or metadata.
 		all - lists all channels
@@ -80,7 +80,7 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "updatev <JSON_string> <user_auth_token>",
+		Use:   "update <JSON_string> <user_token>",
 		Short: "Update channel",
 		Long:  `Updates channel record`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -104,7 +104,7 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "delete <channel_id> <user_auth_token>",
+		Use:   "delete <channel_id> <user_token>",
 		Short: "Delete channel",
 		Long:  `Delete channel by ID`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -122,7 +122,7 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "connections <channel_id> <user_auth_token>",
+		Use:   "connections <channel_id> <user_token>",
 		Short: "Connections list",
 		Long:  `List of Things connected to a Channel`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -145,9 +145,9 @@ var cmdChannels = []cobra.Command{
 // NewChannelsCmd returns channels command.
 func NewChannelsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "channels [create | get | update | delete | connections | not-connected]",
+		Use:   "channels [create | get | update | delete | connections]",
 		Short: "Channels management",
-		Long:  `Channels management: create, get, update or delete Channel and get list of Things connected or not connected to a Channel`,
+		Long:  `Channels management: create, get, update or delete Channel and get list of Things connected to a Channel`,
 	}
 
 	for i := range cmdChannels {

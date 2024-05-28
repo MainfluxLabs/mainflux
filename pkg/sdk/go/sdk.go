@@ -125,7 +125,45 @@ type Channel struct {
 	GroupID  string                 `json:"group_id,omitempty"`
 	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// Org represents mainflux org.
+type Org struct {
+	ID          string                 `json:"id,omitempty"`
+	OwnerID     string                 `json:"owner_id,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt   time.Time              `json:"created_at,omitempty"`
+	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
+}
+
+// OrgMember represents mainflux Org Member.
+type OrgMember struct {
+	MemberID  string    `json:"member_id,omitempty"`
+	OrgID     string    `json:"org_id,omitempty"`
+	Role      string    `json:"role,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	Email     string    `json:"email,omitempty"`
+}
+
+// GroupMember represents mainflux Group Member.
+type GroupMember struct {
+	ID    string `json:"id,omitempty"`
+	Role  string `json:"role,omitempty"`
+	Email string `json:"email,omitempty"`
+}
+
+// Webhook represents mainflux Webhook.
+type Webhook struct {
+	ID      string            `json:"id"`
+	GroupID string            `json:"group_id"`
+	Name    string            `json:"name"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
 }
 
 type Key struct {
@@ -202,11 +240,11 @@ type SDK interface {
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
 
-	// ListGroupThings lists things that are members of specified group.
-	ListGroupThings(groupID, token string, offset, limit uint64) (ThingsPage, error)
+	// ListThingsByGroup lists things that are members of specified group.
+	ListThingsByGroup(groupID, token string, offset, limit uint64) (ThingsPage, error)
 
-	// ViewThingGroup retrieves a group that the specified thing is a member of.
-	ViewThingGroup(thingID, token string, offset, limit uint64) (Group, error)
+	// ViewGroupByThing retrieves a group that the specified thing is a member of.
+	ViewGroupByThing(thingID, token string) (Group, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, token string) error
@@ -241,11 +279,71 @@ type SDK interface {
 	// DeleteChannels removes existing channel.
 	DeleteChannels(ids []string, token string) error
 
-	// ListGroupChannels lists channels that are members of specified group.
-	ListGroupChannels(groupID, token string, offset, limit uint64) (ChannelsPage, error)
+	// ListChannelsByGroup lists channels that are members of specified group.
+	ListChannelsByGroup(groupID, token string, offset, limit uint64) (ChannelsPage, error)
 
-	// ViewChannelGroup retrieves a group that the specified channel is a member of.
-	ViewChannelGroup(channelID, token string, offset, limit uint64) (Group, error)
+	// ViewGroupByChannel retrieves a group that the specified channel is a member of.
+	ViewGroupByChannel(channelID, token string) (Group, error)
+
+	// CreateRolesByGroup creates new roles by group.
+	CreateRolesByGroup(roles []GroupMember, groupID, token string) error
+
+	// UpdateRolesByGroup updates existing group roles.
+	UpdateRolesByGroup(roles []GroupMember, groupID, token string) error
+
+	// RemoveRolesByGroup removes existing group roles.
+	RemoveRolesByGroup(ids []string, groupID, token string) error
+
+	// ListRolesByGroup lists roles that are specified for a certain group.
+	ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupRolesPage, error)
+
+	// CreateOrg registers new org.
+	CreateOrg(org Org, token string) error
+
+	// Org returns org data by id.
+	Org(id, token string) (Org, error)
+
+	// UpdateOrg updates existing org.
+	UpdateOrg(o Org, token string) error
+
+	// DeleteOrg removes existing org.
+	DeleteOrg(id, token string) error
+
+	// Orgs returns page of orgs.
+	Orgs(meta PageMetadata, token string) (OrgsPage, error)
+
+	// ViewMember retrieves a member belonging to the specified org.
+	ViewMember(orgID, memberID, token string) (Member, error)
+
+	// AssignMembers assigns a members to the specified org.
+	AssignMembers(om []OrgMember, orgID, token string) error
+
+	// UnassignMembers unassigns a members from the specified org.
+	UnassignMembers(token, orgID string, memberIDs ...string) error
+
+	// UpdateMember updates existing member.
+	UpdateMember(member OrgMember, token string) error
+
+	// ListMembersByOrg lists members who belong to a specified org.
+	ListMembersByOrg(orgID, token string, offset, limit uint64) (MembersPage, error)
+
+	// ListOrgsByMember lists orgs to which the specified member belongs.
+	ListOrgsByMember(memberID, token string, offset, limit uint64) (OrgsPage, error)
+
+	// CreateWebhooks creates new webhooks.
+	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
+
+	// ListWebhooksByGroup lists webhooks who belong to a specified group.
+	ListWebhooksByGroup(groupID, token string) (Webhooks, error)
+
+	// Webhook returns webhook data by id.
+	Webhook(webhookID, token string) (Webhook, error)
+
+	// UpdateWebhook updates existing webhook.
+	UpdateWebhook(wh Webhook, token string) error
+
+	// DeleteWebhooks removes existing webhooks.
+	DeleteWebhooks(ids []string, groupID, token string) error
 
 	// SendMessage send message to specified channel.
 	SendMessage(chanID, msg, token string) error
@@ -285,6 +383,7 @@ type mfSDK struct {
 	httpAdapterURL string
 	readerURL      string
 	thingsURL      string
+	webhooksURL    string
 	usersURL       string
 
 	msgContentType ContentType
@@ -299,6 +398,7 @@ type Config struct {
 	HTTPAdapterURL string
 	ReaderURL      string
 	ThingsURL      string
+	WebhooksURL    string
 	UsersURL       string
 
 	MsgContentType  ContentType
@@ -314,6 +414,7 @@ func NewSDK(conf Config) SDK {
 		httpAdapterURL: conf.HTTPAdapterURL,
 		readerURL:      conf.ReaderURL,
 		thingsURL:      conf.ThingsURL,
+		webhooksURL:    conf.WebhooksURL,
 		usersURL:       conf.UsersURL,
 
 		msgContentType: conf.MsgContentType,

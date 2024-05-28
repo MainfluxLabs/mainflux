@@ -19,6 +19,7 @@ func main() {
 	sdkConf := sdk.Config{
 		AuthURL:         defURL,
 		ThingsURL:       defURL,
+		WebhooksURL:     defURL,
 		UsersURL:        defURL,
 		ReaderURL:       defURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
@@ -46,6 +47,9 @@ func main() {
 	thingsCmd := cli.NewThingsCmd()
 	groupsCmd := cli.NewGroupsCmd()
 	channelsCmd := cli.NewChannelsCmd()
+	webhooksCmd := cli.NewWebhooksCmd()
+	orgsCmd := cli.NewOrgsCmd()
+	groupRolesCmd := cli.NewGroupRolesCmd()
 	messagesCmd := cli.NewMessagesCmd()
 	provisionCmd := cli.NewProvisionCmd()
 	certsCmd := cli.NewCertsCmd()
@@ -57,6 +61,9 @@ func main() {
 	rootCmd.AddCommand(groupsCmd)
 	rootCmd.AddCommand(thingsCmd)
 	rootCmd.AddCommand(channelsCmd)
+	rootCmd.AddCommand(webhooksCmd)
+	rootCmd.AddCommand(orgsCmd)
+	rootCmd.AddCommand(groupRolesCmd)
 	rootCmd.AddCommand(messagesCmd)
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(certsCmd)
@@ -85,6 +92,14 @@ func main() {
 		"t",
 		sdkConf.ThingsURL,
 		"Things service URL",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&sdkConf.WebhooksURL,
+		"webhooks-url",
+		"w",
+		sdkConf.WebhooksURL,
+		"Webhooks service URL",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(

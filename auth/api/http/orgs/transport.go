@@ -85,7 +85,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Delete("/orgs/:id/members", kithttp.NewServer(
+	mux.Patch("/orgs/:id/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
 		decodeUnassignMembers,
 		encodeResponse,

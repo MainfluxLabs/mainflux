@@ -932,7 +932,7 @@ func TestUnassignMembers(t *testing.T) {
 	for _, tc := range cases {
 		req := testRequest{
 			client: client,
-			method: http.MethodDelete,
+			method: http.MethodPatch,
 			url:    fmt.Sprintf("%s/orgs/%s/members", ts.URL, tc.id),
 			token:  tc.token,
 			body:   strings.NewReader(tc.req),

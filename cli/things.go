@@ -12,7 +12,7 @@ import (
 
 var cmdThings = []cobra.Command{
 	{
-		Use:   "create <JSON_thing> <group_id> <user_auth_token>",
+		Use:   "create <JSON_thing> <group_id> <user_token>",
 		Short: "Create thing",
 		Long:  `Create new thing, generate his UUID and store it`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -37,7 +37,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <thing_id>] <user_auth_token>",
+		Use:   "get [all | <thing_id>] <user_token>",
 		Short: "Get things",
 		Long: `Get all things or get thing by id. Things can be filtered by name or metadata
 		all - lists all things
@@ -77,7 +77,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "delete <thing_id> <user_auth_token>",
+		Use:   "delete <thing_id> <user_token>",
 		Short: "Delete thing",
 		Long:  `Removes thing from database`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -114,7 +114,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_string> <user_auth_token>",
+		Use:   "update <JSON_string> <user_token>",
 		Short: "Update thing",
 		Long:  `Update thing record`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -138,7 +138,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "connect <thing_id> <channel_id> <user_auth_token>",
+		Use:   "connect <thing_id> <channel_id> <user_token>",
 		Short: "Connect thing",
 		Long:  `Connect thing to the channel`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -160,7 +160,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "disconnect <thing_id> <channel_id> <user_auth_token>",
+		Use:   "disconnect <thing_id> <channel_id> <user_token>",
 		Short: "Disconnect thing",
 		Long:  `Disconnect thing from the channel`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -183,9 +183,9 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "connections <thing_id> <user_auth_token>",
-		Short: "Connected list",
-		Long:  `Retrieve Channel connected to Thing`,
+		Use:   "connections <thing_id> <user_token>",
+		Short: "Channel By Thing",
+		Long:  `View Channel by Thing`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -206,7 +206,7 @@ var cmdThings = []cobra.Command{
 // NewThingsCmd returns things command.
 func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections | not-connected]",
+		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections]",
 		Short: "Things management",
 		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Channel and get the list of Things connected to a Channel`,
 	}
