@@ -185,8 +185,8 @@ var cmdOrgs = []cobra.Command{
 	},
 	{
 		Use:   "update-member <JSON_member> <user_token>",
-		Short: "Update thing",
-		Long:  `Update thing record`,
+		Short: "Update member",
+		Long:  `Update member record`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)

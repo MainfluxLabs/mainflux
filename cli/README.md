@@ -264,7 +264,7 @@ mainfluxlabs-cli orgs unassign '{"member_ids":["<member_id>"]}' <org_id> <user_t
 
 #### Update member
 ```bash
-mainfluxlabs-cli orgs update-member '{"id":"<member_id>","email":"<email>","role":"<new_role>"}' <user_token>
+mainfluxlabs-cli orgs update-member '{"member_id":"<member_id>","org_id":"<org_id>","role":"<new_role>"}' <user_token>
 ```
 
 #### List users by org
