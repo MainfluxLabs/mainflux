@@ -80,11 +80,11 @@ var cmdChannels = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_string> <user_token>",
+		Use:   "update <JSON_string> <channel_id> <user_token>",
 		Short: "Update channel",
 		Long:  `Updates channel record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -95,7 +95,7 @@ var cmdChannels = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateChannel(channel, args[1]); err != nil {
+			if err := sdk.UpdateChannel(channel, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

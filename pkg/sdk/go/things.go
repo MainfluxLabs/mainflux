@@ -172,13 +172,13 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) UpdateThing(t Thing, token string) error {
+func (sdk mfSDK) UpdateThing(t Thing, thingID, token string) error {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, t.ID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, thingID)
 
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {

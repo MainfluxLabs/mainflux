@@ -253,13 +253,13 @@ func (sdk mfSDK) Group(id, token string) (Group, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) UpdateGroup(t Group, token string) error {
-	data, err := json.Marshal(t)
+func (sdk mfSDK) UpdateGroup(g Group, groupID, token string) error {
+	data, err := json.Marshal(g)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, groupsEndpoint, t.ID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, groupsEndpoint, groupID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err

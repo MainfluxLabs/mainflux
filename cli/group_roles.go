@@ -97,7 +97,7 @@ var cmdGroupRoles = []cobra.Command{
 // NewGroupRolesCmd returns users command.
 func NewGroupRolesCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "group_roles [create | get | delete]",
+		Use:   "group_roles [create | get | update | delete]",
 		Short: "Group roles management",
 		Long:  `Group roles management: create, update, remove and list group roles"`,
 	}

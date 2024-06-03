@@ -41,17 +41,17 @@ mainfluxlabs-cli users password <old_password> <password> <user_token>
 ### System Provisioning
 #### Create Group
 ```bash
-mainfluxlabs-cli groups create '{"name":"myGroup"}' <org_id> <user_token>
+mainfluxlabs-cli groups create '{"name":"<group_name>"}' <org_id> <user_token>
 ```
 
 #### Create Thing
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing"}' <group_id> <user_token>
+mainfluxlabs-cli things create '{"name":"<thing_name>"}' <group_id> <user_token>
 ```
 
 #### Create Thing with metadata
 ```bash
-mainfluxlabs-cli things create '{"name":"myThing", "metadata": {\"key1\":\"value1\"}}' <group_id> <user_token>
+mainfluxlabs-cli things create '{"name":"<thing_name>", "metadata": {\"key1\":\"value1\"}}' <group_id> <user_token>
 ```
 
 #### Bulk Provision Things
@@ -64,7 +64,7 @@ mainfluxlabs-cli provision things <file> <user_token>
 
 #### Update Thing
 ```bash
-mainfluxlabs-cli things update '{"id":"<thing_id>", "name":"myNewName"}' <user_token>
+mainfluxlabs-cli things update '{"name":"<new_name>"}' <thing_id> <user_token>
 ```
 
 #### Remove Thing
@@ -84,7 +84,7 @@ mainfluxlabs-cli things get <thing_id> <user_token>
 
 #### Create Channel
 ```bash
-mainfluxlabs-cli channels create '{"name":"myChannel"}' <group_id> <user_token>
+mainfluxlabs-cli channels create '{"name":"<channel_name>"}' <group_id> <user_token>
 ```
 
 #### Bulk Provision Channels
@@ -97,7 +97,7 @@ mainfluxlabs-cli provision channels <file> <user_token>
 
 #### Update Channel
 ```bash
-mainfluxlabs-cli channels update '{"id":"<channel_id>","name":"myNewName"}' <user_token>
+mainfluxlabs-cli channels update '{"name":"<new_name>"}' <channel_id> <user_token>
 ```
 
 #### Remove Channel
@@ -203,7 +203,7 @@ mainfluxlabs-cli groups get all <user_token>
 
 #### Update group
 ```bash
-mainfluxlabs-cli groups update '{"id":"<group_id>","name":"newName"}' <user_token>
+mainfluxlabs-cli groups update '{"name":"<new_name>"}' <group_id> <user_token>
 ```
 
 #### List things by group
@@ -223,7 +223,7 @@ mainfluxlabs-cli groups channels <group_id> <user_token>
 
 #### View group by channel
 ```bash
-mainfluxlabs-cli groups thing <channel_id> <user_token>
+mainfluxlabs-cli groups channel <channel_id> <user_token>
 ```
 
 ### Orgs
@@ -244,7 +244,7 @@ mainfluxlabs-cli orgs get all <user_token>
 
 #### Update org
 ```bash
-mainfluxlabs-cli orgs update-org '{"id":"<org_id>","name":"new_name"}' <user_token>
+mainfluxlabs-cli orgs update '{"name":"<new_name>"}' <org_id> <user_token>
 ```
 
 #### Delete org
@@ -254,17 +254,17 @@ mainfluxlabs-cli orgs delete <org_id> <user_token>
 
 #### Assign user to an org
 ```bash
-mainfluxlabs-cli orgs assign '{"members": ["member_id":"<member_id>","email":"<email>","role":"<role>"]}' <org_id> <user_token>
+mainfluxlabs-cli orgs assign '{[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]}' <org_id> <user_token>
 ```
 
 #### Unassign user from org
 ```bash
-mainfluxlabs-cli orgs unassign '{"member_ids":["<member_id>"]}' <org_id> <user_token>
+mainfluxlabs-cli orgs unassign '{["<member_id>"]}' <org_id> <user_token>
 ```
 
-#### Update member
+#### Update members
 ```bash
-mainfluxlabs-cli orgs update-member '{"member_id":"<member_id>","org_id":"<org_id>","role":"<new_role>"}' <user_token>
+mainfluxlabs-cli orgs update-members '{[{"member_id":"<member_id>","role":"<new_role>"}]}' <org_id> <user_token>
 ```
 
 #### List users by org
@@ -280,7 +280,7 @@ mainfluxlabs-cli orgs memberships <member_id> <user_token>
 ### Webhooks
 #### Create new webhooks
 ```bash
-mainfluxlabs-cli webhooks create '{[{"name":"<webhook_name>","url":"<url>","headers":{"key":"value",...}}]}' <group_id> <user_token>
+mainfluxlabs-cli webhooks create '{[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]}' <group_id> <user_token>
 ```
 
 #### Get webhook by id
@@ -290,12 +290,12 @@ mainfluxlabs-cli webhooks get by-id <id> <user_token>
 
 #### Get webhooks by group
 ```bash
-mainfluxlabs-cli webhooks get by-group <group_id> <user_token>
+mainfluxlabs-cli webhooks get group <group_id> <user_token>
 ```
 
 #### Update webhook
 ```bash
-mainfluxlabs-cli webhooks update '{"id":"<webhook_id>","name":"new_name"}' <user_token>
+mainfluxlabs-cli webhooks update '{"name":"<new_name>","url":"<http://webhook-url.com>"}' <webhook_id> <user_token>
 ```
 
 #### Delete webhooks

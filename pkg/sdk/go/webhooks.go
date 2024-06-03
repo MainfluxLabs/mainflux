@@ -107,13 +107,13 @@ func (sdk mfSDK) Webhook(webhookID, token string) (Webhook, error) {
 	return w, nil
 }
 
-func (sdk mfSDK) UpdateWebhook(wh Webhook, token string) error {
+func (sdk mfSDK) UpdateWebhook(wh Webhook, webhookID, token string) error {
 	data, err := json.Marshal(wh)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.webhooksURL, webhooksEndpoint, wh.ID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.webhooksURL, webhooksEndpoint, webhookID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (sdk mfSDK) DeleteWebhooks(ids []string, groupID, token string) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/groups/%s/%s", sdk.webhooksURL, groupID, webhooksEndpoint)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.webhooksURL, groupsEndpoint, groupID, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err

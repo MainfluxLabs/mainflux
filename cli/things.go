@@ -16,7 +16,7 @@ var cmdThings = []cobra.Command{
 		Short: "Create thing",
 		Long:  `Create new thing, generate his UUID and store it`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -114,11 +114,11 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_string> <user_token>",
+		Use:   "update <JSON_string> <thing_id> <user_token>",
 		Short: "Update thing",
 		Long:  `Update thing record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -129,7 +129,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateThing(thing, args[1]); err != nil {
+			if err := sdk.UpdateThing(thing, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

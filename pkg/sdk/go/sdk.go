@@ -214,7 +214,7 @@ type SDK interface {
 	Thing(id, token string) (Thing, error)
 
 	// UpdateThing updates existing thing.
-	UpdateThing(thing Thing, token string) error
+	UpdateThing(thing Thing, thingID, token string) error
 
 	// DeleteThing removes existing thing.
 	DeleteThing(id, token string) error
@@ -247,7 +247,7 @@ type SDK interface {
 	ViewGroupByThing(thingID, token string) (Group, error)
 
 	// UpdateGroup updates existing group.
-	UpdateGroup(group Group, token string) error
+	UpdateGroup(group Group, groupID, token string) error
 
 	// Connect connects a list of things to a channel.
 	Connect(conns ConnectionIDs, token string) error
@@ -271,7 +271,7 @@ type SDK interface {
 	Channel(id, token string) (Channel, error)
 
 	// UpdateChannel updates existing channel.
-	UpdateChannel(channel Channel, token string) error
+	UpdateChannel(channel Channel, channelID, token string) error
 
 	// DeleteChannel removes existing channel.
 	DeleteChannel(id, token string) error
@@ -304,7 +304,7 @@ type SDK interface {
 	Org(id, token string) (Org, error)
 
 	// UpdateOrg updates existing org.
-	UpdateOrg(o Org, token string) error
+	UpdateOrg(o Org, orgID, token string) error
 
 	// DeleteOrg removes existing org.
 	DeleteOrg(id, token string) error
@@ -321,8 +321,8 @@ type SDK interface {
 	// UnassignMembers unassigns a members from the specified org.
 	UnassignMembers(token, orgID string, memberIDs ...string) error
 
-	// UpdateMember updates existing member.
-	UpdateMember(member OrgMember, token string) error
+	// UpdateMembers updates existing member.
+	UpdateMembers(members []OrgMember, orgID, token string) error
 
 	// ListMembersByOrg lists members who belong to a specified org.
 	ListMembersByOrg(orgID, token string, offset, limit uint64) (MembersPage, error)
@@ -340,7 +340,7 @@ type SDK interface {
 	Webhook(webhookID, token string) (Webhook, error)
 
 	// UpdateWebhook updates existing webhook.
-	UpdateWebhook(wh Webhook, token string) error
+	UpdateWebhook(wh Webhook, webhookID, token string) error
 
 	// DeleteWebhooks removes existing webhooks.
 	DeleteWebhooks(ids []string, groupID, token string) error

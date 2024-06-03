@@ -73,13 +73,13 @@ func (sdk mfSDK) Org(id, token string) (Org, error) {
 	return o, nil
 }
 
-func (sdk mfSDK) UpdateOrg(o Org, token string) error {
+func (sdk mfSDK) UpdateOrg(o Org, orgID, token string) error {
 	data, err := json.Marshal(o)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.authURL, orgsEndpoint, o.ID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.authURL, orgsEndpoint, orgID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err
@@ -255,13 +255,13 @@ func (sdk mfSDK) UnassignMembers(token, orgID string, memberIDs ...string) error
 	return nil
 }
 
-func (sdk mfSDK) UpdateMember(o OrgMember, token string) error {
+func (sdk mfSDK) UpdateMembers(o []OrgMember, orgID, token string) error {
 	data, err := json.Marshal(o)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, o.OrgID, membersEndpoint)
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membersEndpoint)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err

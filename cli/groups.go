@@ -23,7 +23,7 @@ var cmdGroups = []cobra.Command{
 		Name - is unique group name
 		Metadata - JSON structured string`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -97,11 +97,11 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_group> <user_token>",
+		Use:   "update <JSON_group> <group_id> <user_token>",
 		Short: "Update group",
 		Long:  `Update group record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -110,7 +110,7 @@ var cmdGroups = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.UpdateGroup(group, args[1]); err != nil {
+			if err := sdk.UpdateGroup(group, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

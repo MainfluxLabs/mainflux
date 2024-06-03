@@ -579,7 +579,7 @@ func TestUpdateThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.UpdateThing(tc.thing, tc.token)
+		err := mainfluxSDK.UpdateThing(tc.thing, tc.thing.ID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

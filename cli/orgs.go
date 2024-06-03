@@ -95,11 +95,11 @@ var cmdOrgs = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update-org <JSON_org> <user_token>",
+		Use:   "update <JSON_org> <org_id> <user_token>",
 		Short: "Update org",
 		Long:  `Update org record`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -110,7 +110,7 @@ var cmdOrgs = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateOrg(org, args[1]); err != nil {
+			if err := sdk.UpdateOrg(org, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -184,22 +184,22 @@ var cmdOrgs = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update-member <JSON_member> <user_token>",
-		Short: "Update member",
-		Long:  `Update member record`,
+		Use:   "update-members <JSON_members> <org_id> <user_token>",
+		Short: "Update members",
+		Long:  `Update members by org`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var member mfxsdk.OrgMember
-			if err := json.Unmarshal([]byte(args[0]), &member); err != nil {
+			var members []mfxsdk.OrgMember
+			if err := json.Unmarshal([]byte(args[0]), &members); err != nil {
 				logError(err)
 				return
 			}
 
-			if err := sdk.UpdateMember(member, args[1]); err != nil {
+			if err := sdk.UpdateMembers(members, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -246,7 +246,7 @@ var cmdOrgs = []cobra.Command{
 // NewOrgsCmd returns users command.
 func NewOrgsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "orgs [create | get | delete | update-org | member | membership | assign | unassign | update-member | members | memberships]",
+		Use:   "orgs [create | get | delete | update | member | membership | assign | unassign | update-members | members | memberships]",
 		Short: "Orgs management",
 		Long:  `Orgs management: create, get, update or delete Org, get list of members by org and list of orgs by member, assigns members to org"`,
 	}
