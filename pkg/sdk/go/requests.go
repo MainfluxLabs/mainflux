@@ -52,3 +52,8 @@ type assignMembersReq struct {
 type unassignMemberReq struct {
 	MemberIDs []string `json:"member_ids"`
 }
+
+// updateMemberReq contains members to be updated
+type updateMemberReq struct {
+	OrgMembers []OrgMember `json:"org_members"`
+}

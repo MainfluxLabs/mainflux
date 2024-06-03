@@ -255,13 +255,17 @@ func (sdk mfSDK) UnassignMembers(token, orgID string, memberIDs ...string) error
 	return nil
 }
 
-func (sdk mfSDK) UpdateMembers(o []OrgMember, orgID, token string) error {
-	data, err := json.Marshal(o)
+func (sdk mfSDK) UpdateMembers(oms []OrgMember, orgID, token string) error {
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membersEndpoint)
+	updateMembersReq := updateMemberReq{
+		OrgMembers: oms,
+	}
+
+	data, err := json.Marshal(updateMembersReq)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membersEndpoint)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err

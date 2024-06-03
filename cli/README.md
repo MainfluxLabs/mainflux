@@ -254,17 +254,17 @@ mainfluxlabs-cli orgs delete <org_id> <user_token>
 
 #### Assign user to an org
 ```bash
-mainfluxlabs-cli orgs assign '{[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]}' <org_id> <user_token>
+mainfluxlabs-cli orgs assign '[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]' <org_id> <user_token>
 ```
 
 #### Unassign user from org
 ```bash
-mainfluxlabs-cli orgs unassign '{["<member_id>"]}' <org_id> <user_token>
+mainfluxlabs-cli orgs unassign '["<member_id>"]' <org_id> <user_token>
 ```
 
 #### Update members
 ```bash
-mainfluxlabs-cli orgs update-members '{[{"member_id":"<member_id>","role":"<new_role>"}]}' <org_id> <user_token>
+mainfluxlabs-cli orgs update-members '[{"member_id":"<member_id>","role":"<new_role>"}]' <org_id> <user_token>
 ```
 
 #### List users by org
@@ -280,7 +280,7 @@ mainfluxlabs-cli orgs memberships <member_id> <user_token>
 ### Webhooks
 #### Create new webhooks
 ```bash
-mainfluxlabs-cli webhooks create '{[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]}' <group_id> <user_token>
+mainfluxlabs-cli webhooks create '[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]' <group_id> <user_token>
 ```
 
 #### Get webhook by id
@@ -300,7 +300,7 @@ mainfluxlabs-cli webhooks update '{"name":"<new_name>","url":"<http://webhook-ur
 
 #### Delete webhooks
 ```bash
-mainfluxlabs-cli webhooks delete '{["<webhook_id>"]}' <group_id> <user_token>
+mainfluxlabs-cli webhooks delete '["<webhook_id>"]' <group_id> <user_token>
 ```
 
 ### Keys management
