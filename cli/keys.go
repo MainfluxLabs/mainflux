@@ -11,7 +11,7 @@ import (
 
 var cmdAPIKeys = []cobra.Command{
 	{
-		Use:   "issue <duration> <user_auth_token>",
+		Use:   "issue <duration> <user_token>",
 		Short: "Issue key",
 		Long:  `Issues a new Key`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -36,7 +36,7 @@ var cmdAPIKeys = []cobra.Command{
 		},
 	},
 	{
-		Use:   "revoke <key_id> <user_auth_token>",
+		Use:   "revoke <key_id> <user_token>",
 		Short: "Revoke key",
 		Long:  `Removes API key from database`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -54,7 +54,7 @@ var cmdAPIKeys = []cobra.Command{
 		},
 	},
 	{
-		Use:   "retrieve <key_id> <user_auth_token>",
+		Use:   "retrieve <key_id> <user_token>",
 		Short: "Retrieve key",
 		Long:  `Retrieves API key with given id`,
 		Run: func(cmd *cobra.Command, args []string) {

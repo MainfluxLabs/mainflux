@@ -26,6 +26,10 @@ type createGroupsRes struct {
 	Groups []Group `json:"groups"`
 }
 
+type createWebhooksRes struct {
+	Webhooks []Webhook `json:"webhooks"`
+}
+
 type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`
@@ -50,14 +54,32 @@ type MessagesPage struct {
 	pageRes
 }
 
+// GroupsPage contains list of groups in a page with proper metadata.
 type GroupsPage struct {
 	Groups []Group `json:"groups"`
 	pageRes
 }
 
+// OrgsPage contains list of orgs in a page with proper metadata.
+type OrgsPage struct {
+	Orgs []Org `json:"orgs"`
+	pageRes
+}
+
+// GroupRolesPage contains a list of roles for a certain group with proper metadata.
+type GroupRolesPage struct {
+	GroupRoles []GroupMember `json:"group_roles"`
+	pageRes
+}
+
+// UsersPage contains list of users in a page with proper metadata.
 type UsersPage struct {
 	Users []User `json:"users"`
 	pageRes
+}
+
+type Webhooks struct {
+	Webhooks []Webhook `json:"webhooks"`
 }
 
 type KeyRes struct {
@@ -97,4 +119,16 @@ func (res retrieveKeyRes) Headers() map[string]string {
 
 func (res retrieveKeyRes) Empty() bool {
 	return false
+}
+
+type Member struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
+// MembersPage contains list of members in a page with proper metadata.
+type MembersPage struct {
+	Members []Member `json:"members"`
+	pageRes
 }

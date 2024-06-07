@@ -463,7 +463,7 @@ func TestUpdateChannel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.UpdateChannel(tc.channel, tc.token)
+		err := mainfluxSDK.UpdateChannel(tc.channel, tc.channel.ID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

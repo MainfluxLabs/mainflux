@@ -156,13 +156,13 @@ func (sdk mfSDK) Channel(id, token string) (Channel, error) {
 	return c, nil
 }
 
-func (sdk mfSDK) UpdateChannel(c Channel, token string) error {
+func (sdk mfSDK) UpdateChannel(c Channel, channelID, token string) error {
 	data, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, c.ID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, channelID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err

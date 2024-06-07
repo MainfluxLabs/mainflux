@@ -13,7 +13,7 @@ func NewCertsCmd() *cobra.Command {
 	var ttl uint32
 
 	issueCmd := cobra.Command{
-		Use:   "issue <thing_id> <user_auth_token> [--keysize=2048] [--keytype=rsa] [--ttl=8760]",
+		Use:   "issue <thing_id> <user_token> [--keysize=2048] [--keytype=rsa] [--ttl=8760]",
 		Short: "Issue certificate",
 		Long:  `Issues new certificate for a thing`,
 		Run: func(cmd *cobra.Command, args []string) {
