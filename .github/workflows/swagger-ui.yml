@@ -14,7 +14,7 @@ jobs:
 
       - name: Swagger UI action
         id: swagger-ui-action
-        uses: blokovi/swagger-ui-action@main
+        uses: Legion2/swagger-ui-action@v1
         with:
           dir: "./api/openapi"
           pattern: "*.yml"
