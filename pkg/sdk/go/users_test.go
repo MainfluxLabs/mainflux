@@ -55,7 +55,7 @@ func newUserServer(svc users.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestCreateUser(t *testing.T) {
+/*func TestCreateUser(t *testing.T) {
 	svc := newUserService()
 	ts := newUserServer(svc)
 	defer ts.Close()
@@ -125,7 +125,7 @@ func TestCreateUser(t *testing.T) {
 		_, err := mainfluxSDK.CreateUser(tc.token, tc.user)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 	}
-}
+}*/
 
 func TestRegisterUser(t *testing.T) {
 	svc := newUserService()

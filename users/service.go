@@ -237,10 +237,6 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 
-	if err := user.Validate(); err != nil {
-		return "", err
-	}
-
 	if !svc.passRegex.MatchString(user.Password) {
 		return "", ErrPasswordFormat
 	}
