@@ -233,11 +233,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 }
 
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
-		return "", err
-	}
-
-	if err := user.Validate(); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return "", err
 	}
 

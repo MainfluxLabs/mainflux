@@ -48,6 +48,11 @@ func (u User) Validate() error {
 	if !isEmail(u.Email) {
 		return errors.ErrMalformedEntity
 	}
+
+	if u.Password == "" {
+		return errors.ErrMalformedEntity
+	}
+
 	return nil
 }
 
