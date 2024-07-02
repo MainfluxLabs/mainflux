@@ -393,6 +393,15 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 	}
 }
 
+func getThingConn(ctx context.Context, key string) (*mainflux.ConnByKeyRes, error) {
+	conn, err := thingc.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key})
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
 func isAdmin(ctx context.Context, token string) error {
 	req := &mainflux.AuthorizeReq{
 		Token:   token,

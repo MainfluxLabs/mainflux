@@ -62,14 +62,33 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		// Check if user is authorized to read all messages
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
-		}
+		var page readers.MessagesPage
+		switch {
+		case req.key != "":
+			conn, err := getThingConn(ctx, req.key)
+			if err != nil {
+				return nil, err
+			}
+			req.pageMeta.Publisher = conn.ThingID
 
-		page, err := svc.ListAllMessages(req.pageMeta)
-		if err != nil {
-			return nil, err
+			p, err := svc.ListChannelMessages(conn.ChannelID, req.pageMeta)
+			if err != nil {
+				return nil, err
+			}
+
+			page = p
+		default:
+			// Check if user is authorized to read all messages
+			if err := isAdmin(ctx, req.token); err != nil {
+				return nil, err
+			}
+
+			p, err := svc.ListAllMessages(req.pageMeta)
+			if err != nil {
+				return nil, err
+			}
+
+			page = p
 		}
 
 		return listMessagesRes{
