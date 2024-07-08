@@ -20,8 +20,10 @@ message Profile {
     bool        write       = 2;
     bool        notify      = 3;
     string      webhookID   = 4;
-    Transformer transformer = 5;
-    Notifier    notifier    = 6;
+    string      smtpID      = 5;
+    string      smppID      = 6;
+    Transformer transformer = 7;
+    Notifier    notifier    = 8;
 }
 
 message Transformer {
