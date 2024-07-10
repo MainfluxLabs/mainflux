@@ -35,9 +35,10 @@ type Transformer struct {
 }
 
 type Notifier struct {
-	Protocol  string   `json:"protocol"`
-	Contacts  []string `json:"contacts"`
-	Subtopics []string `json:"subtopics"`
+	ID        string
+	GroupID   string
+	Contacts  []string
+	Subtopics []string
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

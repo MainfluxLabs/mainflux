@@ -29,7 +29,6 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		notifier := &mainflux.Notifier{
-			Protocol:  p.Notifier.Protocol,
 			Contacts:  p.Notifier.Contacts,
 			Subtopics: p.Notifier.Subtopics,
 		}
