@@ -25,7 +25,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -92,7 +92,7 @@ const (
 	envAuthCACerts       = "MF_SMPP_NOTIFIER_AUTH_CA_CERTS"
 	envThingsTLS         = "MF_SMPP_NOTIFIER_THINGS_TLS"
 	envThingsCACerts     = "MF_SMPP_NOTIFIER_THINGS_CA_CERTS"
-	envHTTPPort          = "MF_SMPP_NOTIFIER_HTTP_PORT"
+	envHTTPPort          = "MF_SMPP_NOTIFIER_PORT"
 	envServerCert        = "MF_SMPP_NOTIFIER_SERVER_CERT"
 	envServerKey         = "MF_SMPP_NOTIFIER_SERVER_KEY"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
@@ -365,7 +365,7 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 }
 
 func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
-	idp := ulid.New()
+	idp := uuid.New()
 	database := postgres.NewDatabase(db)
 
 	notifier := mfsmpp.New(c.smppConf)

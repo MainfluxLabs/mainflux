@@ -26,7 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -90,7 +90,7 @@ const (
 	envDBSSLRootCert     = "MF_SMTP_NOTIFIER_DB_SSL_ROOT_CERT"
 	envThingsTLS         = "MF_SMTP_NOTIFIER_THINGS_TLS"
 	envThingsCACerts     = "MF_SMTP_NOTIFIER_THINGS_CA_CERTS"
-	envHTTPPort          = "MF_SMTP_NOTIFIER_HTTP_PORT"
+	envHTTPPort          = "MF_SMTP_NOTIFIER_PORT"
 	envServerCert        = "MF_SMTP_NOTIFIER_SERVER_CERT"
 	envServerKey         = "MF_SMTP_NOTIFIER_SERVER_KEY"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
@@ -347,7 +347,7 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 }
 
 func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
-	idp := ulid.New()
+	idp := uuid.New()
 	database := postgres.NewDatabase(db)
 
 	agent, err := email.New(&c.emailConf)
