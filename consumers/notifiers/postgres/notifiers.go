@@ -13,20 +13,20 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ notifiers.NotifierRepository = (*smppRepository)(nil)
+var _ notifiers.NotifierRepository = (*notifierRepository)(nil)
 
-type smppRepository struct {
+type notifierRepository struct {
 	db Database
 }
 
-// NewSmppNotifierRepository instantiates a PostgreSQL implementation of notifier repository.
-func NewSmppNotifierRepository(db Database) notifiers.NotifierRepository {
-	return &smppRepository{
+// NewNotifierRepository instantiates a PostgreSQL implementation of notifier repository.
+func NewNotifierRepository(db Database) notifiers.NotifierRepository {
+	return &notifierRepository{
 		db: db,
 	}
 }
 
-func (nr smppRepository) Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error) {
+func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error) {
 	tx, err := nr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
@@ -64,7 +64,7 @@ func (nr smppRepository) Save(ctx context.Context, nfs ...things.Notifier) ([]th
 	return nfs, nil
 }
 
-func (nr smppRepository) RetrieveByGroupID(ctx context.Context, groupID string) ([]things.Notifier, error) {
+func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID string) ([]things.Notifier, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -96,7 +96,7 @@ func (nr smppRepository) RetrieveByGroupID(ctx context.Context, groupID string) 
 	return items, nil
 }
 
-func (nr smppRepository) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
+func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
 	q := `SELECT group_id, contacts, subtopics FROM notifiers WHERE id = $1;`
 
 	dbNf := dbNotifier{ID: id}
@@ -111,7 +111,7 @@ func (nr smppRepository) RetrieveByID(ctx context.Context, id string) (things.No
 	return toNotifier(dbNf)
 }
 
-func (nr smppRepository) Update(ctx context.Context, n things.Notifier) error {
+func (nr notifierRepository) Update(ctx context.Context, n things.Notifier) error {
 	q := `UPDATE notifiers SET contacts = :contacts, subtopics = :subtopics WHERE id = :id;`
 
 	dbNf, err := toDBNotifier(n)
@@ -146,7 +146,7 @@ func (nr smppRepository) Update(ctx context.Context, n things.Notifier) error {
 	return nil
 }
 
-func (nr smppRepository) Remove(ctx context.Context, groupID string, ids ...string) error {
+func (nr notifierRepository) Remove(ctx context.Context, groupID string, ids ...string) error {
 	for _, id := range ids {
 		dbNf := dbNotifier{
 			ID:      id,
@@ -171,7 +171,7 @@ type dbNotifier struct {
 
 func toDBNotifier(nf things.Notifier) (dbNotifier, error) {
 	contacts := strings.Join(nf.Contacts, ",")
-	subtopics := strings.Join(nf.Contacts, ",")
+	subtopics := strings.Join(nf.Subtopics, ",")
 
 	return dbNotifier{
 		ID:        nf.ID,

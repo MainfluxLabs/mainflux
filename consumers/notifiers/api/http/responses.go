@@ -10,7 +10,6 @@ import (
 type notifierResponse struct {
 	ID        string   `json:"id"`
 	GroupID   string   `json:"group_id"`
-	Protocol  string   `json:"protocol"`
 	Contacts  []string `json:"contacts"`
 	Subtopics []string `json:"subtopics"`
 	updated   bool

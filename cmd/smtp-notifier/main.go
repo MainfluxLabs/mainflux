@@ -20,8 +20,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api/http"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/smtp"
-	"github.com/MainfluxLabs/mainflux/consumers/notifiers/smtp/postgres"
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -357,7 +357,7 @@ func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger, d
 	}
 
 	notifier := smtp.New(agent)
-	notifierRepo := postgres.NewSmtpNotifierRepository(database)
+	notifierRepo := postgres.NewNotifierRepository(database)
 	svc := notifiers.New(ac, idp, notifier, c.from, notifierRepo, tc)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

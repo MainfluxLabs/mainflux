@@ -43,7 +43,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "smpp-notifiers_1",
+				Id: "notifiers_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS notifiers (
 						id          UUID UNIQUE NOT NULL,

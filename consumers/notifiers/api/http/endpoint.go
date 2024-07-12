@@ -77,7 +77,9 @@ func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 		}
 
 		notifier := things.Notifier{
-			ID: req.id,
+			ID:        req.id,
+			Contacts:  req.Contacts,
+			Subtopics: req.Subtopics,
 		}
 
 		if err := svc.UpdateNotifier(ctx, req.token, notifier); err != nil {
