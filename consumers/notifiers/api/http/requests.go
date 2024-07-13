@@ -92,8 +92,18 @@ func (req updateNotifierReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
+	if req.Contacts == nil && req.Subtopics == nil {
+		return errors.ErrMalformedEntity
+	}
+
 	for _, c := range req.Contacts {
 		if !email.IsEmail(c) && !isPhoneNumber(c) {
+			return errors.ErrMalformedEntity
+		}
+	}
+
+	for _, s := range req.Subtopics {
+		if s == "" {
 			return errors.ErrMalformedEntity
 		}
 	}

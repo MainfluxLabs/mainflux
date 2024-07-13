@@ -50,7 +50,7 @@ var (
 	validNotifier            = things.Notifier{GroupID: groupID, Subtopics: validSubtopics, Contacts: validContacts}
 	invalidContactsNotifier  = things.Notifier{GroupID: groupID, Subtopics: validSubtopics, Contacts: invalidContacts}
 	invalidSubtopicsNotifier = things.Notifier{GroupID: groupID, Subtopics: []string{""}, Contacts: validContacts}
-	invalidIDRes             = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidIDFormat.Error()})
+	missingIDRes             = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
 	missingTokenRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 
@@ -257,31 +257,31 @@ func TestListNotifiersByGroup(t *testing.T) {
 		res    []notifierRes
 	}{
 		{
-			desc:   "view notifiers by group",
+			desc:   "list notifiers by group",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
 			res:    data,
 		},
 		{
-			desc:   "view notifiers by group with invalid token",
+			desc:   "list notifiers by group with invalid token",
 			auth:   wrongValue,
 			status: http.StatusForbidden,
 			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
 			res:    []notifierRes{},
 		},
 		{
-			desc:   "view notifiers by group with empty token",
+			desc:   "list notifiers by group with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
 			res:    []notifierRes{},
 		},
 		{
-			desc:   "view notifiers by group with invalid thing id",
+			desc:   "list notifiers by group with invalid group id",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, wrongValue),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, emptyValue),
 			res:    []notifierRes{},
 		},
 	}
@@ -462,7 +462,7 @@ func TestViewNotifier(t *testing.T) {
 			id:     emptyValue,
 			auth:   token,
 			status: http.StatusBadRequest,
-			res:    invalidIDRes,
+			res:    missingIDRes,
 		},
 	}
 
