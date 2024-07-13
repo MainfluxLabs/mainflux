@@ -185,12 +185,3 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		}
 	}
 }
-
-//
-//func authorize(ctx context.Context, token, groupID string) (err error) {
-//	_, err = thingc.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor})
-//	if err != nil {
-//		return errors.Wrap(errors.ErrAuthorization, err)
-//	}
-//	return nil
-//}

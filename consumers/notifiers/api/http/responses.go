@@ -24,10 +24,7 @@ func (res notifierResponse) Headers() map[string]string {
 }
 
 func (res notifierResponse) Empty() bool {
-	if res.updated {
-		return true
-	}
-	return false
+	return res.updated
 }
 
 type notifiersRes struct {

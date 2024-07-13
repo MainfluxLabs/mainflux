@@ -26,7 +26,7 @@ type NotifierRepository interface {
 	// Save persists multiple notifiers. Notifiers are saved using a transaction.
 	// If one notifier fails then none will be saved.
 	// Successful operation is indicated by non-nil error response.
-	Save(ctx context.Context, whs ...things.Notifier) ([]things.Notifier, error)
+	Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error)
 
 	// RetrieveByGroupID retrieves notifiers related to
 	// a certain group identified by a given ID.

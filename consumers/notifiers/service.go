@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -60,14 +61,31 @@ func New(auth mainflux.AuthServiceClient, idp mainflux.IDProvider, notifier Noti
 }
 
 func (ns *notifierService) Consume(message interface{}) error {
+	ctx := context.Background()
+
 	msg, ok := message.(messaging.Message)
 	if !ok {
 		return errors.ErrMessage
 	}
 
-	err := ns.notifier.Notify(ns.from, msg.Profile.Notifier.Contacts, msg)
-	if err != nil {
-		return errors.Wrap(ErrNotify, err)
+	if msg.Profile.SmtpID == "" && msg.Profile.SmppID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if msg.Profile.SmtpID != "" {
+		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Profile.SmtpID)
+		err = ns.notifier.Notify(ns.from, smtp.Contacts, msg)
+		if err != nil {
+			return errors.Wrap(ErrNotify, err)
+		}
+	}
+
+	if msg.Profile.SmppID != "" {
+		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Profile.SmppID)
+		err = ns.notifier.Notify(ns.from, smpp.Contacts, msg)
+		if err != nil {
+			return errors.Wrap(ErrNotify, err)
+		}
 	}
 
 	return nil

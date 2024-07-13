@@ -132,9 +132,5 @@ func (req removeNotifiersReq) validate() error {
 func isPhoneNumber(phoneNumber string) bool {
 	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
 
-	if !phoneRegexp.MatchString(phoneNumber) {
-		return false
-	}
-
-	return true
+	return phoneRegexp.MatchString(phoneNumber)
 }
