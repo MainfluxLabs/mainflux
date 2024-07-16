@@ -21,10 +21,10 @@ type Channel struct {
 type Profile struct {
 	ContentType string      `json:"content_type"`
 	Write       bool        `json:"write"`
-	Notify      bool        `json:"notify"`
 	WebhookID   string      `json:"webhook_id"`
 	Transformer Transformer `json:"transformer"`
-	Notifier    Notifier    `json:"notifier"`
+	SmtpID      string      `json:"smtp_id"`
+	SmppID      string      `json:"smpp_id"`
 }
 
 type Transformer struct {
@@ -35,10 +35,9 @@ type Transformer struct {
 }
 
 type Notifier struct {
-	ID        string
-	GroupID   string
-	Contacts  []string
-	Subtopics []string
+	ID       string
+	GroupID  string
+	Contacts []string
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

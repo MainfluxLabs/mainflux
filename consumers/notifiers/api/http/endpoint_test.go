@@ -41,17 +41,15 @@ const (
 )
 
 var (
-	validSubtopics           = []string{"subtopic1", "subtopic2"}
-	validContacts            = []string{userEmail, phoneNum}
-	invalidContacts          = []string{invalidUser, invalidPhoneNum}
-	user                     = users.User{Email: userEmail, Password: password}
-	otherUser                = users.User{Email: otherUserEmail, Password: password}
-	usersList                = []users.User{user, otherUser}
-	validNotifier            = things.Notifier{GroupID: groupID, Subtopics: validSubtopics, Contacts: validContacts}
-	invalidContactsNotifier  = things.Notifier{GroupID: groupID, Subtopics: validSubtopics, Contacts: invalidContacts}
-	invalidSubtopicsNotifier = things.Notifier{GroupID: groupID, Subtopics: []string{""}, Contacts: validContacts}
-	missingIDRes             = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
-	missingTokenRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	validContacts           = []string{userEmail, phoneNum}
+	invalidContacts         = []string{invalidUser, invalidPhoneNum}
+	user                    = users.User{Email: userEmail, Password: password}
+	otherUser               = users.User{Email: otherUserEmail, Password: password}
+	usersList               = []users.User{user, otherUser}
+	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
+	invalidContactsNotifier = things.Notifier{GroupID: groupID, Contacts: invalidContacts}
+	missingIDRes            = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
+	missingTokenRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {
@@ -106,8 +104,8 @@ func TestCreateNotifiers(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"contacts":["test@gmail.com"],"subtopics":["subtopic1"]}]`
-	invalidData := `[{"contacts":["test.com","0610120120"],"subtopics":["subtopic1"]}]`
+	validData := `[{"contacts":["test@gmail.com"]}]`
+	invalidData := `[{"contacts":["test.com","0610120120"]}]`
 
 	cases := []struct {
 		desc        string
@@ -219,10 +217,9 @@ func TestCreateNotifiers(t *testing.T) {
 }
 
 type notifierRes struct {
-	ID        string   `json:"id"`
-	GroupID   string   `json:"group_id"`
-	Contacts  []string `json:"contacts"`
-	Subtopics []string `json:"subtopics"`
+	ID       string   `json:"id"`
+	GroupID  string   `json:"group_id"`
+	Contacts []string `json:"contacts"`
 }
 type notifiersRes struct {
 	Notifiers []notifierRes `json:"notifiers"`
@@ -241,10 +238,9 @@ func TestListNotifiersByGroup(t *testing.T) {
 
 	for _, notifier := range nfs {
 		nfRes := notifierRes{
-			ID:        notifier.ID,
-			GroupID:   notifier.GroupID,
-			Contacts:  notifier.Contacts,
-			Subtopics: notifier.Subtopics,
+			ID:       notifier.ID,
+			GroupID:  notifier.GroupID,
+			Contacts: notifier.Contacts,
 		}
 		data = append(data, nfRes)
 	}
@@ -315,7 +311,6 @@ func TestUpdateNotifier(t *testing.T) {
 	nf := nfs[0]
 
 	invalidC := toJSON(invalidContactsNotifier)
-	invalidS := toJSON(invalidSubtopicsNotifier)
 
 	cases := []struct {
 		desc        string
@@ -396,13 +391,6 @@ func TestUpdateNotifier(t *testing.T) {
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
-		{
-			desc:        "update notifier with invalid subtopics",
-			req:         invalidS,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusBadRequest,
-		},
 	}
 
 	for _, tc := range cases {
@@ -430,10 +418,9 @@ func TestViewNotifier(t *testing.T) {
 	nf := nfs[0]
 
 	data := toJSON(notifierRes{
-		ID:        nf.ID,
-		GroupID:   nf.GroupID,
-		Contacts:  nf.Contacts,
-		Subtopics: nf.Subtopics,
+		ID:       nf.ID,
+		GroupID:  nf.GroupID,
+		Contacts: nf.Contacts,
 	})
 
 	cases := []struct {

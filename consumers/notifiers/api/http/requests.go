@@ -35,8 +35,7 @@ func (req *notifierReq) validate() error {
 }
 
 type createNotifierReq struct {
-	Contacts  []string `json:"contacts"`
-	Subtopics []string `json:"subtopics"`
+	Contacts []string `json:"contacts"`
 }
 type createNotifiersReq struct {
 	token     string
@@ -77,10 +76,9 @@ func (req createNotifierReq) validate() error {
 }
 
 type updateNotifierReq struct {
-	token     string
-	id        string
-	Contacts  []string `json:"contacts"`
-	Subtopics []string `json:"subtopics"`
+	token    string
+	id       string
+	Contacts []string `json:"contacts"`
 }
 
 func (req updateNotifierReq) validate() error {
@@ -92,18 +90,12 @@ func (req updateNotifierReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.Contacts == nil && req.Subtopics == nil {
+	if req.Contacts == nil {
 		return errors.ErrMalformedEntity
 	}
 
 	for _, c := range req.Contacts {
 		if !email.IsEmail(c) && !isPhoneNumber(c) {
-			return errors.ErrMalformedEntity
-		}
-	}
-
-	for _, s := range req.Subtopics {
-		if s == "" {
 			return errors.ErrMalformedEntity
 		}
 	}

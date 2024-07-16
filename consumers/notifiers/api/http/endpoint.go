@@ -21,9 +21,8 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 		nfs := []things.Notifier{}
 		for _, nReq := range req.Notifiers {
 			nf := things.Notifier{
-				GroupID:   req.groupID,
-				Contacts:  nReq.Contacts,
-				Subtopics: nReq.Subtopics,
+				GroupID:  req.groupID,
+				Contacts: nReq.Contacts,
 			}
 			nfs = append(nfs, nf)
 		}
@@ -77,9 +76,8 @@ func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 		}
 
 		notifier := things.Notifier{
-			ID:        req.id,
-			Contacts:  req.Contacts,
-			Subtopics: req.Subtopics,
+			ID:       req.id,
+			Contacts: req.Contacts,
 		}
 
 		if err := svc.UpdateNotifier(ctx, req.token, notifier); err != nil {
@@ -109,10 +107,9 @@ func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiers
 	res := notifiersRes{Notifiers: []notifierResponse{}, created: created}
 	for _, nf := range notifiers {
 		notifier := notifierResponse{
-			ID:        nf.ID,
-			GroupID:   nf.GroupID,
-			Contacts:  nf.Contacts,
-			Subtopics: nf.Subtopics,
+			ID:       nf.ID,
+			GroupID:  nf.GroupID,
+			Contacts: nf.Contacts,
 		}
 		res.Notifiers = append(res.Notifiers, notifier)
 	}
@@ -122,11 +119,10 @@ func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiers
 
 func buildNotifierResponse(notifier things.Notifier, updated bool) notifierResponse {
 	res := notifierResponse{
-		ID:        notifier.ID,
-		GroupID:   notifier.GroupID,
-		Contacts:  notifier.Contacts,
-		Subtopics: notifier.Subtopics,
-		updated:   updated,
+		ID:       notifier.ID,
+		GroupID:  notifier.GroupID,
+		Contacts: notifier.Contacts,
+		updated:  updated,
 	}
 
 	return res

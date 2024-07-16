@@ -35,17 +35,15 @@ const (
 )
 
 var (
-	subtopics                = []string{"subtopic1", "subtopic2"}
-	user                     = users.User{Email: userEmail, Password: password}
-	otherUser                = users.User{Email: otherUserEmail, Password: password}
-	usersList                = []users.User{user, otherUser}
-	validContacts            = []string{userEmail, phoneNum}
-	invalidContacts          = []string{invalidUser, invalidPhoneNum}
-	validNotifier            = things.Notifier{GroupID: groupID, Subtopics: subtopics, Contacts: validContacts}
-	validNotifier2           = things.Notifier{GroupID: groupID, Subtopics: []string{subtopics[0]}, Contacts: validContacts}
-	invalidContactsNotifier  = things.Notifier{GroupID: groupID, Subtopics: subtopics, Contacts: invalidContacts}
-	invalidSubtopicsNotifier = things.Notifier{GroupID: groupID, Subtopics: []string{""}, Contacts: validContacts}
-	invalidGroupNotifier     = things.Notifier{GroupID: emptyValue, Subtopics: subtopics, Contacts: validContacts}
+	user                    = users.User{Email: userEmail, Password: password}
+	otherUser               = users.User{Email: otherUserEmail, Password: password}
+	usersList               = []users.User{user, otherUser}
+	validContacts           = []string{userEmail, phoneNum}
+	invalidContacts         = []string{invalidUser, invalidPhoneNum}
+	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
+	validNotifier2          = things.Notifier{GroupID: groupID, Contacts: validContacts}
+	invalidContactsNotifier = things.Notifier{GroupID: groupID, Contacts: invalidContacts}
+	invalidGroupNotifier    = things.Notifier{GroupID: emptyValue, Contacts: validContacts}
 )
 
 func newService() notifiers.Service {
@@ -115,7 +113,7 @@ func TestConsume(t *testing.T) {
 func TestCreateNotifiers(t *testing.T) {
 	svc := newService()
 
-	nfs := []things.Notifier{validNotifier, invalidContactsNotifier, invalidSubtopicsNotifier, invalidGroupNotifier}
+	nfs := []things.Notifier{validNotifier, invalidContactsNotifier, invalidGroupNotifier}
 
 	cases := []struct {
 		desc      string
@@ -142,14 +140,8 @@ func TestCreateNotifiers(t *testing.T) {
 			err:       nil,
 		},
 		{
-			desc:      "create notifier with invalid subtopics",
-			notifiers: []things.Notifier{nfs[2]},
-			token:     token,
-			err:       nil,
-		},
-		{
 			desc:      "create notifier with invalid group id",
-			notifiers: []things.Notifier{nfs[3]},
+			notifiers: []things.Notifier{nfs[2]},
 			token:     token,
 			err:       errors.ErrAuthorization,
 		},
@@ -215,9 +207,6 @@ func TestUpdateNotifier(t *testing.T) {
 	invalidContactsNf := nf
 	invalidContactsNf.Contacts = invalidContacts
 
-	invalidSubtopicsNf := nf
-	invalidSubtopicsNf.Subtopics = []string{""}
-
 	cases := []struct {
 		desc     string
 		notifier things.Notifier
@@ -245,12 +234,6 @@ func TestUpdateNotifier(t *testing.T) {
 		{
 			desc:     "create notifier with invalid contacts",
 			notifier: invalidContactsNf,
-			token:    token,
-			err:      nil,
-		},
-		{
-			desc:     "create notifier with invalid subtopics",
-			notifier: invalidSubtopicsNf,
 			token:    token,
 			err:      nil,
 		},

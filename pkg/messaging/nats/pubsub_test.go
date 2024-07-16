@@ -27,7 +27,7 @@ var (
 	msgChan    = make(chan messaging.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true, Notifier: &messaging.Notifier{}}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true}
 )
 
 func TestPublisher(t *testing.T) {

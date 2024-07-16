@@ -8,11 +8,10 @@ import (
 )
 
 type notifierResponse struct {
-	ID        string   `json:"id"`
-	GroupID   string   `json:"group_id"`
-	Contacts  []string `json:"contacts"`
-	Subtopics []string `json:"subtopics"`
-	updated   bool
+	ID       string   `json:"id"`
+	GroupID  string   `json:"group_id"`
+	Contacts []string `json:"contacts"`
+	updated  bool
 }
 
 func (res notifierResponse) Code() int {

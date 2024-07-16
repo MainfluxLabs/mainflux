@@ -26,7 +26,7 @@ const (
 
 var (
 	data       = []byte("payload")
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true, Transformer: &messaging.Transformer{}, Notifier: &messaging.Notifier{}}
+	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true, Transformer: &messaging.Transformer{}}
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.

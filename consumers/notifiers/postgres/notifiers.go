@@ -32,7 +32,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) (
 		return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO notifiers (id, group_id, contacts, subtopics) VALUES (:id, :group_id, :contacts, :subtopics);`
+	q := `INSERT INTO notifiers (id, group_id, contacts) VALUES (:id, :group_id, :contacts);`
 
 	for _, notifier := range nfs {
 		dbNf, err := toDBNotifier(notifier)
@@ -68,7 +68,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	if _, err := uuid.FromString(groupID); err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT id, group_id, contacts, subtopics FROM notifiers WHERE group_id = :group_id;`
+	q := `SELECT id, group_id, contacts FROM notifiers WHERE group_id = :group_id;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -97,7 +97,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 }
 
 func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
-	q := `SELECT group_id, contacts, subtopics FROM notifiers WHERE id = $1;`
+	q := `SELECT group_id, contacts FROM notifiers WHERE id = $1;`
 
 	dbNf := dbNotifier{ID: id}
 	if err := nr.db.QueryRowxContext(ctx, q, id).StructScan(&dbNf); err != nil {
@@ -112,7 +112,7 @@ func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (thing
 }
 
 func (nr notifierRepository) Update(ctx context.Context, n things.Notifier) error {
-	q := `UPDATE notifiers SET contacts = :contacts, subtopics = :subtopics WHERE id = :id;`
+	q := `UPDATE notifiers SET contacts = :contacts WHERE id = :id;`
 
 	dbNf, err := toDBNotifier(n)
 	if err != nil {
@@ -163,36 +163,27 @@ func (nr notifierRepository) Remove(ctx context.Context, groupID string, ids ...
 }
 
 type dbNotifier struct {
-	ID        string `db:"id"`
-	GroupID   string `db:"group_id"`
-	Contacts  string `json:"contacts"`
-	Subtopics string `json:"subtopics"`
+	ID       string `db:"id"`
+	GroupID  string `db:"group_id"`
+	Contacts string `json:"contacts"`
 }
 
 func toDBNotifier(nf things.Notifier) (dbNotifier, error) {
 	contacts := strings.Join(nf.Contacts, ",")
-	subtopics := strings.Join(nf.Subtopics, ",")
 
 	return dbNotifier{
-		ID:        nf.ID,
-		GroupID:   nf.GroupID,
-		Contacts:  contacts,
-		Subtopics: subtopics,
+		ID:       nf.ID,
+		GroupID:  nf.GroupID,
+		Contacts: contacts,
 	}, nil
 }
 
 func toNotifier(dbN dbNotifier) (things.Notifier, error) {
-	var (
-		contacts  []string
-		subtopics []string
-	)
-	contacts = strings.Split(dbN.Contacts, ",")
-	subtopics = strings.Split(dbN.Subtopics, ",")
+	contacts := strings.Split(dbN.Contacts, ",")
 
 	return things.Notifier{
-		ID:        dbN.ID,
-		GroupID:   dbN.GroupID,
-		Contacts:  contacts,
-		Subtopics: subtopics,
+		ID:       dbN.ID,
+		GroupID:  dbN.GroupID,
+		Contacts: contacts,
 	}, nil
 }
