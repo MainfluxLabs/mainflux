@@ -21,9 +21,6 @@ default values.
 | MF_EMAIL_FROM_NAME                | Email "from" name                                                       |                       |
 | MF_EMAIL_TEMPLATE                 | Email template for sending notification emails                          | email.tmpl            |
 | MF_AUTH_GRPC_URL                  | Auth service gRPC URL                                                   | localhost:8181        |
-| MF_AUTH_GRPC_TIMEOUT              | Auth service gRPC request timeout in seconds                            | 1s                    |
-| MF_AUTH_CLIENT_TLS                | Auth client TLS flag                                                    | false                 |
-| MF_AUTH_CA_CERTS                  | Path to Auth client CA certs in pem format                              |                       |
 | MF_SMTP_NOTIFIER_PORT             | SMTP-Notifiers service HTTP port                                        | 8906                  | 
 | MF_SMTP_NOTIFIER_SERVER_CERT      | Path to server certificate in pem format                                |                       |
 | MF_SMTP_NOTIFIER_SERVER_KEY       | Path to server key in pem format                                        |                       |

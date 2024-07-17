@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
@@ -70,11 +69,6 @@ const (
 	defEmailFromName    = ""
 	defEmailTemplate    = "email.tmpl"
 
-	defAuthTLS         = "false"
-	defAuthCACerts     = ""
-	defAuthGRPCURL     = "localhost:8181"
-	defAuthGRPCTimeout = "1s"
-
 	envLogLevel          = "MF_SMTP_NOTIFIER_LOG_LEVEL"
 	envFrom              = "MF_SMTP_NOTIFIER_FROM_ADDR"
 	envJaegerURL         = "MF_JAEGER_URL"
@@ -103,11 +97,6 @@ const (
 	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_SMTP_NOTIFIER_TEMPLATE"
-
-	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts     = "MF_AUTH_CA_CERTS"
-	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -122,10 +111,6 @@ type config struct {
 	serverCert        string
 	serverKey         string
 	jaegerURL         string
-	authTLS           bool
-	authCACerts       string
-	authGRPCURL       string
-	authGRPCTimeout   time.Duration
 	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 }
@@ -153,14 +138,6 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
-	defer closer.Close()
-
-	auth, close := connectToAuth(cfg, authTracer, logger)
-	if close != nil {
-		defer close()
-	}
-
 	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
@@ -169,7 +146,7 @@ func main() {
 		defer close()
 	}
 
-	svc := newService(auth, cfg, logger, db, things)
+	svc := newService(cfg, logger, db, things)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
@@ -194,19 +171,9 @@ func main() {
 }
 
 func loadConfig() config {
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
-	}
-
 	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
-	}
-
-	authTLS, err := strconv.ParseBool(mainflux.Env(envAuthTLS, defAuthTLS))
-	if err != nil {
-		log.Fatalf("Invalid value passed for %s\n", envAuthTLS)
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
 	thingsTLS, err := strconv.ParseBool(mainflux.Env(envThingsTLS, defThingsTLS))
@@ -243,15 +210,11 @@ func loadConfig() config {
 		dbConfig:          dbConfig,
 		from:              mainflux.Env(envFrom, defFrom),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		authTLS:           authTLS,
-		authCACerts:       mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		thingsTLS:         thingsTLS,
 		thingsCACerts:     mainflux.Env(envThingsCACerts, defThingsCACerts),
 		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
 		serverCert:        mainflux.Env(envServerCert, defServerCert),
 		serverKey:         mainflux.Env(envServerKey, defServerKey),
-		authGRPCTimeout:   authGRPCTimeout,
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
@@ -291,31 +254,6 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
-	var opts []grpc.DialOption
-	if cfg.authTLS {
-		if cfg.authCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.authCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
-}
-
 func createThingsClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.ThingsServiceClient, func() error) {
 	conn := connectToThings(cfg, logger)
 	return thingsapi.NewClient(conn, tracer, cfg.thingsGRPCTimeout), conn.Close
@@ -346,7 +284,7 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
+func newService(c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
 	idp := uuid.New()
 	database := postgres.NewDatabase(db)
 
@@ -358,7 +296,7 @@ func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger, d
 
 	notifier := smtp.New(agent)
 	notifierRepo := postgres.NewNotifierRepository(database)
-	svc := notifiers.New(ac, idp, notifier, c.from, notifierRepo, tc)
+	svc := notifiers.New(idp, notifier, c.from, notifierRepo, tc)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

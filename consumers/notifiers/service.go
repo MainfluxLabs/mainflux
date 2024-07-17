@@ -40,7 +40,6 @@ type Service interface {
 var _ Service = (*notifierService)(nil)
 
 type notifierService struct {
-	auth         mainflux.AuthServiceClient
 	idp          mainflux.IDProvider
 	notifier     Notifier
 	from         string
@@ -49,9 +48,8 @@ type notifierService struct {
 }
 
 // New instantiates the subscriptions service implementation.
-func New(auth mainflux.AuthServiceClient, idp mainflux.IDProvider, notifier Notifier, from string, notifierRepo NotifierRepository, things mainflux.ThingsServiceClient) Service {
+func New(idp mainflux.IDProvider, notifier Notifier, from string, notifierRepo NotifierRepository, things mainflux.ThingsServiceClient) Service {
 	return &notifierService{
-		auth:         auth,
 		idp:          idp,
 		notifier:     notifier,
 		from:         from,

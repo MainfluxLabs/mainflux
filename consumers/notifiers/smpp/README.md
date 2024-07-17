@@ -21,9 +21,6 @@ default values.
 | MF_SMPP_DST_ADDR_TON              | SMPP destination address TON                                            |                       |
 | MF_SMPP_SRC_ADDR_NPI              | SMPP source address NPI                                                 |                       |
 | MF_SMPP_DST_ADDR_NPI              | SMPP destination address NPI                                            |                       |
-| MF_AUTH_GRPC_TIMEOUT              | Auth service gRPC request timeout in seconds                            | 1s                    |
-| MF_AUTH_CLIENT_TLS                | Auth client TLS flag                                                    | false                 |
-| MF_AUTH_CA_CERTS                  | Path to Auth client CA certs in pem format                              |                       |
 | MF_SMPP_NOTIFIER_PORT             | SMPP-Notifiers service HTTP port                                        | 8907                  | 
 | MF_SMPP_NOTIFIER_SERVER_CERT      | Path to server certificate in pem format                                |                       |
 | MF_SMPP_NOTIFIER_SERVER_KEY       | Path to server key in pem format                                        |                       |

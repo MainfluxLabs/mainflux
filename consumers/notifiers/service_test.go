@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,20 +23,15 @@ import (
 const (
 	token           = "admin@example.com"
 	userEmail       = "user@example.com"
-	otherUserEmail  = "otherUser@example.com"
 	phoneNum        = "+381610120120"
 	invalidPhoneNum = "0610120120"
 	invalidUser     = "invalid@example.com"
-	password        = "password"
 	groupID         = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
 	wrongValue      = "wrong-value"
 	emptyValue      = ""
 )
 
 var (
-	user                    = users.User{Email: userEmail, Password: password}
-	otherUser               = users.User{Email: otherUserEmail, Password: password}
-	usersList               = []users.User{user, otherUser}
 	validContacts           = []string{userEmail, phoneNum}
 	invalidContacts         = []string{invalidUser, invalidPhoneNum}
 	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
@@ -47,13 +41,12 @@ var (
 )
 
 func newService() notifiers.Service {
-	auth := mocks.NewAuthService("", usersList)
 	thingsC := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
 	from := "exampleFrom"
-	return notifiers.New(auth, idp, notifier, from, notifierRepo, thingsC)
+	return notifiers.New(idp, notifier, from, notifierRepo, thingsC)
 }
 
 func TestConsume(t *testing.T) {

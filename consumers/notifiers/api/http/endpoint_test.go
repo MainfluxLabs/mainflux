@@ -20,7 +20,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,12 +27,10 @@ import (
 
 const (
 	userEmail       = "user@example.com"
-	otherUserEmail  = "otherUser@example.com"
 	phoneNum        = "+381610120120"
 	invalidPhoneNum = "0610120120"
 	invalidUser     = "invalid@example.com"
 	token           = "admin@example.com"
-	password        = "password"
 	wrongValue      = "wrong-value"
 	contentType     = "application/json"
 	emptyValue      = ""
@@ -43,9 +40,6 @@ const (
 var (
 	validContacts           = []string{userEmail, phoneNum}
 	invalidContacts         = []string{invalidUser, invalidPhoneNum}
-	user                    = users.User{Email: userEmail, Password: password}
-	otherUser               = users.User{Email: otherUserEmail, Password: password}
-	usersList               = []users.User{user, otherUser}
 	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
 	invalidContactsNotifier = things.Notifier{GroupID: groupID, Contacts: invalidContacts}
 	missingIDRes            = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
@@ -64,13 +58,12 @@ func toJSON(data interface{}) string {
 }
 
 func newService() notifiers.Service {
-	auth := mocks.NewAuthService("", usersList)
 	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
 	from := "exampleFrom"
-	return notifiers.New(auth, idp, notifier, from, notifierRepo, things)
+	return notifiers.New(idp, notifier, from, notifierRepo, things)
 }
 
 type testRequest struct {

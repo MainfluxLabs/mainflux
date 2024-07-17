@@ -6,7 +6,6 @@ package uuid
 
 import (
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
 )
@@ -30,13 +29,4 @@ func (up *uuidProvider) ID() (string, error) {
 	}
 
 	return id.String(), nil
-}
-
-func ValidateUUID(extID string) (err error) {
-	id, err := uuid.FromString(extID)
-	if id.String() != extID || err != nil {
-		return apiutil.ErrInvalidIDFormat
-	}
-
-	return nil
 }
