@@ -72,23 +72,6 @@ type User struct {
 	Status string
 }
 
-type Group struct {
-	ID          string
-	OwnerID     string
-	Name        string
-	Description string
-}
-
-type GroupsPage struct {
-	PageMetadata
-	Groups []Group
-}
-
-type OrgGroupsPage struct {
-	PageMetadata
-	OrgGroups []OrgGroup
-}
-
 type OrgMember struct {
 	MemberID  string
 	OrgID     string
@@ -108,7 +91,6 @@ type OrgGroup struct {
 type Backup struct {
 	Orgs       []Org
 	OrgMembers []OrgMember
-	OrgGroups  []OrgGroup
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -147,10 +129,10 @@ type Orgs interface {
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
 
-	// Backup retrieves all orgs, org members and org groups. Only accessible by admin.
+	// Backup retrieves all orgs and org members. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs, org members and org groups from a backup. Only accessible by admin.
+	// Restore adds orgs and org members from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -197,10 +179,4 @@ type OrgRepository interface {
 
 	// RetrieveAllMembersByOrg retrieves all org members.
 	RetrieveAllMembersByOrg(ctx context.Context) ([]OrgMember, error)
-
-	// RetrieveByGroupID retrieves org where group is assigned.
-	RetrieveByGroupID(ctx context.Context, groupID string) (Org, error)
-
-	// RetrieveAllGroupsByOrg retrieves all org groups.
-	RetrieveAllGroupsByOrg(ctx context.Context) ([]OrgGroup, error)
 }
