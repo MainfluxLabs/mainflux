@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
   mainfluxlabs-mqtt-db-volume:
-  mainfluxlabs-influxdb-volume:
+  mainfluxlabs-postgres-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-webhooks-db-volume:
@@ -370,73 +370,71 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  ## INFLUX DB
-  influxdb:
-    image: influxdb:2.2-alpine
-    container_name: mainfluxlabs-influxdb
+  ## POSTGRES DB
+  postgres:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-postgres
     restart: on-failure
     environment:
-      DOCKER_INFLUXDB_INIT_MODE: ${MF_INFLUXDB_INIT_MODE}
-      DOCKER_INFLUXDB_INIT_USERNAME: ${MF_INFLUXDB_ADMIN_USER}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
-      DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
-      DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
-      INFLUXDB_HTTP_FLUX_ENABLED: ${MF_INFLUXDB_HTTP_ENABLED}
+      POSTGRES_USER: ${MF_POSTGRES_WRITER_DB_USER}
+      POSTGRES_PASSWORD: ${MF_POSTGRES_WRITER_DB_PASS}
+      POSTGRES_DB: ${MF_POSTGRES_WRITER_DB}
     networks:
       - mainfluxlabs-base-net
-    ports:
-      - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
     volumes:
-      - mainfluxlabs-influxdb-volume:/var/lib/influxdb2
+      - mainfluxlabs-postgres-volume:/var/lib/postgresql/data
 
-  influxdb-writer:
-    image: ${MF_RELEASE_PREFIX}/influxdb-writer:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-influxdb-writer
+  postgres-writer:
+    image: mainfluxlabs/postgres-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-postgres-writer
     depends_on:
-      - influxdb
+      - postgres
     restart: on-failure
     environment:
-      MF_INFLUX_WRITER_LOG_LEVEL: debug
-      MF_BROKER_URL: ${MF_NATS_URL}
-      MF_INFLUX_WRITER_PORT: ${MF_INFLUX_WRITER_PORT}
-      MF_INFLUX_WRITER_BATCH_SIZE: ${MF_INFLUX_WRITER_BATCH_SIZE}
-      MF_INFLUX_WRITER_BATCH_TIMEOUT: ${MF_INFLUX_WRITER_BATCH_TIMEOUT}
-      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
-      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
-      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
-      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_POSTGRES_WRITER_LOG_LEVEL: ${MF_POSTGRES_WRITER_LOG_LEVEL}
+      MF_POSTGRES_WRITER_PORT: ${MF_POSTGRES_WRITER_PORT}
+      MF_POSTGRES_WRITER_DB_HOST: postgres
+      MF_POSTGRES_WRITER_DB_PORT: ${MF_POSTGRES_WRITER_DB_PORT}
+      MF_POSTGRES_WRITER_DB_USER: ${MF_POSTGRES_WRITER_DB_USER}
+      MF_POSTGRES_WRITER_DB_PASS: ${MF_POSTGRES_WRITER_DB_PASS}
+      MF_POSTGRES_WRITER_DB: ${MF_POSTGRES_WRITER_DB}
+      MF_POSTGRES_WRITER_DB_SSL_MODE: ${MF_POSTGRES_WRITER_DB_SSL_MODE}
+      MF_POSTGRES_WRITER_DB_SSL_CERT: ${MF_POSTGRES_WRITER_DB_SSL_CERT}
+      MF_POSTGRES_WRITER_DB_SSL_KEY: ${MF_POSTGRES_WRITER_DB_SSL_KEY}
+      MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT: ${MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT}
     ports:
-      - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
+      - ${MF_POSTGRES_WRITER_PORT}:${MF_POSTGRES_WRITER_PORT}
     networks:
       - mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml
 
-  influxdb-reader:
-    image: ${MF_RELEASE_PREFIX}/influxdb-reader:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-influxdb-reader
+  postgres-reader:
+    image: mainfluxlabs/postgres-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
-      MF_INFLUX_READER_LOG_LEVEL: debug
-      MF_INFLUX_READER_PORT: ${MF_INFLUX_READER_PORT}
-      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
-      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
-      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
-      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
-      MF_INFLUX_READER_SERVER_CERT: ${MF_INFLUX_READER_SERVER_CERT}
-      MF_INFLUX_READER_SERVER_KEY: ${MF_INFLUX_READER_SERVER_KEY}
+      MF_POSTGRES_READER_LOG_LEVEL: ${MF_POSTGRES_READER_LOG_LEVEL}
+      MF_POSTGRES_READER_PORT: ${MF_POSTGRES_READER_PORT}
+      MF_POSTGRES_READER_CLIENT_TLS: ${MF_POSTGRES_READER_CLIENT_TLS}
+      MF_POSTGRES_READER_CA_CERTS: ${MF_POSTGRES_READER_CA_CERTS}
+      MF_POSTGRES_READER_DB_HOST: postgres
+      MF_POSTGRES_READER_DB_PORT: ${MF_POSTGRES_READER_DB_PORT}
+      MF_POSTGRES_READER_DB_USER: ${MF_POSTGRES_READER_DB_USER}
+      MF_POSTGRES_READER_DB_PASS: ${MF_POSTGRES_READER_DB_PASS}
+      MF_POSTGRES_READER_DB: ${MF_POSTGRES_READER_DB}
+      MF_POSTGRES_READER_DB_SSL_MODE: ${MF_POSTGRES_READER_DB_SSL_MODE}
+      MF_POSTGRES_READER_DB_SSL_CERT: ${MF_POSTGRES_READER_DB_SSL_CERT}
+      MF_POSTGRES_READER_DB_SSL_KEY: ${MF_POSTGRES_READER_DB_SSL_KEY}
+      MF_POSTGRES_READER_DB_SSL_ROOT_CERT: ${MF_POSTGRES_READER_DB_SSL_ROOT_CERT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_TIMEOUT : ${MF_AUTH_GRPC_TIMEOUT}
     ports:
-      - ${MF_INFLUX_READER_PORT}:${MF_INFLUX_READER_PORT}
+      - ${MF_POSTGRES_READER_PORT}:${MF_POSTGRES_READER_PORT}
     networks:
       - mainfluxlabs-base-net
-    volumes:
-      - ../../ssl/certs:/etc/ssl/certs
 
   filestore-db:
     image: postgres:13.3-alpine
