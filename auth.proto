@@ -54,12 +54,6 @@ message Transformer {
     string timeLocation         = 4;
 }
 
-message Notifier {
-    string id          = 1;
-    string groupID     = 2;
-    repeated string contacts  = 3;
-}
-
 message ChannelOwnerReq {
     string token  = 1;
     string chanID = 2;
