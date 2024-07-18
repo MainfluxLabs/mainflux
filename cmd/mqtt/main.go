@@ -23,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
@@ -42,10 +43,8 @@ import (
 )
 
 const (
-	svcName       = "mqtt"
-	httpProtocol  = "http"
-	httpsProtocol = "https"
-	stopWaitTime  = 5 * time.Second
+	svcName      = "mqtt"
+	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
 	defMQTTPort          = "1883"
@@ -126,11 +125,11 @@ const (
 
 type config struct {
 	port              string
+	httpServer        servers.Config
 	targetHost        string
 	targetPort        string
 	timeout           time.Duration
 	targetHealthCheck string
-	httpPort          string
 	wsPort            string
 	httpTargetHost    string
 	httpTargetPort    string
@@ -150,8 +149,6 @@ type config struct {
 	authCacheURL      string
 	authPass          string
 	authCacheDB       string
-	serverCert        string
-	serverKey         string
 	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 }
@@ -251,14 +248,13 @@ func main() {
 		return proxyMQTT(ctx, cfg, logger, h)
 	})
 
-	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpPort))
+	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpServer.Port))
 	g.Go(func() error {
 		return proxyWS(ctx, cfg, logger, h)
 	})
 
-	errs := make(chan error, 2)
 	g.Go(func() error {
-		return startHTTPServer(ctx, svc, tracer, cfg, logger, errs)
+		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpServer, logger)
 	})
 
 	g.Go(func() error {
@@ -307,13 +303,20 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	httpServer := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
 		port:              mainflux.Env(envMQTTPort, defMQTTPort),
+		httpServer:        httpServer,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
 		timeout:           mqttTimeout,
 		targetHealthCheck: mainflux.Env(envTargetHealthCheck, defTargetHealthCheck),
-		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
 		wsPort:            mainflux.Env(envWSPort, defWSPort),
 		httpTargetHost:    mainflux.Env(envHTTPTargetHost, defHTTPTargetHost),
 		httpTargetPort:    mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
@@ -333,8 +336,6 @@ func loadConfig() config {
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthcacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
-		serverCert:        mainflux.Env(envServerCert, defServerCert),
-		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
@@ -491,43 +492,6 @@ func newService(ac mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient, 
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, svc mqtt.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger, errs chan error) error {
-	p := fmt.Sprintf(":%s", cfg.httpPort)
-	errCh := make(chan error)
-	protocol := httpProtocol
-	server := &http.Server{Addr: p, Handler: mqttapihttp.MakeHandler(tracer, svc, logger)}
-
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("mqtt-adapter service started using https on port %s with cert %s key %s",
-			cfg.httpPort, cfg.serverCert, cfg.serverKey))
-		go func() {
-			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
-		}()
-		protocol = httpsProtocol
-
-	default:
-		logger.Info(fmt.Sprintf("mqtt-adapter service started using http on port %s", cfg.httpPort))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("mqtt-adapter %s service error occurred during shutdown at %s: %s", protocol, p, err))
-			return fmt.Errorf("mqtt-adapter %s service error occurred during shutdown at %s: %w", protocol, p, err)
-		}
-		logger.Info(fmt.Sprintf("mqtt-adapter %s service shutdown of http at %s", protocol, p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
 
 func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {

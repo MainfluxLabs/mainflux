@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -24,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
@@ -109,11 +109,9 @@ var (
 type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
+	certsHTTPServer servers.Config
 	clientTLS       bool
 	caCerts         string
-	httpPort        string
-	serverCert      string
-	serverKey       string
 	certsURL        string
 	thingsURL       string
 	jaegerURL       string
@@ -169,7 +167,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, svc, cfg, logger)
+		return servers.StartHTTPServer(ctx, "certs-http", api.MakeHandler(svc, logger), cfg.certsHTTPServer, logger)
 	})
 
 	g.Go(func() error {
@@ -202,6 +200,13 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	certsHTTPServer := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
@@ -215,11 +220,9 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
+		certsHTTPServer: certsHTTPServer,
 		clientTLS:       tls,
 		caCerts:         mainflux.Env(envCACerts, defCACerts),
-		httpPort:        mainflux.Env(envPort, defPort),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
 		certsURL:        mainflux.Env(envCertsURL, defCertsURL),
 		thingsURL:       mainflux.Env(envThingsURL, defThingsURL),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
@@ -304,9 +307,9 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 		LogLevel:       cfg.logLevel,
 		ClientTLS:      cfg.clientTLS,
 		CaCerts:        cfg.caCerts,
-		HTTPPort:       cfg.httpPort,
-		ServerCert:     cfg.serverCert,
-		ServerKey:      cfg.serverKey,
+		HTTPPort:       cfg.certsHTTPServer.Port,
+		ServerCert:     cfg.certsHTTPServer.ServerCert,
+		ServerKey:      cfg.certsHTTPServer.ServerKey,
 		CertsURL:       cfg.certsURL,
 		JaegerURL:      cfg.jaegerURL,
 		AuthURL:        cfg.authGRPCURL,
@@ -346,38 +349,6 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 		}, []string{"method"}),
 	)
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, svc certs.Service, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.httpPort)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, logger)}
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("Certs service started using https on port %s with cert %s key %s", cfg.httpPort, cfg.serverCert, cfg.serverKey))
-		go func() {
-			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
-		}()
-
-	default:
-		logger.Info(fmt.Sprintf("Certs service started using http on port %s", cfg.httpPort))
-		go func() {
-			errCh <- http.ListenAndServe(p, api.MakeHandler(svc, logger))
-		}()
-	}
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Certs service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("certs service  error occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("Certs service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
 
 func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {

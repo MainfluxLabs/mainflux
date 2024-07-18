@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -18,6 +17,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/mongodb"
@@ -35,6 +35,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "mongodb-reader"
 
 	defLogLevel          = "error"
 	defPort              = "8180"
@@ -68,15 +69,13 @@ const (
 )
 
 type config struct {
+	httpServer        servers.Config
 	logLevel          string
-	port              string
 	dbName            string
 	dbHost            string
 	dbPort            string
 	clientTLS         bool
 	caCerts           string
-	serverCert        string
-	serverKey         string
 	jaegerURL         string
 	thingsGRPCURL     string
 	authGRPCURL       string
@@ -114,7 +113,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, repo, tc, auth, cfg, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpServer, logger)
 	})
 
 	g.Go(func() error {
@@ -173,16 +172,21 @@ func loadConfigs() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
+	httpServer := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
+		httpServer:        httpServer,
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		port:              mainflux.Env(envPort, defPort),
 		dbName:            mainflux.Env(envDB, defDB),
 		dbHost:            mainflux.Env(envDBHost, defDBHost),
 		dbPort:            mainflux.Env(envDBPort, defDBPort),
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
-		serverCert:        mainflux.Env(envServerCert, defServerCert),
-		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
@@ -271,38 +275,4 @@ func newService(db *mongo.Database, logger logger.Logger) readers.MessageReposit
 	)
 
 	return repo
-}
-
-func startHTTPServer(ctx context.Context, repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(repo, tc, ac, "mongodb-reader", logger)}
-
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("Mongo reader service started using https on port %s with cert %s key %s",
-			cfg.port, cfg.serverCert, cfg.serverKey))
-		go func() {
-			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
-		}()
-	default:
-		logger.Info(fmt.Sprintf("Mongo reader service started, exposed port %s", cfg.port))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("MongoDB reader service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("mongodb reader service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("MongoDB reader  service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }

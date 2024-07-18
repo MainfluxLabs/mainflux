@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -60,9 +60,9 @@ const (
 type config struct {
 	brokerURL  string
 	logLevel   string
-	port       string
 	configPath string
 	dbConfig   timescale.Config
+	httpServer servers.Config
 }
 
 func main() {
@@ -92,7 +92,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, cfg.port, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpServer, logger)
 	})
 
 	g.Go(func() error {
@@ -121,12 +121,17 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	httpServer := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		port:       mainflux.Env(envPort, defPort),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:   dbConfig,
+		httpServer: httpServer,
 	}
 }
 
@@ -159,30 +164,4 @@ func newService(db *sqlx.DB, logger logger.Logger) consumers.Consumer {
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, port string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svcName)}
-
-	logger.Info(fmt.Sprintf("Timescale writer service started, exposed port %s", port))
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("timescale writer service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("timescale writer service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("Timescale writer service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
-
 }

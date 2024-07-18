@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
@@ -36,9 +36,7 @@ import (
 )
 
 const (
-	stopWaitTime  = 5 * time.Second
-	httpProtocol  = "http"
-	httpsProtocol = "https"
+	stopWaitTime = 5 * time.Second
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -96,11 +94,9 @@ const (
 type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
-	httpPort        string
-	grpcPort        string
+	authHTTPServer  servers.Config
+	authGRPCServer  servers.Config
 	secret          string
-	serverCert      string
-	serverKey       string
 	jaegerURL       string
 	loginDuration   time.Duration
 	timeout         time.Duration
@@ -150,10 +146,10 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger)
+		return servers.StartHTTPServer(ctx, "auth-http", httpapi.MakeHandler(svc, tracer, logger), cfg.authHTTPServer, logger)
 	})
 	g.Go(func() error {
-		return startGRPCServer(ctx, tracer, svc, cfg.grpcPort, cfg.serverCert, cfg.serverKey, logger)
+		return startGRPCServer(ctx, tracer, svc, cfg.authGRPCServer.Port, cfg.authGRPCServer.ServerCert, cfg.authGRPCServer.ServerKey, logger)
 	})
 
 	g.Go(func() error {
@@ -181,6 +177,20 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	authHTTPServer := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
+		StopWaitTime: stopWaitTime,
+	}
+
+	authGRPCServer := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	usersClientTLS, err := strconv.ParseBool(mainflux.Env(envUsersClientTLS, defUsersClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envUsersClientTLS)
@@ -204,11 +214,9 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
-		httpPort:        mainflux.Env(envHTTPPort, defHTTPPort),
-		grpcPort:        mainflux.Env(envGRPCPort, defGRPCPort),
+		authHTTPServer:  authHTTPServer,
+		authGRPCServer:  authGRPCServer,
 		secret:          mainflux.Env(envSecret, defSecret),
-		serverCert:      mainflux.Env(envServerCert, defServerCert),
-		serverKey:       mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration:   loginDuration,
 		timeout:         timeout,
@@ -339,40 +347,6 @@ func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, uc mainflux.UsersS
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Service, port string, certFile string, keyFile string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	server := &http.Server{Addr: p, Handler: httpapi.MakeHandler(svc, tracer, logger)}
-	errCh := make(chan error)
-	protocol := httpProtocol
-	switch {
-	case certFile != "" || keyFile != "":
-		logger.Info(fmt.Sprintf("Authentication service started using https, cert %s key %s, exposed port %s", certFile, keyFile, port))
-		go func() {
-			errCh <- server.ListenAndServeTLS(certFile, keyFile)
-		}()
-		protocol = httpsProtocol
-	default:
-		logger.Info(fmt.Sprintf("Authentication service started using http, exposed port %s", port))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Authentication %s service error occurred during shutdown at %s: %s", protocol, p, err))
-			return fmt.Errorf("Authentication %s service error occurred during shutdown at %s: %w", protocol, p, err)
-		}
-		logger.Info(fmt.Sprintf("Authentication %s service shutdown of http at %s", protocol, p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
 
 func startGRPCServer(ctx context.Context, tracer opentracing.Tracer, svc auth.Service, port string, certFile string, keyFile string, logger logger.Logger) error {

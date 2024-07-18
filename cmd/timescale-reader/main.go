@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -18,6 +17,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
@@ -77,10 +77,10 @@ const (
 
 type config struct {
 	logLevel          string
-	port              string
 	clientTLS         bool
 	caCerts           string
 	dbConfig          timescale.Config
+	httpServer        servers.Config
 	jaegerURL         string
 	thingsGRPCURL     string
 	authGRPCURL       string
@@ -119,7 +119,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, repo, tc, auth, cfg.port, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpServer, logger)
 	})
 
 	g.Go(func() error {
@@ -148,6 +148,11 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	httpServer := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
@@ -165,10 +170,10 @@ func loadConfig() config {
 
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		port:              mainflux.Env(envPort, defPort),
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		dbConfig:          dbConfig,
+		httpServer:        httpServer,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
@@ -280,29 +285,4 @@ func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient, port string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(repo, tc, ac, svcName, logger)}
-
-	logger.Info(fmt.Sprintf("Timescale reader service started, exposed port %s", port))
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Timescale reader service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("Timescale reader service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("Timescale reader service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }

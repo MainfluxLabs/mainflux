@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/opentracing/opentracing-go"
@@ -53,9 +53,9 @@ const (
 )
 
 type config struct {
+	httpServer        servers.Config
 	brokerURL         string
 	logLevel          string
-	port              string
 	clientTLS         bool
 	caCerts           string
 	jaegerURL         string
@@ -110,7 +110,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, svc, cfg, logger, tracer)
+		return servers.StartHTTPServer(ctx, "http", api.MakeHandler(svc, tracer, logger), cfg.httpServer, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -137,10 +137,15 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	httpServer := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
+		httpServer:        httpServer,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		port:              mainflux.Env(envPort, defPort),
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
@@ -195,28 +200,4 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 		os.Exit(1)
 	}
 	return conn
-}
-
-func startHTTPServer(ctx context.Context, svc adapter.Service, cfg config, logger logger.Logger, tracer opentracing.Tracer) error {
-	p := fmt.Sprintf(":%s", cfg.port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svc, tracer, logger)}
-	logger.Info(fmt.Sprintf("HTTP adapter service started on port %s", cfg.port))
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("HTTP adapter service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("http adapter service error occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("HTTP adapter service shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
