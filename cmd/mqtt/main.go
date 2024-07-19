@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	svcName      = "mqtt"
+	svcName      = "mqtt-adapter"
 	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
@@ -125,7 +125,7 @@ const (
 
 type config struct {
 	port              string
-	httpServer        servers.Config
+	httpConfig        servers.Config
 	targetHost        string
 	targetPort        string
 	timeout           time.Duration
@@ -248,13 +248,13 @@ func main() {
 		return proxyMQTT(ctx, cfg, logger, h)
 	})
 
-	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpServer.Port))
+	logger.Info(fmt.Sprintf("Starting MQTT over WS  proxy on port %s", cfg.httpConfig.Port))
 	g.Go(func() error {
 		return proxyWS(ctx, cfg, logger, h)
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -303,7 +303,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -312,7 +312,7 @@ func loadConfig() config {
 
 	return config{
 		port:              mainflux.Env(envMQTTPort, defMQTTPort),
-		httpServer:        httpServer,
+		httpConfig:        httpConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
 		timeout:           mqttTimeout,

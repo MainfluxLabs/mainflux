@@ -42,9 +42,9 @@ import (
 )
 
 const (
-	stopWaitTime       = 5 * time.Second
-	svcThings          = "things-http"
-	svcAuth            = "things-auth-http"
+	stopWaitTime = 5 * time.Second
+	svcName      = "things"
+
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
 	defDBPort          = "5432"
@@ -115,9 +115,9 @@ const (
 type config struct {
 	logLevel         string
 	dbConfig         postgres.Config
-	thingsHTTPServer servers.Config
-	authHTTPServer   servers.Config
-	thingsGRPCServer servers.Config
+	httpConfig       servers.Config
+	authHttpConfig   servers.Config
+	grpcConfig       servers.Config
 	clientTLS        bool
 	caCerts          string
 	cacheURL         string
@@ -182,15 +182,15 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcThings, thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.thingsHTTPServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcAuth, authhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.authHTTPServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, authhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, thingsTracer, cfg.thingsGRPCServer, logger)
+		return startGRPCServer(ctx, svc, thingsTracer, cfg.grpcConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -239,21 +239,21 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	thingsHTTPServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
 		StopWaitTime: stopWaitTime,
 	}
 
-	authHTTPServer := servers.Config{
+	authHttpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
 		StopWaitTime: stopWaitTime,
 	}
 
-	thingsGRPCServer := servers.Config{
+	grpcConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
@@ -263,9 +263,9 @@ func loadConfig() config {
 	return config{
 		logLevel:         mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:         dbConfig,
-		thingsHTTPServer: thingsHTTPServer,
-		authHTTPServer:   authHTTPServer,
-		thingsGRPCServer: thingsGRPCServer,
+		httpConfig:       httpConfig,
+		authHttpConfig:   authHttpConfig,
+		grpcConfig:       grpcConfig,
 		clientTLS:        tls,
 		caCerts:          mainflux.Env(envCACerts, defCACerts),
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),

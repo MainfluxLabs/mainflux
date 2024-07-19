@@ -80,7 +80,7 @@ type config struct {
 	clientTLS         bool
 	caCerts           string
 	dbConfig          timescale.Config
-	httpServer        servers.Config
+	httpConfig        servers.Config
 	jaegerURL         string
 	thingsGRPCURL     string
 	authGRPCURL       string
@@ -119,7 +119,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -148,7 +148,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -173,7 +173,7 @@ func loadConfig() config {
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		dbConfig:          dbConfig,
-		httpServer:        httpServer,
+		httpConfig:        httpConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,

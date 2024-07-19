@@ -45,7 +45,7 @@ const (
 )
 
 type config struct {
-	httpServer servers.Config
+	httpConfig servers.Config
 	brokerURL  string
 	logLevel   string
 	dbName     string
@@ -90,7 +90,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -108,13 +108,13 @@ func main() {
 }
 
 func loadConfigs() config {
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
 
 	return config{
-		httpServer: httpServer,
+		httpConfig: httpConfig,
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbName:     mainflux.Env(envDB, defDB),

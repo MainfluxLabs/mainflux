@@ -62,7 +62,7 @@ type config struct {
 	logLevel   string
 	configPath string
 	dbConfig   timescale.Config
-	httpServer servers.Config
+	httpConfig servers.Config
 }
 
 func main() {
@@ -92,7 +92,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -121,7 +121,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -131,7 +131,7 @@ func loadConfig() config {
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		configPath: mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:   dbConfig,
-		httpServer: httpServer,
+		httpConfig: httpConfig,
 	}
 }
 

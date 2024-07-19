@@ -36,6 +36,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "certs"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -109,7 +110,7 @@ var (
 type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
-	certsHTTPServer servers.Config
+	httpConfig      servers.Config
 	clientTLS       bool
 	caCerts         string
 	certsURL        string
@@ -167,7 +168,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, "certs-http", api.MakeHandler(svc, logger), cfg.certsHTTPServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -200,7 +201,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	certsHTTPServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envPort, defPort),
@@ -220,7 +221,7 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
-		certsHTTPServer: certsHTTPServer,
+		httpConfig:      httpConfig,
 		clientTLS:       tls,
 		caCerts:         mainflux.Env(envCACerts, defCACerts),
 		certsURL:        mainflux.Env(envCertsURL, defCertsURL),
@@ -307,9 +308,9 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 		LogLevel:       cfg.logLevel,
 		ClientTLS:      cfg.clientTLS,
 		CaCerts:        cfg.caCerts,
-		HTTPPort:       cfg.certsHTTPServer.Port,
-		ServerCert:     cfg.certsHTTPServer.ServerCert,
-		ServerKey:      cfg.certsHTTPServer.ServerKey,
+		HTTPPort:       cfg.httpConfig.Port,
+		ServerCert:     cfg.httpConfig.ServerCert,
+		ServerKey:      cfg.httpConfig.ServerKey,
 		CertsURL:       cfg.certsURL,
 		JaegerURL:      cfg.jaegerURL,
 		AuthURL:        cfg.authGRPCURL,

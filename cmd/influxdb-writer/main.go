@@ -52,7 +52,7 @@ const (
 )
 
 type config struct {
-	httpServer servers.Config
+	httpConfig servers.Config
 	brokerURL  string
 	logLevel   string
 	dbHost     string
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -123,13 +123,13 @@ func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
 }
 
 func loadConfigs() (config, influxdb.RepoConfig) {
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
 
 	cfg := config{
-		httpServer: httpServer,
+		httpConfig: httpConfig,
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbHost:     mainflux.Env(envDBHost, defDBHost),

@@ -88,7 +88,7 @@ type config struct {
 	brokerURL         string
 	logLevel          string
 	dbConfig          postgres.Config
-	httpServer        servers.Config
+	httpConfig        servers.Config
 	clientTLS         bool
 	caCerts           string
 	jaegerURL         string
@@ -137,7 +137,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -176,7 +176,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -187,7 +187,7 @@ func loadConfig() config {
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
-		httpServer:        httpServer,
+		httpConfig:        httpConfig,
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),

@@ -37,6 +37,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "auth"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -94,8 +95,8 @@ const (
 type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
-	authHTTPServer  servers.Config
-	authGRPCServer  servers.Config
+	httpConfig      servers.Config
+	grpcConfig      servers.Config
 	secret          string
 	jaegerURL       string
 	loginDuration   time.Duration
@@ -146,10 +147,10 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, "auth-http", httpapi.MakeHandler(svc, tracer, logger), cfg.authHTTPServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
-		return startGRPCServer(ctx, tracer, svc, cfg.authGRPCServer.Port, cfg.authGRPCServer.ServerCert, cfg.authGRPCServer.ServerKey, logger)
+		return startGRPCServer(ctx, tracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
 	})
 
 	g.Go(func() error {
@@ -177,14 +178,14 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	authHTTPServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
 		StopWaitTime: stopWaitTime,
 	}
 
-	authGRPCServer := servers.Config{
+	grpcConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
@@ -214,8 +215,8 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
-		authHTTPServer:  authHTTPServer,
-		authGRPCServer:  authGRPCServer,
+		httpConfig:      httpConfig,
+		grpcConfig:      grpcConfig,
 		secret:          mainflux.Env(envSecret, defSecret),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration:   loginDuration,

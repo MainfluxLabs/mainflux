@@ -32,6 +32,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "http-adapter"
 
 	defLogLevel          = "error"
 	defClientTLS         = "false"
@@ -53,7 +54,7 @@ const (
 )
 
 type config struct {
-	httpServer        servers.Config
+	httpConfig        servers.Config
 	brokerURL         string
 	logLevel          string
 	clientTLS         bool
@@ -110,7 +111,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, "http", api.MakeHandler(svc, tracer, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -137,13 +138,13 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
 
 	return config{
-		httpServer:        httpServer,
+		httpConfig:        httpConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:         tls,

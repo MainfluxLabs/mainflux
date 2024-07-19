@@ -42,7 +42,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcName      = "users-http"
+	svcName      = "users"
 
 	defLogLevel      = "error"
 	defDBHost        = "localhost"
@@ -121,8 +121,8 @@ const (
 type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
-	httpServer      servers.Config
-	grpcServer      servers.Config
+	httpConfig      servers.Config
+	grpcConfig      servers.Config
 	emailConf       email.Config
 	jaegerURL       string
 	resetURL        string
@@ -168,7 +168,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, tracer, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -221,14 +221,14 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
 		StopWaitTime: stopWaitTime,
 	}
 
-	grpcServer := servers.Config{
+	grpcConfig := servers.Config{
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
@@ -248,8 +248,8 @@ func loadConfig() config {
 	return config{
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
-		httpServer:      httpServer,
-		grpcServer:      grpcServer,
+		httpConfig:      httpConfig,
+		grpcConfig:      grpcConfig,
 		emailConf:       emailConf,
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		resetURL:        mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
@@ -373,26 +373,26 @@ func createAdmin(svc users.Service, c config) error {
 }
 
 func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.grpcServer.Port)
+	p := fmt.Sprintf(":%s", cfg.grpcConfig.Port)
 	errCh := make(chan error)
 	var server *grpc.Server
 
 	listener, err := net.Listen("tcp", p)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.grpcServer.Port, err)
+		return fmt.Errorf("failed to listen on port %s: %w", cfg.grpcConfig.Port, err)
 	}
 
 	switch {
-	case cfg.grpcServer.ServerCert != "" || cfg.grpcServer.ServerKey != "":
-		creds, err := credentials.NewServerTLSFromFile(cfg.grpcServer.ServerCert, cfg.grpcServer.ServerKey)
+	case cfg.grpcConfig.ServerCert != "" || cfg.grpcConfig.ServerKey != "":
+		creds, err := credentials.NewServerTLSFromFile(cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey)
 		if err != nil {
 			return fmt.Errorf("failed to load users certificates: %w", err)
 		}
 		logger.Info(fmt.Sprintf("Users gRPC service started using https on port %s with cert %s key %s",
-			cfg.grpcServer.Port, cfg.grpcServer.ServerCert, cfg.grpcServer.ServerKey))
+			cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey))
 		server = grpc.NewServer(grpc.Creds(creds))
 	default:
-		logger.Info(fmt.Sprintf("Users gRPC service started using http on port %s", cfg.grpcServer.Port))
+		logger.Info(fmt.Sprintf("Users gRPC service started using http on port %s", cfg.grpcConfig.Port))
 		server = grpc.NewServer()
 	}
 

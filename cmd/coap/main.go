@@ -33,6 +33,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "coap-adapter"
 
 	defPort              = "5683"
 	defBrokerURL         = "nats://localhost:4222"
@@ -54,7 +55,7 @@ const (
 )
 
 type config struct {
-	coapServer        servers.Config
+	coapConfig        servers.Config
 	brokerURL         string
 	logLevel          string
 	clientTLS         bool
@@ -110,7 +111,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, "coap", api.MakeHTTPHandler(), cfg.coapServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHTTPHandler(), cfg.coapConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -131,7 +132,7 @@ func main() {
 }
 
 func loadConfig() config {
-	coapServer := servers.Config{
+	coapConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -147,7 +148,7 @@ func loadConfig() config {
 	}
 
 	return config{
-		coapServer:        coapServer,
+		coapConfig:        coapConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:         tls,
@@ -207,9 +208,9 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 }
 
 func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.coapServer.Port)
+	p := fmt.Sprintf(":%s", cfg.coapConfig.Port)
 	errCh := make(chan error)
-	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.coapServer.Port))
+	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.coapConfig.Port))
 	go func() {
 		errCh <- gocoap.ListenAndServe("udp", p, api.MakeCoAPHandler(svc, l))
 	}()

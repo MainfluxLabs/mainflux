@@ -69,7 +69,7 @@ const (
 )
 
 type config struct {
-	httpServer        servers.Config
+	httpConfig        servers.Config
 	logLevel          string
 	dbName            string
 	dbHost            string
@@ -113,7 +113,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -172,7 +172,7 @@ func loadConfigs() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envPort, defPort),
@@ -180,7 +180,7 @@ func loadConfigs() config {
 	}
 
 	return config{
-		httpServer:        httpServer,
+		httpConfig:        httpConfig,
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbName:            mainflux.Env(envDB, defDB),
 		dbHost:            mainflux.Env(envDBHost, defDBHost),

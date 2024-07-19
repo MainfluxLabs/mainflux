@@ -56,7 +56,7 @@ const (
 )
 
 type config struct {
-	httpServer servers.Config
+	httpConfig servers.Config
 	brokerURL  string
 	logLevel   string
 	dbConfig   postgres.Config
@@ -89,7 +89,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpServer, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -119,7 +119,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	httpServer := servers.Config{
+	httpConfig := servers.Config{
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -128,7 +128,7 @@ func loadConfig() config {
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
-		httpServer: httpServer,
+		httpConfig: httpConfig,
 	}
 }
 
