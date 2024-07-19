@@ -13,7 +13,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -88,12 +88,9 @@ type config struct {
 	brokerURL         string
 	logLevel          string
 	dbConfig          postgres.Config
+	httpConfig        servers.Config
 	clientTLS         bool
 	caCerts           string
-	httpPort          string
-	authGRPCPort      string
-	serverCert        string
-	serverKey         string
 	jaegerURL         string
 	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
@@ -116,7 +113,7 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	webhooksTracer, webhooksCloser := initJaeger("webhooks", cfg.jaegerURL, logger)
+	webhooksTracer, webhooksCloser := initJaeger(svcName, cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
 
 	db := connectToDB(cfg.dbConfig, logger)
@@ -140,7 +137,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, "webhook-http", httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpPort, cfg, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -178,15 +175,21 @@ func loadConfig() config {
 		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
+
+	httpConfig := servers.Config{
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
+		httpConfig:        httpConfig,
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
-		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert:        mainflux.Env(envServerCert, defServerCert),
-		serverKey:         mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
@@ -282,38 +285,4 @@ func newService(ts mainflux.ThingsServiceClient, dbTracer opentracing.Tracer, db
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, name string, handler http.Handler, port string, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: handler}
-
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("Webhooks %s service started using https on port %s with cert %s key %s",
-			name, port, cfg.serverCert, cfg.serverKey))
-		go func() {
-			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
-		}()
-	default:
-		logger.Info(fmt.Sprintf("Webhooks %s service started using http on port %s", name, cfg.httpPort))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Webhooks %s service error occurred during shutdown at %s: %s", name, p, err))
-			return fmt.Errorf("webhooks %s service occurred during shutdown at %s: %w", name, p, err)
-		}
-		logger.Info(fmt.Sprintf("Webhooks %s service  shutdown of http at %s", name, p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }

@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -20,6 +19,7 @@ import (
 	logger "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -33,6 +33,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
+	svcName      = "coap-adapter"
 
 	defPort              = "5683"
 	defBrokerURL         = "nats://localhost:4222"
@@ -54,7 +55,7 @@ const (
 )
 
 type config struct {
-	port              string
+	coapConfig        servers.Config
 	brokerURL         string
 	logLevel          string
 	clientTLS         bool
@@ -110,7 +111,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, cfg.port, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHTTPHandler(), cfg.coapConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -131,6 +132,11 @@ func main() {
 }
 
 func loadConfig() config {
+	coapConfig := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
@@ -142,8 +148,8 @@ func loadConfig() config {
 	}
 
 	return config{
+		coapConfig:        coapConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
-		port:              mainflux.Env(envPort, defPort),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		clientTLS:         tls,
 		caCerts:           mainflux.Env(envCACerts, defCACerts),
@@ -201,35 +207,10 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	return tracer, closer
 }
 
-func startHTTPServer(ctx context.Context, port string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHTTPHandler()}
-	logger.Info(fmt.Sprintf("CoAP service started, exposed port %s", port))
-
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("CoAP adapter service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("CoAP adapter service error occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("CoAP adapter service shutdown at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
-}
-
 func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.port)
+	p := fmt.Sprintf(":%s", cfg.coapConfig.Port)
 	errCh := make(chan error)
-	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.port))
+	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.coapConfig.Port))
 	go func() {
 		errCh <- gocoap.ListenAndServe("udp", p, api.MakeCoAPHandler(svc, l))
 	}()
