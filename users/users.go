@@ -6,7 +6,7 @@ package users
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
