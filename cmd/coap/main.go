@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/coap"
 	"github.com/MainfluxLabs/mainflux/coap/api"
 	logger "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -27,13 +28,12 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcName      = "coap-adapter"
+	svcCoap      = "coap-adapter"
+	svcThings    = "things"
 
 	defPort              = "5683"
 	defBrokerURL         = "nats://localhost:4222"
@@ -56,12 +56,10 @@ const (
 
 type config struct {
 	coapConfig        servers.Config
+	thingsConfig      clients.Config
 	brokerURL         string
 	logLevel          string
-	clientTLS         bool
-	caCerts           string
 	jaegerURL         string
-	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 }
 
@@ -75,10 +73,10 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := connectToThings(cfg, logger)
+	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -111,7 +109,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHTTPHandler(), cfg.coapConfig, logger)
+		return servers.StartHTTPServer(ctx, svcCoap, api.MakeHTTPHandler(), cfg.coapConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -147,40 +145,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	thingsConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+	}
+
 	return config{
 		coapConfig:        coapConfig,
+		thingsConfig:      thingsConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:         tls,
-		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
-}
-
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-	return conn
 }
 
 func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {

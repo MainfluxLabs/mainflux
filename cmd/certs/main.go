@@ -21,6 +21,7 @@ import (
 	vault "github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -30,13 +31,12 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcName      = "certs"
+	svcCerts     = "certs"
+	svcAuth      = "auth"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -111,12 +111,10 @@ type config struct {
 	logLevel        string
 	dbConfig        postgres.Config
 	httpConfig      servers.Config
-	clientTLS       bool
-	caCerts         string
+	authConfig      clients.Config
 	certsURL        string
 	thingsURL       string
 	jaegerURL       string
-	authGRPCURL     string
 	authGRPCTimeout time.Duration
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
@@ -157,10 +155,10 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := connectToAuth(cfg, logger)
+	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -168,7 +166,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcCerts, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -213,6 +211,12 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
+	authConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+	}
+
 	signRSABits, err := strconv.Atoi(mainflux.Env(envSignRSABits, defSignRSABits))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envSignRSABits, err.Error())
@@ -222,12 +226,10 @@ func loadConfig() config {
 		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:        dbConfig,
 		httpConfig:      httpConfig,
-		clientTLS:       tls,
-		caCerts:         mainflux.Env(envCACerts, defCACerts),
+		authConfig:      authConfig,
 		certsURL:        mainflux.Env(envCertsURL, defCertsURL),
 		thingsURL:       mainflux.Env(envThingsURL, defThingsURL),
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authGRPCTimeout: authGRPCTimeout,
 
 		signCAKeyPath:  mainflux.Env(envSignCAKey, defSignCAKeyPath),
@@ -250,31 +252,6 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 		os.Exit(1)
 	}
 	return db
-}
-
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
 }
 
 func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
@@ -306,14 +283,14 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 
 	certsConfig := certs.Config{
 		LogLevel:       cfg.logLevel,
-		ClientTLS:      cfg.clientTLS,
-		CaCerts:        cfg.caCerts,
+		ClientTLS:      cfg.authConfig.ClientTLS,
+		CaCerts:        cfg.authConfig.CaCerts,
 		HTTPPort:       cfg.httpConfig.Port,
 		ServerCert:     cfg.httpConfig.ServerCert,
 		ServerKey:      cfg.httpConfig.ServerKey,
 		CertsURL:       cfg.certsURL,
 		JaegerURL:      cfg.jaegerURL,
-		AuthURL:        cfg.authGRPCURL,
+		AuthURL:        cfg.authConfig.GrpcURL,
 		AuthTimeout:    cfg.authGRPCTimeout,
 		SignTLSCert:    tlsCert,
 		SignX509Cert:   x509Cert,

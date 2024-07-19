@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -38,12 +39,12 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
-	svcName      = "mqtt-adapter"
+	svcMqtt      = "mqtt-adapter"
+	svcThings    = "things"
+	svcAuth      = "auth"
 	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
@@ -126,6 +127,8 @@ const (
 type config struct {
 	port              string
 	httpConfig        servers.Config
+	authConfig        clients.Config
+	thingsConfig      clients.Config
 	targetHost        string
 	targetPort        string
 	timeout           time.Duration
@@ -136,12 +139,8 @@ type config struct {
 	httpTargetPath    string
 	jaegerURL         string
 	logLevel          string
-	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 	brokerURL         string
-	authGRPCURL       string
-	clientTLS         bool
-	caCerts           string
 	instance          string
 	esURL             string
 	esPass            string
@@ -178,7 +177,7 @@ func main() {
 		}
 	}
 
-	conn := connectToThings(cfg, logger)
+	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
 	defer conn.Close()
 
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
@@ -203,7 +202,7 @@ func main() {
 	}
 
 	fwd := mqtt.NewForwarder(subjects, logger)
-	if err := fwd.Forward(svcName, nps, mpub); err != nil {
+	if err := fwd.Forward(svcMqtt, nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
 		os.Exit(1)
 	}
@@ -220,20 +219,20 @@ func main() {
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tracer, closer := initJaeger("mqtt_adapter", cfg.jaegerURL, logger)
 
 	defer closer.Close()
 
-	usersAuthTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	usersAuthTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	usersAuthConn := connectToAuth(cfg, logger)
-	defer usersAuthConn.Close()
+	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	defer authConn.Close()
 
-	usersAuth := authapi.NewClient(usersAuthTracer, usersAuthConn, cfg.authGRPCTimeout)
+	usersAuth := authapi.NewClient(usersAuthTracer, authConn, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authClient := auth.New(ac, tc)
@@ -254,7 +253,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcMqtt, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -310,9 +309,23 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	thingsConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+	}
+
+	authConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+	}
+
 	return config{
 		port:              mainflux.Env(envMQTTPort, defMQTTPort),
 		httpConfig:        httpConfig,
+		authConfig:        authConfig,
+		thingsConfig:      thingsConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
 		timeout:           mqttTimeout,
@@ -322,13 +335,9 @@ func loadConfig() config {
 		httpTargetPort:    mainflux.Env(envHTTPTargetPort, defHTTPTargetPort),
 		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
-		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:         tls,
-		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		instance:          mainflux.Env(envInstance, defInstance),
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esPass:            mainflux.Env(envESPass, defESPass),
@@ -363,30 +372,6 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	}
 
 	return tracer, closer
-}
-
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-	return conn
 }
 
 func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *redis.Client {
@@ -492,29 +477,4 @@ func newService(ac mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient, 
 	)
 
 	return svc
-}
-
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
 }

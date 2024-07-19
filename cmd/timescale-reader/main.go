@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -28,13 +29,13 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
-	svcName      = "timescaledb-reader"
-	stopWaitTime = 5 * time.Second
+	svcTimescaledb = "timescaledb-reader"
+	svcThings      = "things"
+	svcAuth        = "auth"
+	stopWaitTime   = 5 * time.Second
 
 	defLogLevel          = "error"
 	defPort              = "8911"
@@ -77,13 +78,11 @@ const (
 
 type config struct {
 	logLevel          string
-	clientTLS         bool
-	caCerts           string
 	dbConfig          timescale.Config
 	httpConfig        servers.Config
+	authConfig        clients.Config
+	thingsConfig      clients.Config
 	jaegerURL         string
-	thingsGRPCURL     string
-	authGRPCURL       string
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 }
@@ -98,16 +97,16 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := connectToThings(cfg, logger)
+	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := connectToAuth(cfg, logger)
+	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
 	defer authConn.Close()
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
@@ -119,7 +118,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcTimescaledb, api.MakeHandler(repo, tc, auth, svcTimescaledb, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -168,44 +167,28 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	thingsConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+	}
+
+	authConfig := clients.Config{
+		ClientTLS: tls,
+		CaCerts:   mainflux.Env(envCACerts, defCACerts),
+		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		clientTLS:         tls,
-		caCerts:           mainflux.Env(envCACerts, defCACerts),
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
+		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		authGRPCURL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authGRPCTimeout:   authGRPCTimeout,
 	}
-}
-
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	logger.Info("Connecting to auth via gRPC")
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-	logger.Info(fmt.Sprintf("Established gRPC connection to auth via gRPC: %s", cfg.authGRPCURL))
-	return conn
 }
 
 func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
@@ -239,30 +222,6 @@ func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, 
 	}
 
 	return tracer, closer
-}
-
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-	return conn
 }
 
 func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
