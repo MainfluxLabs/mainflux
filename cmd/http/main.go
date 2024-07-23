@@ -18,9 +18,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/opentracing/opentracing-go"
@@ -71,7 +73,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
 	httpTracer, closer := initJaeger("http_adapter", cfg.jaegerURL, logger)
@@ -108,7 +110,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -143,7 +145,7 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 	return config{

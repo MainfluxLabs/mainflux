@@ -18,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -100,7 +101,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

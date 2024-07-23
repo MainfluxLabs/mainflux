@@ -22,9 +22,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
@@ -157,7 +159,7 @@ func main() {
 	authTracer, authCloser := initJaeger("certs_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -165,7 +167,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -213,7 +215,7 @@ func loadConfig() config {
 	authConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 	}
 
 	signRSABits, err := strconv.Atoi(mainflux.Env(envSignRSABits, defSignRSABits))
@@ -289,7 +291,7 @@ func newService(ac mainflux.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 		ServerKey:      cfg.httpConfig.ServerKey,
 		CertsURL:       cfg.certsURL,
 		JaegerURL:      cfg.jaegerURL,
-		AuthURL:        cfg.authConfig.GrpcURL,
+		AuthURL:        cfg.authConfig.URL,
 		AuthTimeout:    cfg.authGRPCTimeout,
 		SignTLSCert:    tlsCert,
 		SignX509Cert:   x509Cert,

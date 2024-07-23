@@ -21,9 +21,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -120,7 +122,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("webhooks_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	thingsConn := clients.Connect(cfg.thingsConfig, "things", logger)
+	thingsConn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
 	defer thingsConn.Close()
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -135,7 +137,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -184,7 +186,7 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 	return config{

@@ -18,8 +18,10 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
@@ -171,7 +173,7 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	usrConn := clients.Connect(cfg.usersConfig, "users", logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, "users", logger)
 	defer usrConn.Close()
 
 	usersTracer, usersCloser := initJaeger("things_users", cfg.jaegerURL, logger)
@@ -182,11 +184,11 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, svcName, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -263,13 +265,13 @@ func loadConfig() config {
 	authConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 	}
 
 	usersConfig := clients.Config{
 		ClientTLS: usersClientTLS,
 		CaCerts:   mainflux.Env(envUsersCACerts, defUsersCACerts),
-		GrpcURL:   mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		URL:       mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
 	}
 
 	return config{
@@ -346,7 +348,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
 	}
 
-	conn := clients.Connect(cfg.authConfig, "auth", logger)
+	conn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 

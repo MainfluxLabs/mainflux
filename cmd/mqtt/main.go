@@ -20,11 +20,13 @@ import (
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
@@ -175,7 +177,7 @@ func main() {
 		}
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
@@ -227,7 +229,7 @@ func main() {
 	authTracer, authCloser := initJaeger("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	usersAuth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -251,7 +253,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -310,13 +312,13 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 	authConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 	}
 
 	return config{

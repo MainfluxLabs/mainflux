@@ -21,8 +21,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
@@ -128,7 +130,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	usrConn := clients.Connect(cfg.usersConfig, "users", logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, "users", logger)
 	defer usrConn.Close()
 
 	usersTracer, usersCloser := initJaeger("auth_users", cfg.jaegerURL, logger)
@@ -136,7 +138,7 @@ func main() {
 
 	uc := usersapi.NewClient(usrConn, usersTracer, cfg.timeout)
 
-	thConn := clients.Connect(cfg.thingsConfig, "things", logger)
+	thConn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
 	defer thConn.Close()
 
 	thingsTracer, thingsCloser := initJaeger("auth_things", cfg.jaegerURL, logger)
@@ -147,7 +149,7 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		return startGRPCServer(ctx, authGrpcTracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
@@ -205,13 +207,13 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS: thingsClientTLS,
 		CaCerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
-		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 	usersConfig := clients.Config{
 		ClientTLS: usersClientTLS,
 		CaCerts:   mainflux.Env(envUsersCACerts, defUsersCACerts),
-		GrpcURL:   mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		URL:       mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))

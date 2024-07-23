@@ -16,6 +16,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"golang.org/x/sync/errgroup"
 
@@ -76,7 +77,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
 	thingsTracer, thingsCloser := initJaeger("ws_things", cfg.jaegerURL, logger)
@@ -125,7 +126,7 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		GrpcURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 	}
 
 	return config{

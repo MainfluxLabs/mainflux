@@ -17,8 +17,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
@@ -156,7 +158,7 @@ func main() {
 	authTracer, closer := initJaeger("users_auth", cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	authConn := clients.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -167,7 +169,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -247,7 +249,7 @@ func loadConfig() config {
 	authConfig := clients.Config{
 		ClientTLS: tls,
 		CaCerts:   mainflux.Env(envAuthCACerts, defAuthCACerts),
-		GrpcURL:   mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 	}
 
 	return config{
