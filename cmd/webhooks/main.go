@@ -40,8 +40,7 @@ import (
 )
 
 const (
-	svcWebhooks  = "webhooks"
-	svcThings    = "things"
+	svcName      = "webhooks"
 	stopWaitTime = 5 * time.Second
 
 	defBrokerURL         = "nats://localhost:4222"
@@ -112,16 +111,16 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	webhooksTracer, webhooksCloser := initJaeger(svcWebhooks, cfg.jaegerURL, logger)
+	webhooksTracer, webhooksCloser := initJaeger(svcName, cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("webhooks_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	thingsConn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	thingsConn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer thingsConn.Close()
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -131,12 +130,12 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcWebhooks, pubSub, svc, brokers.SubjectWebhook); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectWebhook); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcWebhooks, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

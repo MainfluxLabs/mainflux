@@ -42,9 +42,7 @@ import (
 )
 
 const (
-	svcMqtt      = "mqtt-adapter"
-	svcThings    = "things"
-	svcAuth      = "auth"
+	svcName      = "mqtt-adapter"
 	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
@@ -177,7 +175,7 @@ func main() {
 		}
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
@@ -202,7 +200,7 @@ func main() {
 	}
 
 	fwd := mqtt.NewForwarder(subjects, logger)
-	if err := fwd.Forward(svcMqtt, nps, mpub); err != nil {
+	if err := fwd.Forward(svcName, nps, mpub); err != nil {
 		logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
 		os.Exit(1)
 	}
@@ -219,20 +217,20 @@ func main() {
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("mqtt_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	tracer, closer := initJaeger("mqtt_adapter", cfg.jaegerURL, logger)
+	mqttTracer, closer := initJaeger("mqtt_adapter", cfg.jaegerURL, logger)
 
 	defer closer.Close()
 
-	usersAuthTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
-	usersAuth := authapi.NewClient(usersAuthTracer, authConn, cfg.authGRPCTimeout)
+	usersAuth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authClient := auth.New(ac, tc)
@@ -253,7 +251,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcMqtt, mqttapihttp.MakeHandler(tracer, svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

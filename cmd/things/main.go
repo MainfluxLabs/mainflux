@@ -44,9 +44,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcThings    = "things"
-	svcAuth      = "auth"
-	svcUsers     = "users"
+	svcName      = "things"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -146,8 +144,11 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
-	defer thingsCloser.Close()
+	thingsHttpTracer, thingsHttpCloser := initJaeger("things_http", cfg.jaegerURL, logger)
+	defer thingsHttpCloser.Close()
+
+	thingsGrpcTracer, thingsGrpcCloser := initJaeger("things_grpc", cfg.jaegerURL, logger)
+	defer thingsGrpcCloser.Close()
 
 	cacheClient := connectToRedis(cfg.cacheURL, cfg.cachePass, cfg.cacheDB, logger)
 
@@ -156,7 +157,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("things_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	auth, close := createAuthClient(cfg, authTracer, logger)
@@ -170,10 +171,10 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	usrConn := clients.Connect(cfg.usersConfig, svcUsers, logger)
+	usrConn := clients.Connect(cfg.usersConfig, "users", logger)
 	defer usrConn.Close()
 
-	usersTracer, usersCloser := initJaeger(svcUsers, cfg.jaegerURL, logger)
+	usersTracer, usersCloser := initJaeger("things_users", cfg.jaegerURL, logger)
 	defer usersCloser.Close()
 
 	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
@@ -181,15 +182,15 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcThings, thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcThings, authhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, thingsTracer, cfg.grpcConfig, logger)
+		return startGRPCServer(ctx, svc, thingsGrpcTracer, cfg.grpcConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -345,7 +346,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
 	}
 
-	conn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	conn := clients.Connect(cfg.authConfig, "auth", logger)
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 

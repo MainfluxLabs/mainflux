@@ -31,8 +31,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcHttp      = "http-adapter"
-	svcThings    = "things"
+	svcName      = "http-adapter"
 
 	defLogLevel          = "error"
 	defClientTLS         = "false"
@@ -72,13 +71,13 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	tracer, closer := initJaeger("http_adapter", cfg.jaegerURL, logger)
+	httpTracer, closer := initJaeger("http_adapter", cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("http_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	pub, err := brokers.NewPublisher(cfg.brokerURL)
@@ -109,7 +108,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcHttp, api.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {

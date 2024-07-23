@@ -43,8 +43,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcUsers     = "users"
-	svcAuth      = "auth"
+	svcName      = "users"
 
 	defLogLevel      = "error"
 	defDBHost        = "localhost"
@@ -148,19 +147,19 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	usersTracer, usersCloser := initJaeger(svcUsers, cfg.jaegerURL, logger)
-	defer usersCloser.Close()
+	usersHttpTracer, usersHttpCloser := initJaeger("users_http", cfg.jaegerURL, logger)
+	defer usersHttpCloser.Close()
 
-	authTracer, closer := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	usersGrpcTracer, usersGrpcCloser := initJaeger("users_grpc", cfg.jaegerURL, logger)
+	defer usersGrpcCloser.Close()
+
+	authTracer, closer := initJaeger("users_auth", cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
-
-	tracer, closer := initJaeger(svcUsers, cfg.jaegerURL, logger)
-	defer closer.Close()
 
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
@@ -168,7 +167,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcUsers, httpapi.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -180,7 +179,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, usersTracer, cfg, logger)
+		return startGRPCServer(ctx, svc, usersGrpcTracer, cfg, logger)
 	})
 
 	if err := g.Wait(); err != nil {

@@ -34,9 +34,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcMongodb   = "mongodb-reader"
-	svcThings    = "things"
-	svcAuth      = "auth"
+	svcName      = "mongodb-reader"
 
 	defLogLevel          = "error"
 	defPort              = "8180"
@@ -91,18 +89,18 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("mongodb_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("mongodb_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -112,7 +110,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcMongodb, api.MakeHandler(repo, tc, auth, svcMongodb, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

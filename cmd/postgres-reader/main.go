@@ -32,9 +32,7 @@ import (
 )
 
 const (
-	svcPostgres  = "postgres-reader"
-	svcThings    = "things"
-	svcAuth      = "auth"
+	svcName      = "postgres-reader"
 	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
@@ -97,18 +95,18 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("postgres_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("postgres_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -119,7 +117,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcPostgres, api.MakeHandler(repo, tc, auth, svcPostgres, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

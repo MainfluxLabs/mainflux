@@ -32,8 +32,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcCoap      = "coap-adapter"
-	svcThings    = "things"
+	svcName      = "coap-adapter"
 
 	defPort              = "5683"
 	defBrokerURL         = "nats://localhost:4222"
@@ -73,10 +72,10 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("coap_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -109,7 +108,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcCoap, api.MakeHTTPHandler(), cfg.coapConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHTTPHandler(), cfg.coapConfig, logger)
 	})
 
 	g.Go(func() error {

@@ -35,8 +35,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcCerts     = "certs"
-	svcAuth      = "auth"
+	svcName      = "certs"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -155,10 +154,10 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("certs_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -166,7 +165,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcCerts, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

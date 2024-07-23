@@ -38,9 +38,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcAuth      = "auth"
-	svcThings    = "things"
-	svcUsers     = "users"
+	svcName      = "auth"
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -121,24 +119,27 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	tracer, closer := initJaeger(svcAuth, cfg.jaegerURL, logger)
-	defer closer.Close()
+	authHttpTracer, authHttpCloser := initJaeger("auth_http", cfg.jaegerURL, logger)
+	defer authHttpCloser.Close()
+
+	authGrpcTracer, authGrpcCloser := initJaeger("auth_grpc", cfg.jaegerURL, logger)
+	defer authGrpcCloser.Close()
 
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	usrConn := clients.Connect(cfg.usersConfig, svcUsers, logger)
+	usrConn := clients.Connect(cfg.usersConfig, "users", logger)
 	defer usrConn.Close()
 
-	usersTracer, usersCloser := initJaeger(svcUsers, cfg.jaegerURL, logger)
+	usersTracer, usersCloser := initJaeger("auth_users", cfg.jaegerURL, logger)
 	defer usersCloser.Close()
 
 	uc := usersapi.NewClient(usrConn, usersTracer, cfg.timeout)
 
-	thConn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	thConn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer thConn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("auth_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
@@ -146,10 +147,10 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcAuth, httpapi.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
-		return startGRPCServer(ctx, tracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
+		return startGRPCServer(ctx, authGrpcTracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
 	})
 
 	g.Go(func() error {

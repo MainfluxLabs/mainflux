@@ -32,10 +32,8 @@ import (
 )
 
 const (
-	svcTimescaledb = "timescaledb-reader"
-	svcThings      = "things"
-	svcAuth        = "auth"
-	stopWaitTime   = 5 * time.Second
+	svcName      = "timescaledb-reader"
+	stopWaitTime = 5 * time.Second
 
 	defLogLevel          = "error"
 	defPort              = "8911"
@@ -97,16 +95,16 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("timescale_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("timescale_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
@@ -118,7 +116,7 @@ func main() {
 	repo := newService(db, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcTimescaledb, api.MakeHandler(repo, tc, auth, svcTimescaledb, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

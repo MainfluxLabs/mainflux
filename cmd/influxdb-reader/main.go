@@ -30,9 +30,7 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcInfluxdb  = "influxdb-reader"
-	svcThings    = "things"
-	svcAuth      = "auth"
+	svcName      = "influxdb-reader"
 
 	defLogLevel          = "error"
 	defPort              = "8180"
@@ -103,18 +101,18 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("influxdb_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authTracer, authCloser := initJaeger(svcAuth, cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("influxdb_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clients.Connect(cfg.authConfig, svcAuth, logger)
+	authConn := clients.Connect(cfg.authConfig, "auth", logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -129,7 +127,7 @@ func main() {
 	repo := newService(client, repoCfg, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcInfluxdb, api.MakeHandler(repo, tc, auth, svcInfluxdb, logger), cfg.httpConfig, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

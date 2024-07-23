@@ -33,7 +33,6 @@ import (
 
 const (
 	stopWaitTime = 5 * time.Second
-	svcThings    = "things"
 
 	defPort              = "8190"
 	defBrokerURL         = "nats://localhost:4222"
@@ -77,10 +76,10 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clients.Connect(cfg.thingsConfig, svcThings, logger)
+	conn := clients.Connect(cfg.thingsConfig, "things", logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger(svcThings, cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("ws_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
