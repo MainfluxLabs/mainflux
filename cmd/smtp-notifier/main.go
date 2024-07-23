@@ -21,6 +21,7 @@ import (
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api/http"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/smtp"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
 	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -132,13 +133,13 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	notifiersTracer, notifiersCloser := initJaeger("smtp-notifier", cfg.jaegerURL, logger)
+	notifiersTracer, notifiersCloser := initJaeger(svcName, cfg.jaegerURL, logger)
 	defer notifiersCloser.Close()
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("smtp_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	things, close := createThingsClient(cfg, thingsTracer, logger)
@@ -146,14 +147,17 @@ func main() {
 		defer close()
 	}
 
-	svc := newService(cfg, logger, db, things)
+	dbTracer, dbCloser := initJaeger("smtp_notifier_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	svc := newService(cfg, logger, dbTracer, db, things)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, "smtp-notifier-http", httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpPort, cfg, logger)
+		return startHTTPServer(ctx, svcName, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpPort, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -284,7 +288,7 @@ func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
 	return conn
 }
 
-func newService(c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
+func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
 	idp := uuid.New()
 	database := postgres.NewDatabase(db)
 
@@ -296,6 +300,7 @@ func newService(c config, logger logger.Logger, db *sqlx.DB, tc mainflux.ThingsS
 
 	notifier := smtp.New(agent)
 	notifierRepo := postgres.NewNotifierRepository(database)
+	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
 	svc := notifiers.New(idp, notifier, c.from, notifierRepo, tc)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
