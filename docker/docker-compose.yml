@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
   mainfluxlabs-mqtt-db-volume:
-  mainfluxlabs-influxdb-volume:
+  mainfluxlabs-timescale-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-webhooks-db-volume:
@@ -242,7 +242,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainfluxlabs/vernemq:0.13.2
+    image: mainfluxlabs/vernemq:0.13.2-arm64
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
@@ -372,73 +372,71 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  ## INFLUX DB
-  influxdb:
-    image: influxdb:2.2-alpine
-    container_name: mainfluxlabs-influxdb
+  ## TIMESCALE DB
+  timescale:
+    image: timescale/timescaledb:2.15.3-pg16
+    container_name: mainfluxlabs-timescale
     restart: on-failure
     environment:
-      DOCKER_INFLUXDB_INIT_MODE: ${MF_INFLUXDB_INIT_MODE}
-      DOCKER_INFLUXDB_INIT_USERNAME: ${MF_INFLUXDB_ADMIN_USER}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
-      DOCKER_INFLUXDB_INIT_ORG: ${MF_INFLUXDB_ORG}
-      DOCKER_INFLUXDB_INIT_BUCKET: ${MF_INFLUXDB_BUCKET}
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${MF_INFLUXDB_TOKEN}
-      INFLUXDB_HTTP_FLUX_ENABLED: ${MF_INFLUXDB_HTTP_ENABLED}
+      POSTGRES_PASSWORD: ${MF_TIMESCALE_WRITER_DB_PASS}
+      POSTGRES_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      POSTGRES_DB: ${MF_TIMESCALE_WRITER_DB}
     networks:
       - mainfluxlabs-base-net
-    ports:
-      - ${MF_INFLUXDB_PORT}:${MF_INFLUXDB_PORT}
     volumes:
-      - mainfluxlabs-influxdb-volume:/var/lib/influxdb2
+      - mainfluxlabs-timescale-volume:/var/lib/timescalesql/data
 
-  influxdb-writer:
-    image: ${MF_RELEASE_PREFIX}/influxdb-writer:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-influxdb-writer
+  timescale-writer:
+    image: mainfluxlabs/timescale-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-writer
     depends_on:
-      - influxdb
+      - timescale
     restart: on-failure
     environment:
-      MF_INFLUX_WRITER_LOG_LEVEL: debug
-      MF_BROKER_URL: ${MF_NATS_URL}
-      MF_INFLUX_WRITER_PORT: ${MF_INFLUX_WRITER_PORT}
-      MF_INFLUX_WRITER_BATCH_SIZE: ${MF_INFLUX_WRITER_BATCH_SIZE}
-      MF_INFLUX_WRITER_BATCH_TIMEOUT: ${MF_INFLUX_WRITER_BATCH_TIMEOUT}
-      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
-      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
-      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
-      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
+      MF_TIMESCALE_WRITER_PORT: ${MF_TIMESCALE_WRITER_PORT}
+      MF_TIMESCALE_WRITER_DB_HOST: timescale
+      MF_TIMESCALE_WRITER_DB_PORT: ${MF_TIMESCALE_WRITER_DB_PORT}
+      MF_TIMESCALE_WRITER_DB_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      MF_TIMESCALE_WRITER_DB_PASS: ${MF_TIMESCALE_WRITER_DB_PASS}
+      MF_TIMESCALE_WRITER_DB: ${MF_TIMESCALE_WRITER_DB}
+      MF_TIMESCALE_WRITER_DB_SSL_MODE: ${MF_TIMESCALE_WRITER_DB_SSL_MODE}
+      MF_TIMESCALE_WRITER_DB_SSL_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_CERT}
+      MF_TIMESCALE_WRITER_DB_SSL_KEY: ${MF_TIMESCALE_WRITER_DB_SSL_KEY}
+      MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT}
     ports:
-      - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
+      - ${MF_TIMESCALE_WRITER_PORT}:${MF_TIMESCALE_WRITER_PORT}
     networks:
       - mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml
 
-  influxdb-reader:
-    image: ${MF_RELEASE_PREFIX}/influxdb-reader:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-influxdb-reader
+  timescale-reader:
+    image: mainfluxlabs/timescale-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-reader
     restart: on-failure
     environment:
-      MF_INFLUX_READER_LOG_LEVEL: debug
-      MF_INFLUX_READER_PORT: ${MF_INFLUX_READER_PORT}
-      MF_INFLUXDB_HOST: ${MF_INFLUXDB_HOST}
-      MF_INFLUXDB_PORT: ${MF_INFLUXDB_PORT}
-      MF_INFLUXDB_ADMIN_USER: ${MF_INFLUXDB_ADMIN_USER}
-      MF_INFLUXDB_ADMIN_PASSWORD: ${MF_INFLUXDB_ADMIN_PASSWORD}
-      MF_INFLUX_READER_SERVER_CERT: ${MF_INFLUX_READER_SERVER_CERT}
-      MF_INFLUX_READER_SERVER_KEY: ${MF_INFLUX_READER_SERVER_KEY}
+      MF_TIMESCALE_READER_LOG_LEVEL: ${MF_TIMESCALE_READER_LOG_LEVEL}
+      MF_TIMESCALE_READER_PORT: ${MF_TIMESCALE_READER_PORT}
+      MF_TIMESCALE_READER_CLIENT_TLS: ${MF_TIMESCALE_READER_CLIENT_TLS}
+      MF_TIMESCALE_READER_CA_CERTS: ${MF_TIMESCALE_READER_CA_CERTS}
+      MF_TIMESCALE_READER_DB_HOST: timescale
+      MF_TIMESCALE_READER_DB_PORT: ${MF_TIMESCALE_READER_DB_PORT}
+      MF_TIMESCALE_READER_DB_USER: ${MF_TIMESCALE_READER_DB_USER}
+      MF_TIMESCALE_READER_DB_PASS: ${MF_TIMESCALE_READER_DB_PASS}
+      MF_TIMESCALE_READER_DB: ${MF_TIMESCALE_READER_DB}
+      MF_TIMESCALE_READER_DB_SSL_MODE: ${MF_TIMESCALE_READER_DB_SSL_MODE}
+      MF_TIMESCALE_READER_DB_SSL_CERT: ${MF_TIMESCALE_READER_DB_SSL_CERT}
+      MF_TIMESCALE_READER_DB_SSL_KEY: ${MF_TIMESCALE_READER_DB_SSL_KEY}
+      MF_TIMESCALE_READER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_READER_DB_SSL_ROOT_CERT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
-      - ${MF_INFLUX_READER_PORT}:${MF_INFLUX_READER_PORT}
+      - ${MF_TIMESCALE_READER_PORT}:${MF_TIMESCALE_READER_PORT}
     networks:
       - mainfluxlabs-base-net
-    volumes:
-      - ../../ssl/certs:/etc/ssl/certs
 
   filestore-db:
     image: postgres:13.3-alpine

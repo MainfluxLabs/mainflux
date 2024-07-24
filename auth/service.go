@@ -531,15 +531,9 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	ogs, err := svc.orgs.RetrieveAllGroupsByOrg(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
 	backup := Backup{
 		Orgs:       orgs,
 		OrgMembers: mrs,
-		OrgGroups:  ogs,
 	}
 
 	return backup, nil

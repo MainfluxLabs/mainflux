@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -52,17 +52,17 @@ const (
 )
 
 type config struct {
-	brokerURL string
-	logLevel  string
-	port      string
-	dbHost    string
-	dbPort    string
-	dbUser    string
-	dbPass    string
-	dbBucket  string
-	dbOrg     string
-	dbToken   string
-	dbUrl     string
+	httpConfig servers.Config
+	brokerURL  string
+	logLevel   string
+	dbHost     string
+	dbPort     string
+	dbUser     string
+	dbPass     string
+	dbBucket   string
+	dbOrg      string
+	dbToken    string
+	dbUrl      string
 }
 
 func main() {
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPService(ctx, cfg.port, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -123,17 +123,22 @@ func connectToInfluxDB(cfg config) (influxdb2.Client, error) {
 }
 
 func loadConfigs() (config, influxdb.RepoConfig) {
+	httpConfig := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	cfg := config{
-		brokerURL: mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:  mainflux.Env(envLogLevel, defLogLevel),
-		port:      mainflux.Env(envPort, defPort),
-		dbHost:    mainflux.Env(envDBHost, defDBHost),
-		dbPort:    mainflux.Env(envDBPort, defDBPort),
-		dbUser:    mainflux.Env(envDBUser, defDBUser),
-		dbPass:    mainflux.Env(envDBPass, defDBPass),
-		dbBucket:  mainflux.Env(envDBBucket, defDBBucket),
-		dbOrg:     mainflux.Env(envDBOrg, defDBOrg),
-		dbToken:   mainflux.Env(envDBToken, defDBToken),
+		httpConfig: httpConfig,
+		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
+		dbHost:     mainflux.Env(envDBHost, defDBHost),
+		dbPort:     mainflux.Env(envDBPort, defDBPort),
+		dbUser:     mainflux.Env(envDBUser, defDBUser),
+		dbPass:     mainflux.Env(envDBPass, defDBPass),
+		dbBucket:   mainflux.Env(envDBBucket, defDBBucket),
+		dbOrg:      mainflux.Env(envDBOrg, defDBOrg),
+		dbToken:    mainflux.Env(envDBToken, defDBToken),
 	}
 	cfg.dbUrl = fmt.Sprintf("http://%s:%s", cfg.dbHost, cfg.dbPort)
 
@@ -160,30 +165,4 @@ func makeMetrics() (*kitprometheus.Counter, *kitprometheus.Summary) {
 	}, []string{"method"})
 
 	return counter, latency
-}
-
-func startHTTPService(ctx context.Context, port string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svcName)}
-
-	logger.Info(fmt.Sprintf("InfluxDB writer service started, exposed port %s", p))
-
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("InfluxDB writer service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("influxDB writer service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("InfluxDB writer service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }

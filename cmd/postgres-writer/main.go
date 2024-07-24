@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -56,10 +56,10 @@ const (
 )
 
 type config struct {
-	brokerURL string
-	logLevel  string
-	port      string
-	dbConfig  postgres.Config
+	httpConfig servers.Config
+	brokerURL  string
+	logLevel   string
+	dbConfig   postgres.Config
 }
 
 func main() {
@@ -89,7 +89,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, cfg.port, logger)
+		return servers.StartHTTPServer(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -119,11 +119,16 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	httpConfig := servers.Config{
+		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
 	return config{
-		brokerURL: mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:  mainflux.Env(envLogLevel, defLogLevel),
-		port:      mainflux.Env(envPort, defPort),
-		dbConfig:  dbConfig,
+		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:   dbConfig,
+		httpConfig: httpConfig,
 	}
 }
 
@@ -156,29 +161,4 @@ func newService(db *sqlx.DB, logger logger.Logger) consumers.Consumer {
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, port string, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: api.MakeHandler(svcName)}
-
-	logger.Info(fmt.Sprintf("Postgres writer service started, exposed port %s", port))
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("Postgres writer service error occurred during shutdown at %s: %s", p, err))
-			return fmt.Errorf("postgres writer service occurred during shutdown at %s: %w", p, err)
-		}
-		logger.Info(fmt.Sprintf("Postgres writer service  shutdown of http at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
