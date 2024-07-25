@@ -122,7 +122,7 @@ func main() {
 	thingsTracer, thingsCloser := initJaeger("webhooks_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	thingsConn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
+	thingsConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer thingsConn.Close()
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -184,9 +184,10 @@ func loadConfig() config {
 	}
 
 	thingsConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
 	}
 
 	return config{

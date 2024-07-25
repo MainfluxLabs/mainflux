@@ -158,7 +158,7 @@ func main() {
 	authTracer, closer := initJaeger("users_auth", cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -247,9 +247,10 @@ func loadConfig() config {
 	}
 
 	authConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envAuthCACerts, defAuthCACerts),
-		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envAuthCACerts, defAuthCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: "auth",
 	}
 
 	return config{

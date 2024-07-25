@@ -130,7 +130,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	usrConn := clientsgrpc.Connect(cfg.usersConfig, "users", logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
 	usersTracer, usersCloser := initJaeger("auth_users", cfg.jaegerURL, logger)
@@ -138,7 +138,7 @@ func main() {
 
 	uc := usersapi.NewClient(usrConn, usersTracer, cfg.timeout)
 
-	thConn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
+	thConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer thConn.Close()
 
 	thingsTracer, thingsCloser := initJaeger("auth_things", cfg.jaegerURL, logger)
@@ -205,15 +205,17 @@ func loadConfig() config {
 	}
 
 	thingsConfig := clients.Config{
-		ClientTLS: thingsClientTLS,
-		CaCerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
-		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientTLS:  thingsClientTLS,
+		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
 	}
 
 	usersConfig := clients.Config{
-		ClientTLS: usersClientTLS,
-		CaCerts:   mainflux.Env(envUsersCACerts, defUsersCACerts),
-		URL:       mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientTLS:  usersClientTLS,
+		CaCerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
+		URL:        mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientName: "users",
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))

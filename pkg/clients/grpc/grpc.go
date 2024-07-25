@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-func Connect(cfg clients.Config, svcName string, logger logger.Logger) *grpc.ClientConn {
+func Connect(cfg clients.Config, logger logger.Logger) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	if cfg.ClientTLS {
 		if cfg.CaCerts != "" {
@@ -31,7 +31,7 @@ func Connect(cfg clients.Config, svcName string, logger logger.Logger) *grpc.Cli
 
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to %s service: %s", svcName, err))
+		logger.Error(fmt.Sprintf("Failed to connect to %s service: %s", cfg.ClientName, err))
 		os.Exit(1)
 	}
 

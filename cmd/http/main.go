@@ -73,7 +73,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
 	httpTracer, closer := initJaeger("http_adapter", cfg.jaegerURL, logger)
@@ -143,9 +143,10 @@ func loadConfig() config {
 	}
 
 	thingsConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
 	}
 
 	return config{

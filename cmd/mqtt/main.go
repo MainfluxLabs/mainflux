@@ -177,7 +177,7 @@ func main() {
 		}
 	}
 
-	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
 	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
@@ -229,7 +229,7 @@ func main() {
 	authTracer, authCloser := initJaeger("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
 	usersAuth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -310,15 +310,17 @@ func loadConfig() config {
 	}
 
 	thingsConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
 	}
 
 	authConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: "auth",
 	}
 
 	return config{

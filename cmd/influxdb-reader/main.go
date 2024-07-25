@@ -103,7 +103,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	conn := clientsgrpc.Connect(cfg.thingsConfig, "things", logger)
+	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
 	thingsTracer, thingsCloser := initJaeger("influxdb_things", cfg.jaegerURL, logger)
@@ -114,7 +114,7 @@ func main() {
 	authTracer, authCloser := initJaeger("influxdb_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	authConn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
@@ -175,15 +175,17 @@ func loadConfigs() (config, influxdb.RepoConfig) {
 	}
 
 	thingsConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
 	}
 
 	authConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: "auth",
 	}
 
 	cfg := config{

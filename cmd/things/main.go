@@ -173,7 +173,7 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	usrConn := clientsgrpc.Connect(cfg.usersConfig, "users", logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
 	usersTracer, usersCloser := initJaeger("things_users", cfg.jaegerURL, logger)
@@ -263,15 +263,17 @@ func loadConfig() config {
 	}
 
 	authConfig := clients.Config{
-		ClientTLS: tls,
-		CaCerts:   mainflux.Env(envCACerts, defCACerts),
-		URL:       mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: "auth",
 	}
 
 	usersConfig := clients.Config{
-		ClientTLS: usersClientTLS,
-		CaCerts:   mainflux.Env(envUsersCACerts, defUsersCACerts),
-		URL:       mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientTLS:  usersClientTLS,
+		CaCerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
+		URL:        mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientName: "users",
 	}
 
 	return config{
@@ -348,7 +350,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
 	}
 
-	conn := clientsgrpc.Connect(cfg.authConfig, "auth", logger)
+	conn := clientsgrpc.Connect(cfg.authConfig, logger)
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
 }
 

@@ -4,7 +4,8 @@
 package clients
 
 type Config struct {
-	ClientTLS bool
-	CaCerts   string
-	URL       string
+	ClientName string
+	ClientTLS  bool
+	CaCerts    string
+	URL        string
 }
