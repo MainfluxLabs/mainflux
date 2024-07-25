@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
@@ -37,9 +37,7 @@ import (
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
-	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -219,14 +217,14 @@ func main() {
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
-	thingsTracer, thingsCloser := initJaeger("mqtt_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("mqtt_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	mqttTracer, closer := initJaeger("mqtt_adapter", cfg.jaegerURL, logger)
+	mqttTracer, closer := jaeger.Init("mqtt_adapter", cfg.jaegerURL, logger)
 
 	defer closer.Close()
 
-	authTracer, authCloser := initJaeger("mqtt_auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := jaeger.Init("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
@@ -253,7 +251,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -303,6 +301,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -350,30 +349,6 @@ func loadConfig() config {
 		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger client: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *redis.Client {

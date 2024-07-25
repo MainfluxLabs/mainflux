@@ -10,8 +10,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -23,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -37,7 +36,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -113,13 +111,13 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	webhooksTracer, webhooksCloser := initJaeger(svcName, cfg.jaegerURL, logger)
+	webhooksTracer, webhooksCloser := jaeger.Init(svcName, cfg.jaegerURL, logger)
 	defer webhooksCloser.Close()
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	thingsTracer, thingsCloser := initJaeger("webhooks_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("webhooks_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	thingsConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
@@ -127,7 +125,7 @@ func main() {
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	dbTracer, dbCloser := initJaeger("webhooks_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("webhooks_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(things, dbTracer, db, logger)
@@ -137,7 +135,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(webhooksTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -177,6 +175,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -199,30 +198,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 	}
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger client: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {

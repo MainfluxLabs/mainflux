@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	ServerName   string
 	ServerCert   string
 	ServerKey    string
 	Port         string

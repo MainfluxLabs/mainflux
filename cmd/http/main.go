@@ -6,8 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -20,14 +18,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -76,10 +73,10 @@ func main() {
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
-	httpTracer, closer := initJaeger("http_adapter", cfg.jaegerURL, logger)
+	httpTracer, closer := jaeger.Init("http_adapter", cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	thingsTracer, thingsCloser := initJaeger("http_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("http_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	pub, err := brokers.NewPublisher(cfg.brokerURL)
@@ -110,7 +107,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -138,6 +135,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -157,28 +155,4 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger client: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }

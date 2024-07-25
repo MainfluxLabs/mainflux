@@ -6,8 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -20,15 +18,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	opentracing "github.com/opentracing/opentracing-go"
 	gocoap "github.com/plgd-dev/go-coap/v2"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -77,7 +74,7 @@ func main() {
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
-	thingsTracer, thingsCloser := initJaeger("coap_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("coap_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
@@ -110,7 +107,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, api.MakeHTTPHandler(), cfg.coapConfig, logger)
+		return servershttp.Start(ctx, api.MakeHTTPHandler(), cfg.coapConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -132,6 +129,7 @@ func main() {
 
 func loadConfig() config {
 	coapConfig := servers.Config{
+		ServerName:   svcName,
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}
@@ -161,30 +159,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger client: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger.Logger) error {

@@ -6,41 +6,35 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
+	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/emailer"
-	"github.com/MainfluxLabs/mainflux/users/tracing"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	"github.com/MainfluxLabs/mainflux/logger"
-	grpcapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
-	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
+	"github.com/MainfluxLabs/mainflux/users/tracing"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -149,13 +143,13 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	usersHttpTracer, usersHttpCloser := initJaeger("users_http", cfg.jaegerURL, logger)
+	usersHttpTracer, usersHttpCloser := jaeger.Init("users_http", cfg.jaegerURL, logger)
 	defer usersHttpCloser.Close()
 
-	usersGrpcTracer, usersGrpcCloser := initJaeger("users_grpc", cfg.jaegerURL, logger)
+	usersGrpcTracer, usersGrpcCloser := jaeger.Init("users_grpc", cfg.jaegerURL, logger)
 	defer usersGrpcCloser.Close()
 
-	authTracer, closer := initJaeger("users_auth", cfg.jaegerURL, logger)
+	authTracer, closer := jaeger.Init("users_auth", cfg.jaegerURL, logger)
 	defer closer.Close()
 
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
@@ -163,13 +157,13 @@ func main() {
 
 	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
 
-	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -181,7 +175,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, usersGrpcTracer, cfg, logger)
+		return serversgrpc.Start(ctx, usersGrpcTracer, svc, cfg.grpcConfig, logger)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -223,6 +217,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -230,6 +225,7 @@ func loadConfig() config {
 	}
 
 	grpcConfig := servers.Config{
+		ServerName:   svcName,
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
@@ -269,30 +265,6 @@ func loadConfig() config {
 		selfRegister:    selfRegister,
 	}
 
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
@@ -352,51 +324,4 @@ func createAdmin(svc users.Service, c config) error {
 	}
 
 	return nil
-}
-
-func startGRPCServer(ctx context.Context, svc users.Service, tracer opentracing.Tracer, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.grpcConfig.Port)
-	errCh := make(chan error)
-	var server *grpc.Server
-
-	listener, err := net.Listen("tcp", p)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.grpcConfig.Port, err)
-	}
-
-	switch {
-	case cfg.grpcConfig.ServerCert != "" || cfg.grpcConfig.ServerKey != "":
-		creds, err := credentials.NewServerTLSFromFile(cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey)
-		if err != nil {
-			return fmt.Errorf("failed to load users certificates: %w", err)
-		}
-		logger.Info(fmt.Sprintf("Users gRPC service started using https on port %s with cert %s key %s",
-			cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey))
-		server = grpc.NewServer(grpc.Creds(creds))
-	default:
-		logger.Info(fmt.Sprintf("Users gRPC service started using http on port %s", cfg.grpcConfig.Port))
-		server = grpc.NewServer()
-	}
-
-	mainflux.RegisterUsersServiceServer(server, grpcapi.NewServer(tracer, svc))
-	go func() {
-		errCh <- server.Serve(listener)
-	}()
-
-	select {
-	case <-ctx.Done():
-		c := make(chan bool)
-		go func() {
-			defer close(c)
-			server.GracefulStop()
-		}()
-		select {
-		case <-c:
-		case <-time.After(stopWaitTime):
-		}
-		logger.Info(fmt.Sprintf("Users gRPC service shutdown at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
