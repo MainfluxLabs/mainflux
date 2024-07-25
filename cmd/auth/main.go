@@ -20,8 +20,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
@@ -93,21 +96,17 @@ const (
 )
 
 type config struct {
-	logLevel        string
-	dbConfig        postgres.Config
-	httpConfig      servers.Config
-	grpcConfig      servers.Config
-	secret          string
-	jaegerURL       string
-	loginDuration   time.Duration
-	timeout         time.Duration
-	adminEmail      string
-	thingsClientTLS bool
-	thingsCACerts   string
-	thingsGRPCURL   string
-	usersClientTLS  bool
-	usersCACerts    string
-	usersGRPCURL    string
+	logLevel      string
+	dbConfig      postgres.Config
+	httpConfig    servers.Config
+	grpcConfig    servers.Config
+	thingsConfig  clients.Config
+	usersConfig   clients.Config
+	secret        string
+	jaegerURL     string
+	loginDuration time.Duration
+	timeout       time.Duration
+	adminEmail    string
 }
 
 func main() {
@@ -122,24 +121,27 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	tracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
-	defer closer.Close()
+	authHttpTracer, authHttpCloser := initJaeger("auth_http", cfg.jaegerURL, logger)
+	defer authHttpCloser.Close()
+
+	authGrpcTracer, authGrpcCloser := initJaeger("auth_grpc", cfg.jaegerURL, logger)
+	defer authGrpcCloser.Close()
 
 	dbTracer, dbCloser := initJaeger("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	usrConn := connectToUsers(cfg, logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
-	usersTracer, usersCloser := initJaeger("users", cfg.jaegerURL, logger)
+	usersTracer, usersCloser := initJaeger("auth_users", cfg.jaegerURL, logger)
 	defer usersCloser.Close()
 
 	uc := usersapi.NewClient(usrConn, usersTracer, cfg.timeout)
 
-	thConn := connectToThings(cfg, logger)
+	thConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer thConn.Close()
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := initJaeger("auth_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
@@ -147,10 +149,10 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, httpapi.MakeHandler(svc, tracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
-		return startGRPCServer(ctx, tracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
+		return startGRPCServer(ctx, authGrpcTracer, svc, cfg.grpcConfig.Port, cfg.grpcConfig.ServerCert, cfg.grpcConfig.ServerKey, logger)
 	})
 
 	g.Go(func() error {
@@ -202,6 +204,20 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
 
+	thingsConfig := clients.Config{
+		ClientTLS:  thingsClientTLS,
+		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
+	}
+
+	usersConfig := clients.Config{
+		ClientTLS:  usersClientTLS,
+		CaCerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
+		URL:        mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientName: "users",
+	}
+
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -213,21 +229,17 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		httpConfig:      httpConfig,
-		grpcConfig:      grpcConfig,
-		secret:          mainflux.Env(envSecret, defSecret),
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration:   loginDuration,
-		timeout:         timeout,
-		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
-		thingsClientTLS: thingsClientTLS,
-		thingsCACerts:   mainflux.Env(envThingsCACerts, defThingsCACerts),
-		thingsGRPCURL:   mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		usersClientTLS:  usersClientTLS,
-		usersCACerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
-		usersGRPCURL:    mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:      dbConfig,
+		httpConfig:    httpConfig,
+		grpcConfig:    grpcConfig,
+		thingsConfig:  thingsConfig,
+		usersConfig:   usersConfig,
+		secret:        mainflux.Env(envSecret, defSecret),
+		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration: loginDuration,
+		timeout:       timeout,
+		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
 	}
 
 }
@@ -264,56 +276,6 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	}
 
 	return db
-}
-
-func connectToUsers(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.usersClientTLS {
-		if cfg.usersCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.usersCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.usersGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to users service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
-}
-
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.thingsClientTLS {
-		if cfg.thingsCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.thingsCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
 }
 
 func newService(db *sqlx.DB, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration) auth.Service {

@@ -1,22 +1,18 @@
-package servers
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package http
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
 )
 
-type Config struct {
-	ServerCert   string
-	ServerKey    string
-	Port         string
-	StopWaitTime time.Duration
-}
-
-func StartHTTPServer(ctx context.Context, svcName string, handler http.Handler, cfg Config, logger logger.Logger) error {
+func Start(ctx context.Context, svcName string, handler http.Handler, cfg servers.Config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.Port)
 	errCh := make(chan error)
 	server := &http.Server{Addr: p, Handler: handler}

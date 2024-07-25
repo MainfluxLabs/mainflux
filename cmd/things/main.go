@@ -17,8 +17,11 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
@@ -118,8 +121,8 @@ type config struct {
 	httpConfig       servers.Config
 	authHttpConfig   servers.Config
 	grpcConfig       servers.Config
-	clientTLS        bool
-	caCerts          string
+	authConfig       clients.Config
+	usersConfig      clients.Config
 	cacheURL         string
 	cachePass        string
 	cacheDB          string
@@ -129,11 +132,7 @@ type config struct {
 	standaloneEmail  string
 	standaloneToken  string
 	jaegerURL        string
-	authGRPCURL      string
 	authGRPCTimeout  time.Duration
-	usersClientTLS   bool
-	usersCACerts     string
-	usersGRPCURL     string
 	usersGRPCTimeout time.Duration
 }
 
@@ -147,8 +146,11 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	thingsTracer, thingsCloser := initJaeger("things", cfg.jaegerURL, logger)
-	defer thingsCloser.Close()
+	thingsHttpTracer, thingsHttpCloser := initJaeger("things_http", cfg.jaegerURL, logger)
+	defer thingsHttpCloser.Close()
+
+	thingsGrpcTracer, thingsGrpcCloser := initJaeger("things_grpc", cfg.jaegerURL, logger)
+	defer thingsGrpcCloser.Close()
 
 	cacheClient := connectToRedis(cfg.cacheURL, cfg.cachePass, cfg.cacheDB, logger)
 
@@ -157,7 +159,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger("auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := initJaeger("things_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	auth, close := createAuthClient(cfg, authTracer, logger)
@@ -171,10 +173,10 @@ func main() {
 	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
-	usrConn := connectToUsers(cfg, logger)
+	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
-	usersTracer, usersCloser := initJaeger("users", cfg.jaegerURL, logger)
+	usersTracer, usersCloser := initJaeger("things_users", cfg.jaegerURL, logger)
 	defer usersCloser.Close()
 
 	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
@@ -182,15 +184,15 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, thhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, svcName, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servers.StartHTTPServer(ctx, svcName, authhttpapi.MakeHandler(thingsTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, svcName, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, thingsTracer, cfg.grpcConfig, logger)
+		return startGRPCServer(ctx, svc, thingsGrpcTracer, cfg.grpcConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -260,14 +262,28 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: "auth",
+	}
+
+	usersConfig := clients.Config{
+		ClientTLS:  usersClientTLS,
+		CaCerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
+		URL:        mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
+		ClientName: "users",
+	}
+
 	return config{
 		logLevel:         mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:         dbConfig,
 		httpConfig:       httpConfig,
 		authHttpConfig:   authHttpConfig,
 		grpcConfig:       grpcConfig,
-		clientTLS:        tls,
-		caCerts:          mainflux.Env(envCACerts, defCACerts),
+		authConfig:       authConfig,
+		usersConfig:      usersConfig,
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
 		cachePass:        mainflux.Env(envCachePass, defCachePass),
 		cacheDB:          mainflux.Env(envCacheDB, defCacheDB),
@@ -277,11 +293,7 @@ func loadConfig() config {
 		standaloneEmail:  mainflux.Env(envStandaloneEmail, defStandaloneEmail),
 		standaloneToken:  mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCURL:      mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
 		authGRPCTimeout:  authGRPCTimeout,
-		usersClientTLS:   usersClientTLS,
-		usersCACerts:     mainflux.Env(envUsersCACerts, defUsersCACerts),
-		usersGRPCURL:     mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
 		usersGRPCTimeout: usersGRPCTimeout,
 	}
 }
@@ -338,58 +350,8 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
 	}
 
-	conn := connectToAuth(cfg, logger)
+	conn := clientsgrpc.Connect(cfg.authConfig, logger)
 	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
-}
-
-func connectToAuth(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.clientTLS {
-		if cfg.caCerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.caCerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
-}
-
-func connectToUsers(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.usersClientTLS {
-		if cfg.usersCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.usersCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to load certs: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		logger.Info("gRPC communication is not encrypted")
-		opts = append(opts, grpc.WithInsecure())
-	}
-
-	conn, err := grpc.Dial(cfg.usersGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to users service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
 }
 
 func newService(ac mainflux.AuthServiceClient, uc mainflux.UsersServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
