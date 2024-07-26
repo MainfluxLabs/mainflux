@@ -90,7 +90,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, api.MakeHandler(svcName), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svcName), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -121,6 +121,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		Port:         mainflux.Env(envPort, defPort),
 		StopWaitTime: stopWaitTime,
 	}

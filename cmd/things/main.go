@@ -6,10 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"strconv"
 	"time"
@@ -20,12 +17,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
-	authgrpcapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	authhttpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	thhttpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -38,10 +36,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -146,10 +141,10 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	thingsHttpTracer, thingsHttpCloser := initJaeger("things_http", cfg.jaegerURL, logger)
+	thingsHttpTracer, thingsHttpCloser := jaeger.Init("things_http", cfg.jaegerURL, logger)
 	defer thingsHttpCloser.Close()
 
-	thingsGrpcTracer, thingsGrpcCloser := initJaeger("things_grpc", cfg.jaegerURL, logger)
+	thingsGrpcTracer, thingsGrpcCloser := jaeger.Init("things_grpc", cfg.jaegerURL, logger)
 	defer thingsGrpcCloser.Close()
 
 	cacheClient := connectToRedis(cfg.cacheURL, cfg.cachePass, cfg.cacheDB, logger)
@@ -159,7 +154,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	authTracer, authCloser := initJaeger("things_auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := jaeger.Init("things_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	auth, close := createAuthClient(cfg, authTracer, logger)
@@ -167,16 +162,16 @@ func main() {
 		defer close()
 	}
 
-	dbTracer, dbCloser := initJaeger("things_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("things_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	cacheTracer, cacheCloser := initJaeger("things_cache", cfg.jaegerURL, logger)
+	cacheTracer, cacheCloser := jaeger.Init("things_cache", cfg.jaegerURL, logger)
 	defer cacheCloser.Close()
 
 	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
-	usersTracer, usersCloser := initJaeger("things_users", cfg.jaegerURL, logger)
+	usersTracer, usersCloser := jaeger.Init("things_users", cfg.jaegerURL, logger)
 	defer usersCloser.Close()
 
 	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
@@ -184,15 +179,15 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, svcName, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return startGRPCServer(ctx, svc, thingsGrpcTracer, cfg.grpcConfig, logger)
+		return serversgrpc.Start(ctx, thingsGrpcTracer, svc, cfg.grpcConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -242,6 +237,7 @@ func loadConfig() config {
 	}
 
 	httpConfig := servers.Config{
+		ServerName:   svcName,
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
@@ -249,6 +245,7 @@ func loadConfig() config {
 	}
 
 	authHttpConfig := servers.Config{
+		ServerName:   svcName,
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envAuthHTTPPort, defAuthHTTPPort),
@@ -256,6 +253,7 @@ func loadConfig() config {
 	}
 
 	grpcConfig := servers.Config{
+		ServerName:   svcName,
 		ServerCert:   mainflux.Env(envServerCert, defServerCert),
 		ServerKey:    mainflux.Env(envServerKey, defServerKey),
 		Port:         mainflux.Env(envAuthGRPCPort, defAuthGRPCPort),
@@ -296,30 +294,6 @@ func loadConfig() config {
 		authGRPCTimeout:  authGRPCTimeout,
 		usersGRPCTimeout: usersGRPCTimeout,
 	}
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger client: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func connectToRedis(cacheURL, cachePass string, cacheDB string, logger logger.Logger) *redis.Client {
@@ -395,51 +369,4 @@ func newService(ac mainflux.AuthServiceClient, uc mainflux.UsersServiceClient, d
 		}, []string{"method"}),
 	)
 	return svc
-}
-
-func startGRPCServer(ctx context.Context, svc things.Service, tracer opentracing.Tracer, cfg servers.Config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", cfg.Port)
-	errCh := make(chan error)
-	var server *grpc.Server
-
-	listener, err := net.Listen("tcp", p)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", cfg.Port, err)
-	}
-
-	switch {
-	case cfg.ServerCert != "" || cfg.ServerKey != "":
-		creds, err := credentials.NewServerTLSFromFile(cfg.ServerCert, cfg.ServerKey)
-		if err != nil {
-			return fmt.Errorf("failed to load things certificates: %w", err)
-		}
-		logger.Info(fmt.Sprintf("Things gRPC service started using https on port %s with cert %s key %s",
-			cfg.Port, cfg.ServerCert, cfg.ServerKey))
-		server = grpc.NewServer(grpc.Creds(creds))
-	default:
-		logger.Info(fmt.Sprintf("Things gRPC service started using http on port %s", cfg.Port))
-		server = grpc.NewServer()
-	}
-
-	mainflux.RegisterThingsServiceServer(server, authgrpcapi.NewServer(tracer, svc))
-	go func() {
-		errCh <- server.Serve(listener)
-	}()
-
-	select {
-	case <-ctx.Done():
-		c := make(chan bool)
-		go func() {
-			defer close(c)
-			server.GracefulStop()
-		}()
-		select {
-		case <-c:
-		case <-time.After(stopWaitTime):
-		}
-		logger.Info(fmt.Sprintf("Things gRPC service shutdown at %s", p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
