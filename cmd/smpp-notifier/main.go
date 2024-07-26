@@ -6,38 +6,60 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
+	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api/http"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	mfsmpp "github.com/MainfluxLabs/mainflux/consumers/notifiers/smpp"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
 	svcName      = "smpp-notifier"
-	defLogLevel  = "error"
-	defFrom      = ""
-	defJaegerURL = ""
-	defBrokerURL = "nats://localhost:4222"
+	stopWaitTime = 5 * time.Second
+
+	defLogLevel          = "error"
+	defFrom              = ""
+	defJaegerURL         = ""
+	defBrokerURL         = "nats://localhost:4222"
+	defDBHost            = "localhost"
+	defDBPort            = "5432"
+	defDBUser            = "mainflux"
+	defDBPass            = "mainflux"
+	defDB                = "smpp-notifiers"
+	defDBSSLMode         = "disable"
+	defDBSSLCert         = ""
+	defDBSSLKey          = ""
+	defDBSSLRootCert     = ""
+	defThingsTLS         = "false"
+	defThingsCACerts     = ""
+	defHTTPPort          = "8907"
+	defServerCert        = ""
+	defServerKey         = ""
+	defThingsGRPCURL     = "localhost:8183"
+	defThingsGRPCTimeout = "1s"
 
 	defAddress    = ""
 	defUsername   = ""
@@ -48,15 +70,26 @@ const (
 	defSrcAddrNPI = "0"
 	defDstAddrNPI = "0"
 
-	defAuthTLS         = "false"
-	defAuthCACerts     = ""
-	defAuthGRPCURL     = "localhost:8181"
-	defAuthGRPCTimeout = "1s"
-
-	envLogLevel  = "MF_SMPP_NOTIFIER_LOG_LEVEL"
-	envFrom      = "MF_SMPP_NOTIFIER_SOURCE_ADDR"
-	envJaegerURL = "MF_JAEGER_URL"
-	envBrokerURL = "MF_BROKER_URL"
+	envLogLevel          = "MF_SMPP_NOTIFIER_LOG_LEVEL"
+	envFrom              = "MF_SMPP_NOTIFIER_SOURCE_ADDR"
+	envJaegerURL         = "MF_JAEGER_URL"
+	envBrokerURL         = "MF_BROKER_URL"
+	envDBHost            = "MF_SMPP_NOTIFIER_DB_HOST"
+	envDBPort            = "MF_SMPP_NOTIFIER_DB_PORT"
+	envDBUser            = "MF_SMPP_NOTIFIER_DB_USER"
+	envDBPass            = "MF_SMPP_NOTIFIER_DB_PASS"
+	envDB                = "MF_SMPP_NOTIFIER_DB"
+	envDBSSLMode         = "MF_SMPP_NOTIFIER_DB_SSL_MODE"
+	envDBSSLCert         = "MF_SMPP_NOTIFIER_DB_SSL_CERT"
+	envDBSSLKey          = "MF_SMPP_NOTIFIER_DB_SSL_KEY"
+	envDBSSLRootCert     = "MF_SMPP_NOTIFIER_DB_SSL_ROOT_CERT"
+	envThingsTLS         = "MF_SMPP_NOTIFIER_THINGS_TLS"
+	envThingsCACerts     = "MF_SMPP_NOTIFIER_THINGS_CA_CERTS"
+	envHTTPPort          = "MF_SMPP_NOTIFIER_PORT"
+	envServerCert        = "MF_SMPP_NOTIFIER_SERVER_CERT"
+	envServerKey         = "MF_SMPP_NOTIFIER_SERVER_KEY"
+	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 
 	envAddress    = "MF_SMPP_ADDRESS"
 	envUsername   = "MF_SMPP_USERNAME"
@@ -66,23 +99,18 @@ const (
 	envDstAddrTON = "MF_SMPP_DST_ADDR_TON"
 	envSrcAddrNPI = "MF_SMPP_SRC_ADDR_NPI"
 	envDstAddrNPI = "MF_SMPP_DST_ADDR_NPI"
-
-	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
-	envAuthCACerts     = "MF_AUTH_CA_CERTS"
-	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
-	brokerURL       string
-	logLevel        string
-	smppConf        mfsmpp.Config
-	from            string
-	jaegerURL       string
-	authTLS         bool
-	authCACerts     string
-	authGRPCURL     string
-	authGRPCTimeout time.Duration
+	brokerURL         string
+	logLevel          string
+	dbConfig          postgres.Config
+	httpConfig        servers.Config
+	thingsConfig      clients.Config
+	smppConf          mfsmpp.Config
+	from              string
+	jaegerURL         string
+	thingsGRPCTimeout time.Duration
 }
 
 func main() {
@@ -102,19 +130,32 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	authTracer, closer := initJaeger("auth", cfg.jaegerURL, logger)
-	defer closer.Close()
+	notifiersTracer, notifiersCloser := jaeger.Init(svcName, cfg.jaegerURL, logger)
+	defer notifiersCloser.Close()
 
-	auth, close := connectToAuth(cfg, authTracer, logger)
-	if close != nil {
-		defer close()
-	}
+	db := connectToDB(cfg.dbConfig, logger)
+	defer db.Close()
 
-	svc := newService(auth, cfg, logger)
+	thingsTracer, thingsCloser := jaeger.Init("smpp_things", cfg.jaegerURL, logger)
+	defer thingsCloser.Close()
+
+	thConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
+	defer thConn.Close()
+
+	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
+
+	dbTracer, dbCloser := jaeger.Init("smpp_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	svc := newService(cfg, logger, dbTracer, db, tc)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMPP notifier: %s", err))
 	}
+
+	g.Go(func() error {
+		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpConfig, logger)
+	})
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -131,14 +172,14 @@ func main() {
 }
 
 func loadConfig() config {
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	tls, err := strconv.ParseBool(mainflux.Env(envAuthTLS, defAuthTLS))
+	thingsTLS, err := strconv.ParseBool(mainflux.Env(envThingsTLS, defThingsTLS))
 	if err != nil {
-		log.Fatalf("Invalid value passed for %s\n", envAuthTLS)
+		log.Fatalf("Invalid value passed for %s\n", envThingsTLS)
 	}
 
 	saton, err := strconv.ParseUint(mainflux.Env(envSrcAddrTON, defSrcAddrTON), 10, 8)
@@ -169,73 +210,64 @@ func loadConfig() config {
 		DestAddrNPI:   uint8(danpi),
 	}
 
+	dbConfig := postgres.Config{
+		Host:        mainflux.Env(envDBHost, defDBHost),
+		Port:        mainflux.Env(envDBPort, defDBPort),
+		User:        mainflux.Env(envDBUser, defDBUser),
+		Pass:        mainflux.Env(envDBPass, defDBPass),
+		Name:        mainflux.Env(envDB, defDB),
+		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
+		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
+		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
+		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
+	}
+
+	httpConfig := servers.Config{
+		ServerName:   svcName,
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
+		StopWaitTime: stopWaitTime,
+	}
+
+	thingsConfig := clients.Config{
+		ClientTLS:  thingsTLS,
+		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
+	}
+
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		brokerURL:       mainflux.Env(envBrokerURL, defBrokerURL),
-		smppConf:        smppConf,
-		from:            mainflux.Env(envFrom, defFrom),
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authTLS:         tls,
-		authCACerts:     mainflux.Env(envAuthCACerts, defAuthCACerts),
-		authGRPCURL:     mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		authGRPCTimeout: authGRPCTimeout,
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
+		smppConf:          smppConf,
+		dbConfig:          dbConfig,
+		httpConfig:        httpConfig,
+		thingsConfig:      thingsConfig,
+		from:              mainflux.Env(envFrom, defFrom),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 
 }
 
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
+func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
+	db, err := postgres.Connect(dbConfig)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to postgres: %s", err))
 		os.Exit(1)
 	}
-
-	return tracer, closer
+	return db
 }
 
-func connectToAuth(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.AuthServiceClient, func() error) {
-	var opts []grpc.DialOption
-	if cfg.authTLS {
-		if cfg.authCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.authCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
+func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
+	idp := uuid.New()
+	database := postgres.NewDatabase(db)
 
-	conn, err := grpc.Dial(cfg.authGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to auth service: %s", err))
-		os.Exit(1)
-	}
-
-	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
-}
-
-func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger) notifiers.Service {
-	idp := ulid.New()
 	notifier := mfsmpp.New(c.smppConf)
-	svc := notifiers.New(ac, idp, notifier, c.from)
+	notifierRepo := postgres.NewNotifierRepository(database)
+	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
+	svc := notifiers.New(idp, notifier, c.from, notifierRepo, tc)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
@@ -252,6 +284,6 @@ func newService(ac mainflux.AuthServiceClient, c config, logger logger.Logger) n
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	
+
 	return svc
 }

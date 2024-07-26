@@ -107,8 +107,9 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 	}
 
 	msg.Profile.Write = conn.Profile.Write
-	msg.Profile.Notify = conn.Profile.Notify
 	msg.Profile.WebhookID = conn.Profile.WebhookID
+	msg.Profile.SmtpID = conn.Profile.SmtpID
+	msg.Profile.SmppID = conn.Profile.SmppID
 	msg.Profile.ContentType = conn.Profile.ContentType
 
 	if conn.Profile.Transformer != nil {
@@ -117,14 +118,6 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 			TimeField:    conn.Profile.Transformer.TimeField,
 			TimeFormat:   conn.Profile.Transformer.TimeFormat,
 			TimeLocation: conn.Profile.Transformer.TimeLocation,
-		}
-	}
-
-	if conn.Profile.Notifier != nil {
-		msg.Profile.Notifier = &Notifier{
-			Protocol:  conn.Profile.Notifier.Protocol,
-			Contacts:  conn.Profile.Notifier.Contacts,
-			Subtopics: conn.Profile.Notifier.Subtopics,
 		}
 	}
 

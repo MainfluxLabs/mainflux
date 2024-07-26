@@ -220,7 +220,7 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("mqtt_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	mqttTracer, closer := jaeger.Init("mqtt_adapter", cfg.jaegerURL, logger)
+	mqttTracer, closer := jaeger.Init(svcName, cfg.jaegerURL, logger)
 
 	defer closer.Close()
 

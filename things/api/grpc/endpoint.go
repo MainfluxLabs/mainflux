@@ -28,12 +28,6 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		notifier := &mainflux.Notifier{
-			Protocol:  p.Notifier.Protocol,
-			Contacts:  p.Notifier.Contacts,
-			Subtopics: p.Notifier.Subtopics,
-		}
-
 		transformer := &mainflux.Transformer{
 			ValueFields:  p.Transformer.ValueFields,
 			TimeField:    p.Transformer.TimeField,
@@ -45,9 +39,9 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			ContentType: p.ContentType,
 			Write:       p.Write,
 			Transformer: transformer,
-			Notifier:    notifier,
-			Notify:      p.Notify,
 			WebhookID:   p.WebhookID,
+			SmtpID:      p.SmtpID,
+			SmppID:      p.SmppID,
 		}
 
 		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil

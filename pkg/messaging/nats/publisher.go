@@ -63,15 +63,12 @@ func (pub *publisher) Publish(msg messaging.Message) (err error) {
 		subjects = append(subjects, subject)
 	}
 
-	if msg.Profile.Notifier != nil {
-		sub := msg.Profile.Notifier.Protocol
-		if sub == subjectSMTP || sub == subjectSMPP {
-			for _, s := range msg.Profile.Notifier.Subtopics {
-				if s == msg.Subtopic {
-					subjects = append(subjects, sub)
-				}
-			}
-		}
+	if msg.Profile.SmtpID != "" {
+		subjects = append(subjects, subjectSMTP)
+	}
+
+	if msg.Profile.SmppID != "" {
+		subjects = append(subjects, subjectSMPP)
 	}
 
 	if msg.Profile.WebhookID != "" {

@@ -121,12 +121,10 @@ func (m *Message) GetProfile() *Profile {
 type Profile struct {
 	ContentType          string       `protobuf:"bytes,1,opt,name=contentType,proto3" json:"contentType,omitempty"`
 	Write                bool         `protobuf:"varint,2,opt,name=write,proto3" json:"write,omitempty"`
-	Notify               bool         `protobuf:"varint,3,opt,name=notify,proto3" json:"notify,omitempty"`
-	WebhookID            string       `protobuf:"bytes,4,opt,name=webhookID,proto3" json:"webhookID,omitempty"`
-	SmtpID               string       `protobuf:"bytes,5,opt,name=smtpID,proto3" json:"smtpID,omitempty"`
-	SmppID               string       `protobuf:"bytes,6,opt,name=smppID,proto3" json:"smppID,omitempty"`
-	Transformer          *Transformer `protobuf:"bytes,7,opt,name=transformer,proto3" json:"transformer,omitempty"`
-	Notifier             *Notifier    `protobuf:"bytes,8,opt,name=notifier,proto3" json:"notifier,omitempty"`
+	WebhookID            string       `protobuf:"bytes,3,opt,name=webhookID,proto3" json:"webhookID,omitempty"`
+	SmtpID               string       `protobuf:"bytes,4,opt,name=smtpID,proto3" json:"smtpID,omitempty"`
+	SmppID               string       `protobuf:"bytes,5,opt,name=smppID,proto3" json:"smppID,omitempty"`
+	Transformer          *Transformer `protobuf:"bytes,6,opt,name=transformer,proto3" json:"transformer,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -179,13 +177,6 @@ func (m *Profile) GetWrite() bool {
 	return false
 }
 
-func (m *Profile) GetNotify() bool {
-	if m != nil {
-		return m.Notify
-	}
-	return false
-}
-
 func (m *Profile) GetWebhookID() string {
 	if m != nil {
 		return m.WebhookID
@@ -210,13 +201,6 @@ func (m *Profile) GetSmppID() string {
 func (m *Profile) GetTransformer() *Transformer {
 	if m != nil {
 		return m.Transformer
-	}
-	return nil
-}
-
-func (m *Profile) GetNotifier() *Notifier {
-	if m != nil {
-		return m.Notifier
 	}
 	return nil
 }
@@ -292,108 +276,40 @@ func (m *Transformer) GetTimeLocation() string {
 	return ""
 }
 
-type Notifier struct {
-	Protocol             string   `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
-	Subtopics            []string `protobuf:"bytes,2,rep,name=subtopics,proto3" json:"subtopics,omitempty"`
-	Contacts             []string `protobuf:"bytes,3,rep,name=contacts,proto3" json:"contacts,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Notifier) Reset()         { *m = Notifier{} }
-func (m *Notifier) String() string { return proto.CompactTextString(m) }
-func (*Notifier) ProtoMessage()    {}
-func (*Notifier) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5e29d24c44e4762, []int{3}
-}
-func (m *Notifier) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Notifier) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Notifier.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Notifier) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Notifier.Merge(m, src)
-}
-func (m *Notifier) XXX_Size() int {
-	return m.Size()
-}
-func (m *Notifier) XXX_DiscardUnknown() {
-	xxx_messageInfo_Notifier.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Notifier proto.InternalMessageInfo
-
-func (m *Notifier) GetProtocol() string {
-	if m != nil {
-		return m.Protocol
-	}
-	return ""
-}
-
-func (m *Notifier) GetSubtopics() []string {
-	if m != nil {
-		return m.Subtopics
-	}
-	return nil
-}
-
-func (m *Notifier) GetContacts() []string {
-	if m != nil {
-		return m.Contacts
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterType((*Message)(nil), "messaging.Message")
 	proto.RegisterType((*Profile)(nil), "messaging.Profile")
 	proto.RegisterType((*Transformer)(nil), "messaging.Transformer")
-	proto.RegisterType((*Notifier)(nil), "messaging.Notifier")
 }
 
 func init() { proto.RegisterFile("pkg/messaging/message.proto", fileDescriptor_e5e29d24c44e4762) }
 
 var fileDescriptor_e5e29d24c44e4762 = []byte{
-	// 436 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x92, 0xc1, 0x8e, 0xd3, 0x30,
-	0x10, 0x86, 0x71, 0xcb, 0x36, 0xc9, 0x74, 0x0f, 0xc8, 0xa0, 0x95, 0x05, 0xab, 0x28, 0xca, 0xa9,
-	0x07, 0xd4, 0x95, 0xe0, 0xc2, 0x19, 0xad, 0x90, 0x56, 0x02, 0x84, 0xac, 0x7d, 0x00, 0x9c, 0xd4,
-	0xdd, 0x5a, 0x9b, 0xc4, 0x96, 0xed, 0xb2, 0xea, 0x63, 0xc0, 0x89, 0x47, 0xe2, 0xc8, 0x9d, 0x0b,
-	0x2a, 0x2f, 0x82, 0xec, 0xd8, 0x49, 0xba, 0xb7, 0x7c, 0xff, 0xef, 0x89, 0xe7, 0x1f, 0x0f, 0xbc,
-	0x52, 0xf7, 0x77, 0x57, 0x2d, 0x37, 0x86, 0xdd, 0x89, 0x2e, 0x7e, 0xf1, 0xb5, 0xd2, 0xd2, 0x4a,
-	0x9c, 0x0d, 0x46, 0xf9, 0x07, 0x41, 0xf2, 0xa9, 0x37, 0x31, 0x81, 0xa4, 0xde, 0xb1, 0xae, 0xe3,
-	0x0d, 0x41, 0x05, 0x5a, 0x65, 0x34, 0x22, 0x7e, 0x09, 0xa9, 0xd9, 0x57, 0x56, 0x2a, 0x51, 0x93,
-	0x99, 0xb7, 0x06, 0xc6, 0x97, 0x90, 0xa9, 0x7d, 0xd5, 0x08, 0xb3, 0xe3, 0x9a, 0xcc, 0xbd, 0x39,
-	0x0a, 0xae, 0xd2, 0xdf, 0x59, 0xcb, 0x86, 0x3c, 0xed, 0x2b, 0x23, 0xbb, 0xfb, 0x14, 0x3b, 0x34,
-	0x92, 0x6d, 0xc8, 0x59, 0x81, 0x56, 0xe7, 0x34, 0xa2, 0xef, 0x44, 0x73, 0x66, 0xf9, 0x86, 0x2c,
-	0x0a, 0xb4, 0x9a, 0xd3, 0x88, 0xf8, 0x35, 0x24, 0x4a, 0xcb, 0xad, 0x68, 0x38, 0x49, 0x0a, 0xb4,
-	0x5a, 0xbe, 0xc1, 0xeb, 0x21, 0xcc, 0xfa, 0x4b, 0xef, 0xd0, 0x78, 0xa4, 0xfc, 0x31, 0x83, 0x24,
-	0x88, 0xb8, 0x80, 0x65, 0x2d, 0x3b, 0xcb, 0x3b, 0x7b, 0x7b, 0x50, 0x3c, 0x24, 0x9c, 0x4a, 0xf8,
-	0x05, 0x9c, 0x3d, 0x68, 0x61, 0xb9, 0x8f, 0x98, 0xd2, 0x1e, 0xf0, 0x05, 0x2c, 0x3a, 0x69, 0xc5,
-	0xf6, 0xe0, 0xc3, 0xa5, 0x34, 0x90, 0xcb, 0xfd, 0xc0, 0xab, 0x9d, 0x94, 0xf7, 0x37, 0xd7, 0x21,
-	0xda, 0x28, 0xb8, 0x2a, 0xd3, 0x5a, 0x75, 0x73, 0xed, 0xa3, 0x65, 0x34, 0x50, 0xaf, 0x2b, 0xa7,
-	0x2f, 0xa2, 0xee, 0x08, 0xbf, 0x83, 0xa5, 0xd5, 0xac, 0x33, 0x5b, 0xa9, 0x5b, 0xae, 0x43, 0xb6,
-	0x8b, 0x49, 0xb6, 0xdb, 0xd1, 0xa5, 0xd3, 0xa3, 0xf8, 0x0a, 0x52, 0xdf, 0x91, 0xe0, 0x9a, 0xa4,
-	0xbe, 0xec, 0xf9, 0xa4, 0xec, 0x73, 0xb0, 0xe8, 0x70, 0xa8, 0xfc, 0x8e, 0x60, 0x39, 0xf9, 0x9b,
-	0x1b, 0xcc, 0x37, 0xd6, 0xec, 0xf9, 0x07, 0xc1, 0x9b, 0x8d, 0x21, 0xa8, 0x98, 0xbb, 0xc1, 0x4c,
-	0x24, 0x17, 0xd5, 0x8a, 0xb6, 0xa7, 0xf0, 0xfe, 0xa3, 0x80, 0x73, 0x00, 0x0f, 0x52, 0xb7, 0xcc,
-	0x86, 0x0d, 0x98, 0x28, 0xb8, 0x84, 0x73, 0x47, 0x1f, 0x65, 0xcd, 0xac, 0x90, 0x5d, 0x98, 0xd5,
-	0x89, 0x56, 0x7e, 0x85, 0x34, 0x76, 0x7a, 0xb2, 0x32, 0xe8, 0xd1, 0xca, 0x5c, 0x42, 0x16, 0x17,
-	0xcf, 0x90, 0x99, 0xef, 0x74, 0x14, 0x5c, 0xa5, 0x7b, 0x4f, 0x56, 0x5b, 0x43, 0xe6, 0xde, 0x1c,
-	0xf8, 0xfd, 0xb3, 0x5f, 0xc7, 0x1c, 0xfd, 0x3e, 0xe6, 0xe8, 0xef, 0x31, 0x47, 0x3f, 0xff, 0xe5,
-	0x4f, 0xaa, 0x85, 0xff, 0xeb, 0xdb, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0xe9, 0x59, 0xba, 0x26,
-	0x2b, 0x03, 0x00, 0x00,
+	// 369 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x91, 0xb1, 0x6a, 0xe3, 0x30,
+	0x1c, 0x87, 0x4f, 0x97, 0x4b, 0x9c, 0xfc, 0x9d, 0xe1, 0x10, 0x47, 0x10, 0x77, 0x87, 0x31, 0x9e,
+	0x3c, 0x94, 0x14, 0xd2, 0xa5, 0x73, 0x09, 0x85, 0x40, 0x0b, 0xc5, 0xe4, 0x05, 0x64, 0x47, 0x49,
+	0x44, 0x6c, 0x4b, 0xc8, 0x4a, 0x43, 0x1e, 0xa3, 0x5b, 0x1f, 0xa9, 0xdd, 0xba, 0x77, 0x29, 0xe9,
+	0x8b, 0x14, 0xc9, 0x96, 0xe3, 0x6e, 0xfe, 0xbe, 0x9f, 0x8d, 0xf5, 0x21, 0xf8, 0x27, 0x77, 0x9b,
+	0xcb, 0x82, 0x55, 0x15, 0xdd, 0xf0, 0xd2, 0x3d, 0xb1, 0xa9, 0x54, 0x42, 0x0b, 0x3c, 0x6a, 0x87,
+	0xe8, 0x1d, 0x81, 0x77, 0x5f, 0x8f, 0x98, 0x80, 0x97, 0x6d, 0x69, 0x59, 0xb2, 0x9c, 0xa0, 0x10,
+	0xc5, 0xa3, 0xc4, 0x21, 0xfe, 0x0b, 0xc3, 0x6a, 0x9f, 0x6a, 0x21, 0x79, 0x46, 0x7e, 0xda, 0xa9,
+	0x65, 0xfc, 0x1f, 0x46, 0x72, 0x9f, 0xe6, 0xbc, 0xda, 0x32, 0x45, 0x7a, 0x76, 0x3c, 0x0b, 0xf3,
+	0xa5, 0xfd, 0x67, 0x26, 0x72, 0xf2, 0xab, 0xfe, 0xd2, 0xb1, 0xf9, 0x9f, 0xa4, 0xc7, 0x5c, 0xd0,
+	0x15, 0xe9, 0x87, 0x28, 0x1e, 0x27, 0x0e, 0xed, 0x49, 0x14, 0xa3, 0x9a, 0xad, 0xc8, 0x20, 0x44,
+	0x71, 0x2f, 0x71, 0x88, 0x2f, 0xc0, 0x93, 0x4a, 0xac, 0x79, 0xce, 0x88, 0x17, 0xa2, 0xd8, 0x9f,
+	0xe1, 0x69, 0x1b, 0x33, 0x7d, 0xa8, 0x97, 0xc4, 0xbd, 0x12, 0xbd, 0x22, 0xf0, 0x1a, 0x89, 0x43,
+	0xf0, 0x33, 0x51, 0x6a, 0x56, 0xea, 0xe5, 0x51, 0xb2, 0xa6, 0xb0, 0xab, 0xf0, 0x1f, 0xe8, 0x1f,
+	0x14, 0xd7, 0xcc, 0x26, 0x0e, 0x93, 0x1a, 0x4c, 0xdf, 0x81, 0xa5, 0x5b, 0x21, 0x76, 0x8b, 0xb9,
+	0xeb, 0x6b, 0x05, 0x9e, 0xc0, 0xa0, 0x2a, 0xb4, 0x5c, 0xcc, 0x9b, 0xba, 0x86, 0x6a, 0x2f, 0x8d,
+	0xef, 0x3b, 0x6f, 0x08, 0x5f, 0x83, 0xaf, 0x15, 0x2d, 0xab, 0xb5, 0x50, 0x05, 0x53, 0xb6, 0xce,
+	0x9f, 0x4d, 0x3a, 0x0d, 0xcb, 0xf3, 0x9a, 0x74, 0x5f, 0x8d, 0x9e, 0x10, 0xf8, 0x9d, 0xd1, 0xf4,
+	0x3c, 0xd2, 0x7c, 0xcf, 0x6e, 0x39, 0xcb, 0x57, 0x15, 0x41, 0x61, 0xcf, 0xf4, 0x74, 0x94, 0x39,
+	0xb9, 0xe6, 0x45, 0x4d, 0xcd, 0xb5, 0x9d, 0x05, 0x0e, 0x00, 0x2c, 0x08, 0x55, 0x50, 0xdd, 0x84,
+	0x75, 0x0c, 0x8e, 0x60, 0x6c, 0xe8, 0x4e, 0x64, 0x54, 0x73, 0x51, 0x36, 0x7d, 0xdf, 0xdc, 0xcd,
+	0xef, 0x97, 0x53, 0x80, 0xde, 0x4e, 0x01, 0xfa, 0x38, 0x05, 0xe8, 0xf9, 0x33, 0xf8, 0x91, 0x0e,
+	0xec, 0xed, 0x5e, 0x7d, 0x05, 0x00, 0x00, 0xff, 0xff, 0xbf, 0x45, 0x27, 0x14, 0x80, 0x02, 0x00,
+	0x00,
 }
 
 func (m *Message) Marshal() (dAtA []byte, err error) {
@@ -499,18 +415,6 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.Notifier != nil {
-		{
-			size, err := m.Notifier.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessage(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
-	}
 	if m.Transformer != nil {
 		{
 			size, err := m.Transformer.MarshalToSizedBuffer(dAtA[:i])
@@ -521,38 +425,28 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintMessage(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x3a
+		dAtA[i] = 0x32
 	}
 	if len(m.SmppID) > 0 {
 		i -= len(m.SmppID)
 		copy(dAtA[i:], m.SmppID)
 		i = encodeVarintMessage(dAtA, i, uint64(len(m.SmppID)))
 		i--
-		dAtA[i] = 0x32
+		dAtA[i] = 0x2a
 	}
 	if len(m.SmtpID) > 0 {
 		i -= len(m.SmtpID)
 		copy(dAtA[i:], m.SmtpID)
 		i = encodeVarintMessage(dAtA, i, uint64(len(m.SmtpID)))
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x22
 	}
 	if len(m.WebhookID) > 0 {
 		i -= len(m.WebhookID)
 		copy(dAtA[i:], m.WebhookID)
 		i = encodeVarintMessage(dAtA, i, uint64(len(m.WebhookID)))
 		i--
-		dAtA[i] = 0x22
-	}
-	if m.Notify {
-		i--
-		if m.Notify {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x1a
 	}
 	if m.Write {
 		i--
@@ -631,58 +525,6 @@ func (m *Transformer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Notifier) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Notifier) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Notifier) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.Contacts) > 0 {
-		for iNdEx := len(m.Contacts) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Contacts[iNdEx])
-			copy(dAtA[i:], m.Contacts[iNdEx])
-			i = encodeVarintMessage(dAtA, i, uint64(len(m.Contacts[iNdEx])))
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if len(m.Subtopics) > 0 {
-		for iNdEx := len(m.Subtopics) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Subtopics[iNdEx])
-			copy(dAtA[i:], m.Subtopics[iNdEx])
-			i = encodeVarintMessage(dAtA, i, uint64(len(m.Subtopics[iNdEx])))
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.Protocol) > 0 {
-		i -= len(m.Protocol)
-		copy(dAtA[i:], m.Protocol)
-		i = encodeVarintMessage(dAtA, i, uint64(len(m.Protocol)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	offset -= sovMessage(v)
 	base := offset
@@ -746,9 +588,6 @@ func (m *Profile) Size() (n int) {
 	if m.Write {
 		n += 2
 	}
-	if m.Notify {
-		n += 2
-	}
 	l = len(m.WebhookID)
 	if l > 0 {
 		n += 1 + l + sovMessage(uint64(l))
@@ -763,10 +602,6 @@ func (m *Profile) Size() (n int) {
 	}
 	if m.Transformer != nil {
 		l = m.Transformer.Size()
-		n += 1 + l + sovMessage(uint64(l))
-	}
-	if m.Notifier != nil {
-		l = m.Notifier.Size()
 		n += 1 + l + sovMessage(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -798,34 +633,6 @@ func (m *Transformer) Size() (n int) {
 	l = len(m.TimeLocation)
 	if l > 0 {
 		n += 1 + l + sovMessage(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Notifier) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Protocol)
-	if l > 0 {
-		n += 1 + l + sovMessage(uint64(l))
-	}
-	if len(m.Subtopics) > 0 {
-		for _, s := range m.Subtopics {
-			l = len(s)
-			n += 1 + l + sovMessage(uint64(l))
-		}
-	}
-	if len(m.Contacts) > 0 {
-		for _, s := range m.Contacts {
-			l = len(s)
-			n += 1 + l + sovMessage(uint64(l))
-		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1091,10 +898,7 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthMessage
 			}
 			if (iNdEx + skippy) > l {
@@ -1192,26 +996,6 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			}
 			m.Write = bool(v != 0)
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Notify", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Notify = bool(v != 0)
-		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WebhookID", wireType)
 			}
@@ -1243,7 +1027,7 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			}
 			m.WebhookID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 5:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SmtpID", wireType)
 			}
@@ -1275,7 +1059,7 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			}
 			m.SmtpID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 6:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SmppID", wireType)
 			}
@@ -1307,7 +1091,7 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			}
 			m.SmppID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 7:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Transformer", wireType)
 			}
@@ -1343,52 +1127,13 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Notifier", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Notifier == nil {
-				m.Notifier = &Notifier{}
-			}
-			if err := m.Notifier.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMessage(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthMessage
 			}
 			if (iNdEx + skippy) > l {
@@ -1567,160 +1312,7 @@ func (m *Transformer) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Notifier) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowMessage
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Notifier: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Notifier: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Protocol", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Protocol = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Subtopics", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Subtopics = append(m.Subtopics, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Contacts", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Contacts = append(m.Contacts, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipMessage(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthMessage
 			}
 			if (iNdEx + skippy) > l {

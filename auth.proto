@@ -41,12 +41,10 @@ message ConnByKeyRes {
 message Profile {
     string      contentType = 1;
     bool        write       = 2;
-    bool        notify      = 3;
-    string      webhookID   = 4;
-    string      smtpID      = 5;
-    string      smppID      = 6;
-    Transformer transformer = 7;
-    Notifier    notifier    = 8;
+    string      webhookID   = 3;
+    string      smtpID      = 4;
+    string      smppID      = 5;
+    Transformer transformer = 6;
 }
 
 message Transformer {
@@ -54,12 +52,6 @@ message Transformer {
     string timeField            = 2;
     string timeFormat           = 3;
     string timeLocation         = 4;
-}
-
-message Notifier {
-    string protocol           = 1;
-    repeated string subtopics = 2;
-    repeated string contacts  = 3;
 }
 
 message ChannelOwnerReq {
