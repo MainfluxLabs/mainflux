@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -64,10 +63,6 @@ func (ns *notifierService) Consume(message interface{}) error {
 	msg, ok := message.(messaging.Message)
 	if !ok {
 		return errors.ErrMessage
-	}
-
-	if msg.Profile.SmtpID == "" && msg.Profile.SmppID == "" {
-		return apiutil.ErrMissingID
 	}
 
 	if msg.Profile.SmtpID != "" {

@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -71,11 +70,6 @@ func TestConsume(t *testing.T) {
 		SmppID: nf2.ID,
 	}
 
-	emptyNotifiersProfile := &messaging.Profile{
-		SmtpID: "",
-		SmppID: "",
-	}
-
 	cases := []struct {
 		desc string
 		msg  messaging.Message
@@ -84,11 +78,6 @@ func TestConsume(t *testing.T) {
 		{
 			desc: "notify success",
 			msg:  messaging.Message{Profile: profile},
-		},
-		{
-			desc: "notify without notifiers",
-			msg:  messaging.Message{Profile: emptyNotifiersProfile},
-			err:  apiutil.ErrMissingID,
 		},
 		{
 			desc: "notify with invalid contacts",
