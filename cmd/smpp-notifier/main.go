@@ -144,7 +144,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	dbTracer, dbCloser := jaeger.Init("smpp_notifier_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("smpp_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
