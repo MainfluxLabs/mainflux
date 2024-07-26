@@ -6,10 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -23,18 +20,20 @@ import (
 	mfsmpp "github.com/MainfluxLabs/mainflux/consumers/notifiers/smpp"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/clients"
+	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	jconfig "github.com/uber/jaeger-client-go/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -106,15 +105,11 @@ type config struct {
 	brokerURL         string
 	logLevel          string
 	dbConfig          postgres.Config
-	thingsTLS         bool
-	thingsCACerts     string
-	httpPort          string
+	httpConfig        servers.Config
+	thingsConfig      clients.Config
 	smppConf          mfsmpp.Config
 	from              string
-	serverCert        string
-	serverKey         string
 	jaegerURL         string
-	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 }
 
@@ -135,31 +130,31 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	notifiersTracer, notifiersCloser := initJaeger(svcName, cfg.jaegerURL, logger)
+	notifiersTracer, notifiersCloser := jaeger.Init(svcName, cfg.jaegerURL, logger)
 	defer notifiersCloser.Close()
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	thingsTracer, thingsCloser := initJaeger("smpp_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("smpp_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	things, close := createThingsClient(cfg, thingsTracer, logger)
-	if close != nil {
-		defer close()
-	}
+	thConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
+	defer thConn.Close()
 
-	dbTracer, dbCloser := initJaeger("smpp_notifier_db", cfg.jaegerURL, logger)
+	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
+
+	dbTracer, dbCloser := jaeger.Init("smpp_notifier_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(cfg, logger, dbTracer, db, things)
+	svc := newService(cfg, logger, dbTracer, db, tc)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMPP notifier: %s", err))
 	}
 
 	g.Go(func() error {
-		return startHTTPServer(ctx, svcName, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpPort, cfg, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -227,46 +222,33 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	httpConfig := servers.Config{
+		ServerName:   svcName,
+		ServerCert:   mainflux.Env(envServerCert, defServerCert),
+		ServerKey:    mainflux.Env(envServerKey, defServerKey),
+		Port:         mainflux.Env(envHTTPPort, defHTTPPort),
+		StopWaitTime: stopWaitTime,
+	}
+
+	thingsConfig := clients.Config{
+		ClientTLS:  thingsTLS,
+		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
+		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
+		ClientName: "things",
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		smppConf:          smppConf,
 		dbConfig:          dbConfig,
+		httpConfig:        httpConfig,
+		thingsConfig:      thingsConfig,
 		from:              mainflux.Env(envFrom, defFrom),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsTLS:         thingsTLS,
-		thingsCACerts:     mainflux.Env(envThingsCACerts, defThingsCACerts),
-		httpPort:          mainflux.Env(envHTTPPort, defHTTPPort),
-		serverCert:        mainflux.Env(envServerCert, defServerCert),
-		serverKey:         mainflux.Env(envServerKey, defServerKey),
-		thingsGRPCURL:     mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 	}
 
-}
-
-func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
-	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
-	}
-
-	tracer, closer, err := jconfig.Configuration{
-		ServiceName: svcName,
-		Sampler: &jconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jconfig.ReporterConfig{
-			LocalAgentHostPort: url,
-			LogSpans:           true,
-		},
-	}.NewTracer()
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to init Jaeger: %s", err))
-		os.Exit(1)
-	}
-
-	return tracer, closer
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
@@ -276,36 +258,6 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 		os.Exit(1)
 	}
 	return db
-}
-
-func createThingsClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (mainflux.ThingsServiceClient, func() error) {
-	conn := connectToThings(cfg, logger)
-	return thingsapi.NewClient(conn, tracer, cfg.thingsGRPCTimeout), conn.Close
-}
-
-func connectToThings(cfg config, logger logger.Logger) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if cfg.thingsTLS {
-		if cfg.thingsCACerts != "" {
-			tpc, err := credentials.NewClientTLSFromFile(cfg.thingsCACerts, "")
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create tls credentials: %s", err))
-				os.Exit(1)
-			}
-			opts = append(opts, grpc.WithTransportCredentials(tpc))
-		}
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-		logger.Info("gRPC communication is not encrypted")
-	}
-
-	conn, err := grpc.Dial(cfg.thingsGRPCURL, opts...)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to things service: %s", err))
-		os.Exit(1)
-	}
-
-	return conn
 }
 
 func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc mainflux.ThingsServiceClient) notifiers.Service {
@@ -334,38 +286,4 @@ func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db 
 	)
 
 	return svc
-}
-
-func startHTTPServer(ctx context.Context, name string, handler http.Handler, port string, cfg config, logger logger.Logger) error {
-	p := fmt.Sprintf(":%s", port)
-	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: handler}
-
-	switch {
-	case cfg.serverCert != "" || cfg.serverKey != "":
-		logger.Info(fmt.Sprintf("SMPP notifiers %s service started using https on port %s with cert %s key %s",
-			name, port, cfg.serverCert, cfg.serverKey))
-		go func() {
-			errCh <- server.ListenAndServeTLS(cfg.serverCert, cfg.serverKey)
-		}()
-	default:
-		logger.Info(fmt.Sprintf("SMPP notifiers %s service started using http on port %s", name, cfg.httpPort))
-		go func() {
-			errCh <- server.ListenAndServe()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), stopWaitTime)
-		defer cancelShutdown()
-		if err := server.Shutdown(ctxShutdown); err != nil {
-			logger.Error(fmt.Sprintf("SMPP notifiers %s service error occurred during shutdown at %s: %s", name, p, err))
-			return fmt.Errorf("SMPP notifiers %s service occurred during shutdown at %s: %w", name, p, err)
-		}
-		logger.Info(fmt.Sprintf("SMPP notifiers %s service  shutdown of http at %s", name, p))
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
