@@ -112,7 +112,13 @@ func TestCreateThings(t *testing.T) {
 
 func TestUpdateThing(t *testing.T) {
 	svc := newService()
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
+	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 	other := things.Thing{ID: wrongID, Key: "x"}
@@ -194,7 +200,13 @@ func TestUpdateKey(t *testing.T) {
 
 func TestViewThing(t *testing.T) {
 	svc := newService()
-	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
+	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
@@ -607,6 +619,12 @@ func TestCreateChannels(t *testing.T) {
 
 func TestUpdateChannel(t *testing.T) {
 	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -646,6 +664,12 @@ func TestUpdateChannel(t *testing.T) {
 
 func TestViewChannel(t *testing.T) {
 	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]

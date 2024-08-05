@@ -210,24 +210,16 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	thing, err := ts.things.RetrieveByID(ctx, thing.ID)
+	th, err := ts.things.RetrieveByID(ctx, thing.ID)
 	if err != nil {
 		return err
 	}
 
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	if thing.OwnerID == res.GetId() {
-		return ts.things.Update(ctx, thing)
-	}
-
-	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Editor); err != nil {
+	if err := ts.canAccessGroup(ctx, token, th.GroupID, Editor); err != nil {
 		return err
 	}
 
+	thing.OwnerID = th.OwnerID
 	return ts.things.Update(ctx, thing)
 }
 
@@ -246,15 +238,6 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	thing, err := ts.things.RetrieveByID(ctx, id)
 	if err != nil {
 		return Thing{}, err
-	}
-
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Thing{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	if thing.OwnerID == res.GetId() {
-		return thing, nil
 	}
 
 	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Viewer); err != nil {
@@ -361,12 +344,16 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 }
 
 func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channel Channel) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	ch, err := ts.channels.RetrieveByID(ctx, channel.ID)
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+		return err
 	}
 
-	channel.OwnerID = res.GetId()
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+		return err
+	}
+
+	channel.OwnerID = ch.OwnerID
 	return ts.channels.Update(ctx, channel)
 }
 
@@ -374,15 +361,6 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 	channel, err := ts.channels.RetrieveByID(ctx, id)
 	if err != nil {
 		return Channel{}, err
-	}
-
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return Channel{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	if channel.OwnerID == res.GetId() {
-		return channel, nil
 	}
 
 	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
