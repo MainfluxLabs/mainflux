@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 const (
@@ -134,19 +135,19 @@ type Backup struct {
 var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
-	auth         mainflux.AuthServiceClient
-	users        mainflux.UsersServiceClient
+	auth         protomfx.AuthServiceClient
+	users        protomfx.UsersServiceClient
 	things       ThingRepository
 	channels     ChannelRepository
 	groups       GroupRepository
 	roles        RolesRepository
 	channelCache ChannelCache
 	thingCache   ThingCache
-	idProvider   mainflux.IDProvider
+	idProvider   uuid.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth mainflux.AuthServiceClient, users mainflux.UsersServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, roles RolesRepository, ccache ChannelCache, tcache ThingCache, idp mainflux.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, roles RolesRepository, ccache ChannelCache, tcache ThingCache, idp uuid.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		users:        users,
@@ -161,7 +162,7 @@ func New(auth mainflux.AuthServiceClient, users mainflux.UsersServiceClient, thi
 }
 
 func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return []Thing{}, err
 	}
@@ -179,7 +180,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 	return ths, nil
 }
 
-func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *mainflux.UserIdentity) (Thing, error) {
+func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *protomfx.UserIdentity) (Thing, error) {
 	thing.OwnerID = identity.GetId()
 
 	if thing.ID == "" {
@@ -224,7 +225,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 }
 
 func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -252,7 +253,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return ts.things.RetrieveByAdmin(ctx, pm)
 	}
 
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -287,7 +288,7 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID st
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -306,7 +307,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error) {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return []Channel{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -322,7 +323,7 @@ func (ts *thingsService) CreateChannels(ctx context.Context, token string, chann
 	return chs, nil
 }
 
-func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, identity *mainflux.UserIdentity) (Channel, error) {
+func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, identity *protomfx.UserIdentity) (Channel, error) {
 	if channel.ID == "" {
 		chID, err := ts.idProvider.ID()
 		if err != nil {
@@ -375,7 +376,7 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 		return ts.channels.RetrieveByAdmin(ctx, pm)
 	}
 
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -397,7 +398,7 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 }
 
 func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids ...string) error {
-	res, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -491,7 +492,7 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 }
 
 func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID string) error {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return err
 	}
@@ -632,7 +633,7 @@ func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
-	req := &mainflux.AuthorizeReq{
+	req := &protomfx.AuthorizeReq{
 		Token:   token,
 		Subject: auth.RootSubject,
 	}
@@ -645,7 +646,7 @@ func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 }
 
 func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID string) error {
-	req := &mainflux.AuthorizeReq{
+	req := &protomfx.AuthorizeReq{
 		Token:   token,
 		Subject: auth.OrgsSubject,
 		Object:  orgID,

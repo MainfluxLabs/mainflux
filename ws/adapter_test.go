@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	thmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/mocks"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ const (
 	protocol = "ws"
 )
 
-var msg = messaging.Message{
+var msg = protomfx.Message{
 	Channel:   chanID,
 	Publisher: id,
 	Subtopic:  "",
@@ -32,7 +31,7 @@ var msg = messaging.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
-func newService(tc mainflux.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
 }
@@ -44,7 +43,7 @@ func TestPublish(t *testing.T) {
 	cases := []struct {
 		desc     string
 		thingKey string
-		msg      messaging.Message
+		msg      protomfx.Message
 		err      error
 	}{
 		{
@@ -68,19 +67,19 @@ func TestPublish(t *testing.T) {
 		{
 			desc:     "publish an empty message with valid thingKey",
 			thingKey: thingKey,
-			msg:      messaging.Message{},
+			msg:      protomfx.Message{},
 			err:      ws.ErrFailedMessagePublish,
 		},
 		{
 			desc:     "publish an empty message with empty thingKey",
 			thingKey: "",
-			msg:      messaging.Message{},
+			msg:      protomfx.Message{},
 			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
 			desc:     "publish an empty message with invalid thingKey",
 			thingKey: "invalid",
-			msg:      messaging.Message{},
+			msg:      protomfx.Message{},
 			err:      ws.ErrUnauthorizedAccess,
 		},
 	}

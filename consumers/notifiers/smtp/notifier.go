@@ -8,7 +8,7 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/internal/email"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -27,7 +27,7 @@ func New(agent *email.Agent) notifiers.Notifier {
 	return &notifier{agent: agent}
 }
 
-func (n *notifier) Notify(from string, to []string, msg messaging.Message) error {
+func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error {
 	subject := fmt.Sprintf(`Mainflux notification: Channel %s, Thing %s and subtopic %s`, msg.Channel, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
 	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)

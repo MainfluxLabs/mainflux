@@ -6,10 +6,10 @@ package grpc
 import (
 	"context"
 
-	mainflux "github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ mainflux.AuthServiceServer = (*grpcServer)(nil)
+var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
 	issue        kitgrpc.Handler
@@ -32,7 +32,7 @@ type grpcServer struct {
 }
 
 // NewServer returns new AuthServiceServer instance.
-func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthServiceServer {
+func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthServiceServer {
 	return &grpcServer{
 		issue: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "issue")(issueEndpoint(svc)),
@@ -62,23 +62,23 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) mainflux.AuthService
 	}
 }
 
-func (s *grpcServer) Issue(ctx context.Context, req *mainflux.IssueReq) (*mainflux.Token, error) {
+func (s *grpcServer) Issue(ctx context.Context, req *protomfx.IssueReq) (*protomfx.Token, error) {
 	_, res, err := s.issue.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*mainflux.Token), nil
+	return res.(*protomfx.Token), nil
 }
 
-func (s *grpcServer) Identify(ctx context.Context, token *mainflux.Token) (*mainflux.UserIdentity, error) {
+func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
 	_, res, err := s.identify.ServeGRPC(ctx, token)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*mainflux.UserIdentity), nil
+	return res.(*protomfx.UserIdentity), nil
 }
 
-func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) (*empty.Empty, error) {
+func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
 	_, res, err := s.authorize.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -86,7 +86,7 @@ func (s *grpcServer) Authorize(ctx context.Context, req *mainflux.AuthorizeReq) 
 	return res.(*empty.Empty), nil
 }
 
-func (s *grpcServer) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq) (*empty.Empty, error) {
+func (s *grpcServer) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq) (*empty.Empty, error) {
 	_, res, err := s.assignRole.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -94,51 +94,51 @@ func (s *grpcServer) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq
 	return res.(*empty.Empty), nil
 }
 
-func (s *grpcServer) RetrieveRole(ctx context.Context, req *mainflux.RetrieveRoleReq) (*mainflux.RetrieveRoleRes, error) {
+func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq) (*protomfx.RetrieveRoleRes, error) {
 	_, res, err := s.retrieveRole.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*mainflux.RetrieveRoleRes), nil
+	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
 func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AssignRoleReq)
+	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
 }
 
 func decodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.RetrieveRoleReq)
+	req := grpcReq.(*protomfx.RetrieveRoleReq)
 	return retrieveRoleReq{id: req.GetId()}, nil
 }
 
 func encodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(retrieveRoleRes)
-	return &mainflux.RetrieveRoleRes{Role: res.role}, nil
+	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
 }
 
 func decodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.IssueReq)
+	req := grpcReq.(*protomfx.IssueReq)
 	return issueReq{id: req.GetId(), email: req.GetEmail(), keyType: req.GetType()}, nil
 }
 
 func encodeIssueResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(issueRes)
-	return &mainflux.Token{Value: res.value}, nil
+	return &protomfx.Token{Value: res.value}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.Token)
+	req := grpcReq.(*protomfx.Token)
 	return identityReq{token: req.GetValue()}, nil
 }
 
 func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(identityRes)
-	return &mainflux.UserIdentity{Id: res.id, Email: res.email}, nil
+	return &protomfx.UserIdentity{Id: res.id, Email: res.email}, nil
 }
 
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*mainflux.AuthorizeReq)
+	req := grpcReq.(*protomfx.AuthorizeReq)
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.Subject, Action: req.GetAction()}, nil
 }
 

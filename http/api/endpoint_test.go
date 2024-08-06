@@ -11,19 +11,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 )
 
 const ServiceErrToken = "unavailable"
 
-func newService(tc mainflux.ThingsServiceClient) adapter.Service {
+func newService(tc protomfx.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }

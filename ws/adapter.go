@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -48,7 +48,7 @@ var (
 // Service specifies web socket service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, thingKey string, msg messaging.Message) error
+	Publish(ctx context.Context, thingKey string, msg protomfx.Message) error
 
 	// Subscribe  subscribes to a channel with specified id.
 	Subscribe(ctx context.Context, thingKey, chanID, subtopic string, client *Client) error
@@ -60,12 +60,12 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things mainflux.ThingsServiceClient
+	things protomfx.ThingsServiceClient
 	pubsub messaging.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
 		things: things,
 		pubsub: pubsub,
@@ -73,7 +73,7 @@ func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 // Publish publishes the message using the broker
-func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg messaging.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg protomfx.Message) error {
 	conn, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
@@ -136,8 +136,8 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, chanID, su
 	return svc.pubsub.Unsubscribe(conn.ChannelID, subject)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*mainflux.ConnByKeyRes, error) {
-	ar := &mainflux.ConnByKeyReq{
+func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*protomfx.ConnByKeyRes, error) {
+	ar := &protomfx.ConnByKeyReq{
 		Key: thingKey,
 	}
 	conn, err := svc.things.GetConnByKey(ctx, ar)

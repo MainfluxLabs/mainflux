@@ -6,7 +6,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -23,10 +23,10 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		mu := []*mainflux.User{}
+		mu := []*protomfx.User{}
 
 		for _, u := range up.Users {
-			user := mainflux.User{
+			user := protomfx.User{
 				Id:     u.ID,
 				Email:  u.Email,
 				Status: u.Status,
@@ -50,10 +50,10 @@ func listUsersByEmailsEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		mu := []*mainflux.User{}
+		mu := []*protomfx.User{}
 
 		for _, u := range users {
-			user := mainflux.User{
+			user := protomfx.User{
 				Id:     u.ID,
 				Email:  u.Email,
 				Status: u.Status,

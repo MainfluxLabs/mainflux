@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	grpcapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +51,7 @@ func newService() auth.Service {
 func startGRPCServer(svc auth.Service, port int) {
 	listener, _ := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	server := grpc.NewServer()
-	mainflux.RegisterAuthServiceServer(server, grpcapi.NewServer(mocktracer.New(), svc))
+	protomfx.RegisterAuthServiceServer(server, grpcapi.NewServer(mocktracer.New(), svc))
 	go server.Serve(listener)
 }
 
@@ -111,7 +111,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := client.Issue(context.Background(), &mainflux.IssueReq{Id: tc.id, Email: tc.email, Type: tc.kind})
+		_, err := client.Issue(context.Background(), &protomfx.IssueReq{Id: tc.id, Email: tc.email, Type: tc.kind})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
@@ -135,49 +135,49 @@ func TestIdentify(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		idt   mainflux.UserIdentity
+		idt   protomfx.UserIdentity
 		err   error
 		code  codes.Code
 	}{
 		{
 			desc:  "identify user with user token",
 			token: loginSecret,
-			idt:   mainflux.UserIdentity{Email: email, Id: id},
+			idt:   protomfx.UserIdentity{Email: email, Id: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with recovery token",
 			token: recoverySecret,
-			idt:   mainflux.UserIdentity{Email: email, Id: id},
+			idt:   protomfx.UserIdentity{Email: email, Id: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with API token",
 			token: apiSecret,
-			idt:   mainflux.UserIdentity{Email: email, Id: id},
+			idt:   protomfx.UserIdentity{Email: email, Id: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with invalid user token",
 			token: "invalid",
-			idt:   mainflux.UserIdentity{},
+			idt:   protomfx.UserIdentity{},
 			err:   status.Error(codes.Unauthenticated, "unauthenticated access"),
 			code:  codes.Unauthenticated,
 		},
 		{
 			desc:  "identify user with empty token",
 			token: "",
-			idt:   mainflux.UserIdentity{},
+			idt:   protomfx.UserIdentity{},
 			err:   status.Error(codes.InvalidArgument, "received invalid token request"),
 			code:  codes.Unauthenticated,
 		},
 	}
 
 	for _, tc := range cases {
-		idt, err := client.Identify(context.Background(), &mainflux.Token{Value: tc.token})
+		idt, err := client.Identify(context.Background(), &protomfx.Token{Value: tc.token})
 		if idt != nil {
 			assert.Equal(t, tc.idt, *idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, *idt))
 		}
@@ -202,7 +202,7 @@ func TestAuthorize(t *testing.T) {
 		subject  string
 		object   string
 		relation string
-		ar       mainflux.AuthorizeRes
+		ar       protomfx.AuthorizeRes
 		err      error
 		code     codes.Code
 	}{
@@ -212,7 +212,7 @@ func TestAuthorize(t *testing.T) {
 			subject:  id,
 			object:   authoritiesObj,
 			relation: memberRelation,
-			ar:       mainflux.AuthorizeRes{Authorized: true},
+			ar:       protomfx.AuthorizeRes{Authorized: true},
 			err:      nil,
 			code:     codes.OK,
 		},
@@ -222,7 +222,7 @@ func TestAuthorize(t *testing.T) {
 			subject:  id,
 			object:   authoritiesObj,
 			relation: "unauthorizedRelation",
-			ar:       mainflux.AuthorizeRes{Authorized: false},
+			ar:       protomfx.AuthorizeRes{Authorized: false},
 			err:      nil,
 			code:     codes.PermissionDenied,
 		},
@@ -232,7 +232,7 @@ func TestAuthorize(t *testing.T) {
 			subject:  id,
 			object:   "unauthorizedobject",
 			relation: memberRelation,
-			ar:       mainflux.AuthorizeRes{Authorized: false},
+			ar:       protomfx.AuthorizeRes{Authorized: false},
 			err:      nil,
 			code:     codes.PermissionDenied,
 		},
@@ -242,7 +242,7 @@ func TestAuthorize(t *testing.T) {
 			subject:  "unauthorizedSubject",
 			object:   authoritiesObj,
 			relation: memberRelation,
-			ar:       mainflux.AuthorizeRes{Authorized: false},
+			ar:       protomfx.AuthorizeRes{Authorized: false},
 			err:      nil,
 			code:     codes.PermissionDenied,
 		},
@@ -252,7 +252,7 @@ func TestAuthorize(t *testing.T) {
 			subject:  "",
 			object:   "",
 			relation: "",
-			ar:       mainflux.AuthorizeRes{Authorized: false},
+			ar:       protomfx.AuthorizeRes{Authorized: false},
 			err:      nil,
 			code:     codes.InvalidArgument,
 		},

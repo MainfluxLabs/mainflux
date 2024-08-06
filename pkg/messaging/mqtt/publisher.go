@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 )
@@ -32,7 +33,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(msg messaging.Message) error {
+func (pub publisher) Publish(msg protomfx.Message) error {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err

@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
 var (
-	_ mainflux.Response = (*memberPageRes)(nil)
-	_ mainflux.Response = (*orgRes)(nil)
-	_ mainflux.Response = (*deleteRes)(nil)
-	_ mainflux.Response = (*assignRes)(nil)
-	_ mainflux.Response = (*unassignRes)(nil)
-	_ mainflux.Response = (*backupRes)(nil)
-	_ mainflux.Response = (*restoreRes)(nil)
+	_ apiutil.Response = (*memberPageRes)(nil)
+	_ apiutil.Response = (*orgRes)(nil)
+	_ apiutil.Response = (*deleteRes)(nil)
+	_ apiutil.Response = (*assignRes)(nil)
+	_ apiutil.Response = (*unassignRes)(nil)
+	_ apiutil.Response = (*backupRes)(nil)
+	_ apiutil.Response = (*restoreRes)(nil)
 )
 
 type viewMemberRes struct {

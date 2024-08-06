@@ -5,6 +5,14 @@ package http
 
 import (
 	"net/http"
+
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+)
+
+var (
+	_ apiutil.Response = (*webhookResponse)(nil)
+	_ apiutil.Response = (*webhooksRes)(nil)
+	_ apiutil.Response = (*removeRes)(nil)
 )
 
 type webhookResponse struct {

@@ -6,10 +6,10 @@ package notifiers
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -39,15 +39,15 @@ type Service interface {
 var _ Service = (*notifierService)(nil)
 
 type notifierService struct {
-	idp          mainflux.IDProvider
+	idp          uuid.IDProvider
 	notifier     Notifier
 	from         string
 	notifierRepo NotifierRepository
-	things       mainflux.ThingsServiceClient
+	things       protomfx.ThingsServiceClient
 }
 
 // New instantiates the subscriptions service implementation.
-func New(idp mainflux.IDProvider, notifier Notifier, from string, notifierRepo NotifierRepository, things mainflux.ThingsServiceClient) Service {
+func New(idp uuid.IDProvider, notifier Notifier, from string, notifierRepo NotifierRepository, things protomfx.ThingsServiceClient) Service {
 	return &notifierService{
 		idp:          idp,
 		notifier:     notifier,
@@ -60,7 +60,7 @@ func New(idp mainflux.IDProvider, notifier Notifier, from string, notifierRepo N
 func (ns *notifierService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	msg, ok := message.(messaging.Message)
+	msg, ok := message.(protomfx.Message)
 	if !ok {
 		return errors.ErrMessage
 	}
@@ -98,7 +98,7 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, no
 }
 
 func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.Notifier, token string) (things.Notifier, error) {
-	_, err := ns.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Editor})
+	_, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Editor})
 	if err != nil {
 		return things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -122,7 +122,7 @@ func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.
 }
 
 func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string) ([]things.Notifier, error) {
-	_, err := ns.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
+	_, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
 	if err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -141,7 +141,7 @@ func (ns *notifierService) ViewNotifier(ctx context.Context, token, id string) (
 		return things.Notifier{}, err
 	}
 
-	if _, err := ns.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Viewer}); err != nil {
 		return things.Notifier{}, err
 	}
 
@@ -154,7 +154,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 		return err
 	}
 
-	if _, err := ns.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: nf.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: nf.GroupID, Action: things.Viewer}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -162,7 +162,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 }
 
 func (ns *notifierService) RemoveNotifiers(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ns.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
+	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

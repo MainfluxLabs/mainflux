@@ -11,8 +11,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/stretchr/testify/assert"
@@ -60,28 +60,28 @@ func TestConsume(t *testing.T) {
 	invalidNf.ID = "a63a8bb7-725b-4f34-89a4-857827934b1f"
 	invalidNf.Contacts = invalidContacts
 
-	profile := &messaging.Profile{
+	profile := &protomfx.Profile{
 		SmtpID: nf.ID,
 		SmppID: "",
 	}
 
-	invalidContactProfile := &messaging.Profile{
+	invalidContactProfile := &protomfx.Profile{
 		SmtpID: invalidNf.ID,
 		SmppID: nf2.ID,
 	}
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  protomfx.Message
 		err  error
 	}{
 		{
 			desc: "notify success",
-			msg:  messaging.Message{Profile: profile},
+			msg:  protomfx.Message{Profile: profile},
 		},
 		{
 			desc: "notify with invalid contacts",
-			msg:  messaging.Message{Profile: invalidContactProfile},
+			msg:  protomfx.Message{Profile: invalidContactProfile},
 			err:  notifiers.ErrNotify,
 		},
 	}

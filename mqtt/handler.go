@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
@@ -239,14 +239,14 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client) (mainflux.ConnByKeyRes, error) {
+func (h *handler) authAccess(c *session.Client) (protomfx.ConnByKeyRes, error) {
 	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
 	if err != nil {
-		return mainflux.ConnByKeyRes{}, err
+		return protomfx.ConnByKeyRes{}, err
 	}
 
 	if conn.ThingID != c.Username {
-		return mainflux.ConnByKeyRes{}, ErrAuthentication
+		return protomfx.ConnByKeyRes{}, ErrAuthentication
 	}
 
 	return conn, nil

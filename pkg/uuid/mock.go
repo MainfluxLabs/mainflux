@@ -6,14 +6,12 @@ package uuid
 import (
 	"fmt"
 	"sync"
-
-	"github.com/MainfluxLabs/mainflux"
 )
 
 // Prefix represents the prefix used to generate UUID mocks
 const Prefix = "123e4567-e89b-12d3-a456-"
 
-var _ mainflux.IDProvider = (*uuidProviderMock)(nil)
+var _ IDProvider = (*uuidProviderMock)(nil)
 
 type uuidProviderMock struct {
 	mu      sync.Mutex
@@ -30,6 +28,6 @@ func (up *uuidProviderMock) ID() (string, error) {
 
 // NewMock creates "mirror" uuid provider, i.e. generated
 // token will hold value provided by the caller.
-func NewMock() mainflux.IDProvider {
+func NewMock() IDProvider {
 	return &uuidProviderMock{}
 }

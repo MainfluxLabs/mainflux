@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	mfsenml "github.com/MainfluxLabs/senml"
 	"github.com/stretchr/testify/assert"
@@ -24,13 +24,13 @@ func TestTransformJSON(t *testing.T) {
 	require.Nil(t, err, "Decoding JSON expected to succeed")
 
 	tr := senml.New()
-	msg := messaging.Message{
+	msg := protomfx.Message{
 		Channel:   "channel",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
 		Protocol:  "protocol",
 		Payload:   jsonBytes,
-		Profile:   &messaging.Profile{ContentType: senml.JSON},
+		Profile:   &protomfx.Profile{ContentType: senml.JSON},
 	}
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
@@ -57,7 +57,7 @@ func TestTransformJSON(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  protomfx.Message
 		msgs interface{}
 		err  error
 	}{
@@ -93,13 +93,13 @@ func TestTransformCBOR(t *testing.T) {
 	require.Nil(t, err, "Decoding CBOR expected to succeed")
 
 	tr := senml.New()
-	msg := messaging.Message{
+	msg := protomfx.Message{
 		Channel:   "channel",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
 		Protocol:  "protocol",
 		Payload:   cborBytes,
-		Profile:   &messaging.Profile{ContentType: senml.CBOR},
+		Profile:   &protomfx.Profile{ContentType: senml.CBOR},
 	}
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
@@ -129,7 +129,7 @@ func TestTransformCBOR(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  protomfx.Message
 		msgs interface{}
 		err  error
 	}{

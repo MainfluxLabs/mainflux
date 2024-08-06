@@ -11,7 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
 	mux "github.com/plgd-dev/go-coap/v2/mux"
@@ -21,7 +21,7 @@ import (
 type Client interface {
 	// In CoAP terminology, Token similar to the Session ID.
 	Token() string
-	Handle(m messaging.Message) error
+	Handle(m protomfx.Message) error
 	Cancel() error
 	Done() <-chan struct{}
 }
@@ -67,7 +67,7 @@ func (c *client) Token() string {
 	return c.token.String()
 }
 
-func (c *client) Handle(msg messaging.Message) error {
+func (c *client) Handle(msg protomfx.Message) error {
 	m := message.Message{
 		Code:    codes.Content,
 		Token:   c.token,

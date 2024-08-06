@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package http
 
-import "github.com/MainfluxLabs/mainflux"
+import "github.com/MainfluxLabs/mainflux/internal/apiutil"
 
-var _ mainflux.Response = (*listSubscriptionsRes)(nil)
+var _ apiutil.Response = (*listSubscriptionsRes)(nil)
 
 type listSubscriptionsRes struct {
 	pageRes

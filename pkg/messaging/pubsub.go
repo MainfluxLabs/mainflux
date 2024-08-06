@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -57,16 +57,16 @@ var (
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publish publishes message to the message broker.
-	Publish(msg Message) error
+	Publish(msg protomfx.Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error
 }
 
-// MessageHandler represents Message handler for Subscriber.
+// MessageHandler represents protomfx.Message handler for Subscriber.
 type MessageHandler interface {
 	// Handle handles messages passed by underlying implementation.
-	Handle(msg Message) error
+	Handle(msg protomfx.Message) error
 
 	// Cancel is used for cleanup during unsubscribing and it's optional.
 	Cancel() error
@@ -91,15 +91,15 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payload *[]byte) Message {
-	msg := Message{
+func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
+	msg := protomfx.Message{
 		Protocol:  protocol,
 		Channel:   conn.ChannelID,
 		Subtopic:  subject,
 		Publisher: conn.ThingID,
 		Payload:   *payload,
 		Created:   time.Now().UnixNano(),
-		Profile:   &Profile{},
+		Profile:   &protomfx.Profile{},
 	}
 
 	if conn.Profile == nil {
@@ -113,7 +113,7 @@ func CreateMessage(conn *mainflux.ConnByKeyRes, protocol, subject string, payloa
 	msg.Profile.ContentType = conn.Profile.ContentType
 
 	if conn.Profile.Transformer != nil {
-		msg.Profile.Transformer = &Transformer{
+		msg.Profile.Transformer = &protomfx.Transformer{
 			ValueFields:  conn.Profile.Transformer.ValueFields,
 			TimeField:    conn.Profile.Transformer.TimeField,
 			TimeFormat:   conn.Profile.Transformer.TimeFormat,

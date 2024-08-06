@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -75,7 +74,7 @@ func decodeKeyReq(_ context.Context, r *http.Request) (interface{}, error) {
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
-	if ar, ok := response.(mainflux.Response); ok {
+	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}

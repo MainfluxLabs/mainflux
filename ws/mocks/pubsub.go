@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/gorilla/websocket"
 )
@@ -15,7 +16,7 @@ import (
 var _ messaging.PubSub = (*mockPubSub)(nil)
 
 type MockPubSub interface {
-	Publish(messaging.Message) error
+	Publish(protomfx.Message) error
 	Subscribe(string, string, messaging.MessageHandler) error
 	Unsubscribe(string, string) error
 	SetFail(bool)
@@ -32,7 +33,7 @@ type mockPubSub struct {
 func NewPubSub() MockPubSub {
 	return &mockPubSub{false, nil}
 }
-func (pubsub *mockPubSub) Publish(msg messaging.Message) error {
+func (pubsub *mockPubSub) Publish(msg protomfx.Message) error {
 	if pubsub.conn != nil {
 		data, err := json.Marshal(msg)
 		if err != nil {

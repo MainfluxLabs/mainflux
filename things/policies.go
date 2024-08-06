@@ -3,8 +3,8 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type GroupMembers struct {
@@ -86,7 +86,7 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 
 	var groupRoles []GroupMembers
 	if len(gpp.GroupRoles) > 0 {
-		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupRolesPage{}, err

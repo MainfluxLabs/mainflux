@@ -5,7 +5,7 @@ package senml
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/senml"
 )
@@ -36,7 +36,7 @@ func New() transformers.Transformer {
 	return transformer{}
 }
 
-func (t transformer) Transform(msg messaging.Message) (interface{}, error) {
+func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
 	contentFormat := msg.Profile.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {

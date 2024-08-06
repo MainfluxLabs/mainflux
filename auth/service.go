@@ -7,8 +7,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 const (
@@ -95,17 +96,17 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs          OrgRepository
-	users         mainflux.UsersServiceClient
-	things        mainflux.ThingsServiceClient
+	users         protomfx.UsersServiceClient
+	things        protomfx.ThingsServiceClient
 	keys          KeyRepository
 	roles         RolesRepository
-	idProvider    mainflux.IDProvider
+	idProvider    uuid.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc mainflux.ThingsServiceClient, uc mainflux.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp mainflux.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -342,7 +343,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms .
 		memberEmails = append(memberEmails, om.Email)
 	}
 
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
 	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
 	if err != nil {
 		return err
@@ -386,7 +387,7 @@ func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string
 		return OrgMember{}, err
 	}
 
-	usrReq := mainflux.UsersByIDsReq{Ids: []string{memberID}}
+	usrReq := protomfx.UsersByIDsReq{Ids: []string{memberID}}
 	page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 	if err != nil {
 		return OrgMember{}, err
@@ -423,7 +424,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		memberEmails = append(memberEmails, m.Email)
 	}
 
-	muReq := mainflux.UsersByEmailsReq{Emails: memberEmails}
+	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
 	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
 	if err != nil {
 		return err
@@ -471,7 +472,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
-		usrReq := mainflux.UsersByIDsReq{Ids: memberIDs}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs}
 		page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembersPage{}, err

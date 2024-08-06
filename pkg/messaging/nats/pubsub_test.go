@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,10 +25,10 @@ const (
 )
 
 var (
-	msgChan    = make(chan messaging.Message)
+	msgChan    = make(chan protomfx.Message)
 	data       = []byte("payload")
 	errFailed  = errors.New("failed")
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true}
+	msgProfile = &protomfx.Profile{ContentType: senmlContentType, Write: true}
 )
 
 func TestPublisher(t *testing.T) {
@@ -58,7 +59,7 @@ func TestPublisher(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		expectedMsg := messaging.Message{
+		expectedMsg := protomfx.Message{
 			Channel:  channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
@@ -268,7 +269,7 @@ type handler struct {
 	fail bool
 }
 
-func (h handler) Handle(msg messaging.Message) error {
+func (h handler) Handle(msg protomfx.Message) error {
 	msgChan <- msg
 	return nil
 }

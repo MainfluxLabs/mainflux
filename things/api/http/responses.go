@@ -7,22 +7,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
 var (
-	_ mainflux.Response = (*viewThingRes)(nil)
-	_ mainflux.Response = (*thingsPageRes)(nil)
-	_ mainflux.Response = (*channelsPageRes)(nil)
-	_ mainflux.Response = (*connectionsRes)(nil)
-	_ mainflux.Response = (*shareThingRes)(nil)
-	_ mainflux.Response = (*backupRes)(nil)
-	_ mainflux.Response = (*ThingsPageRes)(nil)
-	_ mainflux.Response = (*groupsRes)(nil)
-	_ mainflux.Response = (*removeRes)(nil)
-	_ mainflux.Response = (*listGroupRolesRes)(nil)
-	_ mainflux.Response = (*updateGroupRolesRes)(nil)
-	_ mainflux.Response = (*createGroupRolesRes)(nil)
+	_ apiutil.Response = (*viewThingRes)(nil)
+	_ apiutil.Response = (*thingsPageRes)(nil)
+	_ apiutil.Response = (*channelsPageRes)(nil)
+	_ apiutil.Response = (*connectionsRes)(nil)
+	_ apiutil.Response = (*shareThingRes)(nil)
+	_ apiutil.Response = (*backupRes)(nil)
+	_ apiutil.Response = (*ThingsPageRes)(nil)
+	_ apiutil.Response = (*groupsRes)(nil)
+	_ apiutil.Response = (*removeRes)(nil)
+	_ apiutil.Response = (*listGroupRolesRes)(nil)
+	_ apiutil.Response = (*updateGroupRolesRes)(nil)
+	_ apiutil.Response = (*createGroupRolesRes)(nil)
 )
 
 type removeRes struct{}

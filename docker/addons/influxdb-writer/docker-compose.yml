@@ -55,5 +55,3 @@ services:
       - ${MF_INFLUX_WRITER_PORT}:${MF_INFLUX_WRITER_PORT}
     networks:
       - docker_mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml

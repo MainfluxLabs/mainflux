@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -57,7 +57,7 @@ var (
 	usersList = []users.User{user, admin}
 )
 
-func newServer(repo readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient) *httptest.Server {
+func newServer(repo readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
 	logger := logger.NewMock()
 	mux := api.MakeHandler(repo, tc, ac, svcName, logger)
 
@@ -89,7 +89,7 @@ func (tr testRequest) make() (*http.Response, error) {
 
 	return tr.client.Do(req)
 }
-func newAuthService() mainflux.AuthServiceClient {
+func newAuthService() protomfx.AuthServiceClient {
 	return mocks.NewAuthService(admin.ID, usersList)
 }
 
@@ -150,9 +150,9 @@ func TestListChannelMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
-	adminTok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	userToken := tok.GetValue()
@@ -847,9 +847,9 @@ func TestListAllMessages(t *testing.T) {
 	thSvc := thmocks.NewThingsServiceClient(map[string]string{userEmail: ""}, nil, nil)
 	authSvc := newAuthService()
 
-	tok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
-	adminTok, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	userToken := tok.GetValue()

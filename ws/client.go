@@ -4,8 +4,8 @@
 package ws
 
 import (
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gorilla/websocket"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 // Client handles messaging and websocket connection
@@ -31,7 +31,7 @@ func (c *Client) Cancel() error {
 }
 
 // Handle handles the sending and receiving of messages via the broker
-func (c *Client) Handle(msg messaging.Message) error {
+func (c *Client) Handle(msg protomfx.Message) error {
 	// To prevent publisher from receiving its own published message
 	if msg.GetPublisher() == c.id {
 		return nil

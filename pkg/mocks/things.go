@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -20,13 +20,13 @@ type mainfluxThings struct {
 	counter     uint64
 	things      map[string]things.Thing
 	channels    map[string]things.Channel
-	auth        mainflux.AuthServiceClient
+	auth        protomfx.AuthServiceClient
 	connections map[string][]string
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, channels map[string]things.Channel, auth mainflux.AuthServiceClient) things.Service {
+func NewThingsService(things map[string]things.Thing, channels map[string]things.Channel, auth protomfx.AuthServiceClient) things.Service {
 	return &mainfluxThings{
 		things:      things,
 		channels:    channels,
@@ -39,7 +39,7 @@ func (svc *mainfluxThings) CreateThings(_ context.Context, owner string, ths ...
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return []things.Thing{}, errors.ErrAuthentication
 	}
@@ -58,7 +58,7 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, owner, id string) (thing
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return things.Thing{}, errors.ErrAuthentication
 	}
@@ -75,7 +75,7 @@ func (svc *mainfluxThings) Connect(_ context.Context, owner, chID string, thIDs 
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
@@ -92,7 +92,7 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner, chID string, thI
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
@@ -130,7 +130,7 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, owner string, ids ...
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return errors.ErrAuthentication
 	}
@@ -185,7 +185,7 @@ func (svc *mainfluxThings) CreateChannels(_ context.Context, owner string, chs .
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	user, err := svc.auth.Identify(context.Background(), &mainflux.Token{Value: owner})
+	user, err := svc.auth.Identify(context.Background(), &protomfx.Token{Value: owner})
 	if err != nil {
 		return []things.Channel{}, errors.ErrAuthentication
 	}

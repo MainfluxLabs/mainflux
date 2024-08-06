@@ -10,6 +10,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -50,7 +51,7 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 }
 
 func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc {
-	return func(msg messaging.Message) error {
+	return func(msg protomfx.Message) error {
 		if msg.Protocol == protocol {
 			return nil
 		}
@@ -79,9 +80,9 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 	}
 }
 
-type handleFunc func(msg messaging.Message) error
+type handleFunc func(msg protomfx.Message) error
 
-func (h handleFunc) Handle(msg messaging.Message) error {
+func (h handleFunc) Handle(msg protomfx.Message) error {
 	return h(msg)
 
 }

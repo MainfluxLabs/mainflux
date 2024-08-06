@@ -9,9 +9,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
 	"github.com/MainfluxLabs/mainflux/coap"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/go-kit/kit/metrics"
 )
 
 var _ coap.Service = (*metricsMiddleware)(nil)
@@ -31,7 +31,7 @@ func MetricsMiddleware(svc coap.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, key string, msg messaging.Message) error {
+func (mm *metricsMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())

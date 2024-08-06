@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
@@ -99,7 +100,7 @@ func listen(conn *websocket.Conn, msgs chan<- []byte) {
 
 func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 	for msg := range msgs {
-		m := messaging.Message{
+		m := protomfx.Message{
 			Subtopic: req.subtopic,
 			Protocol: "websocket",
 			Payload:  msg,

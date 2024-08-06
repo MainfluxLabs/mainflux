@@ -54,5 +54,3 @@ services:
       - ${MF_POSTGRES_WRITER_PORT}:${MF_POSTGRES_WRITER_PORT}
     networks:
       - docker_mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml

@@ -320,7 +320,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	if ar, ok := response.(mainflux.Response); ok {
+	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}

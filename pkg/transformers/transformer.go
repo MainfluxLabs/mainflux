@@ -3,10 +3,10 @@
 
 package transformers
 
-import "github.com/MainfluxLabs/mainflux/pkg/messaging"
+import protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 
 // Transformer specifies API form Message transformer.
 type Transformer interface {
 	// Transform Mainflux message to any other format.
-	Transform(msg messaging.Message) (interface{}, error)
+	Transform(msg protomfx.Message) (interface{}, error)
 }

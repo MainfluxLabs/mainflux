@@ -6,7 +6,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -28,14 +28,14 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		transformer := &mainflux.Transformer{
+		transformer := &protomfx.Transformer{
 			ValueFields:  p.Transformer.ValueFields,
 			TimeField:    p.Transformer.TimeField,
 			TimeFormat:   p.Transformer.TimeFormat,
 			TimeLocation: p.Transformer.TimeLocation,
 		}
 
-		profile := &mainflux.Profile{
+		profile := &protomfx.Profile{
 			ContentType: p.ContentType,
 			Write:       p.Write,
 			Transformer: transformer,
@@ -100,10 +100,10 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 			return getGroupsByIDsRes{}, err
 		}
 
-		mgr := []*mainflux.Group{}
+		mgr := []*protomfx.Group{}
 
 		for _, g := range groups {
-			gr := mainflux.Group{
+			gr := protomfx.Group{
 				Id:          g.ID,
 				OwnerID:     g.OwnerID,
 				Name:        g.Name,

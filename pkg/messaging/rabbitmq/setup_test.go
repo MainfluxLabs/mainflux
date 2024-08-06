@@ -11,10 +11,11 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	mflog "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/gogo/protobuf/proto"
 	dockertest "github.com/ory/dockertest/v3"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
@@ -90,7 +91,7 @@ func newConn() (*amqp.Connection, *amqp.Channel, error) {
 
 func rabbitHandler(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
 	for d := range deliveries {
-		var msg messaging.Message
+		var msg protomfx.Message
 		if err := proto.Unmarshal(d.Body, &msg); err != nil {
 			logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
@@ -48,7 +48,7 @@ func New() transformers.Transformer {
 }
 
 // Transform transforms Mainflux message to a list of JSON messages.
-func (ts *transformerService) Transform(msg messaging.Message) (interface{}, error) {
+func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, error) {
 	ret := Message{
 		Publisher: msg.Publisher,
 		Created:   msg.Created,
@@ -191,7 +191,7 @@ func flatten(prefix string, m, m1 map[string]interface{}) (map[string]interface{
 	return m, nil
 }
 
-func (ts *transformerService) transformTimeField(payload map[string]interface{}, transformer messaging.Transformer) (int64, error) {
+func (ts *transformerService) transformTimeField(payload map[string]interface{}, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}

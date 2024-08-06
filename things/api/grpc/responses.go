@@ -3,7 +3,9 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux"
+import (
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+)
 
 type identityRes struct {
 	id string
@@ -12,7 +14,7 @@ type identityRes struct {
 type connByKeyRes struct {
 	channelOD string
 	thingID   string
-	profile   *mainflux.Profile
+	profile   *protomfx.Profile
 }
 
 type emptyRes struct {
@@ -20,5 +22,5 @@ type emptyRes struct {
 }
 
 type getGroupsByIDsRes struct {
-	groups []*mainflux.Group
+	groups []*protomfx.Group
 }

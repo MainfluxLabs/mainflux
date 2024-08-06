@@ -5,7 +5,6 @@
 package uuid
 
 import (
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
 )
@@ -13,12 +12,12 @@ import (
 // ErrGeneratingID indicates error in generating UUID
 var ErrGeneratingID = errors.New("failed to generate uuid")
 
-var _ mainflux.IDProvider = (*uuidProvider)(nil)
+var _ IDProvider = (*uuidProvider)(nil)
 
 type uuidProvider struct{}
 
 // New instantiates a UUID provider.
-func New() mainflux.IDProvider {
+func New() IDProvider {
 	return &uuidProvider{}
 }
 
@@ -29,4 +28,10 @@ func (up *uuidProvider) ID() (string, error) {
 	}
 
 	return id.String(), nil
+}
+
+// IDProvider specifies an API for generating unique identifiers.
+type IDProvider interface {
+	// ID generates the unique identifier.
+	ID() (string, error)
 }
