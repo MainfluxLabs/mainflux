@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	ch1          = sdk.Channel{GroupID: groupID, Name: "test1"}
-	ch2          = sdk.Channel{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3          = sdk.Channel{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	ch1          = sdk.Channel{Name: "test1"}
+	ch2          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	ch3          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
 	chPrefix     = "fe6b4e92-cc98-425e-b0aa-"
 	emptyChannel = sdk.Channel{GroupID: "1"}
 )
@@ -182,8 +182,13 @@ func TestChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	ch2.GroupID = grID
 
 	cases := []struct {
 		desc     string
@@ -421,8 +426,13 @@ func TestUpdateChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	ch2.GroupID = grID
 
 	cases := []struct {
 		desc    string

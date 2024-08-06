@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -18,7 +17,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -64,9 +62,6 @@ var (
 		Metadata: map[string]interface{}{"test": "data"},
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
-	notFoundRes    = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
-	unauthRes      = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	missingTokRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	searchThingReq = things.PageMetadata{
 		Limit:  5,
 		Offset: 0,
@@ -243,10 +238,16 @@ func TestUpdateThing(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	data := toJSON(thing)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th1 := ths[0]
+
+	data := toJSON(th1)
 
 	th2 := thing
 	th2.Name = invalidName
@@ -483,23 +484,29 @@ func TestViewThing(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
-	data := toJSON(thingRes{
+	data := thingRes{
 		ID:       th.ID,
 		Name:     th.Name,
 		Key:      th.Key,
 		Metadata: th.Metadata,
-	})
+		GroupID:  th.GroupID,
+	}
 
 	cases := []struct {
 		desc   string
 		id     string
 		auth   string
 		status int
-		res    string
+		res    thingRes
 	}{
 		{
 			desc:   "view existing thing",
@@ -513,28 +520,28 @@ func TestViewThing(t *testing.T) {
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
 			status: http.StatusNotFound,
-			res:    notFoundRes,
+			res:    thingRes{},
 		},
 		{
 			desc:   "view thing by passing invalid token",
 			id:     th.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			res:    unauthRes,
+			res:    thingRes{},
 		},
 		{
 			desc:   "view thing by passing empty token",
 			id:     th.ID,
 			auth:   "",
 			status: http.StatusUnauthorized,
-			res:    missingTokRes,
+			res:    thingRes{},
 		},
 		{
 			desc:   "view thing by passing invalid id",
 			id:     "invalid",
 			auth:   token,
 			status: http.StatusNotFound,
-			res:    notFoundRes,
+			res:    thingRes{},
 		},
 	}
 
@@ -547,11 +554,10 @@ func TestViewThing(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		body, err := ioutil.ReadAll(res.Body)
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		data := strings.Trim(string(body), "\n")
+		var body thingRes
+		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
+		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
 	}
 }
 
@@ -560,11 +566,17 @@ func TestListThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
 	data := []thingRes{}
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
+
+		thing.GroupID = gr.ID
 		ths, err := svc.CreateThings(context.Background(), token, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
@@ -573,6 +585,7 @@ func TestListThings(t *testing.T) {
 			Name:     th.Name,
 			Key:      th.Key,
 			Metadata: th.Metadata,
+			GroupID:  th.GroupID,
 		})
 	}
 
@@ -1411,6 +1424,11 @@ func TestUpdateChannel(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -1531,28 +1549,32 @@ func TestViewChannel(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	channel.GroupID = group.ID
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	sch := chs[0]
+	ch := chs[0]
 
-	data := toJSON(channelRes{
-		ID:       sch.ID,
-		Name:     sch.Name,
-		GroupID:  sch.GroupID,
-		Metadata: sch.Metadata,
-	})
+	data := channelRes{
+		ID:       ch.ID,
+		Name:     ch.Name,
+		GroupID:  ch.GroupID,
+		Metadata: ch.Metadata,
+	}
 
 	cases := []struct {
 		desc   string
 		id     string
 		auth   string
 		status int
-		res    string
+		res    channelRes
 	}{
 		{
 			desc:   "view existing channel",
-			id:     sch.ID,
+			id:     ch.ID,
 			auth:   token,
 			status: http.StatusOK,
 			res:    data,
@@ -1562,28 +1584,28 @@ func TestViewChannel(t *testing.T) {
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
 			status: http.StatusNotFound,
-			res:    notFoundRes,
+			res:    channelRes{},
 		},
 		{
 			desc:   "view channel with invalid token",
-			id:     sch.ID,
+			id:     ch.ID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			res:    unauthRes,
+			res:    channelRes{},
 		},
 		{
 			desc:   "view channel with empty token",
-			id:     sch.ID,
+			id:     ch.ID,
 			auth:   "",
 			status: http.StatusUnauthorized,
-			res:    missingTokRes,
+			res:    channelRes{},
 		},
 		{
 			desc:   "view channel with invalid id",
 			id:     "invalid",
 			auth:   token,
 			status: http.StatusNotFound,
-			res:    notFoundRes,
+			res:    channelRes{},
 		},
 	}
 
@@ -1596,11 +1618,10 @@ func TestViewChannel(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		data, err := ioutil.ReadAll(res.Body)
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		body := strings.Trim(string(data), "\n")
+		var body channelRes
+		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, body))
+		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
 	}
 }
 
@@ -3020,6 +3041,7 @@ type channelRes struct {
 	Name     string                 `json:"name,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Profile  map[string]interface{} `json:"profile,omitempty"`
 }
 
 type thingsPageRes struct {

@@ -231,9 +231,14 @@ func TestThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 1)
+
+	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 2)
+	th1.GroupID = grID
 
 	cases := []struct {
 		desc     string
@@ -516,7 +521,11 @@ func TestUpdateThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th1.Name = "test2"
 
@@ -733,7 +742,11 @@ func TestIdentifyThing(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	mainfluxAuthSDK := sdk.NewSDK(authSdkConf)
 	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
-	id, err := mainfluxSDK.CreateThing(th, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thing, err := mainfluxSDK.Thing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
