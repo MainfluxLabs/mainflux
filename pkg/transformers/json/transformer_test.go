@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,13 +32,13 @@ var (
 	valueFields = []string{"key1", "key2", "key3"}
 )
 
-var profile = &messaging.Profile{Transformer: &messaging.Transformer{ValueFields: valueFields, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
+var profile = &protomfx.Profile{Transformer: &protomfx.Transformer{ValueFields: valueFields, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
 
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
 
 	tr := json.New()
-	msg := messaging.Message{
+	msg := protomfx.Message{
 		Channel:   "channel-1",
 		Subtopic:  subtopic + "." + format,
 		Publisher: "publisher-1",
@@ -59,7 +59,7 @@ func TestTransformJSON(t *testing.T) {
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.Profile = &messaging.Profile{Transformer: &messaging.Transformer{ValueFields: valueFields, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
+	microsMsg.Profile = &protomfx.Profile{Transformer: &protomfx.Transformer{ValueFields: valueFields, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
 
 	invalidFmt := msg
 	invalidFmt.Subtopic = ""
@@ -164,7 +164,7 @@ func TestTransformJSON(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		msg  messaging.Message
+		msg  protomfx.Message
 		json interface{}
 		err  error
 	}{

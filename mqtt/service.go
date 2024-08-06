@@ -3,8 +3,9 @@ package mqtt
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -27,14 +28,14 @@ type Service interface {
 }
 
 type mqttService struct {
-	auth          mainflux.AuthServiceClient
-	things        mainflux.ThingsServiceClient
+	auth          protomfx.AuthServiceClient
+	things        protomfx.ThingsServiceClient
 	subscriptions Repository
-	idp           mainflux.IDProvider
+	idp           uuid.IDProvider
 }
 
 // NewMqttService instantiates the MQTT service implementation.
-func NewMqttService(auth mainflux.AuthServiceClient, things mainflux.ThingsServiceClient, subscriptions Repository, idp mainflux.IDProvider) Service {
+func NewMqttService(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, subscriptions Repository, idp uuid.IDProvider) Service {
 	return &mqttService{
 		auth:          auth,
 		things:        things,
@@ -75,16 +76,16 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string) (err error) {
 	switch {
 	case token != "":
-		if _, err := ms.auth.Authorize(ctx, &mainflux.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err == nil {
+		if _, err := ms.auth.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err == nil {
 			return nil
 		}
 
-		if _, err = ms.things.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
+		if _, err = ms.things.IsChannelOwner(ctx, &protomfx.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil
 	default:
-		if _, err := ms.things.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key}); err != nil {
+		if _, err := ms.things.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key}); err != nil {
 			return err
 		}
 		return nil

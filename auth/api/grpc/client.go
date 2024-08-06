@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	svcName = "mainflux.AuthService"
+	svcName = "protomfx.AuthService"
 )
 
-var _ mainflux.AuthServiceClient = (*grpcClient)(nil)
+var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	issue        endpoint.Endpoint
@@ -32,7 +32,7 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Duration) mainflux.AuthServiceClient {
+func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Duration) protomfx.AuthServiceClient {
 	return &grpcClient{
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
@@ -40,7 +40,7 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			"Issue",
 			encodeIssueRequest,
 			decodeIssueResponse,
-			mainflux.UserIdentity{},
+			protomfx.UserIdentity{},
 		).Endpoint()),
 		identify: kitot.TraceClient(tracer, "identify")(kitgrpc.NewClient(
 			conn,
@@ -48,7 +48,7 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			"Identify",
 			encodeIdentifyRequest,
 			decodeIdentifyResponse,
-			mainflux.UserIdentity{},
+			protomfx.UserIdentity{},
 		).Endpoint()),
 		authorize: kitot.TraceClient(tracer, "authorize")(kitgrpc.NewClient(
 			conn,
@@ -64,7 +64,7 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 			"RetrieveRole",
 			encodeRetrieveRoleRequest,
 			decodeRetrieveRoleResponse,
-			mainflux.RetrieveRoleRes{},
+			protomfx.RetrieveRoleRes{},
 		).Endpoint()),
 		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
 			conn,
@@ -79,7 +79,7 @@ func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Du
 	}
 }
 
-func (client grpcClient) Issue(ctx context.Context, req *mainflux.IssueReq, _ ...grpc.CallOption) (*mainflux.Token, error) {
+func (client grpcClient) Issue(ctx context.Context, req *protomfx.IssueReq, _ ...grpc.CallOption) (*protomfx.Token, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -89,20 +89,20 @@ func (client grpcClient) Issue(ctx context.Context, req *mainflux.IssueReq, _ ..
 	}
 
 	ir := res.(identityRes)
-	return &mainflux.Token{Value: ir.id}, nil
+	return &protomfx.Token{Value: ir.id}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(issueReq)
-	return &mainflux.IssueReq{Id: req.id, Email: req.email, Type: req.keyType}, nil
+	return &protomfx.IssueReq{Id: req.id, Email: req.email, Type: req.keyType}, nil
 }
 
 func decodeIssueResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.UserIdentity)
+	res := grpcRes.(*protomfx.UserIdentity)
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Identify(ctx context.Context, token *mainflux.Token, _ ...grpc.CallOption) (*mainflux.UserIdentity, error) {
+func (client grpcClient) Identify(ctx context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.UserIdentity, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -112,20 +112,20 @@ func (client grpcClient) Identify(ctx context.Context, token *mainflux.Token, _ 
 	}
 
 	ir := res.(identityRes)
-	return &mainflux.UserIdentity{Id: ir.id, Email: ir.email}, nil
+	return &protomfx.UserIdentity{Id: ir.id, Email: ir.email}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(identityReq)
-	return &mainflux.Token{Value: req.token}, nil
+	return &protomfx.Token{Value: req.token}, nil
 }
 
 func decodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.UserIdentity)
+	res := grpcRes.(*protomfx.UserIdentity)
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -140,7 +140,7 @@ func (client grpcClient) Authorize(ctx context.Context, req *mainflux.AuthorizeR
 
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authReq)
-	return &mainflux.AuthorizeReq{
+	return &protomfx.AuthorizeReq{
 		Token:   req.Token,
 		Object:  req.Object,
 		Subject: req.Subject,
@@ -148,7 +148,7 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	}, nil
 }
 
-func (client grpcClient) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -163,40 +163,40 @@ func (client grpcClient) AssignRole(ctx context.Context, req *mainflux.AssignRol
 
 func encodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(assignRoleReq)
-	return &mainflux.AssignRoleReq{
+	return &protomfx.AssignRoleReq{
 		Id:   req.ID,
 		Role: req.Role,
 	}, nil
 }
 
-func (client grpcClient) RetrieveRole(ctx context.Context, req *mainflux.RetrieveRoleReq, _ ...grpc.CallOption) (r *mainflux.RetrieveRoleRes, err error) {
+func (client grpcClient) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
 	res, err := client.retrieveRole(ctx, retrieveRoleReq{id: req.GetId()})
 	if err != nil {
-		return &mainflux.RetrieveRoleRes{}, err
+		return &protomfx.RetrieveRoleRes{}, err
 	}
 
 	rr := res.(retrieveRoleRes)
-	return &mainflux.RetrieveRoleRes{Role: rr.role}, err
+	return &protomfx.RetrieveRoleRes{Role: rr.role}, err
 }
 
 func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(retrieveRoleReq)
-	return &mainflux.RetrieveRoleReq{
+	return &protomfx.RetrieveRoleReq{
 		Id: req.id,
 	}, nil
 }
 
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.RetrieveRoleRes)
+	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
 }
 
 func decodeAssignResponse(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authReq)
-	return &mainflux.AuthorizeReq{
+	return &protomfx.AuthorizeReq{
 		Token: req.Token,
 	}, nil
 }

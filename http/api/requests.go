@@ -5,11 +5,11 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type publishReq struct {
-	msg   messaging.Message
+	msg   protomfx.Message
 	token string
 }
 

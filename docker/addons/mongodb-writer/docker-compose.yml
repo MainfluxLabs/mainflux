@@ -50,5 +50,3 @@ services:
       - ${MF_MONGO_WRITER_PORT}:${MF_MONGO_WRITER_PORT}
     networks:
       - docker_mainfluxlabs-base-net
-    volumes:
-      - ./config.toml:/config.toml

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/fiorix/go-smpp/smpp"
@@ -47,7 +47,7 @@ func New(cfg Config) notifiers.Notifier {
 	return ret
 }
 
-func (n *notifier) Notify(from string, to []string, msg messaging.Message) error {
+func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error {
 	send := &smpp.ShortMessage{
 		Src:           from,
 		DstList:       to,

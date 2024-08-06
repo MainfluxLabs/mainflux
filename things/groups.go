@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var (
@@ -110,7 +110,7 @@ type Groups interface {
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -170,7 +170,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm
 		return ts.groups.RetrieveByAdmin(ctx, orgID, pm)
 	}
 
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -221,7 +221,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 }
 
 func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, channelID string) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	if _, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
 
@@ -239,7 +239,7 @@ func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, c
 }
 
 func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token}); err != nil {
+	if _, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
 		return Group{}, err
 	}
 
@@ -261,7 +261,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return nil
 	}
 
-	user, err := ts.auth.Identify(ctx, &mainflux.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return err
 	}

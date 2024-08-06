@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var _ mainflux.ThingsServiceClient = (*grpcClient)(nil)
+var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout        time.Duration
@@ -28,8 +28,8 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) mainflux.ThingsServiceClient {
-	svcName := "mainflux.ThingsService"
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.ThingsServiceClient {
+	svcName := "protomfx.ThingsService"
 
 	return &grpcClient{
 		timeout: timeout,
@@ -39,7 +39,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetConnByKey",
 			encodeGetConnByKeyRequest,
 			decodeGetConnByKeyResponse,
-			mainflux.ConnByKeyRes{},
+			protomfx.ConnByKeyRes{},
 		).Endpoint()),
 		isChannelOwner: kitot.TraceClient(tracer, "is_channel_owner")(kitgrpc.NewClient(
 			conn,
@@ -63,7 +63,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"Identify",
 			encodeIdentifyRequest,
 			decodeIdentityResponse,
-			mainflux.ThingID{},
+			protomfx.ThingID{},
 		).Endpoint()),
 		getGroupsByIDs: kitot.TraceClient(tracer, "get_groups_by_ids")(kitgrpc.NewClient(
 			conn,
@@ -71,12 +71,12 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetGroupsByIDs",
 			encodeGetGroupsByIDsRequest,
 			decodeGetGroupsByIDsResponse,
-			mainflux.GroupsRes{},
+			protomfx.GroupsRes{},
 		).Endpoint()),
 	}
 }
 
-func (client grpcClient) GetConnByKey(ctx context.Context, req *mainflux.ConnByKeyReq, _ ...grpc.CallOption) (*mainflux.ConnByKeyRes, error) {
+func (client grpcClient) GetConnByKey(ctx context.Context, req *protomfx.ConnByKeyReq, _ ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -89,10 +89,10 @@ func (client grpcClient) GetConnByKey(ctx context.Context, req *mainflux.ConnByK
 	}
 
 	cr := res.(connByKeyRes)
-	return &mainflux.ConnByKeyRes{ChannelID: cr.channelOD, ThingID: cr.thingID, Profile: cr.profile}, nil
+	return &protomfx.ConnByKeyRes{ChannelID: cr.channelOD, ThingID: cr.thingID, Profile: cr.profile}, nil
 }
 
-func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.ChannelOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+func (client grpcClient) IsChannelOwner(ctx context.Context, req *protomfx.ChannelOwnerReq, _ ...grpc.CallOption) (*empty.Empty, error) {
 	ar := channelOwnerReq{token: req.GetToken(), chanID: req.GetChanID()}
 	res, err := client.isChannelOwner(ctx, ar)
 	if err != nil {
@@ -103,7 +103,7 @@ func (client grpcClient) IsChannelOwner(ctx context.Context, req *mainflux.Chann
 	return &empty.Empty{}, er.err
 }
 
-func (client grpcClient) CanAccessGroup(ctx context.Context, req *mainflux.AccessGroupReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+func (client grpcClient) CanAccessGroup(ctx context.Context, req *protomfx.AccessGroupReq, _ ...grpc.CallOption) (*empty.Empty, error) {
 	ar := accessGroupReq{token: req.GetToken(), groupID: req.GetGroupID(), action: req.GetAction()}
 	res, err := client.canAccessGroup(ctx, ar)
 	if err != nil {
@@ -114,7 +114,7 @@ func (client grpcClient) CanAccessGroup(ctx context.Context, req *mainflux.Acces
 	return &empty.Empty{}, er.err
 }
 
-func (client grpcClient) Identify(ctx context.Context, req *mainflux.Token, _ ...grpc.CallOption) (*mainflux.ThingID, error) {
+func (client grpcClient) Identify(ctx context.Context, req *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -124,10 +124,10 @@ func (client grpcClient) Identify(ctx context.Context, req *mainflux.Token, _ ..
 	}
 
 	ir := res.(identityRes)
-	return &mainflux.ThingID{Value: ir.id}, nil
+	return &protomfx.ThingID{Value: ir.id}, nil
 }
 
-func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *mainflux.GroupsReq, _ ...grpc.CallOption) (*mainflux.GroupsRes, error) {
+func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *protomfx.GroupsReq, _ ...grpc.CallOption) (*protomfx.GroupsRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -137,41 +137,41 @@ func (client grpcClient) GetGroupsByIDs(ctx context.Context, req *mainflux.Group
 	}
 
 	gr := res.(getGroupsByIDsRes)
-	return &mainflux.GroupsRes{Groups: gr.groups}, nil
+	return &protomfx.GroupsRes{Groups: gr.groups}, nil
 }
 
 func encodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(connByKeyReq)
-	return &mainflux.ConnByKeyReq{Key: req.key}, nil
+	return &protomfx.ConnByKeyReq{Key: req.key}, nil
 }
 
 func encodeIsChannelOwner(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(channelOwnerReq)
-	return &mainflux.ChannelOwnerReq{Token: req.token, ChanID: req.chanID}, nil
+	return &protomfx.ChannelOwnerReq{Token: req.token, ChanID: req.chanID}, nil
 }
 
 func encodeCanAccessGroup(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(accessGroupReq)
-	return &mainflux.AccessGroupReq{Token: req.token, GroupID: req.groupID, Action: req.action}, nil
+	return &protomfx.AccessGroupReq{Token: req.token, GroupID: req.groupID, Action: req.action}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(identifyReq)
-	return &mainflux.Token{Value: req.key}, nil
+	return &protomfx.Token{Value: req.key}, nil
 }
 
 func encodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getGroupsByIDsReq)
-	return &mainflux.GroupsReq{Ids: req.ids}, nil
+	return &protomfx.GroupsReq{Ids: req.ids}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.ThingID)
+	res := grpcRes.(*protomfx.ThingID)
 	return identityRes{id: res.GetValue()}, nil
 }
 
 func decodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.ConnByKeyRes)
+	res := grpcRes.(*protomfx.ConnByKeyRes)
 	return connByKeyRes{channelOD: res.ChannelID, thingID: res.ThingID, profile: res.Profile}, nil
 }
 
@@ -180,6 +180,6 @@ func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) 
 }
 
 func decodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.GroupsRes)
+	res := grpcRes.(*protomfx.GroupsRes)
 	return getGroupsByIDsRes{groups: res.GetGroups()}, nil
 }

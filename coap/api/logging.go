@@ -12,7 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var _ coap.Service = (*loggingMiddleware)(nil)
@@ -27,7 +27,7 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg messaging.Message) (err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		destChannel := msg.Channel
 		if msg.Subtopic != "" {

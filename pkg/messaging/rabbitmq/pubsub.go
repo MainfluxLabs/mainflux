@@ -9,6 +9,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -151,7 +152,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 
 func (ps *pubsub) handle(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) {
 	for d := range deliveries {
-		var msg messaging.Message
+		var msg protomfx.Message
 		if err := proto.Unmarshal(d.Body, &msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return

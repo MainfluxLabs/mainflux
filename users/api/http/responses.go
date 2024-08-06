@@ -7,15 +7,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
 var (
-	_ mainflux.Response = (*tokenRes)(nil)
-	_ mainflux.Response = (*viewUserRes)(nil)
-	_ mainflux.Response = (*passwChangeRes)(nil)
-	_ mainflux.Response = (*createUserRes)(nil)
-	_ mainflux.Response = (*deleteRes)(nil)
+	_ apiutil.Response = (*tokenRes)(nil)
+	_ apiutil.Response = (*viewUserRes)(nil)
+	_ apiutil.Response = (*passwChangeRes)(nil)
+	_ apiutil.Response = (*createUserRes)(nil)
+	_ apiutil.Response = (*deleteRes)(nil)
 )
 
 // MailSent message response when link is sent

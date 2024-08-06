@@ -3,8 +3,8 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux"
+import protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 
 type getUsersRes struct {
-	users []*mainflux.User
+	users []*protomfx.User
 }

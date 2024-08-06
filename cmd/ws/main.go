@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"golang.org/x/sync/errgroup"
 
@@ -137,7 +138,7 @@ func loadConfig() config {
 	}
 }
 
-func newService(tc mainflux.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger) adapter.Service {
+func newService(tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger) adapter.Service {
 	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

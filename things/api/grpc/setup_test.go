@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -42,7 +42,7 @@ func startServer() {
 	svc = newService(map[string]string{token: email})
 	listener, _ := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	server := grpc.NewServer()
-	mainflux.RegisterThingsServiceServer(server, grpcapi.NewServer(mocktracer.New(), svc))
+	protomfx.RegisterThingsServiceServer(server, grpcapi.NewServer(mocktracer.New(), svc))
 	go server.Serve(listener)
 }
 

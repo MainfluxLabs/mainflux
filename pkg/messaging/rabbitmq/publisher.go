@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -41,7 +42,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(msg messaging.Message) error {
+func (pub *publisher) Publish(msg protomfx.Message) error {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err

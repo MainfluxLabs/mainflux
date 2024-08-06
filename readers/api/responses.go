@@ -6,13 +6,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 var (
-	_ mainflux.Response = (*listMessagesRes)(nil)
-	_ mainflux.Response = (*restoreMessagesRes)(nil)
+	_ apiutil.Response = (*listMessagesRes)(nil)
+	_ apiutil.Response = (*restoreMessagesRes)(nil)
 )
 
 type listMessagesRes struct {

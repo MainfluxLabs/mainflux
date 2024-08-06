@@ -16,6 +16,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-zoo/bone"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
@@ -105,7 +106,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg messaging.Message, key string) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key string) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -119,28 +120,28 @@ func handleGet(m *mux.Message, c mux.Client, msg messaging.Message, key string) 
 	return service.Unsubscribe(context.Background(), key, msg.Channel, msg.Subtopic, m.Token.String())
 }
 
-func decodeMessage(msg *mux.Message) (messaging.Message, error) {
+func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 	if msg.Options == nil {
-		return messaging.Message{}, errBadOptions
+		return protomfx.Message{}, errBadOptions
 	}
 
 	path, err := msg.Options.Path()
 	if err != nil {
-		return messaging.Message{}, err
+		return protomfx.Message{}, err
 	}
 
 	subtopic, err := messaging.ExtractSubtopic(path)
 	if err != nil {
-		return messaging.Message{}, messaging.ErrMalformedSubtopic
+		return protomfx.Message{}, messaging.ErrMalformedSubtopic
 
 	}
 
 	subject, err := messaging.CreateSubject(subtopic)
 	if err != nil {
-		return messaging.Message{}, err
+		return protomfx.Message{}, err
 	}
 
-	ret := messaging.Message{
+	ret := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subject,
 		Payload:  []byte{},

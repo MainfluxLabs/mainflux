@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things/standalone"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,7 +40,7 @@ func TestIdentify(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		id, err := svc.Identify(context.Background(), &mainflux.Token{Value: tc.token})
+		id, err := svc.Identify(context.Background(), &protomfx.Token{Value: tc.token})
 		assert.Equal(t, tc.id, id.GetEmail(), fmt.Sprintf("%s: expected %s, got %s", desc, tc.id, id.GetEmail()))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s, got %s", desc, tc.err, err))
 	}
@@ -67,7 +67,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		id, err := svc.Issue(context.Background(), &mainflux.IssueReq{Id: tc.id, Email: tc.token, Type: 0})
+		id, err := svc.Issue(context.Background(), &protomfx.IssueReq{Id: tc.id, Email: tc.token, Type: 0})
 		assert.Equal(t, tc.id, id.GetValue(), fmt.Sprintf("%s: expected %s, got %s", desc, tc.id, id.GetValue()))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s, got %s", desc, tc.err, err))
 	}

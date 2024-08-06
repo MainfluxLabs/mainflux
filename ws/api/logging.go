@@ -11,7 +11,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
 )
 
@@ -27,7 +27,7 @@ func LoggingMiddleware(svc ws.Service, logger log.Logger) ws.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, thingKey string, msg messaging.Message) (err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, thingKey string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		destChannel := msg.GetChannel()
 		if msg.Subtopic != "" {

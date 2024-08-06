@@ -17,13 +17,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/certs"
 	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
@@ -103,7 +103,7 @@ func newService() (certs.Service, error) {
 	return certs.New(auth, repo, sdk, c, pki), nil
 }
 
-func newThingsService(auth mainflux.AuthServiceClient) things.Service {
+func newThingsService(auth protomfx.AuthServiceClient) things.Service {
 	ths := make(map[string]things.Thing, thingsNum)
 	for i := 0; i < thingsNum; i++ {
 		id := strconv.Itoa(i + 1)

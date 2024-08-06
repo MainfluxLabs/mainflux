@@ -6,12 +6,13 @@ package webhooks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -51,17 +52,17 @@ type Service interface {
 }
 
 type webhooksService struct {
-	things     mainflux.ThingsServiceClient
+	things     protomfx.ThingsServiceClient
 	webhooks   WebhookRepository
 	subscriber messaging.Subscriber
 	forwarder  Forwarder
-	idProvider mainflux.IDProvider
+	idProvider uuid.IDProvider
 }
 
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(things mainflux.ThingsServiceClient, webhooks WebhookRepository, forwarder Forwarder, idp mainflux.IDProvider) Service {
+func New(things protomfx.ThingsServiceClient, webhooks WebhookRepository, forwarder Forwarder, idp uuid.IDProvider) Service {
 	return &webhooksService{
 		things:     things,
 		webhooks:   webhooks,
@@ -84,7 +85,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Editor})
+	_, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Editor})
 	if err != nil {
 		return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -108,7 +109,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
+	_, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
 	if err != nil {
 		return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -127,7 +128,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 		return Webhook{}, err
 	}
 
-	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Viewer}); err != nil {
 		return Webhook{}, err
 	}
 
@@ -140,7 +141,7 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 		return err
 	}
 
-	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: wh.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: wh.GroupID, Action: things.Viewer}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 
 	}
@@ -149,7 +150,7 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 }
 
 func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ws.things.CanAccessGroup(ctx, &mainflux.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
+	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

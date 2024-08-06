@@ -8,38 +8,38 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // Service specifies coap service API.
 type Service interface {
 	// Publish Messssage
-	Publish(ctx context.Context, token string, msg messaging.Message) (m messaging.Message, err error)
+	Publish(ctx context.Context, token string, msg protomfx.Message) (m protomfx.Message, err error)
 }
 
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    mainflux.ThingsServiceClient
+	things    protomfx.ThingsServiceClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(publisher messaging.Publisher, things mainflux.ThingsServiceClient) Service {
+func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Service {
 	return &adapterService{
 		publisher: publisher,
 		things:    things,
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) (m messaging.Message, err error) {
-	cr := &mainflux.ConnByKeyReq{
+func (as *adapterService) Publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
+	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
 	conn, err := as.things.GetConnByKey(ctx, cr)
 	if err != nil {
-		return messaging.Message{}, err
+		return protomfx.Message{}, err
 	}
 
 	m = messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)

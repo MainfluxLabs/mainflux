@@ -12,9 +12,8 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const chansPrefix = "channels"
@@ -25,7 +24,7 @@ var ErrUnsubscribe = errors.New("unable to unsubscribe")
 // Service specifies CoAP service API.
 type Service interface {
 	// Publish Messssage
-	Publish(ctx context.Context, key string, msg messaging.Message) error
+	Publish(ctx context.Context, key string, msg protomfx.Message) error
 
 	// Subscribe subscribes to channel with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
@@ -39,13 +38,13 @@ var _ Service = (*adapterService)(nil)
 
 // Observers is a map of maps,
 type adapterService struct {
-	things  mainflux.ThingsServiceClient
+	things  protomfx.ThingsServiceClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -55,8 +54,8 @@ func New(things mainflux.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return as
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key string, msg messaging.Message) error {
-	cr := &mainflux.ConnByKeyReq{
+func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx.Message) error {
+	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
 	conn, err := svc.things.GetConnByKey(ctx, cr)
@@ -69,7 +68,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg messagin
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {
-	cr := &mainflux.ConnByKeyReq{
+	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
 	if _, err := svc.things.GetConnByKey(ctx, cr); err != nil {
@@ -83,7 +82,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic 
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {
-	cr := &mainflux.ConnByKeyReq{
+	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
 	conn, err := svc.things.GetConnByKey(ctx, cr)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -46,7 +47,7 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...s
 }
 
 func handle(t transformers.Transformer, c Consumer) handleFunc {
-	return func(msg messaging.Message) error {
+	return func(msg protomfx.Message) error {
 		m := interface{}(msg)
 		var err error
 		if t != nil {
@@ -59,9 +60,9 @@ func handle(t transformers.Transformer, c Consumer) handleFunc {
 	}
 }
 
-type handleFunc func(msg messaging.Message) error
+type handleFunc func(msg protomfx.Message) error
 
-func (h handleFunc) Handle(msg messaging.Message) error {
+func (h handleFunc) Handle(msg protomfx.Message) error {
 	return h(msg)
 
 }

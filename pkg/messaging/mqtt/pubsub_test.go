@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ const (
 
 var (
 	data       = []byte("payload")
-	msgProfile = &messaging.Profile{ContentType: senmlContentType, Write: true, Transformer: &messaging.Transformer{}}
+	msgProfile = &protomfx.Profile{ContentType: senmlContentType, Write: true, Transformer: &protomfx.Transformer{}}
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.
@@ -85,7 +86,7 @@ func TestPublisher(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		msg := messaging.Message{
+		msg := protomfx.Message{
 			Publisher: "clientID11",
 			Channel:   channel,
 			Subtopic:  tc.subtopic,
@@ -105,7 +106,7 @@ func TestPublisher(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	msgChan := make(chan messaging.Message)
+	msgChan := make(chan protomfx.Message)
 
 	// Creating client to Publish messages to subscribed topic.
 	client, err := newClient(address, "mainflux", brokerTimeout)
@@ -178,7 +179,7 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, err, tc.err, fmt.Sprintf("%s: expected: %s, but got: %s", tc.desc, err, tc.err))
 
 		if tc.err == nil {
-			expectedMsg := messaging.Message{
+			expectedMsg := protomfx.Message{
 				Publisher: "clientID1",
 				Channel:   channel,
 				Subtopic:  subtopic,
@@ -198,7 +199,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestPubSub(t *testing.T) {
-	msgChan := make(chan messaging.Message)
+	msgChan := make(chan protomfx.Message)
 
 	cases := []struct {
 		desc     string
@@ -249,7 +250,7 @@ func TestPubSub(t *testing.T) {
 
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
-			expectedMsg := messaging.Message{
+			expectedMsg := protomfx.Message{
 				Publisher: "clientID",
 				Channel:   channel,
 				Subtopic:  subtopic,
@@ -268,7 +269,7 @@ func TestPubSub(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	msgChan := make(chan messaging.Message)
+	msgChan := make(chan protomfx.Message)
 
 	cases := []struct {
 		desc      string
@@ -414,10 +415,10 @@ func TestUnsubscribe(t *testing.T) {
 type handler struct {
 	fail      bool
 	publisher string
-	msgChan   chan messaging.Message
+	msgChan   chan protomfx.Message
 }
 
-func (h handler) Handle(msg messaging.Message) error {
+func (h handler) Handle(msg protomfx.Message) error {
 	if msg.Publisher != h.publisher {
 		h.msgChan <- msg
 	}

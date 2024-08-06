@@ -3,14 +3,14 @@ package mocks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
-var _ mainflux.AuthServiceClient = (*authServiceMock)(nil)
+var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
 
 type MockClient struct {
 	key   map[string]string
@@ -21,18 +21,18 @@ func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) GetConnByKey(ctx context.Context, key string) (mainflux.ConnByKeyRes, error) {
+func (cli MockClient) GetConnByKey(ctx context.Context, key string) (protomfx.ConnByKeyRes, error) {
 	thID, ok := cli.key[key]
 	if !ok {
-		return mainflux.ConnByKeyRes{}, errors.ErrAuthentication
+		return protomfx.ConnByKeyRes{}, errors.ErrAuthentication
 	}
 
 	chID, ok := cli.conns[thID]
 	if !ok {
-		return mainflux.ConnByKeyRes{}, errors.ErrAuthentication
+		return protomfx.ConnByKeyRes{}, errors.ErrAuthentication
 	}
 
-	conn := &mainflux.ConnByKeyRes{
+	conn := &protomfx.ConnByKeyRes{
 		ThingID:   thID,
 		ChannelID: chID,
 	}
@@ -58,28 +58,28 @@ type authServiceMock struct {
 }
 
 // NewAuth creates mock of auth service.
-func NewAuth(users map[string]string, authz map[string][]SubjectSet) mainflux.AuthServiceClient {
+func NewAuth(users map[string]string, authz map[string][]SubjectSet) protomfx.AuthServiceClient {
 	return &authServiceMock{users, authz}
 }
 
-func (svc authServiceMock) Identify(ctx context.Context, in *mainflux.Token, opts ...grpc.CallOption) (*mainflux.UserIdentity, error) {
+func (svc authServiceMock) Identify(ctx context.Context, in *protomfx.Token, opts ...grpc.CallOption) (*protomfx.UserIdentity, error) {
 	if id, ok := svc.users[in.Value]; ok {
-		return &mainflux.UserIdentity{Id: id, Email: id}, nil
+		return &protomfx.UserIdentity{Id: id, Email: id}, nil
 	}
 	return nil, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Issue(ctx context.Context, in *mainflux.IssueReq, opts ...grpc.CallOption) (*mainflux.Token, error) {
+func (svc authServiceMock) Issue(ctx context.Context, in *protomfx.IssueReq, opts ...grpc.CallOption) (*protomfx.Token, error) {
 	if id, ok := svc.users[in.GetEmail()]; ok {
 		switch in.Type {
 		default:
-			return &mainflux.Token{Value: id}, nil
+			return &protomfx.Token{Value: id}, nil
 		}
 	}
 	return nil, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	if req.GetToken() != "token" {
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
@@ -87,10 +87,10 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *mainflux.Authoriz
 	return &empty.Empty{}, nil
 }
 
-func (svc authServiceMock) AssignRole(ctx context.Context, req *mainflux.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(ctx context.Context, req *mainflux.RetrieveRoleReq, _ ...grpc.CallOption) (r *mainflux.RetrieveRoleRes, err error) {
+func (svc authServiceMock) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	panic("not implemented")
 }

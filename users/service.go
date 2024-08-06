@@ -7,10 +7,11 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 const (
@@ -131,13 +132,13 @@ type usersService struct {
 	users      UserRepository
 	hasher     Hasher
 	email      Emailer
-	auth       mainflux.AuthServiceClient
-	idProvider mainflux.IDProvider
+	auth       protomfx.AuthServiceClient
+	idProvider uuid.IDProvider
 	passRegex  *regexp.Regexp
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, hasher Hasher, auth mainflux.AuthServiceClient, e Emailer, idp mainflux.IDProvider, passRegex *regexp.Regexp) Service {
+func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, passRegex *regexp.Regexp) Service {
 	return &usersService{
 		users:      users,
 		hasher:     hasher,
@@ -176,12 +177,12 @@ func (svc usersService) SelfRegister(ctx context.Context, user User) (string, er
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 	if u, err := svc.users.RetrieveByEmail(context.Background(), user.Email); err == nil {
-		role, err := svc.auth.RetrieveRole(ctx, &mainflux.RetrieveRoleReq{Id: u.ID})
+		role, err := svc.auth.RetrieveRole(ctx, &protomfx.RetrieveRoleReq{Id: u.ID})
 		if err != nil {
 			return err
 		}
 
-		req := mainflux.AssignRoleReq{
+		req := protomfx.AssignRoleReq{
 			Id:   u.ID,
 			Role: auth.RoleRootAdmin,
 		}
@@ -220,7 +221,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return err
 	}
 
-	req := mainflux.AssignRoleReq{
+	req := protomfx.AssignRoleReq{
 		Id:   user.ID,
 		Role: auth.RoleRootAdmin,
 	}
@@ -388,7 +389,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	req := mainflux.AssignRoleReq{
+	req := protomfx.AssignRoleReq{
 		Id:   admin.ID,
 		Role: auth.RoleRootAdmin,
 	}
@@ -520,7 +521,7 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 
 // Auth helpers
 func (svc usersService) issue(ctx context.Context, id, email string, keyType uint32) (string, error) {
-	key, err := svc.auth.Issue(ctx, &mainflux.IssueReq{Id: id, Email: email, Type: keyType})
+	key, err := svc.auth.Issue(ctx, &protomfx.IssueReq{Id: id, Email: email, Type: keyType})
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -533,7 +534,7 @@ type userIdentity struct {
 }
 
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
-	identity, err := svc.auth.Identify(ctx, &mainflux.Token{Value: token})
+	identity, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -542,7 +543,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 }
 
 func (svc usersService) isAdmin(ctx context.Context, token string) error {
-	req := &mainflux.AuthorizeReq{
+	req := &protomfx.AuthorizeReq{
 		Token:   token,
 		Subject: auth.RootSubject,
 	}

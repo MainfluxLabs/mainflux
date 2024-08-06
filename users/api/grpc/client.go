@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -17,7 +17,7 @@ import (
 
 const svcName = "mainflux.UsersService"
 
-var _ mainflux.UsersServiceClient = (*grpcClient)(nil)
+var _ protomfx.UsersServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout          time.Duration
@@ -26,7 +26,7 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) mainflux.UsersServiceClient {
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.UsersServiceClient {
 	return &grpcClient{
 		timeout: timeout,
 		getUsersByIDs: kitot.TraceClient(tracer, "get_users_by_ids")(kitgrpc.NewClient(
@@ -35,7 +35,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetUsersByIDs",
 			encodeGetUsersByIDsRequest,
 			decodeGetUsersResponse,
-			mainflux.UsersRes{},
+			protomfx.UsersRes{},
 		).Endpoint()),
 		getUsersByEmails: kitot.TraceClient(tracer, "get_users_by_emails")(kitgrpc.NewClient(
 			conn,
@@ -43,12 +43,12 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetUsersByEmails",
 			encodeGetUsersByEmailsRequest,
 			decodeGetUsersResponse,
-			mainflux.UsersRes{},
+			protomfx.UsersRes{},
 		).Endpoint()),
 	}
 }
 
-func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *mainflux.UsersByIDsReq, _ ...grpc.CallOption) (*mainflux.UsersRes, error) {
+func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
 	ctx, close := context.WithTimeout(ctx, clent.timeout)
 	defer close()
 
@@ -59,11 +59,11 @@ func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *mainflux.UsersBy
 
 	ir := res.(getUsersRes)
 
-	return &mainflux.UsersRes{Users: ir.users}, nil
+	return &protomfx.UsersRes{Users: ir.users}, nil
 
 }
 
-func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *mainflux.UsersByEmailsReq, _ ...grpc.CallOption) (*mainflux.UsersRes, error) {
+func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
 	ctx, close := context.WithTimeout(ctx, clent.timeout)
 	defer close()
 
@@ -74,21 +74,21 @@ func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *mainflux.User
 
 	ir := res.(getUsersRes)
 
-	return &mainflux.UsersRes{Users: ir.users}, nil
+	return &protomfx.UsersRes{Users: ir.users}, nil
 
 }
 
 func encodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getUsersByIDsReq)
-	return &mainflux.UsersByIDsReq{Ids: req.ids}, nil
+	return &protomfx.UsersByIDsReq{Ids: req.ids}, nil
 }
 
 func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getUsersByEmailsReq)
-	return &mainflux.UsersByEmailsReq{Emails: req.emails}, nil
+	return &protomfx.UsersByEmailsReq{Emails: req.emails}, nil
 }
 
 func decodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*mainflux.UsersRes)
+	res := grpcRes.(*protomfx.UsersRes)
 	return getUsersRes{users: res.GetUsers()}, nil
 }

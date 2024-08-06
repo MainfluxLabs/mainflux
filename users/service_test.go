@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
@@ -382,7 +382,7 @@ func TestResetPassword(t *testing.T) {
 	svc := newService()
 	authSvc := mocks.NewAuthService("", []users.User{registerUser})
 
-	resetToken, err := authSvc.Issue(context.Background(), &mainflux.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
+	resetToken, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string

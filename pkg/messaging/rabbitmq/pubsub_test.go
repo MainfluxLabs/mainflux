@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	msgChan = make(chan messaging.Message)
+	msgChan = make(chan protomfx.Message)
 	data    = []byte("payload")
 )
 
@@ -68,7 +69,7 @@ func TestPublisher(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		expectedMsg := messaging.Message{
+		expectedMsg := protomfx.Message{
 			Publisher: clientID,
 			Channel:   channel,
 			Subtopic:  tc.subtopic,
@@ -155,7 +156,7 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected: %s, but got: %s", tc.desc, tc.err, err))
 
 		if tc.err == nil {
-			expectedMsg := messaging.Message{
+			expectedMsg := protomfx.Message{
 				Publisher: "CLIENTID",
 				Channel:   channel,
 				Subtopic:  subtopic,
@@ -388,7 +389,7 @@ func TestPubSub(t *testing.T) {
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			// If no error, publish message, and receive after subscribing.
-			expectedMsg := messaging.Message{
+			expectedMsg := protomfx.Message{
 				Channel:  channel,
 				Subtopic: tc.subtopic,
 				Payload:  data,
@@ -413,7 +414,7 @@ type handler struct {
 	publisher string
 }
 
-func (h handler) Handle(msg messaging.Message) error {
+func (h handler) Handle(msg protomfx.Message) error {
 	if msg.Publisher != h.publisher {
 		msgChan <- msg
 	}

@@ -9,10 +9,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	grpcauth "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/logger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcthings "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -49,11 +49,11 @@ func Start(ctx context.Context, tracer opentracing.Tracer, svc interface{}, cfg 
 
 	switch v := svc.(type) {
 	case things.Service:
-		mainflux.RegisterThingsServiceServer(server, grpcthings.NewServer(tracer, v))
+		protomfx.RegisterThingsServiceServer(server, grpcthings.NewServer(tracer, v))
 	case users.Service:
-		mainflux.RegisterUsersServiceServer(server, grpcusers.NewServer(tracer, v))
+		protomfx.RegisterUsersServiceServer(server, grpcusers.NewServer(tracer, v))
 	case auth.Service:
-		mainflux.RegisterAuthServiceServer(server, grpcauth.NewServer(tracer, v))
+		protomfx.RegisterAuthServiceServer(server, grpcauth.NewServer(tracer, v))
 	default:
 		return fmt.Errorf("unknown service: %s", cfg.ServerName)
 	}

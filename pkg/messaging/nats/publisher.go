@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
 )
@@ -42,7 +43,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
-func (pub *publisher) Publish(msg messaging.Message) (err error) {
+func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	format, err := getFormat(msg.Profile.ContentType)
 	if err != nil {
 		return err

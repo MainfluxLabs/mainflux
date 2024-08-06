@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -43,12 +44,12 @@ const (
 )
 
 var (
-	thingc mainflux.ThingsServiceClient
-	authc  mainflux.AuthServiceClient
+	thingc protomfx.ThingsServiceClient
+	authc  protomfx.AuthServiceClient
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc readers.MessageRepository, tc mainflux.ThingsServiceClient, ac mainflux.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
+func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
 	thingc = tc
 	authc = ac
 
@@ -299,7 +300,7 @@ func decodeRestore(ctx context.Context, r *http.Request) (interface{}, error) {
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
-	if ar, ok := response.(mainflux.Response); ok {
+	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}
@@ -381,20 +382,20 @@ func authorize(ctx context.Context, token, key, chanID string) (err error) {
 			return nil
 		}
 
-		if _, err = thingc.IsChannelOwner(ctx, &mainflux.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
+		if _, err = thingc.IsChannelOwner(ctx, &protomfx.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
 			return err
 		}
 		return nil
 	default:
-		if _, err := thingc.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key}); err != nil {
+		if _, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key}); err != nil {
 			return err
 		}
 		return nil
 	}
 }
 
-func getThingConn(ctx context.Context, key string) (*mainflux.ConnByKeyRes, error) {
-	conn, err := thingc.GetConnByKey(ctx, &mainflux.ConnByKeyReq{Key: key})
+func getThingConn(ctx context.Context, key string) (*protomfx.ConnByKeyRes, error) {
+	conn, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key})
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +404,7 @@ func getThingConn(ctx context.Context, key string) (*mainflux.ConnByKeyRes, erro
 }
 
 func isAdmin(ctx context.Context, token string) error {
-	req := &mainflux.AuthorizeReq{
+	req := &protomfx.AuthorizeReq{
 		Token:   token,
 		Subject: auth.RootSubject,
 	}

@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 )
 
 var (
-	_ mainflux.Response = (*issueKeyRes)(nil)
-	_ mainflux.Response = (*revokeKeyRes)(nil)
+	_ apiutil.Response = (*issueKeyRes)(nil)
+	_ apiutil.Response = (*revokeKeyRes)(nil)
 )
 
 type issueKeyRes struct {

@@ -38,7 +38,7 @@ define make_docker
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
-		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
 		--output type=docker \
 		-f docker/Dockerfile .
 endef
@@ -76,8 +76,7 @@ test:
 	go test -mod=vendor -v -race -count 1 -tags test $(shell go list ./... | grep -v 'vendor\|cmd')
 
 proto:
-	protoc --gofast_out=plugins=grpc:. *.proto
-	protoc --gofast_out=plugins=grpc:. pkg/messaging/*.proto
+	protoc --gofast_out=plugins=grpc:. pkg/proto/*.proto
 
 $(SERVICES):
 	$(call compile_service,$(@))

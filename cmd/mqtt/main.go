@@ -25,6 +25,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
@@ -431,7 +432,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac mainflux.AuthServiceClient, tc mainflux.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
 	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
 	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)

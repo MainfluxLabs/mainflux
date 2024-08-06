@@ -20,6 +20,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -276,7 +277,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, ac mainflux.AuthServiceClient, c config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceClient, c config, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)

@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -106,7 +107,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	defer r.Body.Close()
 
 	req := publishReq{
-		msg: messaging.Message{
+		msg: protomfx.Message{
 			Protocol: protocol,
 			Subtopic: subject,
 			Payload:  payload,

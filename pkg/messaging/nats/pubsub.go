@@ -11,6 +11,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
 )
 
@@ -148,7 +149,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 
 func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
 	return func(m *broker.Msg) {
-		var msg messaging.Message
+		var msg protomfx.Message
 		if err := proto.Unmarshal(m.Data, &msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return

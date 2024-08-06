@@ -9,7 +9,7 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -34,7 +34,7 @@ func NewNotifierRepository() notifiers.NotifierRepository {
 	return &notifierRepositoryMock{notifiers: make(map[string]things.Notifier)}
 }
 
-func (n notifier) Notify(from string, to []string, msg messaging.Message) error {
+func (n notifier) Notify(from string, to []string, msg protomfx.Message) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}
