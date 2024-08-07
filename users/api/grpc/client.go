@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const svcName = "mainflux.UsersService"
+const svcName = "protomfx.UsersService"
 
 var _ protomfx.UsersServiceClient = (*grpcClient)(nil)
 
