@@ -2,7 +2,7 @@ package orgs
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 type createOrgsReq struct {

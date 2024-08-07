@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 const (

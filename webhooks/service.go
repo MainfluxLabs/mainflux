@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"

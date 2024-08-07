@@ -3,7 +3,7 @@
 
 package api
 
-import "github.com/MainfluxLabs/mainflux/internal/apiutil"
+import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
 const maxLimitSize = 100
 

@@ -4,8 +4,8 @@
 package http
 
 import (
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 

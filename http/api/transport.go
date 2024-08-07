@@ -13,8 +13,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	adapter "github.com/MainfluxLabs/mainflux/http"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"

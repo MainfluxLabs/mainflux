@@ -11,8 +11,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"

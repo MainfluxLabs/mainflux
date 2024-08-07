@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package http
 
-import "github.com/MainfluxLabs/mainflux/internal/apiutil"
+import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
 var _ apiutil.Response = (*listSubscriptionsRes)(nil)
 

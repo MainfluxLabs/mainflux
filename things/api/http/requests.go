@@ -6,7 +6,7 @@ package http
 import (
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
 )

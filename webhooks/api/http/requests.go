@@ -6,7 +6,7 @@ package http
 import (
 	"net/url"
 
-	"github.com/MainfluxLabs/mainflux/internal/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
 )
