@@ -19,7 +19,6 @@ paths:
         - $ref: "#/components/parameters/ChanId"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Value"
         - $ref: "#/components/parameters/BoolValue"
@@ -71,9 +70,6 @@ components:
               channel:
                 type: integer
                 description: Unique channel id.
-              publisher:
-                type: integer
-                description: Unique publisher id.
               protocol:
                 type: string
                 description: Protocol name.
@@ -132,14 +128,6 @@ components:
         type: integer
         default: 0
         minimum: 0
-      required: false
-    Publisher:
-      name: Publisher
-      description: Unique thing identifier.
-      in: query
-      schema:
-        type: string
-        format: uuid
       required: false
     Name:
       name: name

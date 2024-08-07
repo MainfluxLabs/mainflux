@@ -103,14 +103,6 @@ latest: dockers
 	$(call docker_push,latest)
 
 release:
-	$(eval version = $(shell git describe --abbrev=0 --tags))
-	git checkout $(version)
-	$(MAKE) dockers
-	for svc in $(SERVICES); do \
-		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(version); \
-	done
-
-release-push:
 	for svc in $(SERVICES); do \
 		docker buildx build --platform=linux/amd64,linux/arm64 \
 			--no-cache \
