@@ -28,7 +28,6 @@ const (
 	limitKey               = "limit"
 	formatKey              = "format"
 	subtopicKey            = "subtopic"
-	publisherKey           = "publisher"
 	protocolKey            = "protocol"
 	nameKey                = "name"
 	valueKey               = "v"
@@ -83,104 +82,6 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	return mux
 }
 
-func decodeListChannelMessages(ctx context.Context, r *http.Request) (interface{}, error) {
-	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	limit, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	format, err := apiutil.ReadStringQuery(r, formatKey, defFormat)
-	if err != nil {
-		return nil, err
-	}
-
-	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	name, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listChannelMessagesReq{
-		chanID: bone.GetValue(r, "chanID"),
-		token:  apiutil.ExtractBearerToken(r),
-		key:    apiutil.ExtractThingKey(r),
-		pageMeta: readers.PageMetadata{
-			Offset:      offset,
-			Limit:       limit,
-			Format:      format,
-			Subtopic:    subtopic,
-			Publisher:   publisher,
-			Protocol:    protocol,
-			Name:        name,
-			Value:       v,
-			Comparator:  comparator,
-			StringValue: vs,
-			DataValue:   vd,
-			From:        from,
-			To:          to,
-		},
-	}
-
-	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
-	if err != nil && err != apiutil.ErrNotFoundParam {
-		return nil, err
-	}
-	if err == nil {
-		req.pageMeta.BoolValue = vb
-	}
-
-	return req, nil
-}
-
 func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
 	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
@@ -198,11 +99,6 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 	}
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +151,6 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 			Limit:       limit,
 			Format:      format,
 			Subtopic:    subtopic,
-			Publisher:   publisher,
 			Protocol:    protocol,
 			Name:        name,
 			Value:       v,
@@ -369,16 +264,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 }
 
-func authorize(ctx context.Context, token, key, chanID string) (err error) {
+func authorize(ctx context.Context, token, key string) (err error) {
 	switch {
 	case token != "":
-		if err := isAdmin(ctx, token); err == nil {
-			return nil
-		}
-
-		if _, err = thingc.IsChannelOwner(ctx, &protomfx.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
+		if err := isAdmin(ctx, token); err != nil {
 			return err
 		}
+
 		return nil
 	default:
 		if _, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key}); err != nil {

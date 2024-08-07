@@ -96,8 +96,6 @@ func newAuthService() protomfx.AuthServiceClient {
 func TestListAllMessages(t *testing.T) {
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pubID2, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	now := time.Now().Unix()
 
@@ -135,7 +133,6 @@ func TestListAllMessages(t *testing.T) {
 			msg.Sum = &sum
 			msg.Subtopic = subtopic
 			msg.Protocol = httpProt
-			msg.Publisher = pubID2
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
@@ -301,16 +298,6 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with subtopic and protocol",
 			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
-			token:  adminToken,
-			status: http.StatusOK,
-			res: pageRes{
-				Total:    uint64(len(queryMsgs)),
-				Messages: queryMsgs[0:10],
-			},
-		},
-		{
-			desc:   "read page with publisher",
-			url:    fmt.Sprintf("%s/messages?publisher=%s", ts.URL, pubID2),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
