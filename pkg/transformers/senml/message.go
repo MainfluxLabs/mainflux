@@ -2,7 +2,6 @@ package senml
 
 // Message represents a resolved (normalized) SenML record.
 type Message struct {
-	Channel     string   `json:"channel,omitempty" db:"channel" bson:"channel"`
 	Subtopic    string   `json:"subtopic,omitempty" db:"subtopic" bson:"subtopic,omitempty"`
 	Publisher   string   `json:"publisher,omitempty" db:"publisher" bson:"publisher"`
 	Protocol    string   `json:"protocol,omitempty" db:"protocol" bson:"protocol"`

@@ -53,7 +53,6 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		Publisher: msg.Publisher,
 		Created:   msg.Created,
 		Protocol:  msg.Protocol,
-		Channel:   msg.Channel,
 	}
 
 	if msg.Profile.WebhookID != "" {

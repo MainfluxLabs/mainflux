@@ -64,7 +64,6 @@ func (repo *influxRepo) senmlPoints(messages interface{}) ([]*influxdb2write.Poi
 	var pts []*write.Point
 	for _, msg := range msgs {
 		tgs := map[string]string{
-			"channel":   msg.Channel,
 			"subtopic":  msg.Subtopic,
 			"publisher": msg.Publisher,
 			"name":      msg.Name,
@@ -121,7 +120,6 @@ func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*influxdb2write.Point,
 		fields["protocol"] = m.Protocol
 
 		tags := map[string]string{
-			"channel":   m.Channel,
 			"subtopic":  m.Subtopic,
 			"publisher": m.Publisher,
 		}

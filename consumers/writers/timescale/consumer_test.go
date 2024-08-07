@@ -34,11 +34,7 @@ var (
 func TestSaveSenML(t *testing.T) {
 	repo := timescale.New(db)
 
-	chid, err := uuid.NewV4()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	msg := senml.Message{}
-	msg.Channel = chid.String()
 
 	pubid, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -75,13 +71,10 @@ func TestSaveSenML(t *testing.T) {
 func TestSaveJSON(t *testing.T) {
 	repo := timescale.New(db)
 
-	chid, err := uuid.NewV4()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubid, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	msg := json.Message{
-		Channel:   chid.String(),
 		Publisher: pubid.String(),
 		Created:   time.Now().Unix(),
 		Subtopic:  "subtopic/format/some_json",

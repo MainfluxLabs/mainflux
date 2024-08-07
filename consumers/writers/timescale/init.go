@@ -50,7 +50,6 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS messages (
                         time BIGINT NOT NULL,
-                        channel       UUID,
                         subtopic      VARCHAR(254),
                         publisher     UUID,
                         protocol      TEXT,

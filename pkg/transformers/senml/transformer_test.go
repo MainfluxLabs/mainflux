@@ -42,7 +42,6 @@ func TestTransformJSON(t *testing.T) {
 	sum := 110.0
 	msgs := []senml.Message{
 		{
-			Channel:    "channel",
 			Subtopic:   "subtopic",
 			Publisher:  "publisher",
 			Protocol:   "protocol",
@@ -114,7 +113,6 @@ func TestTransformCBOR(t *testing.T) {
 	sum := 110.0
 	msgs := []senml.Message{
 		{
-			Channel:    "channel",
 			Subtopic:   "subtopic",
 			Publisher:  "publisher",
 			Protocol:   "protocol",

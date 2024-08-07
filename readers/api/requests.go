@@ -23,10 +23,6 @@ func (req listChannelMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
-	}
-
 	if req.pageMeta.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}

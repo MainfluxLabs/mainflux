@@ -49,10 +49,6 @@ func (repo *influxRepository) ListAllMessages(rpm readers.PageMetadata) (readers
 	return repo.readAll("", rpm)
 }
 
-func (repo *influxRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll(chanID, rpm)
-}
-
 func (repo *influxRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
 }
@@ -93,7 +89,7 @@ func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (
 	queryAPI := repo.client.QueryAPI(repo.cfg.Org)
 	var sb strings.Builder
 
-	condition, timeRange := fmtCondition(chanID, rpm)
+	condition, timeRange := fmtCondition(rpm)
 	sb.WriteString(`import "influxdata/influxdb/schema"`)
 	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, repo.cfg.Bucket))
 	// FluxQL syntax requires timeRange filter in this position, do not change.
@@ -181,14 +177,11 @@ func (repo *influxRepository) count(measurement, condition string, timeRange str
 
 }
 
-func fmtCondition(chanID string, rpm readers.PageMetadata) (string, string) {
+func fmtCondition(rpm readers.PageMetadata) (string, string) {
 	// TODO: adapt filters to flux
 	var timeRange string
 
 	var sb strings.Builder
-	if chanID != "" {
-		sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["channel"] == "%s" )`, chanID))
-	}
 
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)

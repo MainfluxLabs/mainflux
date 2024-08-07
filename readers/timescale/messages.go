@@ -44,22 +44,18 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 func (tr timescaleRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll("", rpm)
-}
-
-func (tr timescaleRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(chanID, rpm)
+	return tr.readAll(rpm)
 }
 
 func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll("", rpm)
+	return tr.readAll(rpm)
 }
 
 func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Message) error {
-	q := `INSERT INTO messages (channel, subtopic, publisher, protocol,
+	q := `INSERT INTO messages (subtopic, publisher, protocol,
 		name, unit, value, string_value, bool_value, data_value, sum,
 		time, update_time)
-		VALUES (:channel, :subtopic, :publisher, :protocol, :name, :unit,
+		VALUES (:subtopic, :publisher, :protocol, :name, :unit,
 		:value, :string_value, :bool_value, :data_value, :sum,
 		:time, :update_time);`
 
@@ -99,7 +95,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Mes
 	return err
 }
 
-func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr timescaleRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable
 
@@ -113,10 +109,9 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 		olq = ""
 	}
 
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(chanID, rpm), order, olq)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(rpm), order, olq)
 
 	params := map[string]interface{}{
-		"channel":      chanID,
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
 		"subtopic":     rpm.Subtopic,
@@ -171,7 +166,7 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 
 	}
 
-	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(chanID, rpm))
+	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(rpm))
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
@@ -189,7 +184,7 @@ func (tr timescaleRepository) readAll(chanID string, rpm readers.PageMetadata) (
 	return page, nil
 }
 
-func fmtCondition(chanID string, rpm readers.PageMetadata) string {
+func fmtCondition(rpm readers.PageMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -199,11 +194,6 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) string {
 
 	condition := ""
 	op := "WHERE"
-	if chanID != "" {
-		condition = fmt.Sprintf(`%s channel = :channel`, op)
-		op = "AND"
-	}
-
 	for name := range query {
 		switch name {
 		case
@@ -243,7 +233,6 @@ type senmlMessage struct {
 }
 
 type jsonMessage struct {
-	Channel   string `db:"channel"`
 	Created   int64  `db:"created"`
 	Subtopic  string `db:"subtopic"`
 	Publisher string `db:"publisher"`
@@ -253,7 +242,6 @@ type jsonMessage struct {
 
 func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	ret := map[string]interface{}{
-		"channel":   msg.Channel,
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,

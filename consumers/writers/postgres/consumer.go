@@ -49,10 +49,10 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 	if !ok {
 		return errors.ErrSaveMessage
 	}
-	q := `INSERT INTO messages (id, channel, subtopic, publisher, protocol,
+	q := `INSERT INTO messages (id, subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:id, :channel, :subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:id, :subtopic, :publisher, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -125,8 +125,8 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 		}
 	}()
 
-	q := `INSERT INTO %s (id, channel, created, subtopic, publisher, protocol, payload)
-          VALUES (:id, :channel, :created, :subtopic, :publisher, :protocol, :payload);`
+	q := `INSERT INTO %s (id, created, subtopic, publisher, protocol, payload)
+          VALUES (:id, :created, :subtopic, :publisher, :protocol, :payload);`
 	q = fmt.Sprintf(q, msgs.Format)
 
 	for _, m := range msgs.Data {
@@ -156,7 +156,6 @@ func (pr postgresRepo) createTable(name string) error {
 	q := `CREATE TABLE IF NOT EXISTS %s (
             id            UUID,
             created       BIGINT,
-            channel       VARCHAR(254),
             subtopic      VARCHAR(254),
             publisher     VARCHAR(254),
             protocol      TEXT,
@@ -176,7 +175,6 @@ type senmlMessage struct {
 
 type jsonMessage struct {
 	ID        string `db:"id"`
-	Channel   string `db:"channel"`
 	Created   int64  `db:"created"`
 	Subtopic  string `db:"subtopic"`
 	Publisher string `db:"publisher"`
@@ -201,7 +199,6 @@ func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
 
 	m := jsonMessage{
 		ID:        id.String(),
-		Channel:   msg.Channel,
 		Created:   msg.Created,
 		Subtopic:  msg.Subtopic,
 		Publisher: msg.Publisher,

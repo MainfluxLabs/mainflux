@@ -71,7 +71,6 @@ func TestTransformJSON(t *testing.T) {
 	jsonMsgs := json.Messages{
 		Data: []json.Message{
 			{
-				Channel:   msg.Channel,
 				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
@@ -91,7 +90,6 @@ func TestTransformJSON(t *testing.T) {
 	jsonTsMsgs := json.Messages{
 		Data: []json.Message{
 			{
-				Channel:   msg.Channel,
 				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
@@ -111,7 +109,6 @@ func TestTransformJSON(t *testing.T) {
 	jsonMicrosMsgs := json.Messages{
 		Data: []json.Message{
 			{
-				Channel:   msg.Channel,
 				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
@@ -131,7 +128,6 @@ func TestTransformJSON(t *testing.T) {
 	listJSON := json.Messages{
 		Data: []json.Message{
 			{
-				Channel:   msg.Channel,
 				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
@@ -145,7 +141,6 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 			{
-				Channel:   msg.Channel,
 				Subtopic:  subtopic,
 				Publisher: msg.Publisher,
 				Protocol:  msg.Protocol,
