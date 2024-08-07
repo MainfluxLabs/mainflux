@@ -48,10 +48,10 @@ func (tr timescaleRepo) saveSenml(messages interface{}) (err error) {
 	if !ok {
 		return errors.ErrSaveMessage
 	}
-	q := `INSERT INTO messages (channel, subtopic, publisher, protocol,
+	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:channel, :subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -120,8 +120,8 @@ func (tr timescaleRepo) insertJSON(msgs mfjson.Messages) error {
 		}
 	}()
 
-	q := `INSERT INTO %s (channel, created, subtopic, publisher, protocol, payload)
-          VALUES (:channel, :created, :subtopic, :publisher, :protocol, :payload);`
+	q := `INSERT INTO %s (created, subtopic, publisher, protocol, payload)
+          VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 	q = fmt.Sprintf(q, msgs.Format)
 
 	for _, m := range msgs.Data {
@@ -149,7 +149,6 @@ func (tr timescaleRepo) insertJSON(msgs mfjson.Messages) error {
 func (tr timescaleRepo) createTable(name string) error {
 	q := `CREATE TABLE IF NOT EXISTS %s (
             created       BIGINT NOT NULL,
-            channel       VARCHAR(254),
             subtopic      VARCHAR(254),
             publisher     VARCHAR(254),
             protocol      TEXT,
@@ -167,7 +166,6 @@ type senmlMessage struct {
 }
 
 type jsonMessage struct {
-	Channel   string `db:"channel"`
 	Created   int64  `db:"created"`
 	Subtopic  string `db:"subtopic"`
 	Publisher string `db:"publisher"`
@@ -186,7 +184,6 @@ func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
 	}
 
 	m := jsonMessage{
-		Channel:   msg.Channel,
 		Created:   msg.Created,
 		Subtopic:  msg.Subtopic,
 		Publisher: msg.Publisher,

@@ -39,10 +39,6 @@ func (repo mongoRepository) ListAllMessages(rpm readers.PageMetadata) (readers.M
 	return repo.readAll("", rpm)
 }
 
-func (repo mongoRepository) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll(chanID, rpm)
-}
-
 func (repo mongoRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
 }

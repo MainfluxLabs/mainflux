@@ -52,7 +52,6 @@ func TestSaveSenML(t *testing.T) {
 
 	now := time.Now().Unix()
 	msg := senml.Message{
-		Channel:    "45",
 		Publisher:  "2580",
 		Protocol:   "http",
 		Name:       "test name",
@@ -98,13 +97,10 @@ func TestSaveJSON(t *testing.T) {
 	db := client.Database(testDB)
 	repo := mongodb.New(db)
 
-	chid, err := uuid.NewV4()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubid, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	msg := json.Message{
-		Channel:   chid.String(),
 		Publisher: pubid.String(),
 		Created:   time.Now().Unix(),
 		Subtopic:  "subtopic/format/some_json",

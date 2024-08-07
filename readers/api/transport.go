@@ -58,12 +58,6 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	}
 
 	mux := bone.New()
-	mux.Get("/channels/:chanID/messages", kithttp.NewServer(
-		ListChannelMessagesEndpoint(svc),
-		decodeListChannelMessages,
-		encodeResponse,
-		opts...,
-	))
 	mux.Get("/messages", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
 		decodeListAllMessages,

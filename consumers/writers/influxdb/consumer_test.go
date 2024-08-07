@@ -144,13 +144,10 @@ func TestSaveSenML(t *testing.T) {
 		now := time.Now().UnixNano()
 		var msgs []senml.Message
 
-		chanID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		pubID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		for i := 0; i < tc.msgsNum; i++ {
 			msg := senml.Message{
-				Channel:    chanID,
 				Publisher:  pubID,
 				Protocol:   "http",
 				Name:       "test name",
@@ -188,13 +185,10 @@ func TestSaveSenML(t *testing.T) {
 func TestSaveJSON(t *testing.T) {
 	repo := writer.New(client, repoCfg)
 
-	chanID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	msg := json.Message{
-		Channel:   chanID,
 		Publisher: pubID,
 		Created:   time.Now().UnixNano(),
 		Subtopic:  "subtopic/format/some_json",

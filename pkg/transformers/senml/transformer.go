@@ -63,7 +63,6 @@ func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
 		}
 
 		msgs[i] = Message{
-			Channel:     msg.Channel,
 			Subtopic:    msg.Subtopic,
 			Publisher:   msg.Publisher,
 			Protocol:    msg.Protocol,

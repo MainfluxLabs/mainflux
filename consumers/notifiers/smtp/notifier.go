@@ -28,7 +28,7 @@ func New(agent *email.Agent) notifiers.Notifier {
 }
 
 func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error {
-	subject := fmt.Sprintf(`Mainflux notification: Channel %s, Thing %s and subtopic %s`, msg.Channel, msg.Publisher, msg.Subtopic)
+	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
 	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
 

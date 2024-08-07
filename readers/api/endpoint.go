@@ -9,7 +9,6 @@ import (
 	"encoding/csv"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -31,30 +30,6 @@ var header = []string{
 	"update_time",
 }
 
-func ListChannelMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listChannelMessagesReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := authorize(ctx, req.token, req.key, req.chanID); err != nil {
-			return nil, errors.Wrap(errors.ErrAuthorization, err)
-		}
-
-		page, err := svc.ListChannelMessages(req.chanID, req.pageMeta)
-		if err != nil {
-			return nil, err
-		}
-
-		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
-			Total:        page.Total,
-			Messages:     page.Messages,
-		}, nil
-	}
-}
-
 func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listAllMessagesReq)
@@ -71,7 +46,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			}
 			req.pageMeta.Publisher = conn.ThingID
 
-			p, err := svc.ListChannelMessages(conn.ChannelID, req.pageMeta)
+			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +143,6 @@ func convertSenMLToCSV(page readers.MessagesPage, writer *csv.Writer) error {
 	for _, msg := range page.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
-				m.Channel,
 				m.Subtopic,
 				m.Publisher,
 				m.Protocol,
