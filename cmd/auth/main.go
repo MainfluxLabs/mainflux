@@ -206,14 +206,14 @@ func loadConfig() config {
 		ClientTLS:  thingsClientTLS,
 		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		ClientName: "things",
+		ClientName: clients.Things,
 	}
 
 	usersConfig := clients.Config{
 		ClientTLS:  usersClientTLS,
 		CaCerts:    mainflux.Env(envUsersCACerts, defUsersCACerts),
 		URL:        mainflux.Env(envUsersGRPCURL, defUsersGRPCURL),
-		ClientName: "users",
+		ClientName: clients.Users,
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))

@@ -247,7 +247,7 @@ func loadConfig() config {
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envAuthCACerts, defAuthCACerts),
 		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: "auth",
+		ClientName: clients.Auth,
 	}
 
 	return config{

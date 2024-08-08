@@ -176,14 +176,14 @@ func loadConfigs() (config, influxdb.RepoConfig) {
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		ClientName: "things",
+		ClientName: clients.Things,
 	}
 
 	authConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: "auth",
+		ClientName: clients.Auth,
 	}
 
 	cfg := config{
