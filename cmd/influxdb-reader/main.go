@@ -114,7 +114,7 @@ func main() {
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
 	client, err := connectToInfluxDB(cfg)
 	if err != nil {
