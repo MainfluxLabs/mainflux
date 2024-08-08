@@ -326,7 +326,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 	}
 
 	conn := clientsgrpc.Connect(cfg.authConfig, logger)
-	return authapi.NewClient(tracer, conn, cfg.authGRPCTimeout), conn.Close
+	return authapi.NewClient(conn, tracer, cfg.authGRPCTimeout), conn.Close
 }
 
 func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {

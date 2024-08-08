@@ -231,7 +231,7 @@ func main() {
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
-	usersAuth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
+	usersAuth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	authClient := auth.New(ac, tc)

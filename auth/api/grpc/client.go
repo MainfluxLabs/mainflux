@@ -32,7 +32,7 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(tracer opentracing.Tracer, conn *grpc.ClientConn, timeout time.Duration) protomfx.AuthServiceClient {
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.AuthServiceClient {
 	return &grpcClient{
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,

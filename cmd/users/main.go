@@ -156,7 +156,7 @@ func main() {
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer authConn.Close()
 
-	auth := authapi.NewClient(authTracer, authConn, cfg.authGRPCTimeout)
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
 	dbTracer, dbCloser := jaeger.Init("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()

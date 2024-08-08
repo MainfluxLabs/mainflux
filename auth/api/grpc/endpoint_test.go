@@ -58,7 +58,7 @@ func startGRPCServer(svc auth.Service, port int) {
 func TestIssue(t *testing.T) {
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.Dial(authAddr, grpc.WithInsecure())
-	client := grpcapi.NewClient(mocktracer.New(), conn, time.Second)
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
 
 	cases := []struct {
 		desc  string
@@ -130,7 +130,7 @@ func TestIdentify(t *testing.T) {
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.Dial(authAddr, grpc.WithInsecure())
-	client := grpcapi.NewClient(mocktracer.New(), conn, time.Second)
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
 
 	cases := []struct {
 		desc  string
