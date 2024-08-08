@@ -216,7 +216,7 @@ func loadConfig() config {
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: "auth",
+		ClientName: clients.Auth,
 	}
 
 	signRSABits, err := strconv.Atoi(mainflux.Env(envSignRSABits, defSignRSABits))

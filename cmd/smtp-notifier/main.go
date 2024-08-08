@@ -215,7 +215,7 @@ func loadConfig() config {
 		ClientTLS:  thingsTLS,
 		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		ClientName: "things",
+		ClientName: clients.Things,
 	}
 
 	return config{

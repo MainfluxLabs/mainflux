@@ -57,10 +57,7 @@ type config struct {
 	port              string
 	brokerURL         string
 	logLevel          string
-	clientTLS         bool
-	caCerts           string
 	jaegerURL         string
-	thingsGRPCURL     string
 	thingsGRPCTimeout time.Duration
 }
 
@@ -125,7 +122,7 @@ func loadConfig() config {
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
-		ClientName: "things",
+		ClientName: clients.Things,
 	}
 
 	return config{

@@ -3,6 +3,12 @@
 
 package clients
 
+const (
+	Things = "things"
+	Auth   = "auth"
+	Users  = "users"
+)
+
 type Config struct {
 	ClientName string
 	ClientTLS  bool
