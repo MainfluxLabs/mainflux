@@ -18,10 +18,12 @@ const (
 	ctJSON      = "application/json"
 )
 
-var ErrSendRequest = errors.New("failed to send request")
+var (
+	httpClient     = &http.Client{}
+	ErrSendRequest = errors.New("failed to send request")
+)
 
 func SendRequest(fullURL, method string, body interface{}, headers map[string]string) ([]byte, error) {
-	client := &http.Client{}
 	_, err := url.ParseRequestURI(fullURL)
 	if err != nil {
 		return nil, err
@@ -50,7 +52,7 @@ func SendRequest(fullURL, method string, body interface{}, headers map[string]st
 		req.Header.Set(contentType, ctJSON)
 	}
 
-	response, err := client.Do(req)
+	response, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
