@@ -16,15 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const (
-	contentType = "Content-Type"
-	ctJSON      = "application/json"
-)
-
-var (
-	ErrForward     = errors.New("failed to forward message")
-	ErrSendRequest = errors.New("failed to send request")
-)
+var ErrForward = errors.New("failed to forward message")
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
