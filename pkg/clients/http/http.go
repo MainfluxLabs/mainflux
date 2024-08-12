@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	ContentType = "Content-Type"
-	CtJSON      = "application/json"
+	contentType = "Content-Type"
+	ctJSON      = "application/json"
 )
 
 var ErrSendRequest = errors.New("failed to send request")
@@ -46,8 +46,8 @@ func SendRequest(fullURL, method string, body interface{}, headers map[string]st
 		}
 	}
 
-	if req.Header.Get(ContentType) == "" {
-		req.Header.Set(ContentType, CtJSON)
+	if req.Header.Get(contentType) == "" {
+		req.Header.Set(contentType, ctJSON)
 	}
 
 	response, err := client.Do(req)
