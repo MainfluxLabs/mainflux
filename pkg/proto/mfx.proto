@@ -19,9 +19,9 @@ message Message {
 
 service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
-    rpc IsChannelOwner(ChannelOwnerReq) returns (google.protobuf.Empty) {}
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
+    rpc GetGroupByThing(GroupByThingReq) returns (GroupID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
 }
 
@@ -48,6 +48,11 @@ message ConnByKeyRes {
     Profile profile   = 3;
 }
 
+message GroupByThingReq {
+    string token  = 1;
+    string thingID = 2;
+}
+
 message Profile {
     string      contentType = 1;
     bool        write       = 2;
@@ -64,11 +69,6 @@ message Transformer {
     string timeLocation         = 4;
 }
 
-message ChannelOwnerReq {
-    string token  = 1;
-    string chanID = 2;
-}
-
 message AccessGroupReq {
     string token   = 1;
     string groupID = 2;
@@ -79,7 +79,7 @@ message ThingID {
     string value = 1;
 }
 
-message ChannelID {
+message GroupID {
     string value = 1;
 }
 

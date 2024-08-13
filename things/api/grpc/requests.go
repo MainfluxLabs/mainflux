@@ -30,23 +30,6 @@ func (req accessByIDReq) validate() error {
 	return nil
 }
 
-type channelOwnerReq struct {
-	token  string
-	chanID string
-}
-
-func (req channelOwnerReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 type accessGroupReq struct {
 	token   string
 	groupID string
@@ -83,6 +66,23 @@ type getGroupsByIDsReq struct {
 
 func (req getGroupsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type getGroupByThingReq struct {
+	token   string
+	thingID string
+}
+
+func (req getGroupByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
 

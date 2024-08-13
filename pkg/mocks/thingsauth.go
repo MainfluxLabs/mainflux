@@ -23,7 +23,7 @@ type thingsServiceMock struct {
 	groups   map[string]things.Group
 }
 
-// NewThingsService returns mock implementation of things service
+// NewThingsServiceClient returns mock implementation of things service
 func NewThingsServiceClient(channels map[string]string, things map[string]string, groups map[string]things.Group) protomfx.ThingsServiceClient {
 	return &thingsServiceMock{channels, things, groups}
 }
@@ -53,15 +53,6 @@ func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *protomfx.Conn
 	return &protomfx.ConnByKeyRes{ChannelID: key, ThingID: key}, nil
 }
 
-func (svc thingsServiceMock) IsChannelOwner(ctx context.Context, in *protomfx.ChannelOwnerReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	if id, ok := svc.channels[in.GetToken()]; ok {
-		if id == in.ChanID {
-			return nil, nil
-		}
-	}
-	return nil, errors.ErrAuthorization
-}
-
 func (svc thingsServiceMock) CanAccessGroup(ctx context.Context, in *protomfx.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
 	if id, ok := svc.things[in.GetToken()]; ok {
 		if id == in.GroupID {
@@ -84,4 +75,8 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.G
 	}
 
 	return &protomfx.GroupsRes{Groups: groups}, nil
+}
+
+func (svc thingsServiceMock) GetGroupByThing(ctx context.Context, req *protomfx.GroupByThingReq, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
+	panic("not implemented")
 }

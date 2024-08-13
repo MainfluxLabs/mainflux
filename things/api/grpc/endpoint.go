@@ -48,18 +48,6 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(channelOwnerReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		err := svc.IsChannelOwner(ctx, req.token, req.chanID)
-		return emptyRes{err: err}, err
-	}
-}
-
 func canAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(accessGroupReq)
@@ -113,5 +101,21 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return getGroupsByIDsRes{groups: mgr}, nil
+	}
+}
+
+func getGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(getGroupByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		group, err := svc.ViewGroupByThing(ctx, req.token, req.thingID)
+		if err != nil {
+			return getGroupByThingRes{}, err
+		}
+
+		return getGroupByThingRes{groupID: group.ID}, nil
 	}
 }

@@ -24,3 +24,7 @@ type emptyRes struct {
 type getGroupsByIDsRes struct {
 	groups []*protomfx.Group
 }
+
+type getGroupByThingRes struct {
+	groupID string
+}
