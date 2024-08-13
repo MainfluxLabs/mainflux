@@ -23,8 +23,8 @@ var (
 	ErrSendRequest = errors.New("failed to send request")
 )
 
-func SendRequest(fullURL, method string, body interface{}, headers map[string]string) ([]byte, error) {
-	_, err := url.ParseRequestURI(fullURL)
+func SendRequest(path, method string, body interface{}, headers map[string]string) ([]byte, error) {
+	_, err := url.ParseRequestURI(path)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func SendRequest(fullURL, method string, body interface{}, headers map[string]st
 		}
 	}
 
-	req, err := http.NewRequest(method, fullURL, bytes.NewReader(jsonData))
+	req, err := http.NewRequest(method, path, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, err
 	}
