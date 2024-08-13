@@ -23,7 +23,7 @@ func NewForwarder() Forwarder {
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, wh Webhook) error {
-	_, err := clientshttp.SendRequest(wh.Url, http.MethodPost, msg.Payload, wh.Headers)
+	_, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers)
 	if err != nil {
 		return errors.Wrap(clientshttp.ErrSendRequest, err)
 	}

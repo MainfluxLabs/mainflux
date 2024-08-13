@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -23,13 +22,9 @@ var (
 	ErrSendRequest = errors.New("failed to send request")
 )
 
-func SendRequest(path, method string, body interface{}, headers map[string]string) ([]byte, error) {
-	_, err := url.ParseRequestURI(path)
-	if err != nil {
-		return nil, err
-	}
-
+func SendRequest(method, path string, body interface{}, headers map[string]string) ([]byte, error) {
 	var jsonData []byte
+	var err error
 	if body != nil {
 		jsonData, err = json.Marshal(body)
 		if err != nil {
