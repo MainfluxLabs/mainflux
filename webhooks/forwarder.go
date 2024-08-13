@@ -1,11 +1,10 @@
 package webhooks
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
+	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
@@ -17,42 +16,17 @@ type Forwarder interface {
 
 var _ Forwarder = (*forwarder)(nil)
 
-type forwarder struct {
-	httpClient *http.Client
-}
+type forwarder struct{}
 
 func NewForwarder() Forwarder {
-	return &forwarder{
-		httpClient: &http.Client{},
-	}
+	return &forwarder{}
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, wh Webhook) error {
-	jsonBytes, err := json.Marshal(msg.Payload)
+	_, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers)
 	if err != nil {
-		return err
+		return errors.Wrap(clientshttp.ErrSendRequest, err)
 	}
-
-	req, err := http.NewRequest(http.MethodPost, wh.Url, bytes.NewReader(jsonBytes))
-	if err != nil {
-		return err
-	}
-
-	if len(wh.Headers) > 0 {
-		for k, v := range wh.Headers {
-			req.Header.Set(k, v)
-		}
-	}
-
-	if req.Header.Get(contentType) == "" {
-		req.Header.Set(contentType, ctJSON)
-	}
-
-	resp, err := fw.httpClient.Do(req)
-	if err != nil {
-		return errors.Wrap(ErrSendRequest, err)
-	}
-	defer resp.Body.Close()
 
 	return nil
 }
