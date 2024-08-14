@@ -253,10 +253,6 @@ func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Conne
 	return es.svc.GetConnByKey(ctx, key)
 }
 
-func (es eventStore) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	return es.svc.IsChannelOwner(ctx, owner, chanID)
-}
-
 func (es eventStore) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
 	return es.svc.CanAccessGroup(ctx, token, groupID, action)
 }

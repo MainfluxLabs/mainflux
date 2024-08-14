@@ -1141,39 +1141,6 @@ func TestGetConnByKey(t *testing.T) {
 	}
 }
 
-func TestIsChannelOwner(t *testing.T) {
-	svc := newService()
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ownedCh := chs[0]
-	chs, err = svc.CreateChannels(context.Background(), otherToken, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	nonOwnedCh := chs[0]
-
-	cases := map[string]struct {
-		channel string
-		err     error
-	}{
-		"user owns channel": {
-			channel: ownedCh.ID,
-			err:     nil,
-		},
-		"user does not own channel": {
-			channel: nonOwnedCh.ID,
-			err:     errors.ErrAuthorization,
-		},
-		"access to non-existing channel": {
-			channel: wrongID,
-			err:     errors.ErrNotFound,
-		},
-	}
-
-	for desc, tc := range cases {
-		err := svc.IsChannelOwner(context.Background(), token, tc.channel)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-	}
-}
-
 func TestIdentify(t *testing.T) {
 	svc := newService()
 

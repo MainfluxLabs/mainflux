@@ -91,10 +91,6 @@ type Service interface {
 	// provided key and returns thing's id if access is allowed.
 	GetConnByKey(ctx context.Context, key string) (Connection, error)
 
-	// IsChannelOwner determines whether the channel can be accessed by
-	// the given user and returns error if it cannot.
-	IsChannelOwner(ctx context.Context, owner, chanID string) error
-
 	// CanAccessGroup determines whether the thing can be accessed by
 	// the given user and returns error if it cannot.
 	CanAccessGroup(ctx context.Context, token, groupID, action string) error
@@ -489,24 +485,6 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 	}
 
 	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
-}
-
-func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID string) error {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	ch, err := ts.channels.RetrieveByID(ctx, chanID)
-	if err != nil {
-		return err
-	}
-
-	if ch.OwnerID != user.GetId() {
-		return errors.ErrAuthorization
-	}
-
-	return nil
 }
 
 func (ts *thingsService) CanAccessGroup(ctx context.Context, token, groupID, action string) error {

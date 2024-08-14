@@ -192,15 +192,6 @@ func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (thin
 	return ms.svc.GetConnByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "is_channel_owner").Add(1)
-		ms.latency.With("method", "is_channel_owner").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.IsChannelOwner(ctx, owner, chanID)
-}
-
 func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "can_access_group").Add(1)
