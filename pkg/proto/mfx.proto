@@ -21,7 +21,7 @@ service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
-    rpc GetGroupByThing(GroupByThingReq) returns (GroupID) {}
+    rpc GetThingGroupID(ThingGroupIDReq) returns (GroupID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
 }
 
@@ -48,7 +48,7 @@ message ConnByKeyRes {
     Profile profile   = 3;
 }
 
-message GroupByThingReq {
+message ThingGroupIDReq {
     string token  = 1;
     string thingID = 2;
 }

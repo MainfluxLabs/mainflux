@@ -77,6 +77,6 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.G
 	return &protomfx.GroupsRes{Groups: groups}, nil
 }
 
-func (svc thingsServiceMock) GetGroupByThing(ctx context.Context, req *protomfx.GroupByThingReq, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (svc thingsServiceMock) GetThingGroupID(ctx context.Context, req *protomfx.ThingGroupIDReq, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
 	panic("not implemented")
 }

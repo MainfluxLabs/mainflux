@@ -25,7 +25,7 @@ type grpcServer struct {
 	canAccessGroup  kitgrpc.Handler
 	identify        kitgrpc.Handler
 	getGroupsByIDs  kitgrpc.Handler
-	getGroupByThing kitgrpc.Handler
+	getThingGroupID kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -51,10 +51,10 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeGetGroupsByIDsRequest,
 			encodeGetGroupsByIDsResponse,
 		),
-		getGroupByThing: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_group_by_thing")(getGroupByThingEndpoint(svc)),
-			decodeGetGroupByThingRequest,
-			encodeGetGroupByThingResponse,
+		getThingGroupID: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_thing_group_id")(getThingGroupIDEndpoint(svc)),
+			decodeGetThingGroupIDRequest,
+			encodeGetThingGroupIDResponse,
 		),
 	}
 }
@@ -95,8 +95,8 @@ func (gs *grpcServer) GetGroupsByIDs(ctx context.Context, req *protomfx.GroupsRe
 	return res.(*protomfx.GroupsRes), nil
 }
 
-func (gs *grpcServer) GetGroupByThing(ctx context.Context, req *protomfx.GroupByThingReq) (*protomfx.GroupID, error) {
-	_, res, err := gs.getGroupByThing.ServeGRPC(ctx, req)
+func (gs *grpcServer) GetThingGroupID(ctx context.Context, req *protomfx.ThingGroupIDReq) (*protomfx.GroupID, error) {
+	_, res, err := gs.getThingGroupID.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -124,9 +124,9 @@ func decodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interf
 	return getGroupsByIDsReq{ids: req.GetIds()}, nil
 }
 
-func decodeGetGroupByThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.GroupByThingReq)
-	return getGroupByThingReq{token: req.GetToken(), thingID: req.GetThingID()}, nil
+func decodeGetThingGroupIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.ThingGroupIDReq)
+	return getThingGroupIDReq{token: req.GetToken(), thingID: req.GetThingID()}, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
@@ -149,8 +149,8 @@ func encodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (inter
 	return &protomfx.GroupsRes{Groups: res.groups}, nil
 }
 
-func encodeGetGroupByThingResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(getGroupByThingRes)
+func encodeGetThingGroupIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(getThingGroupIDRes)
 	return &protomfx.GroupID{Value: res.groupID}, nil
 }
 

@@ -104,18 +104,18 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
+func getThingGroupIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getGroupByThingReq)
+		req := request.(getThingGroupIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		group, err := svc.ViewGroupByThing(ctx, req.token, req.thingID)
 		if err != nil {
-			return getGroupByThingRes{}, err
+			return getThingGroupIDRes{}, err
 		}
 
-		return getGroupByThingRes{groupID: group.ID}, nil
+		return getThingGroupIDRes{groupID: group.ID}, nil
 	}
 }
