@@ -3,9 +3,9 @@ package mqtt
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -58,11 +58,21 @@ func (ms *mqttService) RemoveSubscription(ctx context.Context, sub Subscription)
 }
 
 func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token, key string, pm PageMetadata) (Page, error) {
-	if err := ms.authorize(ctx, token, key, chanID); err != nil {
+	subs, err := ms.subscriptions.RetrieveByChannelID(ctx, pm, chanID)
+	if err != nil {
 		return Page{}, err
 	}
 
-	return ms.subscriptions.RetrieveByChannelID(ctx, pm, chanID)
+	groupID, err := ms.things.GetThingGroupID(ctx, &protomfx.ThingGroupIDReq{Token: token, ThingID: subs.Subscriptions[0].ThingID})
+	if err != nil {
+		return Page{}, err
+	}
+
+	if err := ms.authorize(ctx, token, key, groupID.GetValue()); err != nil {
+		return Page{}, err
+	}
+
+	return subs, nil
 }
 
 func (ms *mqttService) UpdateStatus(ctx context.Context, sub Subscription) error {
@@ -73,14 +83,10 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 	return ms.subscriptions.HasClientID(ctx, clientID)
 }
 
-func (ms *mqttService) authorize(ctx context.Context, token, key, chanID string) (err error) {
+func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
 	switch {
 	case token != "":
-		if _, err := ms.auth.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err == nil {
-			return nil
-		}
-
-		if _, err = ms.things.IsChannelOwner(ctx, &protomfx.ChannelOwnerReq{Token: token, ChanID: chanID}); err != nil {
+		if _, err = ms.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer}); err != nil {
 			return err
 		}
 		return nil
