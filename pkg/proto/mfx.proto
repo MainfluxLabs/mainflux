@@ -21,7 +21,7 @@ service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
-    rpc GetThingGroupID(ThingGroupIDReq) returns (GroupID) {}
+    rpc GetThingGroupAndKey(ThingGroupAndKeyReq) returns (ThingGroupAndKeyRes) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
 }
 
@@ -48,9 +48,14 @@ message ConnByKeyRes {
     Profile profile   = 3;
 }
 
-message ThingGroupIDReq {
+message ThingGroupAndKeyReq {
     string token  = 1;
     string thingID = 2;
+}
+
+message ThingGroupAndKeyRes {
+    string groupID = 1;
+    string thingKey = 2;
 }
 
 message Profile {
@@ -79,9 +84,6 @@ message ThingID {
     string value = 1;
 }
 
-message GroupID {
-    string value = 1;
-}
 
 // If a token is not carrying any information itself, the type
 // field can be used to determine how to validate the token.

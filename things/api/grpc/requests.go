@@ -72,12 +72,12 @@ func (req getGroupsByIDsReq) validate() error {
 	return nil
 }
 
-type getThingGroupIDReq struct {
+type getThingGroupAndKeyReq struct {
 	token   string
 	thingID string
 }
 
-func (req getThingGroupIDReq) validate() error {
+func (req getThingGroupAndKeyReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

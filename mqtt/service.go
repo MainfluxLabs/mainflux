@@ -63,12 +63,12 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token, key
 		return Page{}, err
 	}
 
-	groupID, err := ms.things.GetThingGroupID(ctx, &protomfx.ThingGroupIDReq{Token: token, ThingID: subs.Subscriptions[0].ThingID})
+	thing, err := ms.things.GetThingGroupAndKey(ctx, &protomfx.ThingGroupAndKeyReq{Token: token, ThingID: subs.Subscriptions[0].ThingID})
 	if err != nil {
 		return Page{}, err
 	}
 
-	if err := ms.authorize(ctx, token, key, groupID.GetValue()); err != nil {
+	if err := ms.authorize(ctx, token, key, thing.GetGroupID()); err != nil {
 		return Page{}, err
 	}
 
