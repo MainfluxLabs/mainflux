@@ -111,11 +111,11 @@ func getThingGroupAndKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		thing, err := svc.ViewThing(ctx, req.token, req.thingID)
+		groupID, thingKey, err := svc.GetThingGroupAndKey(ctx, req.token, req.thingID)
 		if err != nil {
 			return getThingGroupAndKeyRes{}, err
 		}
 
-		return getThingGroupAndKeyRes{groupID: thing.GroupID, thingKey: thing.Key}, nil
+		return getThingGroupAndKeyRes{groupID: groupID, thingKey: thingKey}, nil
 	}
 }

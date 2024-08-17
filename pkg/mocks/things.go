@@ -231,6 +231,10 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+	panic("implement me")
+}
+
 func (svc *mainfluxThings) ShareThing(ctx context.Context, token, thingID string, actions, userIDs []string) error {
 	panic("not implemented")
 }

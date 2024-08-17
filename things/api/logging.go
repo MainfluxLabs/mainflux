@@ -284,6 +284,19 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
+func (lm *loggingMiddleware) GetThingGroupAndKey(ctx context.Context, token, thingID string) (_ string, _ string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_thing_group_and_key for thing %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetThingGroupAndKey(ctx, token, thingID)
+}
+
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))

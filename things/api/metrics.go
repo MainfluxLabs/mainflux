@@ -210,6 +210,15 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	return ms.svc.Identify(ctx, key)
 }
 
+func (ms *metricsMiddleware) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_thing_group_and_key").Add(1)
+		ms.latency.With("method", "get_thing_group_and_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetThingGroupAndKey(ctx, token, thingID)
+}
+
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)

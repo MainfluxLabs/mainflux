@@ -98,6 +98,9 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
+	// GetThingGroupAndKey returns group ID and thing key for given thing ID.
+	GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error)
+
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -510,6 +513,15 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 		return "", err
 	}
 	return id, nil
+}
+
+func (ts *thingsService) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+	thing, err := ts.ViewThing(ctx, token, thingID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return thing.GroupID, thing.Key, nil
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {

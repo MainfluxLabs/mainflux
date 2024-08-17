@@ -261,6 +261,10 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
+func (es eventStore) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+	return es.svc.GetThingGroupAndKey(ctx, token, thingID)
+}
+
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }
