@@ -19,6 +19,7 @@ import (
 const (
 	thingID               = "513d02d2-16c1-4f23-98be-9e12f8fee898"
 	chanID                = "123e4567-e89b-12d3-a456-000000000001"
+	groupID               = "9e12f8fe-e89b-a456-12d3-513d02d21212"
 	invalidID             = "invalidID"
 	clientID              = "clientID"
 	password              = "password"
@@ -371,6 +372,7 @@ func newHandler() session.Handler {
 	}
 
 	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]string{thingID: chanID})
+	thingsClient := pubmocks.NewThingsServiceClient(nil, map[string]string{thingID: groupID}, nil)
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{pubmocks.NewPublisher()}, eventStore, logger, authClient, newService())
+	return mqtt.NewHandler([]messaging.Publisher{pubmocks.NewPublisher()}, eventStore, logger, authClient, thingsClient, newService())
 }

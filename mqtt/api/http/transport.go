@@ -36,7 +36,7 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 
 	r := bone.New()
 
-	r.Get("/channels/:id/subscriptions", kithttp.NewServer(
+	r.Get("/groups/:id/subscriptions", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_subscriptions")(listSubscriptions(svc)),
 		decodeListSubscriptions,
 		encodeResponse,
@@ -61,9 +61,9 @@ func decodeListSubscriptions(ctx context.Context, r *http.Request) (interface{},
 	}
 
 	return listSubscriptionsReq{
-		chanID: bone.GetValue(r, "id"),
-		token:  apiutil.ExtractBearerToken(r),
-		key:    apiutil.ExtractThingKey(r),
+		groupID: bone.GetValue(r, "id"),
+		token:   apiutil.ExtractBearerToken(r),
+		key:     apiutil.ExtractThingKey(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,

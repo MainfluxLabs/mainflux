@@ -57,6 +57,7 @@ var (
 type handler struct {
 	publishers []messaging.Publisher
 	auth       auth.Client
+	things     protomfx.ThingsServiceClient
 	logger     logger.Logger
 	es         redis.EventStore
 	service    Service
@@ -64,12 +65,13 @@ type handler struct {
 
 // NewHandler creates new Handler entity
 func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, auth auth.Client, svc Service) session.Handler {
+	logger logger.Logger, auth auth.Client, things protomfx.ThingsServiceClient, svc Service) session.Handler {
 	return &handler{
 		es:         es,
 		logger:     logger,
 		publishers: publishers,
 		auth:       auth,
+		things:     things,
 		service:    svc,
 	}
 }
@@ -266,6 +268,8 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
+		groupID, err := h.things.GetThingGroupID(context.Background(), &protomfx.ThingID{Value: conn.GetThingID()})
+
 		subject, err := messaging.CreateSubject(subtopic)
 		if err != nil {
 			return nil, err
@@ -273,7 +277,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 
 		sub := Subscription{
 			Subtopic:  subject,
-			ChanID:    conn.ChannelID,
+			GroupID:   groupID.GetValue(),
 			ThingID:   c.Username,
 			ClientID:  c.ID,
 			Status:    connected,

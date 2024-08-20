@@ -11,8 +11,8 @@ import (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// ListSubscriptions lists all subscriptions that belong to the specified channel.
-	ListSubscriptions(ctx context.Context, chanID, token, key string, pm PageMetadata) (Page, error)
+	// ListSubscriptions lists all subscriptions that belong to the specified group.
+	ListSubscriptions(ctx context.Context, groupID, token, key string, pm PageMetadata) (Page, error)
 
 	// CreateSubscription create a subscription.
 	CreateSubscription(ctx context.Context, sub Subscription) error
@@ -57,14 +57,13 @@ func (ms *mqttService) RemoveSubscription(ctx context.Context, sub Subscription)
 	return nil
 }
 
-func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token, key string, pm PageMetadata) (Page, error) {
-	subs, err := ms.subscriptions.RetrieveByChannelID(ctx, pm, chanID)
+func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token, key string, pm PageMetadata) (Page, error) {
+	subs, err := ms.subscriptions.RetrieveByGroupID(ctx, pm, groupID)
 	if err != nil {
 		return Page{}, err
 	}
 
-	// TODO: Fix authorization
-	if err := ms.authorize(ctx, token, key); err != nil {
+	if err := ms.authorize(ctx, token, key, groupID); err != nil {
 		return Page{}, err
 	}
 
@@ -79,10 +78,11 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 	return ms.subscriptions.HasClientID(ctx, clientID)
 }
 
-func (ms *mqttService) authorize(ctx context.Context, token, key string) (err error) {
+func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
 	switch {
 	case token != "":
-		if _, err := ms.auth.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err != nil {
+
+		if _, err := ms.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, Subject: auth.Viewer, GroupID: groupID}); err != nil {
 			return err
 		}
 		return nil

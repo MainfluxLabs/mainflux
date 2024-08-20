@@ -239,7 +239,7 @@ func main() {
 	svc := newService(usersAuth, tc, db, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, svc)
+	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, tc, svc)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {

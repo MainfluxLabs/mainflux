@@ -235,6 +235,10 @@ func (svc *mainfluxThings) GetProfileByThing(ctx context.Context, thingID string
 	panic("implement me")
 }
 
+func (svc *mainfluxThings) GetThingGroupID(ctx context.Context, thingID string) (string, error) {
+	panic("implement me")
+}
+
 func (svc *mainfluxThings) ShareThing(ctx context.Context, token, thingID string, actions, userIDs []string) error {
 	panic("not implemented")
 }

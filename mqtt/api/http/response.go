@@ -26,7 +26,7 @@ func (res listSubscriptionsRes) Empty() bool {
 type viewSubRes struct {
 	Subtopic  string  `json:"subtopic"`
 	ThingID   string  `json:"thing_id"`
-	ChannelID string  `json:"channel_id"`
+	GroupID   string  `json:"group_id"`
 	ClientID  string  `json:"client_id"`
 	Status    string  `json:"status"`
 	CreatedAt float64 `json:"created_at"`
