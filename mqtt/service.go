@@ -81,7 +81,6 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
 	switch {
 	case token != "":
-
 		if _, err := ms.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, Subject: auth.Viewer, GroupID: groupID}); err != nil {
 			return err
 		}

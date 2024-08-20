@@ -11,7 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	pubmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
 )
@@ -372,7 +372,7 @@ func newHandler() session.Handler {
 	}
 
 	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]string{thingID: chanID})
-	thingsClient := pubmocks.NewThingsServiceClient(nil, map[string]string{thingID: groupID}, nil)
+	thingsClient := thmocks.NewThingsServiceClient(nil, map[string]string{thingID: groupID}, nil)
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{pubmocks.NewPublisher()}, eventStore, logger, authClient, thingsClient, newService())
+	return mqtt.NewHandler([]messaging.Publisher{thmocks.NewPublisher()}, eventStore, logger, authClient, thingsClient, newService())
 }

@@ -190,7 +190,7 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	subs, err := h.getSubcriptions(c, topics)
+	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
@@ -213,7 +213,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	subs, err := h.getSubcriptions(c, topics)
+	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
 		h.logger.Error(LogErrFailedSubscribe + err.Error())
 		return
@@ -254,7 +254,7 @@ func (h *handler) authAccess(c *session.Client) (protomfx.ConnByKeyRes, error) {
 	return conn, nil
 }
 
-func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
+func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
 	var subs []Subscription
 	for _, t := range *topics {
 
@@ -263,12 +263,7 @@ func (h *handler) getSubcriptions(c *session.Client, topics *[]string) ([]Subscr
 			return nil, err
 		}
 
-		conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
-		if err != nil {
-			return nil, err
-		}
-
-		groupID, err := h.things.GetThingGroupID(context.Background(), &protomfx.ThingID{Value: conn.GetThingID()})
+		groupID, err := h.things.GetThingGroupID(context.Background(), &protomfx.ThingID{Value: c.Username})
 
 		subject, err := messaging.CreateSubject(subtopic)
 		if err != nil {
