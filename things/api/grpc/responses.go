@@ -28,3 +28,7 @@ type getGroupsByIDsRes struct {
 type profileByThingRes struct {
 	profile *protomfx.Profile
 }
+
+type thingGroupIDRes struct {
+	groupID string
+}

@@ -23,6 +23,7 @@ service ThingsService {
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
+    rpc GetThingGroupID(ThingID) returns (GroupID) {}
 }
 
 service UsersService {
@@ -80,6 +81,9 @@ message ThingID {
     string value = 1;
 }
 
+message GroupID {
+    string value = 1;
+}
 
 // If a token is not carrying any information itself, the type
 // field can be used to determine how to validate the token.
