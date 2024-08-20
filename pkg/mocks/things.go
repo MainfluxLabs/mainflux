@@ -223,7 +223,7 @@ func (svc *mainfluxThings) IsChannelOwner(context.Context, string, string) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanAccessGroup(context.Context, string, string, string) error {
+func (svc *mainfluxThings) CanAccessGroup(context.Context, string, string, string, string, string) error {
 	panic("not implemented")
 }
 
@@ -231,7 +231,7 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+func (svc *mainfluxThings) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
 	panic("implement me")
 }
 

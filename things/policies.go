@@ -58,7 +58,7 @@ type Policies interface {
 }
 
 func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Admin, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token, groupID 
 }
 
 func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupRolesPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Viewer, emptyValue, emptyValue); err != nil {
 		return GroupRolesPage{}, err
 	}
 
@@ -126,7 +126,7 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 }
 
 func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Admin, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -149,7 +149,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token, groupID 
 }
 
 func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, Admin); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Admin, emptyValue, emptyValue); err != nil {
 		return err
 	}
 

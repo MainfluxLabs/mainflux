@@ -77,6 +77,6 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.G
 	return &protomfx.GroupsRes{Groups: groups}, nil
 }
 
-func (svc thingsServiceMock) GetThingGroupAndKey(ctx context.Context, req *protomfx.ThingGroupAndKeyReq, opts ...grpc.CallOption) (*protomfx.ThingGroupAndKeyRes, error) {
-	return &protomfx.ThingGroupAndKeyRes{GroupID: svc.things[req.GetToken()], ThingKey: svc.things[req.GetThingID()]}, nil
+func (svc thingsServiceMock) GetProfileByThing(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ProfileByThingRes, error) {
+	panic("implement me")
 }

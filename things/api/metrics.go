@@ -192,13 +192,13 @@ func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (thin
 	return ms.svc.GetConnByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
+func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "can_access_group").Add(1)
 		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CanAccessGroup(ctx, token, groupID, action)
+	return ms.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
 }
 
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {
@@ -210,13 +210,13 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
+func (ms *metricsMiddleware) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_thing_group_and_key").Add(1)
-		ms.latency.With("method", "get_thing_group_and_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_profile_by_thing").Add(1)
+		ms.latency.With("method", "get_profile_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetThingGroupAndKey(ctx, token, thingID)
+	return ms.svc.GetProfileByThing(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {

@@ -55,7 +55,7 @@ func canAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.CanAccessGroup(ctx, req.token, req.groupID, req.action)
+		err := svc.CanAccessGroup(ctx, req.token, req.groupID, req.action, req.object, req.subject)
 		return emptyRes{err: err}, err
 	}
 }
@@ -104,18 +104,34 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getThingGroupAndKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func getProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getThingGroupAndKeyReq)
+		req := request.(profileByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		groupID, thingKey, err := svc.GetThingGroupAndKey(ctx, req.token, req.thingID)
+		p, err := svc.GetProfileByThing(ctx, req.thingID)
 		if err != nil {
-			return getThingGroupAndKeyRes{}, err
+			return profileByThingRes{}, err
 		}
 
-		return getThingGroupAndKeyRes{groupID: groupID, thingKey: thingKey}, nil
+		transformer := &protomfx.Transformer{
+			ValueFields:  p.Transformer.ValueFields,
+			TimeField:    p.Transformer.TimeField,
+			TimeFormat:   p.Transformer.TimeFormat,
+			TimeLocation: p.Transformer.TimeLocation,
+		}
+
+		profile := &protomfx.Profile{
+			ContentType: p.ContentType,
+			Write:       p.Write,
+			Transformer: transformer,
+			WebhookID:   p.WebhookID,
+			SmtpID:      p.SmtpID,
+			SmppID:      p.SmppID,
+		}
+
+		return profileByThingRes{profile: profile}, nil
 	}
 }

@@ -25,7 +25,6 @@ type getGroupsByIDsRes struct {
 	groups []*protomfx.Group
 }
 
-type getThingGroupAndKeyRes struct {
-	groupID  string
-	thingKey string
+type profileByThingRes struct {
+	profile *protomfx.Profile
 }

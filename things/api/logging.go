@@ -258,7 +258,7 @@ func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn
 	return lm.svc.GetConnByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) (err error) {
+func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method can_access_group for group %s and action %s took %s to complete", groupID, action, time.Since(begin))
 		if err != nil {
@@ -268,7 +268,7 @@ func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CanAccessGroup(ctx, token, groupID, action)
+	return lm.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
@@ -284,9 +284,9 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetThingGroupAndKey(ctx context.Context, token, thingID string) (_ string, _ string, err error) {
+func (lm *loggingMiddleware) GetProfileByThing(ctx context.Context, thingID string) (profile things.Profile, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_thing_group_and_key for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method get_profile_by_thing for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -294,7 +294,7 @@ func (lm *loggingMiddleware) GetThingGroupAndKey(ctx context.Context, token, thi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetThingGroupAndKey(ctx, token, thingID)
+	return lm.svc.GetProfileByThing(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {

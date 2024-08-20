@@ -93,13 +93,13 @@ type Service interface {
 
 	// CanAccessGroup determines whether the thing can be accessed by
 	// the given user and returns error if it cannot.
-	CanAccessGroup(ctx context.Context, token, groupID, action string) error
+	CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// GetThingGroupAndKey returns group ID and thing key for given thing ID.
-	GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error)
+	// GetProfileByThing returns channel profile for given thing ID.
+	GetProfileByThing(ctx context.Context, thingID string) (Profile, error)
 
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -215,7 +215,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, th.GroupID, Editor); err != nil {
+	if err := ts.canAccessGroup(ctx, token, th.GroupID, Editor, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -240,7 +240,7 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return Thing{}, err
 	}
 
@@ -274,7 +274,7 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID st
 		return ThingsPage{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -349,7 +349,7 @@ func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channe
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -363,7 +363,7 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return Channel{}, err
 	}
 
@@ -389,7 +389,7 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 		return Channel{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return Channel{}, err
 	}
 
@@ -436,7 +436,7 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -460,7 +460,7 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer, emptyValue, emptyValue); err != nil {
 		return err
 	}
 
@@ -490,8 +490,8 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
 }
 
-func (ts *thingsService) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, action); err != nil {
+func (ts *thingsService) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
+	if err := ts.canAccessGroup(ctx, token, groupID, action, object, subject); err != nil {
 		return err
 	}
 
@@ -515,13 +515,23 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 	return id, nil
 }
 
-func (ts *thingsService) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
-	thing, err := ts.ViewThing(ctx, token, thingID)
+func (ts *thingsService) GetProfileByThing(ctx context.Context, thingID string) (Profile, error) {
+	channel, err := ts.channels.RetrieveByThing(ctx, thingID)
 	if err != nil {
-		return "", "", err
+		return Profile{}, err
 	}
 
-	return thing.GroupID, thing.Key, nil
+	meta, err := json.Marshal(channel.Profile)
+	if err != nil {
+		return Profile{}, err
+	}
+
+	var profile Profile
+	if err := json.Unmarshal(meta, &profile); err != nil {
+		return Profile{}, err
+	}
+
+	return profile, nil
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
@@ -607,7 +617,7 @@ func getTimestmap() time.Time {
 }
 
 func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Viewer, emptyValue, emptyValue); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -615,7 +625,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 }
 
 func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, groupID, Viewer, emptyValue, emptyValue); err != nil {
 		return ChannelsPage{}, err
 	}
 

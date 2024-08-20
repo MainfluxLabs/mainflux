@@ -253,16 +253,16 @@ func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Conne
 	return es.svc.GetConnByKey(ctx, key)
 }
 
-func (es eventStore) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
-	return es.svc.CanAccessGroup(ctx, token, groupID, action)
+func (es eventStore) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
+	return es.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
 }
 
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) GetThingGroupAndKey(ctx context.Context, token, thingID string) (string, string, error) {
-	return es.svc.GetThingGroupAndKey(ctx, token, thingID)
+func (es eventStore) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
+	return es.svc.GetProfileByThing(ctx, thingID)
 }
 
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {

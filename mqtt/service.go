@@ -3,9 +3,9 @@ package mqtt
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -63,12 +63,8 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, chanID, token, key
 		return Page{}, err
 	}
 
-	thing, err := ms.things.GetThingGroupAndKey(ctx, &protomfx.ThingGroupAndKeyReq{Token: token, ThingID: subs.Subscriptions[0].ThingID})
-	if err != nil {
-		return Page{}, err
-	}
-
-	if err := ms.authorize(ctx, token, key, thing.GetGroupID()); err != nil {
+	// TODO: Fix authorization
+	if err := ms.authorize(ctx, token, key); err != nil {
 		return Page{}, err
 	}
 
@@ -83,10 +79,10 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 	return ms.subscriptions.HasClientID(ctx, clientID)
 }
 
-func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
+func (ms *mqttService) authorize(ctx context.Context, token, key string) (err error) {
 	switch {
 	case token != "":
-		if _, err = ms.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer}); err != nil {
+		if _, err := ms.auth.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Subject: auth.RootSubject}); err != nil {
 			return err
 		}
 		return nil

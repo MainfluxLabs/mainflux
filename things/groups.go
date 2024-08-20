@@ -16,6 +16,12 @@ var (
 	ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
 )
 
+const (
+	subThing   = "thing"
+	subChannal = "channel"
+	emptyValue = ""
+)
+
 // Identity contains ID and Email.
 type Identity struct {
 	ID    string
@@ -189,7 +195,7 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 
 func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		if err := ts.canAccessGroup(ctx, token, id, Admin); err != nil {
+		if err := ts.canAccessGroup(ctx, token, id, Admin, emptyValue, emptyValue); err != nil {
 			return err
 		}
 	}
@@ -198,7 +204,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, group.ID, Admin); err != nil {
+	if err := ts.canAccessGroup(ctx, token, group.ID, Admin, emptyValue, emptyValue); err != nil {
 		return Group{}, err
 	}
 
@@ -208,7 +214,7 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, id, Viewer); err != nil {
+	if err := ts.canAccessGroup(ctx, token, id, Viewer, emptyValue, emptyValue); err != nil {
 		return Group{}, err
 	}
 
@@ -256,40 +262,61 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 	return group, nil
 }
 
-func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		return nil
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	gp := GroupMembers{
-		MemberID: user.Id,
-		GroupID:  groupID,
-	}
-
-	p, err := ts.roles.RetrieveRole(ctx, gp)
-	if err != nil {
-		return err
-	}
-
-	switch p {
-	case Viewer:
-		if action == Viewer {
+func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
+	switch subject {
+	case subThing:
+		thing, err := ts.things.RetrieveByID(ctx, object)
+		if err != nil {
+			return err
+		}
+		if groupID == thing.GroupID {
 			return nil
 		}
 		return errors.ErrAuthorization
-	case Editor:
-		if action == Viewer || action == Editor {
+	case subChannal:
+		channel, err := ts.channels.RetrieveByID(ctx, object)
+		if err != nil {
+			return err
+		}
+		if groupID == channel.GroupID {
 			return nil
 		}
 		return errors.ErrAuthorization
-	case Admin:
-		return nil
 	default:
-		return errors.ErrAuthorization
+		if err := ts.isAdmin(ctx, token); err == nil {
+			return nil
+		}
+
+		user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+		if err != nil {
+			return err
+		}
+
+		gp := GroupMembers{
+			MemberID: user.Id,
+			GroupID:  groupID,
+		}
+
+		p, err := ts.roles.RetrieveRole(ctx, gp)
+		if err != nil {
+			return err
+		}
+
+		switch p {
+		case Viewer:
+			if action == Viewer {
+				return nil
+			}
+			return errors.ErrAuthorization
+		case Editor:
+			if action == Viewer || action == Editor {
+				return nil
+			}
+			return errors.ErrAuthorization
+		case Admin:
+			return nil
+		default:
+			return errors.ErrAuthorization
+		}
 	}
 }
