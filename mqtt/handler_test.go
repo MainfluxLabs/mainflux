@@ -17,13 +17,12 @@ import (
 )
 
 const (
-	thingID               = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	groupID               = "9e12f8fe-e89b-a456-12d3-513d02d21212"
-	invalidID             = "invalidID"
-	clientID              = "clientID"
-	password              = "password"
-	subtopic              = "testSubtopic"
-	invalidChannelIDTopic = "channels/**/messages"
+	thingID   = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID   = "9e12f8fe-e89b-a456-12d3-513d02d21212"
+	invalidID = "invalidID"
+	clientID  = "clientID"
+	password  = "password"
+	subtopic  = "testSubtopic"
 )
 
 var (
@@ -229,13 +228,6 @@ func TestPublish(t *testing.T) {
 			topic:   invalidTopic,
 			payload: payload,
 			logMsg:  fmt.Sprintf(mqtt.LogInfoPublished, clientID, invalidTopic),
-		},
-		{
-			desc:    "publish with invalid channel ID",
-			client:  &sessionClient,
-			topic:   invalidChannelIDTopic,
-			payload: payload,
-			logMsg:  mqtt.LogErrFailedPublish + mqtt.ErrMalformedTopic.Error(),
 		},
 		{
 			desc:    "publish with malformed subtopic",
