@@ -136,18 +136,18 @@ func getProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getThingGroupIDEndpoint(svc things.Service) endpoint.Endpoint {
+func GetGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(thingGroupIDReq)
+		req := request.(groupIDByThingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		groupID, err := svc.GetThingGroupID(ctx, req.thingID)
+		groupID, err := svc.GetGroupIDByThingID(ctx, req.thingID)
 		if err != nil {
-			return thingGroupIDRes{}, err
+			return groupIDByThingIDRes{}, err
 		}
 
-		return thingGroupIDRes{groupID: groupID}, nil
+		return groupIDByThingIDRes{groupID: groupID}, nil
 	}
 }

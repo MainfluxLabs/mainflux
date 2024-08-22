@@ -235,7 +235,7 @@ func (svc *mainfluxThings) GetProfileByThing(ctx context.Context, thingID string
 	panic("implement me")
 }
 
-func (svc *mainfluxThings) GetThingGroupID(ctx context.Context, thingID string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
 	panic("implement me")
 }
 

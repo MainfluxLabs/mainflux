@@ -29,6 +29,6 @@ type profileByThingRes struct {
 	profile *protomfx.Profile
 }
 
-type thingGroupIDRes struct {
+type groupIDByThingIDRes struct {
 	groupID string
 }

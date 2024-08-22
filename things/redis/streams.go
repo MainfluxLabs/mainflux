@@ -265,8 +265,8 @@ func (es eventStore) GetProfileByThing(ctx context.Context, thingID string) (thi
 	return es.svc.GetProfileByThing(ctx, thingID)
 }
 
-func (es eventStore) GetThingGroupID(ctx context.Context, thingID string) (string, error) {
-	return es.svc.GetThingGroupID(ctx, thingID)
+func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+	return es.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {

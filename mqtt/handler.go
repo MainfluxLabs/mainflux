@@ -263,7 +263,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			return nil, err
 		}
 
-		groupID, err := h.things.GetThingGroupID(context.Background(), &protomfx.ThingID{Value: c.Username})
+		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: c.Username})
 
 		subject, err := messaging.CreateSubject(subtopic)
 		if err != nil {

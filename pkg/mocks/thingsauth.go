@@ -81,7 +81,7 @@ func (svc thingsServiceMock) GetProfileByThing(ctx context.Context, in *protomfx
 	panic("implement me")
 }
 
-func (svc thingsServiceMock) GetThingGroupID(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (svc thingsServiceMock) GetGroupIDByThingID(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if gr, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: gr}, nil
 	}

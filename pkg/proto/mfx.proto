@@ -23,7 +23,7 @@ service ThingsService {
     rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
-    rpc GetThingGroupID(ThingID) returns (GroupID) {}
+    rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
 }
 
 service UsersService {

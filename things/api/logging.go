@@ -297,9 +297,9 @@ func (lm *loggingMiddleware) GetProfileByThing(ctx context.Context, thingID stri
 	return lm.svc.GetProfileByThing(ctx, thingID)
 }
 
-func (lm *loggingMiddleware) GetThingGroupID(ctx context.Context, thingID string) (_ string, err error) {
+func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_thing_group_id for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method get_group_id_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -307,7 +307,7 @@ func (lm *loggingMiddleware) GetThingGroupID(ctx context.Context, thingID string
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetThingGroupID(ctx, thingID)
+	return lm.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {

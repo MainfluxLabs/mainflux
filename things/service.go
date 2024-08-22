@@ -101,8 +101,8 @@ type Service interface {
 	// GetProfileByThing returns channel profile for given thing ID.
 	GetProfileByThing(ctx context.Context, thingID string) (Profile, error)
 
-	// GetThingGroupID returns a thing's group ID for given thing ID.
-	GetThingGroupID(ctx context.Context, thingID string) (string, error)
+	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
+	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -537,7 +537,7 @@ func (ts *thingsService) GetProfileByThing(ctx context.Context, thingID string) 
 	return profile, nil
 }
 
-func (ts *thingsService) GetThingGroupID(ctx context.Context, thingID string) (string, error) {
+func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
 	thing, err := ts.things.RetrieveByID(ctx, thingID)
 	if err != nil {
 		return "", err
