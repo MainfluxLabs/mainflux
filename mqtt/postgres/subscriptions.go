@@ -64,10 +64,18 @@ func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscriptio
 }
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := `DELETE FROM subscriptions WHERE client_id =$1 AND subtopic =$2 AND thing_id=$3 AND group_id=$4;`
+	q := `DELETE FROM subscriptions WHERE client_id = :client_id AND subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
 
-	if r := mr.db.QueryRowxContext(ctx, q, sub.ClientID, sub.Subtopic, sub.ThingID, sub.GroupID); r.Err() != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, r.Err())
+	dbSub := dbSubscription{
+		ClientID: sub.ClientID,
+		Subtopic: sub.Subtopic,
+		ThingID:  sub.ThingID,
+		GroupID:  sub.GroupID,
+	}
+
+	_, err := mr.db.NamedExecContext(ctx, q, dbSub)
+	if err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
