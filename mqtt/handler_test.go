@@ -28,8 +28,7 @@ const (
 )
 
 var (
-	topicMsg     = "channels/%s/messages"
-	topic        = fmt.Sprintf(topicMsg, chanID)
+	topic        = "/messages"
 	invalidTopic = "invalidTopic"
 	payload      = []byte("[{'n':'test-name', 'v': 1.2}]")
 	topics       = []string{topic}

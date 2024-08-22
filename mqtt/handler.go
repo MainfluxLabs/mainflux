@@ -155,7 +155,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 	// Topics are in the format:
-	// channels/<channel_id>/messages/<subtopic>/.../ct/<content_type>
+	// messages/<subtopic>/.../ct/<content_type>
 
 	subtopic, err := messaging.ExtractSubtopic(*topic)
 	if err != nil {
