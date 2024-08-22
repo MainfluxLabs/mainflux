@@ -17,7 +17,6 @@ import (
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
-	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -234,12 +233,10 @@ func main() {
 	usersAuth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authClient := auth.New(ac, tc)
-
 	svc := newService(usersAuth, tc, db, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, authClient, tc, svc)
+	h := mqtt.NewHandler([]messaging.Publisher{np}, es, logger, tc, svc)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {

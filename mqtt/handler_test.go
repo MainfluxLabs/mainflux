@@ -18,7 +18,6 @@ import (
 
 const (
 	thingID               = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	chanID                = "123e4567-e89b-12d3-a456-000000000001"
 	groupID               = "9e12f8fe-e89b-a456-12d3-513d02d21212"
 	invalidID             = "invalidID"
 	clientID              = "clientID"
@@ -370,8 +369,7 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]string{thingID: chanID})
-	thingsClient := thmocks.NewThingsServiceClient(nil, map[string]string{thingID: groupID}, nil)
+	thingsClient := thmocks.NewThingsServiceClient(nil, map[string]string{password: thingID}, nil)
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{thmocks.NewPublisher()}, eventStore, logger, authClient, thingsClient, newService())
+	return mqtt.NewHandler([]messaging.Publisher{thmocks.NewPublisher()}, eventStore, logger, thingsClient, newService())
 }

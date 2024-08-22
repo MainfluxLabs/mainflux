@@ -50,7 +50,7 @@ func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *protomfx.Conn
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.ConnByKeyRes{ChannelID: key, ThingID: key}, nil
+	return &protomfx.ConnByKeyRes{ChannelID: key, ThingID: svc.things[key]}, nil
 }
 
 func (svc thingsServiceMock) CanAccessGroup(ctx context.Context, in *protomfx.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
@@ -62,8 +62,11 @@ func (svc thingsServiceMock) CanAccessGroup(ctx context.Context, in *protomfx.Ac
 	return nil, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) Identify(context.Context, *protomfx.Token, ...grpc.CallOption) (*protomfx.ThingID, error) {
-	panic("not implemented")
+func (svc thingsServiceMock) Identify(ctx context.Context, token *protomfx.Token, opts ...grpc.CallOption) (*protomfx.ThingID, error) {
+	if c, ok := svc.things[token.GetValue()]; ok {
+		return &protomfx.ThingID{Value: c}, nil
+	}
+	return nil, errors.ErrAuthentication
 }
 
 func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.GroupsReq, opts ...grpc.CallOption) (*protomfx.GroupsRes, error) {

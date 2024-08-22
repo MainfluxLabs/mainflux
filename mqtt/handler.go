@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
-	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -56,7 +55,6 @@ var (
 // Event implements events.Event interface
 type handler struct {
 	publishers []messaging.Publisher
-	auth       auth.Client
 	things     protomfx.ThingsServiceClient
 	logger     logger.Logger
 	es         redis.EventStore
@@ -65,12 +63,11 @@ type handler struct {
 
 // NewHandler creates new Handler entity
 func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, auth auth.Client, things protomfx.ThingsServiceClient, svc Service) session.Handler {
+	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
 	return &handler{
 		es:         es,
 		logger:     logger,
 		publishers: publishers,
-		auth:       auth,
 		things:     things,
 		service:    svc,
 	}
@@ -87,12 +84,12 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thid, err := h.auth.Identify(context.Background(), string(c.Password))
+	thid, err := h.things.Identify(context.Background(), &protomfx.Token{Value: string(c.Password)})
 	if err != nil {
 		return err
 	}
 
-	if thid != c.Username {
+	if thid.GetValue() != c.Username {
 		return errors.ErrAuthentication
 	}
 
@@ -169,12 +166,12 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
+	conn, err := h.things.GetConnByKey(context.Background(), &protomfx.ConnByKeyReq{Key: string(c.Password)})
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
 
-	m := messaging.CreateMessage(&conn, protocol, subject, payload)
+	m := messaging.CreateMessage(conn, protocol, subject, payload)
 
 	for _, pub := range h.publishers {
 		if err := pub.Publish(m); err != nil {
@@ -242,7 +239,7 @@ func (h *handler) Disconnect(c *session.Client) {
 }
 
 func (h *handler) authAccess(c *session.Client) (protomfx.ConnByKeyRes, error) {
-	conn, err := h.auth.GetConnByKey(context.Background(), string(c.Password))
+	conn, err := h.things.GetConnByKey(context.Background(), &protomfx.ConnByKeyReq{Key: string(c.Password)})
 	if err != nil {
 		return protomfx.ConnByKeyRes{}, err
 	}
@@ -251,7 +248,7 @@ func (h *handler) authAccess(c *session.Client) (protomfx.ConnByKeyRes, error) {
 		return protomfx.ConnByKeyRes{}, ErrAuthentication
 	}
 
-	return conn, nil
+	return *conn, nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
