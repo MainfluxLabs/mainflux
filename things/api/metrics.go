@@ -210,13 +210,13 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
+func (ms *metricsMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_profile_by_thing").Add(1)
-		ms.latency.With("method", "get_profile_by_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_profile_by_thing_id").Add(1)
+		ms.latency.With("method", "get_profile_by_thing_id").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetProfileByThing(ctx, thingID)
+	return ms.svc.GetProfileByThingID(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

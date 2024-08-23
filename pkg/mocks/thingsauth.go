@@ -80,7 +80,7 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.G
 	return &protomfx.GroupsRes{Groups: groups}, nil
 }
 
-func (svc thingsServiceMock) GetProfileByThing(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ProfileByThingRes, error) {
+func (svc thingsServiceMock) GetProfileByThingID(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ProfileByThingIDRes, error) {
 	panic("implement me")
 }
 

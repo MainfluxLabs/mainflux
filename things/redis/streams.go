@@ -261,8 +261,8 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
-	return es.svc.GetProfileByThing(ctx, thingID)
+func (es eventStore) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
+	return es.svc.GetProfileByThingID(ctx, thingID)
 }
 
 func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

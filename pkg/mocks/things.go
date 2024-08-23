@@ -231,7 +231,7 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetProfileByThing(ctx context.Context, thingID string) (things.Profile, error) {
+func (svc *mainfluxThings) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
 	panic("implement me")
 }
 

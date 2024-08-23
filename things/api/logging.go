@@ -284,9 +284,9 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetProfileByThing(ctx context.Context, thingID string) (profile things.Profile, err error) {
+func (lm *loggingMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (profile things.Profile, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_profile_by_thing for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method get_profile_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -294,7 +294,7 @@ func (lm *loggingMiddleware) GetProfileByThing(ctx context.Context, thingID stri
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetProfileByThing(ctx, thingID)
+	return lm.svc.GetProfileByThingID(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {

@@ -98,8 +98,8 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// GetProfileByThing returns channel profile for given thing ID.
-	GetProfileByThing(ctx context.Context, thingID string) (Profile, error)
+	// GetProfileByThingID returns channel profile for given thing ID.
+	GetProfileByThingID(ctx context.Context, thingID string) (Profile, error)
 
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
@@ -518,7 +518,7 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 	return id, nil
 }
 
-func (ts *thingsService) GetProfileByThing(ctx context.Context, thingID string) (Profile, error) {
+func (ts *thingsService) GetProfileByThingID(ctx context.Context, thingID string) (Profile, error) {
 	channel, err := ts.channels.RetrieveByThing(ctx, thingID)
 	if err != nil {
 		return Profile{}, err

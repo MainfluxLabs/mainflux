@@ -44,7 +44,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
+		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
 	}
 }
 
@@ -104,16 +104,16 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
+func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(profileByThingReq)
+		req := request.(profileByThingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		p, err := svc.GetProfileByThing(ctx, req.thingID)
+		p, err := svc.GetProfileByThingID(ctx, req.thingID)
 		if err != nil {
-			return profileByThingRes{}, err
+			return profileByThingIDRes{}, err
 		}
 
 		transformer := &protomfx.Transformer{
@@ -132,7 +132,7 @@ func getProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return profileByThingRes{profile: profile}, nil
+		return profileByThingIDRes{profile: profile}, nil
 	}
 }
 

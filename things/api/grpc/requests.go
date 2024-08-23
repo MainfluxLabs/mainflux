@@ -70,11 +70,11 @@ func (req getGroupsByIDsReq) validate() error {
 	return nil
 }
 
-type profileByThingReq struct {
+type profileByThingIDReq struct {
 	thingID string
 }
 
-func (req profileByThingReq) validate() error {
+func (req profileByThingIDReq) validate() error {
 	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
