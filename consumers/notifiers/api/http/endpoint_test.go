@@ -58,7 +58,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService() notifiers.Service {
-	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
+	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
@@ -169,7 +169,7 @@ func TestCreateNotifiers(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			auth:        wrongValue,
-			status:      http.StatusForbidden,
+			status:      http.StatusUnauthorized,
 			response:    emptyValue,
 		},
 		{
@@ -255,7 +255,7 @@ func TestListNotifiersByGroup(t *testing.T) {
 		{
 			desc:   "list notifiers by group with invalid token",
 			auth:   wrongValue,
-			status: http.StatusForbidden,
+			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
 			res:    []notifierRes{},
 		},

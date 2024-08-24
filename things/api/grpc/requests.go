@@ -3,11 +3,9 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
-
-const (
-	subThing   = "thing"
-	subChannel = "channel"
+import (
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type connByKeyReq struct {
@@ -22,25 +20,28 @@ func (req connByKeyReq) validate() error {
 	return nil
 }
 
-type accessGroupReq struct {
+type authorizeReq struct {
 	token   string
-	groupID string
-	action  string
 	object  string
 	subject string
+	action  string
 }
 
-func (req accessGroupReq) validate() error {
-	if req.subject != subThing && req.subject != subChannel && req.token == "" {
+func (req authorizeReq) validate() error {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
+	if req.object == "" {
 		return apiutil.ErrMissingID
 	}
 
-	if (req.subject == subThing || req.subject == subChannel) && req.object == "" {
-		return apiutil.ErrMissingID
+	if req.subject != things.ThingSub && req.subject != things.ChannelSub && req.subject != things.GroupSub {
+		return apiutil.ErrInvalidSubject
+	}
+
+	if req.action != things.Admin && req.action != things.Viewer && req.action != things.Editor {
+		return apiutil.ErrInvalidAction
 	}
 
 	return nil

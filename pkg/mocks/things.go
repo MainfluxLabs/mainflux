@@ -122,7 +122,7 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, owner, chID string, thI
 	return nil
 }
 
-func (svc *mainfluxThings) ListThingsByIDs(ctx context.Context, thingIDs []string) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByIDs(_ context.Context, thingIDs []string) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -211,7 +211,7 @@ func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
+func (svc *mainfluxThings) ViewChannelProfile(_ context.Context, chID string) (things.Profile, error) {
 	panic("not implemented")
 }
 
@@ -223,7 +223,7 @@ func (svc *mainfluxThings) IsChannelOwner(context.Context, string, string) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanAccessGroup(context.Context, string, string, string, string, string) error {
+func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error {
 	panic("not implemented")
 }
 
@@ -231,84 +231,70 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
+func (svc *mainfluxThings) GetProfileByThingID(_ context.Context, thingID string) (things.Profile, error) {
 	panic("implement me")
 }
 
-func (svc *mainfluxThings) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByThingID(_ context.Context, thingID string) (string, error) {
 	panic("implement me")
 }
 
-func (svc *mainfluxThings) ShareThing(ctx context.Context, token, thingID string, actions, userIDs []string) error {
+func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
-func findIndex(list []string, val string) int {
-	for i, v := range list {
-		if v == val {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func (svc *mainfluxThings) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListGroupThingsByChannel(_ context.Context, token, grID, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupThingsByChannel(ctx context.Context, token, grID, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) CreateGroups(_ context.Context, token string, groups ...things.Group) ([]things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroups(ctx context.Context, token string, groups ...things.Group) ([]things.Group, error) {
+func (svc *mainfluxThings) ListGroups(_ context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroupsByIDs(_ context.Context, groupIDs []string) ([]things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
+func (svc *mainfluxThings) RemoveGroups(_ context.Context, token string, ids ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveGroups(ctx context.Context, token string, ids ...string) error {
+func (svc *mainfluxThings) UpdateGroup(_ context.Context, token string, group things.Group) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroup(_ context.Context, token, id string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroup(ctx context.Context, token, id string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByThing(_ context.Context, token string, thingID string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByThing(ctx context.Context, token string, thingID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByChannel(_ context.Context, token string, channelID string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByChannel(ctx context.Context, token string, channelID string) (things.Group, error) {
+func (svc *mainfluxThings) ListChannelsByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannelsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
+func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (svc *mainfluxThings) UpdateRolesByGroup(_ context.Context, token, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemoveRolesByGroup(_ context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

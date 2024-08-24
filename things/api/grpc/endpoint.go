@@ -48,15 +48,25 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func canAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(accessGroupReq)
+		req := request.(authorizeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		err := svc.CanAccessGroup(ctx, req.token, req.groupID, req.action, req.object, req.subject)
-		return emptyRes{err: err}, err
+		ar := things.AuthorizeReq{
+			Token:   req.token,
+			Object:  req.object,
+			Subject: req.subject,
+			Action:  req.action,
+		}
+
+		if err := svc.Authorize(ctx, ar); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
 	}
 }
 

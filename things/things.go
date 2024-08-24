@@ -93,6 +93,6 @@ type ThingCache interface {
 	// ID returns thing ID for given key.
 	ID(context.Context, string) (string, error)
 
-	// Removes thing from cache.
+	// Remove removes thing from cache.
 	Remove(context.Context, string) error
 }

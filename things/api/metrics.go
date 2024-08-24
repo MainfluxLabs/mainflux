@@ -192,13 +192,13 @@ func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (thin
 	return ms.svc.GetConnByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
+func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "can_access_group").Add(1)
-		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "authorize").Add(1)
+		ms.latency.With("method", "authorize").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
+	return ms.svc.Authorize(ctx, ar)
 }
 
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {

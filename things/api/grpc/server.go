@@ -22,7 +22,7 @@ var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
 	getConnByKey        kitgrpc.Handler
-	canAccessGroup      kitgrpc.Handler
+	authorize           kitgrpc.Handler
 	identify            kitgrpc.Handler
 	getGroupsByIDs      kitgrpc.Handler
 	getProfileByThingID kitgrpc.Handler
@@ -37,9 +37,9 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeGetConnByKeyRequest,
 			encodeGetConnByKeyResponse,
 		),
-		canAccessGroup: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "can_access_group")(canAccessGroupEndpoint(svc)),
-			decodeCanAccessGroupRequest,
+		authorize: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "authorize")(authorizeEndpoint(svc)),
+			decodeAuthorizeRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -74,8 +74,8 @@ func (gs *grpcServer) GetConnByKey(ctx context.Context, req *protomfx.ConnByKeyR
 	return res.(*protomfx.ConnByKeyRes), nil
 }
 
-func (gs *grpcServer) CanAccessGroup(ctx context.Context, req *protomfx.AccessGroupReq) (*empty.Empty, error) {
-	_, res, err := gs.canAccessGroup.ServeGRPC(ctx, req)
+func (gs *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
+	_, res, err := gs.authorize.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -124,9 +124,9 @@ func decodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interfac
 	return connByKeyReq{key: req.GetKey()}, nil
 }
 
-func decodeCanAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.AccessGroupReq)
-	return accessGroupReq{token: req.GetToken(), groupID: req.GetGroupID(), action: req.GetAction(), object: req.GetObject(), subject: req.GetSubject()}, nil
+func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.AuthorizeReq)
+	return authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

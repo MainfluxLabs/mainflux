@@ -40,7 +40,7 @@ var (
 )
 
 func newService() notifiers.Service {
-	thingsC := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
+	thingsC := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
@@ -113,7 +113,7 @@ func TestCreateNotifiers(t *testing.T) {
 			desc:      "create notifier with wrong credentials",
 			notifiers: []things.Notifier{nfs[0]},
 			token:     wrongValue,
-			err:       errors.ErrAuthorization,
+			err:       errors.ErrAuthentication,
 		},
 		{
 			desc:      "create notifier with invalid contacts",
@@ -160,7 +160,7 @@ func TestListNotifiersByGroup(t *testing.T) {
 			notifiers: []things.Notifier{},
 			token:     wrongValue,
 			grID:      groupID,
-			err:       errors.ErrAuthorization,
+			err:       errors.ErrAuthentication,
 		},
 		{
 			desc:      "list notifiers with invalid group id",
@@ -205,7 +205,7 @@ func TestUpdateNotifier(t *testing.T) {
 			desc:     "update notifier with wrong credentials",
 			notifier: nf,
 			token:    emptyValue,
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "update non-existing notifier",
@@ -246,7 +246,7 @@ func TestViewNotifier(t *testing.T) {
 		"view notifier with wrong credentials": {
 			id:    nf.ID,
 			token: wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrAuthentication,
 		},
 		"view non-existing notifier": {
 			id:    wrongValue,
@@ -283,7 +283,7 @@ func TestRemoveNotifiers(t *testing.T) {
 			desc:  "remove notifier with wrong credentials",
 			id:    nf.ID,
 			token: wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrAuthentication,
 		},
 	}
 

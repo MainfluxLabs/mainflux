@@ -258,9 +258,9 @@ func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn
 	return lm.svc.GetConnByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) (err error) {
+func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_access_group for group %s and action %s took %s to complete", groupID, action, time.Since(begin))
+		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -268,7 +268,7 @@ func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
+	return lm.svc.Authorize(ctx, ar)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {

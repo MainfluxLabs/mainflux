@@ -20,7 +20,7 @@ message Message {
 service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
     rpc GetProfileByThingID(ThingID) returns (ProfileByThingIDRes){}
-    rpc CanAccessGroup(AccessGroupReq) returns (google.protobuf.Empty) {}
+    rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
@@ -67,14 +67,6 @@ message Transformer {
 
 message ProfileByThingIDRes{
     Profile profile = 1;
-}
-
-message AccessGroupReq {
-    string token   = 1;
-    string groupID = 2;
-    string action  = 3;
-    string object  = 4;
-    string subject = 5;
 }
 
 message ThingID {

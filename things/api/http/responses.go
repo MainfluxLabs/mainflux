@@ -15,7 +15,6 @@ var (
 	_ apiutil.Response = (*thingsPageRes)(nil)
 	_ apiutil.Response = (*channelsPageRes)(nil)
 	_ apiutil.Response = (*connectionsRes)(nil)
-	_ apiutil.Response = (*shareThingRes)(nil)
 	_ apiutil.Response = (*backupRes)(nil)
 	_ apiutil.Response = (*ThingsPageRes)(nil)
 	_ apiutil.Response = (*groupsRes)(nil)
@@ -37,20 +36,6 @@ func (res removeRes) Headers() map[string]string {
 
 func (res removeRes) Empty() bool {
 	return true
-}
-
-type shareThingRes struct{}
-
-func (res shareThingRes) Code() int {
-	return http.StatusOK
-}
-
-func (res shareThingRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res shareThingRes) Empty() bool {
-	return false
 }
 
 type thingRes struct {

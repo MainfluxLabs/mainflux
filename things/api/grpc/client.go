@@ -21,7 +21,7 @@ var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 type grpcClient struct {
 	timeout             time.Duration
 	getConnByKey        endpoint.Endpoint
-	canAccessGroup      endpoint.Endpoint
+	authorize           endpoint.Endpoint
 	identify            endpoint.Endpoint
 	getGroupsByIDs      endpoint.Endpoint
 	getProfileByThingID endpoint.Endpoint
@@ -42,11 +42,11 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeGetConnByKeyResponse,
 			protomfx.ConnByKeyRes{},
 		).Endpoint()),
-		canAccessGroup: kitot.TraceClient(tracer, "can_access_group")(kitgrpc.NewClient(
+		authorize: kitot.TraceClient(tracer, "authorize")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"CanAccessGroup",
-			encodeCanAccessGroup,
+			"Authorize",
+			encodeAuthorize,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -101,9 +101,9 @@ func (client grpcClient) GetConnByKey(ctx context.Context, req *protomfx.ConnByK
 	return &protomfx.ConnByKeyRes{ChannelID: cr.channelID, ThingID: cr.thingID, Profile: cr.profile}, nil
 }
 
-func (client grpcClient) CanAccessGroup(ctx context.Context, req *protomfx.AccessGroupReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	ar := accessGroupReq{token: req.GetToken(), groupID: req.GetGroupID(), action: req.GetAction(), object: req.GetObject(), subject: req.GetSubject()}
-	res, err := client.canAccessGroup(ctx, ar)
+func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+	ar := authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}
+	res, err := client.authorize(ctx, ar)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +169,9 @@ func encodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interfac
 	return &protomfx.ConnByKeyReq{Key: req.key}, nil
 }
 
-func encodeCanAccessGroup(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(accessGroupReq)
-	return &protomfx.AccessGroupReq{Token: req.token, GroupID: req.groupID, Action: req.action, Object: req.object, Subject: req.subject}, nil
+func encodeAuthorize(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(authorizeReq)
+	return &protomfx.AuthorizeReq{Token: req.token, Object: req.object, Subject: req.subject, Action: req.action}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

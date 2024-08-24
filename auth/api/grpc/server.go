@@ -24,9 +24,6 @@ type grpcServer struct {
 	issue        kitgrpc.Handler
 	identify     kitgrpc.Handler
 	authorize    kitgrpc.Handler
-	addPolicy    kitgrpc.Handler
-	assign       kitgrpc.Handler
-	members      kitgrpc.Handler
 	assignRole   kitgrpc.Handler
 	retrieveRole kitgrpc.Handler
 }

@@ -22,15 +22,8 @@ const (
 )
 
 var (
-	// ErrMissingResetToken indicates malformed or missing reset token
-	// for reseting password.
-	ErrMissingResetToken = errors.New("missing reset token")
-
 	// ErrRecoveryToken indicates error in generating password recovery token.
 	ErrRecoveryToken = errors.New("failed to generate password recovery token")
-
-	// ErrGetToken indicates error in getting signed token.
-	ErrGetToken = errors.New("failed to fetch signed token")
 
 	// ErrPasswordFormat indicates weak password.
 	ErrPasswordFormat = errors.New("password does not meet the requirements")
@@ -545,7 +538,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSubject,
+		Subject: auth.RootSub,
 	}
 
 	if _, err := svc.auth.Authorize(ctx, req); err != nil {

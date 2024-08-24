@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	whMock "github.com/MainfluxLabs/mainflux/webhooks/mocks"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ const (
 	token      = "admin@example.com"
 	wrongValue = "wrong-value"
 	emptyValue = ""
-	groupID    = "1"
+	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 )
 
 var (
@@ -29,12 +30,12 @@ var (
 )
 
 func newService() webhooks.Service {
-	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
+	ths := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	webhookRepo := whMock.NewWebhookRepository()
 	forwarder := whMock.NewForwarder()
 	idProvider := uuid.NewMock()
 
-	return webhooks.New(things, webhookRepo, forwarder, idProvider)
+	return webhooks.New(ths, webhookRepo, forwarder, idProvider)
 }
 
 func TestCreateWebhooks(t *testing.T) {
@@ -63,7 +64,7 @@ func TestCreateWebhooks(t *testing.T) {
 			desc:     "create webhook with wrong credentials",
 			webhooks: []webhooks.Webhook{validData},
 			token:    wrongValue,
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "create webhook with invalid group id",
@@ -115,12 +116,13 @@ func TestListWebhooksByGroup(t *testing.T) {
 			webhooks: []webhooks.Webhook{},
 			token:    wrongValue,
 			grID:     groupID,
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "list webhooks with invalid group id",
 			webhooks: []webhooks.Webhook{},
 			token:    token,
+			grID:     emptyValue,
 			err:      errors.ErrAuthorization,
 		},
 	}
@@ -156,7 +158,7 @@ func TestUpdateWebhook(t *testing.T) {
 			desc:    "update webhook with wrong credentials",
 			webhook: wh,
 			token:   emptyValue,
-			err:     errors.ErrAuthorization,
+			err:     errors.ErrAuthentication,
 		},
 		{
 			desc:    "update non-existing webhook",
@@ -191,7 +193,7 @@ func TestViewWebhook(t *testing.T) {
 		"view webhook with wrong credentials": {
 			id:    wh.ID,
 			token: wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrAuthentication,
 		},
 		"view non-existing webhook": {
 			id:    wrongValue,
@@ -228,7 +230,7 @@ func TestRemoveWebhooks(t *testing.T) {
 			desc:  "remove webhook with wrong credentials",
 			id:    wh.ID,
 			token: wrongValue,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrAuthentication,
 		},
 	}
 

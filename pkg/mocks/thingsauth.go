@@ -28,7 +28,7 @@ func NewThingsServiceClient(channels map[string]string, things map[string]string
 	return &thingsServiceMock{channels, things, groups}
 }
 
-func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *protomfx.ConnByKeyReq, opts ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
+func (svc thingsServiceMock) GetConnByKey(_ context.Context, in *protomfx.ConnByKeyReq, _ ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
 	key := in.GetKey()
 
 	if key == "invalid" {
@@ -53,23 +53,42 @@ func (svc thingsServiceMock) GetConnByKey(ctx context.Context, in *protomfx.Conn
 	return &protomfx.ConnByKeyRes{ChannelID: key, ThingID: svc.things[key]}, nil
 }
 
-func (svc thingsServiceMock) CanAccessGroup(ctx context.Context, in *protomfx.AccessGroupReq, opts ...grpc.CallOption) (*empty.Empty, error) {
-	if id, ok := svc.things[in.GetToken()]; ok {
-		if id == in.GroupID {
-			return nil, nil
+func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+	gr, ok := svc.groups[in.GetToken()]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
+	}
+
+	switch in.GetSubject() {
+	case things.ThingSub:
+		if id, ok := svc.things[in.GetToken()]; ok {
+			if id == gr.ID {
+				return &empty.Empty{}, nil
+			}
+		}
+	case things.ChannelSub:
+		if id, ok := svc.channels[in.GetToken()]; ok {
+			if id == gr.ID {
+				return &empty.Empty{}, nil
+			}
+		}
+	case things.GroupSub:
+		if in.GetObject() == gr.ID {
+			return &empty.Empty{}, nil
 		}
 	}
-	return nil, errors.ErrAuthorization
+
+	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) Identify(ctx context.Context, token *protomfx.Token, opts ...grpc.CallOption) (*protomfx.ThingID, error) {
+func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	if c, ok := svc.things[token.GetValue()]; ok {
 		return &protomfx.ThingID{Value: c}, nil
 	}
 	return nil, errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.GroupsReq, opts ...grpc.CallOption) (*protomfx.GroupsRes, error) {
+func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.GroupsReq, _ ...grpc.CallOption) (*protomfx.GroupsRes, error) {
 	var groups []*protomfx.Group
 	for _, id := range req.Ids {
 		if group, ok := svc.groups[id]; ok {
@@ -80,11 +99,11 @@ func (svc thingsServiceMock) GetGroupsByIDs(ctx context.Context, req *protomfx.G
 	return &protomfx.GroupsRes{Groups: groups}, nil
 }
 
-func (svc thingsServiceMock) GetProfileByThingID(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ProfileByThingIDRes, error) {
+func (svc thingsServiceMock) GetProfileByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileByThingIDRes, error) {
 	panic("implement me")
 }
 
-func (svc thingsServiceMock) GetGroupIDByThingID(ctx context.Context, in *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if gr, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: gr}, nil
 	}

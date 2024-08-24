@@ -3,9 +3,9 @@ package mqtt
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -81,7 +81,7 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
 	switch {
 	case token != "":
-		if _, err := ms.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, Subject: auth.Viewer, GroupID: groupID}); err != nil {
+		if _, err := ms.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
 			return err
 		}
 		return nil

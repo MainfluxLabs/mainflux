@@ -253,8 +253,8 @@ func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Conne
 	return es.svc.GetConnByKey(ctx, key)
 }
 
-func (es eventStore) CanAccessGroup(ctx context.Context, token, groupID, action, object, subject string) error {
-	return es.svc.CanAccessGroup(ctx, token, groupID, action, object, subject)
+func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {
+	return es.svc.Authorize(ctx, req)
 }
 
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
