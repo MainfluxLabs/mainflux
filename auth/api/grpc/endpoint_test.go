@@ -24,18 +24,11 @@ import (
 )
 
 const (
-	port        = 8081
-	secret      = "secret"
-	email       = "test@example.com"
-	id          = "testID"
-	description = "Description"
-
-	numOfThings = 5
-	numOfUsers  = 5
-
-	authoritiesObj = "authorities"
-	memberRelation = "member"
-	loginDuration  = 30 * time.Minute
+	port          = 8081
+	secret        = "secret"
+	email         = "test@example.com"
+	id            = "testID"
+	loginDuration = 30 * time.Minute
 )
 
 var svc auth.Service

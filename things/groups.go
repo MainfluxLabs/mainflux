@@ -189,7 +189,13 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 
 func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		if err := ts.canAccessGroup(ctx, token, id, Admin); err != nil {
+		ar := AuthorizeReq{
+			Token:   token,
+			Object:  id,
+			Subject: GroupSub,
+			Action:  Admin,
+		}
+		if err := ts.Authorize(ctx, ar); err != nil {
 			return err
 		}
 	}
@@ -198,21 +204,32 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, group.ID, Admin); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  group.ID,
+		Subject: GroupSub,
+		Action:  Admin,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Group{}, err
 	}
-
 	group.UpdatedAt = getTimestmap()
 
 	return ts.groups.Update(ctx, group)
 }
 
-func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group, error) {
-	if err := ts.canAccessGroup(ctx, token, id, Viewer); err != nil {
+func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (Group, error) {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  groupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, id)
+	gr, err := ts.groups.RetrieveByID(ctx, groupID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -221,39 +238,51 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, id string) (Group
 }
 
 func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, channelID string) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
-		return Group{}, err
-	}
-
 	ch, err := ts.channels.RetrieveByID(ctx, channelID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  ch.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
+		return Group{}, err
+	}
+
+	gr, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	return group, nil
+	return gr, nil
 }
 
 func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
-	if _, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
-		return Group{}, err
-	}
-
 	th, err := ts.things.RetrieveByID(ctx, thingID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, th.GroupID)
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  th.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
+		return Group{}, err
+	}
+
+	gr, err := ts.groups.RetrieveByID(ctx, th.GroupID)
 	if err != nil {
 		return Group{}, err
 	}
 
-	return group, nil
+	return gr, nil
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {

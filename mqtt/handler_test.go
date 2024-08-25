@@ -11,24 +11,22 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	pubmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	thingID               = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	chanID                = "123e4567-e89b-12d3-a456-000000000001"
-	invalidID             = "invalidID"
-	clientID              = "clientID"
-	password              = "password"
-	subtopic              = "testSubtopic"
-	invalidChannelIDTopic = "channels/**/messages"
+	thingID   = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID   = "9e12f8fe-e89b-a456-12d3-513d02d21212"
+	invalidID = "invalidID"
+	clientID  = "clientID"
+	password  = "password"
+	subtopic  = "testSubtopic"
 )
 
 var (
-	topicMsg     = "channels/%s/messages"
-	topic        = fmt.Sprintf(topicMsg, chanID)
+	topic        = "/messages"
 	invalidTopic = "invalidTopic"
 	payload      = []byte("[{'n':'test-name', 'v': 1.2}]")
 	topics       = []string{topic}
@@ -232,13 +230,6 @@ func TestPublish(t *testing.T) {
 			logMsg:  fmt.Sprintf(mqtt.LogInfoPublished, clientID, invalidTopic),
 		},
 		{
-			desc:    "publish with invalid channel ID",
-			client:  &sessionClient,
-			topic:   invalidChannelIDTopic,
-			payload: payload,
-			logMsg:  mqtt.LogErrFailedPublish + mqtt.ErrMalformedTopic.Error(),
-		},
-		{
 			desc:    "publish with malformed subtopic",
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
@@ -370,7 +361,7 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	authClient := mocks.NewClient(map[string]string{password: thingID}, map[string]string{thingID: chanID})
+	thingsClient := thmocks.NewThingsServiceClient(nil, map[string]string{password: thingID}, nil)
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{pubmocks.NewPublisher()}, eventStore, logger, authClient, newService())
+	return mqtt.NewHandler([]messaging.Publisher{thmocks.NewPublisher()}, eventStore, logger, thingsClient, newService())
 }

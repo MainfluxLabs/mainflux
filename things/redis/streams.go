@@ -253,16 +253,20 @@ func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Conne
 	return es.svc.GetConnByKey(ctx, key)
 }
 
-func (es eventStore) IsChannelOwner(ctx context.Context, owner, chanID string) error {
-	return es.svc.IsChannelOwner(ctx, owner, chanID)
-}
-
-func (es eventStore) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
-	return es.svc.CanAccessGroup(ctx, token, groupID, action)
+func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {
+	return es.svc.Authorize(ctx, req)
 }
 
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
+}
+
+func (es eventStore) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
+	return es.svc.GetProfileByThingID(ctx, thingID)
+}
+
+func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+	return es.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {

@@ -6,7 +6,7 @@ import "context"
 type Subscription struct {
 	Subtopic  string
 	ThingID   string
-	ChanID    string
+	GroupID   string
 	ClientID  string
 	Status    string
 	CreatedAt float64
@@ -26,8 +26,8 @@ type PageMetadata struct {
 }
 
 type Repository interface {
-	// RetrieveByChannelID retrieves all subscriptions that belong to the specified channel.
-	RetrieveByChannelID(ctx context.Context, pm PageMetadata, chanID string) (Page, error)
+	// RetrieveByGroupID retrieves all subscriptions that belong to the specified group.
+	RetrieveByGroupID(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
 	// Save will save the subscription.
 	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.

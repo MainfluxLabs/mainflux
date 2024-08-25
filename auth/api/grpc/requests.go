@@ -57,8 +57,8 @@ func (req authReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Subject != auth.RootSubject &&
-		req.Subject != auth.OrgsSubject {
+	if req.Subject != auth.RootSub &&
+		req.Subject != auth.OrgSub {
 		return apiutil.ErrInvalidSubject
 	}
 

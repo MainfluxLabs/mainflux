@@ -15,9 +15,12 @@ import (
 )
 
 const (
-	Viewer = "viewer"
-	Editor = "editor"
-	Admin  = "admin"
+	Viewer     = "viewer"
+	Editor     = "editor"
+	Admin      = "admin"
+	ThingSub   = "thing"
+	ChannelSub = "channel"
+	GroupSub   = "group"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -91,16 +94,18 @@ type Service interface {
 	// provided key and returns thing's id if access is allowed.
 	GetConnByKey(ctx context.Context, key string) (Connection, error)
 
-	// IsChannelOwner determines whether the channel can be accessed by
+	// Authorize determines whether the group and its things and channels can be accessed by
 	// the given user and returns error if it cannot.
-	IsChannelOwner(ctx context.Context, owner, chanID string) error
-
-	// CanAccessGroup determines whether the thing can be accessed by
-	// the given user and returns error if it cannot.
-	CanAccessGroup(ctx context.Context, token, groupID, action string) error
+	Authorize(ctx context.Context, req AuthorizeReq) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
+
+	// GetProfileByThingID returns channel profile for given thing ID.
+	GetProfileByThingID(ctx context.Context, thingID string) (Profile, error)
+
+	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
+	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
 	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -130,6 +135,13 @@ type Backup struct {
 	Connections []Connection
 	Groups      []Group
 	GroupRoles  []GroupMembers
+}
+
+type AuthorizeReq struct {
+	Token   string
+	Object  string
+	Subject string
+	Action  string
 }
 
 var _ Service = (*thingsService)(nil)
@@ -211,12 +223,18 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	th, err := ts.things.RetrieveByID(ctx, thing.ID)
-	if err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  thing.GroupID,
+		Subject: GroupSub,
+		Action:  Editor,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, th.GroupID, Editor); err != nil {
+	th, err := ts.things.RetrieveByID(ctx, thing.ID)
+	if err != nil {
 		return err
 	}
 
@@ -225,11 +243,17 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 }
 
 func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  id,
+		Subject: ThingSub,
+		Action:  Editor,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
+		return err
 	}
 
+	res, _ := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	owner := res.GetId()
 
 	return ts.things.UpdateKey(ctx, owner, id, key)
@@ -241,7 +265,13 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 		return Thing{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  thing.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Thing{}, err
 	}
 
@@ -275,7 +305,13 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID st
 		return ThingsPage{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  channel.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -350,7 +386,13 @@ func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channe
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  ch.GroupID,
+		Subject: GroupSub,
+		Action:  Editor,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
@@ -364,7 +406,13 @@ func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Cha
 		return Channel{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  channel.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Channel{}, err
 	}
 
@@ -390,7 +438,13 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 		return Channel{}, err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, channel.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  channel.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Channel{}, err
 	}
 
@@ -437,7 +491,13 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  ch.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
@@ -461,7 +521,13 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 		return err
 	}
 
-	if err := ts.canAccessGroup(ctx, token, ch.GroupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  ch.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
@@ -491,30 +557,28 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
 }
 
-func (ts *thingsService) IsChannelOwner(ctx context.Context, token, chanID string) error {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return err
-	}
-
-	ch, err := ts.channels.RetrieveByID(ctx, chanID)
-	if err != nil {
-		return err
-	}
-
-	if ch.OwnerID != user.GetId() {
+func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
+	var groupID string
+	switch ar.Subject {
+	case ThingSub:
+		thing, err := ts.things.RetrieveByID(ctx, ar.Object)
+		if err != nil {
+			return err
+		}
+		groupID = thing.GroupID
+	case ChannelSub:
+		channel, err := ts.channels.RetrieveByID(ctx, ar.Object)
+		if err != nil {
+			return err
+		}
+		groupID = channel.GroupID
+	case GroupSub:
+		groupID = ar.Object
+	default:
 		return errors.ErrAuthorization
 	}
 
-	return nil
-}
-
-func (ts *thingsService) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
-	if err := ts.canAccessGroup(ctx, token, groupID, action); err != nil {
-		return err
-	}
-
-	return nil
+	return ts.canAccessGroup(ctx, ar.Token, groupID, ar.Action)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key string) (string, error) {
@@ -532,6 +596,33 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 		return "", err
 	}
 	return id, nil
+}
+
+func (ts *thingsService) GetProfileByThingID(ctx context.Context, thingID string) (Profile, error) {
+	channel, err := ts.channels.RetrieveByThing(ctx, thingID)
+	if err != nil {
+		return Profile{}, err
+	}
+
+	meta, err := json.Marshal(channel.Profile)
+	if err != nil {
+		return Profile{}, err
+	}
+
+	var profile Profile
+	if err := json.Unmarshal(meta, &profile); err != nil {
+		return Profile{}, err
+	}
+
+	return profile, nil
+}
+
+func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return "", err
+	}
+	return thing.GroupID, nil
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
@@ -617,7 +708,13 @@ func getTimestmap() time.Time {
 }
 
 func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  groupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -625,7 +722,13 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 }
 
 func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
-	if err := ts.canAccessGroup(ctx, token, groupID, Viewer); err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  groupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return ChannelsPage{}, err
 	}
 
@@ -635,7 +738,7 @@ func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSubject,
+		Subject: auth.RootSub,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
@@ -648,8 +751,8 @@ func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.OrgsSubject,
 		Object:  orgID,
+		Subject: auth.OrgSub,
 		Action:  auth.Viewer,
 	}
 

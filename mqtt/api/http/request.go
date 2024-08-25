@@ -18,15 +18,15 @@ type apiReq interface {
 }
 
 type listSubscriptionsReq struct {
-	chanID       string
+	groupID      string
 	token        string
 	key          string
 	pageMetadata mqtt.PageMetadata
 }
 
 func (req listSubscriptionsReq) validate() error {
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	if req.token == "" && req.key == "" {

@@ -258,9 +258,9 @@ func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn
 	return lm.svc.GetConnByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner, chanID string) (err error) {
+func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method is_channel_owner for channel %s and user %s took %s to complete", chanID, owner, time.Since(begin))
+		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -268,20 +268,7 @@ func (lm *loggingMiddleware) IsChannelOwner(ctx context.Context, owner, chanID s
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.IsChannelOwner(ctx, owner, chanID)
-}
-
-func (lm *loggingMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_access_group for group %s and action %s took %s to complete", groupID, action, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.CanAccessGroup(ctx, token, groupID, action)
+	return lm.svc.Authorize(ctx, ar)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
@@ -295,6 +282,32 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	}(time.Now())
 
 	return lm.svc.Identify(ctx, key)
+}
+
+func (lm *loggingMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (profile things.Profile, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_profile_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetProfileByThingID(ctx, thingID)
+}
+
+func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_group_id_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {

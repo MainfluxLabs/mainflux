@@ -17,7 +17,7 @@ func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		subs, err := svc.ListSubscriptions(ctx, req.chanID, req.token, req.key, req.pageMetadata)
+		subs, err := svc.ListSubscriptions(ctx, req.groupID, req.token, req.key, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +35,7 @@ func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 			view := viewSubRes{
 				Subtopic:  sub.Subtopic,
 				ThingID:   sub.ThingID,
-				ChannelID: sub.ChanID,
+				GroupID:   sub.GroupID,
 				ClientID:  sub.ClientID,
 				Status:    sub.Status,
 				CreatedAt: sub.CreatedAt,

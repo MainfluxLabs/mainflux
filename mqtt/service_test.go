@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +31,7 @@ func newService() mqtt.Service {
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	tc := thmocks.NewThingsServiceClient(map[string]string{exampleUser1: chanID}, nil, nil)
+	tc := thmocks.NewThingsServiceClient(nil, map[string]string{exampleUser1: groupID}, map[string]things.Group{exampleUser1: {ID: groupID}})
 	ac := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(ac, tc, repo, idProvider)
 }
@@ -38,7 +39,7 @@ func newService() mqtt.Service {
 func TestCreateSubscription(t *testing.T) {
 	svc := newService()
 
-	chID, err := idProvider.ID()
+	gID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	thID, err := idProvider.ID()
@@ -46,7 +47,7 @@ func TestCreateSubscription(t *testing.T) {
 
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
-		ChanID:   chID,
+		GroupID:  gID,
 		ThingID:  thID,
 	}
 
@@ -76,7 +77,7 @@ func TestCreateSubscription(t *testing.T) {
 func TestRemoveSubscription(t *testing.T) {
 	svc := newService()
 
-	chID, err := idProvider.ID()
+	gID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	thID, err := idProvider.ID()
@@ -84,7 +85,7 @@ func TestRemoveSubscription(t *testing.T) {
 
 	sub := mqtt.Subscription{
 		Subtopic: subtopic,
-		ChanID:   chID,
+		GroupID:  gID,
 		ThingID:  thID,
 	}
 
@@ -114,7 +115,7 @@ func TestRemoveSubscription(t *testing.T) {
 	}
 }
 
-func TestRetrieveByChannelID(t *testing.T) {
+func TestRetrieveByGroupID(t *testing.T) {
 	svc := newService()
 
 	var subs []mqtt.Subscription
@@ -125,7 +126,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 		sub := mqtt.Subscription{
 			Subtopic: subtopic,
 			ThingID:  thID,
-			ChanID:   chanID,
+			GroupID:  groupID,
 		}
 
 		err = svc.CreateSubscription(context.Background(), sub)
@@ -135,18 +136,18 @@ func TestRetrieveByChannelID(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc      string
-		channelID string
-		token     string
-		key       string
-		pageMeta  mqtt.PageMetadata
-		page      mqtt.Page
-		err       error
+		desc     string
+		groupID  string
+		token    string
+		key      string
+		pageMeta mqtt.PageMetadata
+		page     mqtt.Page
+		err      error
 	}{
 		{
-			desc:      "retrieve subscriptions by channel as user",
-			channelID: chanID,
-			token:     exampleUser1,
+			desc:    "retrieve subscriptions by group as user",
+			groupID: groupID,
+			token:   exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -163,9 +164,9 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:      "retrieve subscriptions by channel as user with no limit",
-			channelID: chanID,
-			token:     exampleUser1,
+			desc:    "retrieve subscriptions by group as user with no limit",
+			groupID: groupID,
+			token:   exampleUser1,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -182,24 +183,9 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:      "retrieve subscriptions with invalid user",
-			channelID: chanID,
-			token:     invalidUser,
-			pageMeta: mqtt.PageMetadata{
-				Total: 0,
-			},
-			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: 0,
-				},
-				Subscriptions: nil,
-			},
-			err: errors.ErrAuthorization,
-		},
-		{
-			desc:      "retrieve subscriptions as user with empty token",
-			channelID: chanID,
-			token:     "",
+			desc:    "retrieve subscriptions with invalid user",
+			groupID: groupID,
+			token:   invalidUser,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -212,9 +198,24 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: errors.ErrAuthentication,
 		},
 		{
-			desc:      "retrieve subscriptions by channel as thing",
-			channelID: chanID,
-			key:       key,
+			desc:    "retrieve subscriptions as user with empty token",
+			groupID: groupID,
+			token:   "",
+			pageMeta: mqtt.PageMetadata{
+				Total: 0,
+			},
+			page: mqtt.Page{
+				PageMetadata: mqtt.PageMetadata{
+					Total: 0,
+				},
+				Subscriptions: nil,
+			},
+			err: errors.ErrAuthentication,
+		},
+		{
+			desc:    "retrieve subscriptions by group as thing",
+			groupID: groupID,
+			key:     key,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -231,9 +232,9 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:      "retrieve subscriptions by channel as thing with no limit",
-			channelID: chanID,
-			key:       key,
+			desc:    "retrieve subscriptions by group as thing with no limit",
+			groupID: groupID,
+			key:     key,
 			pageMeta: mqtt.PageMetadata{
 				Total:  total,
 				Offset: 0,
@@ -250,9 +251,9 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:      "retrieve subscriptions as thing with invalid channel",
-			channelID: invalidID,
-			key:       key,
+			desc:    "retrieve subscriptions as thing with invalid group",
+			groupID: invalidID,
+			key:     key,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -265,8 +266,8 @@ func TestRetrieveByChannelID(t *testing.T) {
 			err: errors.ErrNotFound,
 		},
 		{
-			desc:      "retrieve subscriptions by channel without thing key",
-			channelID: chanID,
+			desc:    "retrieve subscriptions by group without thing key",
+			groupID: groupID,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -281,7 +282,7 @@ func TestRetrieveByChannelID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListSubscriptions(context.Background(), tc.channelID, tc.token, tc.key, tc.pageMeta)
+		page, err := svc.ListSubscriptions(context.Background(), tc.groupID, tc.token, tc.key, tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.page, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.page, page))
 	}

@@ -192,22 +192,13 @@ func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (thin
 	return ms.svc.GetConnByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) IsChannelOwner(ctx context.Context, owner, chanID string) error {
+func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "is_channel_owner").Add(1)
-		ms.latency.With("method", "is_channel_owner").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "authorize").Add(1)
+		ms.latency.With("method", "authorize").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.IsChannelOwner(ctx, owner, chanID)
-}
-
-func (ms *metricsMiddleware) CanAccessGroup(ctx context.Context, token, groupID, action string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "can_access_group").Add(1)
-		ms.latency.With("method", "can_access_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.CanAccessGroup(ctx, token, groupID, action)
+	return ms.svc.Authorize(ctx, ar)
 }
 
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {
@@ -217,6 +208,24 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	}(time.Now())
 
 	return ms.svc.Identify(ctx, key)
+}
+
+func (ms *metricsMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_profile_by_thing_id").Add(1)
+		ms.latency.With("method", "get_profile_by_thing_id").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetProfileByThingID(ctx, thingID)
+}
+
+func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_group_id_by_thing_id").Add(1)
+		ms.latency.With("method", "get_group_id_by_thing_id").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {

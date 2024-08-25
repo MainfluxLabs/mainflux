@@ -77,9 +77,9 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Editor})
+	_, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Editor})
 	if err != nil {
-		return Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
+		return Webhook{}, err
 	}
 
 	id, err := ws.idProvider.ID()
@@ -101,9 +101,9 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error) {
-	_, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
+	_, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer})
 	if err != nil {
-		return []Webhook{}, errors.Wrap(errors.ErrAuthorization, err)
+		return []Webhook{}, err
 	}
 
 	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID)
@@ -120,7 +120,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 		return Webhook{}, err
 	}
 
-	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: webhook.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
 		return Webhook{}, err
 	}
 
@@ -133,16 +133,15 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 		return err
 	}
 
-	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: wh.GroupID, Action: things.Viewer}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-
+	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: wh.GroupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
+		return err
 	}
 
 	return ws.webhooks.Update(ctx, webhook)
 }
 
 func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ws.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
+	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

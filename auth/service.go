@@ -18,8 +18,8 @@ const (
 	Owner            = "owner"
 	Editor           = "editor"
 	Viewer           = "viewer"
-	RootSubject      = "root"
-	OrgsSubject      = "orgs"
+	RootSub          = "root"
+	OrgSub           = "org"
 )
 
 var (
@@ -159,9 +159,9 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case RootSubject:
+	case RootSub:
 		return svc.isAdmin(ctx, ar.Token)
-	case OrgsSubject:
+	case OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject

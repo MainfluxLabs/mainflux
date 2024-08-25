@@ -44,31 +44,29 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return connByKeyRes{channelOD: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
+		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
 	}
 }
 
-func isChannelOwnerEndpoint(svc things.Service) endpoint.Endpoint {
+func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(channelOwnerReq)
+		req := request.(authorizeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		err := svc.IsChannelOwner(ctx, req.token, req.chanID)
-		return emptyRes{err: err}, err
-	}
-}
-
-func canAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(accessGroupReq)
-		if err := req.validate(); err != nil {
-			return nil, err
+		ar := things.AuthorizeReq{
+			Token:   req.token,
+			Object:  req.object,
+			Subject: req.subject,
+			Action:  req.action,
 		}
 
-		err := svc.CanAccessGroup(ctx, req.token, req.groupID, req.action)
-		return emptyRes{err: err}, err
+		if err := svc.Authorize(ctx, ar); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
 	}
 }
 
@@ -113,5 +111,53 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return getGroupsByIDsRes{groups: mgr}, nil
+	}
+}
+
+func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(profileByThingIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		p, err := svc.GetProfileByThingID(ctx, req.thingID)
+		if err != nil {
+			return profileByThingIDRes{}, err
+		}
+
+		transformer := &protomfx.Transformer{
+			ValueFields:  p.Transformer.ValueFields,
+			TimeField:    p.Transformer.TimeField,
+			TimeFormat:   p.Transformer.TimeFormat,
+			TimeLocation: p.Transformer.TimeLocation,
+		}
+
+		profile := &protomfx.Profile{
+			ContentType: p.ContentType,
+			Write:       p.Write,
+			Transformer: transformer,
+			WebhookID:   p.WebhookID,
+			SmtpID:      p.SmtpID,
+			SmppID:      p.SmppID,
+		}
+
+		return profileByThingIDRes{profile: profile}, nil
+	}
+}
+
+func GetGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupIDByThingIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupID, err := svc.GetGroupIDByThingID(ctx, req.thingID)
+		if err != nil {
+			return groupIDByThingIDRes{}, err
+		}
+
+		return groupIDByThingIDRes{groupID: groupID}, nil
 	}
 }

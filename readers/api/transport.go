@@ -264,22 +264,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 }
 
-func authorize(ctx context.Context, token, key string) (err error) {
-	switch {
-	case token != "":
-		if err := isAdmin(ctx, token); err != nil {
-			return err
-		}
-
-		return nil
-	default:
-		if _, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key}); err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
 func getThingConn(ctx context.Context, key string) (*protomfx.ConnByKeyRes, error) {
 	conn, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key})
 	if err != nil {
@@ -292,7 +276,7 @@ func getThingConn(ctx context.Context, key string) (*protomfx.ConnByKeyRes, erro
 func isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSubject,
+		Subject: auth.RootSub,
 	}
 
 	if _, err := authc.Authorize(ctx, req); err != nil {

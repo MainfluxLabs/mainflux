@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	httpapi "github.com/MainfluxLabs/mainflux/webhooks/api/http"
 	whmocks "github.com/MainfluxLabs/mainflux/webhooks/mocks"
@@ -52,7 +53,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService() webhooks.Service {
-	things := mocks.NewThingsServiceClient(nil, map[string]string{token: groupID}, nil)
+	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	webhookRepo := whmocks.NewWebhookRepository()
 	forwarder := whmocks.NewForwarder()
 	idProvider := uuid.NewMock()
@@ -173,7 +174,7 @@ func TestCreateWebhooks(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			auth:        wrongValue,
-			status:      http.StatusForbidden,
+			status:      http.StatusUnauthorized,
 			response:    emptyValue,
 		},
 		{
@@ -263,7 +264,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		{
 			desc:   "view webhooks by group with invalid token",
 			auth:   wrongValue,
-			status: http.StatusForbidden,
+			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
 			res:    []webhookRes{},
 		},

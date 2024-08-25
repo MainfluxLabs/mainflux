@@ -98,7 +98,7 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, no
 }
 
 func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.Notifier, token string) (things.Notifier, error) {
-	_, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Editor})
+	_, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: notifier.GroupID, Subject: things.GroupSub, Action: things.Editor})
 	if err != nil {
 		return things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -122,7 +122,7 @@ func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.
 }
 
 func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string) ([]things.Notifier, error) {
-	_, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Viewer})
+	_, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer})
 	if err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -141,7 +141,7 @@ func (ns *notifierService) ViewNotifier(ctx context.Context, token, id string) (
 		return things.Notifier{}, err
 	}
 
-	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: notifier.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: notifier.GroupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
 		return things.Notifier{}, err
 	}
 
@@ -154,7 +154,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 		return err
 	}
 
-	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: nf.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: nf.GroupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -162,7 +162,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 }
 
 func (ns *notifierService) RemoveNotifiers(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ns.things.CanAccessGroup(ctx, &protomfx.AccessGroupReq{Token: token, GroupID: groupID, Action: things.Editor}); err != nil {
+	if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

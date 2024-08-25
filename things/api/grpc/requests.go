@@ -3,7 +3,10 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
+import (
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
+)
 
 type connByKeyReq struct {
 	key string
@@ -17,49 +20,28 @@ func (req connByKeyReq) validate() error {
 	return nil
 }
 
-type accessByIDReq struct {
-	thingID string
-	chanID  string
-}
-
-func (req accessByIDReq) validate() error {
-	if req.thingID == "" || req.chanID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type channelOwnerReq struct {
-	token  string
-	chanID string
-}
-
-func (req channelOwnerReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.chanID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type accessGroupReq struct {
+type authorizeReq struct {
 	token   string
-	groupID string
+	object  string
+	subject string
 	action  string
 }
 
-func (req accessGroupReq) validate() error {
+func (req authorizeReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
+	if req.object == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.subject != things.ThingSub && req.subject != things.ChannelSub && req.subject != things.GroupSub {
+		return apiutil.ErrInvalidSubject
+	}
+
+	if req.action != things.Admin && req.action != things.Viewer && req.action != things.Editor {
+		return apiutil.ErrInvalidAction
 	}
 
 	return nil
@@ -83,6 +65,30 @@ type getGroupsByIDsReq struct {
 
 func (req getGroupsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type profileByThingIDReq struct {
+	thingID string
+}
+
+func (req profileByThingIDReq) validate() error {
+	if req.thingID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
+type groupIDByThingIDReq struct {
+	thingID string
+}
+
+func (req groupIDByThingIDReq) validate() error {
+	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
 

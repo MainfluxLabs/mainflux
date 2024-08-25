@@ -21,7 +21,7 @@ func NewRepo(subs map[string][]mqtt.Subscription) mqtt.Repository {
 	}
 }
 
-func (srm *subRepoMock) RetrieveByChannelID(_ context.Context, pm mqtt.PageMetadata, chanID string) (mqtt.Page, error) {
+func (srm *subRepoMock) RetrieveByGroupID(_ context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
@@ -31,7 +31,7 @@ func (srm *subRepoMock) RetrieveByChannelID(_ context.Context, pm mqtt.PageMetad
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
-				if m.ChanID == chanID {
+				if m.GroupID == groupID {
 					subs = append(subs, m)
 				}
 			}
@@ -55,13 +55,13 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 
 	for _, s := range srm.subs {
 		for _, m := range s {
-			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.ChanID == sub.ChanID {
+			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.GroupID == sub.GroupID {
 				return errors.ErrConflict
 			}
 		}
 	}
 
-	srm.subs[sub.ChanID] = append(srm.subs[sub.ChanID], sub)
+	srm.subs[sub.GroupID] = append(srm.subs[sub.GroupID], sub)
 	return nil
 }
 
@@ -71,8 +71,8 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 
 	for _, s := range srm.subs {
 		for _, m := range s {
-			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.ChanID == sub.ChanID {
-				delete(srm.subs, m.ChanID)
+			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.GroupID == sub.GroupID {
+				delete(srm.subs, m.GroupID)
 				return nil
 			}
 		}

@@ -362,8 +362,13 @@ func TestUpdateKey(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
 	th := thing
 	th.Key = "key"
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th = ths[0]
