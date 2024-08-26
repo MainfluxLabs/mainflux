@@ -49,7 +49,6 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "messages_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS messages (
-                        id            UUID,
                         subtopic      VARCHAR(254),
                         publisher     UUID,
                         protocol      TEXT,
@@ -62,7 +61,7 @@ func migrateDB(db *sqlx.DB) error {
                         sum           FLOAT,
                         time          FLOAT,
                         update_time   FLOAT,
-                        PRIMARY KEY (id)
+                        PRIMARY KEY (time, publisher, subtopic, name)
                     )`,
 				},
 				Down: []string{

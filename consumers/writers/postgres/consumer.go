@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
-	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -49,10 +48,10 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 	if !ok {
 		return errors.ErrSaveMessage
 	}
-	q := `INSERT INTO messages (id, subtopic, publisher, protocol,
+	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:id, :subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -74,11 +73,7 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 	}()
 
 	for _, msg := range msgs {
-		id, err := uuid.NewV4()
-		if err != nil {
-			return err
-		}
-		m := senmlMessage{Message: msg, ID: id.String()}
+		m := senmlMessage{Message: msg}
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -125,8 +120,8 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 		}
 	}()
 
-	q := `INSERT INTO %s (id, created, subtopic, publisher, protocol, payload)
-          VALUES (:id, :created, :subtopic, :publisher, :protocol, :payload);`
+	q := `INSERT INTO %s (created, subtopic, publisher, protocol, payload)
+          VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 	q = fmt.Sprintf(q, msgs.Format)
 
 	for _, m := range msgs.Data {
@@ -154,13 +149,12 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 
 func (pr postgresRepo) createTable(name string) error {
 	q := `CREATE TABLE IF NOT EXISTS %s (
-            id            UUID,
             created       BIGINT,
             subtopic      VARCHAR(254),
             publisher     VARCHAR(254),
             protocol      TEXT,
             payload       JSONB,
-            PRIMARY KEY (id)
+            PRIMARY KEY (publisher, subtopic, created)
         )`
 	q = fmt.Sprintf(q, name)
 
@@ -170,11 +164,9 @@ func (pr postgresRepo) createTable(name string) error {
 
 type senmlMessage struct {
 	senml.Message
-	ID string `db:"id"`
 }
 
 type jsonMessage struct {
-	ID        string `db:"id"`
 	Created   int64  `db:"created"`
 	Subtopic  string `db:"subtopic"`
 	Publisher string `db:"publisher"`
@@ -183,11 +175,6 @@ type jsonMessage struct {
 }
 
 func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
-	id, err := uuid.NewV4()
-	if err != nil {
-		return jsonMessage{}, err
-	}
-
 	data := []byte("{}")
 	if msg.Payload != nil {
 		b, err := json.Marshal(msg.Payload)
@@ -198,7 +185,6 @@ func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
 	}
 
 	m := jsonMessage{
-		ID:        id.String(),
 		Created:   msg.Created,
 		Subtopic:  msg.Subtopic,
 		Publisher: msg.Publisher,
