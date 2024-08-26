@@ -52,7 +52,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	m := json.Message{
 		Publisher: id1,
-		Created:   time.Now().Unix(),
 		Subtopic:  "subtopic/format/some_json",
 		Protocol:  "coap",
 		Payload: map[string]interface{}{
@@ -70,8 +69,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 		Format: format1,
 	}
 	msgs1 := []map[string]interface{}{}
+	created := time.Now().Unix()
 	for i := 0; i < msgsNum; i++ {
 		msg := m
+		msg.Created = created + int64(i)
 		messages1.Data = append(messages1.Data, msg)
 		m := toMap(msg)
 		msgs1 = append(msgs1, m)
@@ -83,7 +84,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	m = json.Message{
 		Publisher: id2,
-		Created:   time.Now().Unix(),
 		Subtopic:  "subtopic/other_format/some_other_json",
 		Protocol:  "udp",
 		Payload: map[string]interface{}{
@@ -97,8 +97,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 	msgs2 := []map[string]interface{}{}
 	httpMsgs := []map[string]interface{}{}
+	created = time.Now().Unix()
 	for i := 0; i < msgsNum; i++ {
 		msg := m
+		msg.Created = created + int64(i)
 		if i%2 == 0 {
 			msg.Protocol = httpProt
 			httpMsgs = append(httpMsgs, toMap(msg))
@@ -144,8 +146,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 		result, err := reader.ListAllMessages(tc.pageMeta)
 		for i := 0; i < len(result.Messages); i++ {
 			m := result.Messages[i]
-			// Remove id as it is not sent by the client.
-			delete(m.(map[string]interface{}), "id")
 			result.Messages[i] = m
 		}
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))

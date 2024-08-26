@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -54,10 +53,10 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 }
 
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
-	q := `INSERT INTO messages (id, subtopic, publisher, protocol,
+	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:id, :subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -80,11 +79,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	}()
 
 	for _, msg := range messages {
-		id, err := uuid.NewV4()
-		if err != nil {
-			return err
-		}
-		m := senmlMessage{Message: msg, ID: id.String()}
+		m := senmlMessage{Message: msg}
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -234,12 +229,10 @@ func fmtCondition(rpm readers.PageMetadata) string {
 }
 
 type senmlMessage struct {
-	ID string `db:"id"`
 	senml.Message
 }
 
 type jsonMessage struct {
-	ID        string `db:"id"`
 	Created   int64  `db:"created"`
 	Subtopic  string `db:"subtopic"`
 	Publisher string `db:"publisher"`
@@ -249,7 +242,6 @@ type jsonMessage struct {
 
 func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	ret := map[string]interface{}{
-		"id":        msg.ID,
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
