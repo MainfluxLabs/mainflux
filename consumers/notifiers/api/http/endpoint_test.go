@@ -40,8 +40,8 @@ const (
 var (
 	validContacts           = []string{userEmail, phoneNum}
 	invalidContacts         = []string{invalidUser, invalidPhoneNum}
-	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
-	invalidContactsNotifier = things.Notifier{GroupID: groupID, Contacts: invalidContacts}
+	validNotifier           = things.Notifier{GroupID: groupID, Name: "test-downlink", Contacts: validContacts}
+	invalidContactsNotifier = things.Notifier{GroupID: groupID, Name: "test-downlink2", Contacts: invalidContacts}
 	missingIDRes            = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
 	missingTokenRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
@@ -97,8 +97,8 @@ func TestCreateNotifiers(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"contacts":["test@gmail.com"]}]`
-	invalidData := `[{"contacts":["test.com","0610120120"]}]`
+	validData := `[{"name":"test","contacts":["test@gmail.com"]}]`
+	invalidData := `[{"name":"test","contacts":["test.com","0610120120"]}]`
 
 	cases := []struct {
 		desc        string
@@ -212,6 +212,7 @@ func TestCreateNotifiers(t *testing.T) {
 type notifierRes struct {
 	ID       string   `json:"id"`
 	GroupID  string   `json:"group_id"`
+	Name     string   `json:"name"`
 	Contacts []string `json:"contacts"`
 }
 type notifiersRes struct {
@@ -233,6 +234,7 @@ func TestListNotifiersByGroup(t *testing.T) {
 		nfRes := notifierRes{
 			ID:       notifier.ID,
 			GroupID:  notifier.GroupID,
+			Name:     notifier.Name,
 			Contacts: notifier.Contacts,
 		}
 		data = append(data, nfRes)
@@ -354,8 +356,8 @@ func TestUpdateNotifier(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update notifier with empty JSON request",
-			req:         "{}",
+			desc:        "update notifier with empty request",
+			req:         "",
 			id:          nf.ID,
 			contentType: contentType,
 			auth:        token,
@@ -413,6 +415,7 @@ func TestViewNotifier(t *testing.T) {
 	data := toJSON(notifierRes{
 		ID:       nf.ID,
 		GroupID:  nf.GroupID,
+		Name:     nf.Name,
 		Contacts: nf.Contacts,
 	})
 
