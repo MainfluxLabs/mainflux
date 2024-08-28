@@ -49,7 +49,6 @@ func migrateDB(db *sqlx.DB) error {
 						id          UUID UNIQUE NOT NULL,
 						group_id    UUID NOT NULL,
 						contacts    VARCHAR(1024) NOT NULL,
-						subtopics   VARCHAR(1024) NOT NULL,
 						PRIMARY KEY (id)
 					)`,
 				},
