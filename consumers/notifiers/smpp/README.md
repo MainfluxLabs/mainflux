@@ -21,7 +21,7 @@ default values.
 | MF_SMPP_DST_ADDR_TON              | SMPP destination address TON                                            |                       |
 | MF_SMPP_SRC_ADDR_NPI              | SMPP source address NPI                                                 |                       |
 | MF_SMPP_DST_ADDR_NPI              | SMPP destination address NPI                                            |                       |
-| MF_SMPP_NOTIFIER_PORT             | SMPP-Notifiers service HTTP port                                        | 8907                  | 
+| MF_SMPP_NOTIFIER_PORT             | SMPP-Notifiers service HTTP port                                        | 9024                  |
 | MF_SMPP_NOTIFIER_SERVER_CERT      | Path to server certificate in pem format                                |                       |
 | MF_SMPP_NOTIFIER_SERVER_KEY       | Path to server key in pem format                                        |                       |
 | MF_SMPP_NOTIFIER_LOG_LEVEL        | Log level for SMPP-Notifiers (debug, info, warn, error)                 | debug                 |
@@ -39,5 +39,5 @@ default values.
 ## Usage
 
 Starting service will start consuming messages and sending SMS when a message is received.
- 
+
 [doc]: http://mainflux.readthedocs.io

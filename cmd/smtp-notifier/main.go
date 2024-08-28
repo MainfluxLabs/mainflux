@@ -56,7 +56,7 @@ const (
 	defDBSSLRootCert     = ""
 	defThingsTLS         = "false"
 	defThingsCACerts     = ""
-	defHTTPPort          = "8906"
+	defHTTPPort          = "9023"
 	defServerCert        = ""
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
