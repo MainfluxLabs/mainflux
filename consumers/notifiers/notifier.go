@@ -40,5 +40,5 @@ type NotifierRepository interface {
 	Update(ctx context.Context, n things.Notifier) error
 
 	// Remove removes the notifiers having the provided identifiers
-	Remove(ctx context.Context, groupID string, ids ...string) error
+	Remove(ctx context.Context, ids ...string) error
 }

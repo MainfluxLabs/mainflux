@@ -61,12 +61,12 @@ func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf things.Not
 	return n.repo.Update(ctx, ntf)
 }
 
-func (n notifierRepositoryMiddleware) Remove(ctx context.Context, groupID string, ids ...string) error {
+func (n notifierRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
 	span := createSpan(ctx, n.tracer, "remove_notifiers")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return n.repo.Remove(ctx, groupID, ids...)
+	return n.repo.Remove(ctx, ids...)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
