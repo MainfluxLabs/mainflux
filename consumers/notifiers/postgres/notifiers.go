@@ -32,7 +32,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) (
 		return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO notifiers (id, group_id, contacts) VALUES (:id, :group_id, :contacts);`
+	q := `INSERT INTO notifiers (id, group_id, name, contacts) VALUES (:id, :group_id, :name, :contacts);`
 
 	for _, notifier := range nfs {
 		dbNf, err := toDBNotifier(notifier)
@@ -68,7 +68,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	if _, err := uuid.FromString(groupID); err != nil {
 		return []things.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT id, group_id, contacts FROM notifiers WHERE group_id = :group_id;`
+	q := `SELECT id, group_id, name, contacts FROM notifiers WHERE group_id = :group_id;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -97,7 +97,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 }
 
 func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
-	q := `SELECT group_id, contacts FROM notifiers WHERE id = $1;`
+	q := `SELECT group_id, name, contacts FROM notifiers WHERE id = $1;`
 
 	dbNf := dbNotifier{ID: id}
 	if err := nr.db.QueryRowxContext(ctx, q, id).StructScan(&dbNf); err != nil {
@@ -112,7 +112,7 @@ func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (thing
 }
 
 func (nr notifierRepository) Update(ctx context.Context, n things.Notifier) error {
-	q := `UPDATE notifiers SET contacts = :contacts WHERE id = :id;`
+	q := `UPDATE notifiers SET name = :name, contacts = :contacts WHERE id = :id;`
 
 	dbNf, err := toDBNotifier(n)
 	if err != nil {
@@ -146,13 +146,11 @@ func (nr notifierRepository) Update(ctx context.Context, n things.Notifier) erro
 	return nil
 }
 
-func (nr notifierRepository) Remove(ctx context.Context, groupID string, ids ...string) error {
+func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		dbNf := dbNotifier{
-			ID:      id,
-			GroupID: groupID,
-		}
-		q := `DELETE FROM notifiers WHERE id = :id AND group_id = :group_id;`
+		dbNf := dbNotifier{ID: id}
+		q := `DELETE FROM notifiers WHERE id = :id;`
+
 		_, err := nr.db.NamedExecContext(ctx, q, dbNf)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -165,6 +163,7 @@ func (nr notifierRepository) Remove(ctx context.Context, groupID string, ids ...
 type dbNotifier struct {
 	ID       string `db:"id"`
 	GroupID  string `db:"group_id"`
+	Name     string `db:"name"`
 	Contacts string `json:"contacts"`
 }
 
@@ -174,6 +173,7 @@ func toDBNotifier(nf things.Notifier) (dbNotifier, error) {
 	return dbNotifier{
 		ID:       nf.ID,
 		GroupID:  nf.GroupID,
+		Name:     nf.Name,
 		Contacts: contacts,
 	}, nil
 }
@@ -184,6 +184,7 @@ func toNotifier(dbN dbNotifier) (things.Notifier, error) {
 	return things.Notifier{
 		ID:       dbN.ID,
 		GroupID:  dbN.GroupID,
+		Name:     dbN.Name,
 		Contacts: contacts,
 	}, nil
 }

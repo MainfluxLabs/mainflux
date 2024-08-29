@@ -12,6 +12,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+const maxNameSize = 254
+
 // phoneRegexp represent regex pattern to validate E.164 phone numbers
 var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 
@@ -35,6 +37,7 @@ func (req *notifierReq) validate() error {
 }
 
 type createNotifierReq struct {
+	Name     string   `json:"name"`
 	Contacts []string `json:"contacts"`
 }
 type createNotifiersReq struct {
@@ -66,6 +69,10 @@ func (req createNotifiersReq) validate() error {
 }
 
 func (req createNotifierReq) validate() error {
+	if req.Name == "" || len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
 	for _, c := range req.Contacts {
 		if !email.IsEmail(c) && !isPhoneNumber(c) {
 			return errors.ErrMalformedEntity
@@ -78,6 +85,7 @@ func (req createNotifierReq) validate() error {
 type updateNotifierReq struct {
 	token    string
 	id       string
+	Name     string   `json:"name"`
 	Contacts []string `json:"contacts"`
 }
 
@@ -88,6 +96,10 @@ func (req updateNotifierReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.Name == "" || len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
 	}
 
 	if req.Contacts == nil {

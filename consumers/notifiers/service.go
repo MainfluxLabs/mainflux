@@ -166,7 +166,7 @@ func (ns *notifierService) RemoveNotifiers(ctx context.Context, token, groupID s
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := ns.notifierRepo.Remove(ctx, groupID, ids...); err != nil {
+	if err := ns.notifierRepo.Remove(ctx, ids...); err != nil {
 		return err
 	}
 

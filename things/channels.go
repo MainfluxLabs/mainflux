@@ -37,6 +37,7 @@ type Transformer struct {
 type Notifier struct {
 	ID       string
 	GroupID  string
+	Name     string
 	Contacts []string
 }
 

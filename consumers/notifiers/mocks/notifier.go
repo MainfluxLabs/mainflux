@@ -97,7 +97,7 @@ func (nrm *notifierRepositoryMock) Update(_ context.Context, nf things.Notifier)
 	return nil
 }
 
-func (nrm *notifierRepositoryMock) Remove(_ context.Context, groupID string, ids ...string) error {
+func (nrm *notifierRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 

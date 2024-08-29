@@ -31,12 +31,14 @@ const (
 )
 
 var (
+	downlinkNames           = []string{"downlink1", "downlink2", "downlink3", "downlink4"}
 	validContacts           = []string{userEmail, phoneNum}
 	invalidContacts         = []string{invalidUser, invalidPhoneNum}
-	validNotifier           = things.Notifier{GroupID: groupID, Contacts: validContacts}
-	validNotifier2          = things.Notifier{GroupID: groupID, Contacts: validContacts}
-	invalidContactsNotifier = things.Notifier{GroupID: groupID, Contacts: invalidContacts}
-	invalidGroupNotifier    = things.Notifier{GroupID: emptyValue, Contacts: validContacts}
+	validNotifier           = things.Notifier{GroupID: groupID, Name: downlinkNames[0], Contacts: validContacts}
+	validNotifier2          = things.Notifier{GroupID: groupID, Name: downlinkNames[1], Contacts: validContacts}
+	invalidContactsNotifier = things.Notifier{GroupID: groupID, Name: downlinkNames[2], Contacts: invalidContacts}
+	invalidGroupNotifier    = things.Notifier{GroupID: emptyValue, Name: downlinkNames[3], Contacts: validContacts}
+	invalidNameNotifier     = things.Notifier{GroupID: groupID, Name: emptyValue, Contacts: validContacts}
 )
 
 func newService() notifiers.Service {
@@ -95,7 +97,7 @@ func TestConsume(t *testing.T) {
 func TestCreateNotifiers(t *testing.T) {
 	svc := newService()
 
-	nfs := []things.Notifier{validNotifier, invalidContactsNotifier, invalidGroupNotifier}
+	nfs := []things.Notifier{validNotifier, invalidContactsNotifier, invalidGroupNotifier, invalidNameNotifier}
 
 	cases := []struct {
 		desc      string
@@ -126,6 +128,12 @@ func TestCreateNotifiers(t *testing.T) {
 			notifiers: []things.Notifier{nfs[2]},
 			token:     token,
 			err:       errors.ErrAuthorization,
+		},
+		{
+			desc:      "create notifier with invalid name",
+			notifiers: []things.Notifier{nfs[3]},
+			token:     token,
+			err:       nil,
 		},
 	}
 
@@ -189,6 +197,9 @@ func TestUpdateNotifier(t *testing.T) {
 	invalidContactsNf := nf
 	invalidContactsNf.Contacts = invalidContacts
 
+	invalidNameNf := nf
+	invalidNameNf.Name = emptyValue
+
 	cases := []struct {
 		desc     string
 		notifier things.Notifier
@@ -216,6 +227,12 @@ func TestUpdateNotifier(t *testing.T) {
 		{
 			desc:     "create notifier with invalid contacts",
 			notifier: invalidContactsNf,
+			token:    token,
+			err:      nil,
+		},
+		{
+			desc:     "create notifier with invalid name",
+			notifier: invalidNameNf,
 			token:    token,
 			err:      nil,
 		},

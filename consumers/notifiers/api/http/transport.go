@@ -156,7 +156,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
-		err == apiutil.ErrMissingGroupID:
+		err == apiutil.ErrMissingGroupID,
+		err == apiutil.ErrNameSize:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
