@@ -369,8 +369,8 @@ func TestUpdateNotifier(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update notifier with empty request",
-			req:         "",
+			desc:        "update notifier with empty JSON request",
+			req:         "{}",
 			id:          nf.ID,
 			contentType: contentType,
 			auth:        token,
