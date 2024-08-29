@@ -48,9 +48,9 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS notifiers (
 						id          UUID PRIMARY KEY,
 						group_id    UUID NOT NULL,
-						name    	VARCHAR(254) NOT NULL,						
+						name        VARCHAR(254) NOT NULL,						
 						contacts    VARCHAR(512) NOT NULL,
-						CONSTRAINT	unique_group_name UNIQUE (group_id, name)
+						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
 					)`,
 				},
 				Down: []string{"DROP TABLE notifiers"},
