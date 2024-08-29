@@ -38,10 +38,12 @@ const (
 )
 
 var (
+	downlinkNames           = []string{"downlink1", "downlink2"}
 	validContacts           = []string{userEmail, phoneNum}
 	invalidContacts         = []string{invalidUser, invalidPhoneNum}
-	validNotifier           = things.Notifier{GroupID: groupID, Name: "test-downlink", Contacts: validContacts}
-	invalidContactsNotifier = things.Notifier{GroupID: groupID, Name: "test-downlink2", Contacts: invalidContacts}
+	validNotifier           = things.Notifier{GroupID: groupID, Name: downlinkNames[0], Contacts: validContacts}
+	invalidContactsNotifier = things.Notifier{GroupID: groupID, Name: downlinkNames[1], Contacts: invalidContacts}
+	invalidNameNotifier     = things.Notifier{GroupID: groupID, Name: emptyValue, Contacts: validContacts}
 	missingIDRes            = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
 	missingTokenRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
@@ -97,8 +99,9 @@ func TestCreateNotifiers(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"name":"test","contacts":["test@gmail.com"]}]`
-	invalidData := `[{"name":"test","contacts":["test.com","0610120120"]}]`
+	validData := `[{"name":"downlink1","contacts":["test@gmail.com"]}]`
+	invalidContactsData := `[{"name":"downlink2","contacts":["test.com","0610120120"]}]`
+	invalidNameData := `[{"name":"","contacts":["test@gmail.com"]}]`
 
 	cases := []struct {
 		desc        string
@@ -147,7 +150,16 @@ func TestCreateNotifiers(t *testing.T) {
 		},
 		{
 			desc:        "create notifiers with invalid contacts",
-			data:        invalidData,
+			data:        invalidContactsData,
+			groupID:     groupID,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create notifiers with invalid name",
+			data:        invalidNameData,
 			groupID:     groupID,
 			contentType: contentType,
 			auth:        token,
@@ -306,6 +318,7 @@ func TestUpdateNotifier(t *testing.T) {
 	nf := nfs[0]
 
 	invalidC := toJSON(invalidContactsNotifier)
+	invalidN := toJSON(invalidNameNotifier)
 
 	cases := []struct {
 		desc        string
@@ -382,6 +395,13 @@ func TestUpdateNotifier(t *testing.T) {
 		{
 			desc:        "update notifier with invalid contacts",
 			req:         invalidC,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update notifier with invalid name",
+			req:         invalidN,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
