@@ -123,11 +123,12 @@ func (req listWebhooksReq) validate() error {
 }
 
 type updateWebhookReq struct {
-	token   string
-	id      string
-	Name    string            `json:"name"`
-	Url     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
+	token    string
+	id       string
+	Name     string                 `json:"name"`
+	Url      string                 `json:"url"`
+	Headers  map[string]string      `json:"headers,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateWebhookReq) validate() error {

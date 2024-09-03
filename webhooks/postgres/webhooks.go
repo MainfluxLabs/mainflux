@@ -79,7 +79,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	}
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = :group_id = $1;`
+	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = $1;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,

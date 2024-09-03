@@ -78,10 +78,11 @@ func updateWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		webhook := webhooks.Webhook{
-			ID:      req.id,
-			Name:    req.Name,
-			Url:     req.Url,
-			Headers: req.Headers,
+			ID:       req.id,
+			Name:     req.Name,
+			Url:      req.Url,
+			Headers:  req.Headers,
+			Metadata: req.Metadata,
 		}
 
 		if err := svc.UpdateWebhook(ctx, req.token, webhook); err != nil {

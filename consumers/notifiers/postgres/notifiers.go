@@ -80,7 +80,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	}
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM notifiers WHERE group_id = :group_id = $1;`
+	qc := `SELECT COUNT(*) FROM notifiers WHERE group_id = $1;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
