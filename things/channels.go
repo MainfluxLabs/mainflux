@@ -39,6 +39,12 @@ type Notifier struct {
 	GroupID  string
 	Name     string
 	Contacts []string
+	Metadata Metadata
+}
+
+type NotifiersPage struct {
+	PageMetadata
+	Notifiers []Notifier
 }
 
 // ChannelsPage contains page related metadata as well as list of channels that

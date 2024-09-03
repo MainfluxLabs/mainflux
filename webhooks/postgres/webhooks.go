@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/internal/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/gofrs/uuid"
@@ -32,7 +34,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (id, group_id, name, url, headers) VALUES (:id, :group_id, :name, :url, :headers);`
+	q := `INSERT INTO webhooks (id, group_id, name, url, headers, metadata) VALUES (:id, :group_id, :name, :url, :headers, :metadata);`
 
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
@@ -64,40 +66,66 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	return whs, nil
 }
 
-func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string) ([]webhooks.Webhook, error) {
+func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return []webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
-	q := `SELECT id, name, url, headers FROM webhooks WHERE group_id = :group_id;`
+
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := "LIMIT :limit OFFSET :offset"
+	if pm.Limit == 0 {
+		olq = ""
+	}
+
+	q := fmt.Sprintf(`SELECT id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
+	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = $1;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 	}
 
 	rows, err := wr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
 	var items []webhooks.Webhook
 	for rows.Next() {
-		dbWh := dbWebhook{GroupID: groupID}
+		dbWh := dbWebhook{}
 		if err := rows.StructScan(&dbWh); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		webhook, err := toWebhook(dbWh)
 		if err != nil {
-			return nil, err
+			return webhooks.WebhooksPage{}, err
 		}
 
 		items = append(items, webhook)
 	}
-	return items, nil
+
+	var total uint64
+	if err := wr.db.GetContext(ctx, &total, qc, groupID); err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: webhooks.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
 }
 
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
-	q := `SELECT group_id, name, url, headers FROM webhooks WHERE id = $1;`
+	q := `SELECT group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
 
 	dbwh := dbWebhook{ID: id}
 	if err := wr.db.QueryRowxContext(ctx, q, id).StructScan(&dbwh); err != nil {
@@ -113,7 +141,7 @@ func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhoo
 }
 
 func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) error {
-	q := `UPDATE webhooks SET name = :name, url = :url, headers = :headers WHERE id = :id;`
+	q := `UPDATE webhooks SET name = :name, url = :url, headers = :headers, metadata = :metadata WHERE id = :id;`
 
 	dbwh, err := toDBWebhook(w)
 	if err != nil {
@@ -147,13 +175,11 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 	return nil
 }
 
-func (wr webhookRepository) Remove(ctx context.Context, groupID string, ids ...string) error {
+func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		dbwh := dbWebhook{
-			ID:      id,
-			GroupID: groupID,
-		}
-		q := `DELETE FROM webhooks WHERE id = :id AND group_id = :group_id;`
+		dbwh := dbWebhook{ID: id}
+		q := `DELETE FROM webhooks WHERE id = :id;`
+
 		_, err := wr.db.NamedExecContext(ctx, q, dbwh)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -164,29 +190,40 @@ func (wr webhookRepository) Remove(ctx context.Context, groupID string, ids ...s
 }
 
 type dbWebhook struct {
-	ID      string `db:"id"`
-	GroupID string `db:"group_id"`
-	Name    string `db:"name"`
-	Url     string `db:"url"`
-	Headers []byte `db:"headers"`
+	ID       string `db:"id"`
+	GroupID  string `db:"group_id"`
+	Name     string `db:"name"`
+	Url      string `db:"url"`
+	Headers  []byte `db:"headers"`
+	Metadata []byte `db:"metadata"`
 }
 
 func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
-	data := []byte("{}")
+	headers := []byte("{}")
 	if len(wh.Headers) > 0 {
 		b, err := json.Marshal(wh.Headers)
 		if err != nil {
 			return dbWebhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
-		data = b
+		headers = b
+	}
+
+	metadata := []byte("{}")
+	if len(wh.Metadata) > 0 {
+		b, err := json.Marshal(wh.Metadata)
+		if err != nil {
+			return dbWebhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+		metadata = b
 	}
 
 	return dbWebhook{
-		ID:      wh.ID,
-		GroupID: wh.GroupID,
-		Name:    wh.Name,
-		Url:     wh.Url,
-		Headers: data,
+		ID:       wh.ID,
+		GroupID:  wh.GroupID,
+		Name:     wh.Name,
+		Url:      wh.Url,
+		Headers:  headers,
+		Metadata: metadata,
 	}, nil
 }
 
@@ -196,11 +233,17 @@ func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 		return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
+	var metadata map[string]interface{}
+	if err := json.Unmarshal([]byte(dbW.Metadata), &metadata); err != nil {
+		return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
 	return webhooks.Webhook{
-		ID:      dbW.ID,
-		GroupID: dbW.GroupID,
-		Name:    dbW.Name,
-		Url:     dbW.Url,
-		Headers: headers,
+		ID:       dbW.ID,
+		GroupID:  dbW.GroupID,
+		Name:     dbW.Name,
+		Url:      dbW.Url,
+		Headers:  headers,
+		Metadata: metadata,
 	}, nil
 }

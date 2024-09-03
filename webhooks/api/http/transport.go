@@ -13,7 +13,6 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -25,6 +24,12 @@ import (
 const (
 	contentType = "application/json"
 	idKey       = "id"
+	offsetKey   = "offset"
+	limitKey    = "limit"
+	orderKey    = "order"
+	dirKey      = "dir"
+	defOffset   = 0
+	defLimit    = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -43,7 +48,7 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 	))
 	r.Get("/groups/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
-		decodeRequest,
+		decodeListWebhooks,
 		encodeResponse,
 		opts...,
 	))
@@ -87,6 +92,41 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 
 func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := webhookReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, idKey)}
+
+	return req, nil
+}
+
+func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	or, err := apiutil.ReadStringQuery(r, orderKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, dirKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	req := listWebhooksReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, idKey),
+		pageMetadata: webhooks.PageMetadata{
+			Offset: o,
+			Limit:  l,
+			Order:  or,
+			Dir:    d,
+		},
+	}
 
 	return req, nil
 }
@@ -147,8 +187,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, errors.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken,
-		err == apiutil.ErrBearerKey:
+		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
@@ -161,17 +200,21 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingGroupID,
+		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrOffsetSize,
+		err == apiutil.ErrInvalidOrder,
+		err == apiutil.ErrInvalidDirection,
 		err == ErrInvalidUrl:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
-	case errors.Contains(err, readers.ErrReadMessages),
-		errors.Contains(err, errors.ErrCreateEntity):
-		w.WriteHeader(http.StatusInternalServerError)
 	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity):
+		errors.Contains(err, errors.ErrUpdateEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity),
+		errors.Contains(err, errors.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

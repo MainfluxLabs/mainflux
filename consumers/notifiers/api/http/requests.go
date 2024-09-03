@@ -4,18 +4,18 @@
 package http
 
 import (
-	"regexp"
-	"strings"
-
-	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const maxNameSize = 254
-
-// phoneRegexp represent regex pattern to validate E.164 phone numbers
-var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
+const (
+	maxLimitSize = 100
+	maxNameSize  = 254
+	nameOrder    = "name"
+	idOrder      = "id"
+	ascDir       = "asc"
+	descDir      = "desc"
+)
 
 type apiReq interface {
 	validate() error
@@ -36,10 +36,44 @@ func (req *notifierReq) validate() error {
 	return nil
 }
 
-type createNotifierReq struct {
-	Name     string   `json:"name"`
-	Contacts []string `json:"contacts"`
+type listNotifiersReq struct {
+	token        string
+	id           string
+	pageMetadata things.PageMetadata
 }
+
+func (req listNotifiersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMetadata.Order != "" &&
+		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.pageMetadata.Dir != "" &&
+		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		return apiutil.ErrInvalidDirection
+	}
+
+	return nil
+}
+
+type createNotifierReq struct {
+	Name     string                 `json:"name"`
+	Contacts []string               `json:"contacts"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
 type createNotifiersReq struct {
 	token     string
 	groupID   string
@@ -55,7 +89,7 @@ func (req createNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.Notifiers) <= 0 {
+	if len(req.Notifiers) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -73,10 +107,8 @@ func (req createNotifierReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	for _, c := range req.Contacts {
-		if !email.IsEmail(c) && !isPhoneNumber(c) {
-			return errors.ErrMalformedEntity
-		}
+	if len(req.Contacts) == 0 {
+		return apiutil.ErrEmptyList
 	}
 
 	return nil
@@ -85,8 +117,9 @@ func (req createNotifierReq) validate() error {
 type updateNotifierReq struct {
 	token    string
 	id       string
-	Name     string   `json:"name"`
-	Contacts []string `json:"contacts"`
+	Name     string                 `json:"name"`
+	Contacts []string               `json:"contacts"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateNotifierReq) validate() error {
@@ -102,14 +135,8 @@ func (req updateNotifierReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if req.Contacts == nil {
-		return errors.ErrMalformedEntity
-	}
-
-	for _, c := range req.Contacts {
-		if !email.IsEmail(c) && !isPhoneNumber(c) {
-			return errors.ErrMalformedEntity
-		}
+	if len(req.Contacts) == 0 {
+		return apiutil.ErrEmptyList
 	}
 
 	return nil
@@ -130,7 +157,7 @@ func (req removeNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.NotifierIDs) < 1 {
+	if len(req.NotifierIDs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -141,10 +168,4 @@ func (req removeNotifiersReq) validate() error {
 	}
 
 	return nil
-}
-
-func isPhoneNumber(phoneNumber string) bool {
-	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
-
-	return phoneRegexp.MatchString(phoneNumber)
 }

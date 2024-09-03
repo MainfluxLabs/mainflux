@@ -40,7 +40,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, 
 	return lm.svc.CreateNotifiers(ctx, token, notifiers...)
 }
 
-func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string) (response []things.Notifier, err error) {
+func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (res things.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -50,7 +50,7 @@ func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListNotifiersByGroup(ctx, token, groupID)
+	return lm.svc.ListNotifiersByGroup(ctx, token, groupID, pm)
 }
 
 func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (response things.Notifier, err error) {

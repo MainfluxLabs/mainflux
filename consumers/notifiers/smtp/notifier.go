@@ -6,8 +6,10 @@ package smtp
 import (
 	"fmt"
 
-	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	emailutil "github.com/MainfluxLabs/mainflux/pkg/email"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -20,17 +22,28 @@ var _ notifiers.Notifier = (*notifier)(nil)
 
 type notifier struct {
 	agent *email.Agent
+	from  string
 }
 
 // New instantiates SMTP message notifier.
-func New(agent *email.Agent) notifiers.Notifier {
-	return &notifier{agent: agent}
+func New(agent *email.Agent, from string) notifiers.Notifier {
+	return &notifier{agent: agent, from: from}
 }
 
-func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error {
+func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
 	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
 
-	return n.agent.Send(to, from, subject, "", content, footer)
+	return n.agent.Send(to, n.from, subject, "", content, footer)
+}
+
+func (n *notifier) ValidateContacts(contacts []string) error {
+	for _, c := range contacts {
+		if !emailutil.IsEmail(c) {
+			return apiutil.ErrInvalidContact
+		}
+	}
+
+	return nil
 }

@@ -32,12 +32,17 @@ const (
 	contentType = "application/json"
 	emptyValue  = ""
 	groupID     = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName  = "test-webhook-"
+	nameKey     = "name"
+	ascKey      = "asc"
+	descKey     = "desc"
 )
 
 var (
 	headers       = map[string]string{"Content-Type:": "application/json"}
-	webhook       = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers}
-	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidIDFormat.Error()})
+	webhook       = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
+	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 
@@ -53,12 +58,12 @@ func toJSON(data interface{}) string {
 }
 
 func newService() webhooks.Service {
-	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
+	groups := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	webhookRepo := whmocks.NewWebhookRepository()
 	forwarder := whmocks.NewForwarder()
 	idProvider := uuid.NewMock()
 
-	return webhooks.New(things, webhookRepo, forwarder, idProvider)
+	return webhooks.New(groups, webhookRepo, forwarder, idProvider)
 }
 
 type testRequest struct {
@@ -138,6 +143,15 @@ func TestCreateWebhooks(t *testing.T) {
 			groupID:     wrongValue,
 			contentType: contentType,
 			auth:        token,
+			status:      http.StatusForbidden,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create webhooks with empty group id",
+			data:        validData,
+			groupID:     emptyValue,
+			contentType: contentType,
+			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
 		},
@@ -215,14 +229,19 @@ func TestCreateWebhooks(t *testing.T) {
 }
 
 type webhookRes struct {
-	ID         string            `json:"id"`
-	GroupID    string            `json:"group_id"`
-	Name       string            `json:"name"`
-	Url        string            `json:"url"`
-	ResHeaders map[string]string `json:"headers"`
+	ID         string                 `json:"id"`
+	GroupID    string                 `json:"group_id"`
+	Name       string                 `json:"name"`
+	Url        string                 `json:"url"`
+	ResHeaders map[string]string      `json:"headers"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
-type webhooksRes struct {
+
+type webhooksPageRes struct {
 	Webhooks []webhookRes `json:"webhooks"`
+	Total    uint64       `json:"total"`
+	Offset   uint64       `json:"offset"`
+	Limit    uint64       `json:"limit"`
 }
 
 func TestListWebhooksByGroup(t *testing.T) {
@@ -230,19 +249,24 @@ func TestListWebhooksByGroup(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	wh := whs[0]
-
 	var data []webhookRes
+	for i := 0; i < 10; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		webhook1 := webhook
+		webhook1.ID = id
+		webhook1.Name = name
 
-	for _, webhook := range whs {
+		whs, err := svc.CreateWebhooks(context.Background(), token, webhook1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		w := whs[0]
 		whRes := webhookRes{
-			ID:         webhook.ID,
-			GroupID:    webhook.GroupID,
-			Name:       webhook.Name,
-			Url:        webhook.Url,
-			ResHeaders: webhook.Headers,
+			ID:         w.ID,
+			GroupID:    w.GroupID,
+			Name:       w.Name,
+			Url:        w.Url,
+			ResHeaders: w.Headers,
+			Metadata:   w.Metadata,
 		}
 		data = append(data, whRes)
 	}
@@ -255,32 +279,144 @@ func TestListWebhooksByGroup(t *testing.T) {
 		res    []webhookRes
 	}{
 		{
-			desc:   "view webhooks by group",
+			desc:   "get a list of webhooks by group",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of webhooks by group with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?limit=%d", ts.URL, groupID, -1),
 			res:    data,
 		},
 		{
-			desc:   "view webhooks by group with invalid token",
-			auth:   wrongValue,
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
-			res:    []webhookRes{},
-		},
-		{
-			desc:   "view webhooks by group with empty token",
-			auth:   emptyValue,
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wh.GroupID),
-			res:    []webhookRes{},
-		},
-		{
-			desc:   "view webhooks by group with invalid thing id",
+			desc:   "get a list of webhooks by group with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, -2, 2),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with negative limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 2, -3),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 2, 0),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 1),
+			res:    []webhookRes{},
+		},
+		{
+			desc:   "get a list of webhooks by group with wrong group id",
+			auth:   token,
+			status: http.StatusForbidden,
 			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, wrongValue),
 			res:    []webhookRes{},
+		},
+		{
+			desc:   "get a list of webhooks by group without offset",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?limit=%d", ts.URL, groupID, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of webhooks by group without limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d", ts.URL, groupID, 1),
+			res:    data[1:10],
+		},
+		{
+			desc:   "get a list of webhooks by group with redundant query params",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d&value=something", ts.URL, groupID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of webhooks by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 101),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with default URL",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, groupID),
+			res:    data[0:10],
+		},
+		{
+			desc:   "get a list of webhooks by group with invalid number of params",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks%s", ts.URL, groupID, "?offset=4&limit=4&limit=5&offset=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with invalid offset",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks%s", ts.URL, groupID, "?offset=e&limit=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group with invalid limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks%s", ts.URL, groupID, "?offset=5&limit=e"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group sorted by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, ascKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of webhooks by group sorted by name descendent",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, descKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of webhooks by group sorted with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, wrongValue, ascKey),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of webhooks by group sorted by name with invalid direction",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, wrongValue),
+			res:    nil,
 		},
 	}
 
@@ -293,7 +429,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data webhooksRes
+		var data webhooksPageRes
 		json.NewDecoder(res.Body).Decode(&data)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Webhooks, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Webhooks))
@@ -427,6 +563,7 @@ func TestViewWebhook(t *testing.T) {
 		Name:       wh.Name,
 		Url:        wh.Url,
 		ResHeaders: wh.Headers,
+		Metadata:   wh.Metadata,
 	})
 
 	cases := []struct {

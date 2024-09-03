@@ -8,10 +8,17 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/gofrs/uuid"
+	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
-const maxNameSize = 1024
+const (
+	maxLimitSize = 100
+	maxNameSize  = 254
+	nameOrder    = "name"
+	idOrder      = "id"
+	ascDir       = "asc"
+	descDir      = "desc"
+)
 
 var ErrInvalidUrl = errors.New("missing or invalid url")
 
@@ -20,10 +27,11 @@ type apiReq interface {
 }
 
 type createWebhookReq struct {
-	ID      string            `json:"id,omitempty"`
-	Name    string            `json:"name"`
-	Url     string            `json:"url"`
-	Headers map[string]string `json:"headers,omitempty"`
+	ID       string                 `json:"id,omitempty"`
+	Name     string                 `json:"name"`
+	Url      string                 `json:"url"`
+	Headers  map[string]string      `json:"headers,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createWebhooksReq struct {
@@ -37,8 +45,8 @@ func (req createWebhooksReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := validateUUID(req.groupID); err != nil {
-		return err
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.Webhooks) <= 0 {
@@ -76,18 +84,51 @@ func (req *webhookReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if err := validateUUID(req.id); err != nil {
-		return err
+	if req.id == "" {
+		return apiutil.ErrMissingID
 	}
 	return nil
 }
 
+type listWebhooksReq struct {
+	token        string
+	id           string
+	pageMetadata webhooks.PageMetadata
+}
+
+func (req listWebhooksReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMetadata.Order != "" &&
+		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.pageMetadata.Dir != "" &&
+		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		return apiutil.ErrInvalidDirection
+	}
+
+	return nil
+}
+
 type updateWebhookReq struct {
-	token   string
-	id      string
-	Name    string            `json:"name"`
-	Url     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
+	token    string
+	id       string
+	Name     string                 `json:"name"`
+	Url      string                 `json:"url"`
+	Headers  map[string]string      `json:"headers,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateWebhookReq) validate() error {
@@ -130,15 +171,6 @@ func (req removeWebhooksReq) validate() error {
 		if whID == "" {
 			return apiutil.ErrMissingID
 		}
-	}
-
-	return nil
-}
-
-func validateUUID(extID string) (err error) {
-	id, err := uuid.FromString(extID)
-	if id.String() != extID || err != nil {
-		return apiutil.ErrInvalidIDFormat
 	}
 
 	return nil

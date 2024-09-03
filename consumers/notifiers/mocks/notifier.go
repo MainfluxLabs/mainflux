@@ -8,15 +8,20 @@ import (
 	"sync"
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var _ notifiers.Notifier = (*notifier)(nil)
 var _ notifiers.NotifierRepository = (*notifierRepositoryMock)(nil)
 
-const invalidSender = "invalid@example.com"
+const (
+	invalidEmail = "invalid@example.com"
+	invalidPhone = "0611111111"
+)
 
 type notifier struct{}
 
@@ -34,14 +39,24 @@ func NewNotifierRepository() notifiers.NotifierRepository {
 	return &notifierRepositoryMock{notifiers: make(map[string]things.Notifier)}
 }
 
-func (n notifier) Notify(from string, to []string, msg protomfx.Message) error {
+func (n notifier) Notify(to []string, msg protomfx.Message) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}
 
 	for _, t := range to {
-		if t == invalidSender || t == "" {
+		if t == invalidEmail || t == "" {
 			return notifiers.ErrNotify
+		}
+	}
+
+	return nil
+}
+
+func (n notifier) ValidateContacts(contacts []string) error {
+	for _, c := range contacts {
+		if c == "" || c == invalidEmail || c == invalidPhone {
+			return apiutil.ErrInvalidContact
 		}
 	}
 
@@ -52,24 +67,44 @@ func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...things.Notifie
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 
-	for i := range nfs {
-		nrm.notifiers[nfs[i].ID] = nfs[i]
+	for _, nf := range nfs {
+		for _, n := range nrm.notifiers {
+			if n.GroupID == nf.GroupID && n.Name == nf.Name {
+				return []things.Notifier{}, errors.ErrConflict
+			}
+		}
+
+		nrm.notifiers[nf.ID] = nf
 	}
+
 	return nfs, nil
 }
 
-func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string) ([]things.Notifier, error) {
+func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm things.PageMetadata) (res things.NotifiersPage, err error) {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
+	var items []things.Notifier
 
-	var nfs []things.Notifier
-	for _, i := range nrm.notifiers {
-		if i.GroupID == groupID {
-			nfs = append(nfs, i)
+	first := uint64(pm.Offset) + 1
+	last := first + uint64(pm.Limit)
+
+	for _, nf := range nrm.notifiers {
+		if nf.GroupID == groupID {
+			id := uuid.ParseID(nf.ID)
+			if id >= first && id < last || pm.Limit == 0 {
+				items = append(items, nf)
+			}
 		}
 	}
 
-	return nfs, nil
+	return things.NotifiersPage{
+		Notifiers: items,
+		PageMetadata: things.PageMetadata{
+			Total:  uint64(len(items)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
 }
 
 func (nrm *notifierRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Notifier, error) {

@@ -6,7 +6,6 @@ package mocks
 import (
 	"fmt"
 	"sort"
-	"strconv"
 
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -85,15 +84,4 @@ func sortChannels(pm things.PageMetadata, chs []things.Channel) []things.Channel
 	}
 
 	return chs
-}
-
-func parseID(ID string) (id uint64) {
-	var serialNum string
-
-	if len(ID) == uuidLen {
-		serialNum = ID[len(ID)-6:]
-	}
-	id, _ = strconv.ParseUint(serialNum, 10, 64)
-
-	return
 }

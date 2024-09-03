@@ -37,12 +37,12 @@ func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...things.No
 	return n.repo.Save(ctx, nfs...)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) ([]things.Notifier, error) {
+func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm things.PageMetadata) (things.NotifiersPage, error) {
 	span := createSpan(ctx, n.tracer, "retrieve_by_group_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return n.repo.RetrieveByGroupID(ctx, groupID)
+	return n.repo.RetrieveByGroupID(ctx, groupID, pm)
 }
 
 func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {

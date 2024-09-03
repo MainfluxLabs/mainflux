@@ -18,7 +18,11 @@ var ErrNotify = errors.New("failed to send notification")
 type Notifier interface {
 	// Notify method is used to send notification for the
 	// received message to the provided list of receivers.
-	Notify(from string, to []string, msg protomfx.Message) error
+	Notify(to []string, msg protomfx.Message) error
+
+	// ValidateContacts method is used to validate contacts
+	// to which notifications will be sent.
+	ValidateContacts(contacts []string) error
 }
 
 // NotifierRepository specifies a notifier persistence API.
@@ -28,9 +32,8 @@ type NotifierRepository interface {
 	// Successful operation is indicated by non-nil error response.
 	Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error)
 
-	// RetrieveByGroupID retrieves notifiers related to
-	// a certain group identified by a given ID.
-	RetrieveByGroupID(ctx context.Context, groupID string) ([]things.Notifier, error)
+	// RetrieveByGroupID retrieves notifiers related to a certain group identified by a given ID.
+	RetrieveByGroupID(ctx context.Context, groupID string, pm things.PageMetadata) (things.NotifiersPage, error)
 
 	// RetrieveByID retrieves the notifier having the provided identifier
 	RetrieveByID(ctx context.Context, id string) (things.Notifier, error)

@@ -14,6 +14,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -24,6 +25,12 @@ import (
 const (
 	contentType = "application/json"
 	idKey       = "id"
+	offsetKey   = "offset"
+	limitKey    = "limit"
+	orderKey    = "order"
+	dirKey      = "dir"
+	defOffset   = 0
+	defLimit    = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -43,7 +50,7 @@ func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Lo
 	))
 	r.Get("/groups/:id/notifiers", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_notifiers_by_group")(listNotifiersByGroupEndpoint(svc)),
-		decodeRequest,
+		decodeListNotifiers,
 		encodeResponse,
 		opts...,
 	))
@@ -87,6 +94,41 @@ func decodeCreateNotifiers(_ context.Context, r *http.Request) (interface{}, err
 
 func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := notifierReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, idKey)}
+
+	return req, nil
+}
+
+func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	or, err := apiutil.ReadStringQuery(r, orderKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, dirKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	req := listNotifiersReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, idKey),
+		pageMetadata: things.PageMetadata{
+			Offset: o,
+			Limit:  l,
+			Order:  or,
+			Dir:    d,
+		},
+	}
 
 	return req, nil
 }
@@ -153,16 +195,24 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, apiutil.ErrMalformedEntity),
+	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
+		errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
 		err == apiutil.ErrMissingGroupID,
-		err == apiutil.ErrNameSize:
+		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrOffsetSize,
+		err == apiutil.ErrInvalidOrder,
+		err == apiutil.ErrInvalidDirection,
+		err == apiutil.ErrNameSize,
+		err == apiutil.ErrInvalidContact:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity):
+		errors.Contains(err, errors.ErrUpdateEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity),
+		errors.Contains(err, errors.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

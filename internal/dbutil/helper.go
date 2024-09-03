@@ -44,3 +44,21 @@ func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string
 	}
 	return mb, mq, nil
 }
+
+func GetOrderQuery(order string) string {
+	switch order {
+	case "name":
+		return "name"
+	default:
+		return "id"
+	}
+}
+
+func GetDirQuery(dir string) string {
+	switch dir {
+	case "asc":
+		return "ASC"
+	default:
+		return "DESC"
+	}
+}

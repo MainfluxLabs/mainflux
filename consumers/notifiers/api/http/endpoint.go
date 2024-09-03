@@ -24,6 +24,7 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 				GroupID:  req.groupID,
 				Name:     nReq.Name,
 				Contacts: nReq.Contacts,
+				Metadata: nReq.Metadata,
 			}
 			nfs = append(nfs, nf)
 		}
@@ -39,17 +40,17 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 
 func listNotifiersByGroupEndpoint(svc notifiers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(notifierReq)
+		req := request.(listNotifiersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		nfs, err := svc.ListNotifiersByGroup(ctx, req.token, req.id)
+		nfs, err := svc.ListNotifiersByGroup(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildNotifiersResponse(nfs, false), nil
+		return buildNotifiersByGroupResponse(nfs), nil
 	}
 }
 
@@ -78,7 +79,9 @@ func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 
 		notifier := things.Notifier{
 			ID:       req.id,
+			Name:     req.Name,
 			Contacts: req.Contacts,
+			Metadata: req.Metadata,
 		}
 
 		if err := svc.UpdateNotifier(ctx, req.token, notifier); err != nil {
@@ -104,6 +107,30 @@ func removeNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 	}
 }
 
+func buildNotifiersByGroupResponse(nf things.NotifiersPage) NotifiersPageRes {
+	res := NotifiersPageRes{
+		pageRes: pageRes{
+			Total:  nf.Total,
+			Offset: nf.Offset,
+			Limit:  nf.Limit,
+		},
+		Notifiers: []notifierResponse{},
+	}
+
+	for _, n := range nf.Notifiers {
+		notifier := notifierResponse{
+			ID:       n.ID,
+			GroupID:  n.GroupID,
+			Name:     n.Name,
+			Contacts: n.Contacts,
+			Metadata: n.Metadata,
+		}
+		res.Notifiers = append(res.Notifiers, notifier)
+	}
+
+	return res
+}
+
 func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiersRes {
 	res := notifiersRes{Notifiers: []notifierResponse{}, created: created}
 	for _, nf := range notifiers {
@@ -112,6 +139,7 @@ func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiers
 			GroupID:  nf.GroupID,
 			Name:     nf.Name,
 			Contacts: nf.Contacts,
+			Metadata: nf.Metadata,
 		}
 		res.Notifiers = append(res.Notifiers, notifier)
 	}
@@ -125,6 +153,7 @@ func buildNotifierResponse(notifier things.Notifier, updated bool) notifierRespo
 		GroupID:  notifier.GroupID,
 		Name:     notifier.Name,
 		Contacts: notifier.Contacts,
+		Metadata: notifier.Metadata,
 		updated:  updated,
 	}
 

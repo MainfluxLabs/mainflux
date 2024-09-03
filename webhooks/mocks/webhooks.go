@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -26,24 +27,44 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
-	for i := range whs {
-		wrm.webhooks[whs[i].ID] = whs[i]
+	for _, wh := range whs {
+		for _, w := range wrm.webhooks {
+			if w.GroupID == wh.GroupID && w.Name == wh.Name {
+				return []webhooks.Webhook{}, errors.ErrConflict
+			}
+		}
+
+		wrm.webhooks[wh.ID] = wh
 	}
+
 	return whs, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string) ([]webhooks.Webhook, error) {
+func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
+	var items []webhooks.Webhook
 
-	var whs []webhooks.Webhook
-	for _, i := range wrm.webhooks {
-		if i.GroupID == groupID {
-			whs = append(whs, i)
+	first := uint64(pm.Offset) + 1
+	last := first + uint64(pm.Limit)
+
+	for _, wh := range wrm.webhooks {
+		if wh.GroupID == groupID {
+			id := uuid.ParseID(wh.ID)
+			if id >= first && id < last || pm.Limit == 0 {
+				items = append(items, wh)
+			}
 		}
 	}
 
-	return whs, nil
+	return webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: webhooks.PageMetadata{
+			Total:  uint64(len(items)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
 }
 
 func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (webhooks.Webhook, error) {
@@ -71,7 +92,7 @@ func (wrm *webhookRepositoryMock) Update(_ context.Context, w webhooks.Webhook) 
 	return nil
 }
 
-func (wrm *webhookRepositoryMock) Remove(_ context.Context, groupID string, ids ...string) error {
+func (wrm *webhookRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 

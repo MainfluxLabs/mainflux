@@ -26,7 +26,7 @@ type Service interface {
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
-	ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error)
+	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided
 	// ID, that belongs to the user identified by the provided key.
@@ -41,6 +41,16 @@ type Service interface {
 	RemoveWebhooks(ctx context.Context, token, groupID string, id ...string) error
 
 	consumers.Consumer
+}
+
+type PageMetadata struct {
+	Total    uint64
+	Offset   uint64                 `json:"offset,omitempty"`
+	Limit    uint64                 `json:"limit,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type webhooksService struct {
@@ -100,15 +110,15 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	return whs[0], nil
 }
 
-func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token string, groupID string) ([]Webhook, error) {
+func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
 	_, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer})
 	if err != nil {
-		return []Webhook{}, err
+		return WebhooksPage{}, err
 	}
 
-	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID)
+	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID, pm)
 	if err != nil {
-		return []Webhook{}, err
+		return WebhooksPage{}, err
 	}
 
 	return webhooks, nil
@@ -145,7 +155,7 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID st
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := ws.webhooks.Remove(ctx, groupID, ids...); err != nil {
+	if err := ws.webhooks.Remove(ctx, ids...); err != nil {
 		return err
 	}
 

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -132,7 +133,7 @@ func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string,
 	// itself (see mocks/commons.go).
 	prefix := fmt.Sprintf("%s-", owner)
 	for k, v := range trm.things {
-		id := parseID(v.ID)
+		id := uuid.ParseID(v.ID)
 
 		if strings.HasPrefix(k, prefix) && id >= first && pm.Limit == 0 {
 			ths = append(ths, v)
@@ -175,7 +176,7 @@ func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []stri
 	for _, id := range thingIDs {
 		suffix := fmt.Sprintf("-%s", id)
 		for k, v := range trm.things {
-			id := parseID(v.ID)
+			id := uuid.ParseID(v.ID)
 			if strings.HasSuffix(k, suffix) && id >= first && id < last {
 				items = append(items, v)
 			}
@@ -210,7 +211,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string
 	var ths []things.Thing
 
 	for _, co := range trm.tconns[chID] {
-		id := parseID(co.ID)
+		id := uuid.ParseID(co.ID)
 		if id >= first && id < last || pm.Limit == 0 {
 			ths = append(ths, co)
 		}
