@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -17,7 +18,10 @@ import (
 var _ notifiers.Notifier = (*notifier)(nil)
 var _ notifiers.NotifierRepository = (*notifierRepositoryMock)(nil)
 
-const invalidSender = "invalid@example.com"
+const (
+	invalidEmail = "invalid@example.com"
+	invalidPhone = "0611111111"
+)
 
 type notifier struct{}
 
@@ -35,14 +39,24 @@ func NewNotifierRepository() notifiers.NotifierRepository {
 	return &notifierRepositoryMock{notifiers: make(map[string]things.Notifier)}
 }
 
-func (n notifier) Notify(from string, to []string, msg protomfx.Message) error {
+func (n notifier) Notify(to []string, msg protomfx.Message) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}
 
 	for _, t := range to {
-		if t == invalidSender || t == "" {
+		if t == invalidEmail || t == "" {
 			return notifiers.ErrNotify
+		}
+	}
+
+	return nil
+}
+
+func (n notifier) ValidateContacts(contacts []string) error {
+	for _, c := range contacts {
+		if c == "" || c == invalidEmail || c == invalidPhone {
+			return apiutil.ErrInvalidContact
 		}
 	}
 

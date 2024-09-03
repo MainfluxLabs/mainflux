@@ -4,9 +4,12 @@
 package smpp
 
 import (
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
@@ -24,10 +27,11 @@ type notifier struct {
 	sourceAddrNPI uint8
 	destAddrTON   uint8
 	destAddrNPI   uint8
+	from          string
 }
 
 // New instantiates SMTP message notifier.
-func New(cfg Config) notifiers.Notifier {
+func New(cfg Config, from string) notifiers.Notifier {
 	t := &smpp.Transmitter{
 		Addr:        cfg.Address,
 		User:        cfg.Username,
@@ -43,13 +47,14 @@ func New(cfg Config) notifiers.Notifier {
 		destAddrTON:   cfg.DestAddrTON,
 		sourceAddrNPI: cfg.SourceAddrNPI,
 		destAddrNPI:   cfg.DestAddrNPI,
+		from:          from,
 	}
 	return ret
 }
 
-func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error {
+func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 	send := &smpp.ShortMessage{
-		Src:           from,
+		Src:           n.from,
 		DstList:       to,
 		Validity:      10 * time.Minute,
 		SourceAddrTON: n.sourceAddrTON,
@@ -64,4 +69,21 @@ func (n *notifier) Notify(from string, to []string, msg protomfx.Message) error 
 		return err
 	}
 	return nil
+}
+
+func (n *notifier) ValidateContacts(contacts []string) error {
+	for _, c := range contacts {
+		if !isPhoneNumber(c) {
+			return apiutil.ErrInvalidContact
+		}
+	}
+	return nil
+}
+
+func isPhoneNumber(phoneNumber string) bool {
+	// phoneRegexp represent regex pattern to validate E.164 phone numbers
+	var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
+	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
+
+	return phoneRegexp.MatchString(phoneNumber)
 }

@@ -265,10 +265,10 @@ func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db 
 	idp := uuid.New()
 	database := postgres.NewDatabase(db)
 
-	notifier := mfsmpp.New(c.smppConf)
+	notifier := mfsmpp.New(c.smppConf, c.from)
 	notifierRepo := postgres.NewNotifierRepository(database)
 	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
-	svc := notifiers.New(idp, notifier, c.from, svcName, notifierRepo, tc)
+	svc := notifiers.New(idp, notifier, notifierRepo, tc)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

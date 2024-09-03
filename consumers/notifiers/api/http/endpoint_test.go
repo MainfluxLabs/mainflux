@@ -62,13 +62,12 @@ func toJSON(data interface{}) string {
 	return string(jsonData)
 }
 
-func newService(svcName string) notifiers.Service {
+func newService() notifiers.Service {
 	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
-	from := "exampleFrom"
-	return notifiers.New(idp, notifier, from, svcName, notifierRepo, things)
+	return notifiers.New(idp, notifier, notifierRepo, things)
 }
 
 type testRequest struct {
@@ -98,13 +97,13 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func TestCreateNotifiers(t *testing.T) {
-	runCreateNotifiersTest(t, svcSmtp, validEmails[0])
-	runCreateNotifiersTest(t, svcSmpp, validPhones[0])
+	runCreateNotifiersTest(t, validEmails[0])
+	runCreateNotifiersTest(t, validPhones[0])
 }
 
-func runCreateNotifiersTest(t *testing.T, svcName string, validContacts string) {
+func runCreateNotifiersTest(t *testing.T, validContacts string) {
 	t.Helper()
-	svc := newService(svcName)
+	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
@@ -247,13 +246,13 @@ type notifiersPageRes struct {
 }
 
 func TestListNotifiersByGroup(t *testing.T) {
-	runListNotifiersByGroupTest(t, svcSmtp, validEmails)
-	runListNotifiersByGroupTest(t, svcSmpp, validPhones)
+	runListNotifiersByGroupTest(t, validEmails)
+	runListNotifiersByGroupTest(t, validPhones)
 }
 
-func runListNotifiersByGroupTest(t *testing.T, svcName string, validContacts []string) {
+func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 	t.Helper()
-	svc := newService(svcName)
+	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
@@ -453,7 +452,7 @@ func TestUpdateNotifier(t *testing.T) {
 
 func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
-	svc := newService(svcName)
+	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
@@ -582,13 +581,13 @@ func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string)
 }
 
 func TestViewNotifier(t *testing.T) {
-	runViewNotifierTest(t, svcSmtp, validEmails)
-	runViewNotifierTest(t, svcSmpp, validPhones)
+	runViewNotifierTest(t, validEmails)
+	runViewNotifierTest(t, validPhones)
 }
 
-func runViewNotifierTest(t *testing.T, svcName string, validContacts []string) {
+func runViewNotifierTest(t *testing.T, validContacts []string) {
 	t.Helper()
-	svc := newService(svcName)
+	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
@@ -653,13 +652,13 @@ func runViewNotifierTest(t *testing.T, svcName string, validContacts []string) {
 }
 
 func TestRemoveNotifiers(t *testing.T) {
-	runRemoveNotifiersTest(t, svcSmtp, validEmails)
-	runRemoveNotifiersTest(t, svcSmpp, validPhones)
+	runRemoveNotifiersTest(t, validEmails)
+	runRemoveNotifiersTest(t, validPhones)
 }
 
-func runRemoveNotifiersTest(t *testing.T, svcName string, validContacts []string) {
+func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 	t.Helper()
-	svc := newService(svcName)
+	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
