@@ -20,10 +20,11 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		whs := []webhooks.Webhook{}
 		for _, wReq := range req.Webhooks {
 			wh := webhooks.Webhook{
-				GroupID: req.groupID,
-				Name:    wReq.Name,
-				Url:     wReq.Url,
-				Headers: wReq.Headers,
+				GroupID:  req.groupID,
+				Name:     wReq.Name,
+				Url:      wReq.Url,
+				Headers:  wReq.Headers,
+				Metadata: wReq.Metadata,
 			}
 			whs = append(whs, wh)
 		}
@@ -39,17 +40,17 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 
 func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(webhookReq)
+		req := request.(listWebhooksReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		whs, err := svc.ListWebhooksByGroup(ctx, req.token, req.id)
+		page, err := svc.ListWebhooksByGroup(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildWebhooksResponse(whs, false), nil
+		return buildWebhooksByGroupResponse(page), nil
 	}
 }
 
@@ -106,6 +107,31 @@ func removeWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	}
 }
 
+func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage) WebhooksPageRes {
+	res := WebhooksPageRes{
+		pageRes: pageRes{
+			Total:  wp.Total,
+			Offset: wp.Offset,
+			Limit:  wp.Limit,
+		},
+		Webhooks: []webhookResponse{},
+	}
+
+	for _, wh := range wp.Webhooks {
+		webhook := webhookResponse{
+			ID:         wh.ID,
+			GroupID:    wh.GroupID,
+			Name:       wh.Name,
+			Url:        wh.Url,
+			ResHeaders: wh.Headers,
+			Metadata:   wh.Metadata,
+		}
+		res.Webhooks = append(res.Webhooks, webhook)
+	}
+
+	return res
+}
+
 func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRes {
 	res := webhooksRes{Webhooks: []webhookResponse{}, created: created}
 	for _, wh := range webhooks {
@@ -115,6 +141,7 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 			Name:       wh.Name,
 			Url:        wh.Url,
 			ResHeaders: wh.Headers,
+			Metadata:   wh.Metadata,
 		}
 		res.Webhooks = append(res.Webhooks, webhook)
 	}
@@ -129,6 +156,7 @@ func buildWebhookResponse(webhook webhooks.Webhook, updated bool) webhookRespons
 		Name:       webhook.Name,
 		Url:        webhook.Url,
 		ResHeaders: webhook.Headers,
+		Metadata:   webhook.Metadata,
 		updated:    updated,
 	}
 

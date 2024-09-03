@@ -1,13 +1,23 @@
 package webhooks
 
-import "context"
+import (
+	"context"
+)
+
+type Metadata map[string]interface{}
 
 type Webhook struct {
-	ID      string
-	GroupID string
-	Name    string
-	Url     string
-	Headers map[string]string
+	ID       string
+	GroupID  string
+	Name     string
+	Url      string
+	Headers  map[string]string
+	Metadata Metadata
+}
+
+type WebhooksPage struct {
+	PageMetadata
+	Webhooks []Webhook
 }
 
 type WebhookRepository interface {
@@ -18,7 +28,7 @@ type WebhookRepository interface {
 
 	// RetrieveByGroupID retrieves webhooks related to
 	// a certain group identified by a given ID.
-	RetrieveByGroupID(ctx context.Context, groupID string) ([]Webhook, error)
+	RetrieveByGroupID(ctx context.Context, groupID string, pm PageMetadata) (WebhooksPage, error)
 
 	// RetrieveByID retrieves the webhook having the provided identifier
 	RetrieveByID(ctx context.Context, id string) (Webhook, error)
@@ -28,5 +38,5 @@ type WebhookRepository interface {
 	Update(ctx context.Context, w Webhook) error
 
 	// Remove removes the webhooks having the provided identifiers
-	Remove(ctx context.Context, groupID string, ids ...string) error
+	Remove(ctx context.Context, ids ...string) error
 }

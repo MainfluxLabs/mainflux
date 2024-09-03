@@ -40,13 +40,13 @@ func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token string, 
 	return ms.svc.CreateNotifiers(ctx, token, notifiers...)
 }
 
-func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string) ([]things.Notifier, error) {
+func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (res things.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_notifiers_by_group").Add(1)
 		ms.latency.With("method", "list_notifiers_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListNotifiersByGroup(ctx, token, groupID)
+	return ms.svc.ListNotifiersByGroup(ctx, token, groupID, pm)
 }
 
 func (ms *metricsMiddleware) ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error) {

@@ -18,15 +18,22 @@ import (
 )
 
 const (
-	token      = "admin@example.com"
-	wrongValue = "wrong-value"
-	emptyValue = ""
-	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
+	token       = "admin@example.com"
+	wrongValue  = "wrong-value"
+	emptyValue  = ""
+	groupID     = "574106f7-030e-4881-8ab0-151195c29f94"
+	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName  = "test-webhook-"
+	webhookName = "test-webhook"
+	nameKey     = "name"
+	ascKey      = "asc"
+	descKey     = "desc"
 )
 
 var (
-	headers = map[string]string{"Content-Type:": "application/json"}
-	webhook = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers}
+	headers  = map[string]string{"Content-Type:": "application/json"}
+	metadata = map[string]interface{}{"test": "data"}
+	webhook  = webhooks.Webhook{GroupID: groupID, Name: webhookName, Url: "https://test.webhook.com", Headers: headers, Metadata: metadata}
 )
 
 func newService() webhooks.Service {
@@ -40,13 +47,24 @@ func newService() webhooks.Service {
 
 func TestCreateWebhooks(t *testing.T) {
 	svc := newService()
+	var whs []webhooks.Webhook
+	for i := 0; i < 3; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		webhook1 := webhook
+		webhook1.ID = id
+		webhook1.Name = name
+		whs = append(whs, webhook1)
+	}
 
-	validData := webhooks.Webhook{GroupID: groupID, Name: "test1", Url: "http://test1.com", Headers: headers}
-	validData2 := webhooks.Webhook{GroupID: groupID, Name: "test2", Url: "http://test2.com", Headers: headers}
-	validDataWebhooks := []webhooks.Webhook{validData, validData2}
-	invalidGroupData := []webhooks.Webhook{{GroupID: emptyValue, Name: "test3", Url: "http://test3.com", Headers: headers}}
-	invalidNameData := []webhooks.Webhook{{GroupID: groupID, Name: emptyValue, Url: "https://test.com", Headers: headers}}
-	invalidUrlData := []webhooks.Webhook{{GroupID: groupID, Name: "test5", Url: emptyValue, Headers: headers}}
+	invalidGroupWh := webhook
+	invalidGroupWh.GroupID = emptyValue
+
+	invalidNameWh := webhook
+	invalidNameWh.Name = emptyValue
+
+	invalidUrlWh := webhook
+	invalidUrlWh.Url = wrongValue
 
 	cases := []struct {
 		desc     string
@@ -56,31 +74,31 @@ func TestCreateWebhooks(t *testing.T) {
 	}{
 		{
 			desc:     "create new webhooks",
-			webhooks: validDataWebhooks,
+			webhooks: whs,
 			token:    token,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with wrong credentials",
-			webhooks: []webhooks.Webhook{validData},
+			webhooks: whs,
 			token:    wrongValue,
 			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "create webhook with invalid group id",
-			webhooks: invalidGroupData,
+			webhooks: []webhooks.Webhook{invalidGroupWh},
 			token:    token,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "create webhook with invalid name",
-			webhooks: invalidNameData,
+			webhooks: []webhooks.Webhook{invalidNameWh},
 			token:    token,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with invalid url",
-			webhooks: invalidUrlData,
+			webhooks: []webhooks.Webhook{invalidUrlWh},
 			token:    token,
 			err:      nil,
 		},
@@ -94,42 +112,122 @@ func TestCreateWebhooks(t *testing.T) {
 
 func TestListWebhooksByGroup(t *testing.T) {
 	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	var whs []webhooks.Webhook
+	for i := 0; i < 10; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		webhook1 := webhook
+		webhook1.ID = id
+		webhook1.Name = name
+		whs = append(whs, webhook1)
+	}
+	whs, err := svc.CreateWebhooks(context.Background(), token, whs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
 	cases := []struct {
-		desc     string
-		webhooks []webhooks.Webhook
-		token    string
-		grID     string
-		err      error
+		desc         string
+		token        string
+		grID         string
+		pageMetadata webhooks.PageMetadata
+		size         uint64
+		err          error
 	}{
 		{
-			desc:     "list the webhooks",
-			webhooks: whs,
-			token:    token,
-			grID:     groupID,
-			err:      nil,
+			desc:  "list the webhooks by group",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+			},
+			size: uint64(len(whs)),
+			err:  nil,
 		},
 		{
-			desc:     "list webhooks with invalid auth token",
-			webhooks: []webhooks.Webhook{},
-			token:    wrongValue,
-			grID:     groupID,
-			err:      errors.ErrAuthentication,
+			desc:  "list the webhooks by group with no limit",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
 		},
 		{
-			desc:     "list webhooks with invalid group id",
-			webhooks: []webhooks.Webhook{},
-			token:    token,
-			grID:     emptyValue,
-			err:      errors.ErrAuthorization,
+			desc:  "list last webhook by group",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: uint64(len(whs)) - 1,
+				Limit:  uint64(len(whs)),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:  "list empty set of webhooks by group",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: uint64(len(whs)) + 1,
+				Limit:  uint64(len(whs)),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:  "list webhooks with invalid auth token",
+			token: wrongValue,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:  "list webhooks with invalid group id",
+			token: token,
+			grID:  emptyValue,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthorization,
+		},
+		{
+			desc:  "list webhooks by group sorted by name ascendant",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    ascKey,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
+		},
+		{
+			desc:  "list webhooks by group sorted by name descendent",
+			token: token,
+			grID:  groupID,
+			pageMetadata: webhooks.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    descKey,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
 		},
 	}
 
 	for desc, tc := range cases {
-		whs, err := svc.ListWebhooksByGroup(context.Background(), tc.token, tc.grID)
-		assert.Equal(t, tc.webhooks, whs, fmt.Sprintf("%v: expected %v got %v\n", desc, tc.webhooks, whs))
+		page, err := svc.ListWebhooksByGroup(context.Background(), tc.token, tc.grID, tc.pageMetadata)
+		size := uint64(len(page.Webhooks))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%v: expected %v got %v\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -225,6 +323,12 @@ func TestRemoveWebhooks(t *testing.T) {
 			id:    wh.ID,
 			token: token,
 			err:   nil,
+		},
+		{
+			desc:  "remove non-existing webhook",
+			id:    wrongValue,
+			token: token,
+			err:   errors.ErrNotFound,
 		},
 		{
 			desc:  "remove webhook with wrong credentials",

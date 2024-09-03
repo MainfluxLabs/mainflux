@@ -28,9 +28,8 @@ type NotifierRepository interface {
 	// Successful operation is indicated by non-nil error response.
 	Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error)
 
-	// RetrieveByGroupID retrieves notifiers related to
-	// a certain group identified by a given ID.
-	RetrieveByGroupID(ctx context.Context, groupID string) ([]things.Notifier, error)
+	// RetrieveByGroupID retrieves notifiers related to a certain group identified by a given ID.
+	RetrieveByGroupID(ctx context.Context, groupID string, pm things.PageMetadata) (things.NotifiersPage, error)
 
 	// RetrieveByID retrieves the notifier having the provided identifier
 	RetrieveByID(ctx context.Context, id string) (things.Notifier, error)

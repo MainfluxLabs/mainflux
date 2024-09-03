@@ -5,8 +5,12 @@ package notifiers
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -20,7 +24,7 @@ type Service interface {
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group identified by the provided ID.
-	ListNotifiersByGroup(ctx context.Context, token string, groupID string) ([]things.Notifier, error)
+	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (things.NotifiersPage, error)
 
 	// ViewNotifier retrieves data about the notifier identified with the provided ID
 	ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error)
@@ -42,16 +46,18 @@ type notifierService struct {
 	idp          uuid.IDProvider
 	notifier     Notifier
 	from         string
+	svcName      string
 	notifierRepo NotifierRepository
 	things       protomfx.ThingsServiceClient
 }
 
 // New instantiates the subscriptions service implementation.
-func New(idp uuid.IDProvider, notifier Notifier, from string, notifierRepo NotifierRepository, things protomfx.ThingsServiceClient) Service {
+func New(idp uuid.IDProvider, notifier Notifier, from, svcName string, notifierRepo NotifierRepository, things protomfx.ThingsServiceClient) Service {
 	return &notifierService{
 		idp:          idp,
 		notifier:     notifier,
 		from:         from,
+		svcName:      svcName,
 		notifierRepo: notifierRepo,
 		things:       things,
 	}
@@ -87,6 +93,9 @@ func (ns *notifierService) Consume(message interface{}) error {
 func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, notifiers ...things.Notifier) ([]things.Notifier, error) {
 	nfs := []things.Notifier{}
 	for _, notifier := range notifiers {
+		if err := ns.validateContacts(notifier.Contacts); err != nil {
+			return []things.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 		nf, err := ns.createNotifier(ctx, &notifier, token)
 		if err != nil {
 			return []things.Notifier{}, err
@@ -121,15 +130,15 @@ func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.
 	return nfs[0], nil
 }
 
-func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string) ([]things.Notifier, error) {
+func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (things.NotifiersPage, error) {
 	_, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer})
 	if err != nil {
-		return []things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
+		return things.NotifiersPage{}, err
 	}
 
-	notifiers, err := ns.notifierRepo.RetrieveByGroupID(ctx, groupID)
+	notifiers, err := ns.notifierRepo.RetrieveByGroupID(ctx, groupID, pm)
 	if err != nil {
-		return []things.Notifier{}, err
+		return things.NotifiersPage{}, err
 	}
 
 	return notifiers, nil
@@ -155,7 +164,11 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 	}
 
 	if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: nf.GroupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+		return err
+	}
+
+	if err := ns.validateContacts(notifier.Contacts); err != nil {
+		return errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return ns.notifierRepo.Update(ctx, notifier)
@@ -171,4 +184,34 @@ func (ns *notifierService) RemoveNotifiers(ctx context.Context, token, groupID s
 	}
 
 	return nil
+}
+
+func IsPhoneNumber(phoneNumber string) bool {
+	// phoneRegexp represent regex pattern to validate E.164 phone numbers
+	var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
+	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
+
+	return phoneRegexp.MatchString(phoneNumber)
+}
+
+func (ns *notifierService) validateContacts(contacts []string) error {
+	err := apiutil.ErrInvalidContact
+	switch ns.svcName {
+	case "smtp-notifier":
+		for _, c := range contacts {
+			if !email.IsEmail(c) {
+				return err
+			}
+		}
+		return nil
+	case "smpp-notifier":
+		for _, c := range contacts {
+			if !IsPhoneNumber(c) {
+				return err
+			}
+		}
+		return nil
+	default:
+		return err
+	}
 }

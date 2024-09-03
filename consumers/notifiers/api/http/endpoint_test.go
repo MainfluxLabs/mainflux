@@ -26,26 +26,29 @@ import (
 )
 
 const (
-	userEmail       = "user@example.com"
-	phoneNum        = "+381610120120"
-	invalidPhoneNum = "0610120120"
-	invalidUser     = "invalid@example.com"
-	token           = "admin@example.com"
-	wrongValue      = "wrong-value"
-	contentType     = "application/json"
-	emptyValue      = ""
-	groupID         = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	token        = "admin@example.com"
+	wrongValue   = "wrong-value"
+	contentType  = "application/json"
+	emptyValue   = ""
+	groupID      = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	prefixID     = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName   = "test-notifier-"
+	notifierName = "notifier-test"
+	svcSmtp      = "smtp-notifier"
+	svcSmpp      = "smpp-notifier"
+	nameKey      = "name"
+	ascKey       = "asc"
+	descKey      = "desc"
 )
 
 var (
-	downlinkNames           = []string{"downlink1", "downlink2"}
-	validContacts           = []string{userEmail, phoneNum}
-	invalidContacts         = []string{invalidUser, invalidPhoneNum}
-	validNotifier           = things.Notifier{GroupID: groupID, Name: downlinkNames[0], Contacts: validContacts}
-	invalidContactsNotifier = things.Notifier{GroupID: groupID, Name: downlinkNames[1], Contacts: invalidContacts}
-	invalidNameNotifier     = things.Notifier{GroupID: groupID, Name: emptyValue, Contacts: validContacts}
-	missingIDRes            = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
-	missingTokenRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	validEmails     = []string{"user1@example.com", "user2@example.com"}
+	validPhones     = []string{"+381610120120", "+381622220123"}
+	invalidEmails   = []string{"invalid@example.com", "invalid@invalid"}
+	invalidPhones   = []string{"0610120120", "0622220123"}
+	metadata        = map[string]interface{}{"test": "data"}
+	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
+	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {
@@ -59,13 +62,13 @@ func toJSON(data interface{}) string {
 	return string(jsonData)
 }
 
-func newService() notifiers.Service {
+func newService(svcName string) notifiers.Service {
 	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()
 	from := "exampleFrom"
-	return notifiers.New(idp, notifier, from, notifierRepo, things)
+	return notifiers.New(idp, notifier, from, svcName, notifierRepo, things)
 }
 
 type testRequest struct {
@@ -95,13 +98,20 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func TestCreateNotifiers(t *testing.T) {
-	svc := newService()
+	runCreateNotifiersTest(t, svcSmtp, validEmails[0])
+	runCreateNotifiersTest(t, svcSmpp, validPhones[0])
+}
+
+func runCreateNotifiersTest(t *testing.T, svcName string, validContacts string) {
+	t.Helper()
+	svc := newService(svcName)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := `[{"name":"downlink1","contacts":["test@gmail.com"]}]`
-	invalidContactsData := `[{"name":"downlink2","contacts":["test.com","0610120120"]}]`
-	invalidNameData := `[{"name":"","contacts":["test@gmail.com"]}]`
+	var invalidContactsData string
+	validData := fmt.Sprintf(`[{"name":"%s","contacts":["%s"]}]`, notifierName, validContacts)
+	invalidNameData := fmt.Sprintf(`[{"name":"","contacts":["%s"]}]`, validContacts)
+	invalidContactsData = fmt.Sprintf(`[{"name":"%s","contacts":[]}]`, notifierName)
 
 	cases := []struct {
 		desc        string
@@ -222,32 +232,50 @@ func TestCreateNotifiers(t *testing.T) {
 }
 
 type notifierRes struct {
-	ID       string   `json:"id"`
-	GroupID  string   `json:"group_id"`
-	Name     string   `json:"name"`
-	Contacts []string `json:"contacts"`
+	ID       string                 `json:"id"`
+	GroupID  string                 `json:"group_id"`
+	Name     string                 `json:"name"`
+	Contacts []string               `json:"contacts"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
-type notifiersRes struct {
+
+type notifiersPageRes struct {
 	Notifiers []notifierRes `json:"notifiers"`
+	Total     uint64        `json:"total"`
+	Offset    uint64        `json:"offset"`
+	Limit     uint64        `json:"limit"`
 }
 
 func TestListNotifiersByGroup(t *testing.T) {
-	svc := newService()
+	runListNotifiersByGroupTest(t, svcSmtp, validEmails)
+	runListNotifiersByGroupTest(t, svcSmpp, validPhones)
+}
+
+func runListNotifiersByGroupTest(t *testing.T, svcName string, validContacts []string) {
+	t.Helper()
+	svc := newService(svcName)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	nfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	nf := nfs[0]
-
 	var data []notifierRes
+	notifier := things.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
 
-	for _, notifier := range nfs {
+	for i := 0; i < 10; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		notifier1 := notifier
+		notifier1.ID = id
+		notifier1.Name = name
+
+		nfs, err := svc.CreateNotifiers(context.Background(), token, notifier1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		n := nfs[0]
 		nfRes := notifierRes{
-			ID:       notifier.ID,
-			GroupID:  notifier.GroupID,
-			Name:     notifier.Name,
-			Contacts: notifier.Contacts,
+			ID:       n.ID,
+			GroupID:  n.GroupID,
+			Name:     n.Name,
+			Contacts: n.Contacts,
+			Metadata: n.Metadata,
 		}
 		data = append(data, nfRes)
 	}
@@ -260,32 +288,144 @@ func TestListNotifiersByGroup(t *testing.T) {
 		res    []notifierRes
 	}{
 		{
-			desc:   "list notifiers by group",
+			desc:   "get a list of notifiers by group",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of notifiers by group with no limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?limit=%d", ts.URL, groupID, -1),
 			res:    data,
 		},
 		{
-			desc:   "list notifiers by group with invalid token",
-			auth:   wrongValue,
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
-			res:    []notifierRes{},
-		},
-		{
-			desc:   "list notifiers by group with empty token",
-			auth:   emptyValue,
-			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, nf.GroupID),
-			res:    []notifierRes{},
-		},
-		{
-			desc:   "list notifiers by group with invalid group id",
+			desc:   "get a list of notifiers by group with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, emptyValue),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, -2, 2),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with negative limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 2, -3),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 2, 0),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 1),
 			res:    []notifierRes{},
+		},
+		{
+			desc:   "get a list of notifiers by group with wrong group id",
+			auth:   token,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, wrongValue),
+			res:    []notifierRes{},
+		},
+		{
+			desc:   "get a list of notifiers by group without offset",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?limit=%d", ts.URL, groupID, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of notifiers by group without limit",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d", ts.URL, groupID, 1),
+			res:    data[1:10],
+		},
+		{
+			desc:   "get a list of notifiers by group with redundant query params",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&value=something", ts.URL, groupID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of notifiers by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 101),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with default URL",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, groupID),
+			res:    data[0:10],
+		},
+		{
+			desc:   "get a list of notifiers by group with invalid number of params",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers%s", ts.URL, groupID, "?offset=4&limit=4&limit=5&offset=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with invalid offset",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers%s", ts.URL, groupID, "?offset=e&limit=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group with invalid limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers%s", ts.URL, groupID, "?offset=5&limit=e"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group sorted by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, ascKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of notifiers by group sorted by name descendent",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, descKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of notifiers by group sorted with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, wrongValue, ascKey),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of notifiers by group sorted by name with invalid direction",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, wrongValue),
+			res:    nil,
 		},
 	}
 
@@ -298,7 +438,7 @@ func TestListNotifiersByGroup(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data notifiersRes
+		var data notifiersPageRes
 		json.NewDecoder(res.Body).Decode(&data)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Notifiers, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Notifiers))
@@ -307,18 +447,36 @@ func TestListNotifiersByGroup(t *testing.T) {
 }
 
 func TestUpdateNotifier(t *testing.T) {
-	svc := newService()
+	runUpdateNotifierTest(t, svcSmtp, validEmails)
+	runUpdateNotifierTest(t, svcSmpp, validPhones)
+}
+
+func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string) {
+	t.Helper()
+	svc := newService(svcName)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	data := toJSON(validNotifier)
+	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	data := toJSON(notifier)
 
-	nfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
+	nfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	nf := nfs[0]
 
-	invalidC := toJSON(invalidContactsNotifier)
-	invalidN := toJSON(invalidNameNotifier)
+	invalidContactsNf := notifier
+	if svcName == svcSmtp {
+		invalidContactsNf.Contacts = invalidEmails
+	}
+	if svcName == svcSmpp {
+		invalidContactsNf.Contacts = invalidPhones
+
+	}
+	invalidC := toJSON(invalidContactsNf)
+
+	invalidNameNf := notifier
+	invalidNameNf.Name = emptyValue
+	invalidN := toJSON(invalidNameNf)
 
 	cases := []struct {
 		desc        string
@@ -424,11 +582,18 @@ func TestUpdateNotifier(t *testing.T) {
 }
 
 func TestViewNotifier(t *testing.T) {
-	svc := newService()
+	runViewNotifierTest(t, svcSmtp, validEmails)
+	runViewNotifierTest(t, svcSmpp, validPhones)
+}
+
+func runViewNotifierTest(t *testing.T, svcName string, validContacts []string) {
+	t.Helper()
+	svc := newService(svcName)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
+	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 
-	nfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
+	nfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	nf := nfs[0]
 
@@ -437,6 +602,7 @@ func TestViewNotifier(t *testing.T) {
 		GroupID:  nf.GroupID,
 		Name:     nf.Name,
 		Contacts: nf.Contacts,
+		Metadata: nf.Metadata,
 	})
 
 	cases := []struct {
@@ -487,11 +653,18 @@ func TestViewNotifier(t *testing.T) {
 }
 
 func TestRemoveNotifiers(t *testing.T) {
-	svc := newService()
+	runRemoveNotifiersTest(t, svcSmtp, validEmails)
+	runRemoveNotifiersTest(t, svcSmpp, validPhones)
+}
+
+func runRemoveNotifiersTest(t *testing.T, svcName string, validContacts []string) {
+	t.Helper()
+	svc := newService(svcName)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
+	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 
-	grNfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
+	grNfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var notifierIDs []string

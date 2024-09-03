@@ -72,8 +72,8 @@ var (
 	// ErrInvalidTopic indicates an invalid subscription topic.
 	ErrInvalidTopic = errors.New("invalid Subscription topic")
 
-	// ErrInvalidContact indicates an invalid subscription contract.
-	ErrInvalidContact = errors.New("invalid Subscription contact")
+	// ErrInvalidContact indicates an invalid contact.
+	ErrInvalidContact = errors.New("invalid contact")
 
 	// ErrMissingEmail indicates missing email.
 	ErrMissingEmail = errors.New("missing email")

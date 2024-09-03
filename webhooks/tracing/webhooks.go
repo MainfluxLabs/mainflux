@@ -33,12 +33,12 @@ func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks
 	return wrm.repo.Save(ctx, whs...)
 }
 
-func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string) ([]webhooks.Webhook, error) {
+func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	span := createSpan(ctx, wrm.tracer, "retrieve_by_group_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return wrm.repo.RetrieveByGroupID(ctx, groupID)
+	return wrm.repo.RetrieveByGroupID(ctx, groupID, pm)
 }
 
 func (wrm webhookRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
@@ -57,12 +57,12 @@ func (wrm webhookRepositoryMiddleware) Update(ctx context.Context, w webhooks.We
 	return wrm.repo.Update(ctx, w)
 }
 
-func (wrm webhookRepositoryMiddleware) Remove(ctx context.Context, groupID string, ids ...string) error {
+func (wrm webhookRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
 	span := createSpan(ctx, wrm.tracer, "remove_webhooks")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return wrm.repo.Remove(ctx, groupID, ids...)
+	return wrm.repo.Remove(ctx, ids...)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

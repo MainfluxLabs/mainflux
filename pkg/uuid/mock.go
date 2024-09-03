@@ -5,6 +5,7 @@ package uuid
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -30,4 +31,15 @@ func (up *uuidProviderMock) ID() (string, error) {
 // token will hold value provided by the caller.
 func NewMock() IDProvider {
 	return &uuidProviderMock{}
+}
+
+func ParseID(ID string) (id uint64) {
+	var serialNum string
+
+	if len(ID) == 36 {
+		serialNum = ID[len(ID)-6:]
+	}
+	id, _ = strconv.ParseUint(serialNum, 10, 64)
+
+	return
 }
