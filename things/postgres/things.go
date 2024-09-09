@@ -12,7 +12,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	"github.com/MainfluxLabs/mainflux/internal/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/jackc/pgerrcode"

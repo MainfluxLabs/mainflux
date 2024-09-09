@@ -7,9 +7,8 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	emailutil "github.com/MainfluxLabs/mainflux/pkg/email"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -40,7 +39,7 @@ func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 
 func (n *notifier) ValidateContacts(contacts []string) error {
 	for _, c := range contacts {
-		if !emailutil.IsEmail(c) {
+		if !email.IsEmail(c) {
 			return apiutil.ErrInvalidContact
 		}
 	}
