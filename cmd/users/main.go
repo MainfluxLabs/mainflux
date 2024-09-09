@@ -14,10 +14,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
-	"github.com/MainfluxLabs/mainflux/internal/email"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"

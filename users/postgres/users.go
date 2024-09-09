@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/internal/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/jackc/pgerrcode"

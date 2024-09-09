@@ -5,7 +5,7 @@ package emailer
 import (
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/internal/email"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
