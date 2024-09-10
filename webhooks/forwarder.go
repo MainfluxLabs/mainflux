@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
@@ -23,7 +24,11 @@ func NewForwarder() Forwarder {
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, wh Webhook) error {
-	_, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers)
+	body, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return err
+	}
+	_, err = clientshttp.SendRequest(http.MethodPost, wh.Url, body, wh.Headers)
 	if err != nil {
 		return errors.Wrap(clientshttp.ErrSendRequest, err)
 	}
