@@ -5,7 +5,6 @@ package http
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -22,17 +21,8 @@ var (
 	ErrSendRequest = errors.New("failed to send request")
 )
 
-func SendRequest(method, path string, body interface{}, headers map[string]string) ([]byte, error) {
-	var jsonData []byte
-	var err error
-	if body != nil {
-		jsonData, err = json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	req, err := http.NewRequest(method, path, bytes.NewReader(jsonData))
+func SendRequest(method, path string, body []byte, headers map[string]string) ([]byte, error) {
+	req, err := http.NewRequest(method, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
