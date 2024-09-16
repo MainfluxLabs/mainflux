@@ -91,7 +91,7 @@ services:
       - mainfluxlabs-auth-db-volume:/var/lib/postgresql/data
 
   auth:
-    image: mainfluxlabs/auth:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/auth:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-auth
     depends_on:
       - auth-db
@@ -137,7 +137,7 @@ services:
       - mainfluxlabs-users-db-volume:/var/lib/postgresql/data
 
   users:
-    image: mainfluxlabs/users:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/users:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-users
     volumes:
       - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
@@ -199,7 +199,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: mainfluxlabs/things:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -242,7 +242,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: mainfluxlabs/vernemq:0.13.2-arm64
+    image: ${MF_RELEASE_PREFIX}/vernemq:0.13.2-arm64
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
@@ -267,7 +267,7 @@ services:
       - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
 
   mqtt-adapter:
-    image: mainfluxlabs/mqtt:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/mqtt:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-mqtt
     depends_on:
       - vernemq
@@ -306,7 +306,7 @@ services:
       - mainfluxlabs-base-net
 
   http-adapter:
-    image: mainfluxlabs/http:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/http:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-http
     depends_on:
       - things
@@ -334,7 +334,7 @@ services:
       - mainfluxlabs-es-redis-volume:/data
 
   coap-adapter:
-    image: mainfluxlabs/coap:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/coap:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-coap
     depends_on:
       - things
@@ -354,7 +354,7 @@ services:
       - mainfluxlabs-base-net
 
   ws-adapter:
-    image: mainfluxlabs/ws:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/ws:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-ws
     depends_on:
       - things
@@ -387,7 +387,7 @@ services:
       - mainfluxlabs-postgres-volume:/var/lib/postgresql/data
 
   postgres-writer:
-    image: mainfluxlabs/postgres-writer:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/postgres-writer:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-writer
     depends_on:
       - postgres
@@ -411,7 +411,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: mainfluxlabs/postgres-reader:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
@@ -498,7 +498,7 @@ services:
       - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
 
   webhooks:
-    image: mainfluxlabs/webhooks:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/webhooks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     depends_on:
       - webhooks-db
@@ -536,7 +536,7 @@ services:
       - mainfluxlabs-smtp-notifier-db-volume:/var/lib/postgresql/data
 
   smtp-notifier:
-    image: mainfluxlabs/smtp-notifier:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/smtp-notifier:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-smtp-notifier
     depends_on:
       - smtp-notifier-db
