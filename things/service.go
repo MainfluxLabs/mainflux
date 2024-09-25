@@ -223,18 +223,18 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
+	th, err := ts.things.RetrieveByID(ctx, thing.ID)
+	if err != nil {
+		return err
+	}
+
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  thing.GroupID,
+		Object:  th.GroupID,
 		Subject: GroupSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
-		return err
-	}
-
-	th, err := ts.things.RetrieveByID(ctx, thing.ID)
-	if err != nil {
 		return err
 	}
 
