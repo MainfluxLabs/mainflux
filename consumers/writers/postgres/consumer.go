@@ -6,7 +6,6 @@ package postgres
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -20,7 +19,6 @@ import (
 var (
 	errInvalidMessage = errors.New("invalid message representation")
 	errTransRollback  = errors.New("failed to rollback transaction")
-	errNoTable        = errors.New("relation does not exist")
 )
 
 var _ consumers.Consumer = (*postgresRepo)(nil)
@@ -89,20 +87,14 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 	return err
 }
 
-func (pr postgresRepo) saveJSON(msgs mfjson.Messages) error {
-	if err := pr.insertJSON(msgs); err != nil {
-		if err == errNoTable {
-			if err := pr.createTable(msgs.Format); err != nil {
-				return err
-			}
-			return pr.insertJSON(msgs)
-		}
-		return err
+func (pr postgresRepo) saveJSON(messages interface{}) error {
+	msgs, ok := messages.(mfjson.Messages)
+	if !ok {
+		return errors.ErrSaveMessage
 	}
-	return nil
-}
+	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload)
+          VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 
-func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 	tx, err := pr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessage, err)
@@ -120,10 +112,6 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 		}
 	}()
 
-	q := `INSERT INTO %s (created, subtopic, publisher, protocol, payload)
-          VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
-	q = fmt.Sprintf(q, msgs.Format)
-
 	for _, m := range msgs.Data {
 		var dbmsg jsonMessage
 		dbmsg, err = toJSONMessage(m)
@@ -137,28 +125,12 @@ func (pr postgresRepo) insertJSON(msgs mfjson.Messages) error {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
 					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-				case pgerrcode.UndefinedTable:
-					return errNoTable
 				}
 			}
-			return err
+
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
-	return nil
-}
-
-func (pr postgresRepo) createTable(name string) error {
-	q := `CREATE TABLE IF NOT EXISTS %s (
-            created       BIGINT,
-            subtopic      VARCHAR(254),
-            publisher     VARCHAR(254),
-            protocol      TEXT,
-            payload       JSONB,
-            PRIMARY KEY (publisher, subtopic, created)
-        )`
-	q = fmt.Sprintf(q, name)
-
-	_, err := pr.db.Exec(q)
 	return err
 }
 

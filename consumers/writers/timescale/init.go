@@ -64,9 +64,18 @@ func migrateDB(db *sqlx.DB) error {
                         PRIMARY KEY (time, publisher, subtopic, name)
                     );
                     SELECT create_hypertable('messages', 'time', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
+					`CREATE TABLE IF NOT EXISTS json (
+                        created       BIGINT,
+                        subtopic      VARCHAR(254),
+                        publisher     VARCHAR(254),
+                        protocol      TEXT,
+                        payload       JSONB,
+                        PRIMARY KEY (publisher, subtopic, created)
+                    )`,
 				},
 				Down: []string{
 					"DROP TABLE messages",
+					"DROP TABLE json",
 				},
 			},
 		},

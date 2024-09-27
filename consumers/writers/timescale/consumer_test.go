@@ -77,7 +77,7 @@ func TestSaveJSON(t *testing.T) {
 	msg := json.Message{
 		Publisher: pubid.String(),
 		Created:   time.Now().Unix(),
-		Subtopic:  "subtopic/format/some_json",
+		Subtopic:  subtopic,
 		Protocol:  "mqtt",
 		Payload: map[string]interface{}{
 			"field_1": 123,
@@ -92,9 +92,7 @@ func TestSaveJSON(t *testing.T) {
 	}
 
 	now := time.Now().Unix()
-	msgs := json.Messages{
-		Format: "some_json",
-	}
+	msgs := json.Messages{}
 
 	for i := 0; i < msgsNum; i++ {
 		msg.Created = now + int64(i)

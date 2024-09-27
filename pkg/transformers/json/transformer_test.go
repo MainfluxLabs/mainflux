@@ -40,7 +40,7 @@ func TestTransformJSON(t *testing.T) {
 	tr := json.New()
 	msg := protomfx.Message{
 		Channel:   "channel-1",
-		Subtopic:  subtopic + "." + format,
+		Subtopic:  subtopic,
 		Publisher: "publisher-1",
 		Protocol:  "protocol",
 		Payload:   []byte(validPayload),
@@ -60,9 +60,6 @@ func TestTransformJSON(t *testing.T) {
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
 	microsMsg.Profile = &protomfx.Profile{Transformer: &protomfx.Transformer{ValueFields: valueFields, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
-
-	invalidFmt := msg
-	invalidFmt.Subtopic = ""
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
@@ -84,7 +81,6 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: format,
 	}
 
 	jsonTsMsgs := json.Messages{
@@ -103,7 +99,6 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: format,
 	}
 
 	jsonMicrosMsgs := json.Messages{
@@ -122,7 +117,6 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: format,
 	}
 
 	listJSON := json.Messages{
@@ -154,7 +148,6 @@ func TestTransformJSON(t *testing.T) {
 				},
 			},
 		},
-		Format: format,
 	}
 
 	cases := []struct {
@@ -168,12 +161,6 @@ func TestTransformJSON(t *testing.T) {
 			msg:  msg,
 			json: jsonMsgs,
 			err:  nil,
-		},
-		{
-			desc: "test transform JSON with an invalid subtopic",
-			msg:  invalidFmt,
-			json: nil,
-			err:  json.ErrTransform,
 		},
 		{
 			desc: "test transform JSON array",
