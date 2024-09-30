@@ -242,7 +242,7 @@ services:
       - mainfluxlabs-base-net
 
   vernemq:
-    image: ${MF_RELEASE_PREFIX}/vernemq:0.13.2-arm64
+    image: ${MF_RELEASE_PREFIX}/vernemq:0.13.2
     container_name: mainfluxlabs-vernemq
     restart: on-failure
     environment:
