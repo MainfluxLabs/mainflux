@@ -66,7 +66,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 
 	switch p := payload.(type) {
 	case map[string]interface{}:
-		formattedPayload := transformPayload(p, msg.Profile.Transformer.ValueFields)
+		formattedPayload := transformPayload(p, msg.Profile.Transformer.ValuesFilter)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
@@ -89,7 +89,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := transformPayload(v, msg.Profile.Transformer.ValueFields)
+			formattedPayload := transformPayload(v, msg.Profile.Transformer.ValuesFilter)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
