@@ -61,16 +61,16 @@ func migrateDB(db *sqlx.DB) error {
 						sum           FLOAT,
 						time          FlOAT,
 						update_time   FLOAT,
-						PRIMARY KEY (time, publisher, subtopic, name)
+						PRIMARY KEY   (time, publisher, subtopic, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS json (
-                        created       BIGINT,
-                        subtopic      VARCHAR(254),
-                        publisher     VARCHAR(254),
-                        protocol      TEXT,
-                        payload       JSONB,
-                        PRIMARY KEY (publisher, subtopic, created)
-                    )`,
+						created       BIGINT,
+						subtopic      VARCHAR(254),
+						publisher     VARCHAR(254),
+						protocol      TEXT,
+						payload       JSONB,
+						PRIMARY KEY   (publisher, subtopic, created)
+					)`,
 				},
 				Down: []string{
 					"DROP TABLE messages",
