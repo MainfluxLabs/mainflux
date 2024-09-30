@@ -18,22 +18,15 @@ import (
 )
 
 const (
-	testDB      = "test"
 	subtopic    = "topic"
 	msgsNum     = 101
-	limit       = 10
-	oneMsgLimit = 1
 	noLimit     = 0
 	valueFields = 5
 	mqttProt    = "mqtt"
 	httpProt    = "http"
+	coapProt    = "coap"
 	msgName     = "temperature"
-	offset      = 21
-	zeroOffset  = 0
-
-	format1 = "format1"
-	format2 = "format2"
-	wrongID = "wrong_id"
+	jsonFormat  = "json"
 )
 
 var (
@@ -155,17 +148,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
-			},
-		},
-		"read messages with wrong format": {
-			pageMeta: readers.PageMetadata{
-				Format:    "messagess",
-				Limit:     noLimit,
-				Publisher: pubID2,
-			},
-			page: readers.MessagesPage{
-				Total:    0,
-				Messages: []readers.Message{},
 			},
 		},
 		"read messages with protocol": {
@@ -296,6 +278,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 func TestListAllMessagesJSON(t *testing.T) {
 	err := resetBucket()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	reader := ireader.New(client, repoCfg)
 	writer := iwriter.New(client, repoCfg)
 
 	id1, err := idProvider.ID()
@@ -303,17 +287,15 @@ func TestListAllMessagesJSON(t *testing.T) {
 	m := json.Message{
 		Publisher: id1,
 		Created:   time.Now().UnixNano(),
-		Subtopic:  "subtopic/format/some_json",
-		Protocol:  "coap",
+		Subtopic:  subtopic,
+		Protocol:  coapProt,
 		Payload: map[string]interface{}{
 			"field_1": 123.0,
 			"field_2": "value",
 			"field_3": false,
 		},
 	}
-	messages1 := json.Messages{
-		Format: format1,
-	}
+	messages1 := json.Messages{}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
 		messages1.Data = append(messages1.Data, m)
@@ -334,10 +316,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 			"field_pi": 3.14159265,
 		},
 	}
-	messages2 := json.Messages{
-		Format: format2,
-	}
-	msgs2 := []map[string]interface{}{}
+	messages2 := json.Messages{}
 	httpMsgs := []map[string]interface{}{}
 
 	for i := 0; i < msgsNum; i++ {
@@ -348,12 +327,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 		}
 
 		messages2.Data = append(messages2.Data, msg)
-		msgs2 = append(msgs2, toMap(msg))
+		msgs1 = append(msgs1, toMap(msg))
 	}
 	err = writer.Consume(messages2)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
-
-	reader := ireader.New(client, repoCfg)
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -361,17 +338,17 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.PageMetadata{
-				Format: messages1.Format,
+				Format: jsonFormat,
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{
-				Total:    msgsNum,
+				Total:    uint64(len(msgs1)),
 				Messages: fromJSON(msgs1),
 			},
 		},
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
-				Format:   messages2.Format,
+				Format:   jsonFormat,
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},

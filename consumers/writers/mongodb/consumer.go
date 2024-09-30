@@ -14,7 +14,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
-const senmlCollection string = "messages"
+const (
+	senmlCollection = "messages"
+	jsonCollection  = "json"
+)
 
 var _ consumers.Consumer = (*mongoRepo)(nil)
 
@@ -62,7 +65,7 @@ func (repo *mongoRepo) saveJSON(msgs json.Messages) error {
 		m = append(m, msg)
 	}
 
-	coll := repo.db.Collection(msgs.Format)
+	coll := repo.db.Collection(jsonCollection)
 
 	_, err := coll.InsertMany(context.Background(), m)
 	if err != nil {

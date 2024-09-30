@@ -18,7 +18,10 @@ import (
 	influxdb2write "github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
-const senmlPoints = "messages"
+const (
+	senmlPoints = "messages"
+	jsonPoints  = "json"
+)
 
 var _ consumers.Consumer = (*influxRepo)(nil)
 
@@ -123,7 +126,7 @@ func (repo *influxRepo) jsonPoints(msgs json.Messages) ([]*influxdb2write.Point,
 			"subtopic":  m.Subtopic,
 			"publisher": m.Publisher,
 		}
-		pt := influxdb2.NewPoint(msgs.Format, tags, fields, t)
+		pt := influxdb2.NewPoint(jsonPoints, tags, fields, t)
 		pts = append(pts, pt)
 	}
 

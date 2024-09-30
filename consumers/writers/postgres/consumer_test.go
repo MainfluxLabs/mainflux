@@ -20,6 +20,7 @@ import (
 const (
 	msgsNum     = 42
 	valueFields = 5
+	mqttProt    = "mqtt"
 	subtopic    = "topic"
 )
 
@@ -78,7 +79,7 @@ func TestSaveJSON(t *testing.T) {
 		Publisher: pubid.String(),
 		Created:   time.Now().Unix(),
 		Subtopic:  subtopic,
-		Protocol:  "mqtt",
+		Protocol:  mqttProt,
 		Payload: map[string]interface{}{
 			"field_1": 123,
 			"field_2": "value",

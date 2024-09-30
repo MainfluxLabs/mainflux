@@ -25,6 +25,8 @@ const (
 	valueFields = 5
 	mqttProt    = "mqtt"
 	httpProt    = "http"
+	coapProt    = "coap"
+	udpProt     = "udp"
 	msgName     = "temperature"
 	jsonFormat  = "json"
 )
@@ -40,6 +42,7 @@ var (
 )
 
 func TestListAllMessagesSenML(t *testing.T) {
+	reader := preader.New(db)
 	writer := pwriter.New(db)
 
 	pubID, err := idProvider.ID()
@@ -93,8 +96,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 
 	err = writer.Consume(messages)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
-
-	reader := preader.New(db)
 
 	// Since messages are not saved in natural order,
 	// cases that return subset of messages are only
@@ -298,6 +299,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
+	reader := preader.New(db)
 	writer := pwriter.New(db)
 
 	id1, err := idProvider.ID()
@@ -305,7 +307,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	m := json.Message{
 		Publisher: id1,
 		Subtopic:  subtopic,
-		Protocol:  "coap",
+		Protocol:  coapProt,
 		Payload: map[string]interface{}{
 			"field_1": 123.0,
 			"field_2": "value",
@@ -329,7 +331,35 @@ func TestListAllMessagesJSON(t *testing.T) {
 	err = writer.Consume(messages1)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
-	reader := preader.New(db)
+	id2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	m = json.Message{
+		Publisher: id2,
+		Subtopic:  subtopic,
+		Protocol:  udpProt,
+		Payload: map[string]interface{}{
+			"field_1":     "other_value",
+			"false_value": false,
+			"field_pi":    3.14159265,
+		},
+	}
+	messages2 := json.Messages{}
+	httpMsgs := []map[string]interface{}{}
+	created = time.Now().Unix()
+	for i := 0; i < msgsNum; i++ {
+		msg := m
+		msg.Created = created + int64(i)
+		if i%2 == 0 {
+			msg.Protocol = httpProt
+			httpMsgs = append(httpMsgs, toMap(msg))
+		}
+
+		messages2.Data = append(messages2.Data, msg)
+		msgs1 = append(msgs1, toMap(msg))
+	}
+
+	err = writer.Consume(messages2)
+	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -341,8 +371,19 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{
-				Total:    msgsNum,
+				Total:    uint64(len(msgs1)),
 				Messages: fromJSON(msgs1),
+			},
+		},
+		"read messages with protocol": {
+			pageMeta: readers.PageMetadata{
+				Format:   jsonFormat,
+				Limit:    noLimit,
+				Protocol: httpProt,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(httpMsgs)),
+				Messages: fromJSON(httpMsgs),
 			},
 		},
 	}

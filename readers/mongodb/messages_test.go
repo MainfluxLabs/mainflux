@@ -26,17 +26,14 @@ const (
 	testDB      = "test"
 	subtopic    = "subtopic"
 	msgsNum     = 101
-	limit       = 10
 	noLimit     = 0
 	valueFields = 5
-	zeroOffset  = 0
 	mqttProt    = "mqtt"
 	httpProt    = "http"
+	coapProt    = "coap"
+	udpProt     = "udp"
 	msgName     = "temperature"
-	wrongID     = "wrong-id"
-
-	format1 = "format_1"
-	format2 = "format_2"
+	jsonFormat  = "json"
 )
 
 var (
@@ -57,6 +54,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
 	db := client.Database(testDB)
+	reader := mreader.New(db)
 	writer := mwriter.New(db)
 
 	err = db.Drop(context.Background())
@@ -111,7 +109,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 	err = writer.Consume(messages)
 	require.Nil(t, err, fmt.Sprintf("failed to store message to MongoDB: %s", err))
-	reader := mreader.New(db)
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -155,16 +152,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(queryMsgs),
 			},
 		},
-		"read messages with invalid format": {
-			pageMeta: readers.PageMetadata{
-				Format: "messagess",
-				Limit:  noLimit,
-			},
-			page: readers.MessagesPage{
-				Total:    0,
-				Messages: []readers.Message{},
-			},
-		},
+
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
@@ -326,15 +314,16 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
 	db := client.Database(testDB)
+	reader := mreader.New(db)
 	writer := mwriter.New(db)
 
-	id1, err := idProvider.ID()
+	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	m := json.Message{
-		Publisher: id1,
+		Publisher: id,
 		Created:   time.Now().Unix(),
-		Subtopic:  "subtopic/format/some_json",
-		Protocol:  "coap",
+		Subtopic:  subtopic,
+		Protocol:  coapProt,
 		Payload: map[string]interface{}{
 			"field_2": "value",
 			"field_3": false,
@@ -345,9 +334,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 			},
 		},
 	}
-	messages1 := json.Messages{
-		Format: format1,
-	}
+	messages1 := json.Messages{}
 	msgs1 := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
 		msg := m
@@ -363,8 +350,8 @@ func TestListAllMessagesJSON(t *testing.T) {
 	m = json.Message{
 		Publisher: id2,
 		Created:   time.Now().Unix(),
-		Subtopic:  "subtopic/other_format/some_other_json",
-		Protocol:  "udp",
+		Subtopic:  subtopic,
+		Protocol:  udpProt,
 		Payload: map[string]interface{}{
 			"field_2": "other_value",
 			"field_3": false,
@@ -374,10 +361,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 			},
 		},
 	}
-	messages2 := json.Messages{
-		Format: format2,
-	}
-	msgs2 := []map[string]interface{}{}
+	messages2 := json.Messages{}
 	httpMsgs := []map[string]interface{}{}
 	for i := 0; i < msgsNum; i++ {
 		msg := m
@@ -387,12 +371,10 @@ func TestListAllMessagesJSON(t *testing.T) {
 		}
 
 		messages2.Data = append(messages2.Data, msg)
-		msgs2 = append(msgs2, toMap(msg))
+		msgs1 = append(msgs1, toMap(msg))
 	}
 	err = writer.Consume(messages2)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
-
-	reader := mreader.New(db)
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -400,17 +382,17 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.PageMetadata{
-				Format: messages1.Format,
+				Format: jsonFormat,
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{
-				Total:    msgsNum,
+				Total:    uint64(len(msgs1)),
 				Messages: fromJSON(msgs1),
 			},
 		},
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
-				Format:   messages2.Format,
+				Format:   jsonFormat,
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
