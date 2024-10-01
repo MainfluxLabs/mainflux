@@ -67,13 +67,13 @@ func (ms *metricsMiddleware) UpdateNotifier(ctx context.Context, token string, n
 	return ms.svc.UpdateNotifier(ctx, token, notifier)
 }
 
-func (ms *metricsMiddleware) RemoveNotifiers(ctx context.Context, token, groupID string, id ...string) error {
+func (ms *metricsMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_notifiers").Add(1)
 		ms.latency.With("method", "remove_notifiers").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveNotifiers(ctx, token, groupID, id...)
+	return ms.svc.RemoveNotifiers(ctx, token, id...)
 }
 
 func (ms *metricsMiddleware) Consume(msg interface{}) error {

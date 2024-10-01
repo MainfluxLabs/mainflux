@@ -31,7 +31,7 @@ type Service interface {
 
 	// RemoveNotifiers removes the notifiers identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
-	RemoveNotifiers(ctx context.Context, token, groupID string, id ...string) error
+	RemoveNotifiers(ctx context.Context, token string, id ...string) error
 
 	consumers.Consumer
 }
@@ -174,9 +174,15 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 	return ns.notifierRepo.Update(ctx, notifier)
 }
 
-func (ns *notifierService) RemoveNotifiers(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		notifier, err := ns.notifierRepo.RetrieveByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := ns.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: notifier.GroupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
+			return errors.Wrap(errors.ErrAuthorization, err)
+		}
 	}
 
 	if err := ns.notifierRepo.Remove(ctx, ids...); err != nil {

@@ -447,6 +447,12 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 		err   error
 	}{
 		{
+			desc:  "remove notifier with wrong credentials",
+			id:    nf.ID,
+			token: wrongValue,
+			err:   errors.ErrAuthentication,
+		},
+		{
 			desc:  "remove existing notifier",
 			id:    nf.ID,
 			token: token,
@@ -458,16 +464,10 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 			token: token,
 			err:   errors.ErrNotFound,
 		},
-		{
-			desc:  "remove notifier with wrong credentials",
-			id:    nf.ID,
-			token: wrongValue,
-			err:   errors.ErrAuthentication,
-		},
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveNotifiers(context.Background(), tc.token, groupID, tc.id)
+		err := svc.RemoveNotifiers(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

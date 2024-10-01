@@ -100,7 +100,7 @@ func removeWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveWebhooks(ctx, req.token, req.groupID, req.WebhookIDs...); err != nil {
+		if err := svc.RemoveWebhooks(ctx, req.token, req.WebhookIDs...); err != nil {
 			return nil, err
 		}
 

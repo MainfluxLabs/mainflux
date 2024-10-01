@@ -66,7 +66,7 @@ func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Lo
 		encodeResponse,
 		opts...,
 	))
-	r.Patch("/groups/:id/notifiers", kithttp.NewServer(
+	r.Patch("/notifiers", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_notifiers")(removeNotifiersEndpoint(svc)),
 		decodeRemoveNotifiers,
 		encodeResponse,
@@ -155,8 +155,7 @@ func decodeRemoveNotifiers(_ context.Context, r *http.Request) (interface{}, err
 	}
 
 	req := removeNotifiersReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		token: apiutil.ExtractBearerToken(r),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

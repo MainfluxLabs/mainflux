@@ -720,7 +720,7 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/groups/%s/notifiers", ts.URL, groupID),
+			url:         fmt.Sprintf("%s/notifiers", ts.URL),
 			token:       tc.auth,
 			contentType: tc.contentType,
 			body:        strings.NewReader(body),

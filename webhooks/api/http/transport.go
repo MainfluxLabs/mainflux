@@ -64,7 +64,7 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 		encodeResponse,
 		opts...,
 	))
-	r.Patch("/groups/:id/webhooks", kithttp.NewServer(
+	r.Patch("/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_webhooks")(removeWebhooksEndpoint(svc)),
 		decodeRemoveWebhooks,
 		encodeResponse,
@@ -153,8 +153,7 @@ func decodeRemoveWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 	}
 
 	req := removeWebhooksReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		token: apiutil.ExtractBearerToken(r),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	minLen       = 1
 	maxLimitSize = 100
 	maxNameSize  = 254
 	nameOrder    = "name"
@@ -89,7 +90,7 @@ func (req createNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.Notifiers) == 0 {
+	if len(req.Notifiers) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
@@ -107,7 +108,7 @@ func (req createNotifierReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if len(req.Contacts) == 0 {
+	if len(req.Contacts) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
@@ -135,7 +136,7 @@ func (req updateNotifierReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if len(req.Contacts) == 0 {
+	if len(req.Contacts) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
@@ -143,7 +144,6 @@ func (req updateNotifierReq) validate() error {
 }
 
 type removeNotifiersReq struct {
-	groupID     string
 	token       string
 	NotifierIDs []string `json:"notifier_ids,omitempty"`
 }
@@ -153,11 +153,7 @@ func (req removeNotifiersReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	if len(req.NotifierIDs) == 0 {
+	if len(req.NotifierIDs) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
