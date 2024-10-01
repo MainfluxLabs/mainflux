@@ -38,7 +38,7 @@ type Service interface {
 
 	// RemoveWebhooks removes the webhooks identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
-	RemoveWebhooks(ctx context.Context, token, groupID string, id ...string) error
+	RemoveWebhooks(ctx context.Context, token string, id ...string) error
 
 	consumers.Consumer
 }
@@ -150,9 +150,15 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 	return ws.webhooks.Update(ctx, webhook)
 }
 
-func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token, groupID string, ids ...string) error {
-	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
+func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		webhook, err := ws.webhooks.RetrieveByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
+			return errors.Wrap(errors.ErrAuthorization, err)
+		}
 	}
 
 	if err := ws.webhooks.Remove(ctx, ids...); err != nil {

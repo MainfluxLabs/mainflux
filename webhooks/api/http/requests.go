@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	minLen       = 1
 	maxLimitSize = 100
 	maxNameSize  = 254
 	nameOrder    = "name"
@@ -49,7 +50,7 @@ func (req createWebhooksReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.Webhooks) <= 0 {
+	if len(req.Webhooks) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
@@ -153,7 +154,6 @@ func (req updateWebhookReq) validate() error {
 }
 
 type removeWebhooksReq struct {
-	groupID    string
 	token      string
 	WebhookIDs []string `json:"webhook_ids,omitempty"`
 }
@@ -163,7 +163,7 @@ func (req removeWebhooksReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.WebhookIDs) < 1 {
+	if len(req.WebhookIDs) < minLen {
 		return apiutil.ErrEmptyList
 	}
 

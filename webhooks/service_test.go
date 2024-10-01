@@ -319,6 +319,12 @@ func TestRemoveWebhooks(t *testing.T) {
 		err   error
 	}{
 		{
+			desc:  "remove webhook with wrong credentials",
+			id:    wh.ID,
+			token: wrongValue,
+			err:   errors.ErrAuthentication,
+		},
+		{
 			desc:  "remove existing webhook",
 			id:    wh.ID,
 			token: token,
@@ -330,16 +336,10 @@ func TestRemoveWebhooks(t *testing.T) {
 			token: token,
 			err:   errors.ErrNotFound,
 		},
-		{
-			desc:  "remove webhook with wrong credentials",
-			id:    wh.ID,
-			token: wrongValue,
-			err:   errors.ErrAuthentication,
-		},
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveWebhooks(context.Background(), tc.token, groupID, tc.id)
+		err := svc.RemoveWebhooks(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

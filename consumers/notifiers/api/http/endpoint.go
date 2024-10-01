@@ -99,7 +99,7 @@ func removeNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveNotifiers(ctx, req.token, req.groupID, req.NotifierIDs...); err != nil {
+		if err := svc.RemoveNotifiers(ctx, req.token, req.NotifierIDs...); err != nil {
 			return nil, err
 		}
 

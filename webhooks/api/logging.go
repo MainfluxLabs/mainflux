@@ -79,7 +79,7 @@ func (lm *loggingMiddleware) UpdateWebhook(ctx context.Context, token string, we
 	return lm.svc.UpdateWebhook(ctx, token, webhook)
 }
 
-func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token, groupID string, id ...string) (err error) {
+func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_webhooks took %s to complete", time.Since(begin))
 		if err != nil {
@@ -89,7 +89,7 @@ func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token, groupID 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveWebhooks(ctx, token, groupID, id...)
+	return lm.svc.RemoveWebhooks(ctx, token, id...)
 }
 
 func (lm *loggingMiddleware) Consume(message interface{}) (err error) {
