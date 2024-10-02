@@ -17,7 +17,8 @@ import (
 
 // Collection for SenML messages
 const (
-	defCollection = "messages"
+	defCollection  = "messages"
+	jsonCollection = "json"
 	// noLimit is used to indicate that there is no limit for the number of results.
 	noLimit = 0
 )
@@ -61,7 +62,7 @@ func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Messa
 func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"
-	if rpm.Format != "" && rpm.Format != defCollection {
+	if rpm.Format == jsonCollection {
 		order = "created"
 		format = rpm.Format
 	}

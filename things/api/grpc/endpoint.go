@@ -29,7 +29,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		transformer := &protomfx.Transformer{
-			ValueFields:  p.Transformer.ValueFields,
+			ValuesFilter: p.Transformer.ValuesFilter,
 			TimeField:    p.Transformer.TimeField,
 			TimeFormat:   p.Transformer.TimeFormat,
 			TimeLocation: p.Transformer.TimeLocation,
@@ -127,7 +127,7 @@ func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		transformer := &protomfx.Transformer{
-			ValueFields:  p.Transformer.ValueFields,
+			ValuesFilter: p.Transformer.ValuesFilter,
 			TimeField:    p.Transformer.TimeField,
 			TimeFormat:   p.Transformer.TimeFormat,
 			TimeLocation: p.Transformer.TimeLocation,

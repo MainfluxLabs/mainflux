@@ -59,7 +59,7 @@ message Profile {
 }
 
 message Transformer {
-    repeated string valueFields = 1;
+    repeated string valuesFilter = 1;
     string timeField            = 2;
     string timeFormat           = 3;
     string timeLocation         = 4;

@@ -22,7 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const valueFields = 5
+const (
+	valueFields = 5
+	httpProt    = "http"
+	mqttProt    = "mqtt"
+)
 
 var (
 	testLog, _    = log.New(os.Stdout, log.Info.String())
@@ -37,7 +41,7 @@ var (
 
 	rowCountJson = fmt.Sprintf(`from(bucket: "%s")
 	|> range(start: -1h, stop: 1h)
-	|> filter(fn: (r) => r["_measurement"] == "some_json")
+	|> filter(fn: (r) => r["_measurement"] == "json")
 	|> filter(fn: (r) => r["_field"] == "field_1" or r["_field"] == "field_2" or r["_field"] == "field_3" or r["_field"] == "field_4" or r["_field"] == "field_5/field_1" or r["_field"] == "field_5/field_2")
 	|> count()
 	|> yield(name: "count")`, repoCfg.Bucket)
@@ -149,7 +153,7 @@ func TestSaveSenML(t *testing.T) {
 		for i := 0; i < tc.msgsNum; i++ {
 			msg := senml.Message{
 				Publisher:  pubID,
-				Protocol:   "http",
+				Protocol:   httpProt,
 				Name:       "test name",
 				Unit:       "km",
 				UpdateTime: 5456565466,
@@ -191,8 +195,8 @@ func TestSaveJSON(t *testing.T) {
 	msg := json.Message{
 		Publisher: pubID,
 		Created:   time.Now().UnixNano(),
-		Subtopic:  "subtopic/format/some_json",
-		Protocol:  "mqtt",
+		Subtopic:  subtopic,
+		Protocol:  mqttProt,
 		Payload: map[string]interface{}{
 			"field_1": 123,
 			"field_2": "value",
@@ -231,15 +235,9 @@ func TestSaveJSON(t *testing.T) {
 	}
 
 	now := time.Now().UnixNano()
-	msgs := json.Messages{
-		Format: "some_json",
-	}
-	invalidKeySepMsgs := json.Messages{
-		Format: "some_json",
-	}
-	invalidKeyNameMsgs := json.Messages{
-		Format: "some_json",
-	}
+	msgs := json.Messages{}
+	invalidKeySepMsgs := json.Messages{}
+	invalidKeyNameMsgs := json.Messages{}
 
 	for i := 0; i < streamsSize; i++ {
 		msg.Created = now

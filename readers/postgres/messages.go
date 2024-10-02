@@ -19,11 +19,8 @@ import (
 const (
 	// Table for SenML messages
 	defTable = "messages"
-	// noLimit is used to indicate that there is no limit for the number of results.
-	noLimit = 0
-
-	// Error code for Undefined table error.
-	undefinedTableCode = "42P01"
+	// Table for JSON messages
+	jsonTable = "json"
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
@@ -100,7 +97,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	order := "time"
 	format := defTable
 
-	if rpm.Format != "" && rpm.Format != defTable {
+	if rpm.Format == jsonTable {
 		order = "created"
 		format = rpm.Format
 	}

@@ -19,14 +19,11 @@ var (
 
 	// ErrTransform represents an error during parsing message.
 	ErrTransform = errors.New("unable to parse JSON object")
-	// ErrFormatPayload represents an error during formatting message payload.
-	ErrFormatPayload = errors.New("unable to format payload")
 	// ErrInvalidKey represents the use of a reserved message field.
 	ErrInvalidKey = errors.New("invalid object key")
 	// ErrInvalidTimeField represents the use an invalid time field.
 	ErrInvalidTimeField = errors.New("invalid time field")
 
-	errUnknownFormat     = errors.New("unknown format of JSON message")
 	errInvalidFormat     = errors.New("invalid JSON object")
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
@@ -50,9 +47,10 @@ func New() transformers.Transformer {
 // Transform transforms Mainflux message to a list of JSON messages.
 func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, error) {
 	ret := Message{
-		Publisher: msg.Publisher,
 		Created:   msg.Created,
+		Subtopic:  msg.Subtopic,
 		Protocol:  msg.Protocol,
+		Publisher: msg.Publisher,
 	}
 
 	if msg.Profile.WebhookID != "" {
@@ -61,17 +59,6 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		}
 	}
 
-	subs := strings.Split(msg.Subtopic, ".")
-	switch {
-	case msg.Subtopic == "":
-		return nil, errors.Wrap(ErrTransform, errUnknownFormat)
-	case len(subs) == 1:
-		ret.Subtopic = ""
-	default:
-		ret.Subtopic = strings.Join(subs[:len(subs)-1], ".")
-	}
-
-	format := subs[len(subs)-1]
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
@@ -79,10 +66,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 
 	switch p := payload.(type) {
 	case map[string]interface{}:
-		formattedPayload, err := transformPayload(p, msg.Profile.Transformer.ValueFields)
-		if err != nil {
-			return nil, errors.Wrap(ErrFormatPayload, err)
-		}
+		formattedPayload := transformPayload(p, msg.Profile.Transformer.ValuesFilter)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
@@ -94,7 +78,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			ret.Created = ts
 		}
 
-		return Messages{[]Message{ret}, format}, nil
+		return Messages{Data: []Message{ret}}, nil
 	case []interface{}:
 		res := []Message{}
 		// Make an array of messages from the root array.
@@ -105,10 +89,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload, err := transformPayload(v, msg.Profile.Transformer.ValueFields)
-			if err != nil {
-				return nil, errors.Wrap(ErrFormatPayload, err)
-			}
+			formattedPayload := transformPayload(v, msg.Profile.Transformer.ValuesFilter)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
@@ -122,7 +103,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 
 			res = append(res, newMsg)
 		}
-		return Messages{res, format}, nil
+		return Messages{Data: res}, nil
 	default:
 		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
@@ -206,14 +187,17 @@ func (ts *transformerService) transformTimeField(payload map[string]interface{},
 	return 0, nil
 }
 
-func transformPayload(payload map[string]interface{}, fieldValues []string) (map[string]interface{}, error) {
+func transformPayload(payload map[string]interface{}, valuesFilter []string) map[string]interface{} {
 	formattedPayload := make(map[string]interface{})
+	if len(valuesFilter) == 0 {
+		return payload
+	}
 
-	for _, fv := range fieldValues {
+	for _, fv := range valuesFilter {
 		if value, ok := payload[fv]; ok {
 			formattedPayload[fv] = value
 		}
 	}
 
-	return formattedPayload, nil
+	return formattedPayload
 }

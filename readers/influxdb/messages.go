@@ -20,6 +20,8 @@ import (
 const (
 	// Measurement for SenML messages
 	defMeasurement = "messages"
+	// JSON message format
+	jsonFormat = "json"
 	// noLimit is used to indicate that there is no limit for the number of results.
 	noLimit = 0
 )
@@ -82,7 +84,7 @@ func (repo *influxRepository) senmlPoints(messages []senml.Message) ([]*write.Po
 
 func (repo *influxRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defMeasurement
-	if rpm.Format != "" {
+	if rpm.Format == jsonFormat {
 		format = rpm.Format
 	}
 

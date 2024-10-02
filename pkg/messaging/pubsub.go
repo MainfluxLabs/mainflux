@@ -114,7 +114,7 @@ func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payloa
 
 	if conn.Profile.Transformer != nil {
 		msg.Profile.Transformer = &protomfx.Transformer{
-			ValueFields:  conn.Profile.Transformer.ValueFields,
+			ValuesFilter: conn.Profile.Transformer.ValuesFilter,
 			TimeField:    conn.Profile.Transformer.TimeField,
 			TimeFormat:   conn.Profile.Transformer.TimeFormat,
 			TimeLocation: conn.Profile.Transformer.TimeLocation,

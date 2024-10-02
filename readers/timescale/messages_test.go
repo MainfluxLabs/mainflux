@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
-	treader "github.com/MainfluxLabs/mainflux/readers/timescale"
+	treader "github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,16 +21,12 @@ import (
 const (
 	subtopic    = "subtopic"
 	msgsNum     = 101
-	limit       = 10
 	valueFields = 5
-	zeroOffset  = 0
 	mqttProt    = "mqtt"
 	httpProt    = "http"
+	udpProt     = "udp"
 	msgName     = "temperature"
-	msgFormat   = "messages"
-	format1     = "format1"
-	format2     = "format2"
-	wrongID     = "0"
+	jsonFormat  = "json"
 	noLimit     = 0
 )
 
@@ -45,6 +41,7 @@ var (
 )
 
 func TestListAllMessagesSenML(t *testing.T) {
+	reader := treader.New(db)
 	writer := twriter.New(db)
 
 	pubID, err := idProvider.ID()
@@ -99,8 +96,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 	err = writer.Consume(messages)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
-	reader := treader.New(db)
-
 	// Since messages are not saved in natural order,
 	// cases that return subset of messages are only
 	// checking data result set size, but not content.
@@ -144,17 +139,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
-			},
-		},
-		"read messages with wrong format": {
-			pageMeta: readers.PageMetadata{
-				Format:    "messagess",
-				Limit:     noLimit,
-				Publisher: pubID2,
-			},
-			page: readers.MessagesPage{
-				Total:    0,
-				Messages: []readers.Message{},
 			},
 		},
 		"read messages with protocol": {
@@ -314,75 +298,67 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
+	reader := treader.New(db)
 	writer := twriter.New(db)
 
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	messages1 := json.Messages{
-		Format: format1,
-	}
-	msgs1 := []map[string]interface{}{}
-	timeNow := time.Now().UnixMilli()
-	for i := 0; i < msgsNum; i++ {
-
-		m := json.Message{
-			Publisher: id1,
-			Created:   timeNow - int64(i),
-			Subtopic:  "subtopic/format/some_json",
-			Protocol:  "coap",
-			Payload: map[string]interface{}{
-				"field_1": 123.0,
-				"field_2": "value",
-				"field_3": false,
-				"field_4": 12.344,
-				"field_5": map[string]interface{}{
-					"field_1": "value",
-					"field_2": 42.0,
-				},
+	m := json.Message{
+		Publisher: id1,
+		Subtopic:  subtopic,
+		Protocol:  "coap",
+		Payload: map[string]interface{}{
+			"field_1": 123.0,
+			"field_2": "value",
+			"field_3": false,
+			"field_4": 12.344,
+			"field_5": map[string]interface{}{
+				"field_1": "value",
+				"field_2": 42.0,
 			},
-		}
-
+		},
+	}
+	messages1 := json.Messages{}
+	msgs1 := []map[string]interface{}{}
+	created := time.Now().Unix()
+	for i := 0; i < msgsNum; i++ {
 		msg := m
+		msg.Created = created + int64(i)
 		messages1.Data = append(messages1.Data, msg)
-		mapped := toMap(msg)
-		msgs1 = append(msgs1, mapped)
+		msgs1 = append(msgs1, toMap(msg))
 	}
 	err = writer.Consume(messages1)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 	id2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	messages2 := json.Messages{
-		Format: format2,
+	m = json.Message{
+		Publisher: id2,
+		Subtopic:  subtopic,
+		Protocol:  udpProt,
+		Payload: map[string]interface{}{
+			"field_1":     "other_value",
+			"false_value": false,
+			"field_pi":    3.14159265,
+		},
 	}
-	msgs2 := []map[string]interface{}{}
+	messages2 := json.Messages{}
 	httpMsgs := []map[string]interface{}{}
+	created = time.Now().Unix()
 	for i := 0; i < msgsNum; i++ {
-		m := json.Message{
-			Publisher: id2,
-			Created:   timeNow - int64(i),
-			Subtopic:  "subtopic/other_format/some_other_json",
-			Protocol:  "udp",
-			Payload: map[string]interface{}{
-				"field_1":     "other_value",
-				"false_value": false,
-				"field_pi":    3.14159265,
-			},
-		}
-
 		msg := m
+		msg.Created = created + int64(i)
 		if i%2 == 0 {
 			msg.Protocol = httpProt
 			httpMsgs = append(httpMsgs, toMap(msg))
 		}
 
 		messages2.Data = append(messages2.Data, msg)
-		msgs2 = append(msgs2, toMap(msg))
+		msgs1 = append(msgs1, toMap(msg))
 	}
+
 	err = writer.Consume(messages2)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
-
-	reader := treader.New(db)
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -390,17 +366,17 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.PageMetadata{
-				Format: messages1.Format,
+				Format: jsonFormat,
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{
-				Total:    msgsNum,
+				Total:    uint64(len(msgs1)),
 				Messages: fromJSON(msgs1),
 			},
 		},
 		"read messages with protocol": {
 			pageMeta: readers.PageMetadata{
-				Format:   messages2.Format,
+				Format:   jsonFormat,
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},

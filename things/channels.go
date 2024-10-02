@@ -28,7 +28,7 @@ type Profile struct {
 }
 
 type Transformer struct {
-	ValueFields  []string `json:"value_fields"`
+	ValuesFilter []string `json:"values_filter"`
 	TimeField    string   `json:"time_field"`
 	TimeFormat   string   `json:"time_format"`
 	TimeLocation string   `json:"time_location"`
