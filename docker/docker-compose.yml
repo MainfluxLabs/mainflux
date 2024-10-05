@@ -21,6 +21,7 @@ volumes:
   mainfluxlabs-webhooks-db-volume:
   mainfluxlabs-smtp-notifier-db-volume:
   mainfluxlabs-smpp-notifier-db-volume:
+  mainfluxlabs-downlinks-db-volume:
 
 services:
   ui:
@@ -570,3 +571,42 @@ services:
       - mainfluxlabs-base-net
     volumes:
       - ./templates/${MF_SMTP_NOTIFIER_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
+
+  downlinks-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-downlinks-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_DOWNLINKS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_DOWNLINKS_DB_PASS}
+      POSTGRES_DB: ${MF_DOWNLINKS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-downlinks-db-volume:/var/lib/postgresql/data
+
+  downlinks:
+    image: ${MF_RELEASE_PREFIX}/downlinks:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-downlinks
+    depends_on:
+      - downlinks-db
+      - things
+    restart: on-failure
+    environment:
+      MF_DOWNLINKS_LOG_LEVEL: ${MF_DOWNLINKS_LOG_LEVEL}
+      MF_DOWNLINKS_HTTP_PORT: ${MF_DOWNLINKS_HTTP_PORT}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_DOWNLINKS_DB_HOST: downlinks-db
+      MF_DOWNLINKS_DB_PORT: ${MF_DOWNLINKS_DB_PORT}
+      MF_DOWNLINKS_DB_USER: ${MF_DOWNLINKS_DB_USER}
+      MF_DOWNLINKS_DB_PASS: ${MF_DOWNLINKS_DB_PASS}
+      MF_DOWNLINKS_DB: ${MF_DOWNLINKS_DB}
+      MF_DOWNLINKS_SERVER_CERT: ${MF_DOWNLINKS_SERVER_CERT}
+      MF_DOWNLINKS_SERVER_KEY: ${MF_DOWNLINKS_SERVER_KEY}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
