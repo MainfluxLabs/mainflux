@@ -188,16 +188,33 @@ func (ts *transformerService) transformTimeField(payload map[string]interface{},
 }
 
 func transformPayload(payload map[string]interface{}, valuesFilter []string) map[string]interface{} {
-	formattedPayload := make(map[string]interface{})
 	if len(valuesFilter) == 0 {
 		return payload
 	}
 
-	for _, fv := range valuesFilter {
-		if value, ok := payload[fv]; ok {
-			formattedPayload[fv] = value
+	filteredPayload := make(map[string]interface{})
+	for _, key := range valuesFilter {
+		value := findByKey(payload, key)
+		if value != nil {
+			filteredPayload[key] = value
 		}
 	}
 
-	return formattedPayload
+	return filteredPayload
+}
+
+func findByKey(payload map[string]interface{}, key string) interface{} {
+	if value, ok := payload[key]; ok {
+		return value
+	}
+
+	for _, v := range payload {
+		if data, ok := v.(map[string]interface{}); ok {
+			if value := findByKey(data, key); value != nil {
+				return value
+			}
+		}
+	}
+
+	return nil
 }
