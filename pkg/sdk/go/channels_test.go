@@ -42,6 +42,9 @@ func TestCreateChannel(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc    string
 		channel sdk.Channel
@@ -54,15 +57,15 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new channel",
 			channel: ch1,
 			token:   token,
-			groupID: groupID,
+			groupID: grID,
 			err:     nil,
 			empty:   false,
 		},
 		{
 			desc:    "create new channel with empty token",
 			channel: ch1,
-			token:   "",
-			groupID: groupID,
+			token:   emptyValue,
+			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
@@ -70,7 +73,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new channel with invalid token",
 			channel: ch1,
 			token:   wrongValue,
-			groupID: groupID,
+			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
@@ -78,7 +81,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create new empty channel",
 			channel: emptyChannel,
 			token:   token,
-			groupID: groupID,
+			groupID: grID,
 			err:     nil,
 			empty:   false,
 		},
@@ -86,7 +89,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create a new channel with external UUID",
 			channel: ch2,
 			token:   token,
-			groupID: groupID,
+			groupID: grID,
 			err:     nil,
 			empty:   false,
 		},
@@ -94,7 +97,7 @@ func TestCreateChannel(t *testing.T) {
 			desc:    "create a new channel with wrong external UUID",
 			channel: chWrongExtID,
 			token:   token,
-			groupID: groupID,
+			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 			empty:   true,
 		},
@@ -103,7 +106,7 @@ func TestCreateChannel(t *testing.T) {
 	for _, tc := range cases {
 		loc, err := mainfluxSDK.CreateChannel(tc.channel, groupID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.empty, loc == "", fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
+		assert.Equal(t, tc.empty, loc == emptyValue, fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
 	}
 }
 
@@ -119,6 +122,9 @@ func TestCreateChannels(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+
+	_, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	channels := []sdk.Channel{
 		ch2,
@@ -149,7 +155,7 @@ func TestCreateChannels(t *testing.T) {
 		{
 			desc:     "create new channels with empty token",
 			channels: channels,
-			token:    "",
+			token:    emptyValue,
 			err:      createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:      []sdk.Channel{},
 		},
@@ -214,7 +220,7 @@ func TestChannel(t *testing.T) {
 		{
 			desc:     "get channel with invalid token",
 			chanID:   id,
-			token:    "",
+			token:    emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: sdk.Channel{},
 		},
@@ -238,12 +244,16 @@ func TestChannels(t *testing.T) {
 		TLSVerification: false,
 	}
 	var channels []sdk.Channel
+
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		ch := sdk.Channel{GroupID: "1", ID: id, Name: name}
-		_, err := mainfluxSDK.CreateChannel(ch, groupID, token)
+		ch := sdk.Channel{GroupID: grID, ID: id, Name: name}
+		_, err := mainfluxSDK.CreateChannel(ch, ch.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		channels = append(channels, ch)
 	}
@@ -278,7 +288,7 @@ func TestChannels(t *testing.T) {
 		},
 		{
 			desc:     "get a list of channels with empty token",
-			token:    "",
+			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
@@ -317,8 +327,8 @@ func TestChannels(t *testing.T) {
 		filter := sdk.PageMetadata{
 			Name:     tc.name,
 			Total:    total,
-			Offset:   uint64(tc.offset),
-			Limit:    uint64(tc.limit),
+			Offset:   tc.offset,
+			Limit:    tc.limit,
 			Metadata: tc.metadata,
 		}
 
@@ -388,13 +398,13 @@ func TestViewChannelByThing(t *testing.T) {
 		{
 			desc:     "view channel by thing with empty token",
 			thing:    tid,
-			token:    "",
+			token:    emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: sdk.Channel{},
 		},
 		{
 			desc:     "view channel by thing with empty thing id",
-			thing:    "",
+			thing:    emptyValue,
 			token:    token,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: sdk.Channel{},
@@ -454,7 +464,7 @@ func TestUpdateChannel(t *testing.T) {
 		},
 		{
 			desc:    "update channel with invalid id",
-			channel: sdk.Channel{ID: "", Name: "test2"},
+			channel: sdk.Channel{ID: emptyValue, Name: "test2"},
 			token:   token,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusBadRequest),
 		},
@@ -467,7 +477,7 @@ func TestUpdateChannel(t *testing.T) {
 		{
 			desc:    "update channel with empty token",
 			channel: sdk.Channel{ID: id, Name: "test2"},
-			token:   "",
+			token:   emptyValue,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
 		},
 	}
@@ -489,7 +499,11 @@ func TestDeleteChannel(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -512,14 +526,14 @@ func TestDeleteChannel(t *testing.T) {
 		},
 		{
 			desc:   "delete channel with invalid id",
-			chanID: "",
+			chanID: emptyValue,
 			token:  token,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
 			desc:   "delete channel with empty token",
 			chanID: id,
-			token:  "",
+			token:  emptyValue,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
@@ -553,9 +567,13 @@ func TestDeleteChannels(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id1, err := mainfluxSDK.CreateChannel(ch1, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateChannel(ch2, groupID, token)
+
+	id1, err := mainfluxSDK.CreateChannel(ch1, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	id2, err := mainfluxSDK.CreateChannel(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chIDs := []string{id1, id2}
@@ -580,7 +598,7 @@ func TestDeleteChannels(t *testing.T) {
 		},
 		{
 			desc:    "delete channels with empty id",
-			chanIDs: []string{""},
+			chanIDs: []string{emptyValue},
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
@@ -593,7 +611,7 @@ func TestDeleteChannels(t *testing.T) {
 		{
 			desc:    "delete channels with empty token",
 			chanIDs: chIDs,
-			token:   "",
+			token:   emptyValue,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{

@@ -39,8 +39,8 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 		return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO things (id, owner_id, group_id, name, key, metadata)
-		  VALUES (:id, :owner_id, :group_id, :name, :key, :metadata);`
+	q := `INSERT INTO things (id, group_id, name, key, metadata)
+		  VALUES (:id, :group_id, :name, :key, :metadata);`
 
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
@@ -108,13 +108,12 @@ func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 	return nil
 }
 
-func (tr thingRepository) UpdateKey(ctx context.Context, ownerID, id, key string) error {
-	q := `UPDATE things SET key = :key WHERE owner_id = :owner_id AND id = :id;`
+func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
+	q := `UPDATE things SET key = :key WHERE id = :id;`
 
 	dbth := dbThing{
-		ID:      id,
-		OwnerID: ownerID,
-		Key:     key,
+		ID:  id,
+		Key: key,
 	}
 
 	res, err := tr.db.NamedExecContext(ctx, q, dbth)
@@ -147,7 +146,7 @@ func (tr thingRepository) UpdateKey(ctx context.Context, ownerID, id, key string
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT name, owner_id, group_id, key, metadata FROM things WHERE id = $1;`
+	q := `SELECT group_id, name, key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
@@ -177,83 +176,21 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
-	if len(thingIDs) == 0 {
+func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
+	if len(groupIDs) == 0 {
 		return things.ThingsPage{}, nil
 	}
 
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := getOrderQuery(pm.Order)
-	dq := getDirQuery(pm.Dir)
-	idq := fmt.Sprintf("WHERE id IN ('%s') ", strings.Join(thingIDs, "','"))
-
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	thPage, err := tr.retrieve(ctx, groupIDs, false, pm)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, err
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, key, metadata FROM things
-					   %s%s%s ORDER BY %s %s LIMIT :limit OFFSET :offset;`, idq, mq, nq, oq, dq)
-
-	params := map[string]interface{}{
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": m,
-	}
-
-	rows, err := tr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []things.Thing
-	for rows.Next() {
-		dbth := dbThing{}
-		if err := rows.StructScan(&dbth); err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		th, err := toThing(dbth)
-		if err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		items = append(items, th)
-	}
-
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM things %s%s%s;`, idq, mq, nq)
-
-	total, err := total(ctx, tr.db, cq, params)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := things.ThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-		},
-	}
-
-	return page, nil
-}
-
-func (tr thingRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	if ownerID == "" {
-		return things.ThingsPage{}, errors.ErrRetrieveEntity
-	}
-
-	return tr.retrieve(ctx, ownerID, false, pm)
+	return thPage, nil
 }
 
 func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
-	thPage, err := tr.retrieve(ctx, "", true, things.PageMetadata{})
+	thPage, err := tr.retrieve(ctx, []string{}, true, things.PageMetadata{})
 	if err != nil {
 		return []things.Thing{}, err
 	}
@@ -262,26 +199,21 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 }
 
 func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
-	return tr.retrieve(ctx, "", false, pm)
+	return tr.retrieve(ctx, []string{}, false, pm)
 }
 
 func (tr thingRepository) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	oq := getConnOrderQuery(pm.Order, "th")
-	dq := getDirQuery(pm.Dir)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(chID); err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
 	var q, qc string
-
-	q = fmt.Sprintf(`SELECT id, name, key, metadata, group_id
+	q = fmt.Sprintf(`SELECT id, group_id, name, key, metadata
 		        FROM things th
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
@@ -336,13 +268,12 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, chID string, pm
 	}, nil
 }
 
-func (tr thingRepository) Remove(ctx context.Context, ownerID string, ids ...string) error {
+func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dbth := dbThing{
-			ID:      id,
-			OwnerID: ownerID,
+			ID: id,
 		}
-		q := `DELETE FROM things WHERE id = :id AND owner_id = :owner_id;`
+		q := `DELETE FROM things WHERE id = :id;`
 		_, err := tr.db.NamedExecContext(ctx, q, dbth)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -352,19 +283,20 @@ func (tr thingRepository) Remove(ctx context.Context, ownerID string, ids ...str
 	return nil
 }
 
-func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeOwner bool, pm things.PageMetadata) (things.ThingsPage, error) {
-	ownq := dbutil.GetOwnerQuery(ownerID)
+func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ThingsPage, error) {
+	idsq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := getOrderQuery(pm.Order)
-	dq := getDirQuery(pm.Dir)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var query []string
-	if ownq != "" {
-		query = append(query, ownq)
+	if idsq != "" {
+		query = append(query, idsq)
 	}
 	if mq != "" {
 		query = append(query, mq)
@@ -378,19 +310,13 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
+	q := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
-	q := fmt.Sprintf(`SELECT id, name, key, metadata, group_id FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	if includeOwner {
-		q = "SELECT id, owner_id, group_id, name, key, metadata FROM things;"
+	if allRows {
+		q = "SELECT id, group_id, name, key, metadata FROM things"
 	}
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
@@ -405,7 +331,7 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 
 	var items []things.Thing
 	for rows.Next() {
-		dbth := dbThing{OwnerID: ownerID}
+		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
 			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -441,7 +367,6 @@ func (tr thingRepository) retrieve(ctx context.Context, ownerID string, includeO
 
 type dbThing struct {
 	ID       string `db:"id"`
-	OwnerID  string `db:"owner_id"`
 	GroupID  string `db:"group_id"`
 	Name     string `db:"name"`
 	Key      string `db:"key"`
@@ -460,7 +385,6 @@ func toDBThing(th things.Thing) (dbThing, error) {
 
 	return dbThing{
 		ID:       th.ID,
-		OwnerID:  th.OwnerID,
 		GroupID:  th.GroupID,
 		Name:     th.Name,
 		Key:      th.Key,
@@ -476,7 +400,6 @@ func toThing(dbth dbThing) (things.Thing, error) {
 
 	return things.Thing{
 		ID:       dbth.ID,
-		OwnerID:  dbth.OwnerID,
 		GroupID:  dbth.GroupID,
 		Name:     dbth.Name,
 		Key:      dbth.Key,

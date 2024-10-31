@@ -58,6 +58,7 @@ func migrateDB(db *sqlx.DB) error {
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
 						PRIMARY KEY (id, owner_id)
+						CONSTRAINT  unique_org_name UNIQUE (org_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_policies (
 						group_id    UUID NOT NULL,
@@ -67,24 +68,22 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (group_id, member_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS things (
-						id          UUID UNIQUE NOT NULL,
-						owner_id    UUID NOT NULL,
+						id          UUID PRIMARY KEY,
 						group_id    UUID NOT NULL,
 						key         VARCHAR(4096) UNIQUE NOT NULL,
 						name        VARCHAR(1024),
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						PRIMARY KEY (id, owner_id)
+						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS channels (
-						id          UUID UNIQUE NOT NULL,
-						owner_id    UUID NOT NULL,
+						id          UUID PRIMARY KEY,
 						group_id    UUID NOT NULL,
 						name        VARCHAR(1024),
 						profile     JSONB,
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						PRIMARY KEY (id, owner_id)
+						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS connections (
 						channel_id  UUID NOT NULL,

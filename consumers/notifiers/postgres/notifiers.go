@@ -74,10 +74,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
 	qc := `SELECT COUNT(*) FROM notifiers WHERE group_id = $1;`

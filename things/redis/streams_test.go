@@ -87,7 +87,6 @@ func TestCreateThings(t *testing.T) {
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
-				"owner_id":  user.ID,
 				"group_id":  group.ID,
 				"metadata":  "{\"test\":\"test\"}",
 				"operation": thingCreate,
@@ -322,7 +321,6 @@ func TestCreateChannels(t *testing.T) {
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
-				"owner_id":  user.ID,
 				"group_id":  group.ID,
 				"operation": channelCreate,
 			},

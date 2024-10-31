@@ -25,7 +25,7 @@ var (
 	idProvider  = uuid.New()
 )
 
-func TestThingsSave(t *testing.T) {
+func TestSaveThings(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -43,7 +43,6 @@ func TestThingsSave(t *testing.T) {
 
 		thing := things.Thing{
 			ID:      thID,
-			OwnerID: group.OwnerID,
 			GroupID: group.ID,
 			Key:     thkey,
 		}
@@ -58,38 +57,38 @@ func TestThingsSave(t *testing.T) {
 		err    error
 	}{
 		{
-			desc:   "create new things",
+			desc:   "save new things",
 			things: ths,
 			err:    nil,
 		},
 		{
-			desc:   "create things that already exist",
+			desc:   "save things that already exist",
 			things: ths,
 			err:    errors.ErrConflict,
 		},
 		{
-			desc: "create thing with invalid ID",
+			desc: "save thing with invalid ID",
 			things: []things.Thing{
-				{ID: "invalid", OwnerID: group.OwnerID, GroupID: group.ID, Key: thkey},
+				{ID: "invalid", GroupID: group.ID, Key: thkey},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "create thing with invalid name",
+			desc: "save thing with invalid name",
 			things: []things.Thing{
-				{ID: thID, OwnerID: group.OwnerID, GroupID: group.ID, Key: thkey, Name: invalidName},
+				{ID: thID, GroupID: group.ID, Key: thkey, Name: invalidName},
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "create thing with invalid Key",
+			desc: "save thing with invalid Key",
 			things: []things.Thing{
-				{ID: thID, OwnerID: group.OwnerID, GroupID: group.ID, Key: nonexistentThingKey},
+				{ID: thID, GroupID: group.ID, Key: nonexistentThingKey},
 			},
 			err: errors.ErrConflict,
 		},
 		{
-			desc:   "create things with conflicting keys",
+			desc:   "save things with conflicting keys",
 			things: ths,
 			err:    errors.ErrConflict,
 		},
@@ -101,7 +100,7 @@ func TestThingsSave(t *testing.T) {
 	}
 }
 
-func TestThingUpdate(t *testing.T) {
+func TestUpdateThing(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -114,7 +113,6 @@ func TestThingUpdate(t *testing.T) {
 
 	thing := things.Thing{
 		ID:      thID,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     thkey,
 	}
@@ -138,37 +136,25 @@ func TestThingUpdate(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc: "update non-existing thing with existing user",
+			desc: "update non-existing thing",
 			thing: things.Thing{
 				ID:      nonexistentThingID,
-				OwnerID: group.OwnerID,
 				GroupID: group.ID,
 			},
 			err: errors.ErrNotFound,
 		},
 		{
-			desc: "update existing thing ID with non-existing user",
+			desc: "update existing thing ID",
 			thing: things.Thing{
 				ID:      thing.ID,
-				OwnerID: wrongID,
 				GroupID: group.ID,
 			},
 			err: nil,
 		},
 		{
-			desc: "update non-existing thing with non-existing user",
-			thing: things.Thing{
-				ID:      nonexistentThingID,
-				OwnerID: wrongID,
-				GroupID: group.ID,
-			},
-			err: errors.ErrNotFound,
-		},
-		{
 			desc: "update thing with valid name",
 			thing: things.Thing{
 				ID:      thID,
-				OwnerID: group.OwnerID,
 				GroupID: group.ID,
 				Key:     thkey,
 				Name:    validName,
@@ -178,10 +164,9 @@ func TestThingUpdate(t *testing.T) {
 		{
 			desc: "update thing with invalid name",
 			thing: things.Thing{
-				ID:      thID,
-				OwnerID: group.OwnerID,
-				Key:     thkey,
-				Name:    invalidName,
+				ID:   thID,
+				Key:  thkey,
+				Name: invalidName,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -205,7 +190,6 @@ func TestUpdateKey(t *testing.T) {
 
 	th1 := things.Thing{
 		ID:      id,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     key,
 	}
@@ -219,7 +203,6 @@ func TestUpdateKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	th2 := things.Thing{
 		ID:      id,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     key,
 	}
@@ -231,56 +214,38 @@ func TestUpdateKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		ownerID string
-		id      string
-		key     string
-		err     error
+		desc string
+		id   string
+		key  string
+		err  error
 	}{
 		{
-			desc:    "update key of an existing thing",
-			ownerID: th2.OwnerID,
-			id:      th2.ID,
-			key:     newKey,
-			err:     nil,
+			desc: "update key of an existing thing",
+			id:   th2.ID,
+			key:  newKey,
+			err:  nil,
 		},
 		{
-			desc:    "update key of a non-existing thing with existing user",
-			ownerID: th2.OwnerID,
-			id:      nonexistentThingID,
-			key:     newKey,
-			err:     errors.ErrNotFound,
+			desc: "update key of a non-existing thing",
+			id:   nonexistentThingID,
+			key:  newKey,
+			err:  errors.ErrNotFound,
 		},
 		{
-			desc:    "update key of an existing thing with non-existing user",
-			ownerID: wrongID,
-			id:      th2.ID,
-			key:     newKey,
-			err:     errors.ErrNotFound,
-		},
-		{
-			desc:    "update key of a non-existing thing with non-existing user",
-			ownerID: wrongID,
-			id:      nonexistentThingID,
-			key:     newKey,
-			err:     errors.ErrNotFound,
-		},
-		{
-			desc:    "update key with existing key value",
-			ownerID: th2.OwnerID,
-			id:      th2.ID,
-			key:     th1.Key,
-			err:     errors.ErrConflict,
+			desc: "update key with existing key value",
+			id:   th2.ID,
+			key:  th1.Key,
+			err:  errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := thingRepo.UpdateKey(context.Background(), tc.ownerID, tc.id, tc.key)
+		err := thingRepo.UpdateKey(context.Background(), tc.id, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestSingleThingRetrieval(t *testing.T) {
+func TestRetrieveThingByID(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -291,7 +256,6 @@ func TestSingleThingRetrieval(t *testing.T) {
 
 	th := things.Thing{
 		ID:      id,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     key,
 	}
@@ -327,7 +291,7 @@ func TestSingleThingRetrieval(t *testing.T) {
 	}
 }
 
-func TestThingRetrieveByKey(t *testing.T) {
+func TestRetrieveByKey(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -338,7 +302,6 @@ func TestThingRetrieveByKey(t *testing.T) {
 
 	th := things.Thing{
 		ID:      id,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     key,
 	}
@@ -371,7 +334,7 @@ func TestThingRetrieveByKey(t *testing.T) {
 	}
 }
 
-func TestMultiThingRetrieval(t *testing.T) {
+func TestRetrieveThingsByGroupIDs(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
@@ -405,7 +368,6 @@ func TestMultiThingRetrieval(t *testing.T) {
 		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			OwnerID: group.OwnerID,
 			GroupID: group.ID,
 			ID:      id,
 			Key:     key,
@@ -430,12 +392,10 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		ownerID      string
 		pageMetadata things.PageMetadata
 		size         uint64
 	}{
-		"retrieve all things": {
-			ownerID: group.OwnerID,
+		"retrieve all things by group IDs": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -443,25 +403,22 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
-		"retrieve all things with no limit": {
-			ownerID: group.OwnerID,
+		"retrieve all things by group IDs without limit": {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
-				Total: n,
+				Total: 0,
 			},
-			size: n,
+			size: 0,
 		},
-		"retrieve subset of things with existing owner": {
-			ownerID: group.OwnerID,
+		"retrieve subset of things by group IDs": {
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
-				Total:  n,
+				Total:  n - offset,
 			},
 			size: n - offset,
 		},
-		"retrieve things with existing name": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with existing name": {
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
@@ -470,8 +427,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: nameNum + nameMetaNum - offset,
 		},
-		"retrieve things with non-existing name": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with non-existing name": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -480,8 +436,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: 0,
 		},
-		"retrieve things with existing metadata": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with existing metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -490,8 +445,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: metaNum + nameMetaNum,
 		},
-		"retrieve things with partial metadata": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with partial metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -500,8 +454,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: metaNum + nameMetaNum,
 		},
-		"retrieve things with non-existing metadata": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with non-existing metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -510,8 +463,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: 0,
 		},
-		"retrieve all things with existing name and metadata": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs with existing name and metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
@@ -521,8 +473,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: nameMetaNum,
 		},
-		"retrieve things sorted by name ascendent": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs sorted by name ascendant": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -532,8 +483,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			},
 			size: n,
 		},
-		"retrieve things sorted by name descendent": {
-			ownerID: group.OwnerID,
+		"retrieve things by group IDs sorted by name descendent": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -546,7 +496,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveByOwner(context.Background(), tc.ownerID, tc.pageMetadata)
+		page, err := thingRepo.RetrieveByGroupIDs(context.Background(), []string{group.ID}, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
@@ -557,7 +507,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 }
 
-func TestBackupThings(t *testing.T) {
+func TestRetrieveAllThings(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
@@ -586,7 +536,6 @@ func TestBackupThings(t *testing.T) {
 		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			OwnerID: group.OwnerID,
 			GroupID: group.ID,
 			ID:      id,
 			Key:     key,
@@ -644,7 +593,6 @@ func TestRetrieveByChannel(t *testing.T) {
 
 	_, err = channelRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -656,7 +604,6 @@ func TestRetrieveByChannel(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
 			ID:      thID,
-			OwnerID: group.OwnerID,
 			GroupID: group.ID,
 			Key:     thkey,
 		}
@@ -683,7 +630,7 @@ func TestRetrieveByChannel(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"retrieve all things by channel with existing owner": {
+		"retrieve all things by channel": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -698,7 +645,7 @@ func TestRetrieveByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve subset of things by channel with existing owner": {
+		"retrieve subset of things by channel": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
@@ -756,7 +703,7 @@ func TestRetrieveByChannel(t *testing.T) {
 	}
 }
 
-func TestThingRemoval(t *testing.T) {
+func TestRemoveThing(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -767,7 +714,6 @@ func TestThingRemoval(t *testing.T) {
 
 	thing := things.Thing{
 		ID:      id,
-		OwnerID: group.OwnerID,
 		GroupID: group.ID,
 		Key:     key,
 	}
@@ -776,24 +722,21 @@ func TestThingRemoval(t *testing.T) {
 	thing.ID = ths[0].ID
 
 	cases := map[string]struct {
-		owner   string
 		thingID string
 		err     error
 	}{
 		"remove non-existing thing": {
-			owner:   group.OwnerID,
 			thingID: "wrong",
 			err:     errors.ErrRemoveEntity,
 		},
 		"remove thing": {
-			owner:   group.OwnerID,
 			thingID: thing.ID,
 			err:     nil,
 		},
 	}
 
 	for desc, tc := range cases {
-		err := thingRepo.Remove(context.Background(), tc.owner, tc.thingID)
+		err := thingRepo.Remove(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

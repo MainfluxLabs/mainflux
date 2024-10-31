@@ -6,7 +6,6 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -111,7 +110,6 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 
 		res := viewThingRes{
 			ID:       thing.ID,
-			OwnerID:  thing.OwnerID,
 			GroupID:  thing.GroupID,
 			Name:     thing.Name,
 			Key:      thing.Key,
@@ -147,7 +145,6 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, th := range page.Things {
 			view := viewThingRes{
 				ID:       th.ID,
-				OwnerID:  th.OwnerID,
 				GroupID:  th.GroupID,
 				Name:     th.Name,
 				Key:      th.Key,
@@ -184,7 +181,6 @@ func listThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, th := range page.Things {
 			view := viewThingRes{
 				ID:       th.ID,
-				OwnerID:  th.OwnerID,
 				GroupID:  th.GroupID,
 				Key:      th.Key,
 				Name:     th.Name,
@@ -202,9 +198,6 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
-			if err == errors.ErrNotFound {
-				return removeRes{}, nil
-			}
 			return nil, err
 		}
 
@@ -221,9 +214,6 @@ func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		req := request.(removeThingsReq)
 
 		if err := req.validate(); err != nil {
-			if err == errors.ErrNotFound {
-				return removeRes{}, nil
-			}
 			return nil, err
 		}
 
@@ -401,9 +391,6 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
-			if err == errors.ErrNotFound {
-				return removeRes{}, nil
-			}
 			return nil, err
 		}
 
@@ -420,9 +407,6 @@ func removeChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 		req := request.(removeChannelsReq)
 
 		if err := req.validate(); err != nil {
-			if err == errors.ErrNotFound {
-				return removeRes{}, nil
-			}
 			return nil, err
 		}
 
@@ -825,7 +809,6 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		view := backupThingRes{
 			ID:       thing.ID,
 			Name:     thing.Name,
-			OwnerID:  thing.OwnerID,
 			Key:      thing.Key,
 			Metadata: thing.Metadata,
 		}
@@ -836,7 +819,6 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		view := backupChannelRes{
 			ID:       channel.ID,
 			Name:     channel.Name,
-			OwnerID:  channel.OwnerID,
 			Metadata: channel.Metadata,
 		}
 		res.Channels = append(res.Channels, view)
@@ -871,7 +853,6 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	for _, thing := range req.Things {
 		th := things.Thing{
 			ID:       thing.ID,
-			OwnerID:  thing.OwnerID,
 			Name:     thing.Name,
 			Key:      thing.Key,
 			Metadata: thing.Metadata,
@@ -882,7 +863,6 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	for _, channel := range req.Channels {
 		ch := things.Channel{
 			ID:       channel.ID,
-			OwnerID:  channel.OwnerID,
 			Name:     channel.Name,
 			Metadata: channel.Metadata,
 		}

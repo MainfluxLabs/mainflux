@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -96,10 +97,7 @@ func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) erro
 }
 
 func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, status, created_at FROM subscriptions WHERE group_id= :group_id ORDER BY created_at %s;`, olq)
 	params := map[string]interface{}{

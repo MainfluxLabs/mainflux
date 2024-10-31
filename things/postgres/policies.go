@@ -154,6 +154,21 @@ func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things
 	return items, nil
 }
 
+func (pr rolesRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
+	var groupIDs []string
+
+	q := `SELECT group_id FROM group_roles WHERE member_id = :member_id;`
+	params := map[string]interface{}{
+		"member_id": memberID,
+	}
+
+	if err := pr.db.SelectContext(ctx, &groupIDs, q, params); err != nil {
+		return nil, err
+	}
+
+	return groupIDs, nil
+}
+
 func (pr rolesRepository) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 

@@ -37,6 +37,8 @@ const (
 	adminToken     = adminEmail
 	otherToken     = otherUserEmail
 	wrongValue     = "wrong_value"
+	emptyValue     = ""
+	invalidValue   = "invalid"
 	wrongID        = 0
 	password       = "password"
 	maxNameSize    = 1024
@@ -59,6 +61,10 @@ var (
 	}
 	channel = things.Channel{
 		Name:     "test",
+		Metadata: map[string]interface{}{"test": "data"},
+	}
+	channel1 = things.Channel{
+		Name:     "test1",
 		Metadata: map[string]interface{}{"test": "data"},
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
@@ -147,15 +153,15 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusCreated,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create things with empty request",
-			data:        "",
+			data:        emptyValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing with invalid request format",
@@ -163,7 +169,7 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing with invalid name",
@@ -171,7 +177,7 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create things with empty JSON array",
@@ -179,7 +185,7 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing with existing key",
@@ -187,7 +193,7 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusConflict,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing with invalid auth token",
@@ -195,23 +201,23 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing with empty auth token",
 			data:        data,
 			contentType: contentType,
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create thing without content type",
 			data:        data,
-			contentType: "",
+			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
-			response:    "",
+			response:    emptyValue,
 		},
 	}
 
@@ -288,7 +294,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid id",
 			req:         data,
-			id:          "invalid",
+			id:          invalidValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -306,7 +312,7 @@ func TestUpdateThing(t *testing.T) {
 			req:         data,
 			id:          th1.ID,
 			contentType: contentType,
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -319,7 +325,7 @@ func TestUpdateThing(t *testing.T) {
 		},
 		{
 			desc:        "update thing with empty request",
-			req:         "",
+			req:         emptyValue,
 			id:          th1.ID,
 			contentType: contentType,
 			auth:        token,
@@ -329,7 +335,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing without content type",
 			req:         data,
 			id:          th1.ID,
-			contentType: "",
+			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
 		},
@@ -422,7 +428,7 @@ func TestUpdateKey(t *testing.T) {
 		{
 			desc:        "update thing with invalid id",
 			req:         dummyData,
-			id:          "invalid",
+			id:          invalidValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -440,7 +446,7 @@ func TestUpdateKey(t *testing.T) {
 			req:         data,
 			id:          th.ID,
 			contentType: contentType,
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -453,7 +459,7 @@ func TestUpdateKey(t *testing.T) {
 		},
 		{
 			desc:        "update thing with empty request",
-			req:         "",
+			req:         emptyValue,
 			id:          th.ID,
 			contentType: contentType,
 			auth:        token,
@@ -463,7 +469,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing without content type",
 			req:         data,
 			id:          th.ID,
-			contentType: "",
+			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
 		},
@@ -537,13 +543,13 @@ func TestViewThing(t *testing.T) {
 		{
 			desc:   "view thing by passing empty token",
 			id:     th.ID,
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			res:    thingRes{},
 		},
 		{
 			desc:   "view thing by passing invalid id",
-			id:     "invalid",
+			id:     invalidValue,
 			auth:   token,
 			status: http.StatusNotFound,
 			res:    thingRes{},
@@ -580,11 +586,12 @@ func TestListThings(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
+		thing1.GroupID = gr.ID
 
-		thing.GroupID = gr.ID
 		ths, err := svc.CreateThings(context.Background(), token, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
+
 		data = append(data, thingRes{
 			ID:       th.ID,
 			Name:     th.Name,
@@ -610,41 +617,6 @@ func TestListThings(t *testing.T) {
 			res:    data[0:5],
 		},
 		{
-			desc:   "get a list of things with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?limit=%d", thingURL, noLimit),
-			res:    data,
-		},
-		{
-			desc:   "get a list of things ordered by name descendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=name&dir=desc", thingURL, 0, 5),
-			res:    data[0:5],
-		},
-		{
-			desc:   "get a list of things ordered by name ascendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=name&dir=asc", thingURL, 0, 5),
-			res:    data[0:5],
-		},
-		{
-			desc:   "get a list of things with invalid order",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=wrong", thingURL, 0, 5),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of things with invalid dir",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=name&dir=wrong", thingURL, 0, 5),
-			res:    nil,
-		},
-		{
 			desc:   "get a list of things with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
@@ -653,7 +625,7 @@ func TestListThings(t *testing.T) {
 		},
 		{
 			desc:   "get a list of things with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 1),
 			res:    nil,
@@ -711,7 +683,7 @@ func TestListThings(t *testing.T) {
 			desc:   "get a list of things with default URL",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s%s", thingURL, ""),
+			url:    fmt.Sprintf("%s%s", thingURL, emptyValue),
 			res:    data[0:10],
 		},
 		{
@@ -743,7 +715,7 @@ func TestListThings(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of things sorted by name ascendent",
+			desc:   "get a list of things sorted by name ascendant",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", thingURL, 0, 5, nameKey, ascKey),
@@ -793,49 +765,57 @@ func TestSearchThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	th := searchThingReq
-	validData := toJSON(th)
+	str := searchThingReq
+	validData := toJSON(str)
 
-	th.Dir = "desc"
-	th.Order = "name"
-	descData := toJSON(th)
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
 
-	th.Dir = "asc"
-	ascData := toJSON(th)
+	str.Dir = "asc"
+	ascData := toJSON(str)
 
-	th.Order = "wrong"
-	invalidOrderData := toJSON(th)
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
 
-	th.Limit = 0
-	zeroLimitData := toJSON(th)
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
 
-	th = searchThingReq
-	th.Dir = "wrong"
-	invalidDirData := toJSON(th)
+	str = searchThingReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
 
-	th = searchThingReq
-	th.Limit = 110
-	limitMaxData := toJSON(th)
+	str = searchThingReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
 
-	th = searchThingReq
-	th.Name = invalidName
-	invalidNameData := toJSON(th)
+	str = searchThingReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
 
-	th.Name = invalidName
-	invalidData := toJSON(th)
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	data := []thingRes{}
 	for i := 0; i < 100; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		ths, err := svc.CreateThings(context.Background(), token, things.Thing{ID: id, Name: name, Metadata: map[string]interface{}{"test": name}})
+
+		th := things.Thing{ID: id, GroupID: gr.ID, Name: name, Metadata: map[string]interface{}{"test": name}}
+		ths, err := svc.CreateThings(context.Background(), token, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		th := ths[0]
+		thing := ths[0]
+
 		data = append(data, thingRes{
-			ID:       th.ID,
-			Name:     th.Name,
-			Key:      th.Key,
-			Metadata: th.Metadata,
+			ID:       thing.ID,
+			GroupID:  thing.GroupID,
+			Name:     thing.Name,
+			Key:      thing.Key,
+			Metadata: thing.Metadata,
 		})
 	}
 
@@ -854,17 +834,17 @@ func TestSearchThings(t *testing.T) {
 			res:    data[0:5],
 		},
 		{
+			desc:   "search things ordered by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
 			desc:   "search things ordered by name descendent",
 			auth:   token,
 			status: http.StatusOK,
 			req:    descData,
-			res:    data[0:5],
-		},
-		{
-			desc:   "search things ordered by name ascendent",
-			auth:   token,
-			status: http.StatusOK,
-			req:    ascData,
 			res:    data[0:5],
 		},
 		{
@@ -897,7 +877,7 @@ func TestSearchThings(t *testing.T) {
 		},
 		{
 			desc:   "search things with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			req:    validData,
 			res:    nil,
@@ -938,7 +918,7 @@ func TestSearchThings(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "search things sorted by name ascendent",
+			desc:   "search things sorted by name ascendant",
 			auth:   token,
 			status: http.StatusOK,
 			req:    validData,
@@ -1058,7 +1038,7 @@ func TestListThingsByChannel(t *testing.T) {
 		},
 		{
 			desc:   "get a list of things by channel with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, ch.ID, 0, 1),
 			res:    nil,
@@ -1191,6 +1171,11 @@ func TestRemoveThing(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -1202,6 +1187,18 @@ func TestRemoveThing(t *testing.T) {
 		status int
 	}{
 		{
+			desc:   "remove thing with invalid token",
+			id:     th.ID,
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "remove thing with empty token",
+			id:     th.ID,
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+		},
+		{
 			desc:   "remove existing thing",
 			id:     th.ID,
 			auth:   token,
@@ -1212,18 +1209,6 @@ func TestRemoveThing(t *testing.T) {
 			id:     strconv.FormatUint(wrongID, 10),
 			auth:   token,
 			status: http.StatusNotFound,
-		},
-		{
-			desc:   "remove thing with invalid token",
-			id:     th.ID,
-			auth:   wrongValue,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "remove thing with empty token",
-			id:     th.ID,
-			auth:   "",
-			status: http.StatusUnauthorized,
 		},
 	}
 
@@ -1245,12 +1230,18 @@ func TestRemoveThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	ths := []things.Thing{thing, thing1}
-	usrThs, err := svc.CreateThings(context.Background(), token, ths...)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
+	thing1.GroupID = gr.ID
+	tList := []things.Thing{thing, thing1}
+	ths, err := svc.CreateThings(context.Background(), token, tList...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var thingIDs []string
-	for _, th := range usrThs {
+	for _, th := range ths {
 		thingIDs = append(thingIDs, th.ID)
 	}
 
@@ -1261,6 +1252,27 @@ func TestRemoveThings(t *testing.T) {
 		contentType string
 		status      int
 	}{
+		{
+			desc:        "remove things with invalid token",
+			data:        thingIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove things with empty token",
+			data:        thingIDs,
+			auth:        emptyValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove things with invalid content type",
+			data:        thingIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
 		{
 			desc:        "remove existing things",
 			data:        thingIDs,
@@ -1276,25 +1288,18 @@ func TestRemoveThings(t *testing.T) {
 			status:      http.StatusNotFound,
 		},
 		{
-			desc:        "remove things with invalid token",
-			data:        thingIDs,
-			auth:        wrongValue,
-			contentType: contentType,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "remove things with empty token",
-			data:        thingIDs,
-			auth:        "",
-			contentType: contentType,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "remove things with invalid content type",
-			data:        thingIDs,
+			desc:        "remove things with empty thing ids",
+			data:        []string{emptyValue},
 			auth:        token,
-			contentType: wrongValue,
-			status:      http.StatusUnsupportedMediaType,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove channels without channel ids",
+			data:        []string{},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
 		},
 	}
 
@@ -1347,15 +1352,15 @@ func TestCreateChannels(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusCreated,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create channel with empty request",
-			data:        "",
+			data:        emptyValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create channels with empty JSON",
@@ -1363,7 +1368,7 @@ func TestCreateChannels(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create channel with invalid auth token",
@@ -1371,30 +1376,30 @@ func TestCreateChannels(t *testing.T) {
 			contentType: contentType,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create channel with empty auth token",
 			data:        data,
 			contentType: contentType,
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:     "create channel with invalid request format",
 			data:     "}",
 			auth:     token,
 			status:   http.StatusUnsupportedMediaType,
-			response: "",
+			response: emptyValue,
 		},
 		{
 			desc:        "create channel without content type",
 			data:        data,
-			contentType: "",
+			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
-			response:    "",
+			response:    emptyValue,
 		},
 		{
 			desc:        "create channel with invalid name",
@@ -1402,7 +1407,7 @@ func TestCreateChannels(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    "",
+			response:    emptyValue,
 		},
 	}
 
@@ -1472,7 +1477,7 @@ func TestUpdateChannel(t *testing.T) {
 		{
 			desc:        "update channel with invalid id",
 			req:         updateData,
-			id:          "invalid",
+			id:          invalidValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -1490,7 +1495,7 @@ func TestUpdateChannel(t *testing.T) {
 			req:         updateData,
 			id:          ch.ID,
 			contentType: contentType,
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -1511,7 +1516,7 @@ func TestUpdateChannel(t *testing.T) {
 		},
 		{
 			desc:        "update channel with empty request",
-			req:         "",
+			req:         emptyValue,
 			id:          ch.ID,
 			contentType: contentType,
 			auth:        token,
@@ -1521,7 +1526,7 @@ func TestUpdateChannel(t *testing.T) {
 			desc:        "update channel with missing content type",
 			req:         updateData,
 			id:          ch.ID,
-			contentType: "",
+			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
 		},
@@ -1601,13 +1606,13 @@ func TestViewChannel(t *testing.T) {
 		{
 			desc:   "view channel with empty token",
 			id:     ch.ID,
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			res:    channelRes{},
 		},
 		{
 			desc:   "view channel with invalid id",
-			id:     "invalid",
+			id:     invalidValue,
 			auth:   token,
 			status: http.StatusNotFound,
 			res:    channelRes{},
@@ -1635,25 +1640,33 @@ func TestListChannels(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
 	channels := []channelRes{}
 	for i := 0; i < n; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
-		chs, err := svc.CreateChannels(context.Background(), token,
-			things.Channel{
-				Name:     name,
-				Metadata: map[string]interface{}{"test": "data"},
-			})
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		ch := things.Channel{ID: id, GroupID: gr.ID, Name: name, Metadata: map[string]interface{}{"test": "data"}}
+
+		chs, err := svc.CreateChannels(context.Background(), token, ch)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		ch := chs[0]
+		channel := chs[0]
+
+		thing.GroupID = gr.ID
 		ths, err := svc.CreateThings(context.Background(), token, thing)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
+
 		svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
 
 		channels = append(channels, channelRes{
-			ID:       ch.ID,
-			Name:     ch.Name,
-			Metadata: ch.Metadata,
+			ID:       channel.ID,
+			Name:     channel.Name,
+			Metadata: channel.Metadata,
+			GroupID:  channel.GroupID,
+			Profile:  channel.Profile,
 		})
 	}
 	channelURL := fmt.Sprintf("%s/channels", ts.URL)
@@ -1673,39 +1686,11 @@ func TestListChannels(t *testing.T) {
 			res:    channels[0:6],
 		},
 		{
-			desc:   "get a list of all channels with no limit",
+			desc:   "get a list of all channels without limit",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?limit=%d", channelURL, noLimit),
-			res:    channels,
-		},
-		{
-			desc:   "get a list of channels ordered by id descendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=id&dir=desc", channelURL, 0, 6),
-			res:    channels[len(channels)-6:],
-		},
-		{
-			desc:   "get a list of channels ordered by id ascendent",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=id&dir=asc", channelURL, 0, 6),
-			res:    channels[0:6],
-		},
-		{
-			desc:   "get a list of channels with invalid order",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=wrong", channelURL, 0, 6),
-			res:    nil,
-		},
-		{
-			desc:   "get a list of channels with invalid dir",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=name&dir=wrong", channelURL, 0, 6),
-			res:    nil,
+			res:    []channelRes{},
 		},
 		{
 			desc:   "get a list of channels with invalid token",
@@ -1716,7 +1701,7 @@ func TestListChannels(t *testing.T) {
 		},
 		{
 			desc:   "get a list of channels with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d", channelURL, 0, 1),
 			res:    nil,
@@ -1743,14 +1728,14 @@ func TestListChannels(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of channels with no offset provided",
+			desc:   "get a list of channels without offset",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?limit=%d", channelURL, 5),
 			res:    channels[0:5],
 		},
 		{
-			desc:   "get a list of channels with no limit provided",
+			desc:   "get a list of channels without limit",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d", channelURL, 1),
@@ -1774,7 +1759,7 @@ func TestListChannels(t *testing.T) {
 			desc:   "get a list of channels with default URL",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s%s", channelURL, ""),
+			url:    fmt.Sprintf("%s%s", channelURL, emptyValue),
 			res:    channels[0:10],
 		},
 		{
@@ -1806,7 +1791,7 @@ func TestListChannels(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of channels sorted by name ascendent",
+			desc:   "get a list of channels sorted by name ascendant",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", channelURL, 0, 6, nameKey, ascKey),
@@ -1817,7 +1802,7 @@ func TestListChannels(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", channelURL, 0, 6, nameKey, descKey),
-			res:    channels[len(channels)-6:],
+			res:    channels[0:6],
 		},
 		{
 			desc:   "get a list of channels sorted with invalid order",
@@ -1905,7 +1890,7 @@ func TestViewChannelByThing(t *testing.T) {
 		},
 		{
 			desc:   "view channel by thing with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/channels", channelURL, th.ID),
 			res:    channelRes{},
@@ -1914,7 +1899,7 @@ func TestViewChannelByThing(t *testing.T) {
 			desc:   "view channel by thing without thing id",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/channels", channelURL, ""),
+			url:    fmt.Sprintf("%s/%s/channels", channelURL, emptyValue),
 			res:    channelRes{},
 		},
 		{
@@ -1947,7 +1932,13 @@ func TestRemoveChannel(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	chs, _ := svc.CreateChannels(context.Background(), token, channel)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
+	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	ch := chs[0]
 
 	cases := []struct {
@@ -1956,6 +1947,18 @@ func TestRemoveChannel(t *testing.T) {
 		auth   string
 		status int
 	}{
+		{
+			desc:   "remove channel with invalid token",
+			id:     ch.ID,
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "remove channel with empty token",
+			id:     ch.ID,
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+		},
 		{
 			desc:   "remove channel with invalid token",
 			id:     ch.ID,
@@ -1973,18 +1976,6 @@ func TestRemoveChannel(t *testing.T) {
 			id:     ch.ID,
 			auth:   token,
 			status: http.StatusNotFound,
-		},
-		{
-			desc:   "remove channel with invalid token",
-			id:     ch.ID,
-			auth:   wrongValue,
-			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "remove channel with empty token",
-			id:     ch.ID,
-			auth:   "",
-			status: http.StatusUnauthorized,
 		},
 	}
 
@@ -2006,78 +1997,76 @@ func TestRemoveChannels(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	channel1 := things.Channel{Name: "test1"}
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
-	c := []things.Channel{channel, channel1}
-	chs, _ := svc.CreateChannels(context.Background(), token, c...)
+	channel.GroupID = gr.ID
+	channel1.GroupID = gr.ID
+	cList := []things.Channel{channel, channel1}
+	chs, err := svc.CreateChannels(context.Background(), token, cList...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var chIDs []string
+	var channelIDs []string
 	for _, ch := range chs {
-		chIDs = append(chIDs, ch.ID)
+		channelIDs = append(channelIDs, ch.ID)
 	}
 
 	cases := []struct {
 		desc        string
-		ids         []string
+		data        []string
 		auth        string
 		contentType string
 		status      int
 	}{
 		{
 			desc:        "remove channels with invalid token",
-			ids:         chIDs,
+			data:        channelIDs,
 			auth:        wrongValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
 		{
+			desc:        "remove channels with empty token",
+			data:        channelIDs,
+			auth:        emptyValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove channels with invalid content type",
+			data:        channelIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
 			desc:        "remove existing channels",
-			ids:         chIDs,
+			data:        channelIDs,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNoContent,
 		},
 		{
-			desc:        "remove removed channels",
-			ids:         chIDs,
+			desc:        "remove non-existent channels",
+			data:        channelIDs,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
 		},
 		{
-			desc:        "remove channels with invalid token",
-			ids:         chIDs,
-			auth:        wrongValue,
-			contentType: contentType,
-			status:      http.StatusUnauthorized,
-		},
-		{
 			desc:        "remove channels with empty channel ids",
-			ids:         []string{""},
+			data:        []string{emptyValue},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove channels without channel ids",
-			ids:         []string{},
+			data:        []string{},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "remove channels with empty token",
-			ids:         chIDs,
-			auth:        "",
-			contentType: contentType,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "remove channels with invalid content type",
-			ids:         chIDs,
-			auth:        token,
-			contentType: wrongValue,
-			status:      http.StatusUnsupportedMediaType,
 		},
 	}
 
@@ -2085,7 +2074,7 @@ func TestRemoveChannels(t *testing.T) {
 		data := struct {
 			ChannelIDs []string `json:"channel_ids"`
 		}{
-			tc.ids,
+			tc.data,
 		}
 
 		body := toJSON(data)
@@ -2109,31 +2098,33 @@ func TestConnect(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr1 := grs[0]
+
 	group2 := group
 	group2.Name = "group-2"
-	grs, err := svc.CreateGroups(context.Background(), token, group, group2)
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-	gr2 := grs[1]
+	gr2 := grs2[0]
 
-	thing.GroupID = gr.ID
+	thing.GroupID = gr1.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th1 := ths[0]
 
-	thIDs := []string{}
-	for _, th := range ths {
-		thIDs = append(thIDs, th.ID)
-	}
-
-	channel.GroupID = gr.ID
-	chs1, err := svc.CreateChannels(context.Background(), token, channel)
+	thing.GroupID = gr2.ID
+	ths2, err := svc.CreateThings(context.Background(), otherToken, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch1 := chs1[0]
+	th2 := ths2[0]
 
-	channel.GroupID = gr2.ID
-	chs2, err := svc.CreateChannels(context.Background(), otherToken, channel)
+	thIDs1 := []string{th1.ID}
+	thIDs2 := []string{th2.ID}
+
+	channel.GroupID = gr1.ID
+	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch2 := chs2[0]
+	ch1 := chs[0]
 
 	cases := []struct {
 		desc        string
@@ -2147,7 +2138,7 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect existing things to existing channel",
 			channelID:   ch1.ID,
-			thingIDs:    thIDs,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusOK,
@@ -2155,7 +2146,7 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect existing things to non-existent channel",
 			channelID:   strconv.FormatUint(wrongID, 10),
-			thingIDs:    thIDs,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
@@ -2170,8 +2161,8 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect existing things to channel with invalid id",
-			channelID:   "invalid",
-			thingIDs:    thIDs,
+			channelID:   invalidValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
@@ -2179,15 +2170,15 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect things with invalid id to existing channel",
 			channelID:   ch1.ID,
-			thingIDs:    []string{"invalid"},
+			thingIDs:    []string{invalidValue},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "connect existing things to empty channel id",
-			channelID:   "",
-			thingIDs:    thIDs,
+			channelID:   emptyValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
@@ -2195,7 +2186,7 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect empty things id to existing channel",
 			channelID:   ch1.ID,
-			thingIDs:    []string{""},
+			thingIDs:    []string{emptyValue},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
@@ -2203,7 +2194,7 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect existing things to existing channel with invalid token",
 			channelID:   ch1.ID,
-			thingIDs:    thIDs,
+			thingIDs:    thIDs1,
 			auth:        wrongValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
@@ -2211,25 +2202,17 @@ func TestConnect(t *testing.T) {
 		{
 			desc:        "connect existing things to existing channel with empty token",
 			channelID:   ch1.ID,
-			thingIDs:    thIDs,
-			auth:        "",
+			thingIDs:    thIDs1,
+			auth:        emptyValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "connect things from owner to channel of other user",
-			channelID:   ch2.ID,
-			thingIDs:    thIDs,
-			auth:        token,
-			contentType: contentType,
-			status:      http.StatusForbidden,
-		},
-		{
 			desc:        "connect with invalid content type",
-			channelID:   ch2.ID,
-			thingIDs:    thIDs,
+			channelID:   ch1.ID,
+			thingIDs:    thIDs1,
 			auth:        token,
-			contentType: "invalid",
+			contentType: invalidValue,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
@@ -2241,15 +2224,15 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect valid thing ids with empty channel id",
-			channelID:   "",
-			thingIDs:    thIDs,
+			channelID:   emptyValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "connect valid channel id with empty thing ids",
-			channelID:   ch2.ID,
+			channelID:   ch1.ID,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2257,11 +2240,19 @@ func TestConnect(t *testing.T) {
 		},
 		{
 			desc:        "connect empty channel id and empty thing ids",
-			channelID:   "",
+			channelID:   emptyValue,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "connect things from another group's channel",
+			channelID:   ch1.ID,
+			thingIDs:    thIDs2,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusForbidden,
 		},
 	}
 
@@ -2275,7 +2266,7 @@ func TestConnect(t *testing.T) {
 		}
 		body := toJSON(data)
 
-		if tc.body != "" {
+		if tc.body != emptyValue {
 			body = tc.body
 		}
 
@@ -2299,32 +2290,35 @@ func TestDisconnect(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr1 := grs[0]
+
 	group2 := group
 	group2.Name = "group-2"
-	grs, err := svc.CreateGroups(context.Background(), token, group, group2)
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-	gr2 := grs[1]
+	gr2 := grs2[0]
 
-	thing.GroupID = gr.ID
+	thing.GroupID = gr1.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thIDs := []string{}
-	for _, th := range ths {
-		thIDs = append(thIDs, th.ID)
-	}
+	th1 := ths[0]
 
-	channel.GroupID = gr.ID
+	thing.GroupID = gr2.ID
+	ths2, err := svc.CreateThings(context.Background(), otherToken, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th2 := ths2[0]
+
+	thIDs1 := []string{th1.ID}
+	thIDs2 := []string{th2.ID}
+
+	channel.GroupID = gr1.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	ch1 := chs[0]
 
-	channel.GroupID = gr2.ID
-	uCh, err := svc.CreateChannels(context.Background(), otherToken, channel)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	usrCh := uCh[0]
-
-	err = svc.Connect(context.Background(), token, ch.ID, thIDs)
+	err = svc.Connect(context.Background(), token, ch1.ID, thIDs1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -2338,8 +2332,8 @@ func TestDisconnect(t *testing.T) {
 	}{
 		{
 			desc:        "disconnect existing things from existing channels",
-			channelID:   ch.ID,
-			thingIDs:    thIDs,
+			channelID:   ch1.ID,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusOK,
@@ -2347,14 +2341,14 @@ func TestDisconnect(t *testing.T) {
 		{
 			desc:        "disconnect existing things from non-existent channels",
 			channelID:   strconv.FormatUint(wrongID, 10),
-			thingIDs:    thIDs,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "disconnect non-existing things from existing channels",
-			channelID:   ch.ID,
+			channelID:   ch1.ID,
 			thingIDs:    []string{strconv.FormatUint(wrongID, 10)},
 			auth:        token,
 			contentType: contentType,
@@ -2362,66 +2356,66 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect existing things from channel with invalid id",
-			channelID:   "invalid",
-			thingIDs:    thIDs,
+			channelID:   invalidValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "disconnect things with invalid id from existing channels",
-			channelID:   ch.ID,
-			thingIDs:    []string{"invalid"},
+			channelID:   ch1.ID,
+			thingIDs:    []string{invalidValue},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "disconnect existing things from empty channel ids",
-			channelID:   "",
-			thingIDs:    thIDs,
+			channelID:   emptyValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "disconnect empty things id from existing channels",
-			channelID:   ch.ID,
-			thingIDs:    []string{""},
+			channelID:   ch1.ID,
+			thingIDs:    []string{emptyValue},
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "disconnect existing things from existing channels with invalid token",
-			channelID:   ch.ID,
-			thingIDs:    thIDs,
+			channelID:   ch1.ID,
+			thingIDs:    thIDs1,
 			auth:        wrongValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "disconnect existing things from existing channels with empty token",
-			channelID:   ch.ID,
-			thingIDs:    thIDs,
-			auth:        "",
+			channelID:   ch1.ID,
+			thingIDs:    thIDs1,
+			auth:        emptyValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "disconnect things from channels of other user",
-			channelID:   usrCh.ID,
-			thingIDs:    thIDs,
+			desc:        "disconnect things from another group's channel",
+			channelID:   ch1.ID,
+			thingIDs:    thIDs2,
 			auth:        token,
 			contentType: contentType,
-			status:      http.StatusNotFound,
+			status:      http.StatusForbidden,
 		},
 		{
 			desc:        "disconnect with invalid content type",
-			channelID:   ch.ID,
-			thingIDs:    thIDs,
+			channelID:   ch1.ID,
+			thingIDs:    thIDs1,
 			auth:        token,
-			contentType: "invalid",
+			contentType: invalidValue,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
@@ -2433,15 +2427,15 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect valid thing ids from empty channel ids",
-			channelID:   "",
-			thingIDs:    thIDs,
+			channelID:   emptyValue,
+			thingIDs:    thIDs1,
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "disconnect empty thing ids from valid channel ids",
-			channelID:   ch.ID,
+			channelID:   ch1.ID,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2449,7 +2443,7 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:        "disconnect empty thing ids from empty channel ids",
-			channelID:   "",
+			channelID:   emptyValue,
 			thingIDs:    []string{},
 			auth:        token,
 			contentType: contentType,
@@ -2467,7 +2461,7 @@ func TestDisconnect(t *testing.T) {
 		}
 		body := toJSON(data)
 
-		if tc.body != "" {
+		if tc.body != emptyValue {
 			body = tc.body
 		}
 
@@ -2543,7 +2537,7 @@ func TestRemoveGroups(t *testing.T) {
 		},
 		{
 			desc:        "remove groups with empty group ids",
-			data:        []string{""},
+			data:        []string{emptyValue},
 			auth:        wrongValue,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
@@ -2551,7 +2545,7 @@ func TestRemoveGroups(t *testing.T) {
 		{
 			desc:        "remove groups with empty token",
 			data:        groupIDs,
-			auth:        "",
+			auth:        emptyValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
@@ -2641,7 +2635,6 @@ func TestBackup(t *testing.T) {
 	for _, th := range ths {
 		thingsRes = append(thingsRes, backupThingRes{
 			ID:       th.ID,
-			OwnerID:  th.OwnerID,
 			Name:     th.Name,
 			Key:      th.Key,
 			Metadata: th.Metadata,
@@ -2652,7 +2645,6 @@ func TestBackup(t *testing.T) {
 	for _, ch := range channels {
 		channelsRes = append(channelsRes, backupChannelRes{
 			ID:       ch.ID,
-			OwnerID:  ch.OwnerID,
 			Name:     ch.Name,
 			Metadata: ch.Metadata,
 		})
@@ -2709,7 +2701,7 @@ func TestBackup(t *testing.T) {
 		},
 		{
 			desc:   "backup with empty token",
-			auth:   "",
+			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    backupURL,
 			res:    backupRes{},
@@ -2748,7 +2740,6 @@ func TestRestore(t *testing.T) {
 
 	testThing := things.Thing{
 		ID:       thId,
-		OwnerID:  adminEmail,
 		Name:     nameKey,
 		Key:      thKey,
 		Metadata: map[string]interface{}{"test": "data"},
@@ -2774,8 +2765,7 @@ func TestRestore(t *testing.T) {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		channels = append(channels, things.Channel{
 			ID:       chID,
-			OwnerID:  adminEmail,
-			GroupID:  "",
+			GroupID:  emptyValue,
 			Name:     name,
 			Metadata: map[string]interface{}{"test": "data"},
 		})
@@ -2790,7 +2780,6 @@ func TestRestore(t *testing.T) {
 	thr := []restoreThingReq{
 		{
 			ID:       testThing.ID,
-			OwnerID:  testThing.OwnerID,
 			Name:     testThing.Name,
 			Key:      testThing.Key,
 			Metadata: testThing.Metadata,
@@ -2801,7 +2790,6 @@ func TestRestore(t *testing.T) {
 	for _, ch := range channels {
 		chr = append(chr, restoreChannelReq{
 			ID:       ch.ID,
-			OwnerID:  ch.OwnerID,
 			Name:     ch.Name,
 			Metadata: ch.Metadata,
 		})
@@ -2862,7 +2850,7 @@ func TestRestore(t *testing.T) {
 		},
 		{
 			desc:        "restore with empty token",
-			auth:        "",
+			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 			url:         restoreURL,
 			req:         data,
@@ -2899,6 +2887,11 @@ func TestIdentify(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thing.GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
@@ -2935,7 +2928,7 @@ func TestIdentify(t *testing.T) {
 		},
 		"identify with invalid JSON request": {
 			contentType: contentType,
-			req:         "",
+			req:         emptyValue,
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -3006,7 +2999,7 @@ func TestGetConnByThingKey(t *testing.T) {
 		},
 		"check access with empty request": {
 			contentType: contentType,
-			req:         "",
+			req:         emptyValue,
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -3065,7 +3058,6 @@ type channelsPageRes struct {
 
 type backupThingRes struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -3073,16 +3065,13 @@ type backupThingRes struct {
 
 type backupChannelRes struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type backupConnectionRes struct {
-	ChannelID    string `json:"channel_id"`
-	ChannelOwner string `json:"channel_owner"`
-	ThingID      string `json:"thing_id"`
-	ThingOwner   string `json:"thing_owner"`
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
 }
 
 type viewGroupRes struct {
@@ -3102,7 +3091,6 @@ type backupRes struct {
 
 type restoreThingReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata"`
@@ -3110,16 +3098,13 @@ type restoreThingReq struct {
 
 type restoreChannelReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
 type restoreConnectionReq struct {
-	ChannelID    string `json:"channel_id"`
-	ChannelOwner string `json:"channel_owner"`
-	ThingID      string `json:"thing_id"`
-	ThingOwner   string `json:"thing_owner"`
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
 }
 
 type restoreGroupReq struct {

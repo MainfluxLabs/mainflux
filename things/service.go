@@ -45,9 +45,6 @@ type Service interface {
 	// user identified by the provided key.
 	ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error)
 
-	// ListThingsByIDs retrieves data about subset of things that are identified
-	ListThingsByIDs(ctx context.Context, ids []string) (ThingsPage, error)
-
 	// ListThingsByChannel retrieves data about subset of things that are
 	// connected or not connected to specified channel and belong to the user identified by
 	// the provided key.
@@ -174,15 +171,19 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 }
 
 func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return []Thing{}, err
-	}
-
 	ths := []Thing{}
 	for _, thing := range things {
-		th, err := ts.createThing(ctx, &thing, res)
+		ar := AuthorizeReq{
+			Token:   token,
+			Object:  thing.GroupID,
+			Subject: GroupSub,
+			Action:  Editor,
+		}
+		if err := ts.Authorize(ctx, ar); err != nil {
+			return nil, err
+		}
 
+		th, err := ts.createThing(ctx, &thing)
 		if err != nil {
 			return []Thing{}, err
 		}
@@ -192,9 +193,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 	return ths, nil
 }
 
-func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity *protomfx.UserIdentity) (Thing, error) {
-	thing.OwnerID = identity.GetId()
-
+func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, error) {
 	if thing.ID == "" {
 		id, err := ts.idProvider.ID()
 		if err != nil {
@@ -223,22 +222,16 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing, identity
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	th, err := ts.things.RetrieveByID(ctx, thing.ID)
-	if err != nil {
-		return err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  th.GroupID,
-		Subject: GroupSub,
+		Object:  thing.ID,
+		Subject: ThingSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
-	thing.OwnerID = th.OwnerID
 	return ts.things.Update(ctx, thing)
 }
 
@@ -253,25 +246,22 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 		return err
 	}
 
-	res, _ := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	owner := res.GetId()
-
-	return ts.things.UpdateKey(ctx, owner, id, key)
+	return ts.things.UpdateKey(ctx, id, key)
 }
 
 func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing, error) {
-	thing, err := ts.things.RetrieveByID(ctx, id)
-	if err != nil {
-		return Thing{}, err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  thing.GroupID,
-		Subject: GroupSub,
+		Object:  id,
+		Subject: ThingSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
+		return Thing{}, err
+	}
+
+	thing, err := ts.things.RetrieveByID(ctx, id)
+	if err != nil {
 		return Thing{}, err
 	}
 
@@ -288,27 +278,19 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return ts.things.RetrieveByOwner(ctx, res.GetId(), pm)
-}
-
-func (ts *thingsService) ListThingsByIDs(ctx context.Context, ids []string) (ThingsPage, error) {
-	things, err := ts.things.RetrieveByIDs(ctx, ids, PageMetadata{})
+	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
 	if err != nil {
 		return ThingsPage{}, err
 	}
-	return things, nil
+
+	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error) {
-	channel, err := ts.channels.RetrieveByID(ctx, chID)
-	if err != nil {
-		return ThingsPage{}, err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  channel.GroupID,
-		Subject: GroupSub,
+		Object:  chID,
+		Subject: ChannelSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -324,18 +306,23 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID st
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	for _, id := range ids {
+		ar := AuthorizeReq{
+			Token:   token,
+			Object:  id,
+			Subject: ThingSub,
+			Action:  Editor,
+		}
+		if err := ts.Authorize(ctx, ar); err != nil {
+			return err
+		}
+
 		if err := ts.thingCache.Remove(ctx, id); err != nil {
 			return err
 		}
 	}
 
-	if err := ts.things.Remove(ctx, res.GetId(), ids...); err != nil {
+	if err := ts.things.Remove(ctx, ids...); err != nil {
 		return err
 	}
 
@@ -343,14 +330,19 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error) {
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return []Channel{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	chs := []Channel{}
 	for _, channel := range channels {
-		ch, err := ts.createChannel(ctx, &channel, res)
+		ar := AuthorizeReq{
+			Token:   token,
+			Object:  channel.GroupID,
+			Subject: GroupSub,
+			Action:  Editor,
+		}
+		if err := ts.Authorize(ctx, ar); err != nil {
+			return nil, err
+		}
+
+		ch, err := ts.createChannel(ctx, &channel)
 		if err != nil {
 			return []Channel{}, err
 		}
@@ -359,7 +351,7 @@ func (ts *thingsService) CreateChannels(ctx context.Context, token string, chann
 	return chs, nil
 }
 
-func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, identity *protomfx.UserIdentity) (Channel, error) {
+func (ts *thingsService) createChannel(ctx context.Context, channel *Channel) (Channel, error) {
 	if channel.ID == "" {
 		chID, err := ts.idProvider.ID()
 		if err != nil {
@@ -367,7 +359,6 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 		}
 		channel.ID = chID
 	}
-	channel.OwnerID = identity.GetId()
 
 	chs, err := ts.channels.Save(ctx, *channel)
 	if err != nil {
@@ -381,38 +372,32 @@ func (ts *thingsService) createChannel(ctx context.Context, channel *Channel, id
 }
 
 func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channel Channel) error {
-	ch, err := ts.channels.RetrieveByID(ctx, channel.ID)
-	if err != nil {
-		return err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  ch.GroupID,
-		Subject: GroupSub,
+		Object:  channel.ID,
+		Subject: ChannelSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
-	channel.OwnerID = ch.OwnerID
 	return ts.channels.Update(ctx, channel)
 }
 
 func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Channel, error) {
-	channel, err := ts.channels.RetrieveByID(ctx, id)
-	if err != nil {
-		return Channel{}, err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  channel.GroupID,
-		Subject: GroupSub,
+		Object:  id,
+		Subject: ChannelSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
+		return Channel{}, err
+	}
+
+	channel, err := ts.channels.RetrieveByID(ctx, id)
+	if err != nil {
 		return Channel{}, err
 	}
 
@@ -429,22 +414,27 @@ func (ts *thingsService) ListChannels(ctx context.Context, token string, pm Page
 		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	return ts.channels.RetrieveByOwner(ctx, res.GetId(), pm)
+	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
+	if err != nil {
+		return ChannelsPage{}, err
+	}
+
+	return ts.channels.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error) {
-	channel, err := ts.channels.RetrieveByThing(ctx, thID)
-	if err != nil {
-		return Channel{}, err
-	}
-
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  channel.GroupID,
-		Subject: GroupSub,
+		Object:  thID,
+		Subject: ThingSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
+		return Channel{}, err
+	}
+
+	channel, err := ts.channels.RetrieveByThing(ctx, thID)
+	if err != nil {
 		return Channel{}, err
 	}
 
@@ -452,18 +442,23 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 }
 
 func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids ...string) error {
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
-
 	for _, id := range ids {
+		ar := AuthorizeReq{
+			Token:   token,
+			Object:  id,
+			Subject: ChannelSub,
+			Action:  Editor,
+		}
+		if err := ts.Authorize(ctx, ar); err != nil {
+			return err
+		}
+
 		if err := ts.channelCache.Remove(ctx, id); err != nil {
 			return err
 		}
 	}
 
-	return ts.channels.Remove(ctx, res.GetId(), ids...)
+	return ts.channels.Remove(ctx, ids...)
 }
 
 func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (Profile, error) {
@@ -493,8 +488,8 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  ch.GroupID,
-		Subject: GroupSub,
+		Object:  chID,
+		Subject: ChannelSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -510,6 +505,10 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 		if th.GroupID != ch.GroupID {
 			return errors.ErrAuthorization
 		}
+
+		if err := ts.channelCache.Connect(ctx, chID, thID); err != nil {
+			return err
+		}
 	}
 
 	return ts.channels.Connect(ctx, chID, thIDs)
@@ -523,8 +522,8 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  ch.GroupID,
-		Subject: GroupSub,
+		Object:  chID,
+		Subject: ChannelSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -532,6 +531,15 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 	}
 
 	for _, thID := range thIDs {
+		th, err := ts.things.RetrieveByID(ctx, thID)
+		if err != nil {
+			return err
+		}
+
+		if th.GroupID != ch.GroupID {
+			return errors.ErrAuthorization
+		}
+
 		if err := ts.channelCache.Disconnect(ctx, chID, thID); err != nil {
 			return err
 		}

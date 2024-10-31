@@ -28,7 +28,6 @@ type Metadata map[string]interface{}
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
 	ID       string
-	OwnerID  string
 	GroupID  string
 	Name     string
 	Key      string
@@ -55,7 +54,7 @@ type ThingRepository interface {
 
 	// UpdateKey updates key value of the existing thing. A non-nil error is
 	// returned to indicate operation failure.
-	UpdateKey(ctx context.Context, owner, id, key string) error
+	UpdateKey(ctx context.Context, id, key string) error
 
 	// RetrieveByID retrieves the thing having the provided identifier, that is owned
 	// by the specified user.
@@ -64,11 +63,8 @@ type ThingRepository interface {
 	// RetrieveByKey returns thing ID for given thing key.
 	RetrieveByKey(ctx context.Context, key string) (string, error)
 
-	// RetrieveByOwner retrieves the subset of things owned by the specified user
-	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ThingsPage, error)
-
-	// RetrieveByIDs retrieves the subset of things specified by given thing ids.
-	RetrieveByIDs(ctx context.Context, thingIDs []string, pm PageMetadata) (ThingsPage, error)
+	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
+	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveByChannel retrieves the subset of things owned by the specified
 	// user and connected or not connected to specified channel.
@@ -76,7 +72,7 @@ type ThingRepository interface {
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
-	Remove(ctx context.Context, owner string, ids ...string) error
+	Remove(ctx context.Context, ids ...string) error
 
 	// RetrieveAll retrieves all things for all users.
 	RetrieveAll(ctx context.Context) ([]Thing, error)

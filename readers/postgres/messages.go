@@ -102,9 +102,9 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		format = rpm.Format
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if rpm.Limit == 0 {
-		olq = ""
+	olq := ""
+	if rpm.Limit != 0 {
+		olq = "LIMIT :limit OFFSET :offset"
 	}
 
 	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(rpm), order, olq)

@@ -339,7 +339,6 @@ func (req backupReq) validate() error {
 
 type restoreThingReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata"`
@@ -347,16 +346,13 @@ type restoreThingReq struct {
 
 type restoreChannelReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
 type restoreConnectionReq struct {
-	ChannelID    string `json:"channel_id"`
-	ChannelOwner string `json:"channel_owner"`
-	ThingID      string `json:"thing_id"`
-	ThingOwner   string `json:"thing_owner"`
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
 }
 
 type restoreGroupReq struct {
@@ -367,20 +363,6 @@ type restoreGroupReq struct {
 	Metadata    map[string]interface{} `json:"metadata"`
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
-}
-
-type restoreGroupThingRelationReq struct {
-	ThingID   string    `json:"thing_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type restoreGroupChannelRelationReq struct {
-	ChannelID string    `json:"channel_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type restoreReq struct {

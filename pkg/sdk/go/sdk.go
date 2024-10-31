@@ -60,9 +60,6 @@ var (
 	// ErrFetchHealth indicates that fetching of health check failed.
 	ErrFetchHealth = errors.New("failed to fetch health check")
 
-	// ErrFailedWhitelist failed to whitelist configs
-	ErrFailedWhitelist = errors.New("failed to whitelist")
-
 	// ErrCerts indicates error fetching certificates.
 	ErrCerts = errors.New("failed to fetch certs data")
 
@@ -113,7 +110,6 @@ type Group struct {
 type Thing struct {
 	ID       string                 `json:"id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -123,7 +119,6 @@ type Thing struct {
 type Channel struct {
 	ID       string                 `json:"id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Profile  map[string]interface{} `json:"profile,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`

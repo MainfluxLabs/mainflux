@@ -62,3 +62,10 @@ func GetDirQuery(dir string) string {
 		return "DESC"
 	}
 }
+func GetOffsetLimitQuery(limit uint64) string {
+	if limit != 0 {
+		return "LIMIT :limit OFFSET :offset"
+	}
+
+	return ""
+}
