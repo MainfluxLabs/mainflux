@@ -57,7 +57,7 @@ func migrateDB(db *sqlx.DB) error {
 						metadata    JSONB,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
-						PRIMARY KEY (id, owner_id)
+						PRIMARY KEY (id, owner_id),
 						CONSTRAINT  unique_org_name UNIQUE (org_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_policies (
