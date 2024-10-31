@@ -74,7 +74,7 @@ func migrateDB(db *sqlx.DB) error {
 						name        VARCHAR(1024),
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
+						CONSTRAINT  unique_group_name_things UNIQUE (group_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS channels (
 						id          UUID PRIMARY KEY,
@@ -83,7 +83,7 @@ func migrateDB(db *sqlx.DB) error {
 						profile     JSONB,
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
+						CONSTRAINT  unique_group_name_channels UNIQUE (group_id, name)
 					)`,
 					`CREATE TABLE IF NOT EXISTS connections (
 						channel_id  UUID NOT NULL,
