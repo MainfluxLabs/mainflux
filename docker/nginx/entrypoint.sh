@@ -24,6 +24,7 @@ envsubst '
     ${MF_WEBHOOKS_HTTP_PORT}
     ${MF_SMTP_NOTIFIER_PORT}
     ${MF_DOWNLINKS_HTTP_PORT}
+    ${MF_CONVERTERS_PORT}
     ${MF_FILESTORE_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 exec nginx -g "daemon off;"

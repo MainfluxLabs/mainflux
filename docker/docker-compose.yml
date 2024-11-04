@@ -456,6 +456,7 @@ services:
     image: ${MF_RELEASE_PREFIX}/filestore:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-filestore
     depends_on:
+      - things
       - filestore-db
     restart: on-failure
     environment:
@@ -502,6 +503,7 @@ services:
     image: ${MF_RELEASE_PREFIX}/webhooks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     depends_on:
+      - things
       - webhooks-db
     restart: on-failure
     environment:
@@ -540,6 +542,7 @@ services:
     image: ${MF_RELEASE_PREFIX}/smtp-notifier:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-smtp-notifier
     depends_on:
+      - things
       - smtp-notifier-db
     restart: on-failure
     environment:
@@ -589,8 +592,8 @@ services:
     image: ${MF_RELEASE_PREFIX}/downlinks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-downlinks
     depends_on:
-      - downlinks-db
       - things
+      - downlinks-db
     restart: on-failure
     environment:
       MF_DOWNLINKS_LOG_LEVEL: ${MF_DOWNLINKS_LOG_LEVEL}
@@ -608,5 +611,25 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  converters:
+    image: ${MF_RELEASE_PREFIX}/converters:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-converters
+    restart: on-failure
+    depends_on:
+      - things
+    environment:
+      MF_CONVERTERS_LOG_LEVEL: ${MF_CONVERTERS_LOG_LEVEL}
+      MF_CONVERTERS_CLIENT_TLS: ${MF_CONVERTERS_CLIENT_TLS}
+      MF_CONVERTERS_CA_CERTS: ${MF_CONVERTERS_CA_CERTS}
+      MF_CONVERTERS_PORT: ${MF_CONVERTERS_PORT}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_CONVERTERS_PORT}:${MF_CONVERTERS_PORT}
     networks:
       - mainfluxlabs-base-net
