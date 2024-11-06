@@ -36,14 +36,13 @@ func TestSaveThings(t *testing.T) {
 
 	ths := []things.Thing{}
 	for i := 1; i <= 5; i++ {
-		thID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		thkey := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		thing := things.Thing{
-			ID:      thID,
+			ID:      fmt.Sprintf("%s%012d", prefixID, i),
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", thingName, i),
 			Key:     thkey,
 		}
 		ths = append(ths, thing)
@@ -114,6 +113,7 @@ func TestUpdateThing(t *testing.T) {
 	thing := things.Thing{
 		ID:      thID,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     thkey,
 	}
 
@@ -191,6 +191,7 @@ func TestUpdateKey(t *testing.T) {
 	th1 := things.Thing{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    fmt.Sprintf("%s-%d", thingName, 1),
 		Key:     key,
 	}
 	ths, err := thingRepo.Save(context.Background(), th1)
@@ -204,6 +205,7 @@ func TestUpdateKey(t *testing.T) {
 	th2 := things.Thing{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    fmt.Sprintf("%s-%d", thingName, 2),
 		Key:     key,
 	}
 	ths, err = thingRepo.Save(context.Background(), th2)
@@ -257,6 +259,7 @@ func TestRetrieveThingByID(t *testing.T) {
 	th := things.Thing{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     key,
 	}
 
@@ -303,6 +306,7 @@ func TestRetrieveByKey(t *testing.T) {
 	th := things.Thing{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     key,
 	}
 
@@ -340,56 +344,40 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	name := "thing_name"
-	metaStr := `{"field1":"value1","field2":{"subfield11":"value2","subfield12":{"subfield121":"value3","subfield122":"value4"}}}`
-	subMetaStr := `{"field2":{"subfield12":{"subfield121":"value3"}}}`
-
-	metadata := things.Metadata{}
-	json.Unmarshal([]byte(metaStr), &metadata)
-
-	subMeta := things.Metadata{}
-	json.Unmarshal([]byte(subMetaStr), &subMeta)
+	metadata := things.Metadata{
+		"field": "value",
+	}
 
 	wrongMeta := things.Metadata{
-		"field": "value1",
+		"wrong": "wrong",
 	}
 
 	offset := uint64(1)
-	nameNum := uint64(3)
 	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
 	group := createGroup(t, dbMiddleware)
-
+	var ths []things.Thing
 	n := uint64(101)
+
 	for i := uint64(0); i < n; i++ {
-		id := generateUUID(t)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		suffix := i + 1
 		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
-			ID:      id,
+			Name:    fmt.Sprintf("%s-%d", thingName, suffix),
 			Key:     key,
 		}
 
-		// Create Things with name.
-		if i < nameNum {
-			th.Name = fmt.Sprintf("%s-%d", name, i)
-		}
-		// Create Things with metadata.
-		if i >= nameNum && i < nameNum+metaNum {
+		if i < metaNum {
 			th.Metadata = metadata
-		}
-		// Create Things with name and metadata.
-		if i >= n-nameMetaNum {
-			th.Metadata = metadata
-			th.Name = name
 		}
 
-		_, err = thingRepo.Save(context.Background(), th)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		ths = append(ths, th)
 	}
+
+	_, err = thingRepo.Save(context.Background(), ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
 		pageMetadata things.PageMetadata
@@ -399,40 +387,35 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 			},
 			size: n,
 		},
 		"retrieve all things by group IDs without limit": {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
-				Total: 0,
 			},
-			size: 0,
+			size: n,
 		},
 		"retrieve subset of things by group IDs": {
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
-				Total:  n - offset,
 			},
 			size: n - offset,
 		},
 		"retrieve things by group IDs with existing name": {
 			pageMetadata: things.PageMetadata{
-				Offset: offset,
+				Offset: 0,
 				Limit:  n,
-				Name:   name,
-				Total:  nameNum + nameMetaNum,
+				Name:   "test-thing-101",
 			},
-			size: nameNum + nameMetaNum - offset,
+			size: 1,
 		},
 		"retrieve things by group IDs with non-existing name": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Name:   "wrong",
-				Total:  0,
 			},
 			size: 0,
 		},
@@ -440,44 +423,22 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Total:    metaNum + nameMetaNum,
 				Metadata: metadata,
 			},
-			size: metaNum + nameMetaNum,
-		},
-		"retrieve things by group IDs with partial metadata": {
-			pageMetadata: things.PageMetadata{
-				Offset:   0,
-				Limit:    n,
-				Total:    metaNum + nameMetaNum,
-				Metadata: subMeta,
-			},
-			size: metaNum + nameMetaNum,
+			size: metaNum,
 		},
 		"retrieve things by group IDs with non-existing metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Total:    0,
 				Metadata: wrongMeta,
 			},
 			size: 0,
-		},
-		"retrieve things by group IDs with existing name and metadata": {
-			pageMetadata: things.PageMetadata{
-				Offset:   0,
-				Limit:    n,
-				Total:    nameMetaNum,
-				Name:     name,
-				Metadata: metadata,
-			},
-			size: nameMetaNum,
 		},
 		"retrieve things by group IDs sorted by name ascendant": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 				Order:  "name",
 				Dir:    "asc",
 			},
@@ -487,7 +448,6 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 				Order:  "name",
 				Dir:    "desc",
 			},
@@ -499,7 +459,6 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 		page, err := thingRepo.RetrieveByGroupIDs(context.Background(), []string{group.ID}, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 
 		// Check if Things list have been sorted properly
@@ -513,7 +472,6 @@ func TestRetrieveAllThings(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	name := "thing_name"
 	metaStr := `{"field1":"value1","field2":{"subfield11":"value2","subfield12":{"subfield121":"value3","subfield122":"value4"}}}`
 	subMetaStr := `{"field2":{"subfield12":{"subfield121":"value3"}}}`
 
@@ -523,41 +481,29 @@ func TestRetrieveAllThings(t *testing.T) {
 	subMeta := things.Metadata{}
 	json.Unmarshal([]byte(subMetaStr), &subMeta)
 
-	nameNum := uint64(3)
 	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
 	group := createGroup(t, dbMiddleware)
-
+	ths := []things.Thing{}
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
-		id := generateUUID(t)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		suffix := i + 1
 		key := generateUUID(t)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
-			ID:      id,
+			Name:    fmt.Sprintf("%s-%d", thingName, suffix),
 			Key:     key,
 		}
-
-		// Create Things with name.
-		if i < nameNum {
-			th.Name = fmt.Sprintf("%s-%d", name, i)
-		}
-		// Create Things with metadata.
-		if i >= nameNum && i < nameNum+metaNum {
+		if i < metaNum {
 			th.Metadata = metadata
 		}
-		// Create Things with name and metadata.
-		if i >= n-nameMetaNum {
-			th.Metadata = metadata
-			th.Name = name
-		}
 
-		_, err = thingRepo.Save(context.Background(), th)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		ths = append(ths, th)
 	}
+
+	_, err = thingRepo.Save(context.Background(), ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
 		size uint64
@@ -585,7 +531,6 @@ func TestRetrieveByChannel(t *testing.T) {
 
 	n := uint64(101)
 	thsDisconNum := uint64(1)
-
 	group := createGroup(t, dbMiddleware)
 
 	chID, err := idProvider.ID()
@@ -594,32 +539,33 @@ func TestRetrieveByChannel(t *testing.T) {
 	_, err = channelRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
 		GroupID: group.ID,
+		Name:    channelName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	var ths []things.Thing
 	for i := uint64(0); i < n; i++ {
-		thID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		thkey := generateUUID(t)
+		suffix := n + i + 1
+		thkey, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		th := things.Thing{
-			ID:      thID,
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", thingName, suffix),
 			Key:     thkey,
 		}
-
-		ths, err := thingRepo.Save(context.Background(), th)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		thID = ths[0].ID
-
-		// Don't connnect last Thing
-		if i == n-thsDisconNum {
-			break
-		}
-
-		err = channelRepo.Connect(context.Background(), chID, []string{thID})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		ths = append(ths, th)
 	}
+	thsc, err := thingRepo.Save(context.Background(), ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var thIDs []string
+	for _, thID := range thsc {
+		thIDs = append(thIDs, thID.ID)
+	}
+
+	err = channelRepo.Connect(context.Background(), chID, thIDs[0:n-thsDisconNum])
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonexistentChanID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -715,6 +661,7 @@ func TestRemoveThing(t *testing.T) {
 	thing := things.Thing{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     key,
 	}
 

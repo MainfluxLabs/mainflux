@@ -20,11 +20,10 @@ const (
 )
 
 var (
-	ch1          = sdk.Channel{Name: "test1"}
-	ch2          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3          = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
-	chPrefix     = "fe6b4e92-cc98-425e-b0aa-"
-	emptyChannel = sdk.Channel{GroupID: "1"}
+	ch1      = sdk.Channel{Name: "test1"}
+	ch2      = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	ch3      = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	chPrefix = "fe6b4e92-cc98-425e-b0aa-"
 )
 
 func TestCreateChannel(t *testing.T) {
@@ -76,14 +75,6 @@ func TestCreateChannel(t *testing.T) {
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
-		},
-		{
-			desc:    "create new empty channel",
-			channel: emptyChannel,
-			token:   token,
-			groupID: grID,
-			err:     nil,
-			empty:   false,
 		},
 		{
 			desc:    "create a new channel with external UUID",

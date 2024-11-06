@@ -37,12 +37,11 @@ const (
 )
 
 var (
-	metadata   = map[string]interface{}{"meta": "data"}
-	metadata2  = map[string]interface{}{"meta": "data2"}
-	th1        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
-	th2        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
-	emptyThing = sdk.Thing{GroupID: "1"}
-	group      = sdk.Group{OrgID: "1", Name: "test_group", Metadata: metadata}
+	metadata  = map[string]interface{}{"meta": "data"}
+	metadata2 = map[string]interface{}{"meta": "data2"}
+	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
+	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
+	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
 )
 
 func newThingsService() things.Service {
@@ -95,14 +94,6 @@ func TestCreateThing(t *testing.T) {
 		err      error
 		location string
 	}{
-		{
-			desc:     "create new empty thing",
-			thing:    emptyThing,
-			groupID:  grID,
-			token:    token,
-			err:      nil,
-			location: fmt.Sprintf("%s%012d", uuid.Prefix, 2),
-		},
 		{
 			desc:     "create new thing",
 			thing:    th1,

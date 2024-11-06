@@ -53,7 +53,7 @@ func (req createThingsReq) validate() error {
 			}
 		}
 
-		if len(thing.Name) > maxNameSize {
+		if thing.Name == "" || len(thing.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -77,7 +77,7 @@ func (req updateThingReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Name) > maxNameSize {
+	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
@@ -139,7 +139,7 @@ func (req createChannelsReq) validate() error {
 			}
 		}
 
-		if len(channel.Name) > maxNameSize {
+		if channel.Name == "" || len(channel.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -164,7 +164,7 @@ func (req updateChannelReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Name) > maxNameSize {
+	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
@@ -411,7 +411,7 @@ func (req createGroupsReq) validate() error {
 	}
 
 	for _, group := range req.Groups {
-		if len(group.Name) > maxNameSize {
+		if group.Name == "" || len(group.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -434,6 +434,10 @@ func (req updateGroupReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.Name == "" || len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
 	}
 
 	return nil

@@ -16,10 +16,11 @@ import (
 
 const (
 	maxDescSize = 1024
-	groupName   = "Mainflux"
+	groupName   = "test-group"
 	description = "description"
 	n           = uint64(5)
-	channelName = "channel"
+	channelName = "test-channel"
+	thingName   = "test-thing"
 )
 
 var (
@@ -100,7 +101,7 @@ func TestRetrieveGroupByID(t *testing.T) {
 
 	group1 := things.Group{
 		ID:      generateUUID(t),
-		Name:    groupName + "TestRetrieveGroupByID1",
+		Name:    fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID: owID,
 		OrgID:   orgID,
 	}
@@ -117,7 +118,7 @@ func TestRetrieveGroupByID(t *testing.T) {
 	creationTime := time.Now().UTC().Round(time.Millisecond)
 	group2 := things.Group{
 		ID:          generateUUID(t),
-		Name:        groupName + "TestRetrieveGroupByID",
+		Name:        fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
@@ -155,7 +156,7 @@ func TestUpdateGroup(t *testing.T) {
 
 	group := things.Group{
 		ID:          groupID,
-		Name:        groupName + "TestUpdateGroup",
+		Name:        groupName,
 		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
@@ -197,7 +198,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc: "update group for non-existing id",
 			groupUpdate: things.Group{
 				ID:   wrongUid,
-				Name: groupName + "-2",
+				Name: fmt.Sprintf("%s-%d", groupName, 2),
 			},
 			err: errors.ErrUpdateEntity,
 		},
@@ -240,7 +241,7 @@ func TestRemoveGroup(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group1 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "child1",
+		Name:      fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -250,7 +251,7 @@ func TestRemoveGroup(t *testing.T) {
 	creationTime = time.Now().UTC()
 	group2 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "child2",
+		Name:      fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -488,7 +489,7 @@ func TestRetrieveThingsByGroup(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName,
+		Name:      fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -496,7 +497,7 @@ func TestRetrieveThingsByGroup(t *testing.T) {
 	}
 	group2 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName,
+		Name:      fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -519,18 +520,21 @@ func TestRetrieveThingsByGroup(t *testing.T) {
 		{
 			ID:       thID1,
 			GroupID:  group.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, 1),
 			Key:      "key1",
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       thID2,
 			GroupID:  group.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, 2),
 			Key:      "key2",
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       thID3,
 			GroupID:  group2.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, 3),
 			Key:      "key3",
 			Metadata: map[string]interface{}{},
 		},
@@ -591,7 +595,7 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName,
+		Name:      fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -599,7 +603,7 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	}
 	group2 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "2",
+		Name:      fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -621,19 +625,19 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	channels := []things.Channel{
 		{
 			ID:       chID1,
-			Name:     channelName,
+			Name:     fmt.Sprintf("%s-%d", channelName, 1),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID2,
-			Name:     channelName,
+			Name:     fmt.Sprintf("%s-%d", channelName, 2),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID3,
-			Name:     channelName,
+			Name:     fmt.Sprintf("%s-%d", channelName, 3),
 			GroupID:  group2.ID,
 			Metadata: map[string]interface{}{},
 		},
@@ -700,7 +704,7 @@ func createGroup(t *testing.T, dbMiddleware postgres.Database) things.Group {
 		ID:      grID,
 		OwnerID: owID,
 		OrgID:   orgID,
-		Name:    "gr-name",
+		Name:    groupName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 

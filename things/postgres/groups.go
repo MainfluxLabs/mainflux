@@ -290,7 +290,7 @@ func (gr groupRepository) RetrieveChannelsByGroup(ctx context.Context, groupID s
 		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
-	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, metadata FROM channels
+	q := fmt.Sprintf(`SELECT id, group_id, name, metadata FROM channels
 			WHERE group_id = :group_id %s %s;`, mq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM channels WHERE group_id = :group_id %s;`, mq)
 

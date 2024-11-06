@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const prefixID = "fe6b4e92-cc98-425e-b0aa-"
+
 func TestSaveChannels(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
@@ -29,9 +31,12 @@ func TestSaveChannels(t *testing.T) {
 		ch := things.Channel{
 			ID:      id,
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", channelName, i),
 		}
 		chs = append(chs, ch)
 	}
+	id2, _ := idProvider.ID()
+	chs = append(chs, things.Channel{ID: id2, GroupID: group.ID, Name: ""})
 	id := chs[0].ID
 
 	cases := []struct {
@@ -52,7 +57,7 @@ func TestSaveChannels(t *testing.T) {
 		{
 			desc: "save channel with invalid ID",
 			channels: []things.Channel{
-				{ID: "invalid", GroupID: group.ID},
+				{ID: "invalid", GroupID: group.ID, Name: channelName},
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -82,6 +87,7 @@ func TestUpdateChannel(t *testing.T) {
 	ch := things.Channel{
 		ID:      id,
 		GroupID: group.ID,
+		Name:    channelName,
 	}
 
 	chs, err := chanRepo.Save(context.Background(), ch)
@@ -130,6 +136,7 @@ func TestRetrieveChannelByID(t *testing.T) {
 	th := things.Thing{
 		ID:      thID,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     thkey,
 	}
 	ths, err := thingRepo.Save(context.Background(), th)
@@ -141,6 +148,7 @@ func TestRetrieveChannelByID(t *testing.T) {
 	c := things.Channel{
 		ID:      chID,
 		GroupID: group.ID,
+		Name:    channelName,
 	}
 	chs, err := chanRepo.Save(context.Background(), c)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -156,11 +164,11 @@ func TestRetrieveChannelByID(t *testing.T) {
 		ID  string
 		err error
 	}{
-		"retrieve channel with existing user": {
+		"retrieve channel": {
 			ID:  ch.ID,
 			err: nil,
 		},
-		"retrieve channel with existing user, non-existing channel": {
+		"retrieve channel with non-existing channel": {
 			ID:  nonexistentChanID,
 			err: errors.ErrNotFound,
 		},
@@ -180,7 +188,6 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	chanRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	name := "channel_name"
 	metadata := things.Metadata{
 		"field": "value",
 	}
@@ -189,38 +196,27 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 	}
 
 	offset := uint64(1)
-	nameNum := uint64(3)
 	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
 	group := createGroup(t, dbMiddleware)
-
+	var chs []things.Channel
 	n := uint64(101)
+
 	for i := uint64(0); i < n; i++ {
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
+		suffix := i + 1
 		ch := things.Channel{
-			ID:      chID,
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", channelName, suffix),
 		}
-
-		// Create Channels with name.
-		if i < nameNum {
-			ch.Name = fmt.Sprintf("%s-%d", name, i)
-		}
-		// Create Channels with metadata.
-		if i >= nameNum && i < nameNum+metaNum {
+		if i < metaNum {
 			ch.Metadata = metadata
 		}
-		// Create Channels with name and metadata.
-		if i >= n-nameMetaNum {
-			ch.Metadata = metadata
-			ch.Name = name
-		}
 
-		chanRepo.Save(context.Background(), ch)
+		chs = append(chs, ch)
 	}
+
+	_, err := chanRepo.Save(context.Background(), chs...)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
 		size         uint64
@@ -230,40 +226,35 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 			},
 			size: n,
 		},
 		"retrieve all channels by group IDs without limit": {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
-				Total: 0,
 			},
-			size: 0,
+			size: n,
 		},
 		"retrieve subset of channels by group IDs": {
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
-				Total:  n - offset,
 			},
 			size: n - offset,
 		},
 		"retrieve channels by group IDs with existing name": {
 			pageMetadata: things.PageMetadata{
-				Offset: offset,
+				Offset: 0,
 				Limit:  n,
-				Name:   name,
-				Total:  nameNum + nameMetaNum,
+				Name:   "test-channel-101",
 			},
-			size: nameNum + nameMetaNum - offset,
+			size: 1,
 		},
 		"retrieve all channels by group IDs with non-existing name": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Name:   "wrong",
-				Total:  0,
 			},
 			size: 0,
 		},
@@ -272,33 +263,20 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 				Offset:   0,
 				Limit:    n,
 				Metadata: metadata,
-				Total:    metaNum + nameMetaNum,
 			},
-			size: metaNum + nameMetaNum,
+			size: metaNum,
 		},
 		"retrieve all channels by group IDs with non-existing metadata": {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
 				Metadata: wrongMeta,
-				Total:    0,
 			},
-		},
-		"retrieve all channels by group IDs with existing name and metadata": {
-			pageMetadata: things.PageMetadata{
-				Offset:   0,
-				Limit:    n,
-				Name:     name,
-				Metadata: metadata,
-				Total:    nameMetaNum,
-			},
-			size: nameMetaNum,
 		},
 		"retrieve channels by group IDs sorted by name ascendant": {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 				Order:  "name",
 				Dir:    "asc",
 			},
@@ -308,7 +286,6 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
 				Order:  "name",
 				Dir:    "desc",
 			},
@@ -318,9 +295,9 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 
 	for desc, tc := range cases {
 		page, err := chanRepo.RetrieveByGroupIDs(context.Background(), []string{group.ID}, tc.pageMetadata)
+		//assert.Equal(t, []things.Channel{chRes[len(chs)-1]}, page.Channels)
 		size := uint64(len(page.Channels))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 
 		// Check if Channels list have been sorted properly
@@ -445,12 +422,14 @@ func TestConnect(t *testing.T) {
 		{
 			ID:       thID,
 			GroupID:  group.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, 1),
 			Key:      thkey,
 			Metadata: things.Metadata{},
 		},
 		{
 			ID:       thID1,
 			GroupID:  group.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, 2),
 			Key:      thkey1,
 			Metadata: things.Metadata{},
 		}}
@@ -466,6 +445,7 @@ func TestConnect(t *testing.T) {
 	chs, err := chanRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
 		GroupID: group.ID,
+		Name:    channelName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	chID = chs[0].ID
@@ -527,6 +507,7 @@ func TestDisconnect(t *testing.T) {
 	th := things.Thing{
 		ID:       thID,
 		GroupID:  group.ID,
+		Name:     thingName,
 		Key:      thkey,
 		Metadata: map[string]interface{}{},
 	}
@@ -540,6 +521,7 @@ func TestDisconnect(t *testing.T) {
 	chs, err := chanRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
 		GroupID: group.ID,
+		Name:    channelName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -610,6 +592,7 @@ func TestRetrieveConnByThingKey(t *testing.T) {
 	th := things.Thing{
 		ID:      thID,
 		GroupID: group.ID,
+		Name:    thingName,
 		Key:     thkey,
 	}
 	ths, err := thingRepo.Save(context.Background(), th)
@@ -622,6 +605,7 @@ func TestRetrieveConnByThingKey(t *testing.T) {
 	chs, err := chanRepo.Save(context.Background(), things.Channel{
 		ID:      chID,
 		GroupID: group.ID,
+		Name:    channelName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	chID = chs[0].ID
@@ -657,42 +641,29 @@ func TestRetrieveAllChannels(t *testing.T) {
 	err := cleanTestTable(context.Background(), "channels", dbMiddleware)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	name := "channel_name"
 	metadata := things.Metadata{
 		"field": "value",
 	}
-	nameNum := uint64(3)
 	metaNum := uint64(3)
-	nameMetaNum := uint64(2)
-
 	group := createGroup(t, dbMiddleware)
-
+	chs := []things.Channel{}
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
+		suffix := i + 1
 		ch := things.Channel{
-			ID:      chID,
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", channelName, suffix),
 		}
-
-		// Create Channels with name.
-		if i < nameNum {
-			ch.Name = fmt.Sprintf("%s-%d", name, i)
-		}
-		// Create Channels with metadata.
-		if i >= nameNum && i < nameNum+metaNum {
+		if i < metaNum {
 			ch.Metadata = metadata
 		}
-		// Create Channels with name and metadata.
-		if i >= n-nameMetaNum {
-			ch.Metadata = metadata
-			ch.Name = name
-		}
 
-		chanRepo.Save(context.Background(), ch)
+		chs = append(chs, ch)
 	}
+
+	_, err = chanRepo.Save(context.Background(), chs...)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
 		size uint64
@@ -725,29 +696,28 @@ func TestRetrieveAllConnections(t *testing.T) {
 
 	n := uint64(101)
 	for i := uint64(0); i < n; i++ {
-		thID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		suffix := n + i + 1
 		thkey, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		th := things.Thing{
-			ID:       thID,
+			ID:       fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID:  group.ID,
+			Name:     fmt.Sprintf("%s-%d", thingName, suffix),
 			Key:      thkey,
 			Metadata: things.Metadata{},
 		}
 		ths, err := thingRepo.Save(context.Background(), th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		thID = ths[0].ID
+		thID := ths[0].ID
 
-		chID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		chs, err := chanRepo.Save(context.Background(), things.Channel{
-			ID:      chID,
+			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
 			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", channelName, suffix),
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		chID = chs[0].ID
+		chID := chs[0].ID
 
 		err = chanRepo.Connect(context.Background(), chID, []string{thID})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))

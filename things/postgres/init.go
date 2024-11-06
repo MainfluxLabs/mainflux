@@ -57,8 +57,7 @@ func migrateDB(db *sqlx.DB) error {
 						metadata    JSONB,
 						created_at  TIMESTAMPTZ,
 						updated_at  TIMESTAMPTZ,
-						PRIMARY KEY (id, owner_id),
-						CONSTRAINT  unique_org_name UNIQUE (org_id, name)
+						PRIMARY KEY (id, owner_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS group_policies (
 						group_id    UUID NOT NULL,
@@ -68,22 +67,24 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (group_id, member_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS things (
-						id          UUID PRIMARY KEY,
+						id          UUID UNIQUE NOT NULL,
+						owner_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
 						key         VARCHAR(4096) UNIQUE NOT NULL,
 						name        VARCHAR(1024),
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						CONSTRAINT  unique_group_name_things UNIQUE (group_id, name)
+						PRIMARY KEY (id, owner_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS channels (
-						id          UUID PRIMARY KEY,
+						id          UUID UNIQUE NOT NULL,
+						owner_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
 						name        VARCHAR(1024),
 						profile     JSONB,
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-						CONSTRAINT  unique_group_name_channels UNIQUE (group_id, name)
+						PRIMARY KEY (id, owner_id)
 					)`,
 					`CREATE TABLE IF NOT EXISTS connections (
 						channel_id  UUID NOT NULL,
@@ -112,6 +113,33 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{
 					"DROP TABLE group_roles",
+				},
+			},
+			{
+				Id: "things_3",
+				Up: []string{
+					`UPDATE things 
+						SET name = CONCAT('th_', id)
+						WHERE name IS NULL OR name = '';`,
+					`UPDATE channels 
+						SET name = CONCAT('ch_', id) 
+						WHERE name IS NULL OR name = '';`,
+				},
+			},
+			{
+				Id: "things_4",
+				Up: []string{
+					`ALTER TABLE groups ADD CONSTRAINT org_name UNIQUE (org_id, name);
+						ALTER TABLE things DROP CONSTRAINT things_pkey;
+						ALTER TABLE things DROP COLUMN IF EXISTS owner_id;
+						ALTER TABLE things ADD PRIMARY KEY (id);
+						ALTER TABLE things ADD CONSTRAINT group_name_ths UNIQUE (group_id, name);
+						ALTER TABLE things ALTER COLUMN name SET NOT NULL;
+						ALTER TABLE channels DROP CONSTRAINT channels_pkey;
+						ALTER TABLE channels DROP COLUMN IF EXISTS owner_id;
+						ALTER TABLE channels ADD PRIMARY KEY (id);
+						ALTER TABLE channels ADD CONSTRAINT group_name_chs UNIQUE (group_id, name);
+						ALTER TABLE channels ALTER COLUMN name SET NOT NULL;`,
 				},
 			},
 		},

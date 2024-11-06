@@ -281,7 +281,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          th1.ID,
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusOK,
+			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update non-existent thing",
@@ -1512,7 +1512,7 @@ func TestUpdateChannel(t *testing.T) {
 			id:          ch.ID,
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusOK,
+			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update channel with empty request",
