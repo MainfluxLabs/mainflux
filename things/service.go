@@ -726,7 +726,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 		return ThingsPage{}, err
 	}
 
-	return ts.groups.RetrieveThingsByGroup(ctx, groupID, pm)
+	return ts.things.RetrieveByGroupIDs(ctx, []string{groupID}, pm)
 }
 
 func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
