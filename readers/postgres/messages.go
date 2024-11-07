@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -96,15 +97,11 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	order := "time"
 	format := defTable
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
 	if rpm.Format == jsonTable {
 		order = "created"
 		format = rpm.Format
-	}
-
-	olq := ""
-	if rpm.Limit != 0 {
-		olq = "LIMIT :limit OFFSET :offset"
 	}
 
 	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(rpm), order, olq)
