@@ -157,12 +157,9 @@ func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things
 func (pr rolesRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	var groupIDs []string
 
-	q := `SELECT group_id FROM group_roles WHERE member_id = :member_id;`
-	params := map[string]interface{}{
-		"member_id": memberID,
-	}
+	q := `SELECT group_id FROM group_roles WHERE member_id = $1;`
 
-	if err := pr.db.SelectContext(ctx, &groupIDs, q, params); err != nil {
+	if err := pr.db.SelectContext(ctx, &groupIDs, q, memberID); err != nil {
 		return nil, err
 	}
 
