@@ -53,7 +53,7 @@ func (req createThingsReq) validate() error {
 			}
 		}
 
-		if len(thing.Name) > maxNameSize {
+		if thing.Name == "" || len(thing.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -77,7 +77,7 @@ func (req updateThingReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Name) > maxNameSize {
+	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
@@ -139,7 +139,7 @@ func (req createChannelsReq) validate() error {
 			}
 		}
 
-		if len(channel.Name) > maxNameSize {
+		if channel.Name == "" || len(channel.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -164,7 +164,7 @@ func (req updateChannelReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.Name) > maxNameSize {
+	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
@@ -339,7 +339,6 @@ func (req backupReq) validate() error {
 
 type restoreThingReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Key      string                 `json:"key"`
 	Metadata map[string]interface{} `json:"metadata"`
@@ -347,16 +346,13 @@ type restoreThingReq struct {
 
 type restoreChannelReq struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id"`
 	Name     string                 `json:"name"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
 type restoreConnectionReq struct {
-	ChannelID    string `json:"channel_id"`
-	ChannelOwner string `json:"channel_owner"`
-	ThingID      string `json:"thing_id"`
-	ThingOwner   string `json:"thing_owner"`
+	ChannelID string `json:"channel_id"`
+	ThingID   string `json:"thing_id"`
 }
 
 type restoreGroupReq struct {
@@ -367,20 +363,6 @@ type restoreGroupReq struct {
 	Metadata    map[string]interface{} `json:"metadata"`
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
-}
-
-type restoreGroupThingRelationReq struct {
-	ThingID   string    `json:"thing_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type restoreGroupChannelRelationReq struct {
-	ChannelID string    `json:"channel_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type restoreReq struct {
@@ -429,7 +411,7 @@ func (req createGroupsReq) validate() error {
 	}
 
 	for _, group := range req.Groups {
-		if len(group.Name) > maxNameSize {
+		if group.Name == "" || len(group.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -452,6 +434,10 @@ func (req updateGroupReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.Name == "" || len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
 	}
 
 	return nil

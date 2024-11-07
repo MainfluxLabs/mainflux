@@ -73,10 +73,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
 	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = $1;`

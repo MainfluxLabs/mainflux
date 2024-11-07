@@ -36,6 +36,9 @@ type RolesRepository interface {
 	// RetrieveAllRolesByGroup retrieves all group roles by group ID. This is used for backup.
 	RetrieveAllRolesByGroup(ctx context.Context) ([]GroupMembers, error)
 
+	// RetrieveGroupIDsByMember retrieves the IDs of the groups to which the member belongs
+	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)
+
 	// RemoveRolesByGroup removes group roles by group ID.
 	RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
 

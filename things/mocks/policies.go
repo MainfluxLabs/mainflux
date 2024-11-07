@@ -23,7 +23,7 @@ func NewRolesRepository() things.RolesRepository {
 	}
 }
 
-func (mrm *rolesRepositoryMock) SaveRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (mrm *rolesRepositoryMock) SaveRolesByGroup(_ context.Context, groupID string, gps ...things.GroupRoles) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -38,18 +38,32 @@ func (mrm *rolesRepositoryMock) SaveRolesByGroup(ctx context.Context, groupID st
 	return nil
 }
 
-func (mrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, gp things.GroupMembers) (string, error) {
+func (mrm *rolesRepositoryMock) RetrieveRole(_ context.Context, gp things.GroupMembers) (string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
 	return mrm.groupRolesByID[gp.MemberID].Role, nil
 }
 
-func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(_ context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
 	panic("not implemented")
 }
 
-func (mrm *rolesRepositoryMock) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {
+func (mrm *rolesRepositoryMock) RetrieveGroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var grIDs []string
+	for k, gr := range mrm.groupRoles {
+		if gr.MemberID == memberID {
+			grIDs = append(grIDs, k)
+		}
+	}
+
+	return grIDs, nil
+}
+
+func (mrm *rolesRepositoryMock) RetrieveAllRolesByGroup(_ context.Context) ([]things.GroupMembers, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -60,10 +74,10 @@ func (mrm *rolesRepositoryMock) RetrieveAllRolesByGroup(ctx context.Context) ([]
 
 	return gps, nil
 }
-func (mrm *rolesRepositoryMock) UpdateRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (mrm *rolesRepositoryMock) UpdateRolesByGroup(_ context.Context, groupID string, gps ...things.GroupRoles) error {
 	panic("not implemented")
 }
 
-func (mrm *rolesRepositoryMock) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
+func (mrm *rolesRepositoryMock) RemoveRolesByGroup(_ context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

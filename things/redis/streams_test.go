@@ -87,7 +87,6 @@ func TestCreateThings(t *testing.T) {
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
-				"owner_id":  user.ID,
 				"group_id":  group.ID,
 				"metadata":  "{\"test\":\"test\"}",
 				"operation": thingCreate,
@@ -260,7 +259,7 @@ func TestRemoveThing(t *testing.T) {
 		event map[string]interface{}
 	}{
 		{
-			desc: "delete existing thing successfully",
+			desc: "remove existing thing successfully",
 			id:   sth.ID,
 			key:  token,
 			err:  nil,
@@ -270,10 +269,10 @@ func TestRemoveThing(t *testing.T) {
 			},
 		},
 		{
-			desc:  "delete thing with invalid credentials",
+			desc:  "remove non-existent thing",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrAuthentication,
+			err:   errors.ErrNotFound,
 			event: nil,
 		},
 	}
@@ -322,7 +321,6 @@ func TestCreateChannels(t *testing.T) {
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
-				"owner_id":  user.ID,
 				"group_id":  group.ID,
 				"operation": channelCreate,
 			},
@@ -393,7 +391,7 @@ func TestUpdateChannel(t *testing.T) {
 			},
 		},
 		{
-			desc: "create non-existent channel",
+			desc: "update non-existent channel",
 			channel: things.Channel{
 				ID:   strconv.FormatUint(math.MaxUint64, 10),
 				Name: "c",
@@ -504,7 +502,7 @@ func TestRemoveChannel(t *testing.T) {
 		event map[string]interface{}
 	}{
 		{
-			desc: "update channel successfully",
+			desc: "remove channel successfully",
 			id:   sch.ID,
 			key:  token,
 			err:  nil,
@@ -514,10 +512,10 @@ func TestRemoveChannel(t *testing.T) {
 			},
 		},
 		{
-			desc:  "create non-existent channel",
+			desc:  "remove non-existent channel",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrAuthentication,
+			err:   errors.ErrNotFound,
 			event: nil,
 		},
 	}

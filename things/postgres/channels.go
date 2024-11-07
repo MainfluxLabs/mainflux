@@ -28,7 +28,6 @@ type channelRepository struct {
 type dbConnection struct {
 	Channel string `db:"channel"`
 	Thing   string `db:"thing"`
-	OwnerID string `db:"owner_id"`
 	GroupID string `db:"group_id"`
 }
 
@@ -46,8 +45,8 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO channels (id, owner_id, group_id, name, metadata, profile)
-		  VALUES (:id, :owner_id, :group_id, :name, :metadata, :profile);`
+	q := `INSERT INTO channels (id, group_id, name, metadata, profile)
+		  VALUES (:id, :group_id, :name, :metadata, :profile);`
 
 	for _, channel := range channels {
 		dbch := toDBChannel(channel)
@@ -78,7 +77,7 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 }
 
 func (cr channelRepository) Update(ctx context.Context, channel things.Channel) error {
-	q := `UPDATE channels SET name = :name, metadata = :metadata, profile = :profile WHERE owner_id = :owner_id AND id = :id;`
+	q := `UPDATE channels SET name = :name, metadata = :metadata, profile = :profile WHERE id = :id;`
 
 	dbch := toDBChannel(channel)
 
@@ -110,7 +109,7 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 }
 
 func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
-	q := `SELECT name, metadata, owner_id, group_id, profile FROM channels WHERE id = $1;`
+	q := `SELECT group_id, name, metadata, profile FROM channels WHERE id = $1;`
 
 	dbch := dbChannel{
 		ID: id,
@@ -128,16 +127,8 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things
 	return toChannel(dbch), nil
 }
 
-func (cr channelRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	if ownerID == "" {
-		return things.ChannelsPage{}, errors.ErrRetrieveEntity
-	}
-
-	return cr.retrieve(ctx, ownerID, false, pm)
-}
-
 func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
-	chPage, err := cr.retrieve(ctx, "", true, things.PageMetadata{})
+	chPage, err := cr.retrieve(ctx, []string{}, true, things.PageMetadata{})
 	if err != nil {
 		return []things.Channel{}, err
 	}
@@ -146,7 +137,7 @@ func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, 
 }
 
 func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return cr.retrieve(ctx, "", false, pm)
+	return cr.retrieve(ctx, []string{}, false, pm)
 }
 
 func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (things.Channel, error) {
@@ -156,7 +147,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, name, metadata, owner_id, group_id, profile FROM channels ch
+	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, profile FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE conn.thing_id = :thing;`)
@@ -184,13 +175,12 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	return item, nil
 }
 
-func (cr channelRepository) Remove(ctx context.Context, ownerID string, ids ...string) error {
+func (cr channelRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dbch := dbChannel{
-			ID:      id,
-			OwnerID: ownerID,
+			ID: id,
 		}
-		q := `DELETE FROM channels WHERE id = :id AND owner_id = :owner_id`
+		q := `DELETE FROM channels WHERE id = :id`
 		_, err := cr.db.NamedExecContext(ctx, q, dbch)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -341,20 +331,33 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 	return connections, nil
 }
 
-func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includeOwner bool, pm things.PageMetadata) (things.ChannelsPage, error) {
-	ownq := dbutil.GetOwnerQuery(ownerID)
+func (cr channelRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	if len(groupIDs) == 0 {
+		return things.ChannelsPage{}, nil
+	}
+
+	chPage, err := cr.retrieve(ctx, groupIDs, false, pm)
+	if err != nil {
+		return things.ChannelsPage{}, err
+	}
+
+	return chPage, nil
+}
+
+func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ChannelsPage, error) {
+	idsq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := getOrderQuery(pm.Order)
-	dq := getDirQuery(pm.Dir)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var whereClause string
 	var query []string
-	if ownq != "" {
-		query = append(query, ownq)
+	if idsq != "" {
+		query = append(query, idsq)
 	}
 	if mq != "" {
 		query = append(query, mq)
@@ -362,23 +365,19 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 	if nq != "" {
 		query = append(query, nq)
 	}
+
+	var whereClause string
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
+	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, profile FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
-	q := fmt.Sprintf(`SELECT id, name, metadata, group_id, profile FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	if includeOwner {
-		q = "SELECT id, name, owner_id, metadata FROM channels;"
+	if allRows {
+		q = "SELECT id, group_id, name, metadata, profile FROM channels"
 	}
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
@@ -392,7 +391,7 @@ func (cr channelRepository) retrieve(ctx context.Context, ownerID string, includ
 
 	items := []things.Channel{}
 	for rows.Next() {
-		dbch := dbChannel{OwnerID: ownerID}
+		dbch := dbChannel{}
 		if err := rows.StructScan(&dbch); err != nil {
 			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
@@ -462,7 +461,6 @@ func (m dbJSONB) Value() (driver.Value, error) {
 
 type dbChannel struct {
 	ID       string  `db:"id"`
-	OwnerID  string  `db:"owner_id"`
 	GroupID  string  `db:"group_id"`
 	Name     string  `db:"name"`
 	Profile  dbJSONB `db:"profile"`
@@ -472,7 +470,6 @@ type dbChannel struct {
 func toDBChannel(ch things.Channel) dbChannel {
 	return dbChannel{
 		ID:       ch.ID,
-		OwnerID:  ch.OwnerID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
 		Profile:  ch.Profile,
@@ -483,7 +480,6 @@ func toDBChannel(ch things.Channel) dbChannel {
 func toChannel(ch dbChannel) things.Channel {
 	return things.Channel{
 		ID:       ch.ID,
-		OwnerID:  ch.OwnerID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
 		Profile:  ch.Profile,
@@ -503,15 +499,6 @@ func toConnection(co dbConn) things.Connection {
 	}
 }
 
-func getOrderQuery(order string) string {
-	switch order {
-	case "name":
-		return "name"
-	default:
-		return "id"
-	}
-}
-
 func getConnOrderQuery(order string, level string) string {
 	switch order {
 	case "name":
@@ -521,13 +508,11 @@ func getConnOrderQuery(order string, level string) string {
 	}
 }
 
-func getDirQuery(dir string) string {
-	switch dir {
-	case "asc":
-		return "ASC"
-	default:
-		return "DESC"
+func getGroupIDsQuery(ids []string) string {
+	if len(ids) == 0 {
+		return ""
 	}
+	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }
 
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {

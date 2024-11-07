@@ -138,11 +138,12 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 }
 
 func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm users.PageMetadata) (users.UserPage, error) {
-
 	eq, ep, err := createEmailQuery("", pm.Email)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
+
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	mp, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
@@ -170,11 +171,6 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	}
 	if len(query) > 0 {
 		emq = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
 	}
 
 	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY email %s;`, emq, olq)

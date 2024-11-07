@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	saveRolesByGroup        = "save_roles_by_group"
-	updateRolesByGroup      = "update_roles_by_group"
-	removeRolesByGroup      = "remove_roles_by_group"
-	retrieveRole            = "retrieve_role"
-	retrieveRolesByGroup    = "retrieve_roles_by_group"
-	retrieveAllRolesByGroup = "retrieve_all_roles_by_group"
+	saveRolesByGroup         = "save_roles_by_group"
+	updateRolesByGroup       = "update_roles_by_group"
+	removeRolesByGroup       = "remove_roles_by_group"
+	retrieveRole             = "retrieve_role"
+	retrieveRolesByGroup     = "retrieve_roles_by_group"
+	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
+	retrieveAllRolesByGroup  = "retrieve_all_roles_by_group"
 )
 
 var _ things.RolesRepository = (*rolesRepositoryMiddleware)(nil)
@@ -57,6 +58,14 @@ func (prm rolesRepositoryMiddleware) RetrieveRolesByGroup(ctx context.Context, g
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return prm.repo.RetrieveRolesByGroup(ctx, groupID, pm)
+}
+
+func (prm rolesRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
+	span := createSpan(ctx, prm.tracer, retrieveGroupIDsByMember)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return prm.repo.RetrieveGroupIDsByMember(ctx, memberID)
 }
 
 func (prm rolesRepositoryMiddleware) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {

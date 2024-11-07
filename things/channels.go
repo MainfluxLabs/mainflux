@@ -11,7 +11,6 @@ import (
 // things that can exchange messages between each other.
 type Channel struct {
 	ID       string
-	OwnerID  string
 	GroupID  string
 	Name     string
 	Profile  map[string]interface{}
@@ -75,15 +74,12 @@ type ChannelRepository interface {
 	// by the specified user.
 	RetrieveByID(ctx context.Context, id string) (Channel, error)
 
-	// RetrieveByOwner retrieves the subset of channels owned by the specified user.
-	RetrieveByOwner(ctx context.Context, owner string, pm PageMetadata) (ChannelsPage, error)
-
 	// RetrieveByThing retrieves the channel connected to the given thing id.
 	RetrieveByThing(ctx context.Context, thID string) (Channel, error)
 
 	// Remove removes the channels having the provided identifiers, that is owned
 	// by the specified user.
-	Remove(ctx context.Context, owner string, id ...string) error
+	Remove(ctx context.Context, id ...string) error
 
 	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, chID string, thIDs []string) error
@@ -100,6 +96,9 @@ type ChannelRepository interface {
 	// RetrieveByAdmin  retrieves all channels for all users with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ChannelsPage, error)
 
+	// RetrieveByGroupIDs retrieves the subset of channels specified by given group ids.
+	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ChannelsPage, error)
+
 	// RetrieveAllConnections retrieves all connections between channels and things for all users.
 	RetrieveAllConnections(ctx context.Context) ([]Connection, error)
 }
@@ -112,9 +111,9 @@ type ChannelCache interface {
 	// HasThing checks if thing is connected to channel.
 	HasThing(context.Context, string, string) bool
 
-	// Disconnects thing from channel.
+	// Disconnect disconnects thing from channel.
 	Disconnect(context.Context, string, string) error
 
-	// Removes channel from cache.
+	// Remove removes channel from cache.
 	Remove(context.Context, string) error
 }

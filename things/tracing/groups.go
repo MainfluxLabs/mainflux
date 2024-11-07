@@ -15,7 +15,6 @@ const (
 	retrieveGroupByIDOp       = "retrieve_group_by_id"
 	retrieveGroupByIDsOp      = "retrieve_group_by_ids"
 	retrieveByOwnerOp         = "retrieve_by_owner"
-	retrieveThingsByGroupOp   = "retrieve_things_by_group"
 	retrieveChannelsByGroupOp = "retrieve_channels_by_group"
 )
 
@@ -95,14 +94,6 @@ func (grm groupRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerI
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByOwner(ctx, ownerID, orgID, pm)
-}
-
-func (grm groupRepositoryMiddleware) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveThingsByGroupOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveThingsByGroup(ctx, groupID, pm)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {

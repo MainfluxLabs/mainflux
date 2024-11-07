@@ -6,7 +6,6 @@ package mocks
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -59,7 +58,7 @@ func (trm *thingRepositoryMock) Save(_ context.Context, ths ...things.Thing) ([]
 		if ths[i].ID == "" {
 			ths[i].ID = fmt.Sprintf("%03d", trm.counter)
 		}
-		trm.things[key(ths[i].OwnerID, ths[i].ID)] = ths[i]
+		trm.things[ths[i].ID] = ths[i]
 	}
 
 	return ths, nil
@@ -69,18 +68,16 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	dbKey := key(thing.OwnerID, thing.ID)
-
-	if _, ok := trm.things[dbKey]; !ok {
+	if _, ok := trm.things[thing.ID]; !ok {
 		return errors.ErrNotFound
 	}
 
-	trm.things[dbKey] = thing
+	trm.things[thing.ID] = thing
 
 	return nil
 }
 
-func (trm *thingRepositoryMock) UpdateKey(_ context.Context, owner, id, val string) error {
+func (trm *thingRepositoryMock) UpdateKey(_ context.Context, id, val string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -90,15 +87,13 @@ func (trm *thingRepositoryMock) UpdateKey(_ context.Context, owner, id, val stri
 		}
 	}
 
-	dbKey := key(owner, id)
-
-	th, ok := trm.things[dbKey]
+	th, ok := trm.things[id]
 	if !ok {
 		return errors.ErrNotFound
 	}
 
 	th.Key = val
-	trm.things[dbKey] = th
+	trm.things[id] = th
 
 	return nil
 }
@@ -116,71 +111,38 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveByOwner(_ context.Context, owner string, pm things.PageMetadata) (things.ThingsPage, error) {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	if pm.Limit < 0 {
-		return things.ThingsPage{}, nil
-	}
-
-	first := uint64(pm.Offset) + 1
-	last := first + uint64(pm.Limit)
-
-	var ths []things.Thing
-
-	// This obscure way to examine map keys is enforced by the key structure
-	// itself (see mocks/commons.go).
-	prefix := fmt.Sprintf("%s-", owner)
-	for k, v := range trm.things {
-		id := uuid.ParseID(v.ID)
-
-		if strings.HasPrefix(k, prefix) && id >= first && pm.Limit == 0 {
-			ths = append(ths, v)
-		}
-
-		if strings.HasPrefix(k, prefix) && id >= first && id < last {
-			ths = append(ths, v)
-		}
-	}
-	// Sort Things list
-	ths = sortThings(pm, ths)
-
-	page := things.ThingsPage{
-		Things: ths,
-		PageMetadata: things.PageMetadata{
-			Total:  trm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
-func (trm *thingRepositoryMock) RetrieveByIDs(_ context.Context, thingIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	items := make([]things.Thing, 0)
+	filteredItems := make([]things.Thing, 0)
 
 	if pm.Limit == 0 {
 		return things.ThingsPage{}, nil
 	}
 
 	first := uint64(pm.Offset) + 1
-	last := first + uint64(pm.Limit)
+	last := first + pm.Limit
 
-	// This obscure way to examine map keys is enforced by the key structure
-	// itself (see mocks/commons.go).
-	for _, id := range thingIDs {
-		suffix := fmt.Sprintf("-%s", id)
-		for k, v := range trm.things {
-			id := uuid.ParseID(v.ID)
-			if strings.HasSuffix(k, suffix) && id >= first && id < last {
-				items = append(items, v)
+	for _, grID := range groupIDs {
+		for _, v := range trm.things {
+			if v.GroupID == grID {
+				id := uuid.ParseID(v.ID)
+				if id >= first && id < last {
+					items = append(items, v)
+				}
 			}
 		}
+	}
+
+	if pm.Name != "" {
+		for _, v := range items {
+			if v.Name == pm.Name {
+				filteredItems = append(filteredItems, v)
+			}
+		}
+		items = filteredItems
 	}
 
 	items = sortThings(pm, items)
@@ -232,15 +194,15 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) Remove(_ context.Context, owner string, ids ...string) error {
+func (trm *thingRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	for _, id := range ids {
-		if _, ok := trm.things[key(owner, id)]; !ok {
+		if _, ok := trm.things[id]; !ok {
 			return errors.ErrNotFound
 		}
-		delete(trm.things, key(owner, id))
+		delete(trm.things, id)
 	}
 
 	return nil
@@ -292,7 +254,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, 
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

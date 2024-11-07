@@ -70,7 +70,6 @@ func (res thingsRes) Empty() bool {
 
 type viewThingRes struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"-"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
@@ -169,7 +168,6 @@ func (res connectionsRes) Empty() bool {
 
 type backupThingRes struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Key      string                 `json:"key"`
@@ -178,7 +176,6 @@ type backupThingRes struct {
 
 type backupChannelRes struct {
 	ID       string                 `json:"id"`
-	OwnerID  string                 `json:"owner_id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
 	Profile  map[string]interface{} `json:"profile,omitempty"`

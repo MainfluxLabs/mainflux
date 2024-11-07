@@ -33,7 +33,6 @@ var (
 
 type createThingEvent struct {
 	id       string
-	ownerID  string
 	groupID  string
 	name     string
 	metadata map[string]interface{}
@@ -42,7 +41,6 @@ type createThingEvent struct {
 func (cte createThingEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        cte.id,
-		"owner_id":  cte.ownerID,
 		"group_id":  cte.groupID,
 		"operation": thingCreate,
 	}
@@ -104,7 +102,6 @@ func (rte removeThingEvent) Encode() map[string]interface{} {
 
 type createChannelEvent struct {
 	id       string
-	ownerID  string
 	groupID  string
 	name     string
 	metadata map[string]interface{}
@@ -113,7 +110,6 @@ type createChannelEvent struct {
 func (cce createChannelEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        cce.id,
-		"owner_id":  cce.ownerID,
 		"group_id":  cce.groupID,
 		"operation": channelCreate,
 	}

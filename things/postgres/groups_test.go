@@ -15,13 +15,12 @@ import (
 )
 
 const (
-	maxNameSize1 = 254
-	maxDescSize  = 1024
-	groupName    = "Mainflux"
-	description  = "description"
-	n            = uint64(5)
-	invalid      = "invalid"
-	channelName  = "channel"
+	maxDescSize = 1024
+	groupName   = "test-group"
+	description = "description"
+	n           = uint64(5)
+	channelName = "test-channel"
+	thingName   = "test-thing"
 )
 
 var (
@@ -31,7 +30,7 @@ var (
 	}
 )
 
-func TestGroupSave(t *testing.T) {
+func TestSaveGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
@@ -45,7 +44,7 @@ func TestGroupSave(t *testing.T) {
 		err   error
 	}{
 		{
-			desc: "create new group",
+			desc: "save new group",
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
@@ -55,7 +54,7 @@ func TestGroupSave(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc: "create new group with existing name",
+			desc: "save new group with existing name",
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
@@ -65,7 +64,7 @@ func TestGroupSave(t *testing.T) {
 			err: errors.ErrConflict,
 		},
 		{
-			desc: "create group with invalid name",
+			desc: "save group with invalid name",
 			group: things.Group{
 				ID:      grID,
 				OwnerID: owID,
@@ -75,7 +74,7 @@ func TestGroupSave(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "create group with invalid description",
+			desc: "save group with invalid description",
 			group: things.Group{
 				ID:          grID,
 				OwnerID:     owID,
@@ -93,7 +92,7 @@ func TestGroupSave(t *testing.T) {
 	}
 }
 
-func TestGroupRetrieveByID(t *testing.T) {
+func TestRetrieveGroupByID(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
@@ -102,7 +101,7 @@ func TestGroupRetrieveByID(t *testing.T) {
 
 	group1 := things.Group{
 		ID:      generateUUID(t),
-		Name:    groupName + "TestGroupRetrieveByID1",
+		Name:    fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID: owID,
 		OrgID:   orgID,
 	}
@@ -119,7 +118,7 @@ func TestGroupRetrieveByID(t *testing.T) {
 	creationTime := time.Now().UTC().Round(time.Millisecond)
 	group2 := things.Group{
 		ID:          generateUUID(t),
-		Name:        groupName + "TestGroupRetrieveByID",
+		Name:        fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
@@ -142,7 +141,7 @@ func TestGroupRetrieveByID(t *testing.T) {
 	assert.True(t, errors.Contains(err, errors.ErrNotFound), fmt.Sprintf("Retrieve group: expected %s got %s\n", errors.ErrNotFound, err))
 }
 
-func TestGroupUpdate(t *testing.T) {
+func TestUpdateGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
@@ -157,7 +156,7 @@ func TestGroupUpdate(t *testing.T) {
 
 	group := things.Group{
 		ID:          groupID,
-		Name:        groupName + "TestGroupUpdate",
+		Name:        groupName,
 		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
@@ -199,7 +198,7 @@ func TestGroupUpdate(t *testing.T) {
 			desc: "update group for non-existing id",
 			groupUpdate: things.Group{
 				ID:   wrongUid,
-				Name: groupName + "-2",
+				Name: fmt.Sprintf("%s-%d", groupName, 2),
 			},
 			err: errors.ErrUpdateEntity,
 		},
@@ -231,7 +230,7 @@ func TestGroupUpdate(t *testing.T) {
 	}
 }
 
-func TestGroupRemove(t *testing.T) {
+func TestRemoveGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
@@ -242,7 +241,7 @@ func TestGroupRemove(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group1 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "child1",
+		Name:      fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -252,7 +251,7 @@ func TestGroupRemove(t *testing.T) {
 	creationTime = time.Now().UTC()
 	group2 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "child2",
+		Name:      fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -272,7 +271,6 @@ func TestGroupRemove(t *testing.T) {
 
 	_, err = thingRepo.Save(context.Background(), things.Thing{
 		ID:      thID,
-		OwnerID: owID,
 		GroupID: group1.ID,
 		Key:     key,
 	})
@@ -480,113 +478,7 @@ func TestRetrieveAllGroups(t *testing.T) {
 	}
 }
 
-func TestRetrieveGroupThings(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	owID := generateUUID(t)
-	orgID := generateUUID(t)
-
-	creationTime := time.Now().UTC()
-	group := things.Group{
-		ID:        generateUUID(t),
-		Name:      groupName,
-		OwnerID:   owID,
-		OrgID:     orgID,
-		CreatedAt: creationTime,
-		UpdatedAt: creationTime,
-	}
-	group2 := things.Group{
-		ID:        generateUUID(t),
-		Name:      groupName,
-		OwnerID:   owID,
-		OrgID:     orgID,
-		CreatedAt: creationTime,
-		UpdatedAt: creationTime,
-	}
-
-	group, err := groupRepo.Save(context.Background(), group)
-	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
-	group2, err = groupRepo.Save(context.Background(), group2)
-	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
-
-	thID1, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thID2, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thID3, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	ths := []things.Thing{
-		{
-			ID:       thID1,
-			OwnerID:  owID,
-			GroupID:  group.ID,
-			Key:      "key1",
-			Metadata: map[string]interface{}{},
-		},
-		{
-			ID:       thID2,
-			OwnerID:  owID,
-			GroupID:  group.ID,
-			Key:      "key2",
-			Metadata: map[string]interface{}{},
-		},
-		{
-			ID:       thID3,
-			OwnerID:  owID,
-			GroupID:  group2.ID,
-			Key:      "key3",
-			Metadata: map[string]interface{}{},
-		},
-	}
-	_, err = thingRepo.Save(context.Background(), ths...)
-	require.Nil(t, err, fmt.Sprintf("channel save got unexpected error: %s", err))
-
-	cases := map[string]struct {
-		pagemeta things.PageMetadata
-		groupID  string
-		things   []things.Thing
-		err      error
-	}{
-		"retrieve group things": {
-			pagemeta: things.PageMetadata{
-				Offset: 0,
-				Limit:  10,
-			},
-			groupID: group.ID,
-			things:  ths[:2],
-			err:     nil,
-		},
-		"retrieve group things without group id": {
-			pagemeta: things.PageMetadata{
-				Offset: 0,
-				Limit:  10,
-			},
-			groupID: "",
-			things:  nil,
-			err:     things.ErrRetrieveGroupThings,
-		},
-		"retrieve last group thing": {
-			pagemeta: things.PageMetadata{
-				Offset: 1,
-				Limit:  1,
-			},
-			groupID: group.ID,
-			things:  ths[1:2],
-			err:     nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		ths, err := groupRepo.RetrieveThingsByGroup(context.Background(), tc.groupID, tc.pagemeta)
-		assert.Equal(t, tc.things, ths.Things, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.things, ths.Things))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-	}
-}
-
-func TestRetrieveGroupChannels(t *testing.T) {
+func TestRetrieveChannelsByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
@@ -597,7 +489,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName,
+		Name:      fmt.Sprintf("%s-%d", groupName, 1),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -605,7 +497,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	}
 	group2 := things.Group{
 		ID:        generateUUID(t),
-		Name:      groupName + "2",
+		Name:      fmt.Sprintf("%s-%d", groupName, 2),
 		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
@@ -627,22 +519,19 @@ func TestRetrieveGroupChannels(t *testing.T) {
 	channels := []things.Channel{
 		{
 			ID:       chID1,
-			Name:     channelName,
-			OwnerID:  owID,
+			Name:     fmt.Sprintf("%s-%d", channelName, 1),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID2,
-			Name:     channelName,
-			OwnerID:  owID,
+			Name:     fmt.Sprintf("%s-%d", channelName, 2),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID3,
-			Name:     channelName,
-			OwnerID:  owID,
+			Name:     fmt.Sprintf("%s-%d", channelName, 3),
 			GroupID:  group2.ID,
 			Metadata: map[string]interface{}{},
 		},
@@ -656,7 +545,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 		channels []things.Channel
 		err      error
 	}{
-		"retrieve group channels": {
+		"retrieve channels ": {
 			pagemeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  10,
@@ -665,7 +554,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 			channels: channels[:2],
 			err:      nil,
 		},
-		"retrieve group channels without group id": {
+		"retrieve channels by group without group id": {
 			pagemeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  10,
@@ -674,7 +563,7 @@ func TestRetrieveGroupChannels(t *testing.T) {
 			channels: nil,
 			err:      things.ErrRetrieveGroupChannels,
 		},
-		"retrieve last group channel": {
+		"retrieve last channel by group": {
 			pagemeta: things.PageMetadata{
 				Offset: 1,
 				Limit:  1,
@@ -709,7 +598,7 @@ func createGroup(t *testing.T, dbMiddleware postgres.Database) things.Group {
 		ID:      grID,
 		OwnerID: owID,
 		OrgID:   orgID,
-		Name:    "gr-name",
+		Name:    groupName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 

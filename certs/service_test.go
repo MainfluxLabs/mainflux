@@ -108,9 +108,8 @@ func newThingsService(auth protomfx.AuthServiceClient) things.Service {
 	for i := 0; i < thingsNum; i++ {
 		id := strconv.Itoa(i + 1)
 		ths[id] = things.Thing{
-			ID:      id,
-			Key:     thingKey,
-			OwnerID: email,
+			ID:  id,
+			Key: thingKey,
 		}
 	}
 

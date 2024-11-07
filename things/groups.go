@@ -8,13 +8,8 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-var (
-	// ErrRetrieveGroupThings indicates failure to retrieve group things.
-	ErrRetrieveGroupThings = errors.New("failed to retrieve group things")
-
-	// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
-	ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
-)
+// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
+var ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
 
 // Identity contains ID and Email.
 type Identity struct {
@@ -63,9 +58,6 @@ type GroupRepository interface {
 
 	// RetrieveByOwner retrieves all groups.
 	RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm PageMetadata) (GroupPage, error)
-
-	// RetrieveThingsByGroup retrieves page of things that are assigned to a group identified by ID.
-	RetrieveThingsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
 	RetrieveChannelsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)

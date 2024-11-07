@@ -37,12 +37,11 @@ const (
 )
 
 var (
-	metadata   = map[string]interface{}{"meta": "data"}
-	metadata2  = map[string]interface{}{"meta": "data2"}
-	th1        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
-	th2        = sdk.Thing{GroupID: "1", ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
-	emptyThing = sdk.Thing{GroupID: "1"}
-	group      = sdk.Group{OrgID: "1", Name: "test_group", Metadata: metadata}
+	metadata  = map[string]interface{}{"meta": "data"}
+	metadata2 = map[string]interface{}{"meta": "data2"}
+	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
+	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
+	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
 )
 
 func newThingsService() things.Service {
@@ -84,6 +83,9 @@ func TestCreateThing(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc     string
 		thing    sdk.Thing
@@ -95,34 +97,26 @@ func TestCreateThing(t *testing.T) {
 		{
 			desc:     "create new thing",
 			thing:    th1,
-			groupID:  groupID,
+			groupID:  grID,
 			token:    token,
 			err:      nil,
 			location: th1.ID,
 		},
 		{
-			desc:     "create new empty thing",
-			thing:    emptyThing,
-			groupID:  groupID,
-			token:    token,
-			err:      nil,
-			location: fmt.Sprintf("%s%012d", uuid.Prefix, 2),
-		},
-		{
 			desc:     "create new thing with empty token",
 			thing:    th1,
-			groupID:  groupID,
-			token:    "",
+			groupID:  grID,
+			token:    emptyValue,
 			err:      createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
-			location: "",
+			location: emptyValue,
 		},
 		{
 			desc:     "create new thing with invalid token",
 			thing:    th1,
-			groupID:  groupID,
+			groupID:  grID,
 			token:    wrongValue,
 			err:      createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
-			location: "",
+			location: emptyValue,
 		},
 	}
 	for _, tc := range cases {
@@ -146,13 +140,16 @@ func TestCreateThings(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	things := []sdk.Thing{
 		th1,
 		th2,
 	}
 	thsExtID := []sdk.Thing{
-		{GroupID: "1", ID: th1.ID, Name: "1", Key: "1", Metadata: metadata},
-		{GroupID: "1", ID: th2.ID, Name: "2", Key: "2", Metadata: metadata},
+		{GroupID: grID, ID: th1.ID, Name: "1", Key: "1", Metadata: metadata},
+		{GroupID: grID, ID: th2.ID, Name: "2", Key: "2", Metadata: metadata},
 	}
 	thsWrongExtID := []sdk.Thing{
 		{ID: "b0aa-000000000001", Name: "1", Key: "1", Metadata: metadata},
@@ -183,7 +180,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:   "create new thing with empty token",
 			things: things,
-			token:  "",
+			token:  emptyValue,
 			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:    []sdk.Thing{},
 		},
@@ -289,13 +286,17 @@ func TestThings(t *testing.T) {
 	var things []sdk.Thing
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		th := sdk.Thing{GroupID: groupID, ID: id, Name: name, Metadata: metadata}
+		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
+		th := sdk.Thing{GroupID: grID, ID: id, Name: name, Key: key, Metadata: metadata}
 		_, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		th.Key = fmt.Sprintf("%s%012d", uuid.Prefix, i)
+
 		things = append(things, th)
 	}
 
@@ -329,7 +330,7 @@ func TestThings(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things with empty token",
-			token:    "",
+			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
@@ -368,8 +369,8 @@ func TestThings(t *testing.T) {
 		filter := sdk.PageMetadata{
 			Name:     tc.name,
 			Total:    total,
-			Offset:   uint64(tc.offset),
-			Limit:    uint64(tc.limit),
+			Offset:   tc.offset,
+			Limit:    tc.limit,
 			Metadata: tc.metadata,
 		}
 		page, err := mainfluxSDK.Things(tc.token, filter)
@@ -460,7 +461,7 @@ func TestThingsByChannel(t *testing.T) {
 		{
 			desc:     "get a list of things by channel with empty token",
 			channel:  cid,
-			token:    "",
+			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
@@ -558,7 +559,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update channel with invalid id",
 			thing: sdk.Thing{
-				ID:       "",
+				ID:       emptyValue,
 				Name:     "test_device",
 				Metadata: metadata,
 			},
@@ -582,7 +583,7 @@ func TestUpdateThing(t *testing.T) {
 				Name:     "test_app",
 				Metadata: metadata2,
 			},
-			token: "",
+			token: emptyValue,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
 		},
 	}
@@ -604,7 +605,11 @@ func TestDeleteThing(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id, err := mainfluxSDK.CreateThing(th1, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -627,14 +632,14 @@ func TestDeleteThing(t *testing.T) {
 		},
 		{
 			desc:    "delete thing with invalid id",
-			thingID: "",
+			thingID: emptyValue,
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
 			desc:    "delete thing with empty token",
 			thingID: id,
-			token:   "",
+			token:   emptyValue,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
@@ -668,7 +673,11 @@ func TestDeleteThings(t *testing.T) {
 	}
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
-	id1, err := mainfluxSDK.CreateThing(th1, groupID, token)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id1, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thIDs := []string{id1}
 
@@ -692,14 +701,14 @@ func TestDeleteThings(t *testing.T) {
 		},
 		{
 			desc:     "delete things with invalid id",
-			thingIDs: []string{""},
+			thingIDs: []string{emptyValue},
 			token:    token,
 			err:      createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
 			desc:     "delete things with empty token",
 			thingIDs: thIDs,
-			token:    "",
+			token:    emptyValue,
 			err:      createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
@@ -767,13 +776,13 @@ func TestIdentifyThing(t *testing.T) {
 			desc:     "identify thing with invalid key",
 			thingKey: badKey,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
-			response: "",
+			response: emptyValue,
 		},
 		{
 			desc:     "identify thing with empty key",
-			thingKey: "",
+			thingKey: emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: "",
+			response: emptyValue,
 		},
 	}
 
@@ -784,7 +793,7 @@ func TestIdentifyThing(t *testing.T) {
 	}
 }
 
-func TestConnectThing(t *testing.T) {
+func TestConnect(t *testing.T) {
 	svc := newThingsService()
 
 	ts := newThingsServer(svc)
@@ -800,13 +809,17 @@ func TestConnectThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	group.Name = "test-group2"
+	grID2, err := mainfluxSDK.CreateGroup(group, orgID, otherToken)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingID, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID2, err := mainfluxSDK.CreateChannel(ch3, grID, otherToken)
+	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -841,13 +854,13 @@ func TestConnectThing(t *testing.T) {
 		{
 			desc:    "connect existing thing to channel with invalid ID",
 			thingID: thingID,
-			chanID:  "",
+			chanID:  emptyValue,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
 		},
 		{
 			desc:    "connect thing with invalid ID to existing channel",
-			thingID: "",
+			thingID: emptyValue,
 			chanID:  chanID1,
 			token:   token,
 			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
@@ -864,15 +877,15 @@ func TestConnectThing(t *testing.T) {
 			desc:    "connect existing thing to existing channel with empty token",
 			thingID: thingID,
 			chanID:  chanID1,
-			token:   "",
+			token:   emptyValue,
 			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "connect thing from owner to channel of other user",
-			thingID: thingID,
-			chanID:  chanID2,
+			desc:    "connect thing to a channel from another group",
+			thingID: thingID2,
+			chanID:  chanID1,
 			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusConflict),
+			err:     createError(sdk.ErrFailedConnect, http.StatusForbidden),
 		},
 	}
 
@@ -881,109 +894,6 @@ func TestConnectThing(t *testing.T) {
 			ChannelID: tc.chanID,
 			ThingIDs:  []string{tc.thingID},
 		}
-		err := mainfluxSDK.Connect(connIDs, tc.token)
-		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-	}
-}
-
-func TestConnect(t *testing.T) {
-	svc := newThingsService()
-
-	ts := newThingsServer(svc)
-	defer ts.Close()
-	sdkConf := sdk.Config{
-		ThingsURL:       ts.URL,
-		MsgContentType:  contentType,
-		TLSVerification: false,
-	}
-
-	mainfluxSDK := sdk.NewSDK(sdkConf)
-
-	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thingID, err := mainfluxSDK.CreateThing(th1, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	chanID2, err := mainfluxSDK.CreateChannel(ch3, grID, otherToken)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	cases := []struct {
-		desc    string
-		thingID string
-		chanID  string
-		token   string
-		err     error
-	}{
-		{
-			desc:    "connect existing things to existing channels",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   token,
-			err:     nil,
-		},
-
-		{
-			desc:    "connect existing things to non-existing channels",
-			thingID: thingID,
-			chanID:  wrongID,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
-		},
-		{
-			desc:    "connect non-existing things to existing channels",
-			thingID: wrongID,
-			chanID:  chanID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
-		},
-		{
-			desc:    "connect existing things to channels with invalid ID",
-			thingID: thingID,
-			chanID:  emptyValue,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
-		},
-		{
-			desc:    "connect things with invalid ID to existing channels",
-			thingID: emptyValue,
-			chanID:  chanID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
-		},
-
-		{
-			desc:    "connect existing things to existing channels with invalid token",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
-		},
-		{
-			desc:    "connect existing things to existing channels with empty token",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   emptyValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
-		},
-		{
-			desc:    "connect things from owner to channels of other user",
-			thingID: thingID,
-			chanID:  chanID2,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
-		},
-	}
-
-	for _, tc := range cases {
-		connIDs := sdk.ConnectionIDs{
-			tc.thingID,
-			[]string{tc.chanID},
-		}
-
 		err := mainfluxSDK.Connect(connIDs, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
@@ -1005,7 +915,14 @@ func TestDisconnect(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	group.Name = "test-group2"
+	grID2, err := mainfluxSDK.CreateGroup(group, orgID, otherToken)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	thingID, err := mainfluxSDK.CreateThing(th1, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
@@ -1016,9 +933,6 @@ func TestDisconnect(t *testing.T) {
 		ThingIDs:  []string{thingID},
 	}
 	err = mainfluxSDK.Connect(connIDs, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	chanID2, err := mainfluxSDK.CreateChannel(ch2, grID, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -1047,13 +961,13 @@ func TestDisconnect(t *testing.T) {
 		},
 		{
 			desc:       "disconnect existing thing from channel with invalid ID",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: "", ThingIDs: []string{thingID}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: emptyValue, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
 			desc:       "disconnect thing with invalid ID from existing channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{""}},
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{emptyValue}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
@@ -1066,14 +980,14 @@ func TestDisconnect(t *testing.T) {
 		{
 			desc:       "disconnect existing thing from existing channel with empty token",
 			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
-			token:      "",
+			token:      emptyValue,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
-			desc:       "disconnect owner's thing from someone elses channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID2, ThingIDs: []string{thingID}},
+			desc:       "disconnect thing from another group's channel",
+			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID2}},
 			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
+			err:        createError(sdk.ErrFailedDisconnect, http.StatusForbidden),
 		},
 	}
 

@@ -227,78 +227,14 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm 
 	return gr.retrieve(ctx, "", orgID, pm)
 }
 
-func (gr groupRepository) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, metadata, key FROM things
-			WHERE group_id = :group_id %s %s;`, mq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM things WHERE group_id = :group_id %s;`, mq)
-
-	params := map[string]interface{}{
-		"group_id": groupID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"metadata": pm.Metadata,
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
-	}
-	defer rows.Close()
-
-	var items []things.Thing
-	for rows.Next() {
-		dbmem := dbThing{}
-		if err := rows.StructScan(&dbmem); err != nil {
-			return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
-		}
-
-		th, err := toThing(dbmem)
-		if err != nil {
-			return things.ThingsPage{}, err
-		}
-
-		items = append(items, th)
-	}
-
-	total, err := total(ctx, gr.db, qc, params)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(things.ErrRetrieveGroupThings, err)
-	}
-
-	page := things.ThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
 func (gr groupRepository) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
 	if err != nil {
 		return things.ChannelsPage{}, errors.Wrap(things.ErrRetrieveGroupChannels, err)
 	}
 
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
-	}
-
-	q := fmt.Sprintf(`SELECT id, owner_id, group_id, name, metadata FROM channels
+	q := fmt.Sprintf(`SELECT id, group_id, name, metadata FROM channels
 			WHERE group_id = :group_id %s %s;`, mq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM channels WHERE group_id = :group_id %s;`, mq)
 
@@ -351,7 +287,7 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID, orgID string, p
 	}
 
 	nq, name := dbutil.GetNameQuery(pm.Name)
-
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -378,11 +314,6 @@ func (gr groupRepository) retrieve(ctx context.Context, ownerID, orgID string, p
 
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM groups %s %s;`, whereClause, olq)

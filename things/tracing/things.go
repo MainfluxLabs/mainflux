@@ -11,19 +11,17 @@ import (
 )
 
 const (
-	saveThingOp               = "save_thing"
-	saveThingsOp              = "save_things"
-	updateThingOp             = "update_thing"
-	updateThingKeyOp          = "update_thing_by_key"
-	retrieveThingByIDOp       = "retrieve_thing_by_id"
-	retrieveThingsByIDsOp     = "retrieve_things_by_ids"
-	retrieveThingByKeyOp      = "retrieve_thing_by_key"
-	retrieveThingsByOwnerOp   = "retrieve_things_by_owner"
-	retrieveThingsByChannelOp = "retrieve_things_by_chan"
-	removeThingOp             = "remove_thing"
-	retrieveThingIDByKeyOp    = "retrieve_id_by_key"
-	retrieveAllThingsOp       = "retrieve_all_things"
-	restoreThingsOp           = "restore_things"
+	saveThingOp                = "save_thing"
+	saveThingsOp               = "save_things"
+	updateThingOp              = "update_thing"
+	updateThingKeyOp           = "update_thing_by_key"
+	retrieveThingByIDOp        = "retrieve_thing_by_id"
+	retrieveThingByKeyOp       = "retrieve_thing_by_key"
+	retrieveThingsByChannelOp  = "retrieve_things_by_channel"
+	retrieveThingsByGroupIDsOp = "retrieve_things_by_group_ids"
+	removeThingOp              = "remove_thing"
+	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
+	retrieveAllThingsOp        = "retrieve_all_things"
 )
 
 var (
@@ -61,12 +59,12 @@ func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing
 	return trm.repo.Update(ctx, th)
 }
 
-func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, owner, id, key string) error {
+func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, id, key string) error {
 	span := createSpan(ctx, trm.tracer, updateThingKeyOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.UpdateKey(ctx, owner, id, key)
+	return trm.repo.UpdateKey(ctx, id, key)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
@@ -85,20 +83,12 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByOwner(ctx context.Context, owner string, pm things.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByOwnerOp)
+func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm things.PageMetadata) (things.ThingsPage, error) {
+	span := createSpan(ctx, trm.tracer, retrieveThingsByGroupIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByOwner(ctx, owner, pm)
-}
-
-func (trm thingRepositoryMiddleware) RetrieveByIDs(ctx context.Context, thingIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByIDsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.RetrieveByIDs(ctx, thingIDs, pm)
+	return trm.repo.RetrieveByGroupIDs(ctx, ids, pm)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
@@ -109,12 +99,12 @@ func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, chID
 	return trm.repo.RetrieveByChannel(ctx, chID, pm)
 }
 
-func (trm thingRepositoryMiddleware) Remove(ctx context.Context, owner string, ids ...string) error {
+func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
 	span := createSpan(ctx, trm.tracer, removeThingOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.Remove(ctx, owner, ids...)
+	return trm.repo.Remove(ctx, ids...)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {

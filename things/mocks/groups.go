@@ -144,34 +144,6 @@ func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thi
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveThingsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-	var items []things.Thing
-	ths, ok := grm.things[groupID]
-	if !ok {
-		return things.ThingsPage{}, errors.ErrNotFound
-	}
-
-	first := uint64(pm.Offset)
-	last := first + uint64(pm.Limit)
-
-	if last > uint64(len(ths)) {
-		last = uint64(len(ths))
-	}
-
-	for i := first; i < last; i++ {
-		items = append(items, things.Thing{ID: ths[i]})
-	}
-
-	return things.ThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total: uint64(len(items)),
-		},
-	}, nil
-}
-
 func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()

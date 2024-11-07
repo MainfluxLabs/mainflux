@@ -40,7 +40,6 @@ func (es eventStore) CreateThings(ctx context.Context, token string, ths ...thin
 	for _, thing := range sths {
 		event := createThingEvent{
 			id:       thing.ID,
-			ownerID:  thing.OwnerID,
 			name:     thing.Name,
 			metadata: thing.Metadata,
 		}
@@ -90,10 +89,6 @@ func (es eventStore) ListThings(ctx context.Context, token string, pm things.Pag
 	return es.svc.ListThings(ctx, token, pm)
 }
 
-func (es eventStore) ListThingsByIDs(ctx context.Context, ids []string) (things.ThingsPage, error) {
-	return es.svc.ListThingsByIDs(ctx, ids)
-}
-
 func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
 }
@@ -135,7 +130,6 @@ func (es eventStore) CreateChannels(ctx context.Context, token string, channels 
 	for _, channel := range schs {
 		event := createChannelEvent{
 			id:       channel.ID,
-			ownerID:  channel.OwnerID,
 			name:     channel.Name,
 			metadata: channel.Metadata,
 		}

@@ -31,20 +31,24 @@ const (
 	otherToken     = otherUserEmail
 	password       = "password"
 	n              = uint64(102)
-	prefix         = "fe6b4e92-cc98-425e-b0aa-"
+	nUser          = n * 2
+	nAdmin         = n * 3
+	prefixID       = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName     = "test-"
 )
 
 var (
-	thing     = things.Thing{Name: "test"}
-	thingList = [n]things.Thing{}
-	channel   = things.Channel{Name: "test"}
-	thsExtID  = []things.Thing{{ID: prefix + "000000000001", Name: "a"}, {ID: prefix + "000000000002", Name: "b"}}
-	chsExtID  = []things.Channel{{ID: prefix + "000000000001", Name: "a"}, {ID: prefix + "000000000002", Name: "b"}}
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
-	otherUser = users.User{Email: otherUserEmail, Password: password}
-	admin     = users.User{Email: adminEmail, Password: password}
-	usersList = []users.User{admin, user, otherUser}
-	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
+	thing       = things.Thing{Name: "test"}
+	thingList   = [n]things.Thing{}
+	channelList = [n]things.Channel{}
+	channel     = things.Channel{Name: "test"}
+	thsExtID    = []things.Thing{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
+	chsExtID    = []things.Channel{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
+	user        = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
+	otherUser   = users.User{Email: otherUserEmail, Password: password}
+	admin       = users.User{Email: adminEmail, Password: password}
+	usersList   = []users.User{admin, user, otherUser}
+	group       = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
 func newService() things.Service {
@@ -64,13 +68,15 @@ func newService() things.Service {
 func TestInit(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		thingList[i].Name = fmt.Sprintf("name-%d", i+1)
-		thingList[i].ID = fmt.Sprintf("%s%012d", prefix, i+1)
-		thingList[i].Key = fmt.Sprintf("%s1%011d", prefix, i+1)
+		thingList[i].ID = fmt.Sprintf("%s%012d", prefixID, i+1)
+		thingList[i].Key = fmt.Sprintf("%s1%011d", prefixID, i+1)
 	}
 }
 
 func TestCreateThings(t *testing.T) {
 	svc := newService()
+	_, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc   string
@@ -251,29 +257,60 @@ func TestViewThing(t *testing.T) {
 
 func TestListThings(t *testing.T) {
 	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr2 := grs2[0]
 
 	m := make(map[string]interface{})
 	m["serial"] = "123456"
 	thingList[0].Metadata = m
 
 	var ths1 []things.Thing
+	var suffix uint64
 	for i := uint64(0); i < n; i++ {
+		suffix = i + 1
 		th := thingList[i]
+		th.GroupID = gr.ID
+		th.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		th.Key = fmt.Sprintf("%s%d", prefixID, suffix)
+
 		ths1 = append(ths1, th)
 	}
 
 	var ths2 []things.Thing
 	for i := uint64(0); i < n; i++ {
+		suffix = n + i + 1
 		th := thingList[i]
-		th.OwnerID = userEmail
-		th.Key = fmt.Sprintf("%s2%011d", prefix, i+1)
-		th.ID = fmt.Sprintf("%s2%012d", prefix, i+1)
+		th.GroupID = gr.ID
+		th.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		th.Key = fmt.Sprintf("%s%d", prefixID, suffix)
+
 		ths2 = append(ths2, th)
 	}
 
-	_, err := svc.CreateThings(context.Background(), token, ths1...)
+	var ths3 []things.Thing
+	for i := uint64(0); i < n; i++ {
+		suffix = (n * 2) + i + 1
+		th := thingList[i]
+		th.GroupID = gr2.ID
+		th.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		th.Key = fmt.Sprintf("%s%d", prefixID, suffix)
+
+		ths3 = append(ths3, th)
+	}
+
+	_, err = svc.CreateThings(context.Background(), token, ths1...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	_, err = svc.CreateThings(context.Background(), otherToken, ths2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateThings(context.Background(), otherToken, ths3...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -286,19 +323,18 @@ func TestListThings(t *testing.T) {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 		"list all things as admin": {
 			token: adminToken,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n * 2,
-				Total:  n * 2,
+				Limit:  nAdmin,
 			},
-			size: n * 2,
+			size: nAdmin,
 			err:  nil,
 		},
 		"list all things with no limit": {
@@ -306,23 +342,23 @@ func TestListThings(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
-			size: n,
+			size: 0,
 			err:  nil,
 		},
 		"list half": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
-				Limit:  n,
+				Offset: nUser / 2,
+				Limit:  nUser,
 			},
-			size: n / 2,
+			size: nUser / 2,
 			err:  nil,
 		},
 		"list last thing": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n - 1,
-				Limit:  n,
+				Offset: uint64(nUser) - 1,
+				Limit:  nUser,
 			},
 			size: 1,
 			err:  nil,
@@ -330,8 +366,8 @@ func TestListThings(t *testing.T) {
 		"list empty set": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n + 1,
-				Limit:  n,
+				Offset: uint64(nUser) + 1,
+				Limit:  nUser,
 			},
 			size: 0,
 			err:  nil,
@@ -345,36 +381,56 @@ func TestListThings(t *testing.T) {
 			size: 0,
 			err:  errors.ErrAuthentication,
 		},
+		"list with existing name": {
+			token: token,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  nUser,
+				Name:   "test-1",
+			},
+			size: 1,
+			err:  nil,
+		},
+		"list with non-existent name": {
+			token: token,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  nUser,
+				Name:   "wrong",
+			},
+			size: 0,
+			err:  nil,
+		},
 		"list with metadata": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
-				Limit:    n,
+				Limit:    nUser,
 				Metadata: m,
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
-		"list all things sorted by name ascendent": {
+		"list all things sorted by name ascendant": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 				Order:  "name",
 				Dir:    "asc",
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 		"list all things sorted by name descendent": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 				Order:  "name",
 				Dir:    "desc",
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 	}
@@ -406,8 +462,11 @@ func TestListThingsByChannel(t *testing.T) {
 
 	var ths []things.Thing
 	for i := uint64(0); i < n; i++ {
+		suffix := i + 1
 		th := thingList[i]
 		th.GroupID = gr.ID
+		th.Name = fmt.Sprintf("%s%012d", prefixName, suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
 		ths = append(ths, th)
 	}
 
@@ -501,7 +560,7 @@ func TestListThingsByChannel(t *testing.T) {
 			size: 0,
 			err:  errors.ErrNotFound,
 		},
-		"list all things by channel sorted by name ascendent": {
+		"list all things by channel sorted by name ascendant": {
 			token: token,
 			chID:  ch.ID,
 			pageMetadata: things.PageMetadata{
@@ -540,6 +599,11 @@ func TestListThingsByChannel(t *testing.T) {
 
 func TestRemoveThings(t *testing.T) {
 	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thingList[0].GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
@@ -584,6 +648,8 @@ func TestRemoveThings(t *testing.T) {
 
 func TestCreateChannels(t *testing.T) {
 	svc := newService()
+	_, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -721,18 +787,56 @@ func TestViewChannel(t *testing.T) {
 
 func TestListChannels(t *testing.T) {
 	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr2 := grs2[0]
+
 	meta := things.Metadata{}
 	meta["name"] = "test-channel"
 	channel.Metadata = meta
 
-	var chs []things.Channel
+	var chs1 []things.Channel
+	var suffix uint64
 	for i := uint64(0); i < n; i++ {
-		ch := channel
-		ch.Name = fmt.Sprintf("name-%d", i)
-		chs = append(chs, ch)
+		suffix = i + 1
+		ch := channelList[i]
+		ch.GroupID = gr.ID
+		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		chs1 = append(chs1, ch)
 	}
 
-	_, err := svc.CreateChannels(context.Background(), token, chs...)
+	var chs2 []things.Channel
+	for i := uint64(0); i < n; i++ {
+		suffix = n + i + 1
+		ch := channelList[i]
+		ch.GroupID = gr.ID
+		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+
+		chs2 = append(chs2, ch)
+	}
+
+	var chs3 []things.Channel
+	for i := uint64(0); i < n; i++ {
+		suffix = (n * 2) + i + 1
+		ch := channelList[i]
+		ch.GroupID = gr2.ID
+		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+
+		chs3 = append(chs3, ch)
+	}
+
+	_, err = svc.CreateChannels(context.Background(), token, chs1...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateChannels(context.Background(), otherToken, chs2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateChannels(context.Background(), otherToken, chs3...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -745,18 +849,18 @@ func TestListChannels(t *testing.T) {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 		"list all channels as admin": {
 			token: adminToken,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nAdmin,
 			},
-			size: n,
+			size: nAdmin,
 			err:  nil,
 		},
 		"list all channels with no limit": {
@@ -764,23 +868,23 @@ func TestListChannels(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
-			size: n,
+			size: 0,
 			err:  nil,
 		},
 		"list half": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n / 2,
-				Limit:  n,
+				Offset: nUser / 2,
+				Limit:  nUser,
 			},
-			size: n / 2,
+			size: nUser / 2,
 			err:  nil,
 		},
 		"list last channel": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n - 1,
-				Limit:  n,
+				Offset: nUser - 1,
+				Limit:  nUser,
 			},
 			size: 1,
 			err:  nil,
@@ -788,8 +892,8 @@ func TestListChannels(t *testing.T) {
 		"list empty set": {
 			token: token,
 			pageMetadata: things.PageMetadata{
-				Offset: n + 1,
-				Limit:  n,
+				Offset: uint64(nUser) + 1,
+				Limit:  nUser,
 			},
 			size: 0,
 			err:  nil,
@@ -807,52 +911,52 @@ func TestListChannels(t *testing.T) {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
-				Name:   "chanel_name",
+				Limit:  nUser,
+				Name:   "test-1",
 			},
-			size: n,
+			size: 1,
 			err:  nil,
 		},
 		"list with non-existent name": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 				Name:   "wrong",
 			},
-			size: n,
+			size: 0,
 			err:  nil,
 		},
 		"list all channels with metadata": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
-				Limit:    n,
+				Limit:    nUser,
 				Metadata: meta,
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
-		"list all channels sorted by name ascendent": {
+		"list all channels sorted by name ascendant": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 				Order:  "name",
 				Dir:    "asc",
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 		"list all channels sorted by name descendent": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
-				Limit:  n,
+				Limit:  nUser,
 				Order:  "name",
 				Dir:    "desc",
 			},
-			size: n,
+			size: nUser,
 			err:  nil,
 		},
 	}
@@ -941,6 +1045,11 @@ func TestViewChannelByThing(t *testing.T) {
 
 func TestRemoveChannel(t *testing.T) {
 	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	channel.GroupID = gr.ID
 	chs, err := svc.CreateChannels(context.Background(), token, channel)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
@@ -1150,6 +1259,11 @@ func TestGetConnByKey(t *testing.T) {
 func TestIdentify(t *testing.T) {
 	svc := newService()
 
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	thingList[0].GroupID = gr.ID
 	ths, err := svc.CreateThings(context.Background(), token, thingList[0])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -1287,7 +1401,7 @@ func TestRestore(t *testing.T) {
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
 		gr := things.Group{
-			ID:          fmt.Sprintf("%s%012d", prefix, i+1),
+			ID:          fmt.Sprintf("%s%012d", prefixID, i+1),
 			Name:        "test-group-" + num,
 			Description: "test group desc",
 		}
@@ -1299,7 +1413,6 @@ func TestRestore(t *testing.T) {
 		{
 			ID:       thID,
 			Name:     "testThing",
-			OwnerID:  adminEmail,
 			Key:      thkey,
 			Metadata: map[string]interface{}{},
 		},
@@ -1312,7 +1425,6 @@ func TestRestore(t *testing.T) {
 		ch := things.Channel{
 			ID:       chID,
 			Name:     "testChannel",
-			OwnerID:  adminEmail,
 			Metadata: map[string]interface{}{},
 		}
 		ch.Name = fmt.Sprintf("name-%d", i)

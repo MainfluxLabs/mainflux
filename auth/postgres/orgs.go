@@ -455,6 +455,7 @@ func (or orgRepository) RetrieveAllMembersByOrg(ctx context.Context) ([]auth.Org
 func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	ownq := dbutil.GetOwnerQuery(ownerID)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	meta, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -476,11 +477,6 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 	var whereClause string
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	olq := "LIMIT :limit OFFSET :offset"
-	if pm.Limit == 0 {
-		olq = ""
 	}
 
 	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
