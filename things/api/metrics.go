@@ -336,7 +336,7 @@ func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token, grou
 	return ms.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_roles_by_group").Add(1)
 		ms.latency.With("method", "list_roles_by_group").Observe(time.Since(begin).Seconds())

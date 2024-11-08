@@ -307,7 +307,7 @@ func (es eventStore) CreateRolesByGroup(ctx context.Context, token, groupID stri
 	return es.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	return es.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 

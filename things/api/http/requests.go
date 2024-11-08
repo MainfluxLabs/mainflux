@@ -540,7 +540,7 @@ func (req getConnByKeyReq) validate() error {
 type groupRolesReq struct {
 	token      string
 	groupID    string
-	GroupRoles []groupMember `json:"group_roles"`
+	GroupMembers []groupMember `json:"group_members"`
 }
 
 func (req groupRolesReq) validate() error {
@@ -552,11 +552,11 @@ func (req groupRolesReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if len(req.GroupRoles) == 0 {
+	if len(req.GroupMembers) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gp := range req.GroupRoles {
+	for _, gp := range req.GroupMembers {
 		if gp.Role != things.Viewer && gp.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}

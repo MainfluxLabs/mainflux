@@ -136,7 +136,7 @@ func (sdk mfSDK) UpdateRolesByGroup(roles []GroupMember, groupID, token string) 
 func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error
     RemoveRolesByGroup - removes existing group roles
 	
-func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupRolesPage, error)
+func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
     ListRolesByGroup - lists roles by group
  
 func (sdk mfSDK) CreateOrg(org Org, token string) error

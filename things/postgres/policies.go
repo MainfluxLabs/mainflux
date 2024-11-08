@@ -31,7 +31,7 @@ func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, groupID string, 
 	q := `INSERT INTO group_roles (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
 	for _, g := range gps {
-		gp := things.GroupMembers{
+		gp := things.GroupMember{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
 			Role:     g.Role,
@@ -62,7 +62,7 @@ func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, groupID string, 
 	return nil
 }
 
-func (pr rolesRepository) RetrieveRole(ctc context.Context, gp things.GroupMembers) (string, error) {
+func (pr rolesRepository) RetrieveRole(ctc context.Context, gp things.GroupMember) (string, error) {
 	q := `SELECT role FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 
 	params := map[string]interface{}{
@@ -86,7 +86,7 @@ func (pr rolesRepository) RetrieveRole(ctc context.Context, gp things.GroupMembe
 	return role, nil
 }
 
-func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	q := `SELECT member_id, role FROM group_roles WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
@@ -97,15 +97,15 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []things.GroupMembers
+	var items []things.GroupMember
 	for rows.Next() {
 		dbgp := dbGroupMembers{}
 		if err := rows.StructScan(&dbgp); err != nil {
-			return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		gp := toGroupMembers(dbgp)
@@ -116,11 +116,11 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 
 	total, err := total(ctx, pr.db, cq, params)
 	if err != nil {
-		return things.GroupRolesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.GroupRolesPage{
-		GroupRoles: items,
+	page := things.GroupMembersPage{
+		GroupMembers: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -131,7 +131,7 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 	return page, nil
 }
 
-func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {
+func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMember, error) {
 	q := `SELECT member_id, group_id, role FROM group_roles;`
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
@@ -140,7 +140,7 @@ func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things
 	}
 	defer rows.Close()
 
-	var items []things.GroupMembers
+	var items []things.GroupMember
 	for rows.Next() {
 		dbgp := dbGroupMembers{}
 		if err := rows.StructScan(&dbgp); err != nil {
@@ -186,7 +186,7 @@ func (pr rolesRepository) UpdateRolesByGroup(ctx context.Context, groupID string
 	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gps {
-		gp := things.GroupMembers{
+		gp := things.GroupMember{
 			MemberID: g.MemberID,
 			GroupID:  groupID,
 			Role:     g.Role,
@@ -227,7 +227,7 @@ type dbGroupMembers struct {
 	Role     string `db:"role"`
 }
 
-func toDBGroupMembers(gp things.GroupMembers) dbGroupMembers {
+func toDBGroupMembers(gp things.GroupMember) dbGroupMembers {
 	return dbGroupMembers{
 		MemberID: gp.MemberID,
 		GroupID:  gp.GroupID,
@@ -235,8 +235,8 @@ func toDBGroupMembers(gp things.GroupMembers) dbGroupMembers {
 	}
 }
 
-func toGroupMembers(dbgp dbGroupMembers) things.GroupMembers {
-	return things.GroupMembers{
+func toGroupMembers(dbgp dbGroupMembers) things.GroupMember {
+	return things.GroupMember{
 		GroupID:  dbgp.GroupID,
 		MemberID: dbgp.MemberID,
 		Role:     dbgp.Role,

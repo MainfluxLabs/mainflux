@@ -465,7 +465,7 @@ func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token, grou
 	return lm.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
 }
 
-func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gpp things.GroupRolesPage, err error) {
+func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gpp things.GroupMembersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

@@ -287,7 +287,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
-	gp := GroupMembers{
+	gp := GroupMember{
 		MemberID: user.Id,
 		GroupID:  groupID,
 	}

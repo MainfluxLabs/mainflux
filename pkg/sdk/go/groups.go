@@ -413,31 +413,31 @@ func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupRolesPage, error) {
+func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return GroupRolesPage{}, err
+		return GroupMembersPage{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return GroupRolesPage{}, err
+		return GroupMembersPage{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return GroupRolesPage{}, err
+		return GroupMembersPage{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return GroupRolesPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return GroupMembersPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var grp GroupRolesPage
+	var grp GroupMembersPage
 	if err := json.Unmarshal(body, &grp); err != nil {
-		return GroupRolesPage{}, err
+		return GroupMembersPage{}, err
 	}
 
 	return grp, nil
