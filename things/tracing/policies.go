@@ -44,7 +44,7 @@ func (prm rolesRepositoryMiddleware) SaveRolesByGroup(ctx context.Context, group
 	return prm.repo.SaveRolesByGroup(ctx, groupID, gps...)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things.GroupMembers) (string, error) {
+func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
 	span := createSpan(ctx, prm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -52,7 +52,7 @@ func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things
 	return prm.repo.RetrieveRole(ctx, gp)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (prm rolesRepositoryMiddleware) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	span := createSpan(ctx, prm.tracer, retrieveRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -68,7 +68,7 @@ func (prm rolesRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Contex
 	return prm.repo.RetrieveGroupIDsByMember(ctx, memberID)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMembers, error) {
+func (prm rolesRepositoryMiddleware) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMember, error) {
 	span := createSpan(ctx, prm.tracer, retrieveAllRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -401,7 +401,7 @@ func (res updateGroupRolesRes) Empty() bool {
 
 type listGroupRolesRes struct {
 	pageRes
-	GroupRoles []groupMember `json:"group_roles"`
+	GroupMembers []groupMember `json:"group_members"`
 }
 
 func (res listGroupRolesRes) Code() int {

@@ -238,7 +238,7 @@ func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token, groupID 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.GroupRolesPage, error) {
+func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	panic("not implemented")
 }
 

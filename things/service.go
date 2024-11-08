@@ -131,7 +131,7 @@ type Backup struct {
 	Channels    []Channel
 	Connections []Connection
 	Groups      []Group
-	GroupRoles  []GroupMembers
+	GroupRoles  []GroupMember
 }
 
 type AuthorizeReq struct {

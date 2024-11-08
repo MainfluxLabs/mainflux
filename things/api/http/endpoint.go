@@ -942,7 +942,7 @@ func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		var gps []things.GroupRoles
-		for _, g := range req.GroupRoles {
+		for _, g := range req.GroupMembers {
 			gp := things.GroupRoles{
 				MemberID: g.ID,
 				Role:     g.Role,
@@ -966,7 +966,7 @@ func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		var gps []things.GroupRoles
-		for _, g := range req.GroupRoles {
+		for _, g := range req.GroupMembers {
 			gp := things.GroupRoles{
 				MemberID: g.ID,
 				Role:     g.Role,
@@ -1018,23 +1018,23 @@ func listRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupRolesResponse(gpp things.GroupRolesPage) listGroupRolesRes {
+func buildGroupRolesResponse(gpp things.GroupMembersPage) listGroupRolesRes {
 	res := listGroupRolesRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,
 			Limit:  gpp.Limit,
 			Offset: gpp.Offset,
 		},
-		GroupRoles: []groupMember{},
+		GroupMembers: []groupMember{},
 	}
 
-	for _, g := range gpp.GroupRoles {
+	for _, g := range gpp.GroupMembers {
 		gp := groupMember{
 			Email: g.Email,
 			ID:    g.MemberID,
 			Role:  g.Role,
 		}
-		res.GroupRoles = append(res.GroupRoles, gp)
+		res.GroupMembers = append(res.GroupMembers, gp)
 	}
 
 	return res

@@ -290,7 +290,7 @@ type SDK interface {
 	RemoveRolesByGroup(ids []string, groupID, token string) error
 
 	// ListRolesByGroup lists roles that are specified for a certain group.
-	ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupRolesPage, error)
+	ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
 
 	// CreateOrg registers new org.
 	CreateOrg(org Org, token string) error

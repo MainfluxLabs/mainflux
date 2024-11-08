@@ -107,7 +107,7 @@ func TestRetrieveRole(t *testing.T) {
 
 	memberID := generateUUID(t)
 
-	gp := things.GroupMembers{
+	gp := things.GroupMember{
 		GroupID:  group.ID,
 		Role:     things.Viewer,
 		MemberID: memberID,
@@ -123,7 +123,7 @@ func TestRetrieveRole(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		gp   things.GroupMembers
+		gp   things.GroupMember
 		role string
 		err  error
 	}{
@@ -135,7 +135,7 @@ func TestRetrieveRole(t *testing.T) {
 		},
 		{
 			desc: "retrieve group role without group id",
-			gp: things.GroupMembers{
+			gp: things.GroupMember{
 				GroupID:  "",
 				MemberID: memberID,
 			},
@@ -144,7 +144,7 @@ func TestRetrieveRole(t *testing.T) {
 		},
 		{
 			desc: "retrieve group role without member id",
-			gp: things.GroupMembers{
+			gp: things.GroupMember{
 				GroupID:  group.ID,
 				MemberID: "",
 			},
@@ -241,7 +241,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 
 	for _, tc := range cases {
 		gpp, err := rolesRepo.RetrieveRolesByGroup(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(gpp.GroupRoles)
+		size := len(gpp.GroupMembers)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
