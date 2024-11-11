@@ -293,12 +293,18 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		GroupID:  groupID,
 	}
 
-	p, err := ts.roles.RetrieveRole(ctx, gp)
+	role, err := ts.thingCache.Role(ctx, gp.GroupID, gp.MemberID)
 	if err != nil {
-		return err
+		r, err := ts.roles.RetrieveRole(ctx, gp)
+		if err != nil {
+			return err
+		}
+		role = r
+
+		ts.thingCache.SaveRole(ctx,  gp.GroupID, gp.MemberID, r)
 	}
 
-	switch p {
+	switch role {
 	case Viewer:
 		if action == Viewer {
 			return nil
