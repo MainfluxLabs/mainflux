@@ -112,7 +112,7 @@ type Service interface {
 
 	Groups
 
-	Policies
+	Roles
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -643,7 +643,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupsPolicies, err := ts.roles.RetrieveAllRolesByGroup(ctx)
+	groupsRoles, err := ts.roles.RetrieveAllRolesByGroup(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -668,7 +668,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		Channels:    channels,
 		Connections: connections,
 		Groups:      groups,
-		GroupRoles:  groupsPolicies,
+		GroupRoles:  groupsRoles,
 	}, nil
 }
 

@@ -15,7 +15,7 @@ type rolesRepository struct {
 	db Database
 }
 
-// NewRolesRepository instantiates a PostgreSQL implementation of policies repository.
+// NewRolesRepository instantiates a PostgreSQL implementation of roles repository.
 func NewRolesRepository(db Database) things.RolesRepository {
 	return &rolesRepository{
 		db: db,

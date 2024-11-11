@@ -46,17 +46,17 @@ type RolesRepository interface {
 	UpdateRolesByGroup(ctx context.Context, groupID string, gps ...GroupRoles) error
 }
 
-type Policies interface {
-	// CreateRolesByGroup creates policies of the group identified by the provided ID.
+type Roles interface {
+	// CreateRolesByGroup creates roles of the group identified by the provided ID.
 	CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
 
-	// ListRolesByGroup retrieves a page of policies for a group that is identified by the provided ID.
+	// ListRolesByGroup retrieves a page of roles for a group that is identified by the provided ID.
 	ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// UpdateRolesByGroup updates policies of the group identified by the provided ID.
+	// UpdateRolesByGroup updates roles of the group identified by the provided ID.
 	UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
 
-	// RemoveRolesByGroup removes policies of the group identified by the provided ID.
+	// RemoveRolesByGroup removes roles of the group identified by the provided ID.
 	RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
