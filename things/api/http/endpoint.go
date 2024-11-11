@@ -941,16 +941,17 @@ func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var gps []things.GroupRoles
+		var gms []things.GroupMember
 		for _, g := range req.GroupMembers {
-			gp := things.GroupRoles{
+			gp := things.GroupMember{
 				MemberID: g.ID,
+				GroupID:  req.groupID,
 				Role:     g.Role,
 			}
-			gps = append(gps, gp)
+			gms = append(gms, gp)
 		}
 
-		if err := svc.CreateRolesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.CreateRolesByGroup(ctx, req.token, gms...); err != nil {
 			return nil, err
 		}
 
@@ -965,16 +966,17 @@ func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var gps []things.GroupRoles
+		var gms []things.GroupMember
 		for _, g := range req.GroupMembers {
-			gp := things.GroupRoles{
+			gp := things.GroupMember{
 				MemberID: g.ID,
+				GroupID:  req.groupID,
 				Role:     g.Role,
 			}
-			gps = append(gps, gp)
+			gms = append(gms, gp)
 		}
 
-		if err := svc.UpdateRolesByGroup(ctx, req.token, req.groupID, gps...); err != nil {
+		if err := svc.UpdateRolesByGroup(ctx, req.token, gms...); err != nil {
 			return nil, err
 		}
 

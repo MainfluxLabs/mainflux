@@ -22,7 +22,7 @@ func NewRolesRepository(db Database) things.RolesRepository {
 	}
 }
 
-func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -30,15 +30,9 @@ func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, groupID string, 
 
 	q := `INSERT INTO group_roles (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
-	for _, g := range gps {
-		gp := things.GroupMember{
-			MemberID: g.MemberID,
-			GroupID:  groupID,
-			Role:     g.Role,
-		}
-		dbgp := toDBGroupMembers(gp)
-
-		if _, err := pr.db.NamedExecContext(ctx, q, dbgp); err != nil {
+	for _, g := range gms {
+		dbgm := toDBGroupMembers(g)
+		if _, err := pr.db.NamedExecContext(ctx, q, dbgm); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -182,18 +176,12 @@ func (pr rolesRepository) RemoveRolesByGroup(ctx context.Context, groupID string
 	return nil
 }
 
-func (pr rolesRepository) UpdateRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (pr rolesRepository) UpdateRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
 	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
-	for _, g := range gps {
-		gp := things.GroupMember{
-			MemberID: g.MemberID,
-			GroupID:  groupID,
-			Role:     g.Role,
-		}
-		dbgp := toDBGroupMembers(gp)
-
-		row, err := pr.db.NamedExecContext(ctx, q, dbgp)
+	for _, g := range gms {
+		dbgm := toDBGroupMembers(g)
+		row, err := pr.db.NamedExecContext(ctx, q, dbgm)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {

@@ -234,7 +234,7 @@ func (svc *mainfluxThings) ListChannelsByGroup(_ context.Context, token, groupID
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token, groupID string, gps ...things.GroupRoles) error {
+func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token string, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 
@@ -242,7 +242,7 @@ func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID st
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateRolesByGroup(_ context.Context, token, groupID string, gps ...things.GroupRoles) error {
+func (svc *mainfluxThings) UpdateRolesByGroup(_ context.Context, token string, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 

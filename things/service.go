@@ -698,12 +698,13 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	}
 
 	for _, g := range backup.GroupRoles {
-		gp := GroupRoles{
+		gm := GroupMember{
 			MemberID: g.MemberID,
+			GroupID:  g.GroupID,
 			Role:     g.Role,
 		}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, g.GroupID, gp); err != nil {
+		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
 			return err
 		}
 	}
