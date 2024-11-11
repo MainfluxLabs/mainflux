@@ -73,8 +73,8 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 		return err
 	}
 
-	for _, m := range gps {
-		if err := ts.thingCache.SaveRole(ctx, groupID, m.MemberID, m.Role); err != nil {
+	for _, gm := range gms {
+		if err := ts.thingCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
@@ -173,8 +173,8 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 		return err
 	}
 
-	for _, m := range gps {
-		if err := ts.thingCache.SaveRole(ctx, groupID, m.MemberID, m.Role); err != nil {
+	for _, gm := range gms {
+		if err := ts.thingCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
