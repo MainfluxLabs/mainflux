@@ -91,4 +91,13 @@ type ThingCache interface {
 
 	// Remove removes thing from cache.
 	Remove(context.Context, string) error
+
+	// SaveRole stores pair groupID:memberID, role.
+	SaveRole(context.Context, string, string, string) (error)
+
+	// Role stores pair groupID:memberID, role.
+	Role(context.Context, string, string) (string, error)
+
+	// RemoveRole removes group member role from cache.
+	RemoveRole(context.Context, string, string) (error)
 }
