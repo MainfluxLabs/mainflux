@@ -121,12 +121,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		role := GroupRoles{
+		role := GroupMember{
 			MemberID: ownerID,
+			GroupID:  gr.ID,
 			Role:     Admin,
 		}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, gr.ID, role); err != nil {
+		if err := ts.roles.SaveRolesByGroup(ctx, role); err != nil {
 			return []Group{}, err
 		}
 

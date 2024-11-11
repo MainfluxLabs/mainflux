@@ -14,10 +14,6 @@ type GroupMember struct {
 	Role     string
 }
 
-type GroupRoles struct {
-	MemberID string
-	Role     string
-}
 type GroupMembersPage struct {
 	PageMetadata
 	GroupMembers []GroupMember
@@ -25,7 +21,7 @@ type GroupMembersPage struct {
 
 type RolesRepository interface {
 	// SaveRolesByGroup saves group roles by group ID.
-	SaveRolesByGroup(ctx context.Context, groupID string, gps ...GroupRoles) error
+	SaveRolesByGroup(ctx context.Context, gms ...GroupMember) error
 
 	// RetrieveRole retrieves group role by group ID.
 	RetrieveRole(ctc context.Context, gp GroupMember) (string, error)
@@ -43,27 +39,28 @@ type RolesRepository interface {
 	RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
 
 	// UpdateRolesByGroup updates group roles by group ID.
-	UpdateRolesByGroup(ctx context.Context, groupID string, gps ...GroupRoles) error
+	UpdateRolesByGroup(ctx context.Context, gms ...GroupMember) error
 }
 
-type Policies interface {
-	// CreateRolesByGroup creates policies of the group identified by the provided ID.
-	CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
+type Roles interface {
+	// CreateRolesByGroup creates roles of the group identified by the provided ID.
+	CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
 
-	// ListRolesByGroup retrieves a page of policies for a group that is identified by the provided ID.
+	// ListRolesByGroup retrieves a page of roles for a group that is identified by the provided ID.
 	ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error)
 
-	// UpdateRolesByGroup updates policies of the group identified by the provided ID.
-	UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error
+	// UpdateRolesByGroup updates roles of the group identified by the provided ID.
+	UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
 
-	// RemoveRolesByGroup removes policies of the group identified by the provided ID.
+	// RemoveRolesByGroup removes roles of the group identified by the provided ID.
 	RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
-func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
+func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
+	grID := gms[0].GroupID
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  groupID,
+		Object:  grID,
 		Subject: GroupSub,
 		Action:  Admin,
 	}
@@ -72,7 +69,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token, groupID 
 		return err
 	}
 
-	if err := ts.roles.SaveRolesByGroup(ctx, groupID, gps...); err != nil {
+	if err := ts.roles.SaveRolesByGroup(ctx, gms...); err != nil {
 		return err
 	}
 
@@ -142,10 +139,11 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 	return page, nil
 }
 
-func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...GroupRoles) error {
+func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
+	grID := gms[0].GroupID
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  groupID,
+		Object:  grID,
 		Subject: GroupSub,
 		Action:  Admin,
 	}
@@ -154,18 +152,18 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token, groupID 
 		return err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	group, err := ts.groups.RetrieveByID(ctx, grID)
 	if err != nil {
 		return err
 	}
 
-	for _, gp := range gps {
-		if gp.MemberID == group.OrgID {
+	for _, gp := range gms {
+		if gp.MemberID == group.OwnerID {
 			return errors.ErrAuthorization
 		}
 	}
 
-	if err := ts.roles.UpdateRolesByGroup(ctx, groupID, gps...); err != nil {
+	if err := ts.roles.UpdateRolesByGroup(ctx, gms...); err != nil {
 		return err
 	}
 

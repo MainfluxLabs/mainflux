@@ -327,13 +327,13 @@ func (ms *metricsMiddleware) ViewGroupByChannel(ctx context.Context, token, chan
 	return ms.svc.ViewGroupByChannel(ctx, token, channelID)
 }
 
-func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
+func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_roles_by_group").Add(1)
 		ms.latency.With("method", "create_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
+	return ms.svc.CreateRolesByGroup(ctx, token, gms...)
 }
 
 func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
@@ -345,13 +345,13 @@ func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupI
 	return ms.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
+func (ms *metricsMiddleware) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_roles_by_group").Add(1)
 		ms.latency.With("method", "update_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
+	return ms.svc.UpdateRolesByGroup(ctx, token, gms...)
 }
 
 func (ms *metricsMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {

@@ -453,16 +453,16 @@ func (lm *loggingMiddleware) ListChannelsByGroup(ctx context.Context, token, gro
 	return lm.svc.ListChannelsByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) (err error) {
+func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method create_roles_by_group took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
+	return lm.svc.CreateRolesByGroup(ctx, token, gms...)
 }
 
 func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gpp things.GroupMembersPage, err error) {
@@ -477,16 +477,16 @@ func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupI
 	return lm.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) (err error) {
+func (lm *loggingMiddleware) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method update_roles_by_group took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
+	return lm.svc.UpdateRolesByGroup(ctx, token, gms...)
 }
 
 func (lm *loggingMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {

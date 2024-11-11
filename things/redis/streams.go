@@ -303,16 +303,16 @@ func (es eventStore) ViewGroupByChannel(ctx context.Context, token string, chann
 	return es.svc.ViewGroupByChannel(ctx, token, channelID)
 }
 
-func (es eventStore) CreateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
-	return es.svc.CreateRolesByGroup(ctx, token, groupID, gps...)
+func (es eventStore) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
+	return es.svc.CreateRolesByGroup(ctx, token, gms...)
 }
 
 func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
 	return es.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) UpdateRolesByGroup(ctx context.Context, token, groupID string, gps ...things.GroupRoles) error {
-	return es.svc.UpdateRolesByGroup(ctx, token, groupID, gps...)
+func (es eventStore) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
+	return es.svc.UpdateRolesByGroup(ctx, token, gms...)
 }
 
 func (es eventStore) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {

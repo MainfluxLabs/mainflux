@@ -36,12 +36,12 @@ func RolesRepositoryMiddleware(tracer opentracing.Tracer, pr things.RolesReposit
 	}
 }
 
-func (prm rolesRepositoryMiddleware) SaveRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (prm rolesRepositoryMiddleware) SaveRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
 	span := createSpan(ctx, prm.tracer, saveRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return prm.repo.SaveRolesByGroup(ctx, groupID, gps...)
+	return prm.repo.SaveRolesByGroup(ctx, gms...)
 }
 
 func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
@@ -76,12 +76,12 @@ func (prm rolesRepositoryMiddleware) RetrieveAllRolesByGroup(ctx context.Context
 	return prm.repo.RetrieveAllRolesByGroup(ctx)
 }
 
-func (prm rolesRepositoryMiddleware) UpdateRolesByGroup(ctx context.Context, groupID string, gps ...things.GroupRoles) error {
+func (prm rolesRepositoryMiddleware) UpdateRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
 	span := createSpan(ctx, prm.tracer, updateRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return prm.repo.UpdateRolesByGroup(ctx, groupID, gps...)
+	return prm.repo.UpdateRolesByGroup(ctx, gms...)
 }
 
 func (prm rolesRepositoryMiddleware) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {

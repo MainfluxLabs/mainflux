@@ -30,62 +30,74 @@ func TestSaveRolesByGroup(t *testing.T) {
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
 
-	gps := []things.GroupRoles{
+	gms := []things.GroupMember{
 		{
 			MemberID: memberID,
+			GroupID:  group.ID,
 			Role:     things.Viewer,
 		},
 		{
 			MemberID: memberID1,
+			GroupID:  group.ID,
 			Role:     things.Viewer,
 		},
 	}
 
-	gpsWithoutMemberIDs := []things.GroupRoles{
+	gmsWithoutMemberIDs := []things.GroupMember{
 		{
 			MemberID: "",
+			GroupID:  group.ID,
 			Role:     things.Viewer,
 		},
 		{
 			MemberID: "",
+			GroupID:  group.ID,
+			Role:     things.Viewer,
+		},
+	}
+
+	gmsWithoutGroupIDs := []things.GroupMember{
+		{
+			MemberID: memberID,
+			GroupID:  "",
+			Role:     things.Viewer,
+		},
+		{
+			MemberID: memberID1,
+			GroupID:  "",
 			Role:     things.Viewer,
 		},
 	}
 
 	cases := []struct {
-		desc    string
-		groupID string
-		gps     []things.GroupRoles
-		err     error
+		desc string
+		gms  []things.GroupMember
+		err  error
 	}{
 		{
-			desc:    "save group roles",
-			gps:     gps,
-			groupID: group.ID,
-			err:     nil,
+			desc: "save group roles",
+			gms:  gms,
+			err:  nil,
 		},
 		{
-			desc:    "save group roles without group ids",
-			gps:     gps,
-			groupID: "",
-			err:     errors.ErrMalformedEntity,
+			desc: "save group roles without group ids",
+			gms:  gmsWithoutGroupIDs,
+			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save group roles without member id",
-			gps:     gpsWithoutMemberIDs,
-			groupID: group.ID,
-			err:     errors.ErrMalformedEntity,
+			desc: "save group roles without member id",
+			gms:  gmsWithoutMemberIDs,
+			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc:    "save existing group roles",
-			gps:     gps,
-			groupID: group.ID,
-			err:     errors.ErrConflict,
+			desc: "save existing group roles",
+			gms:  gms,
+			err:  errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := rolesRepo.SaveRolesByGroup(context.Background(), tc.groupID, tc.gps...)
+		err := rolesRepo.SaveRolesByGroup(context.Background(), tc.gms...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -107,18 +119,13 @@ func TestRetrieveRole(t *testing.T) {
 
 	memberID := generateUUID(t)
 
-	gp := things.GroupMember{
+	gm := things.GroupMember{
 		GroupID:  group.ID,
 		Role:     things.Viewer,
 		MemberID: memberID,
 	}
 
-	gpByID := things.GroupRoles{
-		MemberID: memberID,
-		Role:     things.Viewer,
-	}
-
-	err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gpByID)
+	err = rolesRepo.SaveRolesByGroup(context.Background(), gm)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -129,7 +136,7 @@ func TestRetrieveRole(t *testing.T) {
 	}{
 		{
 			desc: "retrieve group role",
-			gp:   gp,
+			gp:   gm,
 			role: things.Viewer,
 			err:  nil,
 		},
@@ -178,11 +185,12 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		gp := things.GroupRoles{
+		gm := things.GroupMember{
 			MemberID: memberID,
+			GroupID:  gr.ID,
 			Role:     things.Viewer,
 		}
-		err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gp)
+		err = rolesRepo.SaveRolesByGroup(context.Background(), gm)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -267,12 +275,13 @@ func TestRemoveRolesByGroup(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		gp := things.GroupRoles{
+		gp := things.GroupMember{
 			MemberID: memberID,
+			GroupID:  group.ID,
 			Role:     things.Viewer,
 		}
 
-		err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gp)
+		err = rolesRepo.SaveRolesByGroup(context.Background(), gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -328,49 +337,50 @@ func TestUpdateRolesByGroup(t *testing.T) {
 	group, err := groupRepo.Save(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	gpByIDs := []things.GroupRoles{
+	gpByIDs := []things.GroupMember{
 		{
 			MemberID: memberID,
+			GroupID:  gr.ID,
 			Role:     things.Viewer,
 		},
 		{
 			MemberID: memberID1,
+			GroupID:  gr.ID,
 			Role:     things.Viewer,
 		},
 	}
 
-	err = rolesRepo.SaveRolesByGroup(context.Background(), group.ID, gpByIDs...)
+	err = rolesRepo.SaveRolesByGroup(context.Background(), gpByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		groupID string
-		gpByID  things.GroupRoles
-		err     error
+		desc   string
+		gpByID things.GroupMember
+		err    error
 	}{
 		{
-			desc:    "update group roles without group id",
-			groupID: "",
-			gpByID: things.GroupRoles{
-				MemberID: "",
-				Role:     things.Viewer,
-			},
-			err: errors.ErrMalformedEntity,
-		},
-		{
-			desc:    "update group roles without member id",
-			groupID: group.ID,
-			gpByID: things.GroupRoles{
-				MemberID: "",
-				Role:     things.Viewer,
-			},
-			err: errors.ErrMalformedEntity,
-		},
-		{
-			desc:    "update group roles",
-			groupID: group.ID,
-			gpByID: things.GroupRoles{
+			desc: "update group roles without group id",
+			gpByID: things.GroupMember{
 				MemberID: memberID,
+				GroupID:  "",
+				Role:     things.Viewer,
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		{
+			desc: "update group roles without member id",
+			gpByID: things.GroupMember{
+				MemberID: "",
+				GroupID:  group.ID,
+				Role:     things.Viewer,
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		{
+			desc: "update group roles",
+			gpByID: things.GroupMember{
+				MemberID: memberID,
+				GroupID:  group.ID,
 				Role:     things.Viewer,
 			},
 			err: nil,
@@ -378,7 +388,7 @@ func TestUpdateRolesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := rolesRepo.UpdateRolesByGroup(context.Background(), tc.groupID, tc.gpByID)
+		err := rolesRepo.UpdateRolesByGroup(context.Background(), tc.gpByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
