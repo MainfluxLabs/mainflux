@@ -17,17 +17,13 @@ type Identity struct {
 	Email string
 }
 
-// GroupMetadata defines the Metadata type.
-type GroupMetadata map[string]interface{}
-
 // Group represents the group information.
 type Group struct {
 	ID          string
-	OwnerID     string
 	OrgID       string
 	Name        string
 	Description string
-	Metadata    GroupMetadata
+	Metadata    Metadata
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -54,10 +50,7 @@ type GroupRepository interface {
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
 	// RetrieveByIDs retrieves groups by their ids
-	RetrieveByIDs(ctx context.Context, groupIDs []string) (GroupPage, error)
-
-	// RetrieveByOwner retrieves all groups.
-	RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm PageMetadata) (GroupPage, error)
+	RetrieveByIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (GroupPage, error)
 
 	// RetrieveChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
 	RetrieveChannelsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)
@@ -107,12 +100,11 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	ownerID := user.GetId()
+	adminID := user.GetId()
 	timestamp := getTimestmap()
 
 	grs := []Group{}
 	for _, group := range groups {
-		group.OwnerID = ownerID
 		group.CreatedAt = timestamp
 		group.UpdatedAt = timestamp
 
@@ -121,8 +113,9 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
+		// TODO: add ORG_OWNER as GROUP_OWNER
 		role := GroupMember{
-			MemberID: ownerID,
+			MemberID: adminID,
 			GroupID:  gr.ID,
 			Role:     Admin,
 		}
@@ -168,11 +161,16 @@ func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm
 		return GroupPage{}, err
 	}
 
-	return ts.groups.RetrieveByOwner(ctx, user.GetId(), orgID, pm)
+	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, user.GetId())
+	if err != nil {
+		return GroupPage{}, err
+	}
+
+	return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error) {
-	page, err := ts.groups.RetrieveByIDs(ctx, ids)
+	page, err := ts.groups.RetrieveByIDs(ctx, ids, PageMetadata{})
 	if err != nil {
 		return []Group{}, err
 	}
@@ -301,7 +299,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		ts.thingCache.SaveRole(ctx,  gp.GroupID, gp.MemberID, r)
+		ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r)
 	}
 
 	switch role {

@@ -542,7 +542,6 @@ func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,
-			OwnerID:     group.OwnerID,
 			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
@@ -661,7 +660,6 @@ func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,
-			OwnerID:     group.OwnerID,
 			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
@@ -710,7 +708,6 @@ func viewGroupByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,
-			OwnerID:     group.OwnerID,
 			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
@@ -733,7 +730,6 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	for _, group := range gp.Groups {
 		view := viewGroupRes{
 			ID:          group.ID,
-			OwnerID:     group.OwnerID,
 			OrgID:       group.OrgID,
 			Name:        group.Name,
 			Description: group.Description,
@@ -838,7 +834,6 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,
-			OwnerID:     group.OwnerID,
 			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
@@ -880,7 +875,6 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	for _, group := range req.Groups {
 		gr := things.Group{
 			ID:          group.ID,
-			OwnerID:     group.OwnerID,
 			Name:        group.Name,
 			Description: group.Description,
 			Metadata:    group.Metadata,

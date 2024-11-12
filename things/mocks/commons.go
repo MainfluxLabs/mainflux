@@ -85,3 +85,36 @@ func sortChannels(pm things.PageMetadata, chs []things.Channel) []things.Channel
 
 	return chs
 }
+
+func sortGroups(pm things.PageMetadata, grs []things.Group) []things.Group {
+	switch pm.Order {
+	case "name":
+		if pm.Dir == "asc" {
+			sort.SliceStable(grs, func(i, j int) bool {
+				return grs[i].Name < grs[j].Name
+			})
+		}
+		if pm.Dir == "desc" {
+			sort.SliceStable(grs, func(i, j int) bool {
+				return grs[i].Name > grs[j].Name
+			})
+		}
+	case "id":
+		if pm.Dir == "asc" {
+			sort.SliceStable(grs, func(i, j int) bool {
+				return grs[i].ID < grs[j].ID
+			})
+		}
+		if pm.Dir == "desc" {
+			sort.SliceStable(grs, func(i, j int) bool {
+				return grs[i].ID > grs[j].ID
+			})
+		}
+	default:
+		sort.SliceStable(grs, func(i, j int) bool {
+			return grs[i].ID < grs[j].ID
+		})
+	}
+
+	return grs
+}

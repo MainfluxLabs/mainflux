@@ -129,13 +129,16 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_4",
 				Up: []string{
-					`ALTER TABLE groups ADD CONSTRAINT org_name UNIQUE (org_id, name);
-						ALTER TABLE things DROP CONSTRAINT things_pkey;
+					`ALTER TABLE groups DROP CONSTRAINT groups_pkey;
+						ALTER TABLE groups DROP COLUMN IF EXISTS owner_id;
+						ALTER TABLE groups ADD PRIMARY KEY (id);
+						ALTER TABLE groups ADD CONSTRAINT org_name UNIQUE (org_id, name);`,
+					`ALTER TABLE things DROP CONSTRAINT things_pkey;
 						ALTER TABLE things DROP COLUMN IF EXISTS owner_id;
 						ALTER TABLE things ADD PRIMARY KEY (id);
 						ALTER TABLE things ADD CONSTRAINT group_name_ths UNIQUE (group_id, name);
-						ALTER TABLE things ALTER COLUMN name SET NOT NULL;
-						ALTER TABLE channels DROP CONSTRAINT channels_pkey;
+						ALTER TABLE things ALTER COLUMN name SET NOT NULL;`,
+					`ALTER TABLE channels DROP CONSTRAINT channels_pkey;
 						ALTER TABLE channels DROP COLUMN IF EXISTS owner_id;
 						ALTER TABLE channels ADD PRIMARY KEY (id);
 						ALTER TABLE channels ADD CONSTRAINT group_name_chs UNIQUE (group_id, name);

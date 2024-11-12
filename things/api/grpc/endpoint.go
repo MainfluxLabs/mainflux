@@ -103,7 +103,6 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, g := range groups {
 			gr := protomfx.Group{
 				Id:          g.ID,
-				OwnerID:     g.OwnerID,
 				Name:        g.Name,
 				Description: g.Description,
 			}

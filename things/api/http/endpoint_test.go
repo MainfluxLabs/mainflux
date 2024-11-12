@@ -2655,7 +2655,6 @@ func TestBackup(t *testing.T) {
 		groupsRes = append(groupsRes, viewGroupRes{
 			ID:          gr.ID,
 			Name:        gr.Name,
-			OwnerID:     gr.OwnerID,
 			Description: gr.Description,
 			Metadata:    gr.Metadata,
 		})
@@ -2807,7 +2806,6 @@ func TestRestore(t *testing.T) {
 		gr = append(gr, restoreGroupReq{
 			ID:          group.ID,
 			Name:        group.Name,
-			OwnerID:     group.OwnerID,
 			Description: group.Description,
 			Metadata:    group.Metadata,
 		})
@@ -3077,7 +3075,6 @@ type backupConnectionRes struct {
 type viewGroupRes struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
-	OwnerID     string                 `json:"owner_id"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -3110,7 +3107,6 @@ type restoreConnectionReq struct {
 type restoreGroupReq struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
-	OwnerID     string                 `json:"owner_id"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	CreatedAt   time.Time              `json:"created_at"`

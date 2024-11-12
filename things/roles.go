@@ -3,7 +3,6 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -158,16 +157,17 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 		return err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, grID)
-	if err != nil {
-		return err
-	}
-
-	for _, gp := range gms {
-		if gp.MemberID == group.OwnerID {
-			return errors.ErrAuthorization
-		}
-	}
+	// TODO : FIX AUTHORIZATION
+	//group, err := ts.groups.RetrieveByID(ctx, grID)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, gp := range gms {
+	//	if gp.MemberID == group.OwnerID {
+	//		return errors.ErrAuthorization
+	//	}
+	//}
 
 	if err := ts.roles.UpdateRolesByGroup(ctx, gms...); err != nil {
 		return err
@@ -194,16 +194,17 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 		return err
 	}
 
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range memberIDs {
-		if m == group.OwnerID {
-			return errors.ErrAuthorization
-		}
-	}
+	// TODO : FIX AUTHORIZATION
+	//group, err := ts.groups.RetrieveByID(ctx, groupID)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, m := range memberIDs {
+	//	if m == group.OwnerID {
+	//		return errors.ErrAuthorization
+	//	}
+	//}
 
 	if err := ts.roles.RemoveRolesByGroup(ctx, groupID, memberIDs...); err != nil {
 		return err

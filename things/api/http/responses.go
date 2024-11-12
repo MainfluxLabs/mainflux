@@ -265,7 +265,6 @@ func (res ThingsPageRes) Empty() bool {
 type viewGroupRes struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
-	OwnerID     string                 `json:"owner_id"`
 	OrgID       string                 `json:"org_id"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`

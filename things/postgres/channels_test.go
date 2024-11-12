@@ -295,7 +295,6 @@ func TestRetrieveChannelsByGroupIDs(t *testing.T) {
 
 	for desc, tc := range cases {
 		page, err := chanRepo.RetrieveByGroupIDs(context.Background(), []string{group.ID}, tc.pageMetadata)
-		//assert.Equal(t, []things.Channel{chRes[len(chs)-1]}, page.Channels)
 		size := uint64(len(page.Channels))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
