@@ -16,7 +16,6 @@ type orgRepositoryMock struct {
 	mu         sync.Mutex
 	orgs       map[string]auth.Org
 	orgMembers map[string]auth.OrgMember
-	orgGroups  map[string]auth.OrgGroup
 }
 
 // NewOrgRepository returns mock of org repository
@@ -24,7 +23,6 @@ func NewOrgRepository() auth.OrgRepository {
 	return &orgRepositoryMock{
 		orgs:       make(map[string]auth.Org),
 		orgMembers: make(map[string]auth.OrgMember),
-		orgGroups:  make(map[string]auth.OrgGroup),
 	}
 }
 
@@ -221,48 +219,6 @@ func (orm *orgRepositoryMock) RetrieveMember(ctx context.Context, orgID, memberI
 	panic("not implemented")
 }
 
-func (orm *orgRepositoryMock) AssignGroups(ctx context.Context, ogs ...auth.OrgGroup) error {
-	orm.mu.Lock()
-	defer orm.mu.Unlock()
-
-	for _, gr := range ogs {
-		if _, ok := orm.orgs[gr.OrgID]; !ok {
-			return errors.ErrNotFound
-		}
-		orm.orgGroups[gr.GroupID] = auth.OrgGroup{
-			GroupID: gr.GroupID,
-		}
-	}
-
-	return nil
-}
-
-func (orm *orgRepositoryMock) UnassignGroups(ctx context.Context, orgID string, groupIDs ...string) error {
-	orm.mu.Lock()
-	defer orm.mu.Unlock()
-
-	for _, groupID := range groupIDs {
-		if _, ok := orm.orgGroups[groupID]; !ok || orm.orgs[orgID].ID != orgID {
-			return errors.ErrNotFound
-		}
-		delete(orm.orgGroups, groupID)
-	}
-
-	return nil
-}
-
-func (orm *orgRepositoryMock) RetrieveByGroupID(ctx context.Context, groupID string) (auth.Org, error) {
-	orm.mu.Lock()
-	defer orm.mu.Unlock()
-
-	org, ok := orm.orgGroups[groupID]
-	if !ok {
-		return auth.Org{}, errors.ErrNotFound
-	}
-
-	return orm.orgs[org.GroupID], nil
-}
-
 func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
@@ -318,23 +274,6 @@ func (orm *orgRepositoryMock) RetrieveAllMembersByOrg(ctx context.Context) ([]au
 	}
 
 	return mrs, nil
-}
-
-func (orm *orgRepositoryMock) RetrieveAllGroupsByOrg(ctx context.Context) ([]auth.OrgGroup, error) {
-	orm.mu.Lock()
-	defer orm.mu.Unlock()
-
-	var ogs []auth.OrgGroup
-	for _, org := range orm.orgs {
-		for _, group := range orm.orgGroups {
-			ogs = append(ogs, auth.OrgGroup{
-				OrgID:   org.ID,
-				GroupID: group.GroupID,
-			})
-		}
-	}
-
-	return ogs, nil
 }
 
 func sortOrgsByID(orgs map[string]auth.Org) []string {

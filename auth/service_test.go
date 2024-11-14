@@ -1437,11 +1437,6 @@ func TestRestore(t *testing.T) {
 		orgMembers = append(orgMembers, auth.OrgMember{MemberID: memberID, OrgID: id})
 	}
 
-	var orgGroups []auth.OrgGroup
-	for _, groupID := range groupIDs {
-		orgGroups = append(orgGroups, auth.OrgGroup{GroupID: groupID, OrgID: id})
-	}
-
 	backup := auth.Backup{
 		Orgs:       orgs,
 		OrgMembers: orgMembers,
