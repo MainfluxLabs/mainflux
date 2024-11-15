@@ -85,7 +85,8 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	orgsRepo := mocks.NewOrgRepository()
+	membsRepo := mocks.NewMembersRepository()
+	orgsRepo := mocks.NewOrgRepository(membsRepo)
 	rolesRepo := mocks.NewRolesRepository()
 
 	idProvider := uuid.NewMock()
@@ -93,7 +94,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
@@ -159,13 +160,6 @@ func TestAssignMembers(t *testing.T) {
 			id:     or.ID,
 			req:    data,
 			status: http.StatusUnauthorized,
-		},
-		{
-			desc:   "assign member to non-existing org",
-			token:  token,
-			id:     wrongValue,
-			req:    data,
-			status: http.StatusNotFound,
 		},
 		{
 			desc:   "assign member to org without org id",

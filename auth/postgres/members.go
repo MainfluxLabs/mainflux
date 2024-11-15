@@ -16,15 +16,25 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ auth.OrgRepository = (*orgRepository)(nil)
+var _ auth.MembersRepository = (*membersRepository)(nil)
+
+type membersRepository struct {
+	db Database
+}
 
 var membersIDFkey = "member_relations_org_id_fkey"
 
+// NewMembersRepo instantiates a PostgreSQL implementation of members repository.
+func NewMembersRepo(db Database) auth.MembersRepository {
+	return &membersRepository{
+		db: db,
+	}
+}
 
-func (or orgRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (or membersRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembersByOrg, err)
+		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}
 
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
@@ -37,7 +47,7 @@ func (or orgRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, 
 
 	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
 	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembersByOrg, err)
+		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}
 	defer rows.Close()
 
@@ -45,7 +55,7 @@ func (or orgRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, 
 	for rows.Next() {
 		dbm := dbMember{}
 		if err := rows.StructScan(&dbm); err != nil {
-			return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembersByOrg, err)
+			return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 		}
 
 		om, err := toMember(dbm)
@@ -61,7 +71,7 @@ func (or orgRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, 
 
 	total, err := total(ctx, or.db, cq, dbmp)
 	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrFailedToRetrieveMembersByOrg, err)
+		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}
 
 	page := auth.OrgMembersPage{
@@ -83,7 +93,7 @@ func toMember(dbmb dbMember) (auth.OrgMember, error) {
 	}, nil
 }
 
-func (or orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+func (or membersRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
 	q := `SELECT role FROM member_relations WHERE member_id = $1 AND org_id = $2`
 
 	member := auth.OrgMember{}
@@ -99,7 +109,7 @@ func (or orgRepository) RetrieveRole(ctx context.Context, memberID, orgID string
 	return member.Role, nil
 }
 
-func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (or membersRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignMember, err)
@@ -136,7 +146,7 @@ func (or orgRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember
 	return nil
 }
 
-func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (or membersRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrUnassignMember, err)
@@ -174,7 +184,7 @@ func (or orgRepository) UnassignMembers(ctx context.Context, orgID string, ids .
 	return nil
 }
 
-func (or orgRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (or membersRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
@@ -209,7 +219,7 @@ func (or orgRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember
 	return nil
 }
 
-func (or orgRepository) RetrieveAllMembersByOrg(ctx context.Context) ([]auth.OrgMember, error) {
+func (or membersRepository) RetrieveAllMembers(ctx context.Context) ([]auth.OrgMember, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})

@@ -8,7 +8,6 @@ import (
 
 var (
 	_ apiutil.Response = (*memberPageRes)(nil)
-	_ apiutil.Response = (*deleteRes)(nil)
 	_ apiutil.Response = (*assignRes)(nil)
 	_ apiutil.Response = (*unassignRes)(nil)
 )
@@ -53,20 +52,6 @@ type pageRes struct {
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
 	Name   string `json:"name"`
-}
-
-type deleteRes struct{}
-
-func (res deleteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res deleteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res deleteRes) Empty() bool {
-	return true
 }
 
 type assignRes struct{}

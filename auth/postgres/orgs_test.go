@@ -479,7 +479,8 @@ func TestRetrieveAll(t *testing.T) {
 
 func TestRetrieveOrgsByMember(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
-	repo := postgres.NewOrgRepo(dbMiddleware)
+	repoOrg := postgres.NewOrgRepo(dbMiddleware)
+	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -500,7 +501,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
 
-		err = repo.Save(context.Background(), org)
+		err = repoOrg.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		orgMember := auth.OrgMember{
@@ -511,7 +512,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = repo.AssignMembers(context.Background(), orgMember)
+		err = repoMembs.AssignMembers(context.Background(), orgMember)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -589,7 +590,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveOrgsByMember,
+			err:  auth.ErrRetrieveOrgsByMember,
 		},
 		{
 			desc:     "retrieve orgs by member without member id",
@@ -600,12 +601,12 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrFailedToRetrieveOrgsByMember,
+			err:  auth.ErrRetrieveOrgsByMember,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := repo.RetrieveOrgsByMember(context.Background(), tc.memberID, tc.pageMetadata)
+		page, err := repoOrg.RetrieveByMemberID(context.Background(), tc.memberID, tc.pageMetadata)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))

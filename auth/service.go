@@ -23,11 +23,11 @@ const (
 )
 
 var (
-	// ErrFailedToRetrieveMembersByOrg failed to retrieve members by org.
-	ErrFailedToRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
+	// ErrRetrieveMembersByOrg failed to retrieve members by org.
+	ErrRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
 
-	// ErrFailedToRetrieveOrgsByMember failed to retrieve orgs by member
-	ErrFailedToRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
+	// ErrRetrieveOrgsByMember failed to retrieve orgs by member
+	ErrRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
 
 	errIssueUser      = errors.New("failed to issue new login key")
 	errIssueTmp       = errors.New("failed to issue new temporary key")
@@ -83,13 +83,15 @@ type service struct {
 	things        protomfx.ThingsServiceClient
 	keys          KeyRepository
 	roles         RolesRepository
+	members       MembersRepository
 	idProvider    uuid.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
+	members MembersRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -97,6 +99,7 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		users:         uc,
 		keys:          keys,
 		roles:         roles,
+		members:       members,
 		idProvider:    idp,
 		loginDuration: duration,
 	}
@@ -178,7 +181,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.orgs.RetrieveAllMembersByOrg(ctx)
+	mrs, err := svc.members.RetrieveAllMembers(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -200,7 +203,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, backup.OrgMembers...); err != nil {
+	if err := svc.members.AssignMembers(ctx, backup.OrgMembers...); err != nil {
 		return err
 	}
 

@@ -2,10 +2,27 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
+
+type OrgMember struct {
+	MemberID  string
+	OrgID     string
+	Role      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Email     string
+}
+
+// OrgMembersPage contains page related metadata as well as list of members that
+// belong to this page.
+type OrgMembersPage struct {
+	PageMetadata
+	OrgMembers []OrgMember
+}
 
 type MembersRepository interface {
 	// AssignMembers adds members to an org.
@@ -24,7 +41,7 @@ type MembersRepository interface {
 	RetrieveMembersByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
 	// RetrieveAllMembersByOrg retrieves all org members.
-	RetrieveAllMembersByOrg(ctx context.Context) ([]OrgMember, error)
+	RetrieveAllMembers(ctx context.Context) ([]OrgMember, error)
 }
 
 // Memberships specifies an API that must be fullfiled by the domain service
@@ -78,7 +95,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms .
 		members = append(members, member)
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, members...); err != nil {
+	if err := svc.members.AssignMembers(ctx, members...); err != nil {
 		return err
 	}
 
@@ -90,7 +107,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	if err := svc.orgs.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.members.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -108,7 +125,7 @@ func (svc service) ViewMember(ctx context.Context, token, orgID, memberID string
 		return OrgMember{}, err
 	}
 
-	role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
+	role, err := svc.members.RetrieveRole(ctx, memberID, orgID)
 	if err != nil {
 		return OrgMember{}, err
 	}
@@ -161,7 +178,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		oms = append(oms, om)
 	}
 
-	if err := svc.orgs.UpdateMembers(ctx, oms...); err != nil {
+	if err := svc.members.UpdateMembers(ctx, oms...); err != nil {
 		return err
 	}
 
@@ -173,9 +190,9 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 		return OrgMembersPage{}, err
 	}
 
-	omp, err := svc.orgs.RetrieveMembersByOrg(ctx, orgID, pm)
+	omp, err := svc.members.RetrieveMembersByOrg(ctx, orgID, pm)
 	if err != nil {
-		return OrgMembersPage{}, errors.Wrap(ErrFailedToRetrieveMembersByOrg, err)
+		return OrgMembersPage{}, errors.Wrap(ErrRetrieveMembersByOrg, err)
 	}
 
 	var oms []OrgMember
@@ -221,7 +238,7 @@ func (svc service) canAssignMembers(ctx context.Context, token, orgID string, me
 	}
 
 	for _, memberID := range memberIDs {
-		role, err := svc.orgs.RetrieveRole(ctx, memberID, orgID)
+		role, err := svc.members.RetrieveRole(ctx, memberID, orgID)
 		if err != nil {
 			return err
 		}

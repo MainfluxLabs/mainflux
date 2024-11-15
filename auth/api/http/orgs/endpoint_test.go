@@ -86,7 +86,8 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	orgsRepo := mocks.NewOrgRepository()
+	membsRepo := mocks.NewMembersRepository()
+	orgsRepo := mocks.NewOrgRepository(membsRepo)
 	rolesRepo := mocks.NewRolesRepository()
 
 	idProvider := uuid.NewMock()
@@ -94,7 +95,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
@@ -600,160 +601,6 @@ func TestListOrgs(t *testing.T) {
 	}
 }
 
-func TestListOrgsByMember(t *testing.T) {
-	svc := newService()
-	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	ts := newServer(svc)
-	defer ts.Close()
-	client := ts.Client()
-
-	data := []orgRes{}
-	for i := 0; i < n; i++ {
-		org.Name = fmt.Sprintf("org-%d", i)
-		org.Description = fmt.Sprintf("org-%d", i)
-
-		or, err := svc.CreateOrg(context.Background(), token, org)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-		data = append(data, orgRes{
-			ID:          or.ID,
-			OwnerID:     or.OwnerID,
-			Name:        or.Name,
-			Description: or.Description,
-			Metadata:    or.Metadata,
-		})
-
-		err = svc.AssignMembers(context.Background(), token, or.ID, editorMember)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	cases := []struct {
-		desc   string
-		token  string
-		status int
-		url    string
-		res    []orgRes
-	}{
-		{
-			desc:   "list orgs by member",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, n, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list orgs by member filtering with name",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d&name=%s", ts.URL, id, n, 0, "1"),
-			status: http.StatusOK,
-			res:    data[1:2],
-		},
-		{
-			desc:   "list orgs by member with invalid auth token",
-			token:  wrongValue,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, n, 0),
-			status: http.StatusUnauthorized,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member with empty auth token",
-			token:  "",
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, 5, 0),
-			status: http.StatusUnauthorized,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member with negative offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, 0, -5),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member with negative limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, id, -5, 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member without offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d", ts.URL, id, n),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list orgs by member without limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?offset=%d", ts.URL, id, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list orgs by member with redundant query params",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d&value=something", ts.URL, id, n, 0),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list orgs by member with default URL",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs", ts.URL, id),
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
-			desc:   "list orgs by member with invalid limit",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%s&offset=%d", ts.URL, id, "i", 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member with invalid offset",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%s", ts.URL, id, n, "i"),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-		{
-			desc:   "list memberships with invalid member id",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
-			status: http.StatusForbidden,
-			res:    nil,
-		},
-		{
-			desc:   "list orgs by member without member id",
-			token:  token,
-			url:    fmt.Sprintf("%s/members/%s/orgs?limit=%d&offset=%d", ts.URL, "", n, 0),
-			status: http.StatusBadRequest,
-			res:    nil,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client: client,
-			method: http.MethodGet,
-			url:    tc.url,
-			token:  tc.token,
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data orgsPageRes
-		err = json.NewDecoder(res.Body).Decode(&data)
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, data.Orgs, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Orgs))
-
-	}
-}
-
 func TestBackup(t *testing.T) {
 	svc := newService()
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
@@ -789,18 +636,22 @@ func TestBackup(t *testing.T) {
 		{
 			MemberID: id,
 			OrgID:    o.ID,
+			Role:     auth.Owner,
 		},
 		{
 			MemberID: adminID,
 			OrgID:    o.ID,
+			Role:     auth.Admin,
 		},
 		{
 			MemberID: editorID,
 			OrgID:    o.ID,
+			Role:     auth.Editor,
 		},
 		{
 			MemberID: viewerID,
 			OrgID:    o.ID,
+			Role:     auth.Viewer,
 		},
 	}
 

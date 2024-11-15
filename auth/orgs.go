@@ -60,26 +60,10 @@ type OrgsPage struct {
 	Orgs []Org
 }
 
-// OrgMembersPage contains page related metadata as well as list of members that
-// belong to this page.
-type OrgMembersPage struct {
-	PageMetadata
-	OrgMembers []OrgMember
-}
-
 type User struct {
 	ID     string
 	Email  string
 	Status string
-}
-
-type OrgMember struct {
-	MemberID  string
-	OrgID     string
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
 }
 
 type Backup struct {
@@ -138,10 +122,8 @@ type OrgRepository interface {
 	// RetrieveByAdmin retrieves all orgs with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (OrgsPage, error)
 
-	// RetrieveOrgsByMember list of orgs that member belongs to
-	RetrieveOrgsByMember(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
-
-	MembersRepository
+	// RetrieveByMemberID list of orgs that member belongs to
+	RetrieveByMemberID(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 }
 
 func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
@@ -179,7 +161,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.orgs.AssignMembers(ctx, om); err != nil {
+	if err := svc.members.AssignMembers(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -253,7 +235,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 
 func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveOrgsByMember(ctx, memberID, pm)
+		return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
 	}
 
 	user, err := svc.Identify(ctx, token)
@@ -265,7 +247,7 @@ func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID 
 		return OrgsPage{}, errors.ErrAuthorization
 	}
 
-	return svc.orgs.RetrieveOrgsByMember(ctx, memberID, pm)
+	return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
 }
 
 func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {
@@ -278,7 +260,7 @@ func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string
 		return err
 	}
 
-	role, err := svc.orgs.RetrieveRole(ctx, user.ID, orgID)
+	role, err := svc.members.RetrieveRole(ctx, user.ID, orgID)
 	if err != nil {
 		return err
 	}

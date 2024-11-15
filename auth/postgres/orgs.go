@@ -172,10 +172,10 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	return orPage.Orgs, nil
 }
 
-func (or orgRepository) RetrieveOrgsByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveOrgsByMember, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
 
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -203,7 +203,7 @@ func (or orgRepository) RetrieveOrgsByMember(ctx context.Context, memberID strin
 
 	rows, err := or.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveOrgsByMember, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
 	defer rows.Close()
 
@@ -211,7 +211,7 @@ func (or orgRepository) RetrieveOrgsByMember(ctx context.Context, memberID strin
 	for rows.Next() {
 		dbg := dbOrg{}
 		if err := rows.StructScan(&dbg); err != nil {
-			return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveOrgsByMember, err)
+			return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 		}
 		og, err := toOrg(dbg)
 		if err != nil {
@@ -225,7 +225,7 @@ func (or orgRepository) RetrieveOrgsByMember(ctx context.Context, memberID strin
 
 	total, err := total(ctx, or.db, cq, params)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrFailedToRetrieveOrgsByMember, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
 
 	page := auth.OrgsPage{
