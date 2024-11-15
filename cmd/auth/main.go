@@ -262,10 +262,13 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	rolesRepo := postgres.NewRolesRepo(db)
 	rolesRepo = tracing.RolesRepositoryMiddleware(tracer, rolesRepo)
 
+	membsRepo := postgres.NewMembersRepo(db)
+	membsRepo = tracing.MembersRepositoryMiddleware(tracer, membsRepo)
+
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, idProvider, t, duration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, idProvider, t, duration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

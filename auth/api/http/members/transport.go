@@ -1,10 +1,9 @@
-package orgs
+package members
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -25,6 +24,7 @@ const (
 	defOffset   = 0
 	defLimit    = 10
 	orgIDKey    = "orgID"
+	memberKey   = "memberID"
 	idKey       = "id"
 )
 
@@ -33,96 +33,43 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
-	mux.Post("/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_orgs")(createOrgsEndpoint(svc)),
-		decodeCreateOrgs,
+
+	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_member")(viewMemberEndpoint(svc)),
+		decodeMemberRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
-		decodeOrgRequest,
+	mux.Post("/orgs/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_members")(assignMembersEndpoint(svc)),
+		decodeMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Put("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_org")(updateOrgEndpoint(svc)),
-		decodeUpdateOrg,
+	mux.Patch("/orgs/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
+		decodeUnassignMembers,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_org")(deleteOrgEndpoint(svc)),
-		decodeOrgRequest,
+	mux.Put("/orgs/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_members")(updateMembersEndpoint(svc)),
+		decodeMembersRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_orgs")(listOrgsEndpoint(svc)),
-		decodeListOrgs,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/members/:id/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_orgs_by_member")(listOrgsByMemberEndpoint(svc)),
-		decodeListOrgsByMember,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
-		decodeBackup,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
-		decodeRestore,
+	mux.Get("/orgs/:id/members", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_members_by_org")(listMembersByOrgEndpoint(svc)),
+		decodeListMembersByOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	return mux
-}
-
-func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listOrgsReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, orgIDKey),
-		name:     n,
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
-
-	return req, nil
 }
 
 func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, error) {
@@ -151,88 +98,43 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeListOrgsByMember(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
+func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := membersReq{
+		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, idKey),
 	}
 
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
+	for i := range req.OrgMembers {
+		if req.OrgMembers[i].Role == "" {
+			req.OrgMembers[i].Role = auth.Viewer
+		}
+
+		if req.OrgMembers[i].Role == auth.Owner {
+			return nil, apiutil.ErrMalformedEntity
+		}
 	}
 
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
+	return req, nil
+}
 
-	req := listOrgsByMemberReq{
+func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := memberReq{
 		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, idKey),
-		name:     n,
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		orgID:    bone.GetValue(r, orgIDKey),
+		memberID: bone.GetValue(r, memberKey),
 	}
 
 	return req, nil
 }
 
-func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := createOrgsReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeUpdateOrg(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := updateOrgReq{
-		id:    bone.GetValue(r, idKey),
+func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, error) {
+	req := unassignMembersReq{
 		token: apiutil.ExtractBearerToken(r),
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := orgReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
-	}
-
-	return req, nil
-}
-
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupReq{
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	return req, nil
-}
-
-func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	req := restoreReq{
-		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, idKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
