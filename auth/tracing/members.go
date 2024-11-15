@@ -34,28 +34,28 @@ func MembersRepositoryMiddleware(tracer opentracing.Tracer, gr auth.MembersRepos
 	}
 }
 
-func (orm membersRepositoryMiddleware) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (orm membersRepositoryMiddleware) Save(ctx context.Context, oms ...auth.OrgMember) error {
 	span := createSpan(ctx, orm.tracer, assignMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.AssignMembers(ctx, oms...)
+	return orm.repo.Save(ctx, oms...)
 }
 
-func (orm membersRepositoryMiddleware) UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error {
+func (orm membersRepositoryMiddleware) Remove(ctx context.Context, orgID string, memberIDs ...string) error {
 	span := createSpan(ctx, orm.tracer, unassignMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UnassignMembers(ctx, orgID, memberIDs...)
+	return orm.repo.Remove(ctx, orgID, memberIDs...)
 }
 
-func (orm membersRepositoryMiddleware) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (orm membersRepositoryMiddleware) Update(ctx context.Context, oms ...auth.OrgMember) error {
 	span := createSpan(ctx, orm.tracer, updateMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.UpdateMembers(ctx, oms...)
+	return orm.repo.Update(ctx, oms...)
 }
 
 func (orm membersRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
@@ -66,18 +66,18 @@ func (orm membersRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, 
 	return orm.repo.RetrieveRole(ctx, orgID, memberID)
 }
 
-func (orm membersRepositoryMiddleware) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (orm membersRepositoryMiddleware) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveMembersByOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveMembersByOrg(ctx, orgID, pm)
+	return orm.repo.RetrieveByOrgID(ctx, orgID, pm)
 }
 
-func (orm membersRepositoryMiddleware) RetrieveAllMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (orm membersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAllMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAllMembers(ctx)
+	return orm.repo.RetrieveAll(ctx)
 }

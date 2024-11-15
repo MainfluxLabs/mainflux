@@ -181,7 +181,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.members.RetrieveAllMembers(ctx)
+	mrs, err := svc.members.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -203,7 +203,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.members.AssignMembers(ctx, backup.OrgMembers...); err != nil {
+	if err := svc.members.Save(ctx, backup.OrgMembers...); err != nil {
 		return err
 	}
 

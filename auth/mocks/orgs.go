@@ -54,7 +54,7 @@ func (orm *orgRepositoryMock) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (orm *orgRepositoryMock) Delete(ctx context.Context, owner, id string) error {
+func (orm *orgRepositoryMock) Remove(ctx context.Context, owner, id string) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -108,18 +108,14 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	members, _ := orm.members.RetrieveAllMembers(ctx)
+	members, _ := orm.members.RetrieveAll(ctx)
 	orgs := []auth.Org{}
-	i := uint64(0)
-	for _, m := range members {
-		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			if m.MemberID == memberID {
-				if strings.Contains(orm.orgs[m.OrgID].Name, pm.Name) {
-					orgs = append(orgs, orm.orgs[m.OrgID])
-				}
+	for _, m := range members[pm.Offset:pm.Offset+pm.Limit] {
+		if m.MemberID == memberID {
+			if strings.Contains(orm.orgs[m.OrgID].Name, pm.Name) {
+				orgs = append(orgs, orm.orgs[m.OrgID])
 			}
 		}
-		i++
 	}
 
 	return auth.OrgsPage{

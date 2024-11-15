@@ -107,8 +107,8 @@ type OrgRepository interface {
 	// Update an org
 	Update(ctx context.Context, org Org) error
 
-	// Delete an org
-	Delete(ctx context.Context, owner, id string) error
+	// Remove an org
+	Remove(ctx context.Context, owner, id string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
@@ -161,7 +161,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.members.AssignMembers(ctx, om); err != nil {
+	if err := svc.members.Save(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -191,7 +191,7 @@ func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
 		return err
 	}
 
-	return svc.orgs.Delete(ctx, user.ID, id)
+	return svc.orgs.Remove(ctx, user.ID, id)
 }
 
 func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, error) {

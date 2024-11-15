@@ -226,7 +226,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repo.Delete(context.Background(), tc.ownerID, tc.orgID)
+		err := repo.Remove(context.Background(), tc.ownerID, tc.orgID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -512,7 +512,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = repoMembs.AssignMembers(context.Background(), orgMember)
+		err = repoMembs.Save(context.Background(), orgMember)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 

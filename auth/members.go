@@ -25,23 +25,23 @@ type OrgMembersPage struct {
 }
 
 type MembersRepository interface {
-	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, oms ...OrgMember) error
+	// Save saves membershipa.
+	Save(ctx context.Context, oms ...OrgMember) error
 
-	// UnassignMembers removes members from an org
-	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
+	// Update updates memberships.
+	Update(ctx context.Context, oms ...OrgMember) error
 
-	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, oms ...OrgMember) error
+	// Remove removes memberships.
+	Remove(ctx context.Context, orgID string, memberIDs ...string) error
 
-	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
+	// RetrieveRole retrieves role of membership specified by memberID and orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
-	// RetrieveMembersByOrg retrieves members assigned to an org identified by orgID.
-	RetrieveMembersByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	// RetrieveByOrgID retrieves members assigned to an org identified by orgID.
+	RetrieveByOrgID(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
 
-	// RetrieveAllMembersByOrg retrieves all org members.
-	RetrieveAllMembers(ctx context.Context) ([]OrgMember, error)
+	// RetrieveAll retrieves all members.
+	RetrieveAll(ctx context.Context) ([]OrgMember, error)
 }
 
 // Memberships specifies an API that must be fullfiled by the domain service
@@ -95,7 +95,7 @@ func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms .
 		members = append(members, member)
 	}
 
-	if err := svc.members.AssignMembers(ctx, members...); err != nil {
+	if err := svc.members.Save(ctx, members...); err != nil {
 		return err
 	}
 
@@ -107,7 +107,7 @@ func (svc service) UnassignMembers(ctx context.Context, token string, orgID stri
 		return err
 	}
 
-	if err := svc.members.UnassignMembers(ctx, orgID, memberIDs...); err != nil {
+	if err := svc.members.Remove(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 		oms = append(oms, om)
 	}
 
-	if err := svc.members.UpdateMembers(ctx, oms...); err != nil {
+	if err := svc.members.Update(ctx, oms...); err != nil {
 		return err
 	}
 
@@ -190,7 +190,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 		return OrgMembersPage{}, err
 	}
 
-	omp, err := svc.members.RetrieveMembersByOrg(ctx, orgID, pm)
+	omp, err := svc.members.RetrieveByOrgID(ctx, orgID, pm)
 	if err != nil {
 		return OrgMembersPage{}, errors.Wrap(ErrRetrieveMembersByOrg, err)
 	}

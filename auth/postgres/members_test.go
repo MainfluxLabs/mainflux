@@ -116,7 +116,7 @@ func TestAssignMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repoMembs.AssignMembers(context.Background(), tc.orgMembers...)
+		err := repoMembs.Save(context.Background(), tc.orgMembers...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -160,7 +160,7 @@ func TestUnassignMembers(t *testing.T) {
 		memberIDs = append(memberIDs, memberID)
 	}
 
-	err = repoMembs.AssignMembers(context.Background(), orgMembers...)
+	err = repoMembs.Save(context.Background(), orgMembers...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -209,7 +209,7 @@ func TestUnassignMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repoMembs.UnassignMembers(context.Background(), tc.orgID, tc.memberIDs...)
+		err := repoMembs.Remove(context.Background(), tc.orgID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -243,7 +243,7 @@ func TestRetrieveRole(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = repoMembs.AssignMembers(context.Background(), orgMember)
+	err = repoMembs.Save(context.Background(), orgMember)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -328,7 +328,7 @@ func TestUpdateMembers(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = repoMembs.AssignMembers(context.Background(), orgMember)
+	err = repoMembs.Save(context.Background(), orgMember)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	updateMrel := auth.OrgMember{
@@ -410,7 +410,7 @@ func TestUpdateMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repoMembs.UpdateMembers(context.Background(), tc.orgMember)
+		err := repoMembs.Update(context.Background(), tc.orgMember)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -452,7 +452,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 		orgMembers = append(orgMembers, orgMember)
 	}
 
-	err = repoMembs.AssignMembers(context.Background(), orgMembers...)
+	err = repoMembs.Save(context.Background(), orgMembers...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -509,7 +509,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := repoMembs.RetrieveMembersByOrg(context.Background(), tc.orgID, tc.pageMetadata)
+		page, err := repoMembs.RetrieveByOrgID(context.Background(), tc.orgID, tc.pageMetadata)
 		size := len(page.OrgMembers)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
@@ -555,7 +555,7 @@ func TestRetrieveAllMembersByOrg(t *testing.T) {
 		orgMembers = append(orgMembers, orgMember)
 	}
 
-	err = repoMembs.AssignMembers(context.Background(), orgMembers...)
+	err = repoMembs.Save(context.Background(), orgMembers...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -571,7 +571,7 @@ func TestRetrieveAllMembersByOrg(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := repoMembs.RetrieveAllMembers(context.Background())
+		page, err := repoMembs.RetrieveAll(context.Background())
 		size := len(page)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

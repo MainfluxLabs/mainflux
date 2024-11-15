@@ -96,7 +96,7 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Delete(ctx context.Context, owner, orgID string) error {
+func (or orgRepository) Remove(ctx context.Context, owner, orgID string) error {
 	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
 	org := auth.Org{
 		ID:      orgID,

@@ -31,7 +31,7 @@ func NewMembersRepo(db Database) auth.MembersRepository {
 	}
 }
 
-func (or membersRepository) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
@@ -109,7 +109,7 @@ func (or membersRepository) RetrieveRole(ctx context.Context, memberID, orgID st
 	return member.Role, nil
 }
 
-func (or membersRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (or membersRepository) Save(ctx context.Context, oms ...auth.OrgMember) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrAssignMember, err)
@@ -146,7 +146,7 @@ func (or membersRepository) AssignMembers(ctx context.Context, oms ...auth.OrgMe
 	return nil
 }
 
-func (or membersRepository) UnassignMembers(ctx context.Context, orgID string, ids ...string) error {
+func (or membersRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
 	tx, err := or.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrUnassignMember, err)
@@ -184,7 +184,7 @@ func (or membersRepository) UnassignMembers(ctx context.Context, orgID string, i
 	return nil
 }
 
-func (or membersRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (or membersRepository) Update(ctx context.Context, oms ...auth.OrgMember) error {
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
@@ -219,7 +219,7 @@ func (or membersRepository) UpdateMembers(ctx context.Context, oms ...auth.OrgMe
 	return nil
 }
 
-func (or membersRepository) RetrieveAllMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (or membersRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})

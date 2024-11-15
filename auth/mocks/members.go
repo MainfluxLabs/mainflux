@@ -24,7 +24,7 @@ func NewMembersRepository() auth.MembersRepository {
 	}
 }
 
-func (mrm *membersRepositoryMock) AssignMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (mrm *membersRepositoryMock) Save(ctx context.Context, oms ...auth.OrgMember) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -46,7 +46,7 @@ func (mrm *membersRepositoryMock) AssignMembers(ctx context.Context, oms ...auth
 	return nil
 }
 
-func (mrm *membersRepositoryMock) UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error {
+func (mrm *membersRepositoryMock) Remove(ctx context.Context, orgID string, memberIDs ...string) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -65,7 +65,7 @@ func (mrm *membersRepositoryMock) UnassignMembers(ctx context.Context, orgID str
 	return nil
 }
 
-func (mrm *membersRepositoryMock) UpdateMembers(ctx context.Context, oms ...auth.OrgMember) error {
+func (mrm *membersRepositoryMock) Update(ctx context.Context, oms ...auth.OrgMember) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -93,13 +93,13 @@ func (mrm *membersRepositoryMock) RetrieveRole(ctx context.Context, memberID, or
 	return mrm.members[memberID].Role, nil
 }
 
-func (mrm *membersRepositoryMock) RetrieveMembersByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	i := uint64(0)
 	oms := []auth.OrgMember{}
-	for _, m := range mrm.membersByOrgID[orgID] {
+	i := uint64(0)
+	for _, m := range mrm.membersByOrgID[orgID]{
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			oms = append(oms, m)
 		}
@@ -116,14 +116,14 @@ func (mrm *membersRepositoryMock) RetrieveMembersByOrg(ctx context.Context, orgI
 	}, nil
 }
 
-func (mrm *membersRepositoryMock) RetrieveAllMembers(ctx context.Context) ([]auth.OrgMember, error) {
+func (mrm *membersRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	var members []auth.OrgMember
-	for _, memb := range mrm.members {
-		members = append(members, memb)
+	oms := []auth.OrgMember{}
+	for _, m := range mrm.members {
+		oms = append(oms, m)
 	}
 
-	return members, nil
+	return oms, nil
 }
