@@ -312,7 +312,9 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r)
+		if err := ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
+			return err
+		}
 	}
 
 	switch role {
