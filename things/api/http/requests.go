@@ -6,6 +6,7 @@ package http
 import (
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -555,12 +556,12 @@ func (req groupRolesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gp := range req.GroupMembers {
-		if gp.Role != things.Viewer && gp.Role != things.Editor {
+	for _, gm := range req.GroupMembers {
+		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 
-		if gp.ID == "" {
+		if gm.ID == "" {
 			return apiutil.ErrMissingID
 		}
 	}

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -45,6 +46,7 @@ const (
 	nameKey        = "name"
 	ascKey         = "asc"
 	descKey        = "desc"
+	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
 	noLimit        = -1
@@ -72,11 +74,11 @@ var (
 		Limit:  5,
 		Offset: 0,
 	}
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
-	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
-	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Editor}
+	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Owner}
+	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
-	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
+	group     = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 )
 
 type testRequest struct {
@@ -283,14 +285,16 @@ func TestUpdateThing(t *testing.T) {
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
+
 		{
 			desc:        "update non-existent thing",
 			req:         data,
-			id:          strconv.FormatUint(wrongID, 10),
+			id:          wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
+
 		{
 			desc:        "update thing with invalid id",
 			req:         data,
@@ -2509,7 +2513,7 @@ func TestRemoveGroups(t *testing.T) {
 	}{
 		{
 			desc:        "remove existing groups",
-			data:        groupIDs,
+			data:        groupIDs[:5],
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusNoContent,
@@ -2523,7 +2527,7 @@ func TestRemoveGroups(t *testing.T) {
 		},
 		{
 			desc:        "remove groups with invalid token",
-			data:        groupIDs,
+			data:        groupIDs[len(groupIDs)-5:],
 			auth:        wrongValue,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,

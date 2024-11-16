@@ -71,6 +71,8 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	if _, ok := trm.things[thing.ID]; !ok {
 		return errors.ErrNotFound
 	}
+	thing.Key = trm.things[thing.ID].Key
+	thing.GroupID = trm.things[thing.ID].GroupID
 
 	trm.things[thing.ID] = thing
 

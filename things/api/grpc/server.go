@@ -58,7 +58,7 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			encodeGetProfileByThingIDResponse,
 		),
 		getGroupIDByThingID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_group_id_by_thing_id")(GetGroupIDByThingIDEndpoint(svc)),
+			kitot.TraceServer(tracer, "get_group_id_by_thing_id")(getGroupIDByThingIDEndpoint(svc)),
 			decodeGetGroupIDByThingIDRequest,
 			encodeGetGroupIDByThingIDResponse,
 		),

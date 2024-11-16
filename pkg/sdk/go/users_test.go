@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -32,9 +33,10 @@ const (
 
 var (
 	passRegex = regexp.MustCompile("^.{8,}$")
-	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass}
-	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass}
-	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass}
+	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Role: auth.Editor}
+	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass, Role: auth.Owner}
+	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Role: auth.RootSub}
+
 	usersList = []users.User{admin, user, otherUser}
 )
 

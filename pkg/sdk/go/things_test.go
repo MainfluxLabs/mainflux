@@ -30,7 +30,7 @@ const (
 	token       = email
 	otherToken  = otherEmail
 	wrongValue  = "wrong_value"
-	orgID       = "1"
+	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
 	wrongID     = "999"
 	badKey      = "999"
 	emptyValue  = ""
@@ -207,7 +207,7 @@ func TestCreateThings(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateThings(tc.things, groupID, tc.token)
+		res, err := mainfluxSDK.CreateThings(tc.things, grID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {

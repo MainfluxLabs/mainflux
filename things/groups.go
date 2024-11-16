@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -100,8 +101,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	adminID := user.GetId()
+	orgID := groups[0].OrgID
+	userID := user.GetId()
 	timestamp := getTimestmap()
+
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Editor); err != nil {
+		return []Group{}, err
+	}
 
 	grs := []Group{}
 	for _, group := range groups {
@@ -113,14 +119,17 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		// TODO: add ORG_OWNER as GROUP_OWNER
-		role := GroupMember{
-			MemberID: adminID,
+		gm := GroupMember{
+			MemberID: userID,
 			GroupID:  gr.ID,
-			Role:     Admin,
+			Role:     Owner,
 		}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, role); err != nil {
+		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
+			return []Group{}, err
+		}
+
+		if err := ts.thingCache.SaveRole(ctx, group.ID, userID, Owner); err != nil {
 			return []Group{}, err
 		}
 
@@ -147,7 +156,7 @@ func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, e
 
 func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error) {
 	if orgID != "" {
-		if err := ts.canAccessOrg(ctx, token, orgID); err == nil {
+		if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err == nil {
 			return ts.groups.RetrieveByAdmin(ctx, orgID, pm)
 		}
 	}
@@ -184,7 +193,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			Token:   token,
 			Object:  id,
 			Subject: GroupSub,
-			Action:  Admin,
+			Action:  Owner,
 		}
 		if err := ts.Authorize(ctx, ar); err != nil {
 			return err
@@ -277,7 +286,11 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Owner); err == nil {
 		return nil
 	}
 
@@ -314,6 +327,11 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		return errors.ErrAuthorization
 	case Admin:
+		if action != Owner {
+			return nil
+		}
+		return errors.ErrAuthorization
+	case Owner:
 		return nil
 	default:
 		return errors.ErrAuthorization

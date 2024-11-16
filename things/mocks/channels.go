@@ -65,6 +65,7 @@ func (crm *channelRepositoryMock) Update(_ context.Context, channel things.Chann
 	if _, ok := crm.channels[channel.ID]; !ok {
 		return errors.ErrNotFound
 	}
+	channel.GroupID = crm.channels[channel.ID].GroupID
 
 	crm.channels[channel.ID] = channel
 	return nil

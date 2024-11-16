@@ -269,7 +269,7 @@ func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, name, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"org_id":   orgID,

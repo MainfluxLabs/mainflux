@@ -40,6 +40,7 @@ func (es eventStore) CreateThings(ctx context.Context, token string, ths ...thin
 	for _, thing := range sths {
 		event := createThingEvent{
 			id:       thing.ID,
+			groupID:  thing.GroupID,
 			name:     thing.Name,
 			metadata: thing.Metadata,
 		}
@@ -130,6 +131,7 @@ func (es eventStore) CreateChannels(ctx context.Context, token string, channels 
 	for _, channel := range schs {
 		event := createChannelEvent{
 			id:       channel.ID,
+			groupID:  channel.GroupID,
 			name:     channel.Name,
 			metadata: channel.Metadata,
 		}

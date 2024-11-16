@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -27,6 +28,7 @@ const (
 	streamID        = "mainflux.things"
 	email           = "user@example.com"
 	adminEmail      = "admin@example.com"
+	otherUserEmail  = "other.user@example.com"
 	password        = "password"
 	token           = email
 	thingPrefix     = "thing."
@@ -43,10 +45,11 @@ const (
 )
 
 var (
-	user      = users.User{Email: email, Password: password}
-	admin     = users.User{Email: adminEmail, Password: password}
-	usersList = []users.User{admin, user}
-	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Editor}
+	otherUser = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Owner}
+	admin     = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
+	usersList = []users.User{admin, user, otherUser}
+	group     = things.Group{OrgID: "374106f7-030e-4881-8ab0-151195c29f92", Name: "test-group", Description: "test-group-desc"}
 )
 
 func newService(tokens map[string]string) things.Service {
@@ -68,6 +71,9 @@ func TestCreateThings(t *testing.T) {
 
 	svc := newService(map[string]string{token: email})
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	cases := []struct {
 		desc  string
@@ -80,21 +86,22 @@ func TestCreateThings(t *testing.T) {
 			desc: "create things successfully",
 			ths: []things.Thing{{
 				Name:     "a",
+				GroupID:  gr.ID,
 				Metadata: map[string]interface{}{"test": "test"},
 			}},
 			key: token,
 			err: nil,
 			event: map[string]interface{}{
-				"id":        "123e4567-e89b-12d3-a456-000000000001",
+				"id":        "123e4567-e89b-12d3-a456-000000000002",
 				"name":      "a",
-				"group_id":  group.ID,
+				"group_id":  gr.ID,
 				"metadata":  "{\"test\":\"test\"}",
 				"operation": thingCreate,
 			},
 		},
 		{
 			desc:  "create things with invalid credentials",
-			ths:   []things.Thing{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			ths:   []things.Thing{{Name: "a", GroupID: gr.ID, Metadata: map[string]interface{}{"test": "test"}}},
 			key:   "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -127,8 +134,12 @@ func TestUpdateThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
 	// Create thing without sending event.
-	th := things.Thing{Name: "a", Metadata: map[string]interface{}{"test": "test"}}
+	th := things.Thing{Name: "a", GroupID: gr.ID, Metadata: map[string]interface{}{"test": "test"}}
 	sths, err := svc.CreateThings(context.Background(), token, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
@@ -185,8 +196,11 @@ func TestViewThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -201,8 +215,11 @@ func TestListThings(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create thing without sending event.
-	_, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
+	_, err = svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -244,8 +261,11 @@ func TestRemoveThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a"})
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -304,6 +324,9 @@ func TestCreateChannels(t *testing.T) {
 
 	svc := newService(map[string]string{token: email})
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 
 	cases := []struct {
 		desc  string
@@ -314,20 +337,20 @@ func TestCreateChannels(t *testing.T) {
 	}{
 		{
 			desc: "create channels successfully",
-			chs:  []things.Channel{{GroupID: group.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			chs:  []things.Channel{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:  token,
 			err:  nil,
 			event: map[string]interface{}{
-				"id":        "123e4567-e89b-12d3-a456-000000000001",
+				"id":        "123e4567-e89b-12d3-a456-000000000002",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
-				"group_id":  group.ID,
+				"group_id":  gr.ID,
 				"operation": channelCreate,
 			},
 		},
 		{
 			desc:  "create channels with invalid credentials",
-			chs:   []things.Channel{{GroupID: group.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			chs:   []things.Channel{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:   "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -360,8 +383,11 @@ func TestUpdateChannel(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: adminEmail})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
@@ -428,8 +454,11 @@ func TestViewChannel(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
@@ -444,8 +473,11 @@ func TestListChannels(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create thing without sending event.
-	_, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
+	_, err = svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -487,8 +519,11 @@ func TestRemoveChannel(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: adminEmail})
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
 	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a"})
+	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sch := schs[0]
 
