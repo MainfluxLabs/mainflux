@@ -10,8 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const uuidLen = 36
-
 // Since mocks will store data in map, and they need to resemble the real
 // identifiers as much as possible, a key will be created as combination of
 // owner and their own identifiers. This will allow searching either by
@@ -20,101 +18,30 @@ func key(owner string, id string) string {
 	return fmt.Sprintf("%s-%s", owner, id)
 }
 
-func sortThings(pm things.PageMetadata, ths []things.Thing) []things.Thing {
-	switch pm.Order {
-	case "name":
-		if pm.Dir == "asc" {
-			sort.SliceStable(ths, func(i, j int) bool {
-				return ths[i].Name < ths[j].Name
-			})
-		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(ths, func(i, j int) bool {
-				return ths[i].Name > ths[j].Name
-			})
-		}
-	case "id":
-		if pm.Dir == "asc" {
-			sort.SliceStable(ths, func(i, j int) bool {
-				return ths[i].ID < ths[j].ID
-			})
-		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(ths, func(i, j int) bool {
-				return ths[i].ID > ths[j].ID
-			})
-		}
-	default:
-		sort.SliceStable(ths, func(i, j int) bool {
-			return ths[i].ID < ths[j].ID
-		})
-	}
-
-	return ths
+func sortItems[T any](pm things.PageMetadata, items []T, getFields func(i int) (string, string)) []T {
+	sort.SliceStable(items, sortByMeta(pm, getFields))
+	return items
 }
 
-func sortChannels(pm things.PageMetadata, chs []things.Channel) []things.Channel {
-	switch pm.Order {
-	case "name":
-		if pm.Dir == "asc" {
-			sort.SliceStable(chs, func(i, j int) bool {
-				return chs[i].Name < chs[j].Name
-			})
+
+func sortByMeta(pm things.PageMetadata, getFields func(i int) (string, string)) func(i, j int) bool {
+	return func(i, j int) bool {
+		nameI, idI := getFields(i)
+		nameJ, idJ := getFields(j)
+
+		switch pm.Order {
+		case "name":
+			if pm.Dir == "asc" {
+				return nameI < nameJ
+			}
+			return nameI > nameJ
+		case "id":
+			if pm.Dir == "asc" {
+				return idI < idJ
+			}
+			return idI > idJ
+		default:
+			return idI < idJ
 		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(chs, func(i, j int) bool {
-				return chs[i].Name > chs[j].Name
-			})
-		}
-	case "id":
-		if pm.Dir == "asc" {
-			sort.SliceStable(chs, func(i, j int) bool {
-				return chs[i].ID < chs[j].ID
-			})
-		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(chs, func(i, j int) bool {
-				return chs[i].ID > chs[j].ID
-			})
-		}
-	default:
-		sort.SliceStable(chs, func(i, j int) bool {
-			return chs[i].ID < chs[j].ID
-		})
 	}
-
-	return chs
-}
-
-func sortGroups(pm things.PageMetadata, grs []things.Group) []things.Group {
-	switch pm.Order {
-	case "name":
-		if pm.Dir == "asc" {
-			sort.SliceStable(grs, func(i, j int) bool {
-				return grs[i].Name < grs[j].Name
-			})
-		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(grs, func(i, j int) bool {
-				return grs[i].Name > grs[j].Name
-			})
-		}
-	case "id":
-		if pm.Dir == "asc" {
-			sort.SliceStable(grs, func(i, j int) bool {
-				return grs[i].ID < grs[j].ID
-			})
-		}
-		if pm.Dir == "desc" {
-			sort.SliceStable(grs, func(i, j int) bool {
-				return grs[i].ID > grs[j].ID
-			})
-		}
-	default:
-		sort.SliceStable(grs, func(i, j int) bool {
-			return grs[i].ID < grs[j].ID
-		})
-	}
-
-	return grs
 }

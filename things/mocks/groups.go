@@ -149,7 +149,9 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 		items = filteredItems
 	}
 
-	items = sortGroups(pm, items)
+	items = sortItems(pm, items, func(i int) (string, string) {
+		return items[i].Name, items[i].ID
+	})
 
 	page := things.GroupPage{
 		Groups: items,

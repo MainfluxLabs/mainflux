@@ -118,7 +118,9 @@ func (crm *channelRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 		items = filteredItems
 	}
 
-	items = sortChannels(pm, items)
+	items = sortItems(pm, items, func(i int) (string, string) {
+		return items[i].Name, items[i].ID
+	})
 
 	page := things.ChannelsPage{
 		Channels: items,
