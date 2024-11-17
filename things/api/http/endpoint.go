@@ -238,7 +238,7 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			ch := things.Channel{
 				Name:     c.Name,
 				ID:       c.ID,
-				Profile:  c.Profile,
+				Config:   c.Config,
 				GroupID:  req.groupID,
 				Metadata: c.Metadata,
 			}
@@ -260,7 +260,7 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				ID:       c.ID,
 				Name:     c.Name,
 				GroupID:  c.GroupID,
-				Profile:  c.Profile,
+				Config:   c.Config,
 				Metadata: c.Metadata,
 			}
 			res.Channels = append(res.Channels, ch)
@@ -281,7 +281,7 @@ func updateChannelEndpoint(svc things.Service) endpoint.Endpoint {
 		channel := things.Channel{
 			ID:       req.id,
 			Name:     req.Name,
-			Profile:  req.Profile,
+			Config:   req.Config,
 			Metadata: req.Metadata,
 		}
 		if err := svc.UpdateChannel(ctx, req.token, channel); err != nil {
@@ -314,7 +314,7 @@ func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
 			Metadata: ch.Metadata,
-			Profile:  ch.Profile,
+			Config:   ch.Config,
 		}
 
 		return res, nil
@@ -350,7 +350,7 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				ID:       ch.ID,
 				GroupID:  ch.GroupID,
 				Name:     ch.Name,
-				Profile:  ch.Profile,
+				Config:   ch.Config,
 				Metadata: ch.Metadata,
 			}
 
@@ -378,7 +378,7 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			ID:       ch.ID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
-			Profile:  ch.Profile,
+			Config:   ch.Config,
 			Metadata: ch.Metadata,
 		}
 
@@ -781,7 +781,7 @@ func buildChannelsByGroupResponse(cp things.ChannelsPage) channelsPageRes {
 	for _, ch := range cp.Channels {
 		c := channelRes{
 			ID:       ch.ID,
-			Profile:  ch.Profile,
+			Config:   ch.Config,
 			Metadata: ch.Metadata,
 			Name:     ch.Name,
 		}

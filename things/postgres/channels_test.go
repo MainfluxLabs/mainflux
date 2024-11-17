@@ -325,7 +325,7 @@ func TestRetrieveChannelByThing(t *testing.T) {
 	ch := things.Channel{
 		ID:       chID,
 		GroupID:  group.ID,
-		Profile:  things.Metadata{},
+		Config:   things.Metadata{},
 		Metadata: things.Metadata{},
 	}
 

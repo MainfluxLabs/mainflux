@@ -45,8 +45,8 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO channels (id, group_id, name, metadata, profile)
-		  VALUES (:id, :group_id, :name, :metadata, :profile);`
+	q := `INSERT INTO channels (id, group_id, name, metadata, config)
+		  VALUES (:id, :group_id, :name, :metadata, :config);`
 
 	for _, channel := range channels {
 		dbch := toDBChannel(channel)
@@ -77,7 +77,7 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 }
 
 func (cr channelRepository) Update(ctx context.Context, channel things.Channel) error {
-	q := `UPDATE channels SET name = :name, metadata = :metadata, profile = :profile WHERE id = :id;`
+	q := `UPDATE channels SET name = :name, metadata = :metadata, config = :config WHERE id = :id;`
 
 	dbch := toDBChannel(channel)
 
@@ -109,7 +109,7 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 }
 
 func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
-	q := `SELECT group_id, name, metadata, profile FROM channels WHERE id = $1;`
+	q := `SELECT group_id, name, metadata, config FROM channels WHERE id = $1;`
 
 	dbch := dbChannel{
 		ID: id,
@@ -147,7 +147,7 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, profile FROM channels ch
+	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM channels ch
 		        INNER JOIN connections conn
 		        ON ch.id = conn.channel_id
 		        WHERE conn.thing_id = :thing;`)
@@ -371,10 +371,10 @@ func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, all
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, profile FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	if allRows {
-		q = "SELECT id, group_id, name, metadata, profile FROM channels"
+		q = "SELECT id, group_id, name, metadata, config FROM channels"
 	}
 
 	params := map[string]interface{}{
@@ -463,7 +463,7 @@ type dbChannel struct {
 	ID       string  `db:"id"`
 	GroupID  string  `db:"group_id"`
 	Name     string  `db:"name"`
-	Profile  dbJSONB `db:"profile"`
+	Config   dbJSONB `db:"config"`
 	Metadata dbJSONB `db:"metadata"`
 }
 
@@ -472,7 +472,7 @@ func toDBChannel(ch things.Channel) dbChannel {
 		ID:       ch.ID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
-		Profile:  ch.Profile,
+		Config:   ch.Config,
 		Metadata: ch.Metadata,
 	}
 }
@@ -482,7 +482,7 @@ func toChannel(ch dbChannel) things.Channel {
 		ID:       ch.ID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
-		Profile:  ch.Profile,
+		Config:   ch.Config,
 		Metadata: ch.Metadata,
 	}
 }

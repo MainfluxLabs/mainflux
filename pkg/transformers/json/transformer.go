@@ -53,9 +53,9 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		Publisher: msg.Publisher,
 	}
 
-	if msg.Profile.WebhookID != "" {
-		ret.Profile = map[string]interface{}{
-			"webhook_id": msg.Profile.WebhookID,
+	if msg.Config.WebhookID != "" {
+		ret.Config = map[string]interface{}{
+			"webhook_id": msg.Config.WebhookID,
 		}
 	}
 
@@ -66,11 +66,11 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 
 	switch p := payload.(type) {
 	case map[string]interface{}:
-		formattedPayload := transformPayload(p, msg.Profile.Transformer.ValuesFilter)
+		formattedPayload := transformPayload(p, msg.Config.Transformer.ValuesFilter)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.Profile.Transformer)
+		ts, err := ts.transformTimeField(p, *msg.Config.Transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -89,11 +89,11 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := transformPayload(v, msg.Profile.Transformer.ValuesFilter)
+			formattedPayload := transformPayload(v, msg.Config.Transformer.ValuesFilter)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.Profile.Transformer)
+			ts, err := ts.transformTimeField(v, *msg.Config.Transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}

@@ -25,10 +25,10 @@ const (
 )
 
 var (
-	msgChan    = make(chan protomfx.Message)
-	data       = []byte("payload")
-	errFailed  = errors.New("failed")
-	msgProfile = &protomfx.Profile{ContentType: senmlContentType, Write: true}
+	msgChan   = make(chan protomfx.Message)
+	data      = []byte("payload")
+	errFailed = errors.New("failed")
+	msgConfig = &protomfx.Config{ContentType: senmlContentType, Write: true}
 )
 
 func TestPublisher(t *testing.T) {
@@ -63,7 +63,7 @@ func TestPublisher(t *testing.T) {
 			Channel:  channel,
 			Subtopic: tc.subtopic,
 			Payload:  tc.payload,
-			Profile:  msgProfile,
+			Config:   msgConfig,
 		}
 
 		err = pubsub.Publish(expectedMsg)

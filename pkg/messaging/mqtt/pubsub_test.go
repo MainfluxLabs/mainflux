@@ -26,8 +26,8 @@ const (
 )
 
 var (
-	data       = []byte("payload")
-	msgProfile = &protomfx.Profile{ContentType: senmlContentType, Write: true, Transformer: &protomfx.Transformer{}}
+	data      = []byte("payload")
+	msgConfig = &protomfx.Config{ContentType: senmlContentType, Write: true, Transformer: &protomfx.Transformer{}}
 )
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.
@@ -91,7 +91,7 @@ func TestPublisher(t *testing.T) {
 			Channel:   channel,
 			Subtopic:  tc.subtopic,
 			Payload:   tc.payload,
-			Profile:   msgProfile,
+			Config:    msgConfig,
 		}
 
 		err := pubsub.Publish(msg)
@@ -255,7 +255,7 @@ func TestPubSub(t *testing.T) {
 				Channel:   channel,
 				Subtopic:  subtopic,
 				Payload:   data,
-				Profile:   msgProfile,
+				Config:    msgConfig,
 			}
 
 			// Publish message, and then receive it on message channel.

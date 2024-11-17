@@ -193,9 +193,9 @@ func (lm *loggingMiddleware) RemoveChannels(ctx context.Context, token string, i
 	return lm.svc.RemoveChannels(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) ViewChannelProfile(ctx context.Context, chID string) (profile things.Profile, err error) {
+func (lm *loggingMiddleware) ViewChannelConfig(ctx context.Context, chID string) (config things.Config, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_channel_profile for id %s took %s to complete", chID, time.Since(begin))
+		message := fmt.Sprintf("Method view_channel_config for id %s took %s to complete", chID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -203,7 +203,7 @@ func (lm *loggingMiddleware) ViewChannelProfile(ctx context.Context, chID string
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewChannelProfile(ctx, chID)
+	return lm.svc.ViewChannelConfig(ctx, chID)
 }
 
 func (lm *loggingMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) (err error) {
@@ -271,9 +271,9 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (profile things.Profile, err error) {
+func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config things.Config, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_profile_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method get_config_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -281,7 +281,7 @@ func (lm *loggingMiddleware) GetProfileByThingID(ctx context.Context, thingID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetProfileByThingID(ctx, thingID)
+	return lm.svc.GetConfigByThingID(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {

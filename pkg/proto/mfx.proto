@@ -14,12 +14,12 @@ message Message {
     string  protocol  = 4;
     bytes   payload   = 5;
     int64   created   = 6; // Unix timestamp in nanoseconds
-    Profile profile   = 7;
+    Config  config    = 7;
 }
 
 service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
-    rpc GetProfileByThingID(ThingID) returns (ProfileByThingIDRes){}
+    rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
@@ -46,10 +46,10 @@ message ConnByKeyReq {
 message ConnByKeyRes {
     string  channelID = 1;
     string  thingID   = 2;
-    Profile profile   = 3;
+    Config  config    = 3;
 }
 
-message Profile {
+message Config {
     string      contentType = 1;
     bool        write       = 2;
     string      webhookID   = 3;
@@ -65,8 +65,8 @@ message Transformer {
     string timeLocation          = 4;
 }
 
-message ProfileByThingIDRes{
-    Profile profile = 1;
+message ConfigByThingIDRes{
+    Config config = 1;
 }
 
 message ThingID {

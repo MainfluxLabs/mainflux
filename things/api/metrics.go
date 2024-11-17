@@ -147,13 +147,13 @@ func (ms *metricsMiddleware) RemoveChannels(ctx context.Context, token string, i
 	return ms.svc.RemoveChannels(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
+func (ms *metricsMiddleware) ViewChannelConfig(ctx context.Context, chID string) (things.Config, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_channel_profile").Add(1)
-		ms.latency.With("method", "view_channel_profile").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_channel_config").Add(1)
+		ms.latency.With("method", "view_channel_config").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewChannelProfile(ctx, chID)
+	return ms.svc.ViewChannelConfig(ctx, chID)
 }
 
 func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) error {
@@ -201,13 +201,13 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
+func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (things.Config, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_profile_by_thing_id").Add(1)
-		ms.latency.With("method", "get_profile_by_thing_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_config_by_thing_id").Add(1)
+		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetProfileByThingID(ctx, thingID)
+	return ms.svc.GetConfigByThingID(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

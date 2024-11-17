@@ -99,25 +99,25 @@ func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payloa
 		Publisher: conn.ThingID,
 		Payload:   *payload,
 		Created:   time.Now().UnixNano(),
-		Profile:   &protomfx.Profile{},
+		Config:    &protomfx.Config{},
 	}
 
-	if conn.Profile == nil {
+	if conn.Config == nil {
 		return msg
 	}
 
-	msg.Profile.Write = conn.Profile.Write
-	msg.Profile.WebhookID = conn.Profile.WebhookID
-	msg.Profile.SmtpID = conn.Profile.SmtpID
-	msg.Profile.SmppID = conn.Profile.SmppID
-	msg.Profile.ContentType = conn.Profile.ContentType
+	msg.Config.Write = conn.Config.Write
+	msg.Config.WebhookID = conn.Config.WebhookID
+	msg.Config.SmtpID = conn.Config.SmtpID
+	msg.Config.SmppID = conn.Config.SmppID
+	msg.Config.ContentType = conn.Config.ContentType
 
-	if conn.Profile.Transformer != nil {
-		msg.Profile.Transformer = &protomfx.Transformer{
-			ValuesFilter: conn.Profile.Transformer.ValuesFilter,
-			TimeField:    conn.Profile.Transformer.TimeField,
-			TimeFormat:   conn.Profile.Transformer.TimeFormat,
-			TimeLocation: conn.Profile.Transformer.TimeLocation,
+	if conn.Config.Transformer != nil {
+		msg.Config.Transformer = &protomfx.Transformer{
+			ValuesFilter: conn.Config.Transformer.ValuesFilter,
+			TimeField:    conn.Config.Transformer.TimeField,
+			TimeFormat:   conn.Config.Transformer.TimeFormat,
+			TimeLocation: conn.Config.Transformer.TimeLocation,
 		}
 	}
 

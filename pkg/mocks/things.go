@@ -170,7 +170,7 @@ func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelProfile(_ context.Context, chID string) (things.Profile, error) {
+func (svc *mainfluxThings) ViewChannelConfig(_ context.Context, chID string) (things.Config, error) {
 	panic("not implemented")
 }
 
@@ -186,7 +186,7 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetProfileByThingID(_ context.Context, thingID string) (things.Profile, error) {
+func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string) (things.Config, error) {
 	panic("implement me")
 }
 

@@ -13,11 +13,11 @@ type Channel struct {
 	ID       string
 	GroupID  string
 	Name     string
-	Profile  map[string]interface{}
+	Config   map[string]interface{}
 	Metadata map[string]interface{}
 }
 
-type Profile struct {
+type Config struct {
 	ContentType string      `json:"content_type"`
 	Write       bool        `json:"write"`
 	WebhookID   string      `json:"webhook_id"`

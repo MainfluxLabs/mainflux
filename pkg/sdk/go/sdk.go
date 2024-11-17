@@ -120,7 +120,7 @@ type Channel struct {
 	ID       string                 `json:"id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 

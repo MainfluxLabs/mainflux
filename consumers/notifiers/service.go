@@ -63,8 +63,8 @@ func (ns *notifierService) Consume(message interface{}) error {
 		return errors.ErrMessage
 	}
 
-	if msg.Profile.SmtpID != "" {
-		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Profile.SmtpID)
+	if msg.Config.SmtpID != "" {
+		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Config.SmtpID)
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}
@@ -74,8 +74,8 @@ func (ns *notifierService) Consume(message interface{}) error {
 		}
 	}
 
-	if msg.Profile.SmppID != "" {
-		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Profile.SmppID)
+	if msg.Config.SmppID != "" {
+		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.Config.SmppID)
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}

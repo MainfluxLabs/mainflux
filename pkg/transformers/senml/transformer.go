@@ -37,7 +37,7 @@ func New() transformers.Transformer {
 }
 
 func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
-	contentFormat := msg.Profile.ContentType
+	contentFormat := msg.Config.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
 		format = formats[JSON]

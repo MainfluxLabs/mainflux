@@ -199,8 +199,8 @@ func (es eventStore) RemoveChannels(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) ViewChannelProfile(ctx context.Context, chID string) (things.Profile, error) {
-	return es.svc.ViewChannelProfile(ctx, chID)
+func (es eventStore) ViewChannelConfig(ctx context.Context, chID string) (things.Config, error) {
+	return es.svc.ViewChannelConfig(ctx, chID)
 }
 
 func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []string) error {
@@ -257,8 +257,8 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) GetProfileByThingID(ctx context.Context, thingID string) (things.Profile, error) {
-	return es.svc.GetProfileByThingID(ctx, thingID)
+func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (things.Config, error) {
+	return es.svc.GetConfigByThingID(ctx, thingID)
 }
 
 func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

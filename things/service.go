@@ -79,8 +79,8 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveChannels(ctx context.Context, token string, ids ...string) error
 
-	// ViewChannelProfile retrieves channel profile.
-	ViewChannelProfile(ctx context.Context, chID string) (Profile, error)
+	// ViewChannelConfig retrieves channel config.
+	ViewChannelConfig(ctx context.Context, chID string) (Config, error)
 
 	// Connect connects a list of things to a channel.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
@@ -99,8 +99,8 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// GetProfileByThingID returns channel profile for given thing ID.
-	GetProfileByThingID(ctx context.Context, thingID string) (Profile, error)
+	// GetConfigByThingID returns channel config for given thing ID.
+	GetConfigByThingID(ctx context.Context, thingID string) (Config, error)
 
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
@@ -462,23 +462,23 @@ func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids .
 	return ts.channels.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) ViewChannelProfile(ctx context.Context, chID string) (Profile, error) {
+func (ts *thingsService) ViewChannelConfig(ctx context.Context, chID string) (Config, error) {
 	channel, err := ts.channels.RetrieveByID(ctx, chID)
 	if err != nil {
-		return Profile{}, err
+		return Config{}, err
 	}
 
-	meta, err := json.Marshal(channel.Profile)
+	meta, err := json.Marshal(channel.Config)
 	if err != nil {
-		return Profile{}, err
+		return Config{}, err
 	}
 
-	var profile Profile
-	if err := json.Unmarshal(meta, &profile); err != nil {
-		return Profile{}, err
+	var config Config
+	if err := json.Unmarshal(meta, &config); err != nil {
+		return Config{}, err
 	}
 
-	return profile, nil
+	return config, nil
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
@@ -607,23 +607,23 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 	return id, nil
 }
 
-func (ts *thingsService) GetProfileByThingID(ctx context.Context, thingID string) (Profile, error) {
+func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string) (Config, error) {
 	channel, err := ts.channels.RetrieveByThing(ctx, thingID)
 	if err != nil {
-		return Profile{}, err
+		return Config{}, err
 	}
 
-	meta, err := json.Marshal(channel.Profile)
+	meta, err := json.Marshal(channel.Config)
 	if err != nil {
-		return Profile{}, err
+		return Config{}, err
 	}
 
-	var profile Profile
-	if err := json.Unmarshal(meta, &profile); err != nil {
-		return Profile{}, err
+	var config Config
+	if err := json.Unmarshal(meta, &config); err != nil {
+		return Config{}, err
 	}
 
-	return profile, nil
+	return config, nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

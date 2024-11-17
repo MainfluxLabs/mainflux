@@ -23,7 +23,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		p, err := svc.ViewChannelProfile(ctx, conn.ChannelID)
+		p, err := svc.ViewChannelConfig(ctx, conn.ChannelID)
 		if err != nil {
 			return connByKeyRes{}, err
 		}
@@ -35,7 +35,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			TimeLocation: p.Transformer.TimeLocation,
 		}
 
-		profile := &protomfx.Profile{
+		config := &protomfx.Config{
 			ContentType: p.ContentType,
 			Write:       p.Write,
 			Transformer: transformer,
@@ -44,7 +44,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
+		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, config: config}, nil
 	}
 }
 
@@ -114,16 +114,16 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(profileByThingIDReq)
+		req := request.(configByThingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		p, err := svc.GetProfileByThingID(ctx, req.thingID)
+		p, err := svc.GetConfigByThingID(ctx, req.thingID)
 		if err != nil {
-			return profileByThingIDRes{}, err
+			return configByThingIDRes{}, err
 		}
 
 		transformer := &protomfx.Transformer{
@@ -133,7 +133,7 @@ func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 			TimeLocation: p.Transformer.TimeLocation,
 		}
 
-		profile := &protomfx.Profile{
+		config := &protomfx.Config{
 			ContentType: p.ContentType,
 			Write:       p.Write,
 			Transformer: transformer,
@@ -142,7 +142,7 @@ func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return profileByThingIDRes{profile: profile}, nil
+		return configByThingIDRes{config: config}, nil
 	}
 }
 

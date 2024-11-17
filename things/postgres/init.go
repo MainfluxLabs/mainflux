@@ -81,7 +81,7 @@ func migrateDB(db *sqlx.DB) error {
 						owner_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
 						name        VARCHAR(1024),
-						profile     JSONB,
+						config      JSONB,
 						metadata    JSONB,
 						FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
 						PRIMARY KEY (id, owner_id)

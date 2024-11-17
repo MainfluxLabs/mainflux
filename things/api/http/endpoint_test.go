@@ -1670,7 +1670,7 @@ func TestListChannels(t *testing.T) {
 			Name:     channel.Name,
 			Metadata: channel.Metadata,
 			GroupID:  channel.GroupID,
-			Profile:  channel.Profile,
+			Config:   channel.Config,
 		})
 	}
 	channelURL := fmt.Sprintf("%s/channels", ts.URL)
@@ -3041,7 +3041,7 @@ type channelRes struct {
 	Name     string                 `json:"name,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 }
 
 type thingsPageRes struct {

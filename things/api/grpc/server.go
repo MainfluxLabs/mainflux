@@ -25,7 +25,7 @@ type grpcServer struct {
 	authorize           kitgrpc.Handler
 	identify            kitgrpc.Handler
 	getGroupsByIDs      kitgrpc.Handler
-	getProfileByThingID kitgrpc.Handler
+	getConfigByThingID  kitgrpc.Handler
 	getGroupIDByThingID kitgrpc.Handler
 }
 
@@ -52,10 +52,10 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeGetGroupsByIDsRequest,
 			encodeGetGroupsByIDsResponse,
 		),
-		getProfileByThingID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_profile_by_thing_id")(getProfileByThingIDEndpoint(svc)),
-			decodeGetProfileByThingIDRequest,
-			encodeGetProfileByThingIDResponse,
+		getConfigByThingID: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_config_by_thing_id")(getConfigByThingIDEndpoint(svc)),
+			decodeGetConfigByThingIDRequest,
+			encodeGetConfigByThingIDResponse,
 		),
 		getGroupIDByThingID: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "get_group_id_by_thing_id")(getGroupIDByThingIDEndpoint(svc)),
@@ -101,13 +101,13 @@ func (gs *grpcServer) GetGroupsByIDs(ctx context.Context, req *protomfx.GroupsRe
 	return res.(*protomfx.GroupsRes), nil
 }
 
-func (gs *grpcServer) GetProfileByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ProfileByThingIDRes, error) {
-	_, res, err := gs.getProfileByThingID.ServeGRPC(ctx, req)
+func (gs *grpcServer) GetConfigByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ConfigByThingIDRes, error) {
+	_, res, err := gs.getConfigByThingID.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*protomfx.ProfileByThingIDRes), nil
+	return res.(*protomfx.ConfigByThingIDRes), nil
 }
 
 func (gs *grpcServer) GetGroupIDByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.GroupID, error) {
@@ -139,9 +139,9 @@ func decodeGetGroupsByIDsRequest(_ context.Context, grpcReq interface{}) (interf
 	return getGroupsByIDsReq{ids: req.GetIds()}, nil
 }
 
-func decodeGetProfileByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingID)
-	return profileByThingIDReq{thingID: req.GetValue()}, nil
+	return configByThingIDReq{thingID: req.GetValue()}, nil
 }
 
 func decodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -156,7 +156,7 @@ func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func encodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(connByKeyRes)
-	return &protomfx.ConnByKeyRes{ChannelID: res.channelID, ThingID: res.thingID, Profile: res.profile}, nil
+	return &protomfx.ConnByKeyRes{ChannelID: res.channelID, ThingID: res.thingID, Config: res.config}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
@@ -169,9 +169,9 @@ func encodeGetGroupsByIDsResponse(_ context.Context, grpcRes interface{}) (inter
 	return &protomfx.GroupsRes{Groups: res.groups}, nil
 }
 
-func encodeGetProfileByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(profileByThingIDRes)
-	return &protomfx.ProfileByThingIDRes{Profile: res.profile}, nil
+func encodeGetConfigByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(configByThingIDRes)
+	return &protomfx.ConfigByThingIDRes{Config: res.config}, nil
 }
 
 func encodeGetGroupIDByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
