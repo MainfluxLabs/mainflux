@@ -54,34 +54,34 @@ var cmdProvision = []cobra.Command{
 		},
 	},
 	{
-		Use:   "channels <channels_file> <group_id> <user_token>",
-		Short: "Provision channels",
-		Long:  `Bulk create channels`,
+		Use:   "profiles <profiles_file> <group_id> <user_token>",
+		Short: "Provision profiles",
+		Long:  `Bulk create profiles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			channels, err := channelsFromFile(args[0])
+			profiles, err := profilesFromFile(args[0])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			channels, err = sdk.CreateChannels(channels, args[1], args[2])
+			profiles, err = sdk.CreateProfiles(profiles, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			logJSON(channels)
+			logJSON(profiles)
 		},
 	},
 	{
 		Use:   "connect <connections_file> <user_token>",
 		Short: "Provision connections",
-		Long:  `Bulk connect things to channels`,
+		Long:  `Bulk connect things to profiles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -104,14 +104,14 @@ var cmdProvision = []cobra.Command{
 	{
 		Use:   "test",
 		Short: "test",
-		Long: `Provisions test setup: one test user, two things and two channels. \
-						Connect both things to one of the channels, \
-						and only on thing to other channel.`,
+		Long: `Provisions test setup: one test user, two things and two profiles. \
+						Connect both things to one of the profiles, \
+						and only on thing to other profile.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			numThings := 3
 			numChan := 2
 			things := []mfxsdk.Thing{}
-			channels := []mfxsdk.Channel{}
+			profiles := []mfxsdk.Profile{}
 			orgID := "1"
 
 			if len(args) != 0 {
@@ -175,30 +175,30 @@ var cmdProvision = []cobra.Command{
 				thIDs = append(thIDs, th.ID)
 			}
 
-			// Create channels
+			// Create profiles
 			for i := 0; i < numChan; i++ {
 				n := fmt.Sprintf("c%d", i)
 
-				c := mfxsdk.Channel{
+				c := mfxsdk.Profile{
 					Name:    n,
 					GroupID: grID,
 				}
 
-				channels = append(channels, c)
+				profiles = append(profiles, c)
 			}
-			channels, err = sdk.CreateChannels(channels, grID, ut)
+			profiles, err = sdk.CreateProfiles(profiles, grID, ut)
 			if err != nil {
 				logError(err)
 				return
 			}
 
 			var chIDs []string
-			for _, ch := range channels {
+			for _, ch := range profiles {
 				chIDs = append(chIDs, ch.ID)
 			}
 
 			conIDs := mfxsdk.ConnectionIDs{
-				ChannelID: channels[0].ID,
+				ProfileID: profiles[0].ID,
 				ThingIDs:  []string{things[0].ID, things[1].ID},
 			}
 			if err := sdk.Connect(conIDs, ut); err != nil {
@@ -207,7 +207,7 @@ var cmdProvision = []cobra.Command{
 			}
 
 			conIDs = mfxsdk.ConnectionIDs{
-				ChannelID: channels[1].ID,
+				ProfileID: profiles[1].ID,
 				ThingIDs:  []string{things[2].ID},
 			}
 			if err := sdk.Connect(conIDs, ut); err != nil {
@@ -215,7 +215,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			logJSON(user, ut, gr, things, channels)
+			logJSON(user, ut, gr, things, profiles)
 		},
 	},
 }
@@ -223,9 +223,9 @@ var cmdProvision = []cobra.Command{
 // NewProvisionCmd returns provision command.
 func NewProvisionCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "provision [things | channels | connect | test]",
-		Short: "Provision things and channels from a config file",
-		Long:  `Provision things and channels: use json or csv file to bulk provision things and channels`,
+		Use:   "provision [things | profiles | connect | test]",
+		Short: "Provision things and profiles from a config file",
+		Long:  `Provision things and profiles: use json or csv file to bulk provision things and profiles`,
 	}
 
 	for i := range cmdProvision {
@@ -282,18 +282,18 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 	return things, nil
 }
 
-func channelsFromFile(path string) ([]mfxsdk.Channel, error) {
+func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return []mfxsdk.Channel{}, err
+		return []mfxsdk.Profile{}, err
 	}
 
 	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return []mfxsdk.Channel{}, err
+		return []mfxsdk.Profile{}, err
 	}
 	defer file.Close()
 
-	channels := []mfxsdk.Channel{}
+	profiles := []mfxsdk.Profile{}
 	switch filepath.Ext(path) {
 	case csvExt:
 		reader := csv.NewReader(file)
@@ -304,29 +304,29 @@ func channelsFromFile(path string) ([]mfxsdk.Channel, error) {
 				break
 			}
 			if err != nil {
-				return []mfxsdk.Channel{}, err
+				return []mfxsdk.Profile{}, err
 			}
 
 			if len(l) < 1 {
-				return []mfxsdk.Channel{}, errors.New("empty line found in file")
+				return []mfxsdk.Profile{}, errors.New("empty line found in file")
 			}
 
-			channel := mfxsdk.Channel{
+			profile := mfxsdk.Profile{
 				Name: l[0],
 			}
 
-			channels = append(channels, channel)
+			profiles = append(profiles, profile)
 		}
 	case jsonExt:
-		err := json.NewDecoder(file).Decode(&channels)
+		err := json.NewDecoder(file).Decode(&profiles)
 		if err != nil {
-			return []mfxsdk.Channel{}, err
+			return []mfxsdk.Profile{}, err
 		}
 	default:
-		return []mfxsdk.Channel{}, err
+		return []mfxsdk.Profile{}, err
 	}
 
-	return channels, nil
+	return profiles, nil
 }
 
 func connectionsFromFile(path string) (mfxsdk.ConnectionIDs, error) {
@@ -359,7 +359,7 @@ func connectionsFromFile(path string) (mfxsdk.ConnectionIDs, error) {
 			}
 
 			connections.ThingIDs = append(connections.ThingIDs, l[0])
-			connections.ChannelID = l[1]
+			connections.ProfileID = l[1]
 		}
 	case jsonExt:
 		err := json.NewDecoder(file).Decode(&connections)

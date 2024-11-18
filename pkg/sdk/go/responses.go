@@ -18,8 +18,8 @@ type createThingsRes struct {
 	Things []Thing `json:"things"`
 }
 
-type createChannelsRes struct {
-	Channels []Channel `json:"channels"`
+type createProfilesRes struct {
+	Profiles []Profile `json:"profiles"`
 }
 
 type createGroupsRes struct {
@@ -42,9 +42,9 @@ type ThingsPage struct {
 	pageRes
 }
 
-// ChannelsPage contains list of channels in a page with proper metadata.
-type ChannelsPage struct {
-	Channels []Channel `json:"channels"`
+// ProfilesPage contains list of profiles in a page with proper metadata.
+type ProfilesPage struct {
+	Profiles []Profile `json:"profiles"`
 	pageRes
 }
 

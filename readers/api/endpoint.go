@@ -15,7 +15,7 @@ import (
 )
 
 var header = []string{
-	"channel",
+	"profile",
 	"subtopic",
 	"publisher",
 	"protocol",

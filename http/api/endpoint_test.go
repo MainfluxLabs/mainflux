@@ -63,7 +63,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func TestPublish(t *testing.T) {
-	chanID := "1"
+	profileID := "1"
 	ctSenmlJSON := "application/senml+json"
 	ctSenmlCBOR := "application/senml+cbor"
 	ctJSON := "application/json"
@@ -72,13 +72,13 @@ func TestPublish(t *testing.T) {
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
 	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
 	cases := map[string]struct {
-		chanID      string
+		profileID      string
 		msg         string
 		contentType string
 		key         string
@@ -86,35 +86,35 @@ func TestPublish(t *testing.T) {
 		basicAuth   bool
 	}{
 		"publish message": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with application/senml+cbor content-type": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msgCBOR,
 			contentType: ctSenmlCBOR,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with application/json content-type": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msgJSON,
 			contentType: ctJSON,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with empty key": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         "",
 			status:      http.StatusUnauthorized,
 		},
 		"publish message with basic auth": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
@@ -122,14 +122,14 @@ func TestPublish(t *testing.T) {
 			status:      http.StatusAccepted,
 		},
 		"publish message with invalid key": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
 			status:      http.StatusUnauthorized,
 		},
 		"publish message with invalid basic auth": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
@@ -137,21 +137,21 @@ func TestPublish(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		"publish message without content type": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: "",
 			key:         thingKey,
 			status:      http.StatusUnsupportedMediaType,
 		},
-		"publish message without channel": {
-			chanID:      "",
+		"publish message without profile": {
+			profileID:      "",
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message unable to authorize": {
-			chanID:      chanID,
+			profileID:      profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         ServiceErrToken,
@@ -163,7 +163,7 @@ func TestPublish(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/channels/%s/messages", ts.URL, tc.chanID),
+			url:         fmt.Sprintf("%s/profiles/%s/messages", ts.URL, tc.profileID),
 			contentType: tc.contentType,
 			token:       tc.key,
 			body:        strings.NewReader(tc.msg),

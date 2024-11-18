@@ -36,7 +36,7 @@ func (req authorizeReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.subject != things.ThingSub && req.subject != things.ChannelSub && req.subject != things.GroupSub {
+	if req.subject != things.ThingSub && req.subject != things.ProfileSub && req.subject != things.GroupSub {
 		return apiutil.ErrInvalidSubject
 	}
 

@@ -23,7 +23,7 @@ const (
 	regExParts       = 2
 )
 
-var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
+var subtopicRegExp = regexp.MustCompile(`(?:^/profiles/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
@@ -94,7 +94,7 @@ type PubSub interface {
 func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
 	msg := protomfx.Message{
 		Protocol:  protocol,
-		Channel:   conn.ChannelID,
+		Profile:   conn.ProfileID,
 		Subtopic:  subject,
 		Publisher: conn.ThingID,
 		Payload:   *payload,

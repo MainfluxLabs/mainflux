@@ -153,15 +153,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "channels <group_id> <user_token>",
-		Short: "Channels by group",
-		Long:  `Lists all channels of a group.`,
+		Use:   "profiles <group_id> <user_token>",
+		Short: "Profiles by group",
+		Long:  `Lists all profiles of a group.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListChannelsByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+			up, err := sdk.ListProfilesByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
 			if err != nil {
 				logError(err)
 				return
@@ -170,15 +170,15 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "channel <channel_id> <user_token>",
-		Short: "Group by channel",
-		Long:  `View group by specified channel`,
+		Use:   "profile <profile_id> <user_token>",
+		Short: "Group by profile",
+		Long:  `View group by specified profile`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ViewGroupByChannel(args[0], args[1])
+			up, err := sdk.ViewGroupByProfile(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -191,9 +191,9 @@ var cmdGroups = []cobra.Command{
 // NewGroupsCmd returns users command.
 func NewGroupsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "groups [create | get | delete | things | thing | channels | channel]",
+		Use:   "groups [create | get | delete | things | thing | profiles | profile]",
 		Short: "Groups management",
-		Long:  `Groups management: create, update, remove; get lists of: all groups, things by group, channels by group; get group by thing and by channel`,
+		Long:  `Groups management: create, update, remove; get lists of: all groups, things by group, profiles by group; get group by thing and by profile`,
 	}
 
 	for i := range cmdGroups {

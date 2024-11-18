@@ -156,7 +156,7 @@ func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func encodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(connByKeyRes)
-	return &protomfx.ConnByKeyRes{ChannelID: res.channelID, ThingID: res.thingID, Config: res.config}, nil
+	return &protomfx.ConnByKeyRes{ProfileID: res.profileID, ThingID: res.thingID, Config: res.config}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

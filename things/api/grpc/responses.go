@@ -12,7 +12,7 @@ type identityRes struct {
 }
 
 type connByKeyRes struct {
-	channelID string
+	profileID string
 	thingID   string
 	config    *protomfx.Config
 }

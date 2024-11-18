@@ -13,15 +13,15 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-func (sdk mfSDK) SendMessage(chanName, msg, key string) error {
-	chanNameParts := strings.SplitN(chanName, ".", 2)
-	chanID := chanNameParts[0]
+func (sdk mfSDK) SendMessage(profileName, msg, key string) error {
+	profileNameParts := strings.SplitN(profileName, ".", 2)
+	profileID := profileNameParts[0]
 	subtopicPart := ""
-	if len(chanNameParts) == 2 {
-		subtopicPart = fmt.Sprintf("/%s", strings.Replace(chanNameParts[1], ".", "/", -1))
+	if len(profileNameParts) == 2 {
+		subtopicPart = fmt.Sprintf("/%s", strings.Replace(profileNameParts[1], ".", "/", -1))
 	}
 
-	url := fmt.Sprintf("%s/channels/%s/messages/%s", sdk.httpAdapterURL, chanID, subtopicPart)
+	url := fmt.Sprintf("%s/profiles/%s/messages/%s", sdk.httpAdapterURL, profileID, subtopicPart)
 
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(msg))
 	if err != nil {
@@ -40,15 +40,15 @@ func (sdk mfSDK) SendMessage(chanName, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(chanName, token string) (MessagesPage, error) {
-	chanNameParts := strings.SplitN(chanName, ".", 2)
-	chanID := chanNameParts[0]
+func (sdk mfSDK) ReadMessages(profileName, token string) (MessagesPage, error) {
+	profileNameParts := strings.SplitN(profileName, ".", 2)
+	profileID := profileNameParts[0]
 	subtopicPart := ""
-	if len(chanNameParts) == 2 {
-		subtopicPart = fmt.Sprintf("?subtopic=%s", strings.Replace(chanNameParts[1], ".", "/", -1))
+	if len(profileNameParts) == 2 {
+		subtopicPart = fmt.Sprintf("?subtopic=%s", strings.Replace(profileNameParts[1], ".", "/", -1))
 	}
 
-	url := fmt.Sprintf("%s/channels/%s/messages%s", sdk.readerURL, chanID, subtopicPart)
+	url := fmt.Sprintf("%s/profiles/%s/messages%s", sdk.readerURL, profileID, subtopicPart)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return MessagesPage{}, err

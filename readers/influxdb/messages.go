@@ -215,7 +215,7 @@ func fmtCondition(rpm readers.PageMetadata) (string, string) {
 	for name, value := range query {
 		switch name {
 		case
-			"channel",
+			"profile",
 			"subtopic",
 			"publisher",
 			"name",
@@ -301,7 +301,7 @@ func parseJSON(valueMap map[string]interface{}) (interface{}, error) {
 	pld := make(map[string]interface{})
 	for name, field := range valueMap {
 		switch name {
-		case "channel", "created", "subtopic", "publisher", "protocol":
+		case "profile", "created", "subtopic", "publisher", "protocol":
 			ret[name] = field
 		case "_time":
 			name = "time"

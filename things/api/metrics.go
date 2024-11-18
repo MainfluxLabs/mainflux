@@ -75,13 +75,13 @@ func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm th
 	return ms.svc.ListThings(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_things_by_channel").Add(1)
-		ms.latency.With("method", "list_things_by_channel").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_things_by_profile").Add(1)
+		ms.latency.With("method", "list_things_by_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThingsByChannel(ctx, token, chID, pm)
+	return ms.svc.ListThingsByProfile(ctx, token, chID, pm)
 }
 
 func (ms *metricsMiddleware) RemoveThings(ctx context.Context, token string, id ...string) error {
@@ -93,67 +93,67 @@ func (ms *metricsMiddleware) RemoveThings(ctx context.Context, token string, id 
 	return ms.svc.RemoveThings(ctx, token, id...)
 }
 
-func (ms *metricsMiddleware) CreateChannels(ctx context.Context, token string, channels ...things.Channel) (saved []things.Channel, err error) {
+func (ms *metricsMiddleware) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) (saved []things.Profile, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_channels").Add(1)
-		ms.latency.With("method", "create_channels").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_profiles").Add(1)
+		ms.latency.With("method", "create_profiles").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateChannels(ctx, token, channels...)
+	return ms.svc.CreateProfiles(ctx, token, profiles...)
 }
 
-func (ms *metricsMiddleware) UpdateChannel(ctx context.Context, token string, channel things.Channel) error {
+func (ms *metricsMiddleware) UpdateProfile(ctx context.Context, token string, profile things.Profile) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_channel").Add(1)
-		ms.latency.With("method", "update_channel").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_profile").Add(1)
+		ms.latency.With("method", "update_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateChannel(ctx, token, channel)
+	return ms.svc.UpdateProfile(ctx, token, profile)
 }
 
-func (ms *metricsMiddleware) ViewChannel(ctx context.Context, token, id string) (things.Channel, error) {
+func (ms *metricsMiddleware) ViewProfile(ctx context.Context, token, id string) (things.Profile, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_channel").Add(1)
-		ms.latency.With("method", "view_channel").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_profile").Add(1)
+		ms.latency.With("method", "view_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewChannel(ctx, token, id)
+	return ms.svc.ViewProfile(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListChannels(ctx context.Context, token string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (ms *metricsMiddleware) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_channels").Add(1)
-		ms.latency.With("method", "list_channels").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_profiles").Add(1)
+		ms.latency.With("method", "list_profiles").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListChannels(ctx, token, pm)
+	return ms.svc.ListProfiles(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ViewChannelByThing(ctx context.Context, token, thID string) (things.Channel, error) {
+func (ms *metricsMiddleware) ViewProfileByThing(ctx context.Context, token, thID string) (things.Profile, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_channel_by_thing").Add(1)
-		ms.latency.With("method", "view_channel_by_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_profile_by_thing").Add(1)
+		ms.latency.With("method", "view_profile_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewChannelByThing(ctx, token, thID)
+	return ms.svc.ViewProfileByThing(ctx, token, thID)
 }
 
-func (ms *metricsMiddleware) RemoveChannels(ctx context.Context, token string, ids ...string) error {
+func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_channels").Add(1)
-		ms.latency.With("method", "remove_channels").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_profiles").Add(1)
+		ms.latency.With("method", "remove_profiles").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveChannels(ctx, token, ids...)
+	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ViewChannelConfig(ctx context.Context, chID string) (things.Config, error) {
+func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, chID string) (things.Config, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_channel_config").Add(1)
-		ms.latency.With("method", "view_channel_config").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_profile_config").Add(1)
+		ms.latency.With("method", "view_profile_config").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewChannelConfig(ctx, chID)
+	return ms.svc.ViewProfileConfig(ctx, chID)
 }
 
 func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) error {
@@ -309,22 +309,22 @@ func (ms *metricsMiddleware) RemoveGroups(ctx context.Context, token string, ids
 	return ms.svc.RemoveGroups(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ListChannelsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (ms *metricsMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_channels_by_group").Add(1)
-		ms.latency.With("method", "list_channels_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_profiles_by_group").Add(1)
+		ms.latency.With("method", "list_profiles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListChannelsByGroup(ctx, token, groupID, pm)
+	return ms.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) ViewGroupByChannel(ctx context.Context, token, channelID string) (things.Group, error) {
+func (ms *metricsMiddleware) ViewGroupByProfile(ctx context.Context, token, profileID string) (things.Group, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_group_by_channel").Add(1)
-		ms.latency.With("method", "view_group_by_channel").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_group_by_profile").Add(1)
+		ms.latency.With("method", "view_group_by_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewGroupByChannel(ctx, token, channelID)
+	return ms.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
 func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {

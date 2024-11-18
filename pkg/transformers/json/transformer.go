@@ -15,7 +15,7 @@ import (
 const sep = "/"
 
 var (
-	keys = [...]string{"publisher", "protocol", "channel", "subtopic"}
+	keys = [...]string{"publisher", "protocol", "profile", "subtopic"}
 
 	// ErrTransform represents an error during parsing message.
 	ErrTransform = errors.New("unable to parse JSON object")

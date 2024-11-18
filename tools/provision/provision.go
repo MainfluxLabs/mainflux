@@ -31,7 +31,7 @@ const (
 
 // MfConn - structure describing Mainflux connection set
 type MfConn struct {
-	ChannelID string
+	ProfileID string
 	ThingID   string
 	ThingKey  string
 	MTLSCert  string
@@ -123,9 +123,9 @@ func Provision(conf Config) {
 		}
 	}
 
-	//  Create things and channels
+	//  Create things and profiles
 	things := make([]sdk.Thing, conf.Num)
-	channels := make([]sdk.Channel, conf.Num)
+	profiles := make([]sdk.Profile, conf.Num)
 	cIDs := []string{}
 	tIDs := []string{}
 	var gID string
@@ -134,8 +134,8 @@ func Provision(conf Config) {
 
 	for i := 0; i < conf.Num; i++ {
 		things[i] = sdk.Thing{Name: fmt.Sprintf("%s-thing-%d", conf.Prefix, i)}
-		channels[i] = sdk.Channel{Name: fmt.Sprintf("%s-channel-%d", conf.Prefix, i)}
-		gID = channels[i].GroupID
+		profiles[i] = sdk.Profile{Name: fmt.Sprintf("%s-profile-%d", conf.Prefix, i)}
+		gID = profiles[i].GroupID
 	}
 
 	things, err = s.CreateThings(things, gID, token)
@@ -143,7 +143,7 @@ func Provision(conf Config) {
 		log.Fatalf("Failed to create the things: %s", err.Error())
 	}
 
-	channels, err = s.CreateChannels(channels, gID, token)
+	profiles, err = s.CreateProfiles(profiles, gID, token)
 	if err != nil {
 		log.Fatalf("Failed to create the chennels: %s", err.Error())
 	}
@@ -152,7 +152,7 @@ func Provision(conf Config) {
 		tIDs = append(tIDs, t.ID)
 	}
 
-	for _, c := range channels {
+	for _, c := range profiles {
 		cIDs = append(cIDs, c.ID)
 	}
 
@@ -223,19 +223,19 @@ func Provision(conf Config) {
 		fmt.Println("")
 	}
 
-	fmt.Printf("# List of channels that things can publish to\n" +
-		"# each channel is connected to each thing from things list\n")
+	fmt.Printf("# List of profiles that things can publish to\n" +
+		"# each profile is connected to each thing from things list\n")
 	for i := 0; i < conf.Num; i++ {
-		fmt.Printf("[[channels]]\nchannel_id = \"%s\"\n\n", cIDs[i])
+		fmt.Printf("[[profiles]]\nprofile_id = \"%s\"\n\n", cIDs[i])
 	}
 
 	for _, cID := range cIDs {
 		conIDs := sdk.ConnectionIDs{
-			ChannelID: cID,
+			ProfileID: cID,
 			ThingIDs:  tIDs,
 		}
 		if err := s.Connect(conIDs, token); err != nil {
-			log.Fatalf("Failed to connect things %s to channel %s: %s", conIDs.ThingIDs, conIDs.ChannelID, err)
+			log.Fatalf("Failed to connect things %s to profile %s: %s", conIDs.ThingIDs, conIDs.ProfileID, err)
 		}
 	}
 }

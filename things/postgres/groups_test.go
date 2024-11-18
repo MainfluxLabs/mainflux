@@ -19,7 +19,7 @@ const (
 	groupName   = "test-group"
 	description = "description"
 	n           = uint64(5)
-	channelName = "test-channel"
+	profileName = "test-profile"
 	thingName   = "test-thing"
 )
 
@@ -463,10 +463,10 @@ func TestRetrieveAllGroups(t *testing.T) {
 	}
 }
 
-func TestRetrieveChannelsByGroup(t *testing.T) {
+func TestRetrieveProfilesByGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	channelRepo := postgres.NewChannelRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
 	creationTime := time.Now().UTC()
@@ -497,67 +497,67 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	chID3, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	channels := []things.Channel{
+	profiles := []things.Profile{
 		{
 			ID:       chID1,
-			Name:     fmt.Sprintf("%s-%d", channelName, 1),
+			Name:     fmt.Sprintf("%s-%d", profileName, 1),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID2,
-			Name:     fmt.Sprintf("%s-%d", channelName, 2),
+			Name:     fmt.Sprintf("%s-%d", profileName, 2),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
 			ID:       chID3,
-			Name:     fmt.Sprintf("%s-%d", channelName, 3),
+			Name:     fmt.Sprintf("%s-%d", profileName, 3),
 			GroupID:  group2.ID,
 			Metadata: map[string]interface{}{},
 		},
 	}
-	_, err = channelRepo.Save(context.Background(), channels...)
-	require.Nil(t, err, fmt.Sprintf("channel save got unexpected error: %s", err))
+	_, err = profileRepo.Save(context.Background(), profiles...)
+	require.Nil(t, err, fmt.Sprintf("profile save got unexpected error: %s", err))
 
 	cases := map[string]struct {
 		pagemeta things.PageMetadata
 		groupID  string
-		channels []things.Channel
+		profiles []things.Profile
 		err      error
 	}{
-		"retrieve channels ": {
+		"retrieve profiles ": {
 			pagemeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  10,
 			},
 			groupID:  group.ID,
-			channels: channels[:2],
+			profiles: profiles[:2],
 			err:      nil,
 		},
-		"retrieve channels by group without group id": {
+		"retrieve profiles by group without group id": {
 			pagemeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  10,
 			},
 			groupID:  "",
-			channels: nil,
-			err:      things.ErrRetrieveGroupChannels,
+			profiles: nil,
+			err:      things.ErrRetrieveGroupProfiles,
 		},
-		"retrieve last channel by group": {
+		"retrieve last profile by group": {
 			pagemeta: things.PageMetadata{
 				Offset: 1,
 				Limit:  1,
 			},
 			groupID:  group.ID,
-			channels: channels[1:2],
+			profiles: profiles[1:2],
 			err:      nil,
 		},
 	}
 
 	for desc, tc := range cases {
-		chs, err := groupRepo.RetrieveChannelsByGroup(context.Background(), tc.groupID, tc.pagemeta)
-		assert.Equal(t, tc.channels, chs.Channels, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channels, chs.Channels))
+		chs, err := groupRepo.RetrieveProfilesByGroup(context.Background(), tc.groupID, tc.pagemeta)
+		assert.Equal(t, tc.profiles, chs.Profiles, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.profiles, chs.Profiles))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

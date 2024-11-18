@@ -23,7 +23,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		p, err := svc.ViewChannelConfig(ctx, conn.ChannelID)
+		p, err := svc.ViewProfileConfig(ctx, conn.ProfileID)
 		if err != nil {
 			return connByKeyRes{}, err
 		}
@@ -44,7 +44,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, config: config}, nil
+		return connByKeyRes{profileID: conn.ProfileID, thingID: conn.ThingID, config: config}, nil
 	}
 }
 

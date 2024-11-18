@@ -98,7 +98,7 @@ func (client grpcClient) GetConnByKey(ctx context.Context, req *protomfx.ConnByK
 	}
 
 	cr := res.(connByKeyRes)
-	return &protomfx.ConnByKeyRes{ChannelID: cr.channelID, ThingID: cr.thingID, Config: cr.config}, nil
+	return &protomfx.ConnByKeyRes{ProfileID: cr.profileID, ThingID: cr.thingID, Config: cr.config}, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -201,7 +201,7 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.ConnByKeyRes)
-	return connByKeyRes{channelID: res.ChannelID, thingID: res.ThingID, config: res.Config}, nil
+	return connByKeyRes{profileID: res.ProfileID, thingID: res.ThingID, config: res.Config}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

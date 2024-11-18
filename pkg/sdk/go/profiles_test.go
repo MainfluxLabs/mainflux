@@ -20,18 +20,18 @@ const (
 )
 
 var (
-	ch1      = sdk.Channel{Name: "test1"}
-	ch2      = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3      = sdk.Channel{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	ch1      = sdk.Profile{Name: "test1"}
+	ch2      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	ch3      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
 	chPrefix = "fe6b4e92-cc98-425e-b0aa-"
 )
 
-func TestCreateChannel(t *testing.T) {
+func TestCreateProfile(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
-	chWrongExtID := sdk.Channel{GroupID: groupID, ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
+	chWrongExtID := sdk.Profile{GroupID: groupID, ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
 
 	sdkConf := sdk.Config{
 		ThingsURL:       ts.URL,
@@ -46,47 +46,47 @@ func TestCreateChannel(t *testing.T) {
 
 	cases := []struct {
 		desc    string
-		channel sdk.Channel
+		profile sdk.Profile
 		token   string
 		groupID string
 		err     error
 		empty   bool
 	}{
 		{
-			desc:    "create new channel",
-			channel: ch1,
+			desc:    "create new profile",
+			profile: ch1,
 			token:   token,
 			groupID: grID,
 			err:     nil,
 			empty:   false,
 		},
 		{
-			desc:    "create new channel with empty token",
-			channel: ch1,
+			desc:    "create new profile with empty token",
+			profile: ch1,
 			token:   emptyValue,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
 		{
-			desc:    "create new channel with invalid token",
-			channel: ch1,
+			desc:    "create new profile with invalid token",
+			profile: ch1,
 			token:   wrongValue,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			empty:   true,
 		},
 		{
-			desc:    "create a new channel with external UUID",
-			channel: ch2,
+			desc:    "create a new profile with external UUID",
+			profile: ch2,
 			token:   token,
 			groupID: grID,
 			err:     nil,
 			empty:   false,
 		},
 		{
-			desc:    "create a new channel with wrong external UUID",
-			channel: chWrongExtID,
+			desc:    "create a new profile with wrong external UUID",
+			profile: chWrongExtID,
 			token:   token,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusBadRequest),
@@ -95,13 +95,13 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateChannel(tc.channel, grID, tc.token)
+		loc, err := mainfluxSDK.CreateProfile(tc.profile, grID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.empty, loc == emptyValue, fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
 	}
 }
 
-func TestCreateChannels(t *testing.T) {
+func TestCreateProfiles(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -117,49 +117,49 @@ func TestCreateChannels(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	channels := []sdk.Channel{
+	profiles := []sdk.Profile{
 		ch2,
 		ch3,
 	}
 
 	cases := []struct {
 		desc     string
-		channels []sdk.Channel
+		profiles []sdk.Profile
 		token    string
 		err      error
-		res      []sdk.Channel
+		res      []sdk.Profile
 	}{
 		{
-			desc:     "create new channels",
-			channels: channels,
+			desc:     "create new profiles",
+			profiles: profiles,
 			token:    token,
 			err:      nil,
-			res:      channels,
+			res:      profiles,
 		},
 		{
-			desc:     "create new channels with empty channels",
-			channels: []sdk.Channel{},
+			desc:     "create new profiles with empty profiles",
+			profiles: []sdk.Profile{},
 			token:    token,
 			err:      createError(sdk.ErrFailedCreation, http.StatusBadRequest),
-			res:      []sdk.Channel{},
+			res:      []sdk.Profile{},
 		},
 		{
-			desc:     "create new channels with empty token",
-			channels: channels,
+			desc:     "create new profiles with empty token",
+			profiles: profiles,
 			token:    emptyValue,
 			err:      createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
-			res:      []sdk.Channel{},
+			res:      []sdk.Profile{},
 		},
 		{
-			desc:     "create new channels with invalid token",
-			channels: channels,
+			desc:     "create new profiles with invalid token",
+			profiles: profiles,
 			token:    wrongValue,
 			err:      createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
-			res:      []sdk.Channel{},
+			res:      []sdk.Profile{},
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateChannels(tc.channels, grID, tc.token)
+		res, err := mainfluxSDK.CreateProfiles(tc.profiles, grID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {
@@ -168,7 +168,7 @@ func TestCreateChannels(t *testing.T) {
 	}
 }
 
-func TestChannel(t *testing.T) {
+func TestProfile(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -183,49 +183,49 @@ func TestChannel(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	ch2.GroupID = grID
 
 	cases := []struct {
 		desc     string
-		chanID   string
+		profileID   string
 		token    string
 		err      error
-		response sdk.Channel
+		response sdk.Profile
 	}{
 		{
-			desc:     "get existing channel",
-			chanID:   id,
+			desc:     "get existing profile",
+			profileID:   id,
 			token:    token,
 			err:      nil,
 			response: ch2,
 		},
 		{
-			desc:     "get non-existent channel",
-			chanID:   "43",
+			desc:     "get non-existent profile",
+			profileID:   "43",
 			token:    token,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 		{
-			desc:     "get channel with invalid token",
-			chanID:   id,
+			desc:     "get profile with invalid token",
+			profileID:   id,
 			token:    emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 	}
 
 	for _, tc := range cases {
-		respCh, err := mainfluxSDK.Channel(tc.chanID, tc.token)
+		respCh, err := mainfluxSDK.Profile(tc.profileID, tc.token)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, respCh, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, respCh))
+		assert.Equal(t, tc.response, respCh, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, respCh))
 	}
 }
 
-func TestChannels(t *testing.T) {
+func TestProfiles(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -234,7 +234,7 @@ func TestChannels(t *testing.T) {
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-	var channels []sdk.Channel
+	var profiles []sdk.Profile
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
@@ -243,10 +243,10 @@ func TestChannels(t *testing.T) {
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", chPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		ch := sdk.Channel{GroupID: grID, ID: id, Name: name}
-		_, err := mainfluxSDK.CreateChannel(ch, ch.GroupID, token)
+		ch := sdk.Profile{GroupID: grID, ID: id, Name: name}
+		_, err := mainfluxSDK.CreateProfile(ch, ch.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		channels = append(channels, ch)
+		profiles = append(profiles, ch)
 	}
 
 	cases := []struct {
@@ -256,20 +256,20 @@ func TestChannels(t *testing.T) {
 		limit    uint64
 		name     string
 		err      error
-		response []sdk.Channel
+		response []sdk.Profile
 		metadata map[string]interface{}
 	}{
 		{
-			desc:     "get a list of channels",
+			desc:     "get a list of profiles",
 			token:    token,
 			offset:   offset,
 			limit:    limit,
 			err:      nil,
-			response: channels[0:limit],
+			response: profiles[0:limit],
 			metadata: make(map[string]interface{}),
 		},
 		{
-			desc:     "get a list of channels with invalid token",
+			desc:     "get a list of profiles with invalid token",
 			token:    wrongValue,
 			offset:   offset,
 			limit:    limit,
@@ -278,7 +278,7 @@ func TestChannels(t *testing.T) {
 			metadata: make(map[string]interface{}),
 		},
 		{
-			desc:     "get a list of channels with empty token",
+			desc:     "get a list of profiles with empty token",
 			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
@@ -287,7 +287,7 @@ func TestChannels(t *testing.T) {
 			metadata: make(map[string]interface{}),
 		},
 		{
-			desc:     "get a list of channels without limit, default 10",
+			desc:     "get a list of profiles without limit, default 10",
 			token:    token,
 			offset:   offset,
 			limit:    0,
@@ -296,7 +296,7 @@ func TestChannels(t *testing.T) {
 			metadata: make(map[string]interface{}),
 		},
 		{
-			desc:     "get a list of channels with limit greater than max",
+			desc:     "get a list of profiles with limit greater than max",
 			token:    token,
 			offset:   offset,
 			limit:    110,
@@ -305,12 +305,12 @@ func TestChannels(t *testing.T) {
 			metadata: make(map[string]interface{}),
 		},
 		{
-			desc:     "get a list of channels with offset greater than max",
+			desc:     "get a list of profiles with offset greater than max",
 			token:    token,
 			offset:   110,
 			limit:    limit,
 			err:      nil,
-			response: []sdk.Channel{},
+			response: []sdk.Profile{},
 			metadata: make(map[string]interface{}),
 		},
 	}
@@ -323,13 +323,13 @@ func TestChannels(t *testing.T) {
 			Metadata: tc.metadata,
 		}
 
-		page, err := mainfluxSDK.Channels(tc.token, filter)
+		page, err := mainfluxSDK.Profiles(tc.token, filter)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, page.Channels, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Channels))
+		assert.Equal(t, tc.response, page.Profiles, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Profiles))
 	}
 }
 
-func TestViewChannelByThing(t *testing.T) {
+func TestViewProfileByThing(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -347,16 +347,16 @@ func TestViewChannelByThing(t *testing.T) {
 	tid, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	ch := sdk.Channel{Name: name}
-	cid, err := mainfluxSDK.CreateChannel(ch, grID, token)
+	ch := sdk.Profile{Name: name}
+	cid, err := mainfluxSDK.CreateProfile(ch, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
-		ChannelID: cid,
+		ProfileID: cid,
 		ThingIDs:  []string{tid},
 	}
 
-	resChan := sdk.Channel{
+	resprofile := sdk.Profile{
 		ID:      cid,
 		GroupID: grID,
 		Name:    name,
@@ -370,53 +370,53 @@ func TestViewChannelByThing(t *testing.T) {
 		thing    string
 		token    string
 		err      error
-		response sdk.Channel
+		response sdk.Profile
 	}{
 		{
-			desc:     "view channel by thing",
+			desc:     "view profile by thing",
 			thing:    tid,
 			token:    token,
 			err:      nil,
-			response: resChan,
+			response: resprofile,
 		},
 		{
-			desc:     "view channel by thing with invalid token",
+			desc:     "view profile by thing with invalid token",
 			thing:    tid,
 			token:    wrongValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 		{
-			desc:     "view channel by thing with empty token",
+			desc:     "view profile by thing with empty token",
 			thing:    tid,
 			token:    emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 		{
-			desc:     "view channel by thing with empty thing id",
+			desc:     "view profile by thing with empty thing id",
 			thing:    emptyValue,
 			token:    token,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 		{
-			desc:     "view channel by thing with unknown thing id",
+			desc:     "view profile by thing with unknown thing id",
 			thing:    wrongID,
 			token:    token,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
-			response: sdk.Channel{},
+			response: sdk.Profile{},
 		},
 	}
 
 	for _, tc := range cases {
-		ch, err := mainfluxSDK.ViewChannelByThing(tc.token, tc.thing)
+		ch, err := mainfluxSDK.ViewProfileByThing(tc.token, tc.thing)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, ch, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, ch))
+		assert.Equal(t, tc.response, ch, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, ch))
 	}
 }
 
-func TestUpdateChannel(t *testing.T) {
+func TestUpdateProfile(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -431,55 +431,55 @@ func TestUpdateChannel(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	ch2.GroupID = grID
 
 	cases := []struct {
 		desc    string
-		channel sdk.Channel
+		profile sdk.Profile
 		token   string
 		err     error
 	}{
 		{
-			desc:    "update existing channel",
-			channel: sdk.Channel{ID: id, Name: "test2"},
+			desc:    "update existing profile",
+			profile: sdk.Profile{ID: id, Name: "test2"},
 			token:   token,
 			err:     nil,
 		},
 		{
-			desc:    "update non-existing channel",
-			channel: sdk.Channel{ID: "0", Name: "test2"},
+			desc:    "update non-existing profile",
+			profile: sdk.Profile{ID: "0", Name: "test2"},
 			token:   token,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusNotFound),
 		},
 		{
-			desc:    "update channel with invalid id",
-			channel: sdk.Channel{ID: emptyValue, Name: "test2"},
+			desc:    "update profile with invalid id",
+			profile: sdk.Profile{ID: emptyValue, Name: "test2"},
 			token:   token,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusBadRequest),
 		},
 		{
-			desc:    "update channel with invalid token",
-			channel: sdk.Channel{ID: id, Name: "test2"},
+			desc:    "update profile with invalid token",
+			profile: sdk.Profile{ID: id, Name: "test2"},
 			token:   wrongValue,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
 		},
 		{
-			desc:    "update channel with empty token",
-			channel: sdk.Channel{ID: id, Name: "test2"},
+			desc:    "update profile with empty token",
+			profile: sdk.Profile{ID: id, Name: "test2"},
 			token:   emptyValue,
 			err:     createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
 		},
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.UpdateChannel(tc.channel, tc.channel.ID, tc.token)
+		err := mainfluxSDK.UpdateProfile(tc.profile, tc.profile.ID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
 
-func TestDeleteChannel(t *testing.T) {
+func TestDeleteProfile(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -494,60 +494,60 @@ func TestDeleteChannel(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc   string
-		chanID string
+		profileID string
 		token  string
 		err    error
 	}{
 		{
-			desc:   "delete channel with invalid token",
-			chanID: id,
+			desc:   "delete profile with invalid token",
+			profileID: id,
 			token:  wrongValue,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:   "delete non-existing channel",
-			chanID: "2",
+			desc:   "delete non-existing profile",
+			profileID: "2",
 			token:  token,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
-			desc:   "delete channel with invalid id",
-			chanID: emptyValue,
+			desc:   "delete profile with invalid id",
+			profileID: emptyValue,
 			token:  token,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:   "delete channel with empty token",
-			chanID: id,
+			desc:   "delete profile with empty token",
+			profileID: id,
 			token:  emptyValue,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:   "delete existing channel",
-			chanID: id,
+			desc:   "delete existing profile",
+			profileID: id,
 			token:  token,
 			err:    nil,
 		},
 		{
-			desc:   "delete deleted channel",
-			chanID: id,
+			desc:   "delete deleted profile",
+			profileID: id,
 			token:  token,
 			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DeleteChannel(tc.chanID, tc.token)
+		err := mainfluxSDK.DeleteProfile(tc.profileID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }
 
-func TestDeleteChannels(t *testing.T) {
+func TestDeleteProfiles(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -562,71 +562,71 @@ func TestDeleteChannels(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id1, err := mainfluxSDK.CreateChannel(ch1, grID, token)
+	id1, err := mainfluxSDK.CreateProfile(ch1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	id2, err := mainfluxSDK.CreateProfile(ch2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	chIDs := []string{id1, id2}
 
 	cases := []struct {
 		desc    string
-		chanIDs []string
+		profileIDs []string
 		token   string
 		err     error
 	}{
 		{
-			desc:    "delete channels with invalid token",
-			chanIDs: chIDs,
+			desc:    "delete profiles with invalid token",
+			profileIDs: chIDs,
 			token:   wrongValue,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete non-existing channels",
-			chanIDs: []string{wrongValue},
+			desc:    "delete non-existing profiles",
+			profileIDs: []string{wrongValue},
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
-			desc:    "delete channels with empty id",
-			chanIDs: []string{emptyValue},
+			desc:    "delete profiles with empty id",
+			profileIDs: []string{emptyValue},
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:    "delete channels without channel ids",
-			chanIDs: []string{},
+			desc:    "delete profiles without profile ids",
+			profileIDs: []string{},
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:    "delete channels with empty token",
-			chanIDs: chIDs,
+			desc:    "delete profiles with empty token",
+			profileIDs: chIDs,
 			token:   emptyValue,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete channels with invalid token",
-			chanIDs: chIDs,
+			desc:    "delete profiles with invalid token",
+			profileIDs: chIDs,
 			token:   wrongValue,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete existing channels",
-			chanIDs: chIDs,
+			desc:    "delete existing profiles",
+			profileIDs: chIDs,
 			token:   token,
 			err:     nil,
 		},
 		{
-			desc:    "delete deleted channels",
-			chanIDs: chIDs,
+			desc:    "delete deleted profiles",
+			profileIDs: chIDs,
 			token:   token,
 			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 
 	for _, tc := range cases {
-		err := mainfluxSDK.DeleteChannels(tc.chanIDs, tc.token)
+		err := mainfluxSDK.DeleteProfiles(tc.profileIDs, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

@@ -1,14 +1,14 @@
 openapi: 3.0.1
 info:
   title: Mainflux http adapter
-  description: HTTP API for sending messages through communication channels.
+  description: HTTP API for sending messages through communication profiles.
   version: "1.0.0"
 paths:
-  /channels/{id}/messages:
+  /profiles/{id}/messages:
     post:
-      summary: Sends message to the communication channel
+      summary: Sends message
       description: |
-        Sends message to the communication channel. Messages can be sent as
+        Sends message. Messages can be sent as
         JSON formatted SenML or as blob.
       tags:
         - messages
@@ -24,7 +24,7 @@ paths:
         "401":
           description: Missing or invalid access token provided.
         "404":
-          description: Message discarded due to invalid channel id.
+          description: Message discarded due to invalid profile id.
         "415":
           description: Message discarded due to invalid or missing content type.
         '500':
@@ -107,7 +107,7 @@ components:
   parameters:
     ID:
       name: id
-      description: Unique channel identifier.
+      description: Unique profile identifier.
       in: path
       schema:
         type: string

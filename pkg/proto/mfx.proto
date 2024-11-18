@@ -8,7 +8,7 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string  channel   = 1;
+    string  profile   = 1;
     string  subtopic  = 2;
     string  publisher = 3;
     string  protocol  = 4;
@@ -44,7 +44,7 @@ message ConnByKeyReq {
 }
 
 message ConnByKeyRes {
-    string  channelID = 1;
+    string  profileID = 1;
     string  thingID   = 2;
     Config  config    = 3;
 }

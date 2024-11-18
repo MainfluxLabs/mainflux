@@ -34,7 +34,7 @@ func (cli MockClient) GetConnByKey(ctx context.Context, key string) (protomfx.Co
 
 	conn := &protomfx.ConnByKeyRes{
 		ThingID:   thID,
-		ChannelID: chID,
+		ProfileID: chID,
 	}
 
 	return *conn, nil

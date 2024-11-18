@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Mainflux things service
-  description: HTTP API for managing platform things and channels.
+  description: HTTP API for managing platform things and profiles.
   version: "1.0.0"
 
 paths:
@@ -167,7 +167,7 @@ paths:
       summary: Removes a thing
       description: |
         Removes a thing. The service will ensure that the removed thing is
-        disconnected from all of the existing channels.
+        disconnected from all of the existing profiles.
       tags:
         - things
       parameters:
@@ -227,21 +227,21 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /groups/{groupId}/channels:
+  /groups/{groupId}/profiles:
     post:
-      summary: Adds new channels
+      summary: Adds new profiles
       description: |
-        Adds new channels to the list of channels owned by user identified using
+        Adds new profiles to the list of profiles owned by user identified using
         the provided access token.
       tags:
-        - channels
+        - profiles
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/ChannelsCreateReq"
+        $ref: "#/components/requestBodies/CreateProfilesReq"
       responses:
         '201':
-          $ref: "#/components/responses/ChannelsCreateRes"
+          $ref: "#/components/responses/ProfilesCreateRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -253,11 +253,11 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: List channels by group.
+      summary: List profiles by group.
       description: |
-        An array of channels that belong to the group specified by groupID.
+        An array of profiles that belong to the group specified by groupID.
       tags:
-        - channels
+        - profiles
       parameters:
         - $ref: "#/components/parameters/GroupId"
         - $ref: "#/components/parameters/Offset"
@@ -265,23 +265,23 @@ paths:
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
-          $ref: "#/components/responses/ChannelsPageRes"
+          $ref: "#/components/responses/ProfilesPageRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels:
+  /profiles:
     get:
-      summary: Retrieves channels
+      summary: Retrieves profiles
       description: |
-        Retrieves a list of channels. Due to performance concerns, data
+        Retrieves a list of profiles. Due to performance concerns, data
         is retrieved in subsets. The API things must ensure that the entire
         dataset is consumed either by making subsequent requests, or by
         increasing the subset size of the initial request.
       tags:
-        - channels
+        - profiles
       parameters:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
@@ -291,7 +291,7 @@ paths:
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
-          $ref: "#/components/responses/ChannelsPageRes"
+          $ref: "#/components/responses/ProfilesPageRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -301,93 +301,93 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     patch:
-      summary: Removes channels
-      description: Removes channels with provided identifiers
+      summary: Removes profiles
+      description: Removes profiles with provided identifiers
       tags:
-        - channels
+        - profiles
       requestBody:
-        $ref: "#/components/requestBodies/ChannelRemoveReq"
+        $ref: "#/components/requestBodies/RemoveProfileReq"
       responses:
         '204':
-          description: Channels removed.
+          description: Profiles removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels/{chanId}:
+  /profiles/{profileId}:
     get:
-      summary: Retrieves channel info
+      summary: Retrieves profile info
       tags:
-        - channels
+        - profiles
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
       responses:
         '200':
-          $ref: "#/components/responses/ChannelRes"
+          $ref: "#/components/responses/ProfileRes"
         '400':
-          description: Failed due to malformed channel's ID.
+          description: Failed due to malformed profile's ID.
         '401':
           description: Missing or invalid access token provided.
         '404':
-          description: Channel does not exist.
+          description: Profile does not exist.
         '422':
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
-      summary: Updates channel info
+      summary: Updates profile info
       description: |
         Update is performed by replacing the current resource data with values
-        provided in a request payload. Note that the channel's ID will not be
+        provided in a request payload. Note that the profile's ID will not be
         affected.
       tags:
-        - channels
+        - profiles
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
       requestBody:
-        $ref: "#/components/requestBodies/ChannelCreateReq"
+        $ref: "#/components/requestBodies/ProfileCreateReq"
       responses:
         '200':
-          description: Channel updated.
+          description: Profile updated.
         '400':
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
         '404':
-          description: Channel does not exist.
+          description: Profile does not exist.
         '415':
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Removes a channel
+      summary: Removes a profile
       description: |
-        Removes a channel. The service will ensure that the subscribed apps and
-        things are unsubscribed from the removed channel.
+        Removes a profile. The service will ensure that the subscribed apps and
+        things are unsubscribed from the removed profile.
       tags:
-        - channels
+        - profiles
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
       responses:
         '204':
-          description: Channel removed.
+          description: Profile removed.
         '400':
-          description: Failed due to malformed channel's ID.
+          description: Failed due to malformed profile's ID.
         '401':
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels/{chanId}/groups:
+  /profiles/{profileId}/groups:
     get:
-      summary: Retrieves group by channel.
+      summary: Retrieves group by profile.
       description: |
-        Retrieves group where channel is member of.
+        Retrieves group where profile is member of.
       tags:
         - groups
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
       responses:
         '200':
           $ref: "#/components/responses/GroupRes"
@@ -397,11 +397,11 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /connect:
     post:
-      summary: Connects thing and channel.
+      summary: Connects thing and profile.
       description: |
-        Connect things specified by IDs to channel specified by ID.
-        Channel and thing are owned by user identified using the provided access token.
-        In order for the connection to be successful, the things and the channel must be members of the same group.
+        Connect things specified by IDs to profile specified by ID.
+        Profile and thing are owned by user identified using the provided access token.
+        In order for the connection to be successful, the things and the profile must be members of the same group.
       tags:
         - things
       requestBody:
@@ -423,10 +423,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /disconnect:
     put:
-      summary: Disconnect things from the channel.
+      summary: Disconnect things from the profile.
       description: |
-        Disconnect a list of things specified by IDs from channel specified by ID.
-        Channel and things are owned by user identified using the provided access token.
+        Disconnect a list of things specified by IDs from profile specified by ID.
+        Profile and things are owned by user identified using the provided access token.
       tags:
         - things
       requestBody:
@@ -444,18 +444,18 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/{thingId}/channels:
+  /things/{thingId}/profiles:
     get:
-      summary: Retrieves channel connected to specified thing
+      summary: Retrieves profile connected to specified thing
       description: |
-        Retrieves channel connected to specified thing.
+        Retrieves profile connected to specified thing.
       tags:
-        - channels
+        - profiles
       parameters:
         - $ref: "#/components/parameters/ThingId"
       responses:
         '200':
-          $ref: "#/components/responses/ChannelRes"
+          $ref: "#/components/responses/ProfileRes"
         '401':
           description: Missing or invalid access token provided.
         '404':
@@ -464,16 +464,16 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /channels/{chanId}/things:
+  /profiles/{profileId}/things:
     get:
-      summary: List of things connected to specified channel
+      summary: List of things connected to specified profile
       description: |
-        Retrieves list of things connected to specified channel with pagination
+        Retrieves list of things connected to specified profile with pagination
         metadata.
       tags:
         - things
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Connected"
@@ -697,10 +697,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /connections:
     post:
-      summary: Checks if thing has access to a channel.
+      summary: Checks if thing has access to a profile.
       description: |
         Checks if a thing with a specified key has an access to a specified
-        channel and if it has, it returns that things id.
+        profile and if it has, it returns that things id.
       tags:
         - access
       requestBody:
@@ -710,7 +710,7 @@ paths:
           $ref: "#/components/responses/AccessGrantedRes"
         '401':
           description: |
-            Thing and channel are not connected, or thing with specified key doesn't
+            Thing and profile are not connected, or thing with specified key doesn't
             exist.
         '415':
           description: Missing or invalid content type.
@@ -740,7 +740,7 @@ paths:
       summary: Retrieves backup of the things service.
       description: |
         Retrieves backup of the things service. Backup is a JSON file that contains
-        all groups, things, channels, and connections.
+        all groups, things, profiles, and connections.
       tags:
         - backup
       responses:
@@ -755,7 +755,7 @@ paths:
       summary: Restores things service from backup.
       description: |
         Restores service from backup. Backup is a JSON file that contains
-        all groups, things, channels, and connections that will be restored.
+        all groups, things, profiles, and connections that will be restored.
       tags:
         - backup
       requestBody:
@@ -905,36 +905,36 @@ components:
           description: Maximum number of items to return in one page.
       required:
         - things
-    ChannelReqSchema:
+    ProfileReqSchema:
       type: object
       properties:
         name:
           type: string
-          description: Free-form channel name.
+          description: Free-form profile name.
         config:
           type: object
-          description: Object-encoded channel config data.
+          description: Object-encoded profile config data.
         metadata:
           type: object
-          description: Arbitrary, object-encoded channel's data.
-    ChannelResSchema:
+          description: Arbitrary, object-encoded profile's data.
+    ProfileResSchema:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          description: Unique channel identifier generated by the service.
+          description: Unique profile identifier generated by the service.
         name:
           type: string
           example: "Test"
-          description: Free-form channel name.
+          description: Free-form profile name.
         group_id:
           type: string
           format: uuid
           description: The group identifier to which the thing belongs.
         config:
           type: object
-          description: Object-encoded channel config data.
+          description: Object-encoded profile config data.
           additionalProperties:
             type: string
           example:
@@ -943,30 +943,30 @@ components:
         metadata:
           type: object
           example: { "key": "value" }
-          description: Arbitrary, object-encoded channel's data.
+          description: Arbitrary, object-encoded profile's data.
       required:
         - id
         - group_id
-    ChannelsResSchema:
+    ProfilesResSchema:
       type: object
       properties:
-        channels:
+        profiles:
           type: array
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/ChannelResSchema"
+            $ref: "#/components/schemas/ProfileResSchema"
       required:
-        - channels
-    ChannelsPage:
+        - profiles
+    ProfilesPage:
       type: object
       properties:
-        channels:
+        profiles:
           type: array
           minItems: 0
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/ChannelResSchema"
+            $ref: "#/components/schemas/ProfileResSchema"
         total:
           type: integer
           description: Total number of items.
@@ -977,14 +977,14 @@ components:
           type: integer
           description: Maximum number of items to return in one page.
       required:
-        - channels
+        - profiles
     ConnectionReqSchema:
       type: object
       properties:
-        channel_id:
+        profile_id:
           type: string
           example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
-          description: Channel ID.
+          description: Profile ID.
         thing_ids:
           type: array
           example: ["6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"]
@@ -994,22 +994,22 @@ components:
     ConnectionResSchema:
       type: object
       properties:
-        channel_id:
+        profile_id:
           type: string
           example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
-          description: Unique channel identifier generated by the service.    
+          description: Unique profile identifier generated by the service.
         thing_id:
           type: string
           example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
           description: Unique thing identifier generated by the service.      
         name:
           type: string
-          description: Free-form channel name.
+          description: Free-form profile name.
         metadata:
           type: object
-          description: Arbitrary, object-encoded channel's data.
+          description: Arbitrary, object-encoded profile's data.
       required:
-        - channel_id
+        - profile_id
         - thing_id
     GroupsPage:
       type: object
@@ -1166,10 +1166,10 @@ components:
           items:
             type: string
             format: uuid | ulid
-    GroupChannelsReqSchema:
+    GroupProfilesReqSchema:
       type: object
       properties:
-        channels:
+        profiles:
           type: array
           minItems: 1
           uniqueItems: true
@@ -1252,12 +1252,12 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/ThingResSchema"
-        channels:
+        profiles:
           type: array
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/ChannelResSchema"
+            $ref: "#/components/schemas/ProfileResSchema"
         connections:
           type: array
           minItems: 1
@@ -1267,13 +1267,13 @@ components:
       required:
         - groups
         - things
-        - channels
+        - profiles
         - connections
 
   parameters:
-    ChanId:
-      name: chanId
-      description: Unique channel identifier.
+    ProfileId:
+      name: profileId
+      description: Unique profile identifier.
       in: path
       schema:
         type: string
@@ -1426,34 +1426,34 @@ components:
                 type: string
                 format: uuid
                 description: Thing key that is used for thing auth.
-    ChannelCreateReq:
-      description: JSON-formatted document describing the updated channel.
+    ProfileCreateReq:
+      description: JSON-formatted document describing the updated profile.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ChannelReqSchema"
-    ChannelsCreateReq:
-      description: JSON-formatted document describing the new channels.
+            $ref: "#/components/schemas/ProfileReqSchema"
+    CreateProfilesReq:
+      description: JSON-formatted document describing the new profiles.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
-              channels:
+              profiles:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ChannelReqSchema"
-    ChannelRemoveReq:
-      description: JSON-formatted document describing the identifiers of channels for deleting.
+                  $ref: "#/components/schemas/ProfileReqSchema"
+    RemoveProfileReq:
+      description: JSON-formatted document describing the identifiers of profiles for deleting.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
-              channel_ids:
+              profile_ids:
                 type: array
                 items:
                   type: string
@@ -1520,13 +1520,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupThingsReqSchema"
-    GroupChannelsReq:
-      description: JSON array of channel IDs.
+    GroupProfilesReq:
+      description: JSON array of profile IDs.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupChannelsReqSchema"
+            $ref: "#/components/schemas/GroupProfilesReqSchema"
     GroupRolesReq:
       description: JSON-formatted document describing group roles request.
       required: true
@@ -1570,26 +1570,26 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsPage"
-    ChannelsCreateRes:
-      description: Channels created.
+    ProfilesCreateRes:
+      description: Profiles created.
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: "#/components/schemas/ChannelResSchema"
-    ChannelRes:
+              $ref: "#/components/schemas/ProfileResSchema"
+    ProfileRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ChannelResSchema"
-    ChannelsPageRes:
+            $ref: "#/components/schemas/ProfileResSchema"
+    ProfilesPageRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ChannelsPage"
+            $ref: "#/components/schemas/ProfilesPage"
     ConnCreateRes:
       description: Thing registered.
       headers:
@@ -1604,7 +1604,7 @@ components:
       description: Things disconnected.
     AccessGrantedRes:
       description: |
-        Thing has access to the specified channel and the thing ID is returned.
+        Thing has access to the specified profile and the thing ID is returned.
       content:
         application/json:
           schema:

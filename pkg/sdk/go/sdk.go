@@ -41,11 +41,11 @@ var (
 	// ErrFailedRemoval indicates that entity removal failed.
 	ErrFailedRemoval = errors.New("failed to remove entity")
 
-	// ErrFailedConnect indicates that connecting thing to channel failed.
-	ErrFailedConnect = errors.New("failed to connect thing to channel")
+	// ErrFailedConnect indicates that connecting thing to profile failed.
+	ErrFailedConnect = errors.New("failed to connect thing to profile")
 
-	// ErrFailedDisconnect indicates that disconnecting thing from a channel failed.
-	ErrFailedDisconnect = errors.New("failed to disconnect thing from channel")
+	// ErrFailedDisconnect indicates that disconnecting thing from a profile failed.
+	ErrFailedDisconnect = errors.New("failed to disconnect thing from profile")
 
 	// ErrFailedPublish indicates that publishing message failed.
 	ErrFailedPublish = errors.New("failed to publish message")
@@ -115,8 +115,8 @@ type Thing struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// Channel represents mainflux channel.
-type Channel struct {
+// Profile represents mainflux profile.
+type Profile struct {
 	ID       string                 `json:"id,omitempty"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
@@ -202,8 +202,8 @@ type SDK interface {
 	// Things returns page of things.
 	Things(token string, pm PageMetadata) (ThingsPage, error)
 
-	// ThingsByChannel returns page of things that are connected to specified channel.
-	ThingsByChannel(token, chanID string, offset, limit uint64) (ThingsPage, error)
+	// ThingsByProfile returns page of things that are connected to specified profile.
+	ThingsByProfile(token, profileID string, offset, limit uint64) (ThingsPage, error)
 
 	// Thing returns thing object by id.
 	Thing(id, token string) (Thing, error)
@@ -244,41 +244,41 @@ type SDK interface {
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, groupID, token string) error
 
-	// Connect connects a list of things to a channel.
+	// Connect connects a list of things to a profile.
 	Connect(conns ConnectionIDs, token string) error
 
-	// Disconnect disconnects a list of things from a channel.
+	// Disconnect disconnects a list of things from a profile.
 	Disconnect(conns ConnectionIDs, token string) error
 
-	// CreateChannel creates new channel and returns its id.
-	CreateChannel(channel Channel, groupID, token string) (string, error)
+	// CreateProfile creates new profile and returns its id.
+	CreateProfile(profile Profile, groupID, token string) (string, error)
 
-	// CreateChannels registers new channels and returns their ids.
-	CreateChannels(channels []Channel, groupID, token string) ([]Channel, error)
+	// CreateProfiles registers new profiles and returns their ids.
+	CreateProfiles(profiles []Profile, groupID, token string) ([]Profile, error)
 
-	// Channels returns page of channels.
-	Channels(token string, pm PageMetadata) (ChannelsPage, error)
+	// Profiles returns page of profiles.
+	Profiles(token string, pm PageMetadata) (ProfilesPage, error)
 
-	// ViewChannelByThing returns channel that are connected to specified thing.
-	ViewChannelByThing(token, thingID string) (Channel, error)
+	// ViewProfileByThing returns profile that are connected to specified thing.
+	ViewProfileByThing(token, thingID string) (Profile, error)
 
-	// Channel returns channel data by id.
-	Channel(id, token string) (Channel, error)
+	// Profile returns profile data by id.
+	Profile(id, token string) (Profile, error)
 
-	// UpdateChannel updates existing channel.
-	UpdateChannel(channel Channel, channelID, token string) error
+	// UpdateProfile updates existing profile.
+	UpdateProfile(profile Profile, profileID, token string) error
 
-	// DeleteChannel removes existing channel.
-	DeleteChannel(id, token string) error
+	// DeleteProfile removes existing profile.
+	DeleteProfile(id, token string) error
 
-	// DeleteChannels removes existing channel.
-	DeleteChannels(ids []string, token string) error
+	// DeleteProfiles removes existing profile.
+	DeleteProfiles(ids []string, token string) error
 
-	// ListChannelsByGroup lists channels that are members of specified group.
-	ListChannelsByGroup(groupID, token string, offset, limit uint64) (ChannelsPage, error)
+	// ListProfilesByGroup lists profiles that are members of specified group.
+	ListProfilesByGroup(groupID, token string, offset, limit uint64) (ProfilesPage, error)
 
-	// ViewGroupByChannel retrieves a group that the specified channel is a member of.
-	ViewGroupByChannel(channelID, token string) (Group, error)
+	// ViewGroupByProfile retrieves a group that the specified profile is a member of.
+	ViewGroupByProfile(profileID, token string) (Group, error)
 
 	// CreateRolesByGroup creates new roles by group.
 	CreateRolesByGroup(roles []GroupMember, groupID, token string) error
@@ -340,11 +340,11 @@ type SDK interface {
 	// DeleteWebhooks removes existing webhooks.
 	DeleteWebhooks(ids []string, groupID, token string) error
 
-	// SendMessage send message to specified channel.
-	SendMessage(chanID, msg, token string) error
+	// SendMessage send message.
+	SendMessage(profileID, msg, token string) error
 
-	// ReadMessages read messages of specified channel.
-	ReadMessages(chanID, token string) (MessagesPage, error)
+	// ReadMessages read messages.
+	ReadMessages(profileID, token string) (MessagesPage, error)
 
 	// SetContentType sets message content type.
 	SetContentType(ct ContentType) error

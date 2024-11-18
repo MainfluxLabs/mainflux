@@ -2,7 +2,7 @@
 
 A simple MQTT benchmarking tool for Mainflux platform.
 
-It connects Mainflux things as subscribers over a number of channels and
+It connects Mainflux things as subscribers over a number of profiles and
 uses other Mainflux things to publish messages and create MQTT load.
 
 Mainflux things used must be pre-provisioned first, and Mainflux `provision` tool can be used for this purpose.
@@ -44,7 +44,7 @@ Flags:
 
 Two output formats supported: human-readable plain text and JSON.
 
-Before use you need a `mfconn.toml` - a TOML file that describes Mainflux connection data (channels, thingIDs, thingKeys, certs).
+Before use you need a `mfconn.toml` - a TOML file that describes Mainflux connection data (profiles, thingIDs, thingKeys, certs).
 You can use `provision` tool (in tools/provision) to create this TOML config file.
 
 ```bash

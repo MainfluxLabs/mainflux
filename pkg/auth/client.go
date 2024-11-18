@@ -17,8 +17,8 @@ type Client interface {
 }
 
 const (
-	chanPrefix = "channel"
-	keyPrefix  = "thing_key"
+	profilePrefix = "profile"
+	keyPrefix     = "thing_key"
 )
 
 type client struct {
@@ -26,7 +26,7 @@ type client struct {
 	things      protomfx.ThingsServiceClient
 }
 
-// New returns redis channel cache implementation.
+// New returns redis profile cache implementation.
 func New(redisClient *redis.Client, things protomfx.ThingsServiceClient) Client {
 	return client{
 		redisClient: redisClient,

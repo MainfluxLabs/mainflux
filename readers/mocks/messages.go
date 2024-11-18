@@ -22,9 +22,9 @@ type messageRepositoryMock struct {
 }
 
 // NewMessageRepository returns mock implementation of message repository.
-func NewMessageRepository(chanID string, messages []readers.Message) readers.MessageRepository {
+func NewMessageRepository(profileID string, messages []readers.Message) readers.MessageRepository {
 	repo := map[string][]readers.Message{
-		chanID: messages,
+		profileID: messages,
 	}
 
 	return &messageRepositoryMock{
@@ -32,8 +32,8 @@ func NewMessageRepository(chanID string, messages []readers.Message) readers.Mes
 		messages: repo,
 	}
 }
-func (repo *messageRepositoryMock) ListChannelMessages(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll(chanID, rpm)
+func (repo *messageRepositoryMock) ListProfileMessages(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll(profileID, rpm)
 }
 
 func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
@@ -48,7 +48,7 @@ func (repo *messageRepositoryMock) Restore(ctx context.Context, messages ...senm
 	panic("not implemented")
 }
 
-func (repo *messageRepositoryMock) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -61,7 +61,7 @@ func (repo *messageRepositoryMock) readAll(chanID string, rpm readers.PageMetada
 	json.Unmarshal(meta, &query)
 
 	var msgs []readers.Message
-	for _, m := range repo.messages[chanID] {
+	for _, m := range repo.messages[profileID] {
 		senml := m.(senml.Message)
 
 		ok := true

@@ -55,5 +55,5 @@ $GOBIN/mainfluxlabs-coap
 
 ## Usage
 
-If CoAP adapter is running locally (on default 5683 port), a valid URL would be: `coap://localhost/channels/<channel_id>/messages?auth=<thing_auth_key>`.
+If CoAP adapter is running locally (on default 5683 port), a valid URL would be: `coap://localhost/profiles/<profile_id>/messages?auth=<thing_auth_key>`.
 Since CoAP protocol does not support `Authorization` header (option) and options have limited size, in order to send CoAP messages, valid `auth` value (a valid Thing key) must be present in `Uri-Query` option.

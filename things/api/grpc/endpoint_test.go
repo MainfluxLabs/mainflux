@@ -24,7 +24,7 @@ const wrongID = ""
 
 var (
 	thing   = things.Thing{Name: "test_app", Metadata: map[string]interface{}{"test": "test"}}
-	channel = things.Channel{Name: "test", Metadata: map[string]interface{}{"test": "test", "config": things.Config{ContentType: "application/json"}}}
+	profile = things.Profile{Name: "test", Metadata: map[string]interface{}{"test": "test", "config": things.Config{ContentType: "application/json"}}}
 	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
@@ -39,8 +39,8 @@ func TestGetConnByKey(t *testing.T) {
 	th1 := ths[0]
 	th2 := ths[1]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	chs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ch := chs[0]
 
@@ -58,15 +58,15 @@ func TestGetConnByKey(t *testing.T) {
 		key  string
 		code codes.Code
 	}{
-		"check if connected thing can access existing channel": {
+		"check if connected thing can access existing profile": {
 			key:  th1.Key,
 			code: codes.OK,
 		},
-		"check if unconnected thing can access existing channel": {
+		"check if unconnected thing can access existing profile": {
 			key:  th2.Key,
 			code: codes.PermissionDenied,
 		},
-		"check if thing with wrong access key can access existing channel": {
+		"check if thing with wrong access key can access existing profile": {
 			key:  wrong,
 			code: codes.NotFound,
 		},

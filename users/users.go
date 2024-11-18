@@ -6,13 +6,12 @@ package users
 import (
 	"context"
 
-
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-// Metadata to be used for Mainflux thing or channel for customized
-// describing of particular thing or channel.
+// Metadata to be used for Mainflux thing or profile for customized
+// describing of particular thing or profile.
 type Metadata map[string]interface{}
 
 // User represents a Mainflux user account. Each user is identified given its

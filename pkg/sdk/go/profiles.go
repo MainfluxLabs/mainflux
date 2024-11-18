@@ -13,156 +13,156 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const channelsEndpoint = "channels"
+const profilesEndpoint = "profiles"
 
-func (sdk mfSDK) CreateChannel(c Channel, groupID, token string) (string, error) {
-	channels, err := sdk.CreateChannels([]Channel{c}, groupID, token)
+func (sdk mfSDK) CreateProfile(c Profile, groupID, token string) (string, error) {
+	profiles, err := sdk.CreateProfiles([]Profile{c}, groupID, token)
 	if err != nil {
 		return "", err
 	}
 
-	if len(channels) < 1 {
+	if len(profiles) < 1 {
 		return "", nil
 	}
 
-	return channels[0].ID, nil
+	return profiles[0].ID, nil
 }
 
-func (sdk mfSDK) CreateChannels(chs []Channel, groupID, token string) ([]Channel, error) {
+func (sdk mfSDK) CreateProfiles(chs []Profile, groupID, token string) ([]Profile, error) {
 	data, err := json.Marshal(chs)
 	if err != nil {
-		return []Channel{}, err
+		return []Profile{}, err
 	}
 
-	url := fmt.Sprintf("%s/groups/%s/%s", sdk.thingsURL, groupID, channelsEndpoint)
+	url := fmt.Sprintf("%s/groups/%s/%s", sdk.thingsURL, groupID, profilesEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
-		return []Channel{}, err
+		return []Profile{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return []Channel{}, err
+		return []Profile{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return []Channel{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return []Profile{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return []Channel{}, err
+		return []Profile{}, err
 	}
 
-	var ccr createChannelsRes
+	var ccr createProfilesRes
 	if err := json.Unmarshal(body, &ccr); err != nil {
-		return []Channel{}, err
+		return []Profile{}, err
 	}
 
-	return ccr.Channels, nil
+	return ccr.Profiles, nil
 }
 
-func (sdk mfSDK) Channels(token string, pm PageMetadata) (ChannelsPage, error) {
-	url, err := sdk.withQueryParams(sdk.thingsURL, channelsEndpoint, pm)
+func (sdk mfSDK) Profiles(token string, pm PageMetadata) (ProfilesPage, error) {
+	url, err := sdk.withQueryParams(sdk.thingsURL, profilesEndpoint, pm)
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ProfilesPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var cp ChannelsPage
+	var cp ProfilesPage
 	if err := json.Unmarshal(body, &cp); err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	return cp, nil
 }
 
-func (sdk mfSDK) ViewChannelByThing(token, thingID string) (Channel, error) {
-	url := fmt.Sprintf("%s/things/%s/channels", sdk.thingsURL, thingID)
+func (sdk mfSDK) ViewProfileByThing(token, thingID string) (Profile, error) {
+	url := fmt.Sprintf("%s/things/%s/profiles", sdk.thingsURL, thingID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Channel{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Profile{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var ch Channel
+	var ch Profile
 	if err := json.Unmarshal(body, &ch); err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	return ch, nil
 }
 
-func (sdk mfSDK) Channel(id, token string) (Channel, error) {
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, id)
+func (sdk mfSDK) Profile(id, token string) (Profile, error) {
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, profilesEndpoint, id)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return Channel{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return Profile{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var c Channel
+	var c Profile
 	if err := json.Unmarshal(body, &c); err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
 	return c, nil
 }
 
-func (sdk mfSDK) UpdateChannel(c Channel, channelID, token string) error {
+func (sdk mfSDK) UpdateProfile(c Profile, profileID, token string) error {
 	data, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, channelID)
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, profilesEndpoint, profileID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 	if err != nil {
 		return err
@@ -180,8 +180,8 @@ func (sdk mfSDK) UpdateChannel(c Channel, channelID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DeleteChannel(id, token string) error {
-	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, channelsEndpoint, id)
+func (sdk mfSDK) DeleteProfile(id, token string) error {
+	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, profilesEndpoint, id)
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -199,14 +199,14 @@ func (sdk mfSDK) DeleteChannel(id, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DeleteChannels(ids []string, token string) error {
-	delReq := deleteChannelsReq{ChannelIDs: ids}
+func (sdk mfSDK) DeleteProfiles(ids []string, token string) error {
+	delReq := deleteProfilesReq{ProfileIDs: ids}
 	data, err := json.Marshal(delReq)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, channelsEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, profilesEndpoint)
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err

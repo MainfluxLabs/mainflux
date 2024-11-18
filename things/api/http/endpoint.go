@@ -157,7 +157,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listByConnectionReq)
 
@@ -165,7 +165,7 @@ func listThingsByChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListThingsByChannel(ctx, req.token, req.id, req.pageMetadata)
+		page, err := svc.ListThingsByProfile(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -225,17 +225,17 @@ func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createChannelsReq)
+		req := request.(createProfilesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		chs := []things.Channel{}
-		for _, c := range req.Channels {
-			ch := things.Channel{
+		chs := []things.Profile{}
+		for _, c := range req.Profiles {
+			ch := things.Profile{
 				Name:     c.Name,
 				ID:       c.ID,
 				Config:   c.Config,
@@ -245,50 +245,50 @@ func createChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			chs = append(chs, ch)
 		}
 
-		saved, err := svc.CreateChannels(ctx, req.token, chs...)
+		saved, err := svc.CreateProfiles(ctx, req.token, chs...)
 		if err != nil {
 			return nil, err
 		}
 
-		res := channelsRes{
-			Channels: []channelRes{},
+		res := profilesRes{
+			Profiles: []profileRes{},
 			created:  true,
 		}
 
 		for _, c := range saved {
-			ch := channelRes{
+			ch := profileRes{
 				ID:       c.ID,
 				Name:     c.Name,
 				GroupID:  c.GroupID,
 				Config:   c.Config,
 				Metadata: c.Metadata,
 			}
-			res.Channels = append(res.Channels, ch)
+			res.Profiles = append(res.Profiles, ch)
 		}
 
 		return res, nil
 	}
 }
 
-func updateChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func updateProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateChannelReq)
+		req := request.(updateProfileReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		channel := things.Channel{
+		profile := things.Profile{
 			ID:       req.id,
 			Name:     req.Name,
 			Config:   req.Config,
 			Metadata: req.Metadata,
 		}
-		if err := svc.UpdateChannel(ctx, req.token, channel); err != nil {
+		if err := svc.UpdateProfile(ctx, req.token, profile); err != nil {
 			return nil, err
 		}
 
-		res := channelRes{
+		res := profileRes{
 			ID:      req.id,
 			created: false,
 		}
@@ -296,7 +296,7 @@ func updateChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func viewProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resourceReq)
 
@@ -304,12 +304,12 @@ func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		ch, err := svc.ViewChannel(ctx, req.token, req.id)
+		ch, err := svc.ViewProfile(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
-		res := channelRes{
+		res := profileRes{
 			ID:       ch.ID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
@@ -321,7 +321,7 @@ func viewChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listResourcesReq)
 
@@ -329,12 +329,12 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListChannels(ctx, req.token, req.pageMetadata)
+		page, err := svc.ListProfiles(ctx, req.token, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
-		res := channelsPageRes{
+		res := profilesPageRes{
 			pageRes: pageRes{
 				Total:  page.Total,
 				Offset: page.Offset,
@@ -342,11 +342,11 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				Order:  page.Order,
 				Dir:    page.Dir,
 			},
-			Channels: []channelRes{},
+			Profiles: []profileRes{},
 		}
-		// Cast channels
-		for _, ch := range page.Channels {
-			view := channelRes{
+		// Cast profiles
+		for _, ch := range page.Profiles {
+			view := profileRes{
 				ID:       ch.ID,
 				GroupID:  ch.GroupID,
 				Name:     ch.Name,
@@ -354,14 +354,14 @@ func listChannelsEndpoint(svc things.Service) endpoint.Endpoint {
 				Metadata: ch.Metadata,
 			}
 
-			res.Channels = append(res.Channels, view)
+			res.Profiles = append(res.Profiles, view)
 		}
 
 		return res, nil
 	}
 }
 
-func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
+func viewProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resourceReq)
 
@@ -369,12 +369,12 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		ch, err := svc.ViewChannelByThing(ctx, req.token, req.id)
+		ch, err := svc.ViewProfileByThing(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
-		res := channelRes{
+		res := profileRes{
 			ID:       ch.ID,
 			GroupID:  ch.GroupID,
 			Name:     ch.Name,
@@ -386,7 +386,7 @@ func viewChannelByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func removeProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resourceReq)
 
@@ -394,7 +394,7 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveChannels(ctx, req.token, req.id); err != nil {
+		if err := svc.RemoveProfiles(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
 
@@ -402,15 +402,15 @@ func removeChannelEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func removeChannelsEndpoint(svc things.Service) endpoint.Endpoint {
+func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(removeChannelsReq)
+		req := request.(removeProfilesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveChannels(ctx, req.token, req.ChannelIDs...); err != nil {
+		if err := svc.RemoveProfiles(ctx, req.token, req.ProfileIDs...); err != nil {
 			return nil, err
 		}
 
@@ -426,7 +426,7 @@ func connectEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Connect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
+		if err := svc.Connect(ctx, cr.token, cr.ProfileID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 
@@ -441,7 +441,7 @@ func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Disconnect(ctx, cr.token, cr.ChannelID, cr.ThingIDs); err != nil {
+		if err := svc.Disconnect(ctx, cr.token, cr.ProfileID, cr.ThingIDs); err != nil {
 			return nil, err
 		}
 
@@ -669,7 +669,7 @@ func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listChannelsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listMembersReq)
 		if err := req.validate(); err != nil {
@@ -682,23 +682,23 @@ func listChannelsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			Metadata: req.metadata,
 		}
 
-		page, err := svc.ListChannelsByGroup(ctx, req.token, req.id, pm)
+		page, err := svc.ListProfilesByGroup(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildChannelsByGroupResponse(page), nil
+		return buildProfilesByGroupResponse(page), nil
 	}
 }
 
-func viewGroupByChannelEndpoint(svc things.Service) endpoint.Endpoint {
+func viewGroupByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		group, err := svc.ViewGroupByChannel(ctx, req.token, req.id)
+		group, err := svc.ViewGroupByProfile(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -767,25 +767,25 @@ func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildChannelsByGroupResponse(cp things.ChannelsPage) channelsPageRes {
-	res := channelsPageRes{
+func buildProfilesByGroupResponse(cp things.ProfilesPage) profilesPageRes {
+	res := profilesPageRes{
 		pageRes: pageRes{
 			Total:  cp.Total,
 			Offset: cp.Offset,
 			Limit:  cp.Limit,
 			Name:   cp.Name,
 		},
-		Channels: []channelRes{},
+		Profiles: []profileRes{},
 	}
 
-	for _, ch := range cp.Channels {
-		c := channelRes{
+	for _, ch := range cp.Profiles {
+		c := profileRes{
 			ID:       ch.ID,
 			Config:   ch.Config,
 			Metadata: ch.Metadata,
 			Name:     ch.Name,
 		}
-		res.Channels = append(res.Channels, c)
+		res.Profiles = append(res.Profiles, c)
 	}
 
 	return res
@@ -794,11 +794,11 @@ func buildChannelsByGroupResponse(cp things.ChannelsPage) channelsPageRes {
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
 		Things:                []backupThingRes{},
-		Channels:              []backupChannelRes{},
+		Profiles:              []backupProfileRes{},
 		Connections:           []backupConnectionRes{},
 		Groups:                []viewGroupRes{},
 		GroupThingRelations:   []backupGroupThingRelationRes{},
-		GroupChannelRelations: []backupGroupChannelRelationRes{},
+		GroupProfileRelations: []backupGroupProfileRelationRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -811,18 +811,18 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		res.Things = append(res.Things, view)
 	}
 
-	for _, channel := range backup.Channels {
-		view := backupChannelRes{
-			ID:       channel.ID,
-			Name:     channel.Name,
-			Metadata: channel.Metadata,
+	for _, profile := range backup.Profiles {
+		view := backupProfileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
 		}
-		res.Channels = append(res.Channels, view)
+		res.Profiles = append(res.Profiles, view)
 	}
 
 	for _, connection := range backup.Connections {
 		view := backupConnectionRes{
-			ChannelID: connection.ChannelID,
+			ProfileID: connection.ProfileID,
 			ThingID:   connection.ThingID,
 		}
 		res.Connections = append(res.Connections, view)
@@ -855,18 +855,18 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 		backup.Things = append(backup.Things, th)
 	}
 
-	for _, channel := range req.Channels {
-		ch := things.Channel{
-			ID:       channel.ID,
-			Name:     channel.Name,
-			Metadata: channel.Metadata,
+	for _, profile := range req.Profiles {
+		ch := things.Profile{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
 		}
-		backup.Channels = append(backup.Channels, ch)
+		backup.Profiles = append(backup.Profiles, ch)
 	}
 
 	for _, connection := range req.Connections {
 		conn := things.Connection{
-			ChannelID: connection.ChannelID,
+			ProfileID: connection.ProfileID,
 			ThingID:   connection.ThingID,
 		}
 		backup.Connections = append(backup.Connections, conn)
@@ -920,7 +920,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		res := connByKeyRes{
-			ChannelID: conn.ChannelID,
+			ProfileID: conn.ProfileID,
 			ThingID:   conn.ThingID,
 		}
 

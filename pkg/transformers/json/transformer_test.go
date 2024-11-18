@@ -39,7 +39,7 @@ func TestTransformJSON(t *testing.T) {
 
 	tr := json.New()
 	msg := protomfx.Message{
-		Channel:   "channel-1",
+		Profile:   "profile-1",
 		Subtopic:  subtopic,
 		Publisher: "publisher-1",
 		Protocol:  "protocol",

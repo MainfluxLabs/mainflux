@@ -1,11 +1,11 @@
 # Things
 
-Things service provides an HTTP API for managing platform resources: things and channels.
+Things service provides an HTTP API for managing platform resources: things and profiles.
 Through this API clients are able to do the following actions:
 
 - provision new things
-- create new channels
-- "connect" things into the channels
+- create new profiles
+- "connect" things into the profiles
 
 For an in-depth explanation of the aforementioned scenarios, as well as thorough
 understanding of Mainflux, please check out the [official documentation][doc].

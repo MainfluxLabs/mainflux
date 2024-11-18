@@ -25,7 +25,7 @@ func TestTransformJSON(t *testing.T) {
 
 	tr := senml.New()
 	msg := protomfx.Message{
-		Channel:   "channel",
+		Profile:   "profile",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
 		Protocol:  "protocol",
@@ -93,7 +93,7 @@ func TestTransformCBOR(t *testing.T) {
 
 	tr := senml.New()
 	msg := protomfx.Message{
-		Channel:   "channel",
+		Profile:   "profile",
 		Subtopic:  "subtopic",
 		Publisher: "publisher",
 		Protocol:  "protocol",

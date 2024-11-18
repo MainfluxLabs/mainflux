@@ -6,7 +6,7 @@ package json
 // Payload represents JSON Message payload.
 type Payload map[string]interface{}
 
-// Config represents JSON Message Channel Config.
+// Config represents JSON Message Profile Config.
 type Config map[string]interface{}
 
 // Message represents a JSON messages.

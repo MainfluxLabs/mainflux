@@ -16,9 +16,9 @@ import (
 
 const (
 	// SubjectSenML represents subject to subscribe for the SenML messages.
-	SubjectSenML = "channels.*.senml.>"
+	SubjectSenML = "profiles.*.senml.>"
 	// SubjectJSON represents subject to subscribe for the JSON messages.
-	SubjectJSON = "channels.*.json.>"
+	SubjectJSON = "profiles.*.json.>"
 	// SubjectSmtp represents subject to subscribe for the SMTP notifications.
 	SubjectSmtp = "smtp"
 	// SubjectSmpp represents subject to subscribe for the SMPP notifications.

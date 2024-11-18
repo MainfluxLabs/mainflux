@@ -19,37 +19,37 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ things.ChannelRepository = (*channelRepository)(nil)
+var _ things.ProfileRepository = (*profileRepository)(nil)
 
-type channelRepository struct {
+type profileRepository struct {
 	db Database
 }
 
 type dbConnection struct {
-	Channel string `db:"channel"`
+	Profile string `db:"profile"`
 	Thing   string `db:"thing"`
 	GroupID string `db:"group_id"`
 }
 
-// NewChannelRepository instantiates a PostgreSQL implementation of channel
+// NewProfileRepository instantiates a PostgreSQL implementation of profile
 // repository.
-func NewChannelRepository(db Database) things.ChannelRepository {
-	return &channelRepository{
+func NewProfileRepository(db Database) things.ProfileRepository {
+	return &profileRepository{
 		db: db,
 	}
 }
 
-func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel) ([]things.Channel, error) {
+func (cr profileRepository) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO channels (id, group_id, name, metadata, config)
+	q := `INSERT INTO profiles (id, group_id, name, metadata, config)
 		  VALUES (:id, :group_id, :name, :metadata, :config);`
 
-	for _, channel := range channels {
-		dbch := toDBChannel(channel)
+	for _, profile := range profiles {
+		dbch := toDBProfile(profile)
 
 		_, err = tx.NamedExecContext(ctx, q, dbch)
 		if err != nil {
@@ -58,28 +58,28 @@ func (cr channelRepository) Save(ctx context.Context, channels ...things.Channel
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []things.Channel{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Profile{}, errors.Wrap(errors.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []things.Channel{}, errors.Wrap(errors.ErrConflict, err)
+					return []things.Profile{}, errors.Wrap(errors.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Channel{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Profile{}, errors.Wrap(errors.ErrMalformedEntity, err)
 				}
 			}
-			return []things.Channel{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []things.Profile{}, errors.Wrap(errors.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []things.Channel{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []things.Profile{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	return channels, nil
+	return profiles, nil
 }
 
-func (cr channelRepository) Update(ctx context.Context, channel things.Channel) error {
-	q := `UPDATE channels SET name = :name, metadata = :metadata, config = :config WHERE id = :id;`
+func (cr profileRepository) Update(ctx context.Context, profile things.Profile) error {
+	q := `UPDATE profiles SET name = :name, metadata = :metadata, config = :config WHERE id = :id;`
 
-	dbch := toDBChannel(channel)
+	dbch := toDBProfile(profile)
 
 	res, err := cr.db.NamedExecContext(ctx, q, dbch)
 	if err != nil {
@@ -108,10 +108,10 @@ func (cr channelRepository) Update(ctx context.Context, channel things.Channel) 
 	return nil
 }
 
-func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things.Channel, error) {
-	q := `SELECT group_id, name, metadata, config FROM channels WHERE id = $1;`
+func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
+	q := `SELECT group_id, name, metadata, config FROM profiles WHERE id = $1;`
 
-	dbch := dbChannel{
+	dbch := dbProfile{
 		ID: id,
 	}
 
@@ -119,37 +119,37 @@ func (cr channelRepository) RetrieveByID(ctx context.Context, id string) (things
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return things.Channel{}, errors.ErrNotFound
+			return things.Profile{}, errors.ErrNotFound
 		}
-		return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return toChannel(dbch), nil
+	return toProfile(dbch), nil
 }
 
-func (cr channelRepository) RetrieveAll(ctx context.Context) ([]things.Channel, error) {
+func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
 	chPage, err := cr.retrieve(ctx, []string{}, true, things.PageMetadata{})
 	if err != nil {
-		return []things.Channel{}, err
+		return []things.Profile{}, err
 	}
 
-	return chPage.Channels, nil
+	return chPage.Profiles, nil
 }
 
-func (cr channelRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
 	return cr.retrieve(ctx, []string{}, false, pm)
 }
 
-func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (things.Channel, error) {
+func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(thID); err != nil {
-		return things.Channel{}, errors.Wrap(errors.ErrNotFound, err)
+		return things.Profile{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM channels ch
+	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles ch
 		        INNER JOIN connections conn
-		        ON ch.id = conn.channel_id
+		        ON ch.id = conn.profile_id
 		        WHERE conn.thing_id = :thing;`)
 
 	params := map[string]interface{}{
@@ -158,29 +158,29 @@ func (cr channelRepository) RetrieveByThing(ctx context.Context, thID string) (t
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var item things.Channel
+	var item things.Profile
 	for rows.Next() {
-		dbch := dbChannel{}
+		dbch := dbProfile{}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.Channel{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		item = toChannel(dbch)
+		item = toProfile(dbch)
 	}
 
 	return item, nil
 }
 
-func (cr channelRepository) Remove(ctx context.Context, ids ...string) error {
+func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		dbch := dbChannel{
+		dbch := dbProfile{
 			ID: id,
 		}
-		q := `DELETE FROM channels WHERE id = :id`
+		q := `DELETE FROM profiles WHERE id = :id`
 		_, err := cr.db.NamedExecContext(ctx, q, dbch)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -190,17 +190,17 @@ func (cr channelRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (cr channelRepository) Connect(ctx context.Context, chID string, thIDs []string) error {
+func (cr profileRepository) Connect(ctx context.Context, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
 	}
 
-	q := `INSERT INTO connections (channel_id, thing_id) VALUES (:channel, :thing);`
+	q := `INSERT INTO connections (profile_id, thing_id) VALUES (:profile, :thing);`
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
-			Channel: chID,
+			Profile: chID,
 			Thing:   thID,
 		}
 
@@ -228,18 +228,18 @@ func (cr channelRepository) Connect(ctx context.Context, chID string, thIDs []st
 	return nil
 }
 
-func (cr channelRepository) Disconnect(ctx context.Context, chID string, thIDs []string) error {
+func (cr profileRepository) Disconnect(ctx context.Context, chID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
 	}
 
 	q := `DELETE FROM connections
-	      WHERE channel_id = :channel AND thing_id = :thing`
+	      WHERE profile_id = :profile AND thing_id = :thing`
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
-			Channel: chID,
+			Profile: chID,
 			Thing:   thID,
 		}
 
@@ -275,14 +275,14 @@ func (cr channelRepository) Disconnect(ctx context.Context, chID string, thIDs [
 	return nil
 }
 
-func (cr channelRepository) RetrieveConnByThingKey(ctx context.Context, thingKey string) (things.Connection, error) {
+func (cr profileRepository) RetrieveConnByThingKey(ctx context.Context, thingKey string) (things.Connection, error) {
 	var thingID string
 	q := `SELECT id FROM things WHERE key = $1`
 	if err := cr.db.QueryRowxContext(ctx, q, thingKey).Scan(&thingID); err != nil {
 		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	q = fmt.Sprintf(`SELECT thing_id, channel_id FROM connections
+	q = fmt.Sprintf(`SELECT thing_id, profile_id FROM connections
 		               WHERE thing_id = :thing;`)
 
 	params := map[string]interface{}{
@@ -302,15 +302,15 @@ func (cr channelRepository) RetrieveConnByThingKey(ctx context.Context, thingKey
 		}
 	}
 
-	if dbch.ChannelID == "" {
+	if dbch.ProfileID == "" {
 		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return things.Connection{ThingID: thingID, ChannelID: dbch.ChannelID}, nil
+	return things.Connection{ThingID: thingID, ProfileID: dbch.ProfileID}, nil
 }
 
-func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
-	q := `SELECT channel_id, thing_id FROM connections;`
+func (cr profileRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
+	q := `SELECT profile_id, thing_id FROM connections;`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -331,20 +331,20 @@ func (cr channelRepository) RetrieveAllConnections(ctx context.Context) ([]thing
 	return connections, nil
 }
 
-func (cr channelRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
-		return things.ChannelsPage{}, nil
+		return things.ProfilesPage{}, nil
 	}
 
 	chPage, err := cr.retrieve(ctx, groupIDs, false, pm)
 	if err != nil {
-		return things.ChannelsPage{}, err
+		return things.ProfilesPage{}, err
 	}
 
 	return chPage, nil
 }
 
-func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ProfilesPage, error) {
 	idsq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -352,7 +352,7 @@ func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, all
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	var query []string
@@ -371,10 +371,10 @@ func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, all
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM channels %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	if allRows {
-		q = "SELECT id, group_id, name, metadata, config FROM channels"
+		q = "SELECT id, group_id, name, metadata, config FROM profiles"
 	}
 
 	params := map[string]interface{}{
@@ -385,30 +385,30 @@ func (cr channelRepository) retrieve(ctx context.Context, groupIDs []string, all
 	}
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	items := []things.Channel{}
+	items := []things.Profile{}
 	for rows.Next() {
-		dbch := dbChannel{}
+		dbch := dbProfile{}
 		if err := rows.StructScan(&dbch); err != nil {
-			return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		ch := toChannel(dbch)
+		ch := toProfile(dbch)
 
 		items = append(items, ch)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM channels %s;`, whereClause)
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	total, err := total(ctx, cr.db, cq, params)
 	if err != nil {
-		return things.ChannelsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.ChannelsPage{
-		Channels: items,
+	page := things.ProfilesPage{
+		Profiles: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -459,7 +459,7 @@ func (m dbJSONB) Value() (driver.Value, error) {
 	return b, err
 }
 
-type dbChannel struct {
+type dbProfile struct {
 	ID       string  `db:"id"`
 	GroupID  string  `db:"group_id"`
 	Name     string  `db:"name"`
@@ -467,8 +467,8 @@ type dbChannel struct {
 	Metadata dbJSONB `db:"metadata"`
 }
 
-func toDBChannel(ch things.Channel) dbChannel {
-	return dbChannel{
+func toDBProfile(ch things.Profile) dbProfile {
+	return dbProfile{
 		ID:       ch.ID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
@@ -477,8 +477,8 @@ func toDBChannel(ch things.Channel) dbChannel {
 	}
 }
 
-func toChannel(ch dbChannel) things.Channel {
-	return things.Channel{
+func toProfile(ch dbProfile) things.Profile {
+	return things.Profile{
 		ID:       ch.ID,
 		GroupID:  ch.GroupID,
 		Name:     ch.Name,
@@ -488,13 +488,13 @@ func toChannel(ch dbChannel) things.Channel {
 }
 
 type dbConn struct {
-	ChannelID string `db:"channel_id"`
+	ProfileID string `db:"profile_id"`
 	ThingID   string `db:"thing_id"`
 }
 
 func toConnection(co dbConn) things.Connection {
 	return things.Connection{
-		ChannelID: co.ChannelID,
+		ProfileID: co.ProfileID,
 		ThingID:   co.ThingID,
 	}
 }

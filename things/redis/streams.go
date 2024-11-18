@@ -90,8 +90,8 @@ func (es eventStore) ListThings(ctx context.Context, token string, pm things.Pag
 	return es.svc.ListThings(ctx, token, pm)
 }
 
-func (es eventStore) ListThingsByChannel(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	return es.svc.ListThingsByChannel(ctx, token, chID, pm)
+func (es eventStore) ListThingsByProfile(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	return es.svc.ListThingsByProfile(ctx, token, chID, pm)
 }
 
 func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, error) {
@@ -122,18 +122,18 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 	return nil
 }
 
-func (es eventStore) CreateChannels(ctx context.Context, token string, channels ...things.Channel) ([]things.Channel, error) {
-	schs, err := es.svc.CreateChannels(ctx, token, channels...)
+func (es eventStore) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) ([]things.Profile, error) {
+	schs, err := es.svc.CreateProfiles(ctx, token, profiles...)
 	if err != nil {
 		return schs, err
 	}
 
-	for _, channel := range schs {
-		event := createChannelEvent{
-			id:       channel.ID,
-			groupID:  channel.GroupID,
-			name:     channel.Name,
-			metadata: channel.Metadata,
+	for _, profile := range schs {
+		event := createProfileEvent{
+			id:       profile.ID,
+			groupID:  profile.GroupID,
+			name:     profile.Name,
+			metadata: profile.Metadata,
 		}
 		record := &redis.XAddArgs{
 			Stream:       streamID,
@@ -146,15 +146,15 @@ func (es eventStore) CreateChannels(ctx context.Context, token string, channels 
 	return schs, nil
 }
 
-func (es eventStore) UpdateChannel(ctx context.Context, token string, channel things.Channel) error {
-	if err := es.svc.UpdateChannel(ctx, token, channel); err != nil {
+func (es eventStore) UpdateProfile(ctx context.Context, token string, profile things.Profile) error {
+	if err := es.svc.UpdateProfile(ctx, token, profile); err != nil {
 		return err
 	}
 
-	event := updateChannelEvent{
-		id:       channel.ID,
-		name:     channel.Name,
-		metadata: channel.Metadata,
+	event := updateProfileEvent{
+		id:       profile.ID,
+		name:     profile.Name,
+		metadata: profile.Metadata,
 	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
@@ -166,25 +166,25 @@ func (es eventStore) UpdateChannel(ctx context.Context, token string, channel th
 	return nil
 }
 
-func (es eventStore) ViewChannel(ctx context.Context, token, id string) (things.Channel, error) {
-	return es.svc.ViewChannel(ctx, token, id)
+func (es eventStore) ViewProfile(ctx context.Context, token, id string) (things.Profile, error) {
+	return es.svc.ViewProfile(ctx, token, id)
 }
 
-func (es eventStore) ListChannels(ctx context.Context, token string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return es.svc.ListChannels(ctx, token, pm)
+func (es eventStore) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (things.ProfilesPage, error) {
+	return es.svc.ListProfiles(ctx, token, pm)
 }
 
-func (es eventStore) ViewChannelByThing(ctx context.Context, token, thID string) (things.Channel, error) {
-	return es.svc.ViewChannelByThing(ctx, token, thID)
+func (es eventStore) ViewProfileByThing(ctx context.Context, token, thID string) (things.Profile, error) {
+	return es.svc.ViewProfileByThing(ctx, token, thID)
 }
 
-func (es eventStore) RemoveChannels(ctx context.Context, token string, ids ...string) error {
+func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		if err := es.svc.RemoveChannels(ctx, token, id); err != nil {
+		if err := es.svc.RemoveProfiles(ctx, token, id); err != nil {
 			return err
 		}
 
-		event := removeChannelEvent{
+		event := removeProfileEvent{
 			id: id,
 		}
 		record := &redis.XAddArgs{
@@ -199,8 +199,8 @@ func (es eventStore) RemoveChannels(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) ViewChannelConfig(ctx context.Context, chID string) (things.Config, error) {
-	return es.svc.ViewChannelConfig(ctx, chID)
+func (es eventStore) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
+	return es.svc.ViewProfileConfig(ctx, prID)
 }
 
 func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []string) error {
@@ -210,7 +210,7 @@ func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []st
 
 	for _, thID := range thIDs {
 		event := connectThingEvent{
-			chanID:  chID,
+			profileID:  chID,
 			thingID: thID,
 		}
 		record := &redis.XAddArgs{
@@ -224,14 +224,14 @@ func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []st
 	return nil
 }
 
-func (es eventStore) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
-	if err := es.svc.Disconnect(ctx, token, chID, thIDs); err != nil {
+func (es eventStore) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
+	if err := es.svc.Disconnect(ctx, token, prID, thIDs); err != nil {
 		return err
 	}
 
 	for _, thID := range thIDs {
 		event := disconnectThingEvent{
-			chanID:  chID,
+			profileID:  prID,
 			thingID: thID,
 		}
 		record := &redis.XAddArgs{
@@ -269,8 +269,8 @@ func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID strin
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) ListChannelsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	return es.svc.ListChannelsByGroup(ctx, token, groupID, pm)
+func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
 func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
@@ -301,8 +301,8 @@ func (es eventStore) ViewGroupByThing(ctx context.Context, token string, thingID
 	return es.svc.ViewGroupByThing(ctx, token, thingID)
 }
 
-func (es eventStore) ViewGroupByChannel(ctx context.Context, token string, channelID string) (things.Group, error) {
-	return es.svc.ViewGroupByChannel(ctx, token, channelID)
+func (es eventStore) ViewGroupByProfile(ctx context.Context, token string, profileID string) (things.Group, error) {
+	return es.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
 func (es eventStore) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {

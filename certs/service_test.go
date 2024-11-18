@@ -113,7 +113,7 @@ func newThingsService(auth protomfx.AuthServiceClient) things.Service {
 		}
 	}
 
-	return thmocks.NewThingsService(ths, map[string]things.Channel{}, auth)
+	return thmocks.NewThingsService(ths, map[string]things.Profile{}, auth)
 }
 
 func TestIssueCert(t *testing.T) {

@@ -20,7 +20,7 @@ const (
 	Admin      = "admin"
 	Owner      = "owner"
 	ThingSub   = "thing"
-	ChannelSub = "channel"
+	ProfileSub = "profile"
 	GroupSub   = "group"
 )
 
@@ -46,69 +46,69 @@ type Service interface {
 	// user identified by the provided key.
 	ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error)
 
-	// ListThingsByChannel retrieves data about subset of things that are
-	// connected or not connected to specified channel and belong to the user identified by
+	// ListThingsByProfile retrieves data about subset of things that are
+	// connected or not connected to specified profile and belong to the user identified by
 	// the provided key.
-	ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error)
+	ListThingsByProfile(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error)
 
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
 
-	// CreateChannels adds channels to the user identified by the provided key.
-	CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error)
+	// CreateProfiles adds profiles to the user identified by the provided key.
+	CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error)
 
-	// UpdateChannel updates the channel identified by the provided ID, that
+	// UpdateProfile updates the profile identified by the provided ID, that
 	// belongs to the user identified by the provided key.
-	UpdateChannel(ctx context.Context, token string, channel Channel) error
+	UpdateProfile(ctx context.Context, token string, profile Profile) error
 
-	// ViewChannel retrieves data about the channel identified by the provided
+	// ViewProfile retrieves data about the profile identified by the provided
 	// ID, that belongs to the user identified by the provided key.
-	ViewChannel(ctx context.Context, token, id string) (Channel, error)
+	ViewProfile(ctx context.Context, token, id string) (Profile, error)
 
-	// ListChannels retrieves data about subset of channels that belongs to the
+	// ListProfiles retrieves data about subset of profiles that belongs to the
 	// user identified by the provided key.
-	ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error)
+	ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error)
 
-	// ViewChannelByThing retrieves data about channel that have
+	// ViewProfileByThing retrieves data about profile that have
 	// specified thing connected or not connected to it and belong to the user identified by
 	// the provided key.
-	ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error)
+	ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error)
 
-	// RemoveChannels removes the things identified by the provided IDs, that
+	// RemoveProfiles removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
-	RemoveChannels(ctx context.Context, token string, ids ...string) error
+	RemoveProfiles(ctx context.Context, token string, ids ...string) error
 
-	// ViewChannelConfig retrieves channel config.
-	ViewChannelConfig(ctx context.Context, chID string) (Config, error)
+	// ViewProfileConfig retrieves profile config.
+	ViewProfileConfig(ctx context.Context, chID string) (Config, error)
 
-	// Connect connects a list of things to a channel.
+	// Connect connects a list of things to a profile.
 	Connect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// Disconnect disconnects a list of things from a channel.
+	// Disconnect disconnects a list of things from a profile.
 	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
 
-	// GetConnByKey determines whether the channel can be accessed using the
+	// GetConnByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
 	GetConnByKey(ctx context.Context, key string) (Connection, error)
 
-	// Authorize determines whether the group and its things and channels can be accessed by
+	// Authorize determines whether the group and its things and profiles can be accessed by
 	// the given user and returns error if it cannot.
 	Authorize(ctx context.Context, req AuthorizeReq) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// GetConfigByThingID returns channel config for given thing ID.
+	// GetConfigByThingID returns profile config for given thing ID.
 	GetConfigByThingID(ctx context.Context, thingID string) (Config, error)
 
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
-	// Backup retrieves all things, channels and connections for all users. Only accessible by admin.
+	// Backup retrieves all things, profiles and connections for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds things, channels and connections from a backup. Only accessible by admin.
+	// Restore adds things, profiles and connections from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
 	Groups
@@ -129,7 +129,7 @@ type PageMetadata struct {
 
 type Backup struct {
 	Things      []Thing
-	Channels    []Channel
+	Profiles    []Profile
 	Connections []Connection
 	Groups      []Group
 	GroupRoles  []GroupMember
@@ -148,24 +148,24 @@ type thingsService struct {
 	auth         protomfx.AuthServiceClient
 	users        protomfx.UsersServiceClient
 	things       ThingRepository
-	channels     ChannelRepository
+	profiles     ProfileRepository
 	groups       GroupRepository
 	roles        RolesRepository
-	channelCache ChannelCache
+	profileCache ProfileCache
 	thingCache   ThingCache
 	idProvider   uuid.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, channels ChannelRepository, groups GroupRepository, roles RolesRepository, ccache ChannelCache, tcache ThingCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, roles RolesRepository, pcache ProfileCache, tcache ThingCache, idp uuid.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		users:        users,
 		things:       things,
-		channels:     channels,
+		profiles:     profiles,
 		groups:       groups,
 		roles:        roles,
-		channelCache: ccache,
+		profileCache: pcache,
 		thingCache:   tcache,
 		idProvider:   idp,
 	}
@@ -287,18 +287,18 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error) {
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  chID,
-		Subject: ChannelSub,
+		Subject: ProfileSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
 		return ThingsPage{}, err
 	}
 
-	tp, err := ts.things.RetrieveByChannel(ctx, chID, pm)
+	tp, err := ts.things.RetrieveByProfile(ctx, chID, pm)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -330,12 +330,12 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 	return nil
 }
 
-func (ts *thingsService) CreateChannels(ctx context.Context, token string, channels ...Channel) ([]Channel, error) {
-	chs := []Channel{}
-	for _, channel := range channels {
+func (ts *thingsService) CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error) {
+	chs := []Profile{}
+	for _, profile := range profiles {
 		ar := AuthorizeReq{
 			Token:   token,
-			Object:  channel.GroupID,
+			Object:  profile.GroupID,
 			Subject: GroupSub,
 			Action:  Editor,
 		}
@@ -343,87 +343,87 @@ func (ts *thingsService) CreateChannels(ctx context.Context, token string, chann
 			return nil, err
 		}
 
-		ch, err := ts.createChannel(ctx, &channel)
+		ch, err := ts.createProfile(ctx, &profile)
 		if err != nil {
-			return []Channel{}, err
+			return []Profile{}, err
 		}
 		chs = append(chs, ch)
 	}
 	return chs, nil
 }
 
-func (ts *thingsService) createChannel(ctx context.Context, channel *Channel) (Channel, error) {
-	if channel.ID == "" {
+func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (Profile, error) {
+	if profile.ID == "" {
 		chID, err := ts.idProvider.ID()
 		if err != nil {
-			return Channel{}, err
+			return Profile{}, err
 		}
-		channel.ID = chID
+		profile.ID = chID
 	}
 
-	chs, err := ts.channels.Save(ctx, *channel)
+	chs, err := ts.profiles.Save(ctx, *profile)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 	if len(chs) == 0 {
-		return Channel{}, errors.ErrCreateEntity
+		return Profile{}, errors.ErrCreateEntity
 	}
 
 	return chs[0], nil
 }
 
-func (ts *thingsService) UpdateChannel(ctx context.Context, token string, channel Channel) error {
+func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profile Profile) error {
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  channel.ID,
-		Subject: ChannelSub,
+		Object:  profile.ID,
+		Subject: ProfileSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
 	}
 
-	return ts.channels.Update(ctx, channel)
+	return ts.profiles.Update(ctx, profile)
 }
 
-func (ts *thingsService) ViewChannel(ctx context.Context, token, id string) (Channel, error) {
+func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Profile, error) {
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  id,
-		Subject: ChannelSub,
+		Subject: ProfileSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
-	channel, err := ts.channels.RetrieveByID(ctx, id)
+	profile, err := ts.profiles.RetrieveByID(ctx, id)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
-	return channel, nil
+	return profile, nil
 }
 
-func (ts *thingsService) ListChannels(ctx context.Context, token string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.channels.RetrieveByAdmin(ctx, pm)
+		return ts.profiles.RetrieveByAdmin(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
-		return ChannelsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
-	return ts.channels.RetrieveByGroupIDs(ctx, grIDs, pm)
+	return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID string) (Channel, error) {
+func (ts *thingsService) ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error) {
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  thID,
@@ -431,44 +431,44 @@ func (ts *thingsService) ViewChannelByThing(ctx context.Context, token, thID str
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
-	channel, err := ts.channels.RetrieveByThing(ctx, thID)
+	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
 	if err != nil {
-		return Channel{}, err
+		return Profile{}, err
 	}
 
-	return channel, nil
+	return profile, nil
 }
 
-func (ts *thingsService) RemoveChannels(ctx context.Context, token string, ids ...string) error {
+func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		ar := AuthorizeReq{
 			Token:   token,
 			Object:  id,
-			Subject: ChannelSub,
+			Subject: ProfileSub,
 			Action:  Editor,
 		}
 		if err := ts.Authorize(ctx, ar); err != nil {
 			return err
 		}
 
-		if err := ts.channelCache.Remove(ctx, id); err != nil {
+		if err := ts.profileCache.Remove(ctx, id); err != nil {
 			return err
 		}
 	}
 
-	return ts.channels.Remove(ctx, ids...)
+	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) ViewChannelConfig(ctx context.Context, chID string) (Config, error) {
-	channel, err := ts.channels.RetrieveByID(ctx, chID)
+func (ts *thingsService) ViewProfileConfig(ctx context.Context, chID string) (Config, error) {
+	profile, err := ts.profiles.RetrieveByID(ctx, chID)
 	if err != nil {
 		return Config{}, err
 	}
 
-	meta, err := json.Marshal(channel.Config)
+	meta, err := json.Marshal(profile.Config)
 	if err != nil {
 		return Config{}, err
 	}
@@ -482,7 +482,7 @@ func (ts *thingsService) ViewChannelConfig(ctx context.Context, chID string) (Co
 }
 
 func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
-	ch, err := ts.channels.RetrieveByID(ctx, chID)
+	ch, err := ts.profiles.RetrieveByID(ctx, chID)
 	if err != nil {
 		return err
 	}
@@ -490,7 +490,7 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  chID,
-		Subject: ChannelSub,
+		Subject: ProfileSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -507,16 +507,16 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 			return errors.ErrAuthorization
 		}
 
-		if err := ts.channelCache.Connect(ctx, chID, thID); err != nil {
+		if err := ts.profileCache.Connect(ctx, chID, thID); err != nil {
 			return err
 		}
 	}
 
-	return ts.channels.Connect(ctx, chID, thIDs)
+	return ts.profiles.Connect(ctx, chID, thIDs)
 }
 
 func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
-	ch, err := ts.channels.RetrieveByID(ctx, chID)
+	ch, err := ts.profiles.RetrieveByID(ctx, chID)
 	if err != nil {
 		return err
 	}
@@ -524,7 +524,7 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  chID,
-		Subject: ChannelSub,
+		Subject: ProfileSub,
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -541,16 +541,16 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 			return errors.ErrAuthorization
 		}
 
-		if err := ts.channelCache.Disconnect(ctx, chID, thID); err != nil {
+		if err := ts.profileCache.Disconnect(ctx, chID, thID); err != nil {
 			return err
 		}
 	}
 
-	return ts.channels.Disconnect(ctx, chID, thIDs)
+	return ts.profiles.Disconnect(ctx, chID, thIDs)
 }
 
 func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {
-	conn, err := ts.channels.RetrieveConnByThingKey(ctx, thingKey)
+	conn, err := ts.profiles.RetrieveConnByThingKey(ctx, thingKey)
 	if err != nil {
 		return Connection{}, err
 	}
@@ -559,11 +559,11 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 		return Connection{}, err
 	}
 
-	if err := ts.channelCache.Connect(ctx, conn.ChannelID, conn.ThingID); err != nil {
+	if err := ts.profileCache.Connect(ctx, conn.ProfileID, conn.ThingID); err != nil {
 		return Connection{}, err
 	}
 
-	return Connection{ThingID: conn.ThingID, ChannelID: conn.ChannelID}, nil
+	return Connection{ThingID: conn.ThingID, ProfileID: conn.ProfileID}, nil
 }
 
 func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
@@ -575,12 +575,12 @@ func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
 			return err
 		}
 		groupID = thing.GroupID
-	case ChannelSub:
-		channel, err := ts.channels.RetrieveByID(ctx, ar.Object)
+	case ProfileSub:
+		profile, err := ts.profiles.RetrieveByID(ctx, ar.Object)
 		if err != nil {
 			return err
 		}
-		groupID = channel.GroupID
+		groupID = profile.GroupID
 	case GroupSub:
 		groupID = ar.Object
 	default:
@@ -608,12 +608,12 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 }
 
 func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string) (Config, error) {
-	channel, err := ts.channels.RetrieveByThing(ctx, thingID)
+	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
 	if err != nil {
 		return Config{}, err
 	}
 
-	meta, err := json.Marshal(channel.Config)
+	meta, err := json.Marshal(profile.Config)
 	if err != nil {
 		return Config{}, err
 	}
@@ -654,19 +654,19 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	channels, err := ts.channels.RetrieveAll(ctx)
+	profiles, err := ts.profiles.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	connections, err := ts.channels.RetrieveAllConnections(ctx)
+	connections, err := ts.profiles.RetrieveAllConnections(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	return Backup{
 		Things:      things,
-		Channels:    channels,
+		Profiles:    profiles,
 		Connections: connections,
 		Groups:      groups,
 		GroupRoles:  groupsRoles,
@@ -688,12 +688,12 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if _, err := ts.channels.Save(ctx, backup.Channels...); err != nil {
+	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
 		return err
 	}
 
 	for _, conn := range backup.Connections {
-		if err := ts.channels.Connect(ctx, conn.ChannelID, []string{conn.ThingID}); err != nil {
+		if err := ts.profiles.Connect(ctx, conn.ProfileID, []string{conn.ThingID}); err != nil {
 			return err
 		}
 	}
@@ -731,7 +731,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 	return ts.things.RetrieveByGroupIDs(ctx, []string{groupID}, pm)
 }
 
-func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ChannelsPage, error) {
+func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ProfilesPage, error) {
 	ar := AuthorizeReq{
 		Token:   token,
 		Object:  groupID,
@@ -739,10 +739,10 @@ func (ts *thingsService) ListChannelsByGroup(ctx context.Context, token, groupID
 		Action:  Viewer,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
-	return ts.groups.RetrieveChannelsByGroup(ctx, groupID, pm)
+	return ts.groups.RetrieveProfilesByGroup(ctx, groupID, pm)
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {

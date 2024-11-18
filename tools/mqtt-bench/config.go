@@ -47,13 +47,13 @@ type mfThing struct {
 	MTLSKey  string `toml:"mtls_key" mapstructure:"mtls_key"`
 }
 
-type mfChannel struct {
-	ChannelID string `toml:"channel_id" mapstructure:"channel_id"`
+type mfProfile struct {
+	ProfileID string `toml:"profile_id" mapstructure:"profile_id"`
 }
 
 type mainflux struct {
 	Things   []mfThing   `toml:"things" mapstructure:"things"`
-	Channels []mfChannel `toml:"channels" mapstructure:"channels"`
+	Profiles []mfProfile `toml:"profiles" mapstructure:"profiles"`
 }
 
 // Config struct holds benchmark configuration
