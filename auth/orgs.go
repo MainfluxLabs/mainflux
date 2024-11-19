@@ -2,8 +2,9 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"time"
+
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var (
@@ -59,33 +60,10 @@ type OrgsPage struct {
 	Orgs []Org
 }
 
-// OrgMembersPage contains page related metadata as well as list of members that
-// belong to this page.
-type OrgMembersPage struct {
-	PageMetadata
-	OrgMembers []OrgMember
-}
-
 type User struct {
 	ID     string
 	Email  string
 	Status string
-}
-
-type OrgMember struct {
-	MemberID  string
-	OrgID     string
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
-}
-
-type OrgGroup struct {
-	GroupID   string
-	OrgID     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
 type Backup struct {
@@ -114,21 +92,6 @@ type Orgs interface {
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
-	// AssignMembers adds members with member emails into the org identified by orgID.
-	AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
-
-	// UnassignMembers removes members with member ids from org identified by orgID.
-	UnassignMembers(ctx context.Context, token string, orgID string, memberIDs ...string) error
-
-	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
-
-	// ListMembersByOrg retrieves members assigned to an org identified by orgID.
-	ListMembersByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
-
-	// ViewMember retrieves member identified by memberID in org identified by orgID.
-	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
-
 	// Backup retrieves all orgs and org members. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -144,8 +107,8 @@ type OrgRepository interface {
 	// Update an org
 	Update(ctx context.Context, org Org) error
 
-	// Delete an org
-	Delete(ctx context.Context, owner, id string) error
+	// Remove an org
+	Remove(ctx context.Context, owner, id string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
@@ -159,24 +122,165 @@ type OrgRepository interface {
 	// RetrieveByAdmin retrieves all orgs with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (OrgsPage, error)
 
-	// RetrieveOrgsByMember list of orgs that member belongs to
-	RetrieveOrgsByMember(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
+	// RetrieveByMemberID list of orgs that member belongs to
+	RetrieveByMemberID(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
+}
 
-	// AssignMembers adds members to an org.
-	AssignMembers(ctx context.Context, oms ...OrgMember) error
+func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Org{}, err
+	}
 
-	// UnassignMembers removes members from an org
-	UnassignMembers(ctx context.Context, orgID string, memberIDs ...string) error
+	id, err := svc.idProvider.ID()
+	if err != nil {
+		return Org{}, err
+	}
 
-	// UpdateMembers updates members role in an org.
-	UpdateMembers(ctx context.Context, oms ...OrgMember) error
+	timestamp := getTimestmap()
 
-	// RetrieveRole retrieves role of member identified by memberID in org identified by orgID.
-	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
+	org := Org{
+		ID:          id,
+		OwnerID:     user.ID,
+		Name:        o.Name,
+		Description: o.Description,
+		Metadata:    o.Metadata,
+		UpdatedAt:   timestamp,
+		CreatedAt:   timestamp,
+	}
 
-	// RetrieveMembersByOrg retrieves members assigned to an org identified by orgID.
-	RetrieveMembersByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	if err := svc.orgs.Save(ctx, org); err != nil {
+		return Org{}, err
+	}
 
-	// RetrieveAllMembersByOrg retrieves all org members.
-	RetrieveAllMembersByOrg(ctx context.Context) ([]OrgMember, error)
+	om := OrgMember{
+		OrgID:     id,
+		MemberID:  user.ID,
+		Role:      Owner,
+		CreatedAt: timestamp,
+		UpdatedAt: timestamp,
+	}
+
+	if err := svc.members.Save(ctx, om); err != nil {
+		return Org{}, err
+	}
+
+	return org, nil
+}
+
+func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.orgs.RetrieveByAdmin(ctx, pm)
+	}
+
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return OrgsPage{}, err
+	}
+
+	return svc.orgs.RetrieveByOwner(ctx, user.ID, pm)
+}
+
+func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.canAccessOrg(ctx, token, id, Owner); err != nil {
+		return err
+	}
+
+	return svc.orgs.Remove(ctx, user.ID, id)
+}
+
+func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, error) {
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return Org{}, err
+	}
+
+	if err := svc.canAccessOrg(ctx, token, o.ID, Admin); err != nil {
+		return Org{}, err
+	}
+
+	org := Org{
+		ID:          o.ID,
+		OwnerID:     user.ID,
+		Name:        o.Name,
+		Description: o.Description,
+		Metadata:    o.Metadata,
+		UpdatedAt:   getTimestmap(),
+	}
+
+	if err := svc.orgs.Update(ctx, org); err != nil {
+		return Org{}, err
+	}
+
+	return org, nil
+}
+
+func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
+	if err := svc.canAccessOrg(ctx, token, id, Viewer); err != nil {
+		return Org{}, err
+	}
+
+	org, err := svc.orgs.RetrieveByID(ctx, id)
+	if err != nil {
+		return Org{}, err
+	}
+
+	return org, nil
+}
+
+func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
+	}
+
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return OrgsPage{}, err
+	}
+
+	if user.ID != memberID {
+		return OrgsPage{}, errors.ErrAuthorization
+	}
+
+	return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
+}
+
+func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return nil
+	}
+
+	user, err := svc.Identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	role, err := svc.members.RetrieveRole(ctx, user.ID, orgID)
+	if err != nil {
+		return err
+	}
+
+	switch role {
+	case Owner:
+		return nil
+	case Admin:
+		if action != Owner {
+			return nil
+		}
+	case Editor:
+		if action == Viewer || action == Editor {
+			return nil
+		}
+	case Viewer:
+		if action == Viewer {
+			return nil
+		}
+	}
+
+	return errors.ErrAuthorization
 }

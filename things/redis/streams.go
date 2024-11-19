@@ -210,8 +210,8 @@ func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []st
 
 	for _, thID := range thIDs {
 		event := connectThingEvent{
-			profileID:  chID,
-			thingID: thID,
+			profileID: chID,
+			thingID:   thID,
 		}
 		record := &redis.XAddArgs{
 			Stream:       streamID,
@@ -231,8 +231,8 @@ func (es eventStore) Disconnect(ctx context.Context, token, prID string, thIDs [
 
 	for _, thID := range thIDs {
 		event := disconnectThingEvent{
-			profileID:  prID,
-			thingID: thID,
+			profileID: prID,
+			thingID:   thID,
 		}
 		record := &redis.XAddArgs{
 			Stream:       streamID,

@@ -45,7 +45,7 @@ const (
 
 var (
 	org           = auth.Org{Name: name, Description: description}
-	members       = []auth.OrgMember{{Email: adminEmail, Role: auth.Admin}, {Email: editorEmail, Role: auth.Editor}, {Email: viewerEmail, Role: auth.Viewer}}
+	members       = []auth.OrgMember{{MemberID: "1", Email: adminEmail, Role: auth.Admin}, {MemberID: "2", Email: editorEmail, Role: auth.Editor}, {MemberID: "3", Email: viewerEmail, Role: auth.Viewer}}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, ownerID: {ID: ownerID, Email: ownerEmail}}
 	idProvider    = uuid.New()
@@ -54,12 +54,13 @@ var (
 func newService() auth.Service {
 	keyRepo := mocks.NewKeyRepository()
 	idMockProvider := uuid.NewMock()
-	orgRepo := mocks.NewOrgRepository()
+	membsRepo := mocks.NewMembersRepository()
+	orgRepo := mocks.NewOrgRepository(membsRepo)
 	roleRepo := mocks.NewRolesRepository()
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, idMockProvider, t, loginDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, idMockProvider, t, loginDuration)
 }
 
 func createGroups() map[string]things.Group {
@@ -835,14 +836,7 @@ func TestAssignMembers(t *testing.T) {
 			err:    errors.ErrAuthentication,
 		},
 		{
-			desc:   "assign members to non-existing org",
-			token:  ownerToken,
-			orgID:  invalid,
-			member: members,
-			err:    errors.ErrNotFound,
-		},
-		{
-			desc:   "assign members to org without id",
+			desc:   "assign members to org without org id",
 			token:  ownerToken,
 			orgID:  "",
 			member: members,
@@ -1186,154 +1180,6 @@ func TestListMembersByOrg(t *testing.T) {
 	}
 }
 
-func TestListOrgsByMember(t *testing.T) {
-	svc := newService()
-
-	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, editorToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	for i := 0; i < n; i++ {
-		o := auth.Org{
-			Name:        fmt.Sprintf("org-%d", i),
-			Description: fmt.Sprintf("description-%d", i),
-		}
-
-		or, err := svc.CreateOrg(context.Background(), ownerToken, o)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		or.Name = fmt.Sprintf("%s-%d", or.Name, i)
-
-		err = svc.AssignMembers(context.Background(), ownerToken, or.ID, members...)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
-	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
-
-	cases := []struct {
-		desc     string
-		token    string
-		memberID string
-		meta     auth.PageMetadata
-		size     int
-		err      error
-	}{
-		{
-			desc:     "list member organisations as owner",
-			token:    ownerToken,
-			memberID: ownerID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:     "list member organisations as admin",
-			token:    adminToken,
-			memberID: adminID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:     "list member organisations as editor",
-			token:    editorToken,
-			memberID: editorID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:     "list member organisations as viewer",
-			token:    viewerToken,
-			memberID: viewerID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:     "list member organisations as system admin",
-			token:    superAdminToken,
-			memberID: ownerID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:     "list half of member organisations",
-			token:    viewerToken,
-			memberID: viewerID,
-			meta: auth.PageMetadata{
-				Offset: n / 2,
-				Limit:  n,
-			},
-			size: n / 2,
-			err:  nil,
-		},
-		{
-			desc:     "list last member organisation",
-			token:    viewerToken,
-			memberID: viewerID,
-			meta: auth.PageMetadata{
-				Offset: n - 1,
-				Limit:  n,
-			},
-			size: 1,
-			err:  nil,
-		},
-		{
-			desc:     "list member organisations with invalid credentials",
-			token:    invalid,
-			memberID: viewerID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
-			err:  errors.ErrAuthentication,
-		},
-		{
-			desc:     "list member organisations with no credentials",
-			token:    "",
-			memberID: viewerID,
-			meta: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: 0,
-			err:  errors.ErrAuthentication,
-		},
-	}
-
-	for _, tc := range cases {
-		page, err := svc.ListOrgsByMember(context.Background(), tc.token, tc.memberID, tc.meta)
-		size := uint64(len(page.Orgs))
-		assert.Equal(t, tc.size, int(size), fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
 func TestBackup(t *testing.T) {
 	svc := newService()
 
@@ -1434,11 +1280,6 @@ func TestRestore(t *testing.T) {
 	var orgMembers []auth.OrgMember
 	for _, memberID := range memberIDs {
 		orgMembers = append(orgMembers, auth.OrgMember{MemberID: memberID, OrgID: id})
-	}
-
-	var orgGroups []auth.OrgGroup
-	for _, groupID := range groupIDs {
-		orgGroups = append(orgGroups, auth.OrgGroup{GroupID: groupID, OrgID: id})
 	}
 
 	backup := auth.Backup{

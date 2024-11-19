@@ -9,49 +9,11 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*memberPageRes)(nil)
 	_ apiutil.Response = (*orgRes)(nil)
 	_ apiutil.Response = (*deleteRes)(nil)
-	_ apiutil.Response = (*assignRes)(nil)
-	_ apiutil.Response = (*unassignRes)(nil)
 	_ apiutil.Response = (*backupRes)(nil)
 	_ apiutil.Response = (*restoreRes)(nil)
 )
-
-type viewMemberRes struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
-}
-
-func (res viewMemberRes) Code() int {
-	return http.StatusOK
-}
-
-func (res viewMemberRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res viewMemberRes) Empty() bool {
-	return false
-}
-
-type memberPageRes struct {
-	pageRes
-	Members []viewMemberRes `json:"members"`
-}
-
-func (res memberPageRes) Code() int {
-	return http.StatusOK
-}
-
-func (res memberPageRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res memberPageRes) Empty() bool {
-	return false
-}
 
 type viewOrgRes struct {
 	ID          string                 `json:"id"`
@@ -137,34 +99,6 @@ func (res deleteRes) Headers() map[string]string {
 }
 
 func (res deleteRes) Empty() bool {
-	return true
-}
-
-type assignRes struct{}
-
-func (res assignRes) Code() int {
-	return http.StatusOK
-}
-
-func (res assignRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res assignRes) Empty() bool {
-	return true
-}
-
-type unassignRes struct{}
-
-func (res unassignRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res unassignRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res unassignRes) Empty() bool {
 	return true
 }
 
