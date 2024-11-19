@@ -28,6 +28,7 @@ func NewAuthService(adminID string, userList []users.User) protomfx.AuthServiceC
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
+		roles[user.Role] = user.ID
 	}
 
 	return &authServiceMock{
@@ -64,11 +65,46 @@ func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeR
 		if svc.roles[auth.RootSub] != u.ID {
 			return &empty.Empty{}, errors.ErrAuthorization
 		}
+	case auth.OrgSub:
+		if err := svc.canAccessOrg(u.ID, req.Action); err != nil {
+			return &empty.Empty{}, err
+		}
 	default:
 		return &empty.Empty{}, errors.ErrAuthorization
 	}
 
 	return &empty.Empty{}, nil
+}
+
+func (svc authServiceMock) canAccessOrg(userID, action string) error {
+	isOwner := svc.roles[auth.RootSub] == userID || svc.roles[auth.Owner] == userID
+	isEditor := isOwner || svc.roles[auth.Editor] == userID
+	isViewer := isEditor || svc.roles[auth.Viewer] == userID
+
+	switch action {
+	case auth.RootSub:
+		if svc.roles[auth.RootSub] != userID {
+			return errors.ErrAuthorization
+		}
+		return nil
+	case auth.Owner:
+		if !isOwner {
+			return errors.ErrAuthorization
+		}
+		return nil
+	case auth.Editor:
+		if !isEditor {
+			return errors.ErrAuthorization
+		}
+		return nil
+	case auth.Viewer:
+		if !isViewer {
+			return errors.ErrAuthorization
+		}
+		return nil
+	default:
+		return errors.ErrAuthorization
+	}
 }
 
 func (svc authServiceMock) AssignRole(_ context.Context, in *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {

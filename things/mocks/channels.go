@@ -65,6 +65,7 @@ func (crm *channelRepositoryMock) Update(_ context.Context, channel things.Chann
 	if _, ok := crm.channels[channel.ID]; !ok {
 		return errors.ErrNotFound
 	}
+	channel.GroupID = crm.channels[channel.ID].GroupID
 
 	crm.channels[channel.ID] = channel
 	return nil
@@ -117,7 +118,9 @@ func (crm *channelRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 		items = filteredItems
 	}
 
-	items = sortChannels(pm, items)
+	items = sortItems(pm, items, func(i int) (string, string) {
+		return items[i].Name, items[i].ID
+	})
 
 	page := things.ChannelsPage{
 		Channels: items,

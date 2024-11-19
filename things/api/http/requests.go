@@ -6,6 +6,7 @@ package http
 import (
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -358,7 +359,6 @@ type restoreConnectionReq struct {
 type restoreGroupReq struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
-	OwnerID     string                 `json:"owner_id"`
 	Description string                 `json:"description"`
 	Metadata    map[string]interface{} `json:"metadata"`
 	CreatedAt   time.Time              `json:"created_at"`
@@ -466,7 +466,7 @@ type listMembersReq struct {
 	id       string
 	offset   uint64
 	limit    uint64
-	metadata things.GroupMetadata
+	metadata things.Metadata
 }
 
 func (req listMembersReq) validate() error {
@@ -538,8 +538,8 @@ func (req getConnByKeyReq) validate() error {
 }
 
 type groupRolesReq struct {
-	token      string
-	groupID    string
+	token        string
+	groupID      string
 	GroupMembers []groupMember `json:"group_members"`
 }
 
@@ -556,12 +556,12 @@ func (req groupRolesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gp := range req.GroupMembers {
-		if gp.Role != things.Viewer && gp.Role != things.Editor {
+	for _, gm := range req.GroupMembers {
+		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 
-		if gp.ID == "" {
+		if gm.ID == "" {
 			return apiutil.ErrMissingID
 		}
 	}

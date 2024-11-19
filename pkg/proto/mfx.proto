@@ -60,9 +60,9 @@ message Profile {
 
 message Transformer {
     repeated string valuesFilter = 1;
-    string timeField            = 2;
-    string timeFormat           = 3;
-    string timeLocation         = 4;
+    string timeField             = 2;
+    string timeFormat            = 3;
+    string timeLocation          = 4;
 }
 
 message ProfileByThingIDRes{
@@ -126,7 +126,7 @@ message UsersRes {
 
 message Group {
     string id          = 1;
-    string ownerID     = 2;
+    string orgID       = 2;
     string name        = 3;
     string description = 4;
 }
@@ -140,7 +140,7 @@ message GroupsRes {
 }
 
 message AssignRoleReq {
-    string id = 1;
+    string id   = 1;
     string role = 2;
 }
 

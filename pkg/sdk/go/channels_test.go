@@ -16,7 +16,7 @@ import (
 
 const (
 	name    = "name"
-	groupID = "1"
+	groupID = "371106m2-131g-5286-2mc1-540295c29f95"
 )
 
 var (
@@ -95,7 +95,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateChannel(tc.channel, groupID, tc.token)
+		loc, err := mainfluxSDK.CreateChannel(tc.channel, grID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.empty, loc == emptyValue, fmt.Sprintf("%s: expected empty result location, got: %s", tc.desc, loc))
 	}
@@ -114,7 +114,7 @@ func TestCreateChannels(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
-	_, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	channels := []sdk.Channel{
@@ -159,7 +159,7 @@ func TestCreateChannels(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateChannels(tc.channels, groupID, tc.token)
+		res, err := mainfluxSDK.CreateChannels(tc.channels, grID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {

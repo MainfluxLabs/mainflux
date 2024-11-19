@@ -103,7 +103,7 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, g := range groups {
 			gr := protomfx.Group{
 				Id:          g.ID,
-				OwnerID:     g.OwnerID,
+				OrgID:       g.OrgID,
 				Name:        g.Name,
 				Description: g.Description,
 			}
@@ -146,7 +146,7 @@ func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func GetGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupIDByThingIDReq)
 		if err := req.validate(); err != nil {

@@ -18,6 +18,7 @@ const (
 	Viewer     = "viewer"
 	Editor     = "editor"
 	Admin      = "admin"
+	Owner      = "owner"
 	ThingSub   = "thing"
 	ChannelSub = "channel"
 	GroupSub   = "group"
@@ -757,12 +758,12 @@ func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID string) error {
+func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
 		Object:  orgID,
-		Subject: auth.OrgSub,
-		Action:  auth.Viewer,
+		Subject: subject,
+		Action:  action,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {

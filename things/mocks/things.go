@@ -71,6 +71,8 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	if _, ok := trm.things[thing.ID]; !ok {
 		return errors.ErrNotFound
 	}
+	thing.Key = trm.things[thing.ID].Key
+	thing.GroupID = trm.things[thing.ID].GroupID
 
 	trm.things[thing.ID] = thing
 
@@ -145,7 +147,9 @@ func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs [
 		items = filteredItems
 	}
 
-	items = sortThings(pm, items)
+	items = sortItems(pm, items, func(i int) (string, string) {
+		return items[i].Name, items[i].ID
+	})
 
 	page := things.ThingsPage{
 		Things: items,
@@ -180,7 +184,9 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string
 	}
 
 	// Sort Things by Channel list
-	ths = sortThings(pm, ths)
+	ths = sortItems(pm, ths, func(i int) (string, string) {
+		return ths[i].Name, ths[i].ID
+	})
 
 	page := things.ThingsPage{
 		Things: ths,

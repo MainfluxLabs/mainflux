@@ -25,7 +25,7 @@ const (
 
 var (
 	invalidDesc = strings.Repeat("m", maxDescSize+1)
-	metadata    = things.GroupMetadata{
+	metadata    = things.Metadata{
 		"field": "value",
 	}
 )
@@ -33,8 +33,6 @@ var (
 func TestSaveGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
 	grID := generateUUID(t)
 
@@ -46,30 +44,27 @@ func TestSaveGroup(t *testing.T) {
 		{
 			desc: "save new group",
 			group: things.Group{
-				ID:      grID,
-				OwnerID: owID,
-				OrgID:   orgID,
-				Name:    groupName,
+				ID:    grID,
+				OrgID: orgID,
+				Name:  groupName,
 			},
 			err: nil,
 		},
 		{
 			desc: "save new group with existing name",
 			group: things.Group{
-				ID:      grID,
-				OwnerID: owID,
-				OrgID:   orgID,
-				Name:    groupName,
+				ID:    grID,
+				OrgID: orgID,
+				Name:  groupName,
 			},
 			err: errors.ErrConflict,
 		},
 		{
 			desc: "save group with invalid name",
 			group: things.Group{
-				ID:      grID,
-				OwnerID: owID,
-				OrgID:   orgID,
-				Name:    invalidName,
+				ID:    grID,
+				OrgID: orgID,
+				Name:  invalidName,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -77,7 +72,6 @@ func TestSaveGroup(t *testing.T) {
 			desc: "save group with invalid description",
 			group: things.Group{
 				ID:          grID,
-				OwnerID:     owID,
 				OrgID:       orgID,
 				Name:        groupName,
 				Description: invalidDesc,
@@ -95,15 +89,12 @@ func TestSaveGroup(t *testing.T) {
 func TestRetrieveGroupByID(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
 
 	group1 := things.Group{
-		ID:      generateUUID(t),
-		Name:    fmt.Sprintf("%s-%d", groupName, 1),
-		OwnerID: owID,
-		OrgID:   orgID,
+		ID:    generateUUID(t),
+		Name:  fmt.Sprintf("%s-%d", groupName, 1),
+		OrgID: orgID,
 	}
 
 	_, err := groupRepo.Save(context.Background(), group1)
@@ -119,7 +110,6 @@ func TestRetrieveGroupByID(t *testing.T) {
 	group2 := things.Group{
 		ID:          generateUUID(t),
 		Name:        fmt.Sprintf("%s-%d", groupName, 2),
-		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
 		UpdatedAt:   creationTime,
@@ -145,19 +135,16 @@ func TestUpdateGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
-
+	groupID := generateUUID(t)
 	wrongUid := generateUUID(t)
 
 	creationTime := time.Now().UTC()
 	updateTime := time.Now().UTC()
-	groupID := generateUUID(t)
 
 	group := things.Group{
 		ID:          groupID,
 		Name:        groupName,
-		OwnerID:     owID,
 		OrgID:       orgID,
 		CreatedAt:   creationTime,
 		UpdatedAt:   creationTime,
@@ -183,12 +170,12 @@ func TestUpdateGroup(t *testing.T) {
 				ID:        groupID,
 				Name:      groupName,
 				UpdatedAt: updateTime,
-				Metadata:  things.GroupMetadata{"admin": "false"},
+				Metadata:  things.Metadata{"admin": "false"},
 			},
 			groupExpected: things.Group{
 				Name:      groupName,
 				UpdatedAt: updateTime,
-				Metadata:  things.GroupMetadata{"admin": "false"},
+				Metadata:  things.Metadata{"admin": "false"},
 				CreatedAt: retrieved.CreatedAt,
 				ID:        retrieved.ID,
 			},
@@ -235,14 +222,11 @@ func TestRemoveGroup(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
-
 	creationTime := time.Now().UTC()
 	group1 := things.Group{
 		ID:        generateUUID(t),
 		Name:      fmt.Sprintf("%s-%d", groupName, 1),
-		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -252,7 +236,6 @@ func TestRemoveGroup(t *testing.T) {
 	group2 := things.Group{
 		ID:        generateUUID(t),
 		Name:      fmt.Sprintf("%s-%d", groupName, 2),
-		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -282,104 +265,28 @@ func TestRemoveGroup(t *testing.T) {
 	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty groups: expected %v got %v\n", nil, err))
 }
 
-func TestRetrieveByOwner(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-
-	owID := generateUUID(t)
-	orgID := generateUUID(t)
-
-	metadata := things.PageMetadata{
-		Metadata: things.GroupMetadata{
-			"field": "value",
-		},
-	}
-	wrongMeta := things.PageMetadata{
-		Metadata: things.GroupMetadata{
-			"wrong": "wrong",
-		},
-	}
-
-	metaNum := uint64(3)
-	for i := uint64(0); i < n; i++ {
-		creationTime := time.Now().UTC()
-		group := things.Group{
-			ID:        generateUUID(t),
-			Name:      fmt.Sprintf("%s-%d", groupName, i),
-			OwnerID:   owID,
-			OrgID:     orgID,
-			CreatedAt: creationTime,
-			UpdatedAt: creationTime,
-		}
-		// Create Groups with metadata.
-		if i < metaNum {
-			group.Metadata = metadata.Metadata
-		}
-
-		_, err := groupRepo.Save(context.Background(), group)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	cases := map[string]struct {
-		Size     uint64
-		Metadata things.PageMetadata
-	}{
-		"retrieve all groups": {
-			Metadata: things.PageMetadata{
-				Total: n,
-				Limit: n,
-			},
-			Size: n,
-		},
-		"retrieve groups with existing metadata": {
-			Metadata: things.PageMetadata{
-				Total:    metaNum,
-				Limit:    n,
-				Metadata: metadata.Metadata,
-			},
-			Size: metaNum,
-		},
-		"retrieve groups with non-existing metadata": {
-			Metadata: things.PageMetadata{
-				Total:    uint64(0),
-				Limit:    n,
-				Metadata: wrongMeta.Metadata,
-			},
-			Size: uint64(0),
-		},
-	}
-
-	for desc, tc := range cases {
-		page, err := groupRepo.RetrieveByOwner(context.Background(), owID, "", tc.Metadata)
-		size := len(page.Groups)
-		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
-		assert.Equal(t, tc.Metadata.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", desc, tc.Metadata.Total, page.Total))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
 func TestRetrieveByIDs(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
-
-	metadata := things.PageMetadata{
-		Metadata: things.GroupMetadata{
-			"field": "value",
-		},
+	metadata := things.Metadata{
+		"field": "value",
+	}
+	wrongMeta := things.Metadata{
+		"wrong": "wrong",
 	}
 
 	malformedIDs := []string{"malformed1", "malformed2"}
 	metaNum := uint64(3)
+	offset := uint64(1)
 	var ids []string
 	for i := uint64(0); i < n; i++ {
+		suffix := i + 1
 		creationTime := time.Now().UTC()
 		group := things.Group{
-			ID:        generateUUID(t),
-			Name:      fmt.Sprintf("%s-%d", groupName, i),
-			OwnerID:   owID,
+			ID:        fmt.Sprintf("%s%012d", prefixID, suffix),
+			Name:      fmt.Sprintf("%s-%d", groupName, suffix),
 			OrgID:     orgID,
 			CreatedAt: creationTime,
 			UpdatedAt: creationTime,
@@ -387,7 +294,7 @@ func TestRetrieveByIDs(t *testing.T) {
 		ids = append(ids, group.ID)
 		// Create Groups with metadata.
 		if i < metaNum {
-			group.Metadata = metadata.Metadata
+			group.Metadata = metadata
 		}
 
 		_, err := groupRepo.Save(context.Background(), group)
@@ -395,33 +302,114 @@ func TestRetrieveByIDs(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		Size     uint64
-		IDs      []string
-		Metadata things.PageMetadata
-		err      error
+		size         uint64
+		ids          []string
+		pageMetadata things.PageMetadata
 	}{
 		"retrieve all groups": {
-			Size: n,
-			IDs:  ids,
-			err:  nil,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			ids:  ids,
 		},
 		"retrieve groups without ids": {
-			Size: 0,
-			IDs:  []string{},
-			err:  nil,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			ids:  []string{},
 		},
 		"retrieve groups with malformed ids": {
-			Size: 0,
-			IDs:  malformedIDs,
-			err:  errors.ErrRetrieveEntity,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			ids:  malformedIDs,
+		},
+
+		"retrieve all groups by IDs without limit": {
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: n,
+			ids:  ids,
+		},
+		"retrieve subset of groups by IDs": {
+			pageMetadata: things.PageMetadata{
+				Offset: offset,
+				Limit:  n,
+			},
+			size: n - offset,
+			ids:  ids,
+		},
+		"retrieve groups by IDs with existing name": {
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Name:   "test-group-5",
+			},
+			size: 1,
+			ids:  ids,
+		},
+		"retrieve groups by IDs with non-existing name": {
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Name:   "wrong",
+			},
+			size: 0,
+			ids:  ids,
+		},
+		"retrieve groups by IDs with existing metadata": {
+			pageMetadata: things.PageMetadata{
+				Offset:   0,
+				Limit:    n,
+				Metadata: metadata,
+			},
+			size: metaNum,
+			ids:  ids,
+		},
+		"retrieve groups by IDs with non-existing metadata": {
+			pageMetadata: things.PageMetadata{
+				Offset:   0,
+				Limit:    n,
+				Metadata: wrongMeta,
+			},
+			ids: ids,
+		},
+		"retrieve groups by IDs sorted by name ascendant": {
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "asc",
+			},
+			size: n,
+			ids:  ids,
+		},
+		"retrieve groups by IDs sorted by name descendent": {
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "desc",
+			},
+			size: n,
+			ids:  ids,
 		},
 	}
 
 	for desc, tc := range cases {
-		page, err := groupRepo.RetrieveByIDs(context.Background(), tc.IDs)
+		page, _ := groupRepo.RetrieveByIDs(context.Background(), tc.ids, tc.pageMetadata)
 		size := len(page.Groups)
-		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
+
+		// Check if Groups list have been sorted properly
+		testSortGroups(t, tc.pageMetadata, page.Groups)
 	}
 }
 
@@ -433,11 +421,9 @@ func TestRetrieveAllGroups(t *testing.T) {
 
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
-
 	metadata := things.PageMetadata{
-		Metadata: things.GroupMetadata{
+		Metadata: things.Metadata{
 			"field": "value",
 		},
 	}
@@ -448,7 +434,6 @@ func TestRetrieveAllGroups(t *testing.T) {
 		group := things.Group{
 			ID:        generateUUID(t),
 			Name:      fmt.Sprintf("%s-%d", groupName, i),
-			OwnerID:   owID,
 			OrgID:     orgID,
 			CreatedAt: creationTime,
 			UpdatedAt: creationTime,
@@ -483,14 +468,11 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	channelRepo := postgres.NewChannelRepository(dbMiddleware)
 
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
-
 	creationTime := time.Now().UTC()
 	group := things.Group{
 		ID:        generateUUID(t),
 		Name:      fmt.Sprintf("%s-%d", groupName, 1),
-		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -498,7 +480,6 @@ func TestRetrieveChannelsByGroup(t *testing.T) {
 	group2 := things.Group{
 		ID:        generateUUID(t),
 		Name:      fmt.Sprintf("%s-%d", groupName, 2),
-		OwnerID:   owID,
 		OrgID:     orgID,
 		CreatedAt: creationTime,
 		UpdatedAt: creationTime,
@@ -591,16 +572,36 @@ func createGroup(t *testing.T, dbMiddleware postgres.Database) things.Group {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	grID := generateUUID(t)
-	owID := generateUUID(t)
 	orgID := generateUUID(t)
 
 	group, err := groupRepo.Save(context.Background(), things.Group{
-		ID:      grID,
-		OwnerID: owID,
-		OrgID:   orgID,
-		Name:    groupName,
+		ID:    grID,
+		OrgID: orgID,
+		Name:  groupName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	return group
+}
+
+func testSortGroups(t *testing.T, pm things.PageMetadata, grs []things.Group) {
+	if len(grs) < 1 {
+		return
+	}
+
+	switch pm.Order {
+	case "name":
+		current := grs[0]
+		for _, res := range grs {
+			if pm.Dir == "asc" {
+				assert.GreaterOrEqual(t, res.Name, current.Name)
+			}
+			if pm.Dir == "desc" {
+				assert.GreaterOrEqual(t, current.Name, res.Name)
+			}
+			current = res
+		}
+	default:
+		break
+	}
 }

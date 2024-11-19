@@ -515,6 +515,13 @@ func getGroupIDsQuery(ids []string) string {
 	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }
 
+func getIDsQuery(ids []string) string {
+	if len(ids) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("id IN ('%s') ", strings.Join(ids, "','"))
+}
+
 func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {

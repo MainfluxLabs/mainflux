@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -114,23 +115,54 @@ func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (th
 	return val, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, groupIDs []string) (things.GroupPage, error) {
-	panic("not implemented")
-}
-
-func (grm *groupRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
-	var items []things.Group
-	for _, g := range grm.groups {
-		items = append(items, g)
+
+	items := make([]things.Group, 0)
+	filteredItems := make([]things.Group, 0)
+
+	if pm.Limit == 0 {
+		return things.GroupPage{}, nil
 	}
-	return things.GroupPage{
+
+	first := uint64(pm.Offset)
+	last := first + pm.Limit
+
+	for _, grID := range ids {
+		for _, v := range grm.groups {
+			if v.ID == grID {
+				id := uuid.ParseID(v.ID)
+				if id >= first && id < last {
+					items = append(items, v)
+				}
+			}
+		}
+	}
+
+	if pm.Name != "" {
+		for _, v := range items {
+			if v.Name == pm.Name {
+				filteredItems = append(filteredItems, v)
+			}
+		}
+		items = filteredItems
+	}
+
+	items = sortItems(pm, items, func(i int) (string, string) {
+		return items[i].Name, items[i].ID
+	})
+
+	page := things.GroupPage{
 		Groups: items,
 		PageMetadata: things.PageMetadata{
-			Total: uint64(len(items)),
+			Total:  uint64(len(items)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
-	}, nil
+	}
+
+	return page, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {

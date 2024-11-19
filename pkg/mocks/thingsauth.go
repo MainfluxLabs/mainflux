@@ -92,7 +92,7 @@ func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.Gro
 	var groups []*protomfx.Group
 	for _, id := range req.Ids {
 		if group, ok := svc.groups[id]; ok {
-			groups = append(groups, &protomfx.Group{Id: group.ID, OwnerID: group.OwnerID, Name: group.Name, Description: group.Description})
+			groups = append(groups, &protomfx.Group{Id: group.ID, Name: group.Name, Description: group.Description})
 		}
 	}
 

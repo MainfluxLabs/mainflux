@@ -18,10 +18,9 @@ func TestSaveRolesByGroup(t *testing.T) {
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
-		ID:      generateUUID(t),
-		Name:    groupName,
-		OwnerID: generateUUID(t),
-		OrgID:   generateUUID(t),
+		ID:    generateUUID(t),
+		Name:  groupName,
+		OrgID: generateUUID(t),
 	}
 
 	group, err := groupRepo.Save(context.Background(), gr)
@@ -108,10 +107,9 @@ func TestRetrieveRole(t *testing.T) {
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
-		ID:      generateUUID(t),
-		Name:    groupName,
-		OwnerID: generateUUID(t),
-		OrgID:   generateUUID(t),
+		ID:    generateUUID(t),
+		Name:  groupName,
+		OrgID: generateUUID(t),
 	}
 
 	group, err := groupRepo.Save(context.Background(), gr)
@@ -173,10 +171,9 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
-		ID:      generateUUID(t),
-		Name:    groupName,
-		OwnerID: generateUUID(t),
-		OrgID:   generateUUID(t),
+		ID:    generateUUID(t),
+		Name:  groupName,
+		OrgID: generateUUID(t),
 	}
 
 	group, err := groupRepo.Save(context.Background(), gr)
@@ -261,10 +258,9 @@ func TestRemoveRolesByGroup(t *testing.T) {
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
 	gr := things.Group{
-		ID:      generateUUID(t),
-		Name:    groupName,
-		OwnerID: generateUUID(t),
-		OrgID:   generateUUID(t),
+		ID:    generateUUID(t),
+		Name:  groupName,
+		OrgID: generateUUID(t),
 	}
 
 	group, err := groupRepo.Save(context.Background(), gr)
@@ -328,10 +324,9 @@ func TestUpdateRolesByGroup(t *testing.T) {
 	memberID1 := generateUUID(t)
 
 	gr := things.Group{
-		ID:      generateUUID(t),
-		Name:    groupName,
-		OwnerID: generateUUID(t),
-		OrgID:   generateUUID(t),
+		ID:    generateUUID(t),
+		Name:  groupName,
+		OrgID: generateUUID(t),
 	}
 
 	group, err := groupRepo.Save(context.Background(), gr)

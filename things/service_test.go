@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -33,6 +34,7 @@ const (
 	n              = uint64(102)
 	nUser          = n * 2
 	nAdmin         = n * 3
+	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
 	prefixID       = "fe6b4e92-cc98-425e-b0aa-"
 	prefixName     = "test-"
 )
@@ -44,11 +46,11 @@ var (
 	channel     = things.Channel{Name: "test"}
 	thsExtID    = []things.Thing{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
 	chsExtID    = []things.Channel{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
-	user        = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
-	otherUser   = users.User{Email: otherUserEmail, Password: password}
-	admin       = users.User{Email: adminEmail, Password: password}
+	user        = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Editor}
+	otherUser   = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Owner}
+	admin       = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList   = []users.User{admin, user, otherUser}
-	group       = things.Group{Name: "test-group", Description: "test-group-desc"}
+	group       = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
 )
 
 func newService() things.Service {
@@ -75,8 +77,11 @@ func TestInit(t *testing.T) {
 
 func TestCreateThings(t *testing.T) {
 	svc := newService()
-	_, err := svc.CreateGroups(context.Background(), token, group)
+	gr, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := gr[0].ID
+	thsExtID[0].GroupID = grID
+	thsExtID[1].GroupID = grID
 
 	cases := []struct {
 		desc   string
@@ -86,13 +91,19 @@ func TestCreateThings(t *testing.T) {
 	}{
 		{
 			desc:   "create new things",
-			things: []things.Thing{{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}},
+			things: []things.Thing{{Name: "a", GroupID: grID}, {Name: "b", GroupID: grID}, {Name: "c", GroupID: grID}, {Name: "d", GroupID: grID}},
 			token:  token,
 			err:    nil,
 		},
 		{
+			desc:   "create new thing with wrong group id",
+			things: []things.Thing{{Name: "e", GroupID: wrongValue}},
+			token:  token,
+			err:    errors.ErrNotFound,
+		},
+		{
 			desc:   "create thing with wrong credentials",
-			things: []things.Thing{{Name: "e"}},
+			things: []things.Thing{{Name: "f", GroupID: grID}},
 			token:  wrongValue,
 			err:    errors.ErrAuthentication,
 		},
@@ -104,7 +115,7 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:   "create new things with external wrong UUID",
-			things: []things.Thing{{ID: "b0aa-000000000001", Name: "a"}, {ID: "b0aa-000000000002", Name: "b"}},
+			things: []things.Thing{{ID: "b0aa-000000000001", Name: "a", GroupID: grID}, {ID: "b0aa-000000000002", Name: "b", GroupID: grID}},
 			token:  token,
 			err:    nil,
 		},
@@ -648,9 +659,11 @@ func TestRemoveThings(t *testing.T) {
 
 func TestCreateChannels(t *testing.T) {
 	svc := newService()
-	_, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
+	grID := grs[0].ID
+	chsExtID[0].GroupID = grID
+	chsExtID[1].GroupID = grID
 	cases := []struct {
 		desc     string
 		channels []things.Channel
@@ -659,13 +672,19 @@ func TestCreateChannels(t *testing.T) {
 	}{
 		{
 			desc:     "create new channels",
-			channels: []things.Channel{{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}},
+			channels: []things.Channel{{Name: "a", GroupID: grID}, {Name: "b", GroupID: grID}, {Name: "c", GroupID: grID}, {Name: "d", GroupID: grID}},
 			token:    token,
 			err:      nil,
 		},
 		{
+			desc:     "create new channel with wrong group id",
+			channels: []things.Channel{{Name: "e", GroupID: wrongValue}},
+			token:    token,
+			err:      errors.ErrNotFound,
+		},
+		{
 			desc:     "create channel with wrong credentials",
-			channels: []things.Channel{{Name: "e"}},
+			channels: []things.Channel{{Name: "f", GroupID: grID}},
 			token:    wrongValue,
 			err:      errors.ErrAuthentication,
 		},
@@ -677,7 +696,7 @@ func TestCreateChannels(t *testing.T) {
 		},
 		{
 			desc:     "create new channels with invalid external UUID",
-			channels: []things.Channel{{ID: "b0aa-000000000001", Name: "a"}, {ID: "b0aa-000000000002", Name: "b"}},
+			channels: []things.Channel{{ID: "b0aa-000000000001", Name: "a", GroupID: grID}, {ID: "b0aa-000000000002", Name: "b", GroupID: grID}},
 			token:    token,
 			err:      nil,
 		},
