@@ -1081,10 +1081,6 @@ components:
           type: string
           example: "Test"
           description: Free-form group name.
-        owner_id:
-          type: string
-          format: uuid
-          description: UUID of user that created the group.
         description:
           type: string
           description: Group description, free form text.
