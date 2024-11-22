@@ -49,7 +49,7 @@ type Service interface {
 	// ListThingsByProfile retrieves data about subset of things that are
 	// connected or not connected to specified profile and belong to the user identified by
 	// the provided key.
-	ListThingsByProfile(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error)
+	ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -80,13 +80,13 @@ type Service interface {
 	RemoveProfiles(ctx context.Context, token string, ids ...string) error
 
 	// ViewProfileConfig retrieves profile config.
-	ViewProfileConfig(ctx context.Context, chID string) (Config, error)
+	ViewProfileConfig(ctx context.Context, prID string) (Config, error)
 
 	// Connect connects a list of things to a profile.
-	Connect(ctx context.Context, token, chID string, thIDs []string) error
+	Connect(ctx context.Context, token, prID string, thIDs []string) error
 
 	// Disconnect disconnects a list of things from a profile.
-	Disconnect(ctx context.Context, token, chID string, thIDs []string) error
+	Disconnect(ctx context.Context, token, prID string, thIDs []string) error
 
 	// GetConnByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
@@ -287,10 +287,10 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, chID string, pm PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error) {
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  chID,
+		Object:  prID,
 		Subject: ProfileSub,
 		Action:  Viewer,
 	}
@@ -298,7 +298,7 @@ func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, chID st
 		return ThingsPage{}, err
 	}
 
-	tp, err := ts.things.RetrieveByProfile(ctx, chID, pm)
+	tp, err := ts.things.RetrieveByProfile(ctx, prID, pm)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -331,7 +331,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error) {
-	chs := []Profile{}
+	prs := []Profile{}
 	for _, profile := range profiles {
 		ar := AuthorizeReq{
 			Token:   token,
@@ -343,33 +343,33 @@ func (ts *thingsService) CreateProfiles(ctx context.Context, token string, profi
 			return nil, err
 		}
 
-		ch, err := ts.createProfile(ctx, &profile)
+		pr, err := ts.createProfile(ctx, &profile)
 		if err != nil {
 			return []Profile{}, err
 		}
-		chs = append(chs, ch)
+		prs = append(prs, pr)
 	}
-	return chs, nil
+	return prs, nil
 }
 
 func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (Profile, error) {
 	if profile.ID == "" {
-		chID, err := ts.idProvider.ID()
+		prID, err := ts.idProvider.ID()
 		if err != nil {
 			return Profile{}, err
 		}
-		profile.ID = chID
+		profile.ID = prID
 	}
 
-	chs, err := ts.profiles.Save(ctx, *profile)
+	prs, err := ts.profiles.Save(ctx, *profile)
 	if err != nil {
 		return Profile{}, err
 	}
-	if len(chs) == 0 {
+	if len(prs) == 0 {
 		return Profile{}, errors.ErrCreateEntity
 	}
 
-	return chs[0], nil
+	return prs[0], nil
 }
 
 func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profile Profile) error {
@@ -462,8 +462,8 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) ViewProfileConfig(ctx context.Context, chID string) (Config, error) {
-	profile, err := ts.profiles.RetrieveByID(ctx, chID)
+func (ts *thingsService) ViewProfileConfig(ctx context.Context, prID string) (Config, error) {
+	profile, err := ts.profiles.RetrieveByID(ctx, prID)
 	if err != nil {
 		return Config{}, err
 	}
@@ -481,15 +481,15 @@ func (ts *thingsService) ViewProfileConfig(ctx context.Context, chID string) (Co
 	return config, nil
 }
 
-func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs []string) error {
-	ch, err := ts.profiles.RetrieveByID(ctx, chID)
+func (ts *thingsService) Connect(ctx context.Context, token, prID string, thIDs []string) error {
+	pr, err := ts.profiles.RetrieveByID(ctx, prID)
 	if err != nil {
 		return err
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  chID,
+		Object:  prID,
 		Subject: ProfileSub,
 		Action:  Viewer,
 	}
@@ -503,27 +503,27 @@ func (ts *thingsService) Connect(ctx context.Context, token, chID string, thIDs 
 			return err
 		}
 
-		if th.GroupID != ch.GroupID {
+		if th.GroupID != pr.GroupID {
 			return errors.ErrAuthorization
 		}
 
-		if err := ts.profileCache.Connect(ctx, chID, thID); err != nil {
+		if err := ts.profileCache.Connect(ctx, prID, thID); err != nil {
 			return err
 		}
 	}
 
-	return ts.profiles.Connect(ctx, chID, thIDs)
+	return ts.profiles.Connect(ctx, prID, thIDs)
 }
 
-func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
-	ch, err := ts.profiles.RetrieveByID(ctx, chID)
+func (ts *thingsService) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
+	pr, err := ts.profiles.RetrieveByID(ctx, prID)
 	if err != nil {
 		return err
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  chID,
+		Object:  prID,
 		Subject: ProfileSub,
 		Action:  Viewer,
 	}
@@ -537,16 +537,16 @@ func (ts *thingsService) Disconnect(ctx context.Context, token, chID string, thI
 			return err
 		}
 
-		if th.GroupID != ch.GroupID {
+		if th.GroupID != pr.GroupID {
 			return errors.ErrAuthorization
 		}
 
-		if err := ts.profileCache.Disconnect(ctx, chID, thID); err != nil {
+		if err := ts.profileCache.Disconnect(ctx, prID, thID); err != nil {
 			return err
 		}
 	}
 
-	return ts.profiles.Disconnect(ctx, chID, thIDs)
+	return ts.profiles.Disconnect(ctx, prID, thIDs)
 }
 
 func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {

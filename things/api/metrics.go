@@ -75,13 +75,13 @@ func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm th
 	return ms.svc.ListThings(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_profile").Add(1)
 		ms.latency.With("method", "list_things_by_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThingsByProfile(ctx, token, chID, pm)
+	return ms.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
 func (ms *metricsMiddleware) RemoveThings(ctx context.Context, token string, id ...string) error {
@@ -147,31 +147,31 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, chID string) (things.Config, error) {
+func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_profile_config").Add(1)
 		ms.latency.With("method", "view_profile_config").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewProfileConfig(ctx, chID)
+	return ms.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (ms *metricsMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) error {
+func (ms *metricsMiddleware) Connect(ctx context.Context, token, prID string, thIDs []string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "connect").Add(1)
 		ms.latency.With("method", "connect").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Connect(ctx, token, chID, thIDs)
+	return ms.svc.Connect(ctx, token, prID, thIDs)
 }
 
-func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, chID string, thIDs []string) error {
+func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disconnect").Add(1)
 		ms.latency.With("method", "disconnect").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Disconnect(ctx, token, chID, thIDs)
+	return ms.svc.Disconnect(ctx, token, prID, thIDs)
 }
 
 func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {

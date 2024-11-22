@@ -28,8 +28,8 @@ func (sdk mfSDK) CreateProfile(c Profile, groupID, token string) (string, error)
 	return profiles[0].ID, nil
 }
 
-func (sdk mfSDK) CreateProfiles(chs []Profile, groupID, token string) ([]Profile, error) {
-	data, err := json.Marshal(chs)
+func (sdk mfSDK) CreateProfiles(prs []Profile, groupID, token string) ([]Profile, error) {
+	data, err := json.Marshal(prs)
 	if err != nil {
 		return []Profile{}, err
 	}
@@ -118,12 +118,12 @@ func (sdk mfSDK) ViewProfileByThing(token, thingID string) (Profile, error) {
 		return Profile{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var ch Profile
-	if err := json.Unmarshal(body, &ch); err != nil {
+	var pr Profile
+	if err := json.Unmarshal(body, &pr); err != nil {
 		return Profile{}, err
 	}
 
-	return ch, nil
+	return pr, nil
 }
 
 func (sdk mfSDK) Profile(id, token string) (Profile, error) {

@@ -40,11 +40,11 @@ func TestGetConnByKey(t *testing.T) {
 	th2 := ths[1]
 
 	profile.GroupID = gr.ID
-	chs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th1.ID})
+	err = svc.Connect(context.Background(), token, pr.ID, []string{th1.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)

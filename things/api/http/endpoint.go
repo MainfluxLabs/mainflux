@@ -233,19 +233,19 @@ func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		chs := []things.Profile{}
+		prs := []things.Profile{}
 		for _, c := range req.Profiles {
-			ch := things.Profile{
+			pr := things.Profile{
 				Name:     c.Name,
 				ID:       c.ID,
 				Config:   c.Config,
 				GroupID:  req.groupID,
 				Metadata: c.Metadata,
 			}
-			chs = append(chs, ch)
+			prs = append(prs, pr)
 		}
 
-		saved, err := svc.CreateProfiles(ctx, req.token, chs...)
+		saved, err := svc.CreateProfiles(ctx, req.token, prs...)
 		if err != nil {
 			return nil, err
 		}
@@ -256,14 +256,14 @@ func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		for _, c := range saved {
-			ch := profileRes{
+			pr := profileRes{
 				ID:       c.ID,
 				Name:     c.Name,
 				GroupID:  c.GroupID,
 				Config:   c.Config,
 				Metadata: c.Metadata,
 			}
-			res.Profiles = append(res.Profiles, ch)
+			res.Profiles = append(res.Profiles, pr)
 		}
 
 		return res, nil
@@ -304,17 +304,17 @@ func viewProfileEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		ch, err := svc.ViewProfile(ctx, req.token, req.id)
+		pr, err := svc.ViewProfile(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
 		res := profileRes{
-			ID:       ch.ID,
-			GroupID:  ch.GroupID,
-			Name:     ch.Name,
-			Metadata: ch.Metadata,
-			Config:   ch.Config,
+			ID:       pr.ID,
+			GroupID:  pr.GroupID,
+			Name:     pr.Name,
+			Metadata: pr.Metadata,
+			Config:   pr.Config,
 		}
 
 		return res, nil
@@ -345,13 +345,13 @@ func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 			Profiles: []profileRes{},
 		}
 		// Cast profiles
-		for _, ch := range page.Profiles {
+		for _, pr := range page.Profiles {
 			view := profileRes{
-				ID:       ch.ID,
-				GroupID:  ch.GroupID,
-				Name:     ch.Name,
-				Config:   ch.Config,
-				Metadata: ch.Metadata,
+				ID:       pr.ID,
+				GroupID:  pr.GroupID,
+				Name:     pr.Name,
+				Config:   pr.Config,
+				Metadata: pr.Metadata,
 			}
 
 			res.Profiles = append(res.Profiles, view)
@@ -369,17 +369,17 @@ func viewProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		ch, err := svc.ViewProfileByThing(ctx, req.token, req.id)
+		pr, err := svc.ViewProfileByThing(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
 
 		res := profileRes{
-			ID:       ch.ID,
-			GroupID:  ch.GroupID,
-			Name:     ch.Name,
-			Config:   ch.Config,
-			Metadata: ch.Metadata,
+			ID:       pr.ID,
+			GroupID:  pr.GroupID,
+			Name:     pr.Name,
+			Config:   pr.Config,
+			Metadata: pr.Metadata,
 		}
 
 		return res, nil
@@ -778,12 +778,12 @@ func buildProfilesByGroupResponse(cp things.ProfilesPage) profilesPageRes {
 		Profiles: []profileRes{},
 	}
 
-	for _, ch := range cp.Profiles {
+	for _, pr := range cp.Profiles {
 		c := profileRes{
-			ID:       ch.ID,
-			Config:   ch.Config,
-			Metadata: ch.Metadata,
-			Name:     ch.Name,
+			ID:       pr.ID,
+			Config:   pr.Config,
+			Metadata: pr.Metadata,
+			Name:     pr.Name,
 		}
 		res.Profiles = append(res.Profiles, c)
 	}
@@ -856,12 +856,12 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 	}
 
 	for _, profile := range req.Profiles {
-		ch := things.Profile{
+		pr := things.Profile{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
 		}
-		backup.Profiles = append(backup.Profiles, ch)
+		backup.Profiles = append(backup.Profiles, pr)
 	}
 
 	for _, connection := range req.Connections {

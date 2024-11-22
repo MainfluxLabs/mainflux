@@ -238,14 +238,14 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
-	ch, err := ts.profiles.RetrieveByID(ctx, profileID)
+	pr, err := ts.profiles.RetrieveByID(ctx, profileID)
 	if err != nil {
 		return Group{}, err
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  ch.GroupID,
+		Object:  pr.GroupID,
 		Subject: GroupSub,
 		Action:  Viewer,
 	}
@@ -253,7 +253,7 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
+	gr, err := ts.groups.RetrieveByID(ctx, pr.GroupID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -312,7 +312,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		if err := ts.thingCache.SaveRole(ctx,  gp.GroupID, gp.MemberID, r); err != nil {
+		if err := ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
 			return err
 		}
 	}

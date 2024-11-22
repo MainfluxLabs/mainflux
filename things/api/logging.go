@@ -91,16 +91,16 @@ func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm th
 	return lm.svc.ListThings(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, chID string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_things_by_profile for id %s took %s to complete", chID, time.Since(begin))
+		message := fmt.Sprintf("Method list_things_by_profile for id %s took %s to complete", prID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListThingsByProfile(ctx, token, chID, pm)
+	return lm.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
 func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
@@ -193,9 +193,9 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return lm.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, chID string) (config things.Config, err error) {
+func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, prID string) (config things.Config, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_profile_config for id %s took %s to complete", chID, time.Since(begin))
+		message := fmt.Sprintf("Method view_profile_config for id %s took %s to complete", prID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -203,12 +203,12 @@ func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, chID string)
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewProfileConfig(ctx, chID)
+	return lm.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (lm *loggingMiddleware) Connect(ctx context.Context, token, chID string, thIDs []string) (err error) {
+func (lm *loggingMiddleware) Connect(ctx context.Context, token, prID string, thIDs []string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method connect for profile %s and things %s took %s to complete", chID, thIDs, time.Since(begin))
+		message := fmt.Sprintf("Method connect for profile %s and things %s took %s to complete", prID, thIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -216,12 +216,12 @@ func (lm *loggingMiddleware) Connect(ctx context.Context, token, chID string, th
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Connect(ctx, token, chID, thIDs)
+	return lm.svc.Connect(ctx, token, prID, thIDs)
 }
 
-func (lm *loggingMiddleware) Disconnect(ctx context.Context, token, chID string, thIDs []string) (err error) {
+func (lm *loggingMiddleware) Disconnect(ctx context.Context, token, prID string, thIDs []string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method disconnect for profile %v and things %v took %s to complete", chID, thIDs, time.Since(begin))
+		message := fmt.Sprintf("Method disconnect for profile %v and things %v took %s to complete", prID, thIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -229,7 +229,7 @@ func (lm *loggingMiddleware) Disconnect(ctx context.Context, token, chID string,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Disconnect(ctx, token, chID, thIDs)
+	return lm.svc.Disconnect(ctx, token, prID, thIDs)
 }
 
 func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn things.Connection, err error) {
@@ -440,7 +440,7 @@ func (lm *loggingMiddleware) ViewGroupByProfile(ctx context.Context, token, prof
 	return lm.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gchp things.ProfilesPage, err error) {
+func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (gprp things.ProfilesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_profiles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

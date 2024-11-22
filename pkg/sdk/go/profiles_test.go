@@ -20,10 +20,10 @@ const (
 )
 
 var (
-	ch1      = sdk.Profile{Name: "test1"}
-	ch2      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
-	ch3      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
-	chPrefix = "fe6b4e92-cc98-425e-b0aa-"
+	pr1      = sdk.Profile{Name: "test1"}
+	pr2      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1"}
+	pr3      = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2"}
+	prPrefix = "fe6b4e92-cc98-425e-b0aa-"
 )
 
 func TestCreateProfile(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCreateProfile(t *testing.T) {
 	ts := newThingsServer(svc)
 	defer ts.Close()
 
-	chWrongExtID := sdk.Profile{GroupID: groupID, ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
+	prWrongExtID := sdk.Profile{GroupID: groupID, ID: "b0aa-000000000001", Name: "1", Metadata: metadata}
 
 	sdkConf := sdk.Config{
 		ThingsURL:       ts.URL,
@@ -54,7 +54,7 @@ func TestCreateProfile(t *testing.T) {
 	}{
 		{
 			desc:    "create new profile",
-			profile: ch1,
+			profile: pr1,
 			token:   token,
 			groupID: grID,
 			err:     nil,
@@ -62,7 +62,7 @@ func TestCreateProfile(t *testing.T) {
 		},
 		{
 			desc:    "create new profile with empty token",
-			profile: ch1,
+			profile: pr1,
 			token:   emptyValue,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
@@ -70,7 +70,7 @@ func TestCreateProfile(t *testing.T) {
 		},
 		{
 			desc:    "create new profile with invalid token",
-			profile: ch1,
+			profile: pr1,
 			token:   wrongValue,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
@@ -78,7 +78,7 @@ func TestCreateProfile(t *testing.T) {
 		},
 		{
 			desc:    "create a new profile with external UUID",
-			profile: ch2,
+			profile: pr2,
 			token:   token,
 			groupID: grID,
 			err:     nil,
@@ -86,7 +86,7 @@ func TestCreateProfile(t *testing.T) {
 		},
 		{
 			desc:    "create a new profile with wrong external UUID",
-			profile: chWrongExtID,
+			profile: prWrongExtID,
 			token:   token,
 			groupID: grID,
 			err:     createError(sdk.ErrFailedCreation, http.StatusBadRequest),
@@ -118,8 +118,8 @@ func TestCreateProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	profiles := []sdk.Profile{
-		ch2,
-		ch3,
+		pr2,
+		pr3,
 	}
 
 	cases := []struct {
@@ -183,45 +183,45 @@ func TestProfile(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	ch2.GroupID = grID
+	pr2.GroupID = grID
 
 	cases := []struct {
-		desc     string
-		profileID   string
-		token    string
-		err      error
-		response sdk.Profile
+		desc      string
+		profileID string
+		token     string
+		err       error
+		response  sdk.Profile
 	}{
 		{
-			desc:     "get existing profile",
-			profileID:   id,
-			token:    token,
-			err:      nil,
-			response: ch2,
+			desc:      "get existing profile",
+			profileID: id,
+			token:     token,
+			err:       nil,
+			response:  pr2,
 		},
 		{
-			desc:     "get non-existent profile",
-			profileID:   "43",
-			token:    token,
-			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
-			response: sdk.Profile{},
+			desc:      "get non-existent profile",
+			profileID: "43",
+			token:     token,
+			err:       createError(sdk.ErrFailedFetch, http.StatusNotFound),
+			response:  sdk.Profile{},
 		},
 		{
-			desc:     "get profile with invalid token",
-			profileID:   id,
-			token:    emptyValue,
-			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
-			response: sdk.Profile{},
+			desc:      "get profile with invalid token",
+			profileID: id,
+			token:     emptyValue,
+			err:       createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+			response:  sdk.Profile{},
 		},
 	}
 
 	for _, tc := range cases {
-		respCh, err := mainfluxSDK.Profile(tc.profileID, tc.token)
+		respPr, err := mainfluxSDK.Profile(tc.profileID, tc.token)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, respCh, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, respCh))
+		assert.Equal(t, tc.response, respPr, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, respPr))
 	}
 }
 
@@ -241,12 +241,12 @@ func TestProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for i := 1; i < 101; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
+		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
-		ch := sdk.Profile{GroupID: grID, ID: id, Name: name}
-		_, err := mainfluxSDK.CreateProfile(ch, ch.GroupID, token)
+		pr := sdk.Profile{GroupID: grID, ID: id, Name: name}
+		_, err := mainfluxSDK.CreateProfile(pr, pr.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profiles = append(profiles, ch)
+		profiles = append(profiles, pr)
 	}
 
 	cases := []struct {
@@ -347,8 +347,8 @@ func TestViewProfileByThing(t *testing.T) {
 	tid, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	ch := sdk.Profile{Name: name}
-	cid, err := mainfluxSDK.CreateProfile(ch, grID, token)
+	pr := sdk.Profile{Name: name}
+	cid, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
@@ -410,9 +410,9 @@ func TestViewProfileByThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		ch, err := mainfluxSDK.ViewProfileByThing(tc.token, tc.thing)
+		pr, err := mainfluxSDK.ViewProfileByThing(tc.token, tc.thing)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, ch, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, ch))
+		assert.Equal(t, tc.response, pr, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, pr))
 	}
 }
 
@@ -431,9 +431,9 @@ func TestUpdateProfile(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	ch2.GroupID = grID
+	pr2.GroupID = grID
 
 	cases := []struct {
 		desc    string
@@ -494,50 +494,50 @@ func TestDeleteProfile(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	id, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
-		desc   string
+		desc      string
 		profileID string
-		token  string
-		err    error
+		token     string
+		err       error
 	}{
 		{
-			desc:   "delete profile with invalid token",
+			desc:      "delete profile with invalid token",
 			profileID: id,
-			token:  wrongValue,
-			err:    createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+			token:     wrongValue,
+			err:       createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:   "delete non-existing profile",
+			desc:      "delete non-existing profile",
 			profileID: "2",
-			token:  token,
-			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+			token:     token,
+			err:       createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
-			desc:   "delete profile with invalid id",
+			desc:      "delete profile with invalid id",
 			profileID: emptyValue,
-			token:  token,
-			err:    createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+			token:     token,
+			err:       createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:   "delete profile with empty token",
+			desc:      "delete profile with empty token",
 			profileID: id,
-			token:  emptyValue,
-			err:    createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+			token:     emptyValue,
+			err:       createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:   "delete existing profile",
+			desc:      "delete existing profile",
 			profileID: id,
-			token:  token,
-			err:    nil,
+			token:     token,
+			err:       nil,
 		},
 		{
-			desc:   "delete deleted profile",
+			desc:      "delete deleted profile",
 			profileID: id,
-			token:  token,
-			err:    createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+			token:     token,
+			err:       createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 
@@ -562,66 +562,66 @@ func TestDeleteProfiles(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id1, err := mainfluxSDK.CreateProfile(ch1, grID, token)
+	id1, err := mainfluxSDK.CreateProfile(pr1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	id2, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	id2, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chIDs := []string{id1, id2}
+	prIDs := []string{id1, id2}
 
 	cases := []struct {
-		desc    string
+		desc       string
 		profileIDs []string
-		token   string
-		err     error
+		token      string
+		err        error
 	}{
 		{
-			desc:    "delete profiles with invalid token",
-			profileIDs: chIDs,
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+			desc:       "delete profiles with invalid token",
+			profileIDs: prIDs,
+			token:      wrongValue,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete non-existing profiles",
+			desc:       "delete non-existing profiles",
 			profileIDs: []string{wrongValue},
-			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+			token:      token,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 		{
-			desc:    "delete profiles with empty id",
+			desc:       "delete profiles with empty id",
 			profileIDs: []string{emptyValue},
-			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+			token:      token,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:    "delete profiles without profile ids",
+			desc:       "delete profiles without profile ids",
 			profileIDs: []string{},
-			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
+			token:      token,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusBadRequest),
 		},
 		{
-			desc:    "delete profiles with empty token",
-			profileIDs: chIDs,
-			token:   emptyValue,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+			desc:       "delete profiles with empty token",
+			profileIDs: prIDs,
+			token:      emptyValue,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete profiles with invalid token",
-			profileIDs: chIDs,
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
+			desc:       "delete profiles with invalid token",
+			profileIDs: prIDs,
+			token:      wrongValue,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusUnauthorized),
 		},
 		{
-			desc:    "delete existing profiles",
-			profileIDs: chIDs,
-			token:   token,
-			err:     nil,
+			desc:       "delete existing profiles",
+			profileIDs: prIDs,
+			token:      token,
+			err:        nil,
 		},
 		{
-			desc:    "delete deleted profiles",
-			profileIDs: chIDs,
-			token:   token,
-			err:     createError(sdk.ErrFailedRemoval, http.StatusNotFound),
+			desc:       "delete deleted profiles",
+			profileIDs: prIDs,
+			token:      token,
+			err:        createError(sdk.ErrFailedRemoval, http.StatusNotFound),
 		},
 	}
 

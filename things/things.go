@@ -68,7 +68,7 @@ type ThingRepository interface {
 
 	// RetrieveByProfile retrieves the subset of things owned by the specified
 	// user and connected or not connected to specified profile.
-	RetrieveByProfile(ctx context.Context, chID string, pm PageMetadata) (ThingsPage, error)
+	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.

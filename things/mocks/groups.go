@@ -193,7 +193,7 @@ func (grm *groupRepositoryMock) RetrieveProfilesByGroup(ctx context.Context, gro
 	defer grm.mu.Unlock()
 
 	var items []things.Profile
-	chs, ok := grm.profiles[groupID]
+	prs, ok := grm.profiles[groupID]
 	if !ok {
 		return things.ProfilesPage{}, nil
 	}
@@ -201,12 +201,12 @@ func (grm *groupRepositoryMock) RetrieveProfilesByGroup(ctx context.Context, gro
 	first := uint64(pm.Offset)
 	last := first + uint64(pm.Limit)
 
-	if last > uint64(len(chs)) {
-		last = uint64(len(chs))
+	if last > uint64(len(prs)) {
+		last = uint64(len(prs))
 	}
 
 	for i := first; i < last; i++ {
-		items = append(items, things.Profile{ID: chs[i]})
+		items = append(items, things.Profile{ID: prs[i]})
 	}
 
 	return things.ProfilesPage{

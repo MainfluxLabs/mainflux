@@ -90,8 +90,8 @@ func (es eventStore) ListThings(ctx context.Context, token string, pm things.Pag
 	return es.svc.ListThings(ctx, token, pm)
 }
 
-func (es eventStore) ListThingsByProfile(ctx context.Context, token, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	return es.svc.ListThingsByProfile(ctx, token, chID, pm)
+func (es eventStore) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	return es.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
 func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, error) {
@@ -123,12 +123,12 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 }
 
 func (es eventStore) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) ([]things.Profile, error) {
-	schs, err := es.svc.CreateProfiles(ctx, token, profiles...)
+	sprs, err := es.svc.CreateProfiles(ctx, token, profiles...)
 	if err != nil {
-		return schs, err
+		return sprs, err
 	}
 
-	for _, profile := range schs {
+	for _, profile := range sprs {
 		event := createProfileEvent{
 			id:       profile.ID,
 			groupID:  profile.GroupID,
@@ -143,7 +143,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token string, profiles 
 		es.client.XAdd(ctx, record).Err()
 	}
 
-	return schs, nil
+	return sprs, nil
 }
 
 func (es eventStore) UpdateProfile(ctx context.Context, token string, profile things.Profile) error {
@@ -203,14 +203,14 @@ func (es eventStore) ViewProfileConfig(ctx context.Context, prID string) (things
 	return es.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (es eventStore) Connect(ctx context.Context, token, chID string, thIDs []string) error {
-	if err := es.svc.Connect(ctx, token, chID, thIDs); err != nil {
+func (es eventStore) Connect(ctx context.Context, token, prID string, thIDs []string) error {
+	if err := es.svc.Connect(ctx, token, prID, thIDs); err != nil {
 		return err
 	}
 
 	for _, thID := range thIDs {
 		event := connectThingEvent{
-			profileID: chID,
+			profileID: prID,
 			thingID:   thID,
 		}
 		record := &redis.XAddArgs{

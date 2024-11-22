@@ -75,9 +75,9 @@ func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	for _, ch := range crm.profiles {
-		if ch.ID == id {
-			return ch, nil
+	for _, pr := range crm.profiles {
+		if pr.ID == id {
+			return pr, nil
 		}
 	}
 
@@ -143,16 +143,16 @@ func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.P
 	}
 
 	i := uint64(0)
-	var chs []things.Profile
-	for _, ch := range crm.profiles {
+	var prs []things.Profile
+	for _, pr := range crm.profiles {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
-			chs = append(chs, ch)
+			prs = append(prs, pr)
 		}
 		i++
 	}
 
 	page := things.ProfilesPage{
-		Profiles: chs,
+		Profiles: prs,
 		PageMetadata: things.PageMetadata{
 			Total:  crm.counter,
 			Offset: pm.Offset,
@@ -167,10 +167,10 @@ func (crm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	for _, ch := range crm.profiles {
+	for _, pr := range crm.profiles {
 		for _, co := range crm.cconns[thID] {
-			if ch.ID == co.ID {
-				return ch, nil
+			if pr.ID == co.ID {
+				return pr, nil
 			}
 		}
 	}
@@ -201,8 +201,8 @@ func (crm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error
 	return nil
 }
 
-func (crm *profileRepositoryMock) Connect(_ context.Context, chID string, thIDs []string) error {
-	ch, err := crm.RetrieveByID(context.Background(), chID)
+func (crm *profileRepositoryMock) Connect(_ context.Context, prID string, thIDs []string) error {
+	pr, err := crm.RetrieveByID(context.Background(), prID)
 	if err != nil {
 		return err
 	}
@@ -216,35 +216,35 @@ func (crm *profileRepositoryMock) Connect(_ context.Context, chID string, thIDs 
 			return err
 		}
 		crm.tconns <- Connection{
-			profileID: chID,
+			profileID: prID,
 			thing:     th,
 			connected: true,
 		}
 		if _, ok := crm.cconns[thID]; !ok {
 			crm.cconns[thID] = make(map[string]things.Profile)
 		}
-		crm.cconns[thID][chID] = ch
+		crm.cconns[thID][prID] = pr
 	}
 
 	return nil
 }
 
-func (crm *profileRepositoryMock) Disconnect(_ context.Context, chID string, thIDs []string) error {
+func (crm *profileRepositoryMock) Disconnect(_ context.Context, prID string, thIDs []string) error {
 	for _, thID := range thIDs {
 		if _, ok := crm.cconns[thID]; !ok {
 			return errors.ErrNotFound
 		}
 
-		if _, ok := crm.cconns[thID][chID]; !ok {
+		if _, ok := crm.cconns[thID][prID]; !ok {
 			return errors.ErrNotFound
 		}
 
 		crm.tconns <- Connection{
-			profileID: chID,
+			profileID: prID,
 			thing:     things.Thing{ID: thID},
 			connected: false,
 		}
-		delete(crm.cconns[thID], chID)
+		delete(crm.cconns[thID], prID)
 	}
 
 	return nil
@@ -289,12 +289,12 @@ func (crm *profileRepositoryMock) RetrieveAll(_ context.Context) ([]things.Profi
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	var chs []things.Profile
+	var prs []things.Profile
 	for _, v := range crm.profiles {
-		chs = append(chs, v)
+		prs = append(prs, v)
 	}
 
-	return chs, nil
+	return prs, nil
 }
 
 func (crm *profileRepositoryMock) RetrieveAllConnections(_ context.Context) ([]things.Connection, error) {

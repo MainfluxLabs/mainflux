@@ -64,7 +64,7 @@ type ProfileRepository interface {
 	// Save persists multiple profiles. Profiles are saved using a transaction. If one profile
 	// fails then none will be saved. Successful operation is indicated by non-nil
 	// error response.
-	Save(ctx context.Context, chs ...Profile) ([]Profile, error)
+	Save(ctx context.Context, prs ...Profile) ([]Profile, error)
 
 	// Update performs an update to the existing profile. A non-nil error is
 	// returned to indicate operation failure.
@@ -82,10 +82,10 @@ type ProfileRepository interface {
 	Remove(ctx context.Context, id ...string) error
 
 	// Connect connects a list of things to a profile.
-	Connect(ctx context.Context, chID string, thIDs []string) error
+	Connect(ctx context.Context, prID string, thIDs []string) error
 
 	// Disconnect disconnects a list of things from a profile.
-	Disconnect(ctx context.Context, chID string, thIDs []string) error
+	Disconnect(ctx context.Context, prID string, thIDs []string) error
 
 	// RetrieveConnByThingKey retrieves connections IDs by ThingKey
 	RetrieveConnByThingKey(ctx context.Context, key string) (Connection, error)

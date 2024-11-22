@@ -208,14 +208,14 @@ func (gr groupRepository) RetrieveProfilesByGroup(ctx context.Context, groupID s
 
 	var items []things.Profile
 	for rows.Next() {
-		dbch := dbProfile{}
-		if err := rows.StructScan(&dbch); err != nil {
+		dbpr := dbProfile{}
+		if err := rows.StructScan(&dbpr); err != nil {
 			return things.ProfilesPage{}, errors.Wrap(things.ErrRetrieveGroupProfiles, err)
 		}
 
-		ch := toProfile(dbch)
+		pr := toProfile(dbpr)
 
-		items = append(items, ch)
+		items = append(items, pr)
 	}
 
 	total, err := total(ctx, gr.db, qc, params)

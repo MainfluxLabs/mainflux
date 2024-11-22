@@ -490,28 +490,28 @@ func TestRetrieveProfilesByGroup(t *testing.T) {
 	group2, err = groupRepo.Save(context.Background(), group2)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	chID1, err := idProvider.ID()
+	prID1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	chID2, err := idProvider.ID()
+	prID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	chID3, err := idProvider.ID()
+	prID3, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	profiles := []things.Profile{
 		{
-			ID:       chID1,
+			ID:       prID1,
 			Name:     fmt.Sprintf("%s-%d", profileName, 1),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
-			ID:       chID2,
+			ID:       prID2,
 			Name:     fmt.Sprintf("%s-%d", profileName, 2),
 			GroupID:  group.ID,
 			Metadata: map[string]interface{}{},
 		},
 		{
-			ID:       chID3,
+			ID:       prID3,
 			Name:     fmt.Sprintf("%s-%d", profileName, 3),
 			GroupID:  group2.ID,
 			Metadata: map[string]interface{}{},
@@ -556,8 +556,8 @@ func TestRetrieveProfilesByGroup(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		chs, err := groupRepo.RetrieveProfilesByGroup(context.Background(), tc.groupID, tc.pagemeta)
-		assert.Equal(t, tc.profiles, chs.Profiles, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.profiles, chs.Profiles))
+		prs, err := groupRepo.RetrieveProfilesByGroup(context.Background(), tc.groupID, tc.pagemeta)
+		assert.Equal(t, tc.profiles, prs.Profiles, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.profiles, prs.Profiles))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

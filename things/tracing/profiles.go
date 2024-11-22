@@ -51,12 +51,12 @@ func (crm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...thi
 	return crm.repo.Save(ctx, profiles...)
 }
 
-func (crm profileRepositoryMiddleware) Update(ctx context.Context, ch things.Profile) error {
+func (crm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Profile) error {
 	span := createSpan(ctx, crm.tracer, updateProfileOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Update(ctx, ch)
+	return crm.repo.Update(ctx, pr)
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
@@ -91,20 +91,20 @@ func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 	return crm.repo.Remove(ctx, ids...)
 }
 
-func (crm profileRepositoryMiddleware) Connect(ctx context.Context, chID string, thIDs []string) error {
+func (crm profileRepositoryMiddleware) Connect(ctx context.Context, prID string, thIDs []string) error {
 	span := createSpan(ctx, crm.tracer, connectOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Connect(ctx, chID, thIDs)
+	return crm.repo.Connect(ctx, prID, thIDs)
 }
 
-func (crm profileRepositoryMiddleware) Disconnect(ctx context.Context, chID string, thIDs []string) error {
+func (crm profileRepositoryMiddleware) Disconnect(ctx context.Context, prID string, thIDs []string) error {
 	span := createSpan(ctx, crm.tracer, disconnectOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Disconnect(ctx, chID, thIDs)
+	return crm.repo.Disconnect(ctx, prID, thIDs)
 }
 
 func (crm profileRepositoryMiddleware) RetrieveConnByThingKey(ctx context.Context, key string) (things.Connection, error) {

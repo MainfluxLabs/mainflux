@@ -290,7 +290,7 @@ func TestThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for i := 1; i < 101; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
+		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
 		th := sdk.Thing{GroupID: grID, ID: id, Name: name, Key: key, Metadata: metadata}
@@ -394,15 +394,15 @@ func TestThingsByProfile(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	ch := sdk.Profile{Name: "test_profile"}
-	cid, err := mainfluxSDK.CreateProfile(ch, grID, token)
+	pr := sdk.Profile{Name: "test_profile"}
+	cid, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var n = 10
 	var thsDiscoNum = 1
 	var ths []sdk.Thing
 	for i := 1; i < n+1; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
+		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		th := sdk.Thing{
 			ID:       id,
@@ -819,73 +819,73 @@ func TestConnect(t *testing.T) {
 	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	profileID1, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		thingID string
-		profileID  string
-		token   string
-		err     error
+		desc      string
+		thingID   string
+		profileID string
+		token     string
+		err       error
 	}{
 		{
-			desc:    "connect existing thing to existing profile",
-			thingID: thingID,
-			profileID:  profileID1,
-			token:   token,
-			err:     nil,
+			desc:      "connect existing thing to existing profile",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     token,
+			err:       nil,
 		},
 
 		{
-			desc:    "connect existing thing to non-existing profile",
-			thingID: thingID,
-			profileID:  "9",
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
+			desc:      "connect existing thing to non-existing profile",
+			thingID:   thingID,
+			profileID: "9",
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
-			desc:    "connect non-existing thing to existing profile",
-			thingID: "9",
-			profileID:  profileID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
+			desc:      "connect non-existing thing to existing profile",
+			thingID:   "9",
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
-			desc:    "connect existing thing to profile with invalid ID",
-			thingID: thingID,
-			profileID:  emptyValue,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
+			desc:      "connect existing thing to profile with invalid ID",
+			thingID:   thingID,
+			profileID: emptyValue,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
 		},
 		{
-			desc:    "connect thing with invalid ID to existing profile",
-			thingID: emptyValue,
-			profileID:  profileID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
+			desc:      "connect thing with invalid ID to existing profile",
+			thingID:   emptyValue,
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
 		},
 
 		{
-			desc:    "connect existing thing to existing profile with invalid token",
-			thingID: thingID,
-			profileID:  profileID1,
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
+			desc:      "connect existing thing to existing profile with invalid token",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     wrongValue,
+			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "connect existing thing to existing profile with empty token",
-			thingID: thingID,
-			profileID:  profileID1,
-			token:   emptyValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
+			desc:      "connect existing thing to existing profile with empty token",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     emptyValue,
+			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "connect thing to a profile from another group",
-			thingID: thingID2,
-			profileID:  profileID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusForbidden),
+			desc:      "connect thing to a profile from another group",
+			thingID:   thingID2,
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusForbidden),
 		},
 	}
 
@@ -925,7 +925,7 @@ func TestDisconnect(t *testing.T) {
 	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	profileID1, err := mainfluxSDK.CreateProfile(ch2, grID, token)
+	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{

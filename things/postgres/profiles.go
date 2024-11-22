@@ -49,9 +49,9 @@ func (cr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 		  VALUES (:id, :group_id, :name, :metadata, :config);`
 
 	for _, profile := range profiles {
-		dbch := toDBProfile(profile)
+		dbpr := toDBProfile(profile)
 
-		_, err = tx.NamedExecContext(ctx, q, dbch)
+		_, err = tx.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
@@ -79,9 +79,9 @@ func (cr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 func (cr profileRepository) Update(ctx context.Context, profile things.Profile) error {
 	q := `UPDATE profiles SET name = :name, metadata = :metadata, config = :config WHERE id = :id;`
 
-	dbch := toDBProfile(profile)
+	dbpr := toDBProfile(profile)
 
-	res, err := cr.db.NamedExecContext(ctx, q, dbch)
+	res, err := cr.db.NamedExecContext(ctx, q, dbpr)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -111,11 +111,11 @@ func (cr profileRepository) Update(ctx context.Context, profile things.Profile) 
 func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
 	q := `SELECT group_id, name, metadata, config FROM profiles WHERE id = $1;`
 
-	dbch := dbProfile{
+	dbpr := dbProfile{
 		ID: id,
 	}
 
-	if err := cr.db.QueryRowxContext(ctx, q, id).StructScan(&dbch); err != nil {
+	if err := cr.db.QueryRowxContext(ctx, q, id).StructScan(&dbpr); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
@@ -124,16 +124,16 @@ func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return toProfile(dbch), nil
+	return toProfile(dbpr), nil
 }
 
 func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
-	chPage, err := cr.retrieve(ctx, []string{}, true, things.PageMetadata{})
+	prPage, err := cr.retrieve(ctx, []string{}, true, things.PageMetadata{})
 	if err != nil {
 		return []things.Profile{}, err
 	}
 
-	return chPage.Profiles, nil
+	return prPage.Profiles, nil
 }
 
 func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
@@ -147,9 +147,9 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles ch
+	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles pr
 		        INNER JOIN connections conn
-		        ON ch.id = conn.profile_id
+		        ON pr.id = conn.profile_id
 		        WHERE conn.thing_id = :thing;`)
 
 	params := map[string]interface{}{
@@ -164,12 +164,12 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 
 	var item things.Profile
 	for rows.Next() {
-		dbch := dbProfile{}
-		if err := rows.StructScan(&dbch); err != nil {
+		dbpr := dbProfile{}
+		if err := rows.StructScan(&dbpr); err != nil {
 			return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		item = toProfile(dbch)
+		item = toProfile(dbpr)
 	}
 
 	return item, nil
@@ -177,11 +177,11 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 
 func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		dbch := dbProfile{
+		dbpr := dbProfile{
 			ID: id,
 		}
 		q := `DELETE FROM profiles WHERE id = :id`
-		_, err := cr.db.NamedExecContext(ctx, q, dbch)
+		_, err := cr.db.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
@@ -190,7 +190,7 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (cr profileRepository) Connect(ctx context.Context, chID string, thIDs []string) error {
+func (cr profileRepository) Connect(ctx context.Context, prID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -200,7 +200,7 @@ func (cr profileRepository) Connect(ctx context.Context, chID string, thIDs []st
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
-			Profile: chID,
+			Profile: prID,
 			Thing:   thID,
 		}
 
@@ -228,7 +228,7 @@ func (cr profileRepository) Connect(ctx context.Context, chID string, thIDs []st
 	return nil
 }
 
-func (cr profileRepository) Disconnect(ctx context.Context, chID string, thIDs []string) error {
+func (cr profileRepository) Disconnect(ctx context.Context, prID string, thIDs []string) error {
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(things.ErrConnect, err)
@@ -239,7 +239,7 @@ func (cr profileRepository) Disconnect(ctx context.Context, chID string, thIDs [
 
 	for _, thID := range thIDs {
 		dbco := dbConnection{
-			Profile: chID,
+			Profile: prID,
 			Thing:   thID,
 		}
 
@@ -295,18 +295,18 @@ func (cr profileRepository) RetrieveConnByThingKey(ctx context.Context, thingKey
 	}
 	defer rows.Close()
 
-	dbch := dbConn{}
+	dbpr := dbConn{}
 	for rows.Next() {
-		if err := rows.StructScan(&dbch); err != nil {
+		if err := rows.StructScan(&dbpr); err != nil {
 			return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 	}
 
-	if dbch.ProfileID == "" {
+	if dbpr.ProfileID == "" {
 		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return things.Connection{ThingID: thingID, ProfileID: dbch.ProfileID}, nil
+	return things.Connection{ThingID: thingID, ProfileID: dbpr.ProfileID}, nil
 }
 
 func (cr profileRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
@@ -336,12 +336,12 @@ func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []s
 		return things.ProfilesPage{}, nil
 	}
 
-	chPage, err := cr.retrieve(ctx, groupIDs, false, pm)
+	prPage, err := cr.retrieve(ctx, groupIDs, false, pm)
 	if err != nil {
 		return things.ProfilesPage{}, err
 	}
 
-	return chPage, nil
+	return prPage, nil
 }
 
 func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ProfilesPage, error) {
@@ -391,13 +391,13 @@ func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, all
 
 	items := []things.Profile{}
 	for rows.Next() {
-		dbch := dbProfile{}
-		if err := rows.StructScan(&dbch); err != nil {
+		dbpr := dbProfile{}
+		if err := rows.StructScan(&dbpr); err != nil {
 			return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
-		ch := toProfile(dbch)
+		pr := toProfile(dbpr)
 
-		items = append(items, ch)
+		items = append(items, pr)
 	}
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
@@ -467,23 +467,23 @@ type dbProfile struct {
 	Metadata dbJSONB `db:"metadata"`
 }
 
-func toDBProfile(ch things.Profile) dbProfile {
+func toDBProfile(pr things.Profile) dbProfile {
 	return dbProfile{
-		ID:       ch.ID,
-		GroupID:  ch.GroupID,
-		Name:     ch.Name,
-		Config:   ch.Config,
-		Metadata: ch.Metadata,
+		ID:       pr.ID,
+		GroupID:  pr.GroupID,
+		Name:     pr.Name,
+		Config:   pr.Config,
+		Metadata: pr.Metadata,
 	}
 }
 
-func toProfile(ch dbProfile) things.Profile {
+func toProfile(pr dbProfile) things.Profile {
 	return things.Profile{
-		ID:       ch.ID,
-		GroupID:  ch.GroupID,
-		Name:     ch.Name,
-		Config:   ch.Config,
-		Metadata: ch.Metadata,
+		ID:       pr.ID,
+		GroupID:  pr.GroupID,
+		Name:     pr.Name,
+		Config:   pr.Config,
+		Metadata: pr.Metadata,
 	}
 }
 

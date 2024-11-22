@@ -61,20 +61,20 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (svc *mainfluxThings) Connect(_ context.Context, token string, chID string, thIDs []string) error {
+func (svc *mainfluxThings) Connect(_ context.Context, token string, prID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	svc.connections[chID] = append(svc.connections[chID], thIDs...)
+	svc.connections[prID] = append(svc.connections[prID], thIDs...)
 
 	return nil
 }
 
-func (svc *mainfluxThings) Disconnect(_ context.Context, token string, chID string, thIDs []string) error {
+func (svc *mainfluxThings) Disconnect(_ context.Context, token string, prID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	ids := svc.connections[chID]
+	ids := svc.connections[prID]
 	var count int
 	var newConns []string
 	for _, thID := range thIDs {
@@ -89,7 +89,7 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, token string, chID stri
 		if len(newConns)-len(ids) != count {
 			return errors.ErrNotFound
 		}
-		svc.connections[chID] = newConns
+		svc.connections[prID] = newConns
 	}
 
 	return nil
@@ -145,17 +145,17 @@ func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateProfiles(_ context.Context, token string, chs ...things.Profile) ([]things.Profile, error) {
+func (svc *mainfluxThings) CreateProfiles(_ context.Context, token string, prs ...things.Profile) ([]things.Profile, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	for i := range chs {
+	for i := range prs {
 		svc.counter++
-		chs[i].ID = strconv.FormatUint(svc.counter, 10)
-		svc.profiles[chs[i].ID] = chs[i]
+		prs[i].ID = strconv.FormatUint(svc.counter, 10)
+		svc.profiles[prs[i].ID] = prs[i]
 	}
 
-	return chs, nil
+	return prs, nil
 }
 
 func (svc *mainfluxThings) UpdateProfile(context.Context, string, things.Profile) error {
@@ -170,7 +170,7 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewProfileConfig(_ context.Context, chID string) (things.Config, error) {
+func (svc *mainfluxThings) ViewProfileConfig(_ context.Context, prID string) (things.Config, error) {
 	panic("not implemented")
 }
 
