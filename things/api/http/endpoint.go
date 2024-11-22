@@ -793,17 +793,16 @@ func buildProfilesByGroupResponse(cp things.ProfilesPage) profilesPageRes {
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:                []backupThingRes{},
-		Profiles:              []backupProfileRes{},
-		Connections:           []backupConnectionRes{},
-		Groups:                []viewGroupRes{},
-		GroupThingRelations:   []backupGroupThingRelationRes{},
-		GroupProfileRelations: []backupGroupProfileRelationRes{},
+		Things:      []backupThingRes{},
+		Profiles:    []backupProfileRes{},
+		Connections: []backupConnectionRes{},
+		Groups:      []viewGroupRes{},
 	}
 
 	for _, thing := range backup.Things {
 		view := backupThingRes{
 			ID:       thing.ID,
+			GroupID:  thing.GroupID,
 			Name:     thing.Name,
 			Key:      thing.Key,
 			Metadata: thing.Metadata,
@@ -814,6 +813,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	for _, profile := range backup.Profiles {
 		view := backupProfileRes{
 			ID:       profile.ID,
+			GroupID:  profile.GroupID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
 		}

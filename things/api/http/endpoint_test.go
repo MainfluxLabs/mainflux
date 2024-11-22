@@ -285,7 +285,6 @@ func TestUpdateThing(t *testing.T) {
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
-
 		{
 			desc:        "update non-existent thing",
 			req:         data,
@@ -294,7 +293,6 @@ func TestUpdateThing(t *testing.T) {
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
-
 		{
 			desc:        "update thing with invalid id",
 			req:         data,

@@ -187,27 +187,11 @@ type backupConnectionRes struct {
 	ThingID   string `json:"thing_id"`
 }
 
-type backupGroupThingRelationRes struct {
-	ThingID   string    `json:"thing_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type backupGroupProfileRelationRes struct {
-	ProfileID string    `json:"profile_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 type backupRes struct {
-	Things                []backupThingRes                `json:"things"`
-	Profiles              []backupProfileRes              `json:"profiles"`
-	Connections           []backupConnectionRes           `json:"connections"`
-	Groups                []viewGroupRes                  `json:"groups"`
-	GroupThingRelations   []backupGroupThingRelationRes   `json:"group_thing_relations"`
-	GroupProfileRelations []backupGroupProfileRelationRes `json:"group_profile_relations"`
+	Things      []backupThingRes      `json:"things"`
+	Profiles    []backupProfileRes    `json:"profiles"`
+	Connections []backupConnectionRes `json:"connections"`
+	Groups      []viewGroupRes        `json:"groups"`
 }
 
 func (res backupRes) Code() int {

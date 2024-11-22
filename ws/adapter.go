@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	profsPrefix = "profiles"
+	profilesPrefix = "profiles"
 )
 
 var (
@@ -28,12 +28,6 @@ var (
 
 	// ErrFailedUnsubscribe indicates that client couldn't unsubscribe from specified profile
 	ErrFailedUnsubscribe = errors.New("failed to unsubscribe from a profile")
-
-	// ErrFailedConnection indicates that service couldn't connect to message broker.
-	ErrFailedConnection = errors.New("failed to connect to message broker")
-
-	// ErrInvalidConnection indicates that client couldn't subscribe to message broker
-	ErrInvalidConnection = errors.New("nats: invalid connection")
 
 	// ErrUnauthorizedAccess indicates that client provided missing or invalid credentials
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
@@ -105,7 +99,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, thingKey, profileID, s
 
 	c.id = conn.ThingID
 
-	subject := fmt.Sprintf("%s.%s", profsPrefix, profileID)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
@@ -128,7 +122,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, profileID,
 		return ErrUnauthorizedAccess
 	}
 
-	subject := fmt.Sprintf("%s.%s", profsPrefix, profileID)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
