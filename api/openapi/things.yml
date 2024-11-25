@@ -16,7 +16,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/ThingsCreateReq"
+        $ref: "#/components/requestBodies/CreateThingsReq"
       responses:
         '201':
           $ref: "#/components/responses/CreateThingsRes"
@@ -84,7 +84,7 @@ paths:
       tags:
         - things
       requestBody:
-        $ref: "#/components/requestBodies/ThingRemoveReq"
+        $ref: "#/components/requestBodies/RemoveThingReq"
       responses:
         '204':
           description: Things removed.
@@ -106,7 +106,7 @@ paths:
       tags:
         - things
       requestBody:
-        $ref: "#/components/requestBodies/ThingsSearchReq"
+        $ref: "#/components/requestBodies/SearchThingsReq"
       responses:
         '200':
           $ref: "#/components/responses/ThingsPageRes"
@@ -149,7 +149,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
-        $ref: "#/components/requestBodies/ThingUpdateReq"
+        $ref: "#/components/requestBodies/UpdateThingReq"
       responses:
         '200':
           description: Thing updated.
@@ -191,7 +191,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
-        $ref: "#/components/requestBodies/KeyUpdateReq"
+        $ref: "#/components/requestBodies/UpdateKeyReq"
       responses:
         '200':
           description: Thing key updated.
@@ -241,7 +241,7 @@ paths:
         $ref: "#/components/requestBodies/CreateProfilesReq"
       responses:
         '201':
-          $ref: "#/components/responses/ProfilesCreateRes"
+          $ref: "#/components/responses/CreateProfilesRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -347,7 +347,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/ProfileId"
       requestBody:
-        $ref: "#/components/requestBodies/ProfileCreateReq"
+        $ref: "#/components/requestBodies/CreateProfileReq"
       responses:
         '200':
           description: Profile updated.
@@ -501,10 +501,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupsCreateReq"
+        $ref: "#/components/requestBodies/CreateGroupsReq"
       responses:
         '201':
-          $ref: "#/components/responses/GroupCreateRes"
+          $ref: "#/components/responses/CreateGroupRes"
         '400':
           description: Failed due to malformed JSON.
         '409':
@@ -541,7 +541,7 @@ paths:
       tags:
         - groups
       requestBody:
-        $ref: "#/components/requestBodies/GroupRemoveReq"
+        $ref: "#/components/requestBodies/RemoveGroupReq"
       responses:
         '204':
           description: Groups removed.
@@ -580,7 +580,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupUpdateReq"
+        $ref: "#/components/requestBodies/UpdateGroupReq"
       responses:
         '200':
           description: Group updated.
@@ -1365,7 +1365,7 @@ components:
         additionalProperties: {}
 
   requestBodies:
-    ThingsCreateReq:
+    CreateThingsReq:
       description: JSON-formatted document describing the new things.
       required: true
       content:
@@ -1377,7 +1377,7 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/ThingReqSchema"
-    ThingUpdateReq:
+    UpdateThingReq:
       description: Arbitrary, object-encoded thing's data.
       required: true
       content:
@@ -1390,14 +1390,14 @@ components:
                 description: Free-form thing name.
               metadata:
                 type: object
-    ThingsSearchReq:
+    SearchThingsReq:
       description: JSON-formatted document describing search parameters.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsReqSchema"
-    ThingRemoveReq:
+    RemoveThingReq:
       description: JSON-formatted document describing the identifiers of things for deleting.
       required: true
       content:
@@ -1410,7 +1410,7 @@ components:
                 items:
                   type: string
                   format: uuid
-    KeyUpdateReq:
+    UpdateKeyReq:
       required: true
       description: JSON containing thing.
       content:
@@ -1422,7 +1422,7 @@ components:
                 type: string
                 format: uuid
                 description: Thing key that is used for thing auth.
-    ProfileCreateReq:
+    CreateProfileReq:
       description: JSON-formatted document describing the updated profile.
       required: true
       content:
@@ -1482,21 +1482,21 @@ components:
                 description: Thing key that is used for thing auth.
             required:
               - token
-    GroupsCreateReq:
+    CreateGroupsReq:
       description: JSON-formatted document describing group create request.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupsReqSchema"
-    GroupUpdateReq:
+    UpdateGroupReq:
       description: JSON-formatted document describing group create request.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupSchema"
-    GroupRemoveReq:
+    RemoveGroupReq:
       description: JSON-formatted document describing the identifiers of groups for deleting.
       required: true
       content:
@@ -1566,7 +1566,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsPage"
-    ProfilesCreateRes:
+    CreateProfilesRes:
       description: Profiles created.
       content:
         application/json:
@@ -1611,7 +1611,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Identity"
-    GroupCreateRes:
+    CreateGroupRes:
       description: Group created.
       content:
         application/json:

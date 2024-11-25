@@ -170,27 +170,27 @@ func (rce removeProfileEvent) Encode() map[string]interface{} {
 }
 
 type connectThingEvent struct {
-	profileID  string
-	thingID string
+	profileID string
+	thingID   string
 }
 
 func (cte connectThingEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"profile_id":   cte.profileID,
-		"thing_id":  cte.thingID,
-		"operation": thingConnect,
+		"profile_id": cte.profileID,
+		"thing_id":   cte.thingID,
+		"operation":  thingConnect,
 	}
 }
 
 type disconnectThingEvent struct {
-	profileID  string
-	thingID string
+	profileID string
+	thingID   string
 }
 
 func (dte disconnectThingEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"profile_id":   dte.profileID,
-		"thing_id":  dte.thingID,
-		"operation": thingDisconnect,
+		"profile_id": dte.profileID,
+		"thing_id":   dte.thingID,
+		"operation":  thingDisconnect,
 	}
 }
