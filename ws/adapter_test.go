@@ -24,7 +24,7 @@ const (
 )
 
 var msg = protomfx.Message{
-	Profile:   profileID,
+	ProfileID: profileID,
 	Publisher: id,
 	Subtopic:  "",
 	Protocol:  protocol,

@@ -58,9 +58,9 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 
 		switch topic {
 		case brokers.SubjectSenML:
-			topic = profiles + "/" + msg.Profile + "/" + senmlFormat + "/" + messages
+			topic = profiles + "/" + msg.ProfileID + "/" + senmlFormat + "/" + messages
 		case brokers.SubjectJSON:
-			topic = profiles + "/" + msg.Profile + "/" + jsonFormat + "/" + messages
+			topic = profiles + "/" + msg.ProfileID + "/" + jsonFormat + "/" + messages
 		default:
 			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
 			return nil

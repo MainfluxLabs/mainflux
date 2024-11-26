@@ -8,18 +8,17 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string  profile   = 1;
-    string  subtopic  = 2;
-    string  publisher = 3;
-    string  protocol  = 4;
-    bytes   payload   = 5;
-    int64   created   = 6; // Unix timestamp in nanoseconds
-    Config  config    = 7;
+    string  profileID       = 1;
+    string  subtopic        = 2;
+    string  publisher       = 3;
+    string  protocol        = 4;
+    bytes   payload         = 5;
+    int64   created         = 6; // Unix timestamp in nanoseconds
+    Config  profileConfig   = 7;
 }
 
 service ThingsService {
     rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
-    rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
@@ -44,9 +43,9 @@ message ConnByKeyReq {
 }
 
 message ConnByKeyRes {
-    string  profileID = 1;
-    string  thingID   = 2;
-    Config  config    = 3;
+    string  profileID       = 1;
+    string  thingID         = 2;
+    Config  profileConfig   = 3;
 }
 
 message Config {
@@ -63,10 +62,6 @@ message Transformer {
     string timeField             = 2;
     string timeFormat            = 3;
     string timeLocation          = 4;
-}
-
-message ConfigByThingIDRes{
-    Config config = 1;
 }
 
 message ThingID {

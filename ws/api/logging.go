@@ -29,7 +29,7 @@ func LoggingMiddleware(svc ws.Service, logger log.Logger) ws.Service {
 
 func (lm *loggingMiddleware) Publish(ctx context.Context, thingKey string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		destProfile := msg.GetProfile()
+		destProfile := msg.GetProfileID()
 		if msg.Subtopic != "" {
 			destProfile = fmt.Sprintf("%s.%s", destProfile, msg.Subtopic)
 		}

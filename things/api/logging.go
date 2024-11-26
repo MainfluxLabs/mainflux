@@ -271,19 +271,6 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config things.Config, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_config_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.GetConfigByThingID(ctx, thingID)
-}
-
 func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_group_id_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))

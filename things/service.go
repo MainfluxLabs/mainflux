@@ -99,9 +99,6 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
 
-	// GetConfigByThingID returns profile config for given thing ID.
-	GetConfigByThingID(ctx context.Context, thingID string) (Config, error)
-
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
@@ -605,25 +602,6 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 		return "", err
 	}
 	return id, nil
-}
-
-func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string) (Config, error) {
-	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
-	if err != nil {
-		return Config{}, err
-	}
-
-	meta, err := json.Marshal(profile.Config)
-	if err != nil {
-		return Config{}, err
-	}
-
-	var config Config
-	if err := json.Unmarshal(meta, &config); err != nil {
-		return Config{}, err
-	}
-
-	return config, nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

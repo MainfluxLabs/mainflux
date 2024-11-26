@@ -201,15 +201,6 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (things.Config, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "get_config_by_thing_id").Add(1)
-		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.GetConfigByThingID(ctx, thingID)
-}
-
 func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_group_id_by_thing_id").Add(1)

@@ -29,7 +29,7 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 
 func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		destProfile := msg.Profile
+		destProfile := msg.ProfileID
 		if msg.Subtopic != "" {
 			destProfile = fmt.Sprintf("%s.%s", destProfile, msg.Subtopic)
 		}

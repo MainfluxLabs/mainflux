@@ -99,10 +99,6 @@ func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.Gro
 	return &protomfx.GroupsRes{Groups: groups}, nil
 }
 
-func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
-	panic("implement me")
-}
-
 func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if gr, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: gr}, nil

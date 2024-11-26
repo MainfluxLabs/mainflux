@@ -60,10 +60,10 @@ func TestPublisher(t *testing.T) {
 
 	for _, tc := range cases {
 		expectedMsg := protomfx.Message{
-			Profile:  profile,
-			Subtopic: tc.subtopic,
-			Payload:  tc.payload,
-			Config:   msgConfig,
+			ProfileID:     profile,
+			Subtopic:      tc.subtopic,
+			Payload:       tc.payload,
+			ProfileConfig: msgConfig,
 		}
 
 		err = pubsub.Publish(expectedMsg)

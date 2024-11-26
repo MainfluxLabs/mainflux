@@ -114,38 +114,6 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(configByThingIDReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		p, err := svc.GetConfigByThingID(ctx, req.thingID)
-		if err != nil {
-			return configByThingIDRes{}, err
-		}
-
-		transformer := &protomfx.Transformer{
-			ValuesFilter: p.Transformer.ValuesFilter,
-			TimeField:    p.Transformer.TimeField,
-			TimeFormat:   p.Transformer.TimeFormat,
-			TimeLocation: p.Transformer.TimeLocation,
-		}
-
-		config := &protomfx.Config{
-			ContentType: p.ContentType,
-			Write:       p.Write,
-			Transformer: transformer,
-			WebhookID:   p.WebhookID,
-			SmtpID:      p.SmtpID,
-			SmppID:      p.SmppID,
-		}
-
-		return configByThingIDRes{config: config}, nil
-	}
-}
-
 func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupIDByThingIDReq)

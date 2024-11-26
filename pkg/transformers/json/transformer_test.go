@@ -39,13 +39,13 @@ func TestTransformJSON(t *testing.T) {
 
 	tr := json.New()
 	msg := protomfx.Message{
-		Profile:   "profile-1",
-		Subtopic:  subtopic,
-		Publisher: "publisher-1",
-		Protocol:  "protocol",
-		Payload:   []byte(validPayload),
-		Created:   now,
-		Config:    config,
+		ProfileID:     "profile-1",
+		Subtopic:      subtopic,
+		Publisher:     "publisher-1",
+		Protocol:      "protocol",
+		Payload:       []byte(validPayload),
+		Created:       now,
+		ProfileConfig: config,
 	}
 	invalid := msg
 	invalid.Payload = []byte(invalidPayload)
@@ -55,15 +55,15 @@ func TestTransformJSON(t *testing.T) {
 
 	tsMsg := msg
 	tsMsg.Payload = []byte(tsPayload)
-	tsMsg.Config.Transformer.TimeField = timeFieldName
+	tsMsg.ProfileConfig.Transformer.TimeField = timeFieldName
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.Config = &protomfx.Config{Transformer: &protomfx.Transformer{ValuesFilter: valuesFilter, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
+	microsMsg.ProfileConfig = &protomfx.Config{Transformer: &protomfx.Transformer{ValuesFilter: valuesFilter, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
-	invalidTimeField.Config.Transformer.TimeField = timeFieldName
+	invalidTimeField.ProfileConfig.Transformer.TimeField = timeFieldName
 
 	jsonMsgs := json.Messages{
 		Data: []json.Message{

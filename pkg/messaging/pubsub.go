@@ -93,31 +93,31 @@ type PubSub interface {
 
 func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
 	msg := protomfx.Message{
-		Protocol:  protocol,
-		Profile:   conn.ProfileID,
-		Subtopic:  subject,
-		Publisher: conn.ThingID,
-		Payload:   *payload,
-		Created:   time.Now().UnixNano(),
-		Config:    &protomfx.Config{},
+		Protocol:      protocol,
+		ProfileID:     conn.ProfileID,
+		Subtopic:      subject,
+		Publisher:     conn.ThingID,
+		Payload:       *payload,
+		Created:       time.Now().UnixNano(),
+		ProfileConfig: &protomfx.Config{},
 	}
 
-	if conn.Config == nil {
+	if conn.ProfileConfig == nil {
 		return msg
 	}
 
-	msg.Config.Write = conn.Config.Write
-	msg.Config.WebhookID = conn.Config.WebhookID
-	msg.Config.SmtpID = conn.Config.SmtpID
-	msg.Config.SmppID = conn.Config.SmppID
-	msg.Config.ContentType = conn.Config.ContentType
+	msg.ProfileConfig.Write = conn.ProfileConfig.Write
+	msg.ProfileConfig.WebhookID = conn.ProfileConfig.WebhookID
+	msg.ProfileConfig.SmtpID = conn.ProfileConfig.SmtpID
+	msg.ProfileConfig.SmppID = conn.ProfileConfig.SmppID
+	msg.ProfileConfig.ContentType = conn.ProfileConfig.ContentType
 
-	if conn.Config.Transformer != nil {
-		msg.Config.Transformer = &protomfx.Transformer{
-			ValuesFilter: conn.Config.Transformer.ValuesFilter,
-			TimeField:    conn.Config.Transformer.TimeField,
-			TimeFormat:   conn.Config.Transformer.TimeFormat,
-			TimeLocation: conn.Config.Transformer.TimeLocation,
+	if conn.ProfileConfig.Transformer != nil {
+		msg.ProfileConfig.Transformer = &protomfx.Transformer{
+			ValuesFilter: conn.ProfileConfig.Transformer.ValuesFilter,
+			TimeField:    conn.ProfileConfig.Transformer.TimeField,
+			TimeFormat:   conn.ProfileConfig.Transformer.TimeFormat,
+			TimeLocation: conn.ProfileConfig.Transformer.TimeLocation,
 		}
 	}
 

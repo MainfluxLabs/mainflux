@@ -257,10 +257,6 @@ func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 
-func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (things.Config, error) {
-	return es.svc.GetConfigByThingID(ctx, thingID)
-}
-
 func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
 	return es.svc.GetGroupIDByThingID(ctx, thingID)
 }

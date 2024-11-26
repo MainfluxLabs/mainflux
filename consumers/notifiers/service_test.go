@@ -94,11 +94,11 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	}{
 		{
 			desc: "notify",
-			msg:  protomfx.Message{Config: config},
+			msg:  protomfx.Message{ProfileConfig: config},
 		},
 		{
 			desc: "notify with invalid contacts",
-			msg:  protomfx.Message{Config: invalidConfig},
+			msg:  protomfx.Message{ProfileConfig: invalidConfig},
 			err:  notifiers.ErrNotify,
 		},
 	}
