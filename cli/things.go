@@ -138,9 +138,9 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "connect <thing_id> <channel_id> <user_token>",
+		Use:   "connect <thing_id> <profile_id> <user_token>",
 		Short: "Connect thing",
-		Long:  `Connect thing to the channel`,
+		Long:  `Connect thing to the profile`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -148,7 +148,7 @@ var cmdThings = []cobra.Command{
 			}
 
 			connIDs := mfxsdk.ConnectionIDs{
-				ChannelID: args[1],
+				ProfileID: args[1],
 				ThingIDs:  []string{args[0]},
 			}
 			if err := sdk.Connect(connIDs, args[2]); err != nil {
@@ -160,9 +160,9 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "disconnect <thing_id> <channel_id> <user_token>",
+		Use:   "disconnect <thing_id> <profile_id> <user_token>",
 		Short: "Disconnect thing",
-		Long:  `Disconnect thing from the channel`,
+		Long:  `Disconnect thing from the profile`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -170,7 +170,7 @@ var cmdThings = []cobra.Command{
 			}
 
 			disconnIDs := mfxsdk.ConnectionIDs{
-				ChannelID: args[1],
+				ProfileID: args[1],
 				ThingIDs:  []string{args[0]},
 			}
 
@@ -184,15 +184,15 @@ var cmdThings = []cobra.Command{
 	},
 	{
 		Use:   "connections <thing_id> <user_token>",
-		Short: "Channel By Thing",
-		Long:  `View Channel by Thing`,
+		Short: "Profile By Thing",
+		Long:  `View Profile by Thing`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			cl, err := sdk.ViewChannelByThing(args[1], args[0])
+			cl, err := sdk.ViewProfileByThing(args[1], args[0])
 			if err != nil {
 				logError(err)
 				return
@@ -208,7 +208,7 @@ func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Channel and get the list of Things connected to a Channel`,
+		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Profile and get the list of Things connected to a Profile`,
 	}
 
 	for i := range cmdThings {

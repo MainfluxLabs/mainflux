@@ -24,15 +24,15 @@ servers:
           - '1883'
           - '8883'
       username:
-        description: Thing ID connected to the channel defined in the MQTT topic.
+        description: Thing ID connected to the profile defined in the MQTT topic.
       password:
         description: Thing Key corresponding to the Thing ID.
 
 channels:
-  channels/{channelId}/messages/{subtopic}:
+  profiles/{profileId}/messages/{subtopic}:
     parameters:
-      channelId:
-        $ref: '#/components/parameters/channelId'
+      profileId:
+        $ref: '#/components/parameters/profileId'
       subtopic:
         $ref: '#/components/parameters/subtopic'
     publish:
@@ -74,8 +74,8 @@ components:
         ```
 
   parameters:
-    channelId:
-      description: Channel ID connected to the Thing ID defined in the username.
+    profileId:
+      description: Profile ID connected to the Thing ID defined in the username.
       schema:
         type: string
         format: uuid

@@ -24,10 +24,10 @@ type groupRepositoryMock struct {
 	thingMembership map[string]string
 	// Map of group thing where group id is a key and thing ids are values.
 	things map[string][]string
-	// Map of group channel membership where channel id is a key and group id is a value.
-	channelMembership map[string]string
-	// Map of group channel where group id is a key and channel ids are values.
-	channels map[string][]string
+	// Map of group profile membership where profile id is a key and group id is a value.
+	profileMembership map[string]string
+	// Map of group profile where group id is a key and profile ids are values.
+	profiles map[string][]string
 }
 
 // NewGroupRepository creates in-memory user repository
@@ -36,8 +36,8 @@ func NewGroupRepository() things.GroupRepository {
 		groups:            make(map[string]things.Group),
 		thingMembership:   make(map[string]string),
 		things:            make(map[string][]string),
-		channelMembership: make(map[string]string),
-		channels:          make(map[string][]string),
+		profileMembership: make(map[string]string),
+		profiles:          make(map[string][]string),
 	}
 }
 
@@ -81,8 +81,8 @@ func (grm *groupRepositoryMock) Remove(ctx context.Context, ids ...string) error
 			delete(grm.thingMembership, thingID)
 		}
 
-		for _, channelID := range grm.channels[id] {
-			delete(grm.channelMembership, channelID)
+		for _, profileID := range grm.profiles[id] {
+			delete(grm.profileMembership, profileID)
 		}
 
 		// This is not quite exact, it should go in depth
@@ -176,11 +176,11 @@ func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thi
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, channelID string) (string, error) {
+func (grm *groupRepositoryMock) RetrieveProfileMembership(ctx context.Context, profileID string) (string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
-	groupID, ok := grm.channelMembership[channelID]
+	groupID, ok := grm.profileMembership[profileID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -188,36 +188,36 @@ func (grm *groupRepositoryMock) RetrieveChannelMembership(ctx context.Context, c
 	return groupID, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (grm *groupRepositoryMock) RetrieveProfilesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
-	var items []things.Channel
-	chs, ok := grm.channels[groupID]
+	var items []things.Profile
+	prs, ok := grm.profiles[groupID]
 	if !ok {
-		return things.ChannelsPage{}, nil
+		return things.ProfilesPage{}, nil
 	}
 
 	first := uint64(pm.Offset)
 	last := first + uint64(pm.Limit)
 
-	if last > uint64(len(chs)) {
-		last = uint64(len(chs))
+	if last > uint64(len(prs)) {
+		last = uint64(len(prs))
 	}
 
 	for i := first; i < last; i++ {
-		items = append(items, things.Channel{ID: chs[i]})
+		items = append(items, things.Profile{ID: prs[i]})
 	}
 
-	return things.ChannelsPage{
-		Channels: items,
+	return things.ProfilesPage{
+		Profiles: items,
 		PageMetadata: things.PageMetadata{
 			Total: uint64(len(items)),
 		},
 	}, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveGroupThingsByChannel(ctx context.Context, groupID, channelID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (grm *groupRepositoryMock) RetrieveGroupThingsByProfile(ctx context.Context, groupID, profileID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 

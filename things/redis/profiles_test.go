@@ -14,7 +14,7 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	channelCache := redis.NewChannelCache(redisClient)
+	profileCache := redis.NewProfileCache(redisClient)
 
 	cid := "123"
 	tid := "321"
@@ -25,30 +25,30 @@ func TestConnect(t *testing.T) {
 		tid  string
 	}{
 		{
-			desc: "connect thing to channel",
+			desc: "connect thing to profile",
 			cid:  cid,
 			tid:  tid,
 		},
 		{
-			desc: "connect already connected thing to channel",
+			desc: "connect already connected thing to profile",
 			cid:  cid,
 			tid:  tid,
 		},
 	}
 	for _, tc := range cases {
-		err := channelCache.Connect(context.Background(), cid, tid)
+		err := profileCache.Connect(context.Background(), cid, tid)
 		assert.Nil(t, err, fmt.Sprintf("%s: fail to connect due to: %s\n", tc.desc, err))
 	}
 }
 
 func TestHasThing(t *testing.T) {
-	channelCache := redis.NewChannelCache(redisClient)
+	profileCache := redis.NewProfileCache(redisClient)
 
 	cid := "123"
 	tid := "321"
 
-	err := channelCache.Connect(context.Background(), cid, tid)
-	require.Nil(t, err, fmt.Sprintf("connect thing to channel: fail to connect due to: %s\n", err))
+	err := profileCache.Connect(context.Background(), cid, tid)
+	require.Nil(t, err, fmt.Sprintf("connect thing to profile: fail to connect due to: %s\n", err))
 
 	cases := map[string]struct {
 		cid       string
@@ -65,7 +65,7 @@ func TestHasThing(t *testing.T) {
 			tid:       cid,
 			hasAccess: false,
 		},
-		"access check for non-existing channel": {
+		"access check for non-existing profile": {
 			cid:       tid,
 			tid:       tid,
 			hasAccess: false,
@@ -73,19 +73,19 @@ func TestHasThing(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		hasAccess := channelCache.HasThing(context.Background(), tc.cid, tc.tid)
+		hasAccess := profileCache.HasThing(context.Background(), tc.cid, tc.tid)
 		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("%s: expected %t got %t\n", desc, tc.hasAccess, hasAccess))
 	}
 }
 func TestDisconnect(t *testing.T) {
-	channelCache := redis.NewChannelCache(redisClient)
+	profileCache := redis.NewProfileCache(redisClient)
 
 	cid := "123"
 	tid := "321"
 	tid2 := "322"
 
-	err := channelCache.Connect(context.Background(), cid, tid)
-	require.Nil(t, err, fmt.Sprintf("connect thing to channel: fail to connect due to: %s\n", err))
+	err := profileCache.Connect(context.Background(), cid, tid)
+	require.Nil(t, err, fmt.Sprintf("connect thing to profile: fail to connect due to: %s\n", err))
 
 	cases := []struct {
 		desc      string
@@ -107,23 +107,23 @@ func TestDisconnect(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		err := channelCache.Disconnect(context.Background(), tc.cid, tc.tid)
+		err := profileCache.Disconnect(context.Background(), tc.cid, tc.tid)
 		assert.Nil(t, err, fmt.Sprintf("%s: fail due to: %s\n", tc.desc, err))
 
-		hasAccess := channelCache.HasThing(context.Background(), tc.cid, tc.tid)
+		hasAccess := profileCache.HasThing(context.Background(), tc.cid, tc.tid)
 		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("access check after %s: expected %t got %t\n", tc.desc, tc.hasAccess, hasAccess))
 	}
 }
 
 func TestRemove(t *testing.T) {
-	channelCache := redis.NewChannelCache(redisClient)
+	profileCache := redis.NewProfileCache(redisClient)
 
 	cid := "123"
 	cid2 := "124"
 	tid := "321"
 
-	err := channelCache.Connect(context.Background(), cid, tid)
-	require.Nil(t, err, fmt.Sprintf("connect thing to channel: fail to connect due to: %s\n", err))
+	err := profileCache.Connect(context.Background(), cid, tid)
+	require.Nil(t, err, fmt.Sprintf("connect thing to Profile: fail to connect due to: %s\n", err))
 
 	cases := []struct {
 		desc      string
@@ -133,14 +133,14 @@ func TestRemove(t *testing.T) {
 		hasAccess bool
 	}{
 		{
-			desc:      "Remove channel from cache",
+			desc:      "Remove profile from cache",
 			cid:       cid,
 			tid:       tid,
 			err:       nil,
 			hasAccess: false,
 		},
 		{
-			desc:      "Remove non-cached channel from cache",
+			desc:      "Remove non-cached profile from cache",
 			cid:       cid2,
 			tid:       tid,
 			err:       nil,
@@ -149,9 +149,9 @@ func TestRemove(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := channelCache.Remove(context.Background(), tc.cid)
+		err := profileCache.Remove(context.Background(), tc.cid)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		hasAcces := channelCache.HasThing(context.Background(), tc.cid, tc.tid)
-		assert.Equal(t, tc.hasAccess, hasAcces, "%s - check access after removing channel: expected %t got %t\n", tc.desc, tc.hasAccess, hasAcces)
+		hasAcces := profileCache.HasThing(context.Background(), tc.cid, tc.tid)
+		assert.Equal(t, tc.hasAccess, hasAcces, "%s - check access after removing profile: expected %t got %t\n", tc.desc, tc.hasAccess, hasAcces)
 	}
 }

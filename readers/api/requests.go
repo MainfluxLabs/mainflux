@@ -11,14 +11,14 @@ import (
 
 const maxLimitSize = 1000
 
-type listChannelMessagesReq struct {
-	chanID   string
+type listProfileMessagesReq struct {
+	profileID   string
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listChannelMessagesReq) validate() error {
+func (req listProfileMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}

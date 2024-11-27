@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	chansPrefix = "channels"
-	// SubjectAllChannels represents subject to subscribe for all the channels.
-	SubjectAllChannels = "channels.#"
+	profilesPrefix = "profiles"
+	// SubjectAllProfiles represents subject to subscribe for all the profiles.
+	SubjectAllProfiles = "profiles.#"
 	exchangeName       = "mainflux-exchange"
 )
 

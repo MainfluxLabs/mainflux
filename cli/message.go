@@ -7,9 +7,9 @@ import "github.com/spf13/cobra"
 
 var cmdMessages = []cobra.Command{
 	{
-		Use:   "send <channel_id.subtopic> <JSON_string> <thing_key>",
+		Use:   "send <profile_id.subtopic> <JSON_string> <thing_key>",
 		Short: "Send messages",
-		Long:  `Sends message on the channel`,
+		Long:  `Sends message on the profile`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -25,9 +25,9 @@ var cmdMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "read <channel_id.subtopic> <thing_key>",
+		Use:   "read <profile_id.subtopic> <thing_key>",
 		Short: "Read messages",
-		Long:  `Reads all channel messages`,
+		Long:  `Reads all profile messages`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)

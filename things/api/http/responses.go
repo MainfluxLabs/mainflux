@@ -13,7 +13,7 @@ import (
 var (
 	_ apiutil.Response = (*viewThingRes)(nil)
 	_ apiutil.Response = (*thingsPageRes)(nil)
-	_ apiutil.Response = (*channelsPageRes)(nil)
+	_ apiutil.Response = (*profilesPageRes)(nil)
 	_ apiutil.Response = (*connectionsRes)(nil)
 	_ apiutil.Response = (*backupRes)(nil)
 	_ apiutil.Response = (*ThingsPageRes)(nil)
@@ -105,21 +105,21 @@ func (res thingsPageRes) Empty() bool {
 	return false
 }
 
-type channelRes struct {
+type profileRes struct {
 	ID       string                 `json:"id"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	created  bool
 }
 
-type channelsRes struct {
-	Channels []channelRes `json:"channels"`
+type profilesRes struct {
+	Profiles []profileRes `json:"profiles"`
 	created  bool
 }
 
-func (res channelsRes) Code() int {
+func (res profilesRes) Code() int {
 	if res.created {
 		return http.StatusCreated
 	}
@@ -127,28 +127,28 @@ func (res channelsRes) Code() int {
 	return http.StatusOK
 }
 
-func (res channelsRes) Headers() map[string]string {
+func (res profilesRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res channelsRes) Empty() bool {
+func (res profilesRes) Empty() bool {
 	return false
 }
 
-type channelsPageRes struct {
+type profilesPageRes struct {
 	pageRes
-	Channels []channelRes `json:"channels"`
+	Profiles []profileRes `json:"profiles"`
 }
 
-func (res channelsPageRes) Code() int {
+func (res profilesPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res channelsPageRes) Headers() map[string]string {
+func (res profilesPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res channelsPageRes) Empty() bool {
+func (res profilesPageRes) Empty() bool {
 	return false
 }
 
@@ -174,40 +174,24 @@ type backupThingRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type backupChannelRes struct {
+type backupProfileRes struct {
 	ID       string                 `json:"id"`
 	GroupID  string                 `json:"group_id,omitempty"`
 	Name     string                 `json:"name,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type backupConnectionRes struct {
-	ChannelID string `json:"channel_id"`
+	ProfileID string `json:"profile_id"`
 	ThingID   string `json:"thing_id"`
 }
 
-type backupGroupThingRelationRes struct {
-	ThingID   string    `json:"thing_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type backupGroupChannelRelationRes struct {
-	ChannelID string    `json:"channel_id"`
-	GroupID   string    `json:"group_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 type backupRes struct {
-	Things                []backupThingRes                `json:"things"`
-	Channels              []backupChannelRes              `json:"channels"`
-	Connections           []backupConnectionRes           `json:"connections"`
-	Groups                []viewGroupRes                  `json:"groups"`
-	GroupThingRelations   []backupGroupThingRelationRes   `json:"group_thing_relations"`
-	GroupChannelRelations []backupGroupChannelRelationRes `json:"group_channel_relations"`
+	Things      []backupThingRes      `json:"things"`
+	Profiles    []backupProfileRes    `json:"profiles"`
+	Connections []backupConnectionRes `json:"connections"`
+	Groups      []viewGroupRes        `json:"groups"`
 }
 
 func (res backupRes) Code() int {
@@ -348,7 +332,7 @@ func (res identityRes) Empty() bool {
 }
 
 type connByKeyRes struct {
-	ChannelID string `json:"channel_id"`
+	ProfileID string `json:"profile_id"`
 	ThingID   string `json:"thing_id"`
 }
 

@@ -14,8 +14,7 @@ const (
 	retrieveAllOp             = "retrieve_all"
 	retrieveGroupByIDOp       = "retrieve_group_by_id"
 	retrieveGroupByIDsOp      = "retrieve_group_by_ids"
-	retrieveByOwnerOp         = "retrieve_by_owner"
-	retrieveChannelsByGroupOp = "retrieve_channels_by_group"
+	retrieveProfilesByGroupOp = "retrieve_profiles_by_group"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -88,10 +87,10 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	return grm.repo.RetrieveByIDs(ctx, groupIDs, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveChannelsByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveChannelsByGroupOp)
+func (grm groupRepositoryMiddleware) RetrieveProfilesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+	span := createSpan(ctx, grm.tracer, retrieveProfilesByGroupOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveChannelsByGroup(ctx, groupID, pm)
+	return grm.repo.RetrieveProfilesByGroup(ctx, groupID, pm)
 }

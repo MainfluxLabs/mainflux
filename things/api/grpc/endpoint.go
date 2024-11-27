@@ -23,7 +23,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return connByKeyRes{}, err
 		}
 
-		p, err := svc.ViewChannelProfile(ctx, conn.ChannelID)
+		p, err := svc.ViewProfileConfig(ctx, conn.ProfileID)
 		if err != nil {
 			return connByKeyRes{}, err
 		}
@@ -35,7 +35,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			TimeLocation: p.Transformer.TimeLocation,
 		}
 
-		profile := &protomfx.Profile{
+		config := &protomfx.Config{
 			ContentType: p.ContentType,
 			Write:       p.Write,
 			Transformer: transformer,
@@ -44,7 +44,7 @@ func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			SmppID:      p.SmppID,
 		}
 
-		return connByKeyRes{channelID: conn.ChannelID, thingID: conn.ThingID, profile: profile}, nil
+		return connByKeyRes{profileID: conn.ProfileID, thingID: conn.ThingID, config: config}, nil
 	}
 }
 
@@ -111,38 +111,6 @@ func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return getGroupsByIDsRes{groups: mgr}, nil
-	}
-}
-
-func getProfileByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(profileByThingIDReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		p, err := svc.GetProfileByThingID(ctx, req.thingID)
-		if err != nil {
-			return profileByThingIDRes{}, err
-		}
-
-		transformer := &protomfx.Transformer{
-			ValuesFilter: p.Transformer.ValuesFilter,
-			TimeField:    p.Transformer.TimeField,
-			TimeFormat:   p.Transformer.TimeFormat,
-			TimeLocation: p.Transformer.TimeLocation,
-		}
-
-		profile := &protomfx.Profile{
-			ContentType: p.ContentType,
-			Write:       p.Write,
-			Transformer: transformer,
-			WebhookID:   p.WebhookID,
-			SmtpID:      p.SmtpID,
-			SmppID:      p.SmppID,
-		}
-
-		return profileByThingIDRes{profile: profile}, nil
 	}
 }
 

@@ -47,7 +47,7 @@ func (pub *publisher) Publish(msg protomfx.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, msg.Channel)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, msg.ProfileID)
 	if msg.Subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 	}

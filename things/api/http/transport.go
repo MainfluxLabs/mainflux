@@ -86,8 +86,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/things/:id/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_channel_by_thing")(viewChannelByThingEndpoint(svc)),
+	r.Get("/things/:id/profiles", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_profile_by_thing")(viewProfileByThingEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
@@ -107,50 +107,50 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Post("/groups/:id/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_channels")(createChannelsEndpoint(svc)),
-		decodeCreateChannels,
+	r.Post("/groups/:id/profiles", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_profiles")(createProfilesEndpoint(svc)),
+		decodeCreateProfiles,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Patch("/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_channels")(removeChannelsEndpoint(svc)),
-		decodeRemoveChannels,
+	r.Patch("/profiles", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_profiles")(removeProfilesEndpoint(svc)),
+		decodeRemoveProfiles,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Put("/channels/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_channel")(updateChannelEndpoint(svc)),
-		decodeUpdateChannel,
+	r.Put("/profiles/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_profile")(updateProfileEndpoint(svc)),
+		decodeUpdateProfile,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/channels/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_channel")(removeChannelEndpoint(svc)),
+	r.Delete("/profiles/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_profile")(removeProfileEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_channel")(viewChannelEndpoint(svc)),
+	r.Get("/profiles/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_profile")(viewProfileEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels/:id/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_things_by_channel")(listThingsByChannelEndpoint(svc)),
+	r.Get("/profiles/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_things_by_profile")(listThingsByProfileEndpoint(svc)),
 		decodeListByConnection,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_channels")(listChannelsEndpoint(svc)),
+	r.Get("/profiles", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_profiles")(listProfilesEndpoint(svc)),
 		decodeList,
 		encodeResponse,
 		opts...,
@@ -226,15 +226,15 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/groups/:id/channels", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_channels_by_group")(listChannelsByGroupEndpoint(svc)),
+	r.Get("/groups/:id/profiles", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_profiles_by_group")(listProfilesByGroupEndpoint(svc)),
 		decodeListMembers,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/channels/:id/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group_by_channel")(viewGroupByChannelEndpoint(svc)),
+	r.Get("/profiles/:id/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_group_by_profile")(viewGroupByProfileEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
@@ -350,28 +350,28 @@ func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCreateChannels(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateProfiles(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createChannelsReq{
+	req := createProfilesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, idKey),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.Channels); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.Profiles); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
-func decodeUpdateChannel(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := updateChannelReq{
+	req := updateProfileReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, idKey),
 	}
@@ -382,12 +382,12 @@ func decodeUpdateChannel(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeRemoveChannels(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveProfiles(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removeChannelsReq{
+	req := removeProfilesReq{
 		token: apiutil.ExtractBearerToken(r),
 	}
 

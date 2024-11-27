@@ -44,7 +44,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 func (pub *publisher) Publish(msg protomfx.Message) (err error) {
-	format, err := getFormat(msg.Profile.ContentType)
+	format, err := getFormat(msg.ProfileConfig.ContentType)
 	if err != nil {
 		return err
 	}
@@ -55,8 +55,8 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	}
 
 	var subjects []string
-	subject := fmt.Sprintf("%s.%s.%s.%s", chansPrefix, msg.Channel, format, messagesSuffix)
-	if msg.Profile.Write {
+	subject := fmt.Sprintf("%s.%s.%s.%s", profilesPrefix, msg.ProfileID, format, messagesSuffix)
+	if msg.ProfileConfig.Write {
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
@@ -64,15 +64,15 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		subjects = append(subjects, subject)
 	}
 
-	if msg.Profile.SmtpID != "" {
+	if msg.ProfileConfig.SmtpID != "" {
 		subjects = append(subjects, subjectSMTP)
 	}
 
-	if msg.Profile.SmppID != "" {
+	if msg.ProfileConfig.SmppID != "" {
 		subjects = append(subjects, subjectSMPP)
 	}
 
-	if msg.Profile.WebhookID != "" {
+	if msg.ProfileConfig.WebhookID != "" {
 		subjects = append(subjects, subjectWebhook)
 	}
 

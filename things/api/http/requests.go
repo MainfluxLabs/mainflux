@@ -107,20 +107,20 @@ func (req updateKeyReq) validate() error {
 	return nil
 }
 
-type createChannelReq struct {
+type createProfileReq struct {
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type createChannelsReq struct {
+type createProfilesReq struct {
 	token    string
 	groupID  string
-	Channels []createChannelReq
+	Profiles []createProfileReq
 }
 
-func (req createChannelsReq) validate() error {
+func (req createProfilesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -129,18 +129,18 @@ func (req createChannelsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.Channels) <= 0 {
+	if len(req.Profiles) <= 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, channel := range req.Channels {
-		if channel.ID != "" {
-			if err := validateUUID(channel.ID); err != nil {
+	for _, profile := range req.Profiles {
+		if profile.ID != "" {
+			if err := validateUUID(profile.ID); err != nil {
 				return err
 			}
 		}
 
-		if channel.Name == "" || len(channel.Name) > maxNameSize {
+		if profile.Name == "" || len(profile.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
 	}
@@ -148,15 +148,15 @@ func (req createChannelsReq) validate() error {
 	return nil
 }
 
-type updateChannelReq struct {
+type updateProfileReq struct {
 	token    string
 	id       string
 	Name     string                 `json:"name,omitempty"`
-	Profile  map[string]interface{} `json:"profile,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func (req updateChannelReq) validate() error {
+func (req updateProfileReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -195,22 +195,22 @@ func (req removeThingsReq) validate() error {
 	return nil
 }
 
-type removeChannelsReq struct {
+type removeProfilesReq struct {
 	token      string
-	ChannelIDs []string `json:"channel_ids,omitempty"`
+	ProfileIDs []string `json:"profile_ids,omitempty"`
 }
 
-func (req removeChannelsReq) validate() error {
+func (req removeProfilesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.ChannelIDs) < 1 {
+	if len(req.ProfileIDs) < 1 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, channelID := range req.ChannelIDs {
-		if channelID == "" {
+	for _, profileID := range req.ProfileIDs {
+		if profileID == "" {
 			return apiutil.ErrMissingID
 		}
 	}
@@ -300,7 +300,7 @@ func (req listByConnectionReq) validate() error {
 
 type connectionsReq struct {
 	token     string
-	ChannelID string   `json:"channel_id,omitempty"`
+	ProfileID string   `json:"profile_id,omitempty"`
 	ThingIDs  []string `json:"thing_ids,omitempty"`
 }
 
@@ -313,7 +313,7 @@ func (req connectionsReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	if req.ChannelID == "" {
+	if req.ProfileID == "" {
 		return apiutil.ErrMissingID
 	}
 
@@ -345,14 +345,14 @@ type restoreThingReq struct {
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
-type restoreChannelReq struct {
+type restoreProfileReq struct {
 	ID       string                 `json:"id"`
 	Name     string                 `json:"name"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
 type restoreConnectionReq struct {
-	ChannelID string `json:"channel_id"`
+	ProfileID string `json:"profile_id"`
 	ThingID   string `json:"thing_id"`
 }
 
@@ -368,7 +368,7 @@ type restoreGroupReq struct {
 type restoreReq struct {
 	token       string
 	Things      []restoreThingReq      `json:"things"`
-	Channels    []restoreChannelReq    `json:"channels"`
+	Profiles    []restoreProfileReq    `json:"profiles"`
 	Connections []restoreConnectionReq `json:"connections"`
 	Groups      []restoreGroupReq      `json:"groups"`
 }
@@ -378,7 +378,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Channels) == 0 && len(req.Connections) == 0 {
+	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Profiles) == 0 && len(req.Connections) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

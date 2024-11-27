@@ -50,12 +50,12 @@ func newService(tokens map[string]string) things.Service {
 	auth := mocks.NewAuthService("", usersList)
 	conns := make(chan thmocks.Connection)
 	thingsRepo := thmocks.NewThingRepository(conns)
-	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	profilesRepo := thmocks.NewProfileRepository(thingsRepo, conns)
 	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
-	chanCache := thmocks.NewChannelCache()
+	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, rolesRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
 }

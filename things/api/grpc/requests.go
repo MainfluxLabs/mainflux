@@ -36,7 +36,7 @@ func (req authorizeReq) validate() error {
 		return apiutil.ErrMissingID
 	}
 
-	if req.subject != things.ThingSub && req.subject != things.ChannelSub && req.subject != things.GroupSub {
+	if req.subject != things.ThingSub && req.subject != things.ProfileSub && req.subject != things.GroupSub {
 		return apiutil.ErrInvalidSubject
 	}
 
@@ -71,11 +71,11 @@ func (req getGroupsByIDsReq) validate() error {
 	return nil
 }
 
-type profileByThingIDReq struct {
+type configByThingIDReq struct {
 	thingID string
 }
 
-func (req profileByThingIDReq) validate() error {
+func (req configByThingIDReq) validate() error {
 	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}

@@ -145,6 +145,21 @@ func migrateDB(db *sqlx.DB) error {
 						ALTER TABLE channels ALTER COLUMN name SET NOT NULL;`,
 				},
 			},
+			{
+				Id: "things_5",
+				Up: []string{
+					`ALTER TABLE IF EXISTS channels RENAME TO profiles;
+						ALTER TABLE IF EXISTS profiles RENAME COLUMN profile TO config;
+						ALTER INDEX IF EXISTS channels_pkey RENAME TO profiles_pkey;
+						ALTER TABLE profiles RENAME CONSTRAINT group_name_chs TO group_name_prs;`,
+					`ALTER TABLE IF EXISTS connections RENAME COLUMN channel_id TO profile_id; 
+						ALTER TABLE connections DROP CONSTRAINT IF EXISTS connections_pkey;
+						ALTER TABLE connections ADD CONSTRAINT connections_pkey PRIMARY KEY (profile_id, thing_id);
+						ALTER TABLE connections DROP CONSTRAINT IF EXISTS connections_channel_id_fkey;
+						ALTER TABLE connections ADD CONSTRAINT connections_profile_id_fkey
+						FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
+				},
+			},
 		},
 	}
 

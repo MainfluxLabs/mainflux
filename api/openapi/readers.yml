@@ -5,18 +5,18 @@ info:
   version: "1.0.0"
 
 paths:
-  /channels/{chanId}/messages:
+  /profiles/{profileId}/messages:
     get:
-      summary: Retrieves messages sent to single channel
+      summary: Retrieves messages sent to single profile
       description: |
-        Retrieves a list of messages sent to specific channel. Due to
+        Retrieves a list of messages sent to specific profile. Due to
         performance concerns, data is retrieved in subsets. The API readers must
         ensure that the entire dataset is consumed either by making subsequent
         requests, or by increasing the subset size of the initial request.
       tags:
         - messages
       parameters:
-        - $ref: "#/components/parameters/ChanId"
+        - $ref: "#/components/parameters/ProfileId"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
@@ -67,9 +67,9 @@ components:
           items:
             type: object
             properties:
-              channel:
+              profile:
                 type: integer
-                description: Unique channel id.
+                description: Unique profile id.
               protocol:
                 type: string
                 description: Protocol name.
@@ -102,9 +102,9 @@ components:
                 description: Time of updating measurement.
 
   parameters:
-    ChanId:
-      name: chanId
-      description: Unique channel identifier.
+    ProfileId:
+      name: profileId
+      description: Unique profile identifier.
       in: path
       schema:
         type: string

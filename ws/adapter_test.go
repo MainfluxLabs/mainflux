@@ -16,15 +16,15 @@ import (
 )
 
 const (
-	chanID   = "1"
-	id       = "1"
-	thingKey = "thing_key"
-	subTopic = "subtopic"
-	protocol = "ws"
+	profileID = "1"
+	id        = "1"
+	thingKey  = "thing_key"
+	subTopic  = "subtopic"
+	protocol  = "ws"
 )
 
 var msg = protomfx.Message{
-	Channel:   chanID,
+	ProfileID: profileID,
 	Publisher: id,
 	Subtopic:  "",
 	Protocol:  protocol,
@@ -37,7 +37,7 @@ func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) 
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
 	svc, _ := newService(thingsClient)
 
 	cases := []struct {
@@ -91,149 +91,149 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
 	svc, pubsub := newService(thingsClient)
 
 	c := ws.NewClient(nil)
 
 	cases := []struct {
-		desc     string
-		thingKey string
-		chanID   string
-		subtopic string
-		fail     bool
-		err      error
+		desc      string
+		thingKey  string
+		profileID string
+		subtopic  string
+		fail      bool
+		err       error
 	}{
 		{
-			desc:     "subscribe to channel with valid thingKey, chanID, subtopic",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     false,
-			err:      nil,
+			desc:      "subscribe with valid thingKey, profileID, subtopic",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      false,
+			err:       nil,
 		},
 		{
-			desc:     "subscribe again to channel with valid thingKey, chanID, subtopic",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     false,
-			err:      nil,
+			desc:      "subscribe again with valid thingKey, profileID, subtopic",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      false,
+			err:       nil,
 		},
 		{
-			desc:     "subscribe to channel with subscribe set to fail",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     true,
-			err:      ws.ErrFailedSubscription,
+			desc:      "subscribe with subscribe set to fail",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      true,
+			err:       ws.ErrFailedSubscription,
 		},
 		{
-			desc:     "subscribe to channel with invalid chanID and invalid thingKey",
-			thingKey: "invalid",
-			chanID:   "0",
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "subscribe with invalid profileID and invalid thingKey",
+			thingKey:  "invalid",
+			profileID: "0",
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:     "subscribe to channel with empty channel",
-			thingKey: thingKey,
-			chanID:   "",
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "subscribe with empty profile",
+			thingKey:  thingKey,
+			profileID: "",
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:     "subscribe to channel with empty thingKey",
-			thingKey: "",
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "subscribe with empty thingKey",
+			thingKey:  "",
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:     "subscribe to channel with empty thingKey and empty channel",
-			thingKey: "",
-			chanID:   "",
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "subscribe with empty thingKey and empty profile",
+			thingKey:  "",
+			profileID: "",
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 	}
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Subscribe(context.Background(), tc.thingKey, tc.chanID, tc.subtopic, c)
+		err := svc.Subscribe(context.Background(), tc.thingKey, tc.profileID, tc.subtopic, c)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: chanID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
 	svc, pubsub := newService(thingsClient)
 
 	cases := []struct {
-		desc     string
-		thingKey string
-		chanID   string
-		subtopic string
-		fail     bool
-		err      error
+		desc      string
+		thingKey  string
+		profileID string
+		subtopic  string
+		fail      bool
+		err       error
 	}{
 		{
-			desc:     "unsubscribe from channel with valid thingKey, chanID, subtopic",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     false,
-			err:      nil,
+			desc:      "unsubscribe with valid thingKey, profileID, subtopic",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      false,
+			err:       nil,
 		},
 		{
-			desc:     "unsubscribe from channel with valid thingKey, chanID, and empty subtopic",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: "",
-			fail:     false,
-			err:      nil,
+			desc:      "unsubscribe with valid thingKey, profileID, and empty subtopic",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  "",
+			fail:      false,
+			err:       nil,
 		},
 		{
-			desc:     "unsubscribe from channel with unsubscribe set to fail",
-			thingKey: thingKey,
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     true,
-			err:      ws.ErrFailedUnsubscribe,
+			desc:      "unsubscribe  with unsubscribe set to fail",
+			thingKey:  thingKey,
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      true,
+			err:       ws.ErrFailedUnsubscribe,
 		},
 		{
-			desc:     "unsubscribe from channel with empty channel",
-			thingKey: thingKey,
-			chanID:   "",
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "unsubscribe with empty profile",
+			thingKey:  thingKey,
+			profileID: "",
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:     "unsubscribe from channel with empty thingKey",
-			thingKey: "",
-			chanID:   chanID,
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "unsubscribe with empty thingKey",
+			thingKey:  "",
+			profileID: profileID,
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:     "unsubscribe from channel with empty thingKey and empty channel",
-			thingKey: "",
-			chanID:   "",
-			subtopic: subTopic,
-			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			desc:      "unsubscribe with empty thingKey and empty profile",
+			thingKey:  "",
+			profileID: "",
+			subtopic:  subTopic,
+			fail:      false,
+			err:       ws.ErrUnauthorizedAccess,
 		},
 	}
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.chanID, tc.subtopic)
+		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.profileID, tc.subtopic)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

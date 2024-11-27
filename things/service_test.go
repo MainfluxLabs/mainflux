@@ -42,10 +42,10 @@ const (
 var (
 	thing       = things.Thing{Name: "test"}
 	thingList   = [n]things.Thing{}
-	channelList = [n]things.Channel{}
-	channel     = things.Channel{Name: "test"}
+	profileList = [n]things.Profile{}
+	profile     = things.Profile{Name: "test"}
 	thsExtID    = []things.Thing{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
-	chsExtID    = []things.Channel{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
+	prsExtID    = []things.Profile{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
 	user        = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Editor}
 	otherUser   = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Owner}
 	admin       = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
@@ -57,14 +57,14 @@ func newService() things.Service {
 	auth := authmock.NewAuthService(admin.ID, usersList)
 	conns := make(chan mocks.Connection)
 	thingsRepo := mocks.NewThingRepository(conns)
-	channelsRepo := mocks.NewChannelRepository(thingsRepo, conns)
+	profilesRepo := mocks.NewProfileRepository(thingsRepo, conns)
 	groupsRepo := mocks.NewGroupRepository()
 	rolesRepo := mocks.NewRolesRepository()
-	chanCache := mocks.NewChannelCache()
+	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, rolesRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
 }
 
 func TestInit(t *testing.T) {
@@ -457,17 +457,17 @@ func TestListThings(t *testing.T) {
 	}
 }
 
-func TestListThingsByChannel(t *testing.T) {
+func TestListThingsByProfile(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	ch := chs[0]
+	pr := prs[0]
 
 	thsDisconNum := uint64(4)
 
@@ -489,22 +489,22 @@ func TestListThingsByChannel(t *testing.T) {
 		thIDs = append(thIDs, thID.ID)
 	}
 
-	err = svc.Connect(context.Background(), token, ch.ID, thIDs[0:n-thsDisconNum])
+	err = svc.Connect(context.Background(), token, pr.ID, thIDs[0:n-thsDisconNum])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	// Wait for things and channels to connect
+	// Wait for things and profiles to connect
 	time.Sleep(time.Second)
 
 	cases := map[string]struct {
 		token        string
-		chID         string
+		prID         string
 		pageMetadata things.PageMetadata
 		size         uint64
 		err          error
 	}{
-		"list all things by existing channel": {
+		"list all things by existing profile": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -512,18 +512,18 @@ func TestListThingsByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 			err:  nil,
 		},
-		"list all things by existing channel with no limit": {
+		"list all things by existing profile with no limit": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
 			size: n - thsDisconNum,
 			err:  nil,
 		},
-		"list half of things by existing channel": {
+		"list half of things by existing profile": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
@@ -531,9 +531,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: (n / 2) - thsDisconNum,
 			err:  nil,
 		},
-		"list last thing by existing channel": {
+		"list last thing by existing profile": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: n - 1 - thsDisconNum,
 				Limit:  n,
@@ -541,9 +541,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: 1,
 			err:  nil,
 		},
-		"list empty set of things by existing channel": {
+		"list empty set of things by existing profile": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
@@ -551,9 +551,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: 0,
 			err:  nil,
 		},
-		"list things by existing channel with wrong credentials": {
+		"list things by existing profile with wrong credentials": {
 			token: wrongValue,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  0,
@@ -561,9 +561,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: 0,
 			err:  errors.ErrAuthentication,
 		},
-		"list things by non-existent channel with wrong credentials": {
+		"list things by non-existent profile with wrong credentials": {
 			token: token,
-			chID:  "non-existent",
+			prID:  "non-existent",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -571,9 +571,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: 0,
 			err:  errors.ErrNotFound,
 		},
-		"list all things by channel sorted by name ascendant": {
+		"list all things by profile sorted by name ascendant": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -583,9 +583,9 @@ func TestListThingsByChannel(t *testing.T) {
 			size: n - thsDisconNum,
 			err:  nil,
 		},
-		"list all things by channel sorted by name descendent": {
+		"list all things by profile sorted by name descendent": {
 			token: token,
-			chID:  ch.ID,
+			prID:  pr.ID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -598,12 +598,12 @@ func TestListThingsByChannel(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := svc.ListThingsByChannel(context.Background(), tc.token, tc.chID, tc.pageMetadata)
+		page, err := svc.ListThingsByProfile(context.Background(), tc.token, tc.prID, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
-		// Check if Things by Channel list have been sorted properly
+		// Check if Things by Profile list have been sorted properly
 		testSortThings(t, tc.pageMetadata, page.Things)
 	}
 }
@@ -657,113 +657,113 @@ func TestRemoveThings(t *testing.T) {
 	}
 }
 
-func TestCreateChannels(t *testing.T) {
+func TestCreateProfiles(t *testing.T) {
 	svc := newService()
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
-	chsExtID[0].GroupID = grID
-	chsExtID[1].GroupID = grID
+	prsExtID[0].GroupID = grID
+	prsExtID[1].GroupID = grID
 	cases := []struct {
 		desc     string
-		channels []things.Channel
+		profiles []things.Profile
 		token    string
 		err      error
 	}{
 		{
-			desc:     "create new channels",
-			channels: []things.Channel{{Name: "a", GroupID: grID}, {Name: "b", GroupID: grID}, {Name: "c", GroupID: grID}, {Name: "d", GroupID: grID}},
+			desc:     "create new profiles",
+			profiles: []things.Profile{{Name: "a", GroupID: grID}, {Name: "b", GroupID: grID}, {Name: "c", GroupID: grID}, {Name: "d", GroupID: grID}},
 			token:    token,
 			err:      nil,
 		},
 		{
-			desc:     "create new channel with wrong group id",
-			channels: []things.Channel{{Name: "e", GroupID: wrongValue}},
+			desc:     "create new profile with wrong group id",
+			profiles: []things.Profile{{Name: "e", GroupID: wrongValue}},
 			token:    token,
 			err:      errors.ErrNotFound,
 		},
 		{
-			desc:     "create channel with wrong credentials",
-			channels: []things.Channel{{Name: "f", GroupID: grID}},
+			desc:     "create profile with wrong credentials",
+			profiles: []things.Profile{{Name: "f", GroupID: grID}},
 			token:    wrongValue,
 			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "create new channels with external UUID",
-			channels: chsExtID,
+			desc:     "create new profiles with external UUID",
+			profiles: prsExtID,
 			token:    token,
 			err:      nil,
 		},
 		{
-			desc:     "create new channels with invalid external UUID",
-			channels: []things.Channel{{ID: "b0aa-000000000001", Name: "a", GroupID: grID}, {ID: "b0aa-000000000002", Name: "b", GroupID: grID}},
+			desc:     "create new profiles with invalid external UUID",
+			profiles: []things.Profile{{ID: "b0aa-000000000001", Name: "a", GroupID: grID}, {ID: "b0aa-000000000002", Name: "b", GroupID: grID}},
 			token:    token,
 			err:      nil,
 		},
 	}
 
 	for _, cc := range cases {
-		_, err := svc.CreateChannels(context.Background(), cc.token, cc.channels...)
+		_, err := svc.CreateProfiles(context.Background(), cc.token, cc.profiles...)
 		assert.True(t, errors.Contains(err, cc.err), fmt.Sprintf("%s: expected %s got %s\n", cc.desc, cc.err, err))
 	}
 }
 
-func TestUpdateChannel(t *testing.T) {
+func TestUpdateProfile(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
-	other := things.Channel{ID: wrongID}
+	pr := prs[0]
+	other := things.Profile{ID: wrongID}
 
 	cases := []struct {
 		desc    string
-		channel things.Channel
+		profile things.Profile
 		token   string
 		err     error
 	}{
 		{
-			desc:    "update existing channel",
-			channel: ch,
+			desc:    "update existing profile",
+			profile: pr,
 			token:   token,
 			err:     nil,
 		},
 		{
-			desc:    "update channel with wrong credentials",
-			channel: ch,
+			desc:    "update profile with wrong credentials",
+			profile: pr,
 			token:   wrongValue,
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "update non-existing channel",
-			channel: other,
+			desc:    "update non-existing profile",
+			profile: other,
 			token:   token,
 			err:     errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.UpdateChannel(context.Background(), tc.token, tc.channel)
+		err := svc.UpdateProfile(context.Background(), tc.token, tc.profile)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestViewChannel(t *testing.T) {
+func TestViewProfile(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
 	cases := map[string]struct {
 		id       string
@@ -771,27 +771,27 @@ func TestViewChannel(t *testing.T) {
 		err      error
 		metadata map[string]interface{}
 	}{
-		"view existing channel": {
-			id:    ch.ID,
+		"view existing profile": {
+			id:    pr.ID,
 			token: token,
 			err:   nil,
 		},
-		"view existing channel as admin": {
-			id:    ch.ID,
+		"view existing profile as admin": {
+			id:    pr.ID,
 			token: adminToken,
 			err:   nil,
 		},
-		"view channel with wrong credentials": {
-			id:    ch.ID,
+		"view profile with wrong credentials": {
+			id:    pr.ID,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
-		"view non-existing channel": {
+		"view non-existing profile": {
 			id:    wrongID,
 			token: token,
 			err:   errors.ErrNotFound,
 		},
-		"view channel with metadata": {
+		"view profile with metadata": {
 			id:    wrongID,
 			token: token,
 			err:   errors.ErrNotFound,
@@ -799,12 +799,12 @@ func TestViewChannel(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewChannel(context.Background(), tc.token, tc.id)
+		_, err := svc.ViewProfile(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
-func TestListChannels(t *testing.T) {
+func TestListProfiles(t *testing.T) {
 	svc := newService()
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -815,47 +815,47 @@ func TestListChannels(t *testing.T) {
 	gr2 := grs2[0]
 
 	meta := things.Metadata{}
-	meta["name"] = "test-channel"
-	channel.Metadata = meta
+	meta["name"] = "test-profile"
+	profile.Metadata = meta
 
-	var chs1 []things.Channel
+	var prs1 []things.Profile
 	var suffix uint64
 	for i := uint64(0); i < n; i++ {
 		suffix = i + 1
-		ch := channelList[i]
-		ch.GroupID = gr.ID
-		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
-		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
-		chs1 = append(chs1, ch)
+		pr := profileList[i]
+		pr.GroupID = gr.ID
+		pr.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		pr.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		prs1 = append(prs1, pr)
 	}
 
-	var chs2 []things.Channel
+	var prs2 []things.Profile
 	for i := uint64(0); i < n; i++ {
 		suffix = n + i + 1
-		ch := channelList[i]
-		ch.GroupID = gr.ID
-		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
-		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		pr := profileList[i]
+		pr.GroupID = gr.ID
+		pr.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		pr.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
 
-		chs2 = append(chs2, ch)
+		prs2 = append(prs2, pr)
 	}
 
-	var chs3 []things.Channel
+	var prs3 []things.Profile
 	for i := uint64(0); i < n; i++ {
 		suffix = (n * 2) + i + 1
-		ch := channelList[i]
-		ch.GroupID = gr2.ID
-		ch.Name = fmt.Sprintf("%s%d", prefixName, suffix)
-		ch.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		pr := profileList[i]
+		pr.GroupID = gr2.ID
+		pr.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		pr.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
 
-		chs3 = append(chs3, ch)
+		prs3 = append(prs3, pr)
 	}
 
-	_, err = svc.CreateChannels(context.Background(), token, chs1...)
+	_, err = svc.CreateProfiles(context.Background(), token, prs1...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	_, err = svc.CreateChannels(context.Background(), otherToken, chs2...)
+	_, err = svc.CreateProfiles(context.Background(), otherToken, prs2...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	_, err = svc.CreateChannels(context.Background(), otherToken, chs3...)
+	_, err = svc.CreateProfiles(context.Background(), otherToken, prs3...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -864,7 +864,7 @@ func TestListChannels(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"list all channels": {
+		"list all profiles": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -873,7 +873,7 @@ func TestListChannels(t *testing.T) {
 			size: nUser,
 			err:  nil,
 		},
-		"list all channels as admin": {
+		"list all profiles as admin": {
 			token: adminToken,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -882,7 +882,7 @@ func TestListChannels(t *testing.T) {
 			size: nAdmin,
 			err:  nil,
 		},
-		"list all channels with no limit": {
+		"list all profiles with no limit": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
@@ -899,7 +899,7 @@ func TestListChannels(t *testing.T) {
 			size: nUser / 2,
 			err:  nil,
 		},
-		"list last channel": {
+		"list last profile": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: nUser - 1,
@@ -946,7 +946,7 @@ func TestListChannels(t *testing.T) {
 			size: 0,
 			err:  nil,
 		},
-		"list all channels with metadata": {
+		"list all profiles with metadata": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
@@ -956,7 +956,7 @@ func TestListChannels(t *testing.T) {
 			size: nUser,
 			err:  nil,
 		},
-		"list all channels sorted by name ascendant": {
+		"list all profiles sorted by name ascendant": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -967,7 +967,7 @@ func TestListChannels(t *testing.T) {
 			size: nUser,
 			err:  nil,
 		},
-		"list all channels sorted by name descendent": {
+		"list all profiles sorted by name descendent": {
 			token: token,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -981,17 +981,17 @@ func TestListChannels(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := svc.ListChannels(context.Background(), tc.token, tc.pageMetadata)
-		size := uint64(len(page.Channels))
+		page, err := svc.ListProfiles(context.Background(), tc.token, tc.pageMetadata)
+		size := uint64(len(page.Profiles))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
-		// Check if channels list have been sorted properly
-		testSortChannels(t, tc.pageMetadata, page.Channels)
+		// Check if profiles list have been sorted properly
+		testSortProfiles(t, tc.pageMetadata, page.Profiles)
 	}
 }
 
-func TestViewChannelByThing(t *testing.T) {
+func TestViewProfileByThing(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
@@ -1003,75 +1003,75 @@ func TestViewChannelByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
-	c := channel
-	c.Name = "test-channel"
+	c := profile
+	c.Name = "test-profile"
 	c.GroupID = grs[0].ID
 
-	chs, err := svc.CreateChannels(context.Background(), token, c)
+	prs, err := svc.CreateProfiles(context.Background(), token, c)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	ch := chs[0]
+	pr := prs[0]
 
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
+	err = svc.Connect(context.Background(), token, pr.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	// Wait for things and channels to connect.
+	// Wait for things and profiles to connect.
 	time.Sleep(time.Second)
 
 	cases := map[string]struct {
 		token   string
 		thID    string
-		channel things.Channel
+		profile things.Profile
 		err     error
 	}{
-		"view channel by existing thing": {
+		"view profile by existing thing": {
 			token:   token,
 			thID:    th.ID,
-			channel: ch,
+			profile: pr,
 			err:     nil,
 		},
-		"view channel by existing thing as admin": {
+		"view profile by existing thing as admin": {
 			token:   adminToken,
 			thID:    th.ID,
-			channel: ch,
+			profile: pr,
 			err:     nil,
 		},
-		"view channel by existing thing with wrong credentials": {
+		"view profile by existing thing with wrong credentials": {
 			token:   wrongValue,
 			thID:    th.ID,
-			channel: things.Channel{},
+			profile: things.Profile{},
 			err:     errors.ErrAuthentication,
 		},
-		"view channel by non-existent thing": {
+		"view profile by non-existent thing": {
 			token:   token,
 			thID:    "non-existent",
-			channel: things.Channel{},
+			profile: things.Profile{},
 			err:     errors.ErrNotFound,
 		},
-		"view channel by existent thing with invalid token": {
+		"view profile by existent thing with invalid token": {
 			token:   wrongValue,
 			thID:    th.ID,
-			channel: things.Channel{},
+			profile: things.Profile{},
 			err:     errors.ErrAuthentication,
 		},
 	}
 
 	for desc, tc := range cases {
-		ch, err := svc.ViewChannelByThing(context.Background(), tc.token, tc.thID)
-		assert.Equal(t, tc.channel, ch, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.channel, ch))
+		pr, err := svc.ViewProfileByThing(context.Background(), tc.token, tc.thID)
+		assert.Equal(t, tc.profile, pr, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.profile, pr))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 
-func TestRemoveChannel(t *testing.T) {
+func TestRemoveProfile(t *testing.T) {
 	svc := newService()
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
 	cases := []struct {
 		desc  string
@@ -1080,25 +1080,25 @@ func TestRemoveChannel(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "remove channel with wrong credentials",
-			id:    ch.ID,
+			desc:  "remove profile with wrong credentials",
+			id:    pr.ID,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove existing channel",
-			id:    ch.ID,
+			desc:  "remove existing profile",
+			id:    pr.ID,
 			token: token,
 			err:   nil,
 		},
 		{
-			desc:  "remove removed channel",
-			id:    ch.ID,
+			desc:  "remove removed profile",
+			id:    pr.ID,
 			token: token,
 			err:   errors.ErrNotFound,
 		},
 		{
-			desc:  "remove non-existing channel",
+			desc:  "remove non-existing profile",
 			id:    wrongID,
 			token: token,
 			err:   errors.ErrNotFound,
@@ -1106,7 +1106,7 @@ func TestRemoveChannel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveChannels(context.Background(), tc.token, tc.id)
+		err := svc.RemoveProfiles(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1123,50 +1123,50 @@ func TestConnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
 	cases := []struct {
-		desc    string
-		token   string
-		chanID  string
-		thingID string
-		err     error
+		desc      string
+		token     string
+		profileID string
+		thingID   string
+		err       error
 	}{
 		{
-			desc:    "connect thing",
-			token:   token,
-			chanID:  ch.ID,
-			thingID: th.ID,
-			err:     nil,
+			desc:      "connect thing",
+			token:     token,
+			profileID: pr.ID,
+			thingID:   th.ID,
+			err:       nil,
 		},
 		{
-			desc:    "connect thing with wrong credentials",
-			token:   wrongValue,
-			chanID:  ch.ID,
-			thingID: th.ID,
-			err:     errors.ErrAuthentication,
+			desc:      "connect thing with wrong credentials",
+			token:     wrongValue,
+			profileID: pr.ID,
+			thingID:   th.ID,
+			err:       errors.ErrAuthentication,
 		},
 		{
-			desc:    "connect thing to non-existing channel",
-			token:   token,
-			chanID:  wrongID,
-			thingID: th.ID,
-			err:     errors.ErrNotFound,
+			desc:      "connect thing to non-existing profile",
+			token:     token,
+			profileID: wrongID,
+			thingID:   th.ID,
+			err:       errors.ErrNotFound,
 		},
 		{
-			desc:    "connect non-existing thing to channel",
-			token:   token,
-			chanID:  ch.ID,
-			thingID: wrongID,
-			err:     errors.ErrNotFound,
+			desc:      "connect non-existing thing to profile",
+			token:     token,
+			profileID: pr.ID,
+			thingID:   wrongID,
+			err:       errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Connect(context.Background(), tc.token, tc.chanID, []string{tc.thingID})
+		err := svc.Connect(context.Background(), tc.token, tc.profileID, []string{tc.thingID})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1183,53 +1183,53 @@ func TestDisconnect(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
+	err = svc.Connect(context.Background(), token, pr.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
-		desc    string
-		token   string
-		chanID  string
-		thingID string
-		err     error
+		desc      string
+		token     string
+		profileID string
+		thingID   string
+		err       error
 	}{
 		{
-			desc:    "disconnect connected thing",
-			token:   token,
-			chanID:  ch.ID,
-			thingID: th.ID,
-			err:     nil,
+			desc:      "disconnect connected thing",
+			token:     token,
+			profileID: pr.ID,
+			thingID:   th.ID,
+			err:       nil,
 		},
 		{
-			desc:    "disconnect with wrong credentials",
-			token:   wrongValue,
-			chanID:  ch.ID,
-			thingID: th.ID,
-			err:     errors.ErrAuthentication,
+			desc:      "disconnect with wrong credentials",
+			token:     wrongValue,
+			profileID: pr.ID,
+			thingID:   th.ID,
+			err:       errors.ErrAuthentication,
 		},
 		{
-			desc:    "disconnect from non-existing channel",
-			token:   token,
-			chanID:  wrongID,
-			thingID: th.ID,
-			err:     errors.ErrNotFound,
+			desc:      "disconnect from non-existing profile",
+			token:     token,
+			profileID: wrongID,
+			thingID:   th.ID,
+			err:       errors.ErrNotFound,
 		},
 		{
-			desc:    "disconnect non-existing thing",
-			token:   token,
-			chanID:  ch.ID,
-			thingID: wrongID,
-			err:     errors.ErrNotFound,
+			desc:      "disconnect non-existing thing",
+			token:     token,
+			profileID: pr.ID,
+			thingID:   wrongID,
+			err:       errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Disconnect(context.Background(), tc.token, tc.chanID, []string{tc.thingID})
+		err := svc.Disconnect(context.Background(), tc.token, tc.profileID, []string{tc.thingID})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 
@@ -1247,12 +1247,12 @@ func TestGetConnByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	channel.GroupID = gr.ID
-	chs, err := svc.CreateChannels(context.Background(), token, channel, channel)
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	ch := chs[0]
+	pr := prs[0]
 
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
+	err = svc.Connect(context.Background(), token, pr.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
@@ -1335,35 +1335,35 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
-	var chs []things.Channel
+	var prs []things.Profile
 	n := uint64(10)
 	for i := uint64(0); i < n; i++ {
-		ch := channel
-		ch.Name = fmt.Sprintf("name-%d", i)
-		ch.GroupID = gr.ID
-		chs = append(chs, ch)
+		pr := profile
+		pr.Name = fmt.Sprintf("name-%d", i)
+		pr.GroupID = gr.ID
+		prs = append(prs, pr)
 	}
 
-	chsc, err := svc.CreateChannels(context.Background(), token, chs...)
+	prsc, err := svc.CreateProfiles(context.Background(), token, prs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	ch := chsc[0]
+	pr := prsc[0]
 
-	err = svc.Connect(context.Background(), token, ch.ID, []string{th.ID})
+	err = svc.Connect(context.Background(), token, pr.ID, []string{th.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	// Wait for things and channels to connect.
+	// Wait for things and profiles to connect.
 	time.Sleep(time.Second)
 
 	connections := []things.Connection{}
 	connections = append(connections, things.Connection{
-		ChannelID: ch.ID,
+		ProfileID: pr.ID,
 		ThingID:   th.ID,
 	})
 
 	backup := things.Backup{
 		Groups:      groups,
 		Things:      ths,
-		Channels:    chsc,
+		Profiles:    prsc,
 		Connections: connections,
 	}
 
@@ -1393,12 +1393,12 @@ func TestBackup(t *testing.T) {
 		backup, err := svc.Backup(context.Background(), tc.token)
 		groupSize := len(backup.Groups)
 		thingsSize := len(backup.Things)
-		channelsSize := len(backup.Channels)
+		profilesSize := len(backup.Profiles)
 		connectionsSize := len(backup.Connections)
 
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
 		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
-		assert.Equal(t, len(tc.backup.Channels), channelsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Channels), channelsSize))
+		assert.Equal(t, len(tc.backup.Profiles), profilesSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Profiles), profilesSize))
 		assert.Equal(t, len(tc.backup.Connections), connectionsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Connections), connectionsSize))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
@@ -1413,7 +1413,7 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	chID, err := idProvider.ID()
+	prID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var groups []things.Group
@@ -1438,22 +1438,22 @@ func TestRestore(t *testing.T) {
 	}
 	th := ths[0]
 
-	var chs []things.Channel
+	var prs []things.Profile
 	n := uint64(10)
 	for i := uint64(0); i < n; i++ {
-		ch := things.Channel{
-			ID:       chID,
-			Name:     "testChannel",
+		pr := things.Profile{
+			ID:       prID,
+			Name:     "testProfile",
 			Metadata: map[string]interface{}{},
 		}
-		ch.Name = fmt.Sprintf("name-%d", i)
-		chs = append(chs, ch)
+		pr.Name = fmt.Sprintf("name-%d", i)
+		prs = append(prs, pr)
 	}
-	ch := chs[0]
+	pr := prs[0]
 
 	var connections []things.Connection
 	conn := things.Connection{
-		ChannelID: ch.ID,
+		ProfileID: pr.ID,
 		ThingID:   th.ID,
 	}
 
@@ -1462,7 +1462,7 @@ func TestRestore(t *testing.T) {
 	backup := things.Backup{
 		Groups:      groups,
 		Things:      ths,
-		Channels:    chs,
+		Profiles:    prs,
 		Connections: connections,
 	}
 
@@ -1510,11 +1510,11 @@ func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
 	}
 }
 
-func testSortChannels(t *testing.T, pm things.PageMetadata, chs []things.Channel) {
+func testSortProfiles(t *testing.T, pm things.PageMetadata, prs []things.Profile) {
 	switch pm.Order {
 	case "name":
-		current := chs[0]
-		for _, res := range chs {
+		current := prs[0]
+		for _, res := range prs {
 			if pm.Dir == "asc" {
 				assert.GreaterOrEqual(t, res.Name, current.Name)
 			}

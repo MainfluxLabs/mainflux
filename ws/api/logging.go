@@ -29,11 +29,11 @@ func LoggingMiddleware(svc ws.Service, logger log.Logger) ws.Service {
 
 func (lm *loggingMiddleware) Publish(ctx context.Context, thingKey string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		destChannel := msg.GetChannel()
+		destProfile := msg.GetProfileID()
 		if msg.Subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, msg.Subtopic)
+			destProfile = fmt.Sprintf("%s.%s", destProfile, msg.Subtopic)
 		}
-		message := fmt.Sprintf("Method publish to %s took %s to complete", destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method publish to %s took %s to complete", destProfile, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 			return
@@ -44,13 +44,13 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, thingKey string, msg p
 	return lm.svc.Publish(ctx, thingKey, msg)
 }
 
-func (lm *loggingMiddleware) Subscribe(ctx context.Context, thingKey, chanID, subtopic string, c *ws.Client) (err error) {
+func (lm *loggingMiddleware) Subscribe(ctx context.Context, thingKey, profileID, subtopic string, c *ws.Client) (err error) {
 	defer func(begin time.Time) {
-		destChannel := chanID
+		destProfile := profileID
 		if subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, subtopic)
+			destProfile = fmt.Sprintf("%s.%s", destProfile, subtopic)
 		}
-		message := fmt.Sprintf("Method subscribe to channel %s took %s to complete", destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method subscribe took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 			return
@@ -58,16 +58,16 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, thingKey, chanID, su
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Subscribe(ctx, thingKey, chanID, subtopic, c)
+	return lm.svc.Subscribe(ctx, thingKey, profileID, subtopic, c)
 }
 
-func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, thingKey, chanID, subtopic string) (err error) {
+func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, thingKey, profileID, subtopic string) (err error) {
 	defer func(begin time.Time) {
-		destChannel := chanID
+		destProfile := profileID
 		if subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, subtopic)
+			destProfile = fmt.Sprintf("%s.%s", destProfile, subtopic)
 		}
-		message := fmt.Sprintf("Method unsubscribe from channel %s took %s to complete", destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method unsubscribe took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
 			return
@@ -75,5 +75,5 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, thingKey, chanID, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Unsubscribe(ctx, thingKey, chanID, subtopic)
+	return lm.svc.Unsubscribe(ctx, thingKey, profileID, subtopic)
 }

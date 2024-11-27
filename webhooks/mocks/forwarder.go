@@ -17,7 +17,7 @@ func NewForwarder() webhooks.Forwarder {
 }
 
 func (mf *forwarder) Forward(ctx context.Context, message json.Message, wh webhooks.Webhook) error {
-	if message.Profile["webhook_id"] == nil {
+	if message.ProfileConfig["webhook_id"] == nil {
 		return apiutil.ErrMissingID
 	}
 	return nil

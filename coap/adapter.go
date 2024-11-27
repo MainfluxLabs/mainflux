@@ -16,7 +16,7 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const chansPrefix = "channels"
+const profilesPrefix = "profiles"
 
 // ErrUnsubscribe indicates an error to unsubscribe
 var ErrUnsubscribe = errors.New("unable to unsubscribe")
@@ -26,12 +26,12 @@ type Service interface {
 	// Publish Messssage
 	Publish(ctx context.Context, key string, msg protomfx.Message) error
 
-	// Subscribe subscribes to channel with specified id, subtopic and adds subscription to
+	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
-	Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error
+	Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key, chanID, subptopic, token string) error
+	Unsubscribe(ctx context.Context, key, profileID, subptopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -67,21 +67,21 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx
 	return svc.pubsub.Publish(m)
 }
 
-func (svc *adapterService) Subscribe(ctx context.Context, key, chanID, subtopic string, c Client) error {
+func (svc *adapterService) Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error {
 	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
 	if _, err := svc.things.GetConnByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, chanID)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 	return svc.pubsub.Subscribe(c.Token(), subject, c)
 }
 
-func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) error {
+func (svc *adapterService) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) error {
 	cr := &protomfx.ConnByKeyReq{
 		Key: key,
 	}
@@ -89,7 +89,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key, chanID, subtopi
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", chansPrefix, conn.ChannelID)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, conn.ProfileID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}

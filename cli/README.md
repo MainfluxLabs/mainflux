@@ -82,61 +82,61 @@ mainfluxlabs-cli things get all --offset=1 --limit=5 <user_token>
 mainfluxlabs-cli things get <thing_id> <user_token>
 ```
 
-#### Create Channel
+#### Create Profile
 ```bash
-mainfluxlabs-cli channels create '{"name":"<channel_name>"}' <group_id> <user_token>
+mainfluxlabs-cli profiles create '{"name":"<profile_name>"}' <group_id> <user_token>
 ```
 
-#### Bulk Provision Channels
+#### Bulk Provision Profiles
 ```bash
-mainfluxlabs-cli provision channels <file> <user_token>
+mainfluxlabs-cli provision profiles <file> <user_token>
 ```
 
-* `file` - A CSV or JSON file containing channels
+* `file` - A CSV or JSON file containing profiles
 * `user_token` - A valid user auth token for the current system
 
-#### Update Channel
+#### Update Profile
 ```bash
-mainfluxlabs-cli channels update '{"name":"<new_name>"}' <channel_id> <user_token>
+mainfluxlabs-cli profiles update '{"name":"<new_name>"}' <profile_id> <user_token>
 ```
 
-#### Remove Channel
+#### Remove Profile
 ```bash
-mainfluxlabs-cli channels delete <channel_id> <user_token>
+mainfluxlabs-cli profiles delete <profile_id> <user_token>
 ```
 
-#### Retrieve a subset list of provisioned Channels
+#### Retrieve a subset list of provisioned Profiles
 ```bash
-mainfluxlabs-cli channels get all --offset=1 --limit=5 <user_token>
+mainfluxlabs-cli profiles get all --offset=1 --limit=5 <user_token>
 ```
 
-#### Retrieve Channel By ID
+#### Retrieve Profile By ID
 ```bash
-mainfluxlabs-cli channels get <channel_id> <user_token>
+mainfluxlabs-cli profiles get <profile_id> <user_token>
 ```
 
 ### Access control
-#### Connect Thing to Channel
+#### Connect Thing to Profile
 ```bash
-mainfluxlabs-cli things connect <thing_id> <channel_id> <user_token>
+mainfluxlabs-cli things connect <thing_id> <profile_id> <user_token>
 ```
 
-#### Bulk Connect Things to Channels
+#### Bulk Connect Things to Profiles
 ```bash
 mainfluxlabs-cli provision connect <file> <user_token>
 ```
 
-* `file` - A CSV or JSON file containing thing and channel ids
+* `file` - A CSV or JSON file containing thing and profile ids
 * `user_token` - A valid user auth token for the current system
 
 An example CSV file might be
 
 ```csv
-<thing_id>,<channel_id>
-<thing_id>,<channel_id>
+<thing_id>,<profile_id>
+<thing_id>,<profile_id>
 ```
 
-in which the first column is thing IDs and the second column is channel IDs. A connection will be created for each thing to each channel. This example would result in 4 connections being created.
+in which the first column is thing IDs and the second column is profile IDs. A connection will be created for each thing to each profile. This example would result in 4 connections being created.
 
 A comparable JSON file would be
 
@@ -146,38 +146,38 @@ A comparable JSON file would be
         "<thing_id>",
         "<thing_id>"
     ],
-    "channel_ids": [
-        "<channel_id>",
-        "<channel_id>"
+    "profile_ids": [
+        "<profile_id>",
+        "<profile_id>"
     ]
 }
 ```
 
-#### Disconnect Thing from Channel
+#### Disconnect Thing from Profile
 ```bash
-mainfluxlabs-cli things disconnect <thing_id> <channel_id> <user_token>
+mainfluxlabs-cli things disconnect <thing_id> <profile_id> <user_token>
 
 ```
 
-#### Retrieve a Channel by Thing
+#### Retrieve a Profile by Thing
 ```bash
 mainfluxlabs-cli things connections <thing_id> <user_token>
 ```
 
-#### Retrieve a subset list of Things connected to Channel
+#### Retrieve a subset list of Things connected to Profile
 ```bash
-mainfluxlabs-cli channels connections <channel_id> <user_token>
+mainfluxlabs-cli profiles connections <profile_id> <user_token>
 ```
 
 ### Messaging
 #### Send a message over HTTP
 ```bash
-mainfluxlabs-cli messages send <channel_id> '[{"bn":"Dev1","n":"temp","v":20}, {"n":"hum","v":40}, {"bn":"Dev2", "n":"temp","v":20}, {"n":"hum","v":40}]' <thing_auth_token>
+mainfluxlabs-cli messages send <profile_id> '[{"bn":"Dev1","n":"temp","v":20}, {"n":"hum","v":40}, {"bn":"Dev2", "n":"temp","v":20}, {"n":"hum","v":40}]' <thing_auth_token>
 ```
 
 #### Read messages over HTTP
 ```bash
-mainfluxlabs-cli messages read <channel_id> <thing_auth_token>
+mainfluxlabs-cli messages read <profile_id> <thing_auth_token>
 ```
 
 ### Groups
@@ -216,14 +216,14 @@ mainfluxlabs-cli groups things <group_id> <user_token>
 mainfluxlabs-cli groups thing <thing_id> <user_token>
 ```
 
-#### List channels by group
+#### List profiles by group
 ```bash
-mainfluxlabs-cli groups channels <group_id> <user_token>
+mainfluxlabs-cli groups profiles <group_id> <user_token>
 ```
 
-#### View group by channel
+#### View group by profile
 ```bash
-mainfluxlabs-cli groups channel <channel_id> <user_token>
+mainfluxlabs-cli groups profile <profile_id> <user_token>
 ```
 
 ### Orgs

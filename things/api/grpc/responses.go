@@ -12,9 +12,9 @@ type identityRes struct {
 }
 
 type connByKeyRes struct {
-	channelID string
+	profileID string
 	thingID   string
-	profile   *protomfx.Profile
+	config    *protomfx.Config
 }
 
 type emptyRes struct {
@@ -25,8 +25,8 @@ type getGroupsByIDsRes struct {
 	groups []*protomfx.Group
 }
 
-type profileByThingIDRes struct {
-	profile *protomfx.Profile
+type configByThingIDRes struct {
+	config *protomfx.Config
 }
 
 type groupIDByThingIDRes struct {

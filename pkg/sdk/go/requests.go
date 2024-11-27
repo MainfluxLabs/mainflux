@@ -7,8 +7,8 @@ type groupThingsReq struct {
 	Things []string `json:"things"`
 }
 
-type groupChannelsReq struct {
-	Channels []string `json:"channels"`
+type groupProfilesReq struct {
+	Profiles []string `json:"profiles"`
 }
 
 // UserPasswordReq contains old and new passwords
@@ -17,15 +17,15 @@ type UserPasswordReq struct {
 	Password    string `json:"password,omitempty"`
 }
 
-// ConnectionIDs contains ID lists of things and channel to be connected
+// ConnectionIDs contains ID lists of things and profile to be connected
 type ConnectionIDs struct {
-	ChannelID string   `json:"channel_id"`
+	ProfileID string   `json:"profile_id"`
 	ThingIDs  []string `json:"thing_ids"`
 }
 
-// deleteChannelsReq contains IDs of channels to be deleted
-type deleteChannelsReq struct {
-	ChannelIDs []string `json:"channel_ids"`
+// deleteProfilesReq contains IDs of profiles to be deleted
+type deleteProfilesReq struct {
+	ProfileIDs []string `json:"profile_ids"`
 }
 
 // deleteThingsReq contains IDs of things to be deleted

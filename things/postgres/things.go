@@ -202,7 +202,7 @@ func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return tr.retrieve(ctx, []string{}, false, pm)
 }
 
-func (tr thingRepository) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByProfile(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	oq := getConnOrderQuery(pm.Order, "th")
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -217,17 +217,17 @@ func (tr thingRepository) RetrieveByChannel(ctx context.Context, chID string, pm
 		        FROM things th
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
-		        WHERE conn.channel_id = :channel_id
+		        WHERE conn.profile_id = :profile_id
 		        ORDER BY %s %s %s;`, oq, dq, olq)
 
 	qc = `SELECT COUNT(*)
 		        FROM things th
 		        INNER JOIN connections conn
 		        ON th.id = conn.thing_id
-		        WHERE conn.channel_id = $1;`
+		        WHERE conn.profile_id = $1;`
 
 	params := map[string]interface{}{
-		"channel_id": chID,
+		"profile_id": chID,
 		"limit":      pm.Limit,
 		"offset":     pm.Offset,
 	}

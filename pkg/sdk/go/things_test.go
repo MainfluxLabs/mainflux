@@ -48,14 +48,14 @@ func newThingsService() things.Service {
 	auth := mocks.NewAuthService("", usersList)
 	conns := make(chan thmocks.Connection)
 	thingsRepo := thmocks.NewThingRepository(conns)
-	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	profilesRepo := thmocks.NewProfileRepository(thingsRepo, conns)
 	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
-	chanCache := thmocks.NewChannelCache()
+	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, rolesRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
@@ -290,7 +290,7 @@ func TestThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	for i := 1; i < 101; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
+		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
 		th := sdk.Thing{GroupID: grID, ID: id, Name: name, Key: key, Metadata: metadata}
@@ -375,11 +375,11 @@ func TestThings(t *testing.T) {
 		}
 		page, err := mainfluxSDK.Things(tc.token, filter)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Things))
+		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}
 }
 
-func TestThingsByChannel(t *testing.T) {
+func TestThingsByProfile(t *testing.T) {
 	svc := newThingsService()
 	ts := newThingsServer(svc)
 	defer ts.Close()
@@ -394,15 +394,15 @@ func TestThingsByChannel(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	ch := sdk.Channel{Name: "test_channel"}
-	cid, err := mainfluxSDK.CreateChannel(ch, grID, token)
+	pr := sdk.Profile{Name: "test_profile"}
+	cid, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var n = 10
 	var thsDiscoNum = 1
 	var ths []sdk.Thing
 	for i := 1; i < n+1; i++ {
-		id := fmt.Sprintf("%s%012d", chPrefix, i)
+		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		th := sdk.Thing{
 			ID:       id,
@@ -421,9 +421,9 @@ func TestThingsByChannel(t *testing.T) {
 			break
 		}
 
-		// Don't connect last 2 Channels
+		// Don't connect last 2 Profiles
 		connIDs := sdk.ConnectionIDs{
-			ChannelID: cid,
+			ProfileID: cid,
 			ThingIDs:  []string{tid},
 		}
 
@@ -433,7 +433,7 @@ func TestThingsByChannel(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		channel  string
+		profile  string
 		token    string
 		offset   uint64
 		limit    uint64
@@ -441,8 +441,8 @@ func TestThingsByChannel(t *testing.T) {
 		response []sdk.Thing
 	}{
 		{
-			desc:     "get a list of things by channel",
-			channel:  cid,
+			desc:     "get a list of things by profile",
+			profile:  cid,
 			token:    token,
 			offset:   offset,
 			limit:    limit,
@@ -450,8 +450,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: ths[0:limit],
 		},
 		{
-			desc:     "get a list of things by channel with invalid token",
-			channel:  cid,
+			desc:     "get a list of things by profile with invalid token",
+			profile:  cid,
 			token:    wrongValue,
 			offset:   offset,
 			limit:    limit,
@@ -459,8 +459,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of things by channel with empty token",
-			channel:  cid,
+			desc:     "get a list of things by profile with empty token",
+			profile:  cid,
 			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
@@ -468,8 +468,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of things by channel with zero limit",
-			channel:  cid,
+			desc:     "get a list of things by profile with zero limit",
+			profile:  cid,
 			token:    token,
 			offset:   offset,
 			limit:    0,
@@ -477,8 +477,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of things by channel with limit greater than max",
-			channel:  cid,
+			desc:     "get a list of things by profile with limit greater than max",
+			profile:  cid,
 			token:    token,
 			offset:   offset,
 			limit:    110,
@@ -486,8 +486,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: nil,
 		},
 		{
-			desc:     "get a list of things by channel with offset greater than max",
-			channel:  cid,
+			desc:     "get a list of things by profile with offset greater than max",
+			profile:  cid,
 			token:    token,
 			offset:   110,
 			limit:    limit,
@@ -495,8 +495,8 @@ func TestThingsByChannel(t *testing.T) {
 			response: []sdk.Thing{},
 		},
 		{
-			desc:     "get a list of things by channel with invalid args (zero limit) and invalid token",
-			channel:  cid,
+			desc:     "get a list of things by profile with invalid args (zero limit) and invalid token",
+			profile:  cid,
 			token:    wrongValue,
 			offset:   offset,
 			limit:    0,
@@ -505,9 +505,9 @@ func TestThingsByChannel(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ThingsByChannel(tc.token, tc.channel, tc.offset, tc.limit)
+		page, err := mainfluxSDK.ThingsByProfile(tc.token, tc.profile, tc.offset, tc.limit)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response channel %s, got %s", tc.desc, tc.response, page.Things))
+		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}
 }
 
@@ -557,7 +557,7 @@ func TestUpdateThing(t *testing.T) {
 			err:   createError(sdk.ErrFailedUpdate, http.StatusNotFound),
 		},
 		{
-			desc: "update channel with invalid id",
+			desc: "update profile with invalid id",
 			thing: sdk.Thing{
 				ID:       emptyValue,
 				Name:     "test_device",
@@ -567,7 +567,7 @@ func TestUpdateThing(t *testing.T) {
 			err:   createError(sdk.ErrFailedUpdate, http.StatusBadRequest),
 		},
 		{
-			desc: "update channel with invalid token",
+			desc: "update profile with invalid token",
 			thing: sdk.Thing{
 				ID:       id,
 				Name:     "test_app",
@@ -577,7 +577,7 @@ func TestUpdateThing(t *testing.T) {
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
 		},
 		{
-			desc: "update channel with empty token",
+			desc: "update profile with empty token",
 			thing: sdk.Thing{
 				ID:       id,
 				Name:     "test_app",
@@ -819,79 +819,79 @@ func TestConnect(t *testing.T) {
 	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		thingID string
-		chanID  string
-		token   string
-		err     error
+		desc      string
+		thingID   string
+		profileID string
+		token     string
+		err       error
 	}{
 		{
-			desc:    "connect existing thing to existing channel",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   token,
-			err:     nil,
+			desc:      "connect existing thing to existing profile",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     token,
+			err:       nil,
 		},
 
 		{
-			desc:    "connect existing thing to non-existing channel",
-			thingID: thingID,
-			chanID:  "9",
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
+			desc:      "connect existing thing to non-existing profile",
+			thingID:   thingID,
+			profileID: "9",
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
-			desc:    "connect non-existing thing to existing channel",
-			thingID: "9",
-			chanID:  chanID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusNotFound),
+			desc:      "connect non-existing thing to existing profile",
+			thingID:   "9",
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
 		},
 		{
-			desc:    "connect existing thing to channel with invalid ID",
-			thingID: thingID,
-			chanID:  emptyValue,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
+			desc:      "connect existing thing to profile with invalid ID",
+			thingID:   thingID,
+			profileID: emptyValue,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
 		},
 		{
-			desc:    "connect thing with invalid ID to existing channel",
-			thingID: emptyValue,
-			chanID:  chanID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusBadRequest),
+			desc:      "connect thing with invalid ID to existing profile",
+			thingID:   emptyValue,
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
 		},
 
 		{
-			desc:    "connect existing thing to existing channel with invalid token",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   wrongValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
+			desc:      "connect existing thing to existing profile with invalid token",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     wrongValue,
+			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "connect existing thing to existing channel with empty token",
-			thingID: thingID,
-			chanID:  chanID1,
-			token:   emptyValue,
-			err:     createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
+			desc:      "connect existing thing to existing profile with empty token",
+			thingID:   thingID,
+			profileID: profileID1,
+			token:     emptyValue,
+			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
 		},
 		{
-			desc:    "connect thing to a channel from another group",
-			thingID: thingID2,
-			chanID:  chanID1,
-			token:   token,
-			err:     createError(sdk.ErrFailedConnect, http.StatusForbidden),
+			desc:      "connect thing to a profile from another group",
+			thingID:   thingID2,
+			profileID: profileID1,
+			token:     token,
+			err:       createError(sdk.ErrFailedConnect, http.StatusForbidden),
 		},
 	}
 
 	for _, tc := range cases {
 		connIDs := sdk.ConnectionIDs{
-			ChannelID: tc.chanID,
+			ProfileID: tc.profileID,
 			ThingIDs:  []string{tc.thingID},
 		}
 		err := mainfluxSDK.Connect(connIDs, tc.token)
@@ -925,11 +925,11 @@ func TestDisconnect(t *testing.T) {
 	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	chanID1, err := mainfluxSDK.CreateChannel(ch2, grID, token)
+	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	connIDs := sdk.ConnectionIDs{
-		ChannelID: chanID1,
+		ProfileID: profileID1,
 		ThingIDs:  []string{thingID},
 	}
 	err = mainfluxSDK.Connect(connIDs, token)
@@ -942,50 +942,50 @@ func TestDisconnect(t *testing.T) {
 		err        error
 	}{
 		{
-			desc:       "disconnect connected thing from channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			desc:       "disconnect connected thing from profile",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        nil,
 		},
 		{
-			desc:       "disconnect existing thing from non-existing channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: wrongID, ThingIDs: []string{thingID}},
+			desc:       "disconnect existing thing from non-existing profile",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: wrongID, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
-			desc:       "disconnect non-existing thing from existing channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{wrongID}},
+			desc:       "disconnect non-existing thing from existing profile",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{wrongID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
 		},
 		{
-			desc:       "disconnect existing thing from channel with invalid ID",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: emptyValue, ThingIDs: []string{thingID}},
+			desc:       "disconnect existing thing from profile with invalid ID",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: emptyValue, ThingIDs: []string{thingID}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
-			desc:       "disconnect thing with invalid ID from existing channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{emptyValue}},
+			desc:       "disconnect thing with invalid ID from existing profile",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{emptyValue}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
 		},
 		{
-			desc:       "disconnect existing thing from existing channel with invalid token",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			desc:       "disconnect existing thing from existing profile with invalid token",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
 			token:      wrongValue,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
-			desc:       "disconnect existing thing from existing channel with empty token",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID}},
+			desc:       "disconnect existing thing from existing profile with empty token",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
 			token:      emptyValue,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
 		},
 		{
-			desc:       "disconnect thing from another group's channel",
-			disconnIDs: sdk.ConnectionIDs{ChannelID: chanID1, ThingIDs: []string{thingID2}},
+			desc:       "disconnect thing from another group's profile",
+			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID2}},
 			token:      token,
 			err:        createError(sdk.ErrFailedDisconnect, http.StatusForbidden),
 		},

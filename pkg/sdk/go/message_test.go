@@ -31,11 +31,11 @@ func newMessageServer(svc adapter.Service) *httptest.Server {
 }
 
 func TestSendMessage(t *testing.T) {
-	chanID := "1"
+	profileID := "1"
 	atoken := "auth_token"
 	invalidToken := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: profileID}, nil, nil)
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)
 	defer ts.Close()
@@ -48,58 +48,58 @@ func TestSendMessage(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
 	cases := map[string]struct {
-		chanID string
+		profileID string
 		msg    string
 		auth   string
 		err    error
 	}{
 		"publish message": {
-			chanID: chanID,
+			profileID: profileID,
 			msg:    msg,
 			auth:   atoken,
 			err:    nil,
 		},
 		"publish message without authorization token": {
-			chanID: chanID,
+			profileID: profileID,
 			msg:    msg,
 			auth:   "",
 			err:    createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 		"publish message with invalid authorization token": {
-			chanID: chanID,
+			profileID: profileID,
 			msg:    msg,
 			auth:   invalidToken,
 			err:    createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 		"publish message with wrong content type": {
-			chanID: chanID,
+			profileID: profileID,
 			msg:    "text",
 			auth:   atoken,
 			err:    nil,
 		},
-		"publish message without channel": {
-			chanID: "",
+		"publish message without profile": {
+			profileID: "",
 			msg:    msg,
 			auth:   atoken,
 			err:    nil,
 		},
 		"publish message unable to authorize": {
-			chanID: chanID,
+			profileID: profileID,
 			msg:    msg,
 			auth:   invalidToken,
 			err:    createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 	}
 	for desc, tc := range cases {
-		err := mainfluxSDK.SendMessage(tc.chanID, tc.msg, tc.auth)
+		err := mainfluxSDK.SendMessage(tc.profileID, tc.msg, tc.auth)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", desc, tc.err, err))
 	}
 }
 
 func TestSetContentType(t *testing.T) {
-	chanID := "1"
+	profileID := "1"
 	atoken := "auth_token"
-	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: chanID}, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]string{atoken: profileID}, nil, nil)
 
 	pub := newMessageService(thingsClient)
 	ts := newMessageServer(pub)

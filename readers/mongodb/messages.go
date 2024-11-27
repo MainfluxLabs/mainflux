@@ -59,7 +59,7 @@ func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Messa
 	return nil
 }
 
-func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (repo mongoRepository) readAll(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	format := defCollection
 	order := "time"
 	if rpm.Format == jsonCollection {
@@ -73,7 +73,7 @@ func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (re
 		order: -1,
 	}
 	// Remove format filter and format the rest properly.
-	filter := fmtCondition(chanID, rpm)
+	filter := fmtCondition(profileID, rpm)
 	var cursor *mongo.Cursor
 	var err error
 	switch rpm.Limit {
@@ -124,11 +124,11 @@ func (repo mongoRepository) readAll(chanID string, rpm readers.PageMetadata) (re
 	return mp, nil
 }
 
-func fmtCondition(chanID string, rpm readers.PageMetadata) bson.D {
+func fmtCondition(profileID string, rpm readers.PageMetadata) bson.D {
 	filter := bson.D{}
 
-	if chanID != "" {
-		filter = append(filter, bson.E{Key: "channel", Value: chanID})
+	if profileID != "" {
+		filter = append(filter, bson.E{Key: "profile", Value: profileID})
 	}
 
 	var query map[string]interface{}
@@ -141,7 +141,7 @@ func fmtCondition(chanID string, rpm readers.PageMetadata) bson.D {
 	for name, value := range query {
 		switch name {
 		case
-			"channel",
+			"profile",
 			"subtopic",
 			"publisher",
 			"name",

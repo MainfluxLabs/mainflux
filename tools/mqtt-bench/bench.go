@@ -48,14 +48,14 @@ func Benchmark(cfg Config) {
 
 	startStamp := time.Now()
 
-	n := len(mf.Channels)
+	n := len(mf.Profiles)
 	var cert tls.Certificate
 
 	start := time.Now()
 
 	// Publishers
 	for i := 0; i < cfg.Test.Pubs; i++ {
-		mfChan := mf.Channels[i%n]
+		mfChan := mf.Profiles[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -139,13 +139,13 @@ func getBytePayload(size int, m message) (handler, error) {
 	return ret, nil
 }
 
-func makeClient(i int, cfg Config, mfChan mfChannel, mfThing mfThing, start time.Time, caCert []byte, clientCert tls.Certificate) (*Client, error) {
+func makeClient(i int, cfg Config, mfChan mfProfile, mfThing mfThing, start time.Time, caCert []byte, clientCert tls.Certificate) (*Client, error) {
 	c := &Client{
 		ID:         strconv.Itoa(i),
 		BrokerURL:  cfg.MQTT.Broker.URL,
 		BrokerUser: mfThing.ThingID,
 		BrokerPass: mfThing.ThingKey,
-		MsgTopic:   fmt.Sprintf("channels/%s/messages/%d/test", mfChan.ChannelID, start.UnixNano()),
+		MsgTopic:   fmt.Sprintf("profiles/%s/messages/%d/test", mfChan.ProfileID, start.UnixNano()),
 		MsgSize:    cfg.MQTT.Message.Size,
 		MsgCount:   cfg.Test.Count,
 		MsgQoS:     byte(cfg.MQTT.Message.QoS),

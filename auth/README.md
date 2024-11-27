@@ -21,7 +21,7 @@ Authentication keys are represented and distributed by the corresponding [JWT](j
 
 User keys are issued when user logs in. Each user request (other than `registration` and `login`) contains user key that is used to authenticate the user.
 
-API keys are similar to the User keys. The main difference is that API keys have configurable expiration time. If no time is set, the key will never expire. For that reason, API keys are _the only key type that can be revoked_. This also means that, despite being used as a JWT, it requires a query to the database to validate the API key. The user with API key can perform all the same actions as the user with login key (can act on behalf of the user for Thing, Channel, or user profile management), *except issuing new API keys*.
+API keys are similar to the User keys. The main difference is that API keys have configurable expiration time. If no time is set, the key will never expire. For that reason, API keys are _the only key type that can be revoked_. This also means that, despite being used as a JWT, it requires a query to the database to validate the API key. The user with API key can perform all the same actions as the user with login key (can act on behalf of the user for Thing, Profile, or user profile management), *except issuing new API keys*.
 
 Recovery key is the password recovery key. It's short-lived token used for password recovery process.
 

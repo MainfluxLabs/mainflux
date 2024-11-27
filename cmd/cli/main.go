@@ -46,7 +46,7 @@ func main() {
 	usersCmd := cli.NewUsersCmd()
 	thingsCmd := cli.NewThingsCmd()
 	groupsCmd := cli.NewGroupsCmd()
-	channelsCmd := cli.NewChannelsCmd()
+	profilesCmd := cli.NewProfilesCmd()
 	webhooksCmd := cli.NewWebhooksCmd()
 	orgsCmd := cli.NewOrgsCmd()
 	groupRolesCmd := cli.NewGroupRolesCmd()
@@ -60,7 +60,7 @@ func main() {
 	rootCmd.AddCommand(usersCmd)
 	rootCmd.AddCommand(groupsCmd)
 	rootCmd.AddCommand(thingsCmd)
-	rootCmd.AddCommand(channelsCmd)
+	rootCmd.AddCommand(profilesCmd)
 	rootCmd.AddCommand(webhooksCmd)
 	rootCmd.AddCommand(orgsCmd)
 	rootCmd.AddCommand(groupRolesCmd)
@@ -150,7 +150,7 @@ func main() {
 		"Enables raw output mode for easier parsing of output",
 	)
 
-	// Client and Channels Flags
+	// Client and Profiles Flags
 	rootCmd.PersistentFlags().UintVarP(
 		&cli.Limit,
 		"limit",

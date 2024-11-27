@@ -141,31 +141,31 @@ func (sdk mfSDK) ListThingsByGroup(groupID, token string, offset, limit uint64) 
 	return gtp, nil
 }
 
-func (sdk mfSDK) ListChannelsByGroup(groupID, token string, offset, limit uint64) (ChannelsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/channels?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
+func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64) (ProfilesPage, error) {
+	url := fmt.Sprintf("%s/%s/%s/profiles?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ChannelsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+		return ProfilesPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
 	}
 
-	var gcp ChannelsPage
+	var gcp ProfilesPage
 	if err := json.Unmarshal(body, &gcp); err != nil {
-		return ChannelsPage{}, err
+		return ProfilesPage{}, err
 	}
 
 	return gcp, nil
@@ -307,8 +307,8 @@ func (sdk mfSDK) ViewGroupByThing(thingID, token string) (Group, error) {
 	return g, nil
 }
 
-func (sdk mfSDK) ViewGroupByChannel(channelID, token string) (Group, error) {
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, channelsEndpoint, channelID, groupsEndpoint)
+func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error) {
+	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, profilesEndpoint, profileID, groupsEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return Group{}, err

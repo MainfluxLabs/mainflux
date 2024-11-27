@@ -29,11 +29,11 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 
 func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		destChannel := msg.Channel
+		destProfile := msg.ProfileID
 		if msg.Subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, msg.Subtopic)
+			destProfile = fmt.Sprintf("%s.%s", destProfile, msg.Subtopic)
 		}
-		message := fmt.Sprintf("Method publish to %s took %s to complete", destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method publish to %s took %s to complete", destProfile, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -44,13 +44,9 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protom
 	return lm.svc.Publish(ctx, key, msg)
 }
 
-func (lm *loggingMiddleware) Subscribe(ctx context.Context, key, chanID, subtopic string, c coap.Client) (err error) {
+func (lm *loggingMiddleware) Subscribe(ctx context.Context, key, profileID, subtopic string, c coap.Client) (err error) {
 	defer func(begin time.Time) {
-		destChannel := chanID
-		if subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, subtopic)
-		}
-		message := fmt.Sprintf("Method subscribe to %s for client %s took %s to complete", destChannel, c.Token(), time.Since(begin))
+		message := fmt.Sprintf("Method subscribe for client %s took %s to complete", c.Token(), time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -58,16 +54,12 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, key, chanID, subtopi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Subscribe(ctx, key, chanID, subtopic, c)
+	return lm.svc.Subscribe(ctx, key, profileID, subtopic, c)
 }
 
-func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key, chanID, subtopic, token string) (err error) {
+func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) (err error) {
 	defer func(begin time.Time) {
-		destChannel := chanID
-		if subtopic != "" {
-			destChannel = fmt.Sprintf("%s.%s", destChannel, subtopic)
-		}
-		message := fmt.Sprintf("Method unsubscribe for the client %s from the channel %s took %s to complete", token, destChannel, time.Since(begin))
+		message := fmt.Sprintf("Method unsubscribe for the client %s took %s to complete", token, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -75,6 +67,6 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key, chanID, subto
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Unsubscribe(ctx, key, chanID, subtopic, token)
+	return lm.svc.Unsubscribe(ctx, key, profileID, subtopic, token)
 
 }

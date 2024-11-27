@@ -19,17 +19,17 @@ type mainfluxThings struct {
 	mu          sync.Mutex
 	counter     uint64
 	things      map[string]things.Thing
-	channels    map[string]things.Channel
+	profiles    map[string]things.Profile
 	auth        protomfx.AuthServiceClient
 	connections map[string][]string
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, channels map[string]things.Channel, auth protomfx.AuthServiceClient) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
 	return &mainfluxThings{
 		things:      things,
-		channels:    channels,
+		profiles:    profiles,
 		auth:        auth,
 		connections: make(map[string][]string),
 	}
@@ -61,20 +61,20 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (svc *mainfluxThings) Connect(_ context.Context, token string, chID string, thIDs []string) error {
+func (svc *mainfluxThings) Connect(_ context.Context, token string, prID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	svc.connections[chID] = append(svc.connections[chID], thIDs...)
+	svc.connections[prID] = append(svc.connections[prID], thIDs...)
 
 	return nil
 }
 
-func (svc *mainfluxThings) Disconnect(_ context.Context, token string, chID string, thIDs []string) error {
+func (svc *mainfluxThings) Disconnect(_ context.Context, token string, prID string, thIDs []string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	ids := svc.connections[chID]
+	ids := svc.connections[prID]
 	var count int
 	var newConns []string
 	for _, thID := range thIDs {
@@ -89,7 +89,7 @@ func (svc *mainfluxThings) Disconnect(_ context.Context, token string, chID stri
 		if len(newConns)-len(ids) != count {
 			return errors.ErrNotFound
 		}
-		svc.connections[chID] = newConns
+		svc.connections[prID] = newConns
 	}
 
 	return nil
@@ -110,11 +110,11 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...
 	return nil
 }
 
-func (svc *mainfluxThings) ViewChannel(_ context.Context, token, id string) (things.Channel, error) {
-	if c, ok := svc.channels[id]; ok {
+func (svc *mainfluxThings) ViewProfile(_ context.Context, token, id string) (things.Profile, error) {
+	if c, ok := svc.profiles[id]; ok {
 		return c, nil
 	}
-	return things.Channel{}, errors.ErrNotFound
+	return things.Profile{}, errors.ErrNotFound
 }
 
 func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) error {
@@ -129,11 +129,11 @@ func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetada
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelByThing(context.Context, string, string) (things.Channel, error) {
+func (svc *mainfluxThings) ViewProfileByThing(context.Context, string, string) (things.Profile, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByChannel(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -145,32 +145,32 @@ func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateChannels(_ context.Context, token string, chs ...things.Channel) ([]things.Channel, error) {
+func (svc *mainfluxThings) CreateProfiles(_ context.Context, token string, prs ...things.Profile) ([]things.Profile, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	for i := range chs {
+	for i := range prs {
 		svc.counter++
-		chs[i].ID = strconv.FormatUint(svc.counter, 10)
-		svc.channels[chs[i].ID] = chs[i]
+		prs[i].ID = strconv.FormatUint(svc.counter, 10)
+		svc.profiles[prs[i].ID] = prs[i]
 	}
 
-	return chs, nil
+	return prs, nil
 }
 
-func (svc *mainfluxThings) UpdateChannel(context.Context, string, things.Channel) error {
+func (svc *mainfluxThings) UpdateProfile(context.Context, string, things.Profile) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannels(context.Context, string, things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ListProfiles(context.Context, string, things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveChannels(context.Context, string, ...string) error {
+func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewChannelProfile(_ context.Context, chID string) (things.Profile, error) {
+func (svc *mainfluxThings) ViewProfileConfig(_ context.Context, prID string) (things.Config, error) {
 	panic("not implemented")
 }
 
@@ -184,10 +184,6 @@ func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error
 
 func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
-}
-
-func (svc *mainfluxThings) GetProfileByThingID(_ context.Context, thingID string) (things.Profile, error) {
-	panic("implement me")
 }
 
 func (svc *mainfluxThings) GetGroupIDByThingID(_ context.Context, thingID string) (string, error) {
@@ -226,11 +222,11 @@ func (svc *mainfluxThings) ViewGroupByThing(_ context.Context, token string, thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByChannel(_ context.Context, token string, channelID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token string, profileID string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListChannelsByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ChannelsPage, error) {
+func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 

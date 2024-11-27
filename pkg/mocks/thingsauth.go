@@ -18,14 +18,14 @@ import (
 var _ protomfx.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
-	channels map[string]string
+	profiles map[string]string
 	things   map[string]string
 	groups   map[string]things.Group
 }
 
 // NewThingsServiceClient returns mock implementation of things service
-func NewThingsServiceClient(channels map[string]string, things map[string]string, groups map[string]things.Group) protomfx.ThingsServiceClient {
-	return &thingsServiceMock{channels, things, groups}
+func NewThingsServiceClient(profiles map[string]string, things map[string]string, groups map[string]things.Group) protomfx.ThingsServiceClient {
+	return &thingsServiceMock{profiles, things, groups}
 }
 
 func (svc thingsServiceMock) GetConnByKey(_ context.Context, in *protomfx.ConnByKeyReq, _ ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
@@ -50,7 +50,7 @@ func (svc thingsServiceMock) GetConnByKey(_ context.Context, in *protomfx.ConnBy
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.ConnByKeyRes{ChannelID: key, ThingID: svc.things[key]}, nil
+	return &protomfx.ConnByKeyRes{ProfileID: key, ThingID: svc.things[key]}, nil
 }
 
 func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -66,8 +66,8 @@ func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.Authorize
 				return &empty.Empty{}, nil
 			}
 		}
-	case things.ChannelSub:
-		if id, ok := svc.channels[in.GetToken()]; ok {
+	case things.ProfileSub:
+		if id, ok := svc.profiles[in.GetToken()]; ok {
 			if id == gr.ID {
 				return &empty.Empty{}, nil
 			}
@@ -97,10 +97,6 @@ func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.Gro
 	}
 
 	return &protomfx.GroupsRes{Groups: groups}, nil
-}
-
-func (svc thingsServiceMock) GetProfileByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileByThingIDRes, error) {
-	panic("implement me")
 }
 
 func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {

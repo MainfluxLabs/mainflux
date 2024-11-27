@@ -15,7 +15,7 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-const chansPrefix = "channels"
+const profilesPrefix = "profiles"
 
 var _ messaging.PubSub = (*pubsub)(nil)
 

@@ -10,10 +10,10 @@ const (
 	thingConnect    = thingPrefix + "connect"
 	thingDisconnect = thingPrefix + "disconnect"
 
-	channelPrefix = "channel."
-	channelCreate = channelPrefix + "create"
-	channelUpdate = channelPrefix + "update"
-	channelRemove = channelPrefix + "remove"
+	profilePrefix = "profile."
+	profileCreate = profilePrefix + "create"
+	profileUpdate = profilePrefix + "update"
+	profileRemove = profilePrefix + "remove"
 )
 
 type event interface {
@@ -24,9 +24,9 @@ var (
 	_ event = (*createThingEvent)(nil)
 	_ event = (*updateThingEvent)(nil)
 	_ event = (*removeThingEvent)(nil)
-	_ event = (*createChannelEvent)(nil)
-	_ event = (*updateChannelEvent)(nil)
-	_ event = (*removeChannelEvent)(nil)
+	_ event = (*createProfileEvent)(nil)
+	_ event = (*updateProfileEvent)(nil)
+	_ event = (*removeProfileEvent)(nil)
 	_ event = (*connectThingEvent)(nil)
 	_ event = (*disconnectThingEvent)(nil)
 )
@@ -100,18 +100,18 @@ func (rte removeThingEvent) Encode() map[string]interface{} {
 	}
 }
 
-type createChannelEvent struct {
+type createProfileEvent struct {
 	id       string
 	groupID  string
 	name     string
 	metadata map[string]interface{}
 }
 
-func (cce createChannelEvent) Encode() map[string]interface{} {
+func (cce createProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        cce.id,
 		"group_id":  cce.groupID,
-		"operation": channelCreate,
+		"operation": profileCreate,
 	}
 
 	if cce.name != "" {
@@ -130,16 +130,16 @@ func (cce createChannelEvent) Encode() map[string]interface{} {
 	return val
 }
 
-type updateChannelEvent struct {
+type updateProfileEvent struct {
 	id       string
 	name     string
 	metadata map[string]interface{}
 }
 
-func (uce updateChannelEvent) Encode() map[string]interface{} {
+func (uce updateProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        uce.id,
-		"operation": channelUpdate,
+		"operation": profileUpdate,
 	}
 
 	if uce.name != "" {
@@ -158,39 +158,39 @@ func (uce updateChannelEvent) Encode() map[string]interface{} {
 	return val
 }
 
-type removeChannelEvent struct {
+type removeProfileEvent struct {
 	id string
 }
 
-func (rce removeChannelEvent) Encode() map[string]interface{} {
+func (rce removeProfileEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
 		"id":        rce.id,
-		"operation": channelRemove,
+		"operation": profileRemove,
 	}
 }
 
 type connectThingEvent struct {
-	chanID  string
-	thingID string
+	profileID string
+	thingID   string
 }
 
 func (cte connectThingEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"chan_id":   cte.chanID,
-		"thing_id":  cte.thingID,
-		"operation": thingConnect,
+		"profile_id": cte.profileID,
+		"thing_id":   cte.thingID,
+		"operation":  thingConnect,
 	}
 }
 
 type disconnectThingEvent struct {
-	chanID  string
-	thingID string
+	profileID string
+	thingID   string
 }
 
 func (dte disconnectThingEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"chan_id":   dte.chanID,
-		"thing_id":  dte.thingID,
-		"operation": thingDisconnect,
+		"profile_id": dte.profileID,
+		"thing_id":   dte.thingID,
+		"operation":  thingDisconnect,
 	}
 }

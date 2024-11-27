@@ -38,10 +38,10 @@ const (
 	thingConnect    = thingPrefix + "connect"
 	thingDisconnect = thingPrefix + "disconnect"
 
-	channelPrefix = "channel."
-	channelCreate = channelPrefix + "create"
-	channelUpdate = channelPrefix + "update"
-	channelRemove = channelPrefix + "remove"
+	profilePrefix = "profile."
+	profileCreate = profilePrefix + "create"
+	profileUpdate = profilePrefix + "update"
+	profileRemove = profilePrefix + "remove"
 )
 
 var (
@@ -56,14 +56,14 @@ func newService(tokens map[string]string) things.Service {
 	auth := mocks.NewAuthService("", usersList)
 	conns := make(chan thmocks.Connection)
 	thingsRepo := thmocks.NewThingRepository(conns)
-	channelsRepo := thmocks.NewChannelRepository(thingsRepo, conns)
+	profilesRepo := thmocks.NewProfileRepository(thingsRepo, conns)
 	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
-	chanCache := thmocks.NewChannelCache()
+	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, channelsRepo, groupsRepo, rolesRepo, chanCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
 }
 
 func TestCreateThings(t *testing.T) {
@@ -229,7 +229,7 @@ func TestListThings(t *testing.T) {
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
 
-func TestListThingsByChannel(t *testing.T) {
+func TestListThingsByProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
@@ -243,16 +243,16 @@ func TestListThingsByChannel(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
-	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
+	err = svc.Connect(context.Background(), token, spr.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
-	esths, eserr := essvc.ListThingsByChannel(context.Background(), token, sch.ID, things.PageMetadata{Offset: 0, Limit: 10})
-	thps, err := svc.ListThingsByChannel(context.Background(), token, sch.ID, things.PageMetadata{Offset: 0, Limit: 10})
+	esths, eserr := essvc.ListThingsByProfile(context.Background(), token, spr.ID, things.PageMetadata{Offset: 0, Limit: 10})
+	thps, err := svc.ListThingsByProfile(context.Background(), token, spr.ID, things.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, thps, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", thps, esths))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
@@ -319,7 +319,7 @@ func TestRemoveThing(t *testing.T) {
 	}
 }
 
-func TestCreateChannels(t *testing.T) {
+func TestCreateProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
@@ -330,14 +330,14 @@ func TestCreateChannels(t *testing.T) {
 
 	cases := []struct {
 		desc  string
-		chs   []things.Channel
+		prs   []things.Profile
 		key   string
 		err   error
 		event map[string]interface{}
 	}{
 		{
-			desc: "create channels successfully",
-			chs:  []things.Channel{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			desc: "create profiles successfully",
+			prs:  []things.Profile{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:  token,
 			err:  nil,
 			event: map[string]interface{}{
@@ -345,12 +345,12 @@ func TestCreateChannels(t *testing.T) {
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
 				"group_id":  gr.ID,
-				"operation": channelCreate,
+				"operation": profileCreate,
 			},
 		},
 		{
-			desc:  "create channels with invalid credentials",
-			chs:   []things.Channel{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			desc:  "create profiles with invalid credentials",
+			prs:   []things.Profile{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
 			key:   "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -359,7 +359,7 @@ func TestCreateChannels(t *testing.T) {
 
 	lastID := "0"
 	for _, tc := range cases {
-		_, err := svc.CreateChannels(context.Background(), tc.key, tc.chs...)
+		_, err := svc.CreateProfiles(context.Background(), tc.key, tc.prs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -379,46 +379,46 @@ func TestCreateChannels(t *testing.T) {
 	}
 }
 
-func TestUpdateChannel(t *testing.T) {
+func TestUpdateProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: adminEmail})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
-	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	// Create profile without sending event.
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc    string
-		channel things.Channel
+		profile things.Profile
 		key     string
 		err     error
 		event   map[string]interface{}
 	}{
 		{
-			desc: "update channel successfully",
-			channel: things.Channel{
-				ID:       sch.ID,
+			desc: "update profile successfully",
+			profile: things.Profile{
+				ID:       spr.ID,
 				Name:     "b",
 				Metadata: map[string]interface{}{"test": "test"},
 			},
 			key: token,
 			err: nil,
 			event: map[string]interface{}{
-				"id":        sch.ID,
+				"id":        spr.ID,
 				"name":      "b",
 				"metadata":  "{\"test\":\"test\"}",
-				"operation": channelUpdate,
+				"operation": profileUpdate,
 			},
 		},
 		{
-			desc: "update non-existent channel",
-			channel: things.Channel{
+			desc: "update non-existent profile",
+			profile: things.Profile{
 				ID:   strconv.FormatUint(math.MaxUint64, 10),
 				Name: "c",
 			},
@@ -430,7 +430,7 @@ func TestUpdateChannel(t *testing.T) {
 
 	lastID := "0"
 	for _, tc := range cases {
-		err := svc.UpdateChannel(context.Background(), tc.key, tc.channel)
+		err := svc.UpdateProfile(context.Background(), tc.key, tc.profile)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -450,26 +450,26 @@ func TestUpdateChannel(t *testing.T) {
 	}
 }
 
-func TestViewChannel(t *testing.T) {
+func TestViewProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
-	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	// Create profile without sending event.
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
-	esch, eserr := essvc.ViewChannel(context.Background(), token, sch.ID)
-	ch, err := svc.ViewChannel(context.Background(), token, sch.ID)
-	assert.Equal(t, ch, esch, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", ch, esch))
+	espr, eserr := essvc.ViewProfile(context.Background(), token, spr.ID)
+	pr, err := svc.ViewProfile(context.Background(), token, spr.ID)
+	assert.Equal(t, pr, espr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", pr, espr))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
 
-func TestListChannels(t *testing.T) {
+func TestListProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
@@ -477,17 +477,17 @@ func TestListChannels(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 	// Create thing without sending event.
-	_, err = svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	_, err = svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
-	eschs, eserr := essvc.ListChannels(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
-	chs, err := svc.ListChannels(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
-	assert.Equal(t, chs, eschs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", chs, eschs))
+	esprs, eserr := essvc.ListProfiles(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
+	prs, err := svc.ListProfiles(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
+	assert.Equal(t, prs, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prs, esprs))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
 
-func TestListChannelsByThing(t *testing.T) {
+func TestListProfilesByThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
@@ -501,31 +501,31 @@ func TestListChannelsByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
-	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
+	err = svc.Connect(context.Background(), token, spr.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
-	eschs, eserr := essvc.ViewChannelByThing(context.Background(), token, sth.ID)
-	chps, err := svc.ViewChannelByThing(context.Background(), token, sth.ID)
-	assert.Equal(t, chps, eschs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", chps, eschs))
+	esprs, eserr := essvc.ViewProfileByThing(context.Background(), token, sth.ID)
+	prps, err := svc.ViewProfileByThing(context.Background(), token, sth.ID)
+	assert.Equal(t, prps, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prps, esprs))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
 
-func TestRemoveChannel(t *testing.T) {
+func TestRemoveProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: adminEmail})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
-	// Create channel without sending event.
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	// Create profile without sending event.
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
@@ -537,17 +537,17 @@ func TestRemoveChannel(t *testing.T) {
 		event map[string]interface{}
 	}{
 		{
-			desc: "remove channel successfully",
-			id:   sch.ID,
+			desc: "remove profile successfully",
+			id:   spr.ID,
 			key:  token,
 			err:  nil,
 			event: map[string]interface{}{
-				"id":        sch.ID,
-				"operation": channelRemove,
+				"id":        spr.ID,
+				"operation": profileRemove,
 			},
 		},
 		{
-			desc:  "remove non-existent channel",
+			desc:  "remove non-existent profile",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
 			err:   errors.ErrNotFound,
@@ -557,7 +557,7 @@ func TestRemoveChannel(t *testing.T) {
 
 	lastID := "0"
 	for _, tc := range cases {
-		err := svc.RemoveChannels(context.Background(), tc.key, tc.id)
+		err := svc.RemoveProfiles(context.Background(), tc.key, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -586,49 +586,49 @@ func TestConnectEvent(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	// Create thing and channel that will be connected.
+	// Create thing and profile that will be connected.
 	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
-		desc    string
-		thingID string
-		chanID  string
-		key     string
-		err     error
-		event   map[string]interface{}
+		desc      string
+		thingID   string
+		profileID string
+		key       string
+		err       error
+		event     map[string]interface{}
 	}{
 		{
-			desc:    "connect existing thing to existing channel",
-			thingID: sth.ID,
-			chanID:  sch.ID,
-			key:     token,
-			err:     nil,
+			desc:      "connect existing thing to existing profile",
+			thingID:   sth.ID,
+			profileID: spr.ID,
+			key:       token,
+			err:       nil,
 			event: map[string]interface{}{
-				"chan_id":   sch.ID,
-				"thing_id":  sth.ID,
-				"operation": thingConnect,
+				"profile_id": spr.ID,
+				"thing_id":   sth.ID,
+				"operation":  thingConnect,
 			},
 		},
 		{
-			desc:    "connect non-existent thing to channel",
-			thingID: strconv.FormatUint(math.MaxUint64, 10),
-			chanID:  sch.ID,
-			key:     token,
-			err:     errors.ErrNotFound,
-			event:   nil,
+			desc:      "connect non-existent thing to profile",
+			thingID:   strconv.FormatUint(math.MaxUint64, 10),
+			profileID: spr.ID,
+			key:       token,
+			err:       errors.ErrNotFound,
+			event:     nil,
 		},
 	}
 
 	lastID := "0"
 	for _, tc := range cases {
-		err := svc.Connect(context.Background(), tc.key, tc.chanID, []string{tc.thingID})
+		err := svc.Connect(context.Background(), tc.key, tc.profileID, []string{tc.thingID})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -657,53 +657,53 @@ func TestDisconnectEvent(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	// Create thing and channel that will be connected.
+	// Create thing and profile that will be connected.
 	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	schs, err := svc.CreateChannels(context.Background(), token, things.Channel{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-	sch := schs[0]
+	spr := sprs[0]
 
-	err = svc.Connect(context.Background(), token, sch.ID, []string{sth.ID})
+	err = svc.Connect(context.Background(), token, spr.ID, []string{sth.ID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
-		desc    string
-		thingID string
-		chanID  string
-		key     string
-		err     error
-		event   map[string]interface{}
+		desc      string
+		thingID   string
+		profileID string
+		key       string
+		err       error
+		event     map[string]interface{}
 	}{
 		{
-			desc:    "disconnect thing from channel",
-			thingID: sth.ID,
-			chanID:  sch.ID,
-			key:     token,
-			err:     nil,
+			desc:      "disconnect thing from profile",
+			thingID:   sth.ID,
+			profileID: spr.ID,
+			key:       token,
+			err:       nil,
 			event: map[string]interface{}{
-				"chan_id":   sch.ID,
-				"thing_id":  sth.ID,
-				"operation": thingDisconnect,
+				"profile_id": spr.ID,
+				"thing_id":   sth.ID,
+				"operation":  thingDisconnect,
 			},
 		},
 		{
-			desc:    "disconnect non-existent thing from channel",
-			thingID: strconv.FormatUint(math.MaxUint64, 10),
-			chanID:  sch.ID,
-			key:     token,
-			err:     errors.ErrNotFound,
-			event:   nil,
+			desc:      "disconnect non-existent thing from profile",
+			thingID:   strconv.FormatUint(math.MaxUint64, 10),
+			profileID: spr.ID,
+			key:       token,
+			err:       errors.ErrNotFound,
+			event:     nil,
 		},
 	}
 
 	lastID := "0"
 	for _, tc := range cases {
-		err := svc.Disconnect(context.Background(), tc.key, tc.chanID, []string{tc.thingID})
+		err := svc.Disconnect(context.Background(), tc.key, tc.profileID, []string{tc.thingID})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{

@@ -23,7 +23,7 @@ const (
 	regExParts       = 2
 )
 
-var subtopicRegExp = regexp.MustCompile(`(?:^/channels/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
+var subtopicRegExp = regexp.MustCompile(`(?:^/profiles/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
@@ -93,31 +93,31 @@ type PubSub interface {
 
 func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
 	msg := protomfx.Message{
-		Protocol:  protocol,
-		Channel:   conn.ChannelID,
-		Subtopic:  subject,
-		Publisher: conn.ThingID,
-		Payload:   *payload,
-		Created:   time.Now().UnixNano(),
-		Profile:   &protomfx.Profile{},
+		Protocol:      protocol,
+		ProfileID:     conn.ProfileID,
+		Subtopic:      subject,
+		Publisher:     conn.ThingID,
+		Payload:       *payload,
+		Created:       time.Now().UnixNano(),
+		ProfileConfig: &protomfx.Config{},
 	}
 
-	if conn.Profile == nil {
+	if conn.ProfileConfig == nil {
 		return msg
 	}
 
-	msg.Profile.Write = conn.Profile.Write
-	msg.Profile.WebhookID = conn.Profile.WebhookID
-	msg.Profile.SmtpID = conn.Profile.SmtpID
-	msg.Profile.SmppID = conn.Profile.SmppID
-	msg.Profile.ContentType = conn.Profile.ContentType
+	msg.ProfileConfig.Write = conn.ProfileConfig.Write
+	msg.ProfileConfig.WebhookID = conn.ProfileConfig.WebhookID
+	msg.ProfileConfig.SmtpID = conn.ProfileConfig.SmtpID
+	msg.ProfileConfig.SmppID = conn.ProfileConfig.SmppID
+	msg.ProfileConfig.ContentType = conn.ProfileConfig.ContentType
 
-	if conn.Profile.Transformer != nil {
-		msg.Profile.Transformer = &protomfx.Transformer{
-			ValuesFilter: conn.Profile.Transformer.ValuesFilter,
-			TimeField:    conn.Profile.Transformer.TimeField,
-			TimeFormat:   conn.Profile.Transformer.TimeFormat,
-			TimeLocation: conn.Profile.Transformer.TimeLocation,
+	if conn.ProfileConfig.Transformer != nil {
+		msg.ProfileConfig.Transformer = &protomfx.Transformer{
+			ValuesFilter: conn.ProfileConfig.Transformer.ValuesFilter,
+			TimeField:    conn.ProfileConfig.Transformer.TimeField,
+			TimeFormat:   conn.ProfileConfig.Transformer.TimeFormat,
+			TimeLocation: conn.ProfileConfig.Transformer.TimeLocation,
 		}
 	}
 

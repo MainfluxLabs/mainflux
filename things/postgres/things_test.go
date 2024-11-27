@@ -524,10 +524,10 @@ func TestRetrieveAllThings(t *testing.T) {
 	}
 }
 
-func TestRetrieveByChannel(t *testing.T) {
+func TestRetrieveByProfile(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
-	channelRepo := postgres.NewChannelRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	n := uint64(101)
 	thsDisconNum := uint64(1)
@@ -536,10 +536,10 @@ func TestRetrieveByChannel(t *testing.T) {
 	chID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	_, err = channelRepo.Save(context.Background(), things.Channel{
+	_, err = profileRepo.Save(context.Background(), things.Profile{
 		ID:      chID,
 		GroupID: group.ID,
-		Name:    channelName,
+		Name:    profileName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -564,10 +564,10 @@ func TestRetrieveByChannel(t *testing.T) {
 		thIDs = append(thIDs, thID.ID)
 	}
 
-	err = channelRepo.Connect(context.Background(), chID, thIDs[0:n-thsDisconNum])
+	err = profileRepo.Connect(context.Background(), chID, thIDs[0:n-thsDisconNum])
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	nonexistentChanID, err := idProvider.ID()
+	nonexistentProfileID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -576,7 +576,7 @@ func TestRetrieveByChannel(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"retrieve all things by channel": {
+		"retrieve all things by profile": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -584,14 +584,14 @@ func TestRetrieveByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve all things by channel without limit": {
+		"retrieve all things by profile without limit": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve subset of things by channel": {
+		"retrieve subset of things by profile": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
@@ -599,8 +599,8 @@ func TestRetrieveByChannel(t *testing.T) {
 			},
 			size: (n - (n / 2)) - thsDisconNum,
 		},
-		"retrieve things by non-existing channel": {
-			chID: nonexistentChanID,
+		"retrieve things by non-existing profile": {
+			chID: nonexistentProfileID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -616,7 +616,7 @@ func TestRetrieveByChannel(t *testing.T) {
 			size: 0,
 			err:  errors.ErrNotFound,
 		},
-		"retrieve all things by channel sorted by name ascendent": {
+		"retrieve all things by profile sorted by name ascendent": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -626,7 +626,7 @@ func TestRetrieveByChannel(t *testing.T) {
 			},
 			size: n - thsDisconNum,
 		},
-		"retrieve all things by channel sorted by name descendent": {
+		"retrieve all things by profile sorted by name descendent": {
 			chID: chID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -639,12 +639,12 @@ func TestRetrieveByChannel(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveByChannel(context.Background(), tc.chID, tc.pageMetadata)
+		page, err := thingRepo.RetrieveByProfile(context.Background(), tc.chID, tc.pageMetadata)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 
-		// Check if Things by Channel list have been sorted properly
+		// Check if Things by Profile list have been sorted properly
 		testSortThings(t, tc.pageMetadata, page.Things)
 	}
 }

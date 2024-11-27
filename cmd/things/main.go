@@ -335,14 +335,14 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	thingsRepo := postgres.NewThingRepository(database)
 	thingsRepo = tracing.ThingRepositoryMiddleware(dbTracer, thingsRepo)
 
-	channelsRepo := postgres.NewChannelRepository(database)
-	channelsRepo = tracing.ChannelRepositoryMiddleware(dbTracer, channelsRepo)
+	profilesRepo := postgres.NewProfileRepository(database)
+	profilesRepo = tracing.ProfileRepositoryMiddleware(dbTracer, profilesRepo)
 
 	groupsRepo := postgres.NewGroupRepository(database)
 	groupsRepo = tracing.GroupRepositoryMiddleware(dbTracer, groupsRepo)
 
-	chanCache := rediscache.NewChannelCache(cacheClient)
-	chanCache = tracing.ChannelCacheMiddleware(cacheTracer, chanCache)
+	profileCache := rediscache.NewProfileCache(cacheClient)
+	profileCache = tracing.ProfileCacheMiddleware(cacheTracer, profileCache)
 
 	thingCache := rediscache.NewThingCache(cacheClient)
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
@@ -351,7 +351,7 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	rolesRepo := postgres.NewRolesRepository(db)
 	rolesRepo = tracing.RolesRepositoryMiddleware(dbTracer, rolesRepo)
 
-	svc := things.New(ac, uc, thingsRepo, channelsRepo, groupsRepo, rolesRepo, chanCache, thingCache, idProvider)
+	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

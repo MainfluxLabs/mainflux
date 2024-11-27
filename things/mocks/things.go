@@ -163,7 +163,7 @@ func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs [
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -183,7 +183,7 @@ func (trm *thingRepositoryMock) RetrieveByChannel(_ context.Context, chID string
 		}
 	}
 
-	// Sort Things by Channel list
+	// Sort Things by Profile list
 	ths = sortItems(pm, ths, func(i int) (string, string) {
 		return ths[i].Name, ths[i].ID
 	})
@@ -231,10 +231,10 @@ func (trm *thingRepositoryMock) connect(conn Connection) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	if _, ok := trm.tconns[conn.chanID]; !ok {
-		trm.tconns[conn.chanID] = make(map[string]things.Thing)
+	if _, ok := trm.tconns[conn.profileID]; !ok {
+		trm.tconns[conn.profileID] = make(map[string]things.Thing)
 	}
-	trm.tconns[conn.chanID][conn.thing.ID] = conn.thing
+	trm.tconns[conn.profileID][conn.thing.ID] = conn.thing
 }
 
 func (trm *thingRepositoryMock) disconnect(conn Connection) {
@@ -242,10 +242,10 @@ func (trm *thingRepositoryMock) disconnect(conn Connection) {
 	defer trm.mu.Unlock()
 
 	if conn.thing.ID == "" {
-		delete(trm.tconns, conn.chanID)
+		delete(trm.tconns, conn.profileID)
 		return
 	}
-	delete(trm.tconns[conn.chanID], conn.thing.ID)
+	delete(trm.tconns[conn.profileID], conn.thing.ID)
 }
 
 func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {

@@ -49,8 +49,8 @@ func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, e
 func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error)
      Things - gets all things
 	
-func (sdk mfSDK) ThingsByChannel(token, chanID string, offset, limit uint64) (ThingsPage, error)
-    ThingsByChannel - gets things by channel
+func (sdk mfSDK) ThingsByProfile(token, profileID string, offset, limit uint64) (ThingsPage, error)
+    ThingsByProfile - gets things by profile
 	
 func (sdk mfSDK) Thing(id, token string) (Thing, error)
     Thing - gets thing by id.
@@ -92,40 +92,40 @@ func (sdk mfSDK) UpdateGroup(group Group, token string) error
     UpdateGroup - updates existing group
     
 func (sdk mfSDK) Connect(conns ConnectionIDs, token string) error
-    Connect - connect things to channels
+    Connect - connect things to profiles
 
 func (sdk mfSDK) Disconnect(conns ConnectionIDs, token string) error
-    Disconnect - disconnect things from a channel
+    Disconnect - disconnect things from a profile
 
-func (sdk mfSDK) CreateChannel(channel Channel, groupID, token string) (string, error)
-    CreateChannel - creates new channel and generates UUID
+func (sdk mfSDK) CreateProfile(profile Profile, groupID, token string) (string, error)
+    CreateProfile - creates new profile and generates UUID
 
-func (sdk mfSDK) CreateChannels(channels []Channel, groupID, token string) ([]Channel, error)
-    CreateChannels - registers new channels
+func (sdk mfSDK) CreateProfiles(profiles []Profile, groupID, token string) ([]Profile, error)
+    CreateProfiles - registers new profiles
     
-func (sdk mfSDK) Channels(token string) ([]things.Channel, error)
-    Channels - gets all channels
+func (sdk mfSDK) Profiles(token string) ([]things.Profile, error)
+    Profiles - gets all profiles
 
-func (sdk mfSDK) ViewChannelByThing(token, thingID string) (Channel, error)
-    ViewChannelByThing - returns channel by thing
+func (sdk mfSDK) ViewProfileByThing(token, thingID string) (Profile, error)
+    ViewProfileByThing - returns profile by thing
     
-func (sdk mfSDK) Channel(id, token string) (things.Channel, error)
-    Channel - gets channel by ID
+func (sdk mfSDK) Profile(id, token string) (things.Profile, error)
+    Profile - gets profile by ID
 
-func (sdk mfSDK) UpdateChannel(channel Channel, token string) error
-    UpdateChannel - updates existing channel
+func (sdk mfSDK) UpdateProfile(profile Profile, token string) error
+    UpdateProfile - updates existing profile
     
-func (sdk mfSDK) DeleteChannel(id, token string) error
-    DeleteChannel - removes channel
+func (sdk mfSDK) DeleteProfile(id, token string) error
+    DeleteProfile - removes profile
 
-func (sdk mfSDK) DeleteChannels(ids []string, token string) error
-    DeleteChannels - removes existing channels
+func (sdk mfSDK) DeleteProfiles(ids []string, token string) error
+    DeleteProfiles - removes existing profiles
     
-func (sdk mfSDK) ListChannelsByGroup(groupID, token string, offset, limit uint64) (ChannelsPage, error)
-    ListChannelsByGroup - lists channels by group
+func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64) (ProfilesPage, error)
+    ListProfilesByGroup - lists profiles by group
     
-func (sdk mfSDK) ViewGroupByChannel(channelID, token string) (Group, error)
-    ViewGroupByChannel retrieves a group by channel
+func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error)
+    ViewGroupByProfile retrieves a group by profile
     
 func (sdk mfSDK) CreateRolesByGroup(roles []GroupMember, groupID, token string) error
     CreateRolesByGroup - creates new roles by group
@@ -187,11 +187,11 @@ func (sdk mfSDK) UpdateWebhook(wh Webhook, token string) error
 func (sdk mfSDK) DeleteWebhooks(ids []string, groupID, token string) error
     DeleteWebhooks - removes existing webhooks
     
-func (sdk mfSDK) SendMessage(chanID, msg, token string) error
-    SendMessage - send message on Mainflux channel
+func (sdk mfSDK) SendMessage(profileID, msg, token string) error
+    SendMessage - send message on Mainflux Profile
 
-func (sdk mfSDK) ReadMessages(chanID, token string) (MessagesPage, error)
-    ReadMessages - read messages of specified channel
+func (sdk mfSDK) ReadMessages(profileID, token string) (MessagesPage, error)
+    ReadMessages - read messages of specified profile
 
 func (sdk mfSDK) SetContentType(ct ContentType) error
     SetContentType - set message content type. Available options are SenML JSON, custom JSON and custom binary (octet-stream).

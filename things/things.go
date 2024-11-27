@@ -17,11 +17,11 @@ var (
 	ErrDisconnect = errors.New("remove connection failed")
 
 	// ErrEntityConnected indicates error while checking connection in database
-	ErrEntityConnected = errors.New("check thing-channel connection in database error")
+	ErrEntityConnected = errors.New("check thing-profile connection in database error")
 )
 
-// Metadata to be used for Mainflux thing or channel for customized
-// describing of particular thing or channel.
+// Metadata to be used for Mainflux thing or profile for customized
+// describing of particular thing or profile.
 type Metadata map[string]interface{}
 
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
@@ -66,9 +66,9 @@ type ThingRepository interface {
 	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
 
-	// RetrieveByChannel retrieves the subset of things owned by the specified
-	// user and connected or not connected to specified channel.
-	RetrieveByChannel(ctx context.Context, chID string, pm PageMetadata) (ThingsPage, error)
+	// RetrieveByProfile retrieves the subset of things owned by the specified
+	// user and connected or not connected to specified profile.
+	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
@@ -93,11 +93,11 @@ type ThingCache interface {
 	Remove(context.Context, string) error
 
 	// SaveRole stores pair groupID:memberID, role.
-	SaveRole(context.Context, string, string, string) (error)
+	SaveRole(context.Context, string, string, string) error
 
 	// Role stores pair groupID:memberID, role.
 	Role(context.Context, string, string) (string, error)
 
 	// RemoveRole removes group member role from cache.
-	RemoveRole(context.Context, string, string) (error)
+	RemoveRole(context.Context, string, string) error
 }

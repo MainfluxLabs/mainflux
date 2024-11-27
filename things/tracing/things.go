@@ -17,7 +17,7 @@ const (
 	updateThingKeyOp           = "update_thing_by_key"
 	retrieveThingByIDOp        = "retrieve_thing_by_id"
 	retrieveThingByKeyOp       = "retrieve_thing_by_key"
-	retrieveThingsByChannelOp  = "retrieve_things_by_channel"
+	retrieveThingsByProfileOp  = "retrieve_things_by_profile"
 	retrieveThingsByGroupIDsOp = "retrieve_things_by_group_ids"
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
@@ -94,12 +94,12 @@ func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids
 	return trm.repo.RetrieveByGroupIDs(ctx, ids, pm)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByChannelOp)
+func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	span := createSpan(ctx, trm.tracer, retrieveThingsByProfileOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByChannel(ctx, chID, pm)
+	return trm.repo.RetrieveByProfile(ctx, chID, pm)
 }
 
 func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {

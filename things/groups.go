@@ -9,8 +9,8 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrRetrieveGroupChannels indicates failure to retrieve group channels.
-var ErrRetrieveGroupChannels = errors.New("failed to retrieve group channels")
+// ErrRetrieveGroupProfiles indicates failure to retrieve group profiles.
+var ErrRetrieveGroupProfiles = errors.New("failed to retrieve group profiles")
 
 // Identity contains ID and Email.
 type Identity struct {
@@ -53,8 +53,8 @@ type GroupRepository interface {
 	// RetrieveByIDs retrieves groups by their ids
 	RetrieveByIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (GroupPage, error)
 
-	// RetrieveChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
-	RetrieveChannelsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ChannelsPage, error)
+	// RetrieveProfilesByGroup retrieves page of profiles that are assigned to a group identified by ID.
+	RetrieveProfilesByGroup(ctx context.Context, groupID string, pm PageMetadata) (ProfilesPage, error)
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
@@ -82,8 +82,8 @@ type Groups interface {
 	// ListThingsByGroup retrieves page of things that are assigned to a group identified by ID.
 	ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error)
 
-	// ListChannelsByGroup retrieves page of channels that are assigned to a group identified by ID.
-	ListChannelsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ChannelsPage, error)
+	// ListProfilesByGroup retrieves page of profiles that are assigned to a group identified by ID.
+	ListProfilesByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ProfilesPage, error)
 
 	// ViewGroupByThing retrieves group that thing belongs to.
 	ViewGroupByThing(ctx context.Context, token, thingID string) (Group, error)
@@ -91,8 +91,8 @@ type Groups interface {
 	// RemoveGroups removes the groups identified with the provided IDs.
 	RemoveGroups(ctx context.Context, token string, ids ...string) error
 
-	// ViewGroupByChannel retrieves group that channel belongs to.
-	ViewGroupByChannel(ctx context.Context, token, channelID string) (Group, error)
+	// ViewGroupByProfile retrieves group that profile belongs to.
+	ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
@@ -237,15 +237,15 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 	return gr, nil
 }
 
-func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, channelID string) (Group, error) {
-	ch, err := ts.channels.RetrieveByID(ctx, channelID)
+func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
+	pr, err := ts.profiles.RetrieveByID(ctx, profileID)
 	if err != nil {
 		return Group{}, err
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  ch.GroupID,
+		Object:  pr.GroupID,
 		Subject: GroupSub,
 		Action:  Viewer,
 	}
@@ -253,7 +253,7 @@ func (ts *thingsService) ViewGroupByChannel(ctx context.Context, token string, c
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, ch.GroupID)
+	gr, err := ts.groups.RetrieveByID(ctx, pr.GroupID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -312,7 +312,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		if err := ts.thingCache.SaveRole(ctx,  gp.GroupID, gp.MemberID, r); err != nil {
+		if err := ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
 			return err
 		}
 	}

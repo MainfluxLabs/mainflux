@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	channels    = "channels"
+	profiles    = "profiles"
 	messages    = "messages"
 	senmlFormat = "senml"
 	jsonFormat  = "json"
@@ -58,9 +58,9 @@ func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc
 
 		switch topic {
 		case brokers.SubjectSenML:
-			topic = channels + "/" + msg.Channel + "/" + senmlFormat + "/" + messages
+			topic = profiles + "/" + msg.ProfileID + "/" + senmlFormat + "/" + messages
 		case brokers.SubjectJSON:
-			topic = channels + "/" + msg.Channel + "/" + jsonFormat + "/" + messages
+			topic = profiles + "/" + msg.ProfileID + "/" + jsonFormat + "/" + messages
 		default:
 			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
 			return nil

@@ -32,15 +32,15 @@ func handshake(svc ws.Service) http.HandlerFunc {
 		req.conn = conn
 		client := ws.NewClient(conn)
 
-		if err := svc.Subscribe(context.Background(), req.thingKey, req.chanID, req.subtopic, client); err != nil {
+		if err := svc.Subscribe(context.Background(), req.thingKey, req.profileID, req.subtopic, client); err != nil {
 			req.conn.Close()
 			return
 		}
 
-		logger.Debug(fmt.Sprintf("Successfully upgraded communication to WS on channel %s", req.chanID))
+		logger.Debug(fmt.Sprintf("Successfully upgraded communication to WS on profile %s", req.profileID))
 		msgs := make(chan []byte)
 
-		// Listen for messages received from the chan messages, and publish them to broker
+		// Listen for messages received from the profile messages, and publish them to broker
 		go process(svc, req, msgs)
 		go listen(conn, msgs)
 	}
@@ -79,7 +79,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 
 func listen(conn *websocket.Conn, msgs chan<- []byte) {
 	for {
-		// Listen for message from the client, and push them to the msgs channel
+		// Listen for message from the client, and push them to the msgs profile
 		_, payload, err := conn.ReadMessage()
 
 		if websocket.IsUnexpectedCloseError(err) {
@@ -108,7 +108,7 @@ func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 		}
 		svc.Publish(context.Background(), req.thingKey, m)
 	}
-	if err := svc.Unsubscribe(context.Background(), req.thingKey, req.chanID, req.subtopic); err != nil {
+	if err := svc.Unsubscribe(context.Background(), req.thingKey, req.profileID, req.subtopic); err != nil {
 		req.conn.Close()
 	}
 }
