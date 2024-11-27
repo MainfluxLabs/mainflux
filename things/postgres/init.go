@@ -118,28 +118,16 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_3",
 				Up: []string{
-					`ALTER TABLE IF EXISTS channels RENAME TO profiles;
-						ALTER TABLE IF EXISTS profiles RENAME COLUMN profile TO config;
-						ALTER TABLE IF EXISTS connections RENAME COLUMN channel_id TO profile_id;
-						ALTER INDEX IF EXISTS channels_pkey RENAME TO profiles_pkey;
-						ALTER TABLE connections DROP CONSTRAINT IF EXISTS connections_channel_id_fkey;
-						ALTER TABLE connections ADD CONSTRAINT connections_profile_id_fkey 
-							FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
-				},
-			},
-			{
-				Id: "things_4",
-				Up: []string{
 					`UPDATE things 
 						SET name = CONCAT('th_', id)
 						WHERE name IS NULL OR name = '';`,
-					`UPDATE profiles 
+					`UPDATE channels 
 						SET name = CONCAT('ch_', id) 
 						WHERE name IS NULL OR name = '';`,
 				},
 			},
 			{
-				Id: "things_5",
+				Id: "things_4",
 				Up: []string{
 					`ALTER TABLE groups DROP CONSTRAINT groups_pkey;
 						ALTER TABLE groups DROP COLUMN IF EXISTS owner_id;
@@ -150,11 +138,26 @@ func migrateDB(db *sqlx.DB) error {
 						ALTER TABLE things ADD PRIMARY KEY (id);
 						ALTER TABLE things ADD CONSTRAINT group_name_ths UNIQUE (group_id, name);
 						ALTER TABLE things ALTER COLUMN name SET NOT NULL;`,
-					`ALTER TABLE profiles DROP CONSTRAINT profiles_pkey;
-						ALTER TABLE profiles DROP COLUMN IF EXISTS owner_id;
-						ALTER TABLE profiles ADD PRIMARY KEY (id);
-						ALTER TABLE profiles ADD CONSTRAINT group_name_profs UNIQUE (group_id, name);
-						ALTER TABLE profiles ALTER COLUMN name SET NOT NULL;`,
+					`ALTER TABLE channels DROP CONSTRAINT channels_pkey;
+						ALTER TABLE channels DROP COLUMN IF EXISTS owner_id;
+						ALTER TABLE channels ADD PRIMARY KEY (id);
+						ALTER TABLE channels ADD CONSTRAINT group_name_chs UNIQUE (group_id, name);
+						ALTER TABLE channels ALTER COLUMN name SET NOT NULL;`,
+				},
+			},
+			{
+				Id: "things_5",
+				Up: []string{
+					`ALTER TABLE IF EXISTS channels RENAME TO profiles;
+						ALTER TABLE IF EXISTS profiles RENAME COLUMN profile TO config;
+						ALTER INDEX IF EXISTS channels_pkey RENAME TO profiles_pkey;
+						ALTER TABLE profiles RENAME CONSTRAINT group_name_chs TO group_name_prs;`,
+					`ALTER TABLE IF EXISTS connections RENAME COLUMN channel_id TO profile_id; 
+						ALTER TABLE connections DROP CONSTRAINT IF EXISTS connections_pkey;
+						ALTER TABLE connections ADD CONSTRAINT connections_pkey PRIMARY KEY (profile_id, thing_id);
+						ALTER TABLE connections DROP CONSTRAINT IF EXISTS connections_channel_id_fkey;
+						ALTER TABLE connections ADD CONSTRAINT connections_profile_id_fkey
+						FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
 				},
 			},
 		},
