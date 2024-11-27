@@ -1,10 +1,10 @@
 openapi: 3.0.1
 info:
   title: Mainflux http adapter
-  description: HTTP API for sending messages through communication profiles.
+  description: HTTP API for sending messages.
   version: "1.0.0"
 paths:
-  /profiles/{id}/messages:
+  /messages:
     post:
       summary: Sends message
       description: |
@@ -12,8 +12,6 @@ paths:
         JSON formatted SenML or as blob.
       tags:
         - messages
-      parameters:
-        - $ref: "#/components/parameters/ID"
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
@@ -23,8 +21,6 @@ paths:
           description: Message discarded due to its malformed content.
         "401":
           description: Missing or invalid access token provided.
-        "404":
-          description: Message discarded due to invalid profile id.
         "415":
           description: Message discarded due to invalid or missing content type.
         '500':
@@ -103,17 +99,6 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/SenMLRecord"
-
-  parameters:
-    ID:
-      name: id
-      description: Unique profile identifier.
-      in: path
-      schema:
-        type: string
-        format: uuid
-      required: true
-
   requestBodies:
     MessageReq:
       description: |
