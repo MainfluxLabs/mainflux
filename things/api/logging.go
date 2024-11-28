@@ -206,32 +206,6 @@ func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, prID string)
 	return lm.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (lm *loggingMiddleware) Connect(ctx context.Context, token, prID string, thIDs []string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method connect for profile %s and things %s took %s to complete", prID, thIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.Connect(ctx, token, prID, thIDs)
-}
-
-func (lm *loggingMiddleware) Disconnect(ctx context.Context, token, prID string, thIDs []string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method disconnect for profile %v and things %v took %s to complete", prID, thIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.Disconnect(ctx, token, prID, thIDs)
-}
-
 func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn things.Connection, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_conn_by_key for thing %s took %s to complete", conn.ThingID, time.Since(begin))

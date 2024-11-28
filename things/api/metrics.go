@@ -156,24 +156,6 @@ func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, prID string)
 	return ms.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (ms *metricsMiddleware) Connect(ctx context.Context, token, prID string, thIDs []string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "connect").Add(1)
-		ms.latency.With("method", "connect").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.Connect(ctx, token, prID, thIDs)
-}
-
-func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "disconnect").Add(1)
-		ms.latency.With("method", "disconnect").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.Disconnect(ctx, token, prID, thIDs)
-}
-
 func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_conn_by_key").Add(1)

@@ -10,12 +10,6 @@ import (
 )
 
 var (
-	// ErrConnect indicates error in adding connection
-	ErrConnect = errors.New("add connection failed")
-
-	// ErrDisconnect indicates error in removing connection
-	ErrDisconnect = errors.New("remove connection failed")
-
 	// ErrEntityConnected indicates error while checking connection in database
 	ErrEntityConnected = errors.New("check thing-profile connection in database error")
 )
@@ -27,11 +21,12 @@ type Metadata map[string]interface{}
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
-	ID       string
-	GroupID  string
-	Name     string
-	Key      string
-	Metadata Metadata
+	ID        string
+	GroupID   string
+	ProfileID string
+	Name      string
+	Key       string
+	Metadata  Metadata
 }
 
 // ThingsPage contains page related metadata as well as list of things that
@@ -95,7 +90,7 @@ type ThingCache interface {
 	// SaveRole stores pair groupID:memberID, role.
 	SaveRole(context.Context, string, string, string) error
 
-	// Role stores pair groupID:memberID, role.
+	// Role returns group member role by given groupID and memberID.
 	Role(context.Context, string, string) (string, error)
 
 	// RemoveRole removes group member role from cache.

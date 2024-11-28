@@ -27,18 +27,13 @@ type profileRepositoryMock struct {
 	mu       sync.Mutex
 	counter  uint64
 	profiles map[string]things.Profile
-	tconns   chan Connection                      // used for synchronization with thing repo
-	cconns   map[string]map[string]things.Profile // used to track connections
-	conns    map[string]string                    // used to track connections
 	things   things.ThingRepository
 }
 
 // NewProfileRepository creates in-memory profile repository.
-func NewProfileRepository(repo things.ThingRepository, tconns chan Connection) things.ProfileRepository {
+func NewProfileRepository(repo things.ThingRepository) things.ProfileRepository {
 	return &profileRepositoryMock{
 		profiles: make(map[string]things.Profile),
-		tconns:   tconns,
-		cconns:   make(map[string]map[string]things.Profile),
 		things:   repo,
 	}
 }
@@ -167,11 +162,10 @@ func (crm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
+	thing, _ := crm.things.RetrieveByID(context.Background(), thID)
 	for _, pr := range crm.profiles {
-		for _, co := range crm.cconns[thID] {
-			if pr.ID == co.ID {
-				return pr, nil
-			}
+		if pr.ID == thing.ProfileID {
+			return pr, nil
 		}
 	}
 
@@ -188,98 +182,6 @@ func (crm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error
 		}
 
 		delete(crm.profiles, id)
-
-		for thk := range crm.cconns {
-			delete(crm.cconns[thk], id)
-		}
-		crm.tconns <- Connection{
-			profileID: id,
-			connected: false,
-		}
-	}
-
-	return nil
-}
-
-func (crm *profileRepositoryMock) Connect(_ context.Context, prID string, thIDs []string) error {
-	pr, err := crm.RetrieveByID(context.Background(), prID)
-	if err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		if _, ok := crm.cconns[thID]; ok {
-			return errors.ErrConflict
-		}
-		th, err := crm.things.RetrieveByID(context.Background(), thID)
-		if err != nil {
-			return err
-		}
-		crm.tconns <- Connection{
-			profileID: prID,
-			thing:     th,
-			connected: true,
-		}
-		if _, ok := crm.cconns[thID]; !ok {
-			crm.cconns[thID] = make(map[string]things.Profile)
-		}
-		crm.cconns[thID][prID] = pr
-	}
-
-	return nil
-}
-
-func (crm *profileRepositoryMock) Disconnect(_ context.Context, prID string, thIDs []string) error {
-	for _, thID := range thIDs {
-		if _, ok := crm.cconns[thID]; !ok {
-			return errors.ErrNotFound
-		}
-
-		if _, ok := crm.cconns[thID][prID]; !ok {
-			return errors.ErrNotFound
-		}
-
-		crm.tconns <- Connection{
-			profileID: prID,
-			thing:     things.Thing{ID: thID},
-			connected: false,
-		}
-		delete(crm.cconns[thID], prID)
-	}
-
-	return nil
-}
-
-func (crm *profileRepositoryMock) RetrieveConnByThingKey(_ context.Context, token string) (things.Connection, error) {
-	tid, err := crm.things.RetrieveByKey(context.Background(), token)
-	if err != nil {
-		return things.Connection{}, err
-	}
-
-	profiles, ok := crm.cconns[tid]
-	if !ok {
-		return things.Connection{}, errors.ErrAuthorization
-	}
-
-	if len(profiles) == 0 {
-		return things.Connection{}, errors.ErrAuthorization
-	}
-
-	for _, v := range profiles {
-		return things.Connection{ThingID: tid, ProfileID: v.ID}, nil
-	}
-
-	return things.Connection{}, errors.ErrNotFound
-}
-
-func (crm *profileRepositoryMock) HasThingByID(_ context.Context, profileID, thingID string) error {
-	profiles, ok := crm.cconns[thingID]
-	if !ok {
-		return errors.ErrAuthorization
-	}
-
-	if _, ok := profiles[profileID]; !ok {
-		return errors.ErrAuthorization
 	}
 
 	return nil
@@ -297,25 +199,6 @@ func (crm *profileRepositoryMock) RetrieveAll(_ context.Context) ([]things.Profi
 	return prs, nil
 }
 
-func (crm *profileRepositoryMock) RetrieveAllConnections(_ context.Context) ([]things.Connection, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
-	var conns []things.Connection
-
-	for thingID, con := range crm.cconns {
-		for _, v := range con {
-			con := things.Connection{
-				ProfileID: v.ID,
-				ThingID:   thingID,
-			}
-			conns = append(conns, con)
-		}
-	}
-
-	return conns, nil
-
-}
-
 type profileCacheMock struct {
 	mu       sync.Mutex
 	profiles map[string]string
@@ -326,29 +209,6 @@ func NewProfileCache() things.ProfileCache {
 	return &profileCacheMock{
 		profiles: make(map[string]string),
 	}
-}
-
-func (ccm *profileCacheMock) Connect(_ context.Context, profileID, thingID string) error {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
-
-	ccm.profiles[profileID] = thingID
-	return nil
-}
-
-func (ccm *profileCacheMock) HasThing(_ context.Context, profileID, thingID string) bool {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
-
-	return ccm.profiles[profileID] == thingID
-}
-
-func (ccm *profileCacheMock) Disconnect(_ context.Context, profileID, thingID string) error {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
-
-	delete(ccm.profiles, profileID)
-	return nil
 }
 
 func (ccm *profileCacheMock) Remove(_ context.Context, profileID string) error {

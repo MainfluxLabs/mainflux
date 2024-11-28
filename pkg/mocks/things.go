@@ -61,40 +61,6 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (svc *mainfluxThings) Connect(_ context.Context, token string, prID string, thIDs []string) error {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	svc.connections[prID] = append(svc.connections[prID], thIDs...)
-
-	return nil
-}
-
-func (svc *mainfluxThings) Disconnect(_ context.Context, token string, prID string, thIDs []string) error {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	ids := svc.connections[prID]
-	var count int
-	var newConns []string
-	for _, thID := range thIDs {
-		for _, id := range ids {
-			if id == thID {
-				count++
-				continue
-			}
-			newConns = append(newConns, id)
-		}
-
-		if len(newConns)-len(ids) != count {
-			return errors.ErrNotFound
-		}
-		svc.connections[prID] = newConns
-	}
-
-	return nil
-}
-
 func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()

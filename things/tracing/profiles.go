@@ -17,11 +17,7 @@ const (
 	retrieveByThingOp            = "retrieve_by_thing"
 	retrieveProfilesByGroupIDsOp = "retrieve_profiles_by_group_ids"
 	removeProfileOp              = "retrieve_profile"
-	connectOp                    = "connect"
-	disconnectOp                 = "disconnect"
-	hasThingOp                   = "has_thing"
 	retrieveAllProfilesOp        = "retrieve_all_profiles"
-	retrieveAllConnectionsOp     = "retrieve_all_connections"
 )
 
 var (
@@ -91,30 +87,6 @@ func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 	return crm.repo.Remove(ctx, ids...)
 }
 
-func (crm profileRepositoryMiddleware) Connect(ctx context.Context, prID string, thIDs []string) error {
-	span := createSpan(ctx, crm.tracer, connectOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.Connect(ctx, prID, thIDs)
-}
-
-func (crm profileRepositoryMiddleware) Disconnect(ctx context.Context, prID string, thIDs []string) error {
-	span := createSpan(ctx, crm.tracer, disconnectOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.Disconnect(ctx, prID, thIDs)
-}
-
-func (crm profileRepositoryMiddleware) RetrieveConnByThingKey(ctx context.Context, key string) (things.Connection, error) {
-	span := createSpan(ctx, crm.tracer, hasThingOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.RetrieveConnByThingKey(ctx, key)
-}
-
 func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllProfilesOp)
 	defer span.Finish()
@@ -131,14 +103,6 @@ func (crm profileRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm t
 	return crm.repo.RetrieveByAdmin(ctx, pm)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
-	span := createSpan(ctx, crm.tracer, retrieveAllConnectionsOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return crm.repo.RetrieveAllConnections(ctx)
-}
-
 type profileCacheMiddleware struct {
 	tracer opentracing.Tracer
 	cache  things.ProfileCache
@@ -151,30 +115,6 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 		tracer: tracer,
 		cache:  cache,
 	}
-}
-
-func (ccm profileCacheMiddleware) Connect(ctx context.Context, profileID, thingID string) error {
-	span := createSpan(ctx, ccm.tracer, connectOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return ccm.cache.Connect(ctx, profileID, thingID)
-}
-
-func (ccm profileCacheMiddleware) HasThing(ctx context.Context, profileID, thingID string) bool {
-	span := createSpan(ctx, ccm.tracer, hasThingOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return ccm.cache.HasThing(ctx, profileID, thingID)
-}
-
-func (ccm profileCacheMiddleware) Disconnect(ctx context.Context, profileID, thingID string) error {
-	span := createSpan(ctx, ccm.tracer, disconnectOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return ccm.cache.Disconnect(ctx, profileID, thingID)
 }
 
 func (ccm profileCacheMiddleware) Remove(ctx context.Context, profileID string) error {

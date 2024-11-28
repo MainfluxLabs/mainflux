@@ -203,48 +203,6 @@ func (es eventStore) ViewProfileConfig(ctx context.Context, prID string) (things
 	return es.svc.ViewProfileConfig(ctx, prID)
 }
 
-func (es eventStore) Connect(ctx context.Context, token, prID string, thIDs []string) error {
-	if err := es.svc.Connect(ctx, token, prID, thIDs); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		event := connectThingEvent{
-			profileID: prID,
-			thingID:   thID,
-		}
-		record := &redis.XAddArgs{
-			Stream:       streamID,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
-	}
-
-	return nil
-}
-
-func (es eventStore) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
-	if err := es.svc.Disconnect(ctx, token, prID, thIDs); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		event := disconnectThingEvent{
-			profileID: prID,
-			thingID:   thID,
-		}
-		record := &redis.XAddArgs{
-			Stream:       streamID,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
-	}
-
-	return nil
-}
-
 func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
 	return es.svc.GetConnByKey(ctx, key)
 }

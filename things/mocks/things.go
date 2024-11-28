@@ -18,27 +18,14 @@ var _ things.ThingRepository = (*thingRepositoryMock)(nil)
 type thingRepositoryMock struct {
 	mu      sync.Mutex
 	counter uint64
-	conns   chan Connection
-	tconns  map[string]map[string]things.Thing
 	things  map[string]things.Thing
 }
 
 // NewThingRepository creates in-memory thing repository.
-func NewThingRepository(conns chan Connection) things.ThingRepository {
+func NewThingRepository() things.ThingRepository {
 	repo := &thingRepositoryMock{
-		conns:  conns,
 		things: make(map[string]things.Thing),
-		tconns: make(map[string]map[string]things.Thing),
 	}
-	go func(conns chan Connection, repo *thingRepositoryMock) {
-		for conn := range conns {
-			if !conn.connected {
-				repo.disconnect(conn)
-				continue
-			}
-			repo.connect(conn)
-		}
-	}(conns, repo)
 
 	return repo
 }
@@ -176,10 +163,12 @@ func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string
 
 	var ths []things.Thing
 
-	for _, co := range trm.tconns[chID] {
-		id := uuid.ParseID(co.ID)
-		if id >= first && id < last || pm.Limit == 0 {
-			ths = append(ths, co)
+	for _, t := range trm.things {
+		if t.ProfileID == chID {
+			id := uuid.ParseID(t.ID)
+			if id >= first && id < last || pm.Limit == 0 {
+				ths = append(ths, t)
+			}
 		}
 	}
 
@@ -225,27 +214,6 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key string) (st
 	}
 
 	return "", errors.ErrNotFound
-}
-
-func (trm *thingRepositoryMock) connect(conn Connection) {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	if _, ok := trm.tconns[conn.profileID]; !ok {
-		trm.tconns[conn.profileID] = make(map[string]things.Thing)
-	}
-	trm.tconns[conn.profileID][conn.thing.ID] = conn.thing
-}
-
-func (trm *thingRepositoryMock) disconnect(conn Connection) {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	if conn.thing.ID == "" {
-		delete(trm.tconns, conn.profileID)
-		return
-	}
-	delete(trm.tconns[conn.profileID], conn.thing.ID)
 }
 
 func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {

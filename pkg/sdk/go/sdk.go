@@ -108,11 +108,12 @@ type Group struct {
 
 // Thing represents mainflux thing.
 type Thing struct {
-	ID       string                 `json:"id,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Profile represents mainflux profile.

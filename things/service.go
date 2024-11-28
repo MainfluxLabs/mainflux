@@ -82,12 +82,6 @@ type Service interface {
 	// ViewProfileConfig retrieves profile config.
 	ViewProfileConfig(ctx context.Context, prID string) (Config, error)
 
-	// Connect connects a list of things to a profile.
-	Connect(ctx context.Context, token, prID string, thIDs []string) error
-
-	// Disconnect disconnects a list of things from a profile.
-	Disconnect(ctx context.Context, token, prID string, thIDs []string) error
-
 	// GetConnByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
 	GetConnByKey(ctx context.Context, key string) (Connection, error)
@@ -125,11 +119,10 @@ type PageMetadata struct {
 }
 
 type Backup struct {
-	Things      []Thing
-	Profiles    []Profile
-	Connections []Connection
-	Groups      []Group
-	GroupRoles  []GroupMember
+	Things     []Thing
+	Profiles   []Profile
+	Groups     []Group
+	GroupRoles []GroupMember
 }
 
 type AuthorizeReq struct {
@@ -478,89 +471,27 @@ func (ts *thingsService) ViewProfileConfig(ctx context.Context, prID string) (Co
 	return config, nil
 }
 
-func (ts *thingsService) Connect(ctx context.Context, token, prID string, thIDs []string) error {
-	pr, err := ts.profiles.RetrieveByID(ctx, prID)
-	if err != nil {
-		return err
-	}
-
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  prID,
-		Subject: ProfileSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		th, err := ts.things.RetrieveByID(ctx, thID)
-		if err != nil {
-			return err
-		}
-
-		if th.GroupID != pr.GroupID {
-			return errors.ErrAuthorization
-		}
-
-		if err := ts.profileCache.Connect(ctx, prID, thID); err != nil {
-			return err
-		}
-	}
-
-	return ts.profiles.Connect(ctx, prID, thIDs)
-}
-
-func (ts *thingsService) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
-	pr, err := ts.profiles.RetrieveByID(ctx, prID)
-	if err != nil {
-		return err
-	}
-
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  prID,
-		Subject: ProfileSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		th, err := ts.things.RetrieveByID(ctx, thID)
-		if err != nil {
-			return err
-		}
-
-		if th.GroupID != pr.GroupID {
-			return errors.ErrAuthorization
-		}
-
-		if err := ts.profileCache.Disconnect(ctx, prID, thID); err != nil {
-			return err
-		}
-	}
-
-	return ts.profiles.Disconnect(ctx, prID, thIDs)
-}
-
 func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {
-	conn, err := ts.profiles.RetrieveConnByThingKey(ctx, thingKey)
+	thID, err := ts.thingCache.ID(ctx, thingKey)
+	if err != nil {
+		id, err := ts.things.RetrieveByKey(ctx, thingKey)
+		if err != nil {
+			return Connection{}, err
+		}
+		thID = id
+
+		if err := ts.thingCache.Save(ctx, thingKey, thID); err != nil {
+			return Connection{}, err
+		}
+	}
+
+	// TODO: ADD CACHE METHOD
+	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
 	if err != nil {
 		return Connection{}, err
 	}
 
-	if err := ts.thingCache.Save(ctx, thingKey, conn.ThingID); err != nil {
-		return Connection{}, err
-	}
-
-	if err := ts.profileCache.Connect(ctx, conn.ProfileID, conn.ThingID); err != nil {
-		return Connection{}, err
-	}
-
-	return Connection{ThingID: conn.ThingID, ProfileID: conn.ProfileID}, nil
+	return Connection{ThingID: thID, ProfileID: profile.ID}, nil
 }
 
 func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
@@ -637,17 +568,11 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	connections, err := ts.profiles.RetrieveAllConnections(ctx)
-	if err != nil {
-		return Backup{}, err
-	}
-
 	return Backup{
-		Things:      things,
-		Profiles:    profiles,
-		Connections: connections,
-		Groups:      groups,
-		GroupRoles:  groupsRoles,
+		Things:     things,
+		Profiles:   profiles,
+		Groups:     groups,
+		GroupRoles: groupsRoles,
 	}, nil
 }
 
@@ -668,12 +593,6 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 
 	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
 		return err
-	}
-
-	for _, conn := range backup.Connections {
-		if err := ts.profiles.Connect(ctx, conn.ProfileID, []string{conn.ThingID}); err != nil {
-			return err
-		}
 	}
 
 	for _, g := range backup.GroupRoles {
@@ -720,7 +639,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 		return ProfilesPage{}, err
 	}
 
-	return ts.groups.RetrieveProfilesByGroup(ctx, groupID, pm)
+	return ts.profiles.RetrieveByGroupIDs(ctx, []string{groupID}, pm)
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {

@@ -39,8 +39,8 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 		return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO things (id, group_id, name, key, metadata)
-		  VALUES (:id, :group_id, :name, :key, :metadata);`
+	q := `INSERT INTO things (id, group_id, profile_id, name, key, metadata)
+		  VALUES (:id, :group_id, :profile_id, :name, :key, :metadata);`
 
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
@@ -146,7 +146,7 @@ func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT group_id, name, key, metadata FROM things WHERE id = $1;`
+	q := `SELECT group_id, profile_id, name, key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
@@ -202,32 +202,23 @@ func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return tr.retrieve(ctx, []string{}, false, pm)
 }
 
-func (tr thingRepository) RetrieveByProfile(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	oq := getConnOrderQuery(pm.Order, "th")
+func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
-	if _, err := uuid.FromString(chID); err != nil {
+	if _, err := uuid.FromString(prID); err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	var q, qc string
-	q = fmt.Sprintf(`SELECT id, group_id, name, key, metadata
-		        FROM things th
-		        INNER JOIN connections conn
-		        ON th.id = conn.thing_id
-		        WHERE conn.profile_id = :profile_id
-		        ORDER BY %s %s %s;`, oq, dq, olq)
-
-	qc = `SELECT COUNT(*)
-		        FROM things th
-		        INNER JOIN connections conn
-		        ON th.id = conn.thing_id
-		        WHERE conn.profile_id = $1;`
+	q = fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things 
+				WHERE profile_id = :profile_id ORDER BY %s %s %s;`, oq, dq, olq)
+	qc = `SELECT COUNT(*) FROM things WHERE profile_id = $1;`
 
 	params := map[string]interface{}{
-		"profile_id": chID,
+		"profile_id": prID,
 		"limit":      pm.Limit,
 		"offset":     pm.Offset,
 	}
@@ -254,7 +245,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, chID string, pm
 	}
 
 	var total uint64
-	if err := tr.db.GetContext(ctx, &total, qc, chID); err != nil {
+	if err := tr.db.GetContext(ctx, &total, qc, prID); err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
@@ -310,10 +301,10 @@ func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRo
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	if allRows {
-		q = "SELECT id, group_id, name, key, metadata FROM things"
+		q = "SELECT id, group_id, profile_id, name, key, metadata FROM things"
 	}
 
 	params := map[string]interface{}{
@@ -366,11 +357,12 @@ func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRo
 }
 
 type dbThing struct {
-	ID       string `db:"id"`
-	GroupID  string `db:"group_id"`
-	Name     string `db:"name"`
-	Key      string `db:"key"`
-	Metadata []byte `db:"metadata"`
+	ID        string `db:"id"`
+	GroupID   string `db:"group_id"`
+	ProfileID string `db:"profile_id"`
+	Name      string `db:"name"`
+	Key       string `db:"key"`
+	Metadata  []byte `db:"metadata"`
 }
 
 func toDBThing(th things.Thing) (dbThing, error) {
@@ -384,11 +376,12 @@ func toDBThing(th things.Thing) (dbThing, error) {
 	}
 
 	return dbThing{
-		ID:       th.ID,
-		GroupID:  th.GroupID,
-		Name:     th.Name,
-		Key:      th.Key,
-		Metadata: data,
+		ID:        th.ID,
+		GroupID:   th.GroupID,
+		ProfileID: th.ProfileID,
+		Name:      th.Name,
+		Key:       th.Key,
+		Metadata:  data,
 	}, nil
 }
 
@@ -399,10 +392,11 @@ func toThing(dbth dbThing) (things.Thing, error) {
 	}
 
 	return things.Thing{
-		ID:       dbth.ID,
-		GroupID:  dbth.GroupID,
-		Name:     dbth.Name,
-		Key:      dbth.Key,
-		Metadata: metadata,
+		ID:        dbth.ID,
+		GroupID:   dbth.GroupID,
+		ProfileID: dbth.ProfileID,
+		Name:      dbth.Name,
+		Key:       dbth.Key,
+		Metadata:  metadata,
 	}, nil
 }

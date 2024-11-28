@@ -22,10 +22,11 @@ const (
 )
 
 type createThingReq struct {
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key,omitempty"`
-	ID       string                 `json:"id,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
@@ -48,6 +49,9 @@ func (req createThingsReq) validate() error {
 	}
 
 	for _, thing := range req.Things {
+		if thing.ProfileID == "" {
+			return apiutil.ErrMissingID
+		}
 		if thing.ID != "" {
 			if err := validateUUID(thing.ID); err != nil {
 				return err
@@ -266,13 +270,13 @@ func (req *listResourcesReq) validate() error {
 	return nil
 }
 
-type listByConnectionReq struct {
+type listByIDReq struct {
 	token        string
 	id           string
 	pageMetadata things.PageMetadata
 }
 
-func (req listByConnectionReq) validate() error {
+func (req listByIDReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -293,34 +297,6 @@ func (req listByConnectionReq) validate() error {
 	if req.pageMetadata.Dir != "" &&
 		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
 		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
-}
-
-type connectionsReq struct {
-	token     string
-	ProfileID string   `json:"profile_id,omitempty"`
-	ThingIDs  []string `json:"thing_ids,omitempty"`
-}
-
-func (req connectionsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.ThingIDs) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingID
-	}
-
-	for _, thingID := range req.ThingIDs {
-		if thingID == "" {
-			return apiutil.ErrMissingID
-		}
 	}
 
 	return nil
@@ -351,11 +327,6 @@ type restoreProfileReq struct {
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
-type restoreConnectionReq struct {
-	ProfileID string `json:"profile_id"`
-	ThingID   string `json:"thing_id"`
-}
-
 type restoreGroupReq struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
@@ -366,11 +337,10 @@ type restoreGroupReq struct {
 }
 
 type restoreReq struct {
-	token       string
-	Things      []restoreThingReq      `json:"things"`
-	Profiles    []restoreProfileReq    `json:"profiles"`
-	Connections []restoreConnectionReq `json:"connections"`
-	Groups      []restoreGroupReq      `json:"groups"`
+	token    string
+	Things   []restoreThingReq   `json:"things"`
+	Profiles []restoreProfileReq `json:"profiles"`
+	Groups   []restoreGroupReq   `json:"groups"`
 }
 
 func (req restoreReq) validate() error {
@@ -378,7 +348,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Profiles) == 0 && len(req.Connections) == 0 {
+	if len(req.Groups) == 0 && len(req.Things) == 0 && len(req.Profiles) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -438,44 +408,6 @@ func (req updateGroupReq) validate() error {
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
-	}
-
-	return nil
-}
-
-type listGroupsReq struct {
-	token        string
-	orgID        string
-	pageMetadata things.PageMetadata
-}
-
-func (req listGroupsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
-}
-
-type listMembersReq struct {
-	token    string
-	id       string
-	offset   uint64
-	limit    uint64
-	metadata things.Metadata
-}
-
-func (req listMembersReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
 	}
 
 	return nil
@@ -592,25 +524,6 @@ func (req removeGroupRolesReq) validate() error {
 		if id == "" {
 			return apiutil.ErrMissingID
 		}
-	}
-
-	return nil
-}
-
-type listGroupMembersReq struct {
-	token   string
-	groupID string
-	offset  uint64
-	limit   uint64
-}
-
-func (req listGroupMembersReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingID
 	}
 
 	return nil

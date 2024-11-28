@@ -81,15 +81,6 @@ type ProfileRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, id ...string) error
 
-	// Connect connects a list of things to a profile.
-	Connect(ctx context.Context, prID string, thIDs []string) error
-
-	// Disconnect disconnects a list of things from a profile.
-	Disconnect(ctx context.Context, prID string, thIDs []string) error
-
-	// RetrieveConnByThingKey retrieves connections IDs by ThingKey
-	RetrieveConnByThingKey(ctx context.Context, key string) (Connection, error)
-
 	// RetrieveAll retrieves all profiles for all users.
 	RetrieveAll(ctx context.Context) ([]Profile, error)
 
@@ -98,22 +89,10 @@ type ProfileRepository interface {
 
 	// RetrieveByGroupIDs retrieves the subset of profiles specified by given group ids.
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ProfilesPage, error)
-
-	// RetrieveAllConnections retrieves all connections between profiles and things for all users.
-	RetrieveAllConnections(ctx context.Context) ([]Connection, error)
 }
 
 // ProfileCache contains profile-thing connection caching interface.
 type ProfileCache interface {
-	// Connect profile thing connection.
-	Connect(context.Context, string, string) error
-
-	// HasThing checks if thing is connected to profile.
-	HasThing(context.Context, string, string) bool
-
-	// Disconnect disconnects thing from profile.
-	Disconnect(context.Context, string, string) error
-
 	// Remove removes profile from cache.
 	Remove(context.Context, string) error
 }

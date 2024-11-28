@@ -25,12 +25,6 @@ type profileRepository struct {
 	db Database
 }
 
-type dbConnection struct {
-	Profile string `db:"profile"`
-	Thing   string `db:"thing"`
-	GroupID string `db:"group_id"`
-}
-
 // NewProfileRepository instantiates a PostgreSQL implementation of profile
 // repository.
 func NewProfileRepository(db Database) things.ProfileRepository {
@@ -147,11 +141,9 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 
 	var q string
-	q = fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles pr
-		        INNER JOIN connections conn
-		        ON pr.id = conn.profile_id
-		        WHERE conn.thing_id = :thing;`)
-
+	q = fmt.Sprintf(`SELECT pr.id, pr.group_id, pr.name, pr.metadata, pr.config
+				FROM things ths, profiles pr
+				WHERE ths.profile_id = pr.id and ths.id = :thing;`)
 	params := map[string]interface{}{
 		"thing": thID,
 	}
@@ -188,147 +180,6 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	}
 
 	return nil
-}
-
-func (cr profileRepository) Connect(ctx context.Context, prID string, thIDs []string) error {
-	tx, err := cr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrConnect, err)
-	}
-
-	q := `INSERT INTO connections (profile_id, thing_id) VALUES (:profile, :thing);`
-
-	for _, thID := range thIDs {
-		dbco := dbConnection{
-			Profile: prID,
-			Thing:   thID,
-		}
-
-		_, err := tx.NamedExecContext(ctx, q, dbco)
-		if err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.ForeignKeyViolation:
-					return errors.ErrNotFound
-				case pgerrcode.UniqueViolation:
-					return errors.ErrConflict
-				}
-			}
-
-			return errors.Wrap(things.ErrConnect, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrConnect, err)
-	}
-
-	return nil
-}
-
-func (cr profileRepository) Disconnect(ctx context.Context, prID string, thIDs []string) error {
-	tx, err := cr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(things.ErrConnect, err)
-	}
-
-	q := `DELETE FROM connections
-	      WHERE profile_id = :profile AND thing_id = :thing`
-
-	for _, thID := range thIDs {
-		dbco := dbConnection{
-			Profile: prID,
-			Thing:   thID,
-		}
-
-		res, err := tx.NamedExecContext(ctx, q, dbco)
-		if err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.ForeignKeyViolation:
-					return errors.ErrNotFound
-				case pgerrcode.UniqueViolation:
-					return errors.ErrConflict
-				}
-			}
-			return errors.Wrap(things.ErrDisconnect, err)
-		}
-
-		cnt, err := res.RowsAffected()
-		if err != nil {
-			return errors.Wrap(things.ErrDisconnect, err)
-		}
-
-		if cnt == 0 {
-			return errors.ErrNotFound
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(things.ErrConnect, err)
-	}
-
-	return nil
-}
-
-func (cr profileRepository) RetrieveConnByThingKey(ctx context.Context, thingKey string) (things.Connection, error) {
-	var thingID string
-	q := `SELECT id FROM things WHERE key = $1`
-	if err := cr.db.QueryRowxContext(ctx, q, thingKey).Scan(&thingID); err != nil {
-		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	q = fmt.Sprintf(`SELECT thing_id, profile_id FROM connections
-		               WHERE thing_id = :thing;`)
-
-	params := map[string]interface{}{
-		"thing": thingID,
-	}
-
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	dbpr := dbConn{}
-	for rows.Next() {
-		if err := rows.StructScan(&dbpr); err != nil {
-			return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-	}
-
-	if dbpr.ProfileID == "" {
-		return things.Connection{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return things.Connection{ThingID: thingID, ProfileID: dbpr.ProfileID}, nil
-}
-
-func (cr profileRepository) RetrieveAllConnections(ctx context.Context) ([]things.Connection, error) {
-	q := `SELECT profile_id, thing_id FROM connections;`
-
-	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
-	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	connections := make([]things.Connection, 0)
-	for rows.Next() {
-		dbco := dbConn{}
-		if err := rows.StructScan(&dbco); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		connections = append(connections, toConnection(dbco))
-	}
-
-	return connections, nil
 }
 
 func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
@@ -484,27 +335,6 @@ func toProfile(pr dbProfile) things.Profile {
 		Name:     pr.Name,
 		Config:   pr.Config,
 		Metadata: pr.Metadata,
-	}
-}
-
-type dbConn struct {
-	ProfileID string `db:"profile_id"`
-	ThingID   string `db:"thing_id"`
-}
-
-func toConnection(co dbConn) things.Connection {
-	return things.Connection{
-		ProfileID: co.ProfileID,
-		ThingID:   co.ThingID,
-	}
-}
-
-func getConnOrderQuery(order string, level string) string {
-	switch order {
-	case "name":
-		return level + ".name"
-	default:
-		return level + ".id"
 	}
 }
 

@@ -144,7 +144,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/profiles/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_things_by_profile")(listThingsByProfileEndpoint(svc)),
-		decodeListByConnection,
+		decodeListByID,
 		encodeResponse,
 		opts...,
 	))
@@ -152,20 +152,6 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	r.Get("/profiles", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_profiles")(listProfilesEndpoint(svc)),
 		decodeList,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/connect", kithttp.NewServer(
-		kitot.TraceServer(tracer, "connect")(connectEndpoint(svc)),
-		decodeConnectionsList,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Put("/disconnect", kithttp.NewServer(
-		kitot.TraceServer(tracer, "disconnect")(disconnectEndpoint(svc)),
-		decodeConnectionsList,
 		encodeResponse,
 		opts...,
 	))
@@ -214,7 +200,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/groups/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_things_by_group")(listThingsByGroupEndpoint(svc)),
-		decodeListMembers,
+		decodeListByID,
 		encodeResponse,
 		opts...,
 	))
@@ -228,7 +214,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/groups/:id/profiles", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_profiles_by_group")(listProfilesByGroupEndpoint(svc)),
-		decodeListMembers,
+		decodeListByID,
 		encodeResponse,
 		opts...,
 	))
@@ -249,7 +235,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/groups/:id/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_roles_by_group")(listRolesByGroupEndpoint(svc)),
-		decodeListGroupRoles,
+		decodeListByID,
 		encodeResponse,
 		opts...,
 	))
@@ -462,13 +448,18 @@ func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListByID(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {
 		return nil, err
 	}
 
 	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	n, err := apiutil.ReadStringQuery(r, nameKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -483,55 +474,22 @@ func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	req := listByConnectionReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
-		pageMetadata: things.PageMetadata{
-			Offset: o,
-			Limit:  l,
-			Order:  or,
-			Dir:    d,
-		},
-	}
-
-	return req, nil
-}
-
-func decodeConnectionsList(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := connectionsReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListMembers(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
 	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listMembersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, idKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
+	req := listByIDReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, idKey),
+		pageMetadata: things.PageMetadata{
+			Offset:   o,
+			Limit:    l,
+			Name:     n,
+			Order:    or,
+			Dir:      d,
+			Metadata: m,
+		},
 	}
 
 	return req, nil
@@ -579,7 +537,7 @@ func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	req := listGroupsReq{
+	req := listByIDReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
 			Offset:   o,
@@ -587,7 +545,7 @@ func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
 			Metadata: m,
 			Name:     n,
 		},
-		orgID: orgID,
+		id: orgID,
 	}
 	return req, nil
 }
@@ -697,27 +655,6 @@ func decodeGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listGroupMembersReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
-		offset:  o,
-		limit:   l,
 	}
 
 	return req, nil
