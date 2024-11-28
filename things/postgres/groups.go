@@ -182,59 +182,6 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm 
 	return gr.retrieve(ctx, []string{}, orgID, pm)
 }
 
-func (gr groupRepository) RetrieveProfilesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	_, mq, err := dbutil.GetMetadataQuery("groups", pm.Metadata)
-	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(things.ErrRetrieveGroupProfiles, err)
-	}
-
-	q := fmt.Sprintf(`SELECT id, group_id, name, metadata FROM profiles
-			WHERE group_id = :group_id %s %s;`, mq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM profiles WHERE group_id = :group_id %s;`, mq)
-
-	params := map[string]interface{}{
-		"group_id": groupID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"metadata": pm.Metadata,
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(things.ErrRetrieveGroupProfiles, err)
-	}
-	defer rows.Close()
-
-	var items []things.Profile
-	for rows.Next() {
-		dbpr := dbProfile{}
-		if err := rows.StructScan(&dbpr); err != nil {
-			return things.ProfilesPage{}, errors.Wrap(things.ErrRetrieveGroupProfiles, err)
-		}
-
-		pr := toProfile(dbpr)
-
-		items = append(items, pr)
-	}
-
-	total, err := total(ctx, gr.db, qc, params)
-	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(things.ErrRetrieveGroupProfiles, err)
-	}
-
-	page := things.ProfilesPage{
-		Profiles: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
 func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	idsq := getIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
