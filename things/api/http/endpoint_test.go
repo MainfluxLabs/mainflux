@@ -133,16 +133,20 @@ func TestCreateThings(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID, grID1 := grs[0].ID, grs[1].ID
 
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
-	prID := prs[0].ID
+	profile.GroupID = grID
+	profile1 := profile
+	profile1.GroupID = grID1
+	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
+	prID, prID1 := prs[0].ID, prs[1].ID
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
-	invalidData := fmt.Sprintf(`[{"name": "%s", "key": "10"}]`, invalidName)
+	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
+	invalidProfileData := `[{"name": "test", "key": "1"}]`
+	invalidGroupData := fmt.Sprintf(`[{"name": "test", "key": "10","profile_id":"%s"}]`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -178,10 +182,26 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:        "create thing with invalid name",
-			data:        invalidData,
+			data:        invalidNameData,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create thing without profile id",
+			data:        invalidProfileData,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create thing with profile from different group",
+			data:        invalidGroupData,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusForbidden,
 			response:    emptyValue,
 		},
 		{
@@ -230,7 +250,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, gr.ID),
+			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, grID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -249,20 +269,26 @@ func TestUpdateThing(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, group, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID, grID1 := grs[0].ID, grs[1].ID
 
-	thing.GroupID = gr.ID
+	profile1 := profile
+	profile1.GroupID = grID1
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
+	prID, prID1 := prs[0].ID, prs[1].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th1 := ths[0]
+	th := ths[0]
 
-	data := toJSON(th1)
-
-	th2 := thing
-	th2.Name = invalidName
-	invalidData := toJSON(th2)
+	data := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID)
+	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
+	invalidProfileData := `{"name": "test"}`
+	invalidGroupData := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -275,7 +301,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update existing thing",
 			req:         data,
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusOK,
@@ -283,7 +309,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with empty JSON request",
 			req:         "{}",
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -307,7 +333,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid user token",
 			req:         data,
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
@@ -315,7 +341,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with empty user token",
 			req:         data,
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
@@ -323,7 +349,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid data format",
 			req:         "{",
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -331,7 +357,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with empty request",
 			req:         emptyValue,
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -339,17 +365,33 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing without content type",
 			req:         data,
-			id:          th1.ID,
+			id:          th.ID,
 			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
 			desc:        "update thing with invalid name",
-			req:         invalidData,
+			req:         invalidNameData,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing without profile id",
+			req:         invalidProfileData,
+			id:          th.ID,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with profile from different group",
+			req:         invalidGroupData,
+			id:          th.ID,
+			contentType: contentType,
+			auth:        token,
+			status:      http.StatusForbidden,
 		},
 	}
 
@@ -375,11 +417,17 @@ func TestUpdateKey(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
 
 	th := thing
 	th.Key = "key"
-	thing.GroupID = gr.ID
+	th.GroupID = grID
+	th.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th = ths[0]
@@ -502,19 +550,26 @@ func TestViewThing(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	thing.GroupID = gr.ID
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
 	data := thingRes{
-		ID:       th.ID,
-		Name:     th.Name,
-		Key:      th.Key,
-		Metadata: th.Metadata,
-		GroupID:  th.GroupID,
+		ID:        th.ID,
+		GroupID:   th.GroupID,
+		ProfileID: th.ProfileID,
+		Name:      th.Name,
+		Key:       th.Key,
+		Metadata:  th.Metadata,
 	}
 
 	cases := []struct {
@@ -584,25 +639,32 @@ func TestListThings(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
 
 	data := []thingRes{}
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
+		thing1.GroupID = grID
+		thing1.ProfileID = prID
 
 		ths, err := svc.CreateThings(context.Background(), token, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
 		data = append(data, thingRes{
-			ID:       th.ID,
-			Name:     th.Name,
-			Key:      th.Key,
-			Metadata: th.Metadata,
-			GroupID:  th.GroupID,
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
 		})
 	}
 
@@ -803,24 +865,30 @@ func TestSearchThings(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
 
 	data := []thingRes{}
 	for i := 0; i < 100; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 
-		th := things.Thing{ID: id, GroupID: gr.ID, Name: name, Metadata: map[string]interface{}{"test": name}}
+		th := things.Thing{ID: id, GroupID: grID, ProfileID: prID, Name: name, Metadata: map[string]interface{}{"test": name}}
 		ths, err := svc.CreateThings(context.Background(), token, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		thing := ths[0]
 
 		data = append(data, thingRes{
-			ID:       thing.ID,
-			GroupID:  thing.GroupID,
-			Name:     thing.Name,
-			Key:      thing.Key,
-			Metadata: thing.Metadata,
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
 		})
 	}
 
@@ -997,18 +1065,16 @@ func TestListThingsByProfile(t *testing.T) {
 		th := ths[0]
 
 		data = append(data, thingRes{
-			ID:       th.ID,
-			Name:     th.Name,
-			Key:      th.Key,
-			GroupID:  th.GroupID,
-			Metadata: th.Metadata,
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
 		})
 	}
 
 	thingURL := fmt.Sprintf("%s/profiles", ts.URL)
-
-	// Wait for things and profiles to connect.
-	time.Sleep(time.Second)
 
 	cases := []struct {
 		desc   string
@@ -1123,7 +1189,7 @@ func TestListThingsByProfile(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of things by profile sorted by name ascendent",
+			desc:   "get a list of things by profile sorted by name ascendant",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&order=%s&dir=%s", thingURL, pr.ID, 0, 5, nameKey, ascKey),
@@ -1175,9 +1241,15 @@ func TestRemoveThing(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	thing.GroupID = gr.ID
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
@@ -1234,12 +1306,16 @@ func TestRemoveThings(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	thing.GroupID = gr.ID
-	thing1.GroupID = gr.ID
-	tList := []things.Thing{thing, thing1}
-	ths, err := svc.CreateThings(context.Background(), token, tList...)
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
+	ths, err := svc.CreateThings(context.Background(), token, thing, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var thingIDs []string
@@ -1927,12 +2003,17 @@ func TestRemoveProfile(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	pr := prs[0]
+	prID, prID1 := prs[0].ID, prs[1].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID1
+	_, err = svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc   string
@@ -1942,33 +2023,39 @@ func TestRemoveProfile(t *testing.T) {
 	}{
 		{
 			desc:   "remove profile with invalid token",
-			id:     pr.ID,
+			id:     prID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "remove profile with empty token",
-			id:     pr.ID,
+			id:     prID,
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "remove profile with invalid token",
-			id:     pr.ID,
+			id:     prID,
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "remove existing profile",
-			id:     pr.ID,
+			id:     prID,
 			auth:   token,
 			status: http.StatusNoContent,
 		},
 		{
 			desc:   "remove removed profile",
-			id:     pr.ID,
+			id:     prID,
 			auth:   token,
 			status: http.StatusNotFound,
+		},
+		{
+			desc:   "remove assigned profile",
+			id:     prID1,
+			auth:   token,
+			status: http.StatusForbidden,
 		},
 	}
 
@@ -1992,18 +2079,20 @@ func TestRemoveProfiles(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	profile.GroupID = gr.ID
-	profile1.GroupID = gr.ID
-	cList := []things.Profile{profile, profile1}
+	profile.GroupID = grID
+	profile1.GroupID = grID
+	cList := []things.Profile{profile, profile, profile1}
 	prs, err := svc.CreateProfiles(context.Background(), token, cList...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var profileIDs []string
-	for _, pr := range prs {
-		profileIDs = append(profileIDs, pr.ID)
-	}
+	thing.GroupID = grID
+	thing.ProfileID = prs[2].ID
+	_, err = svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	profileIDs := []string{prs[0].ID, prs[1].ID}
 
 	cases := []struct {
 		desc        string
@@ -2060,6 +2149,13 @@ func TestRemoveProfiles(t *testing.T) {
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove assigned profiles",
+			data:        []string{prs[2].ID},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusForbidden,
 		},
 	}
 
@@ -2197,6 +2293,7 @@ func TestBackup(t *testing.T) {
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
 		group := things.Group{
+			OrgID:       orgID,
 			Name:        "test-group-" + num,
 			Description: "test group desc",
 		}
@@ -2207,10 +2304,6 @@ func TestBackup(t *testing.T) {
 		groups = append(groups, gr)
 	}
 	gr := groups[0]
-
-	thing.GroupID = gr.ID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	profiles := []things.Profile{}
 	for i := 0; i < 10; i++ {
@@ -2226,14 +2319,33 @@ func TestBackup(t *testing.T) {
 
 		profiles = append(profiles, pr)
 	}
+	pr := profiles[0]
+
+	ths := []things.Thing{}
+	for i := 0; i < 10; i++ {
+		name := "name_" + fmt.Sprintf("%03d", i+1)
+		things, err := svc.CreateThings(context.Background(), token,
+			things.Thing{
+				Name:      name,
+				GroupID:   gr.ID,
+				ProfileID: pr.ID,
+				Metadata:  map[string]interface{}{"test": "data"},
+			})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := things[0]
+
+		ths = append(ths, th)
+	}
 
 	var thingsRes []backupThingRes
 	for _, th := range ths {
 		thingsRes = append(thingsRes, backupThingRes{
-			ID:       th.ID,
-			Name:     th.Name,
-			Key:      th.Key,
-			Metadata: th.Metadata,
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
 		})
 	}
 
@@ -2241,6 +2353,7 @@ func TestBackup(t *testing.T) {
 	for _, pr := range profiles {
 		profilesRes = append(profilesRes, backupProfileRes{
 			ID:       pr.ID,
+			GroupID:  pr.GroupID,
 			Name:     pr.Name,
 			Metadata: pr.Metadata,
 		})
@@ -2250,6 +2363,7 @@ func TestBackup(t *testing.T) {
 	for _, gr := range groups {
 		groupsRes = append(groupsRes, viewGroupRes{
 			ID:          gr.ID,
+			OrgID:       gr.OrgID,
 			Name:        gr.Name,
 			Description: gr.Description,
 			Metadata:    gr.Metadata,
@@ -2403,7 +2517,7 @@ func TestRestore(t *testing.T) {
 		contentType string
 	}{
 		{
-			desc:        "restore all things profiles and connections",
+			desc:        "restore all things, profiles and groups",
 			auth:        adminToken,
 			status:      http.StatusCreated,
 			url:         restoreURL,
@@ -2459,9 +2573,15 @@ func TestIdentify(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	thing.GroupID = gr.ID
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
@@ -2545,7 +2665,7 @@ func TestGetConnByThingKey(t *testing.T) {
 		req         string
 		status      int
 	}{
-		"check access for connected thing and profile": {
+		"check access for an assigned profile to the thing": {
 			contentType: contentType,
 			req:         data,
 			status:      http.StatusOK,
@@ -2595,11 +2715,12 @@ type getConnByKeyReq struct {
 }
 
 type thingRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type profileRes struct {
@@ -2625,20 +2746,24 @@ type profilesPageRes struct {
 }
 
 type backupThingRes struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id"`
+	GroupID   string                 `json:"group_id"`
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type backupProfileRes struct {
 	ID       string                 `json:"id"`
+	GroupID  string                 `json:"group_id"`
 	Name     string                 `json:"name,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type viewGroupRes struct {
 	ID          string                 `json:"id"`
+	OrgID       string                 `json:"org_id"`
 	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`

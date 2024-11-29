@@ -545,9 +545,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update existing thing",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: token,
 			err:   nil,
@@ -555,9 +556,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update non-existing thing",
 			thing: sdk.Thing{
-				ID:       "0",
-				Name:     "test_device",
-				Metadata: metadata,
+				ID:        "0",
+				ProfileID: prID,
+				Name:      "test_device",
+				Metadata:  metadata,
 			},
 			token: token,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusNotFound),
@@ -565,9 +567,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with invalid id",
 			thing: sdk.Thing{
-				ID:       emptyValue,
-				Name:     "test_device",
-				Metadata: metadata,
+				ID:        emptyValue,
+				ProfileID: prID,
+				Name:      "test_device",
+				Metadata:  metadata,
 			},
 			token: token,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusBadRequest),
@@ -575,9 +578,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with invalid token",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: wrongValue,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
@@ -585,9 +589,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with empty token",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: emptyValue,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),

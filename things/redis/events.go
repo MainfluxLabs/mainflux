@@ -3,12 +3,10 @@ package redis
 import "encoding/json"
 
 const (
-	thingPrefix     = "thing."
-	thingCreate     = thingPrefix + "create"
-	thingUpdate     = thingPrefix + "update"
-	thingRemove     = thingPrefix + "remove"
-	thingConnect    = thingPrefix + "connect"
-	thingDisconnect = thingPrefix + "disconnect"
+	thingPrefix = "thing."
+	thingCreate = thingPrefix + "create"
+	thingUpdate = thingPrefix + "update"
+	thingRemove = thingPrefix + "remove"
 
 	profilePrefix = "profile."
 	profileCreate = profilePrefix + "create"
@@ -27,22 +25,22 @@ var (
 	_ event = (*createProfileEvent)(nil)
 	_ event = (*updateProfileEvent)(nil)
 	_ event = (*removeProfileEvent)(nil)
-	_ event = (*connectThingEvent)(nil)
-	_ event = (*disconnectThingEvent)(nil)
 )
 
 type createThingEvent struct {
-	id       string
-	groupID  string
-	name     string
-	metadata map[string]interface{}
+	id        string
+	groupID   string
+	profileID string
+	name      string
+	metadata  map[string]interface{}
 }
 
 func (cte createThingEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
-		"id":        cte.id,
-		"group_id":  cte.groupID,
-		"operation": thingCreate,
+		"id":         cte.id,
+		"group_id":   cte.groupID,
+		"profile_id": cte.profileID,
+		"operation":  thingCreate,
 	}
 
 	if cte.name != "" {
@@ -62,15 +60,17 @@ func (cte createThingEvent) Encode() map[string]interface{} {
 }
 
 type updateThingEvent struct {
-	id       string
-	name     string
-	metadata map[string]interface{}
+	id        string
+	profileID string
+	name      string
+	metadata  map[string]interface{}
 }
 
 func (ute updateThingEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
-		"id":        ute.id,
-		"operation": thingUpdate,
+		"id":         ute.id,
+		"profile_id": ute.profileID,
+		"operation":  thingUpdate,
 	}
 
 	if ute.name != "" {
@@ -166,31 +166,5 @@ func (rce removeProfileEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
 		"id":        rce.id,
 		"operation": profileRemove,
-	}
-}
-
-type connectThingEvent struct {
-	profileID string
-	thingID   string
-}
-
-func (cte connectThingEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
-		"profile_id": cte.profileID,
-		"thing_id":   cte.thingID,
-		"operation":  thingConnect,
-	}
-}
-
-type disconnectThingEvent struct {
-	profileID string
-	thingID   string
-}
-
-func (dte disconnectThingEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
-		"profile_id": dte.profileID,
-		"thing_id":   dte.thingID,
-		"operation":  thingDisconnect,
 	}
 }

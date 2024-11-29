@@ -174,6 +174,14 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 			return nil, err
 		}
 
+		profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
+		if err != nil {
+			return []Thing{}, err
+		}
+		if profile.GroupID != thing.GroupID {
+			return nil, errors.ErrAuthorization
+		}
+
 		th, err := ts.createThing(ctx, &thing)
 		if err != nil {
 			return []Thing{}, err
@@ -213,14 +221,27 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
+	th, err := ts.things.RetrieveByID(ctx, thing.ID)
+	if err != nil {
+		return err
+	}
+
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  thing.ID,
+		Object:  th.ID,
 		Subject: ThingSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
 		return err
+	}
+
+	profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
+	if err != nil {
+		return err
+	}
+	if profile.GroupID != th.GroupID {
+		return errors.ErrAuthorization
 	}
 
 	return ts.things.Update(ctx, thing)
@@ -444,6 +465,12 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			return err
 		}
 
+		if things, err := ts.things.RetrieveByProfile(ctx, id, PageMetadata{}); err == nil {
+			if things.PageMetadata.Total > 0 {
+				return errors.ErrAuthorization
+			}
+		}
+
 		if err := ts.profileCache.Remove(ctx, id); err != nil {
 			return err
 		}
@@ -485,7 +512,6 @@ func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Con
 		}
 	}
 
-	// TODO: ADD CACHE METHOD
 	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
 	if err != nil {
 		return Connection{}, err

@@ -180,7 +180,7 @@ func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string
 	page := things.ThingsPage{
 		Things: ths,
 		PageMetadata: things.PageMetadata{
-			Total:  trm.counter,
+			Total:  uint64(len(ths)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},

@@ -66,9 +66,10 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		thing := things.Thing{
-			ID:       req.id,
-			Name:     req.Name,
-			Metadata: req.Metadata,
+			ID:        req.id,
+			ProfileID: req.ProfileID,
+			Name:      req.Name,
+			Metadata:  req.Metadata,
 		}
 
 		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {

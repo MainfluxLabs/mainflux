@@ -39,10 +39,11 @@ func (es eventStore) CreateThings(ctx context.Context, token string, ths ...thin
 
 	for _, thing := range sths {
 		event := createThingEvent{
-			id:       thing.ID,
-			groupID:  thing.GroupID,
-			name:     thing.Name,
-			metadata: thing.Metadata,
+			id:        thing.ID,
+			groupID:   thing.GroupID,
+			profileID: thing.ProfileID,
+			name:      thing.Name,
+			metadata:  thing.Metadata,
 		}
 		record := &redis.XAddArgs{
 			Stream:       streamID,
@@ -61,9 +62,10 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	}
 
 	event := updateThingEvent{
-		id:       thing.ID,
-		name:     thing.Name,
-		metadata: thing.Metadata,
+		id:        thing.ID,
+		profileID: thing.ProfileID,
+		name:      thing.Name,
+		metadata:  thing.Metadata,
 	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,

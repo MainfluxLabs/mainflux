@@ -31,20 +31,18 @@ var (
 func TestGetConnByKey(t *testing.T) {
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	profile.GroupID = gr.ID
+	profile.GroupID = grID
 	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	pr := prs[0]
+	prID := prs[0].ID
 
-	thing.GroupID = gr.ID
-	thing2 := thing
-	thing2.ProfileID = pr.ID
-	ths, err := svc.CreateThings(context.Background(), token, thing2, thing)
+	thing.GroupID = grID
+	thing.ProfileID = prID
+	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th1 := ths[0]
-	th2 := ths[1]
+	thKey := ths[0].Key
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(usersAddr, grpc.WithInsecure())
@@ -58,12 +56,8 @@ func TestGetConnByKey(t *testing.T) {
 		code codes.Code
 	}{
 		"check if thing can access existing profile": {
-			key:  th1.Key,
+			key:  thKey,
 			code: codes.OK,
-		},
-		"check if thing can access non-existing profile": {
-			key:  th2.Key,
-			code: codes.NotFound,
 		},
 		"check if thing with wrong access key can access existing profile": {
 			key:  wrong,
@@ -80,6 +74,17 @@ func TestGetConnByKey(t *testing.T) {
 }
 
 func TestIdentify(t *testing.T) {
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]

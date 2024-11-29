@@ -48,6 +48,7 @@ var (
 	admin     = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
 	group     = things.Group{OrgID: "374106f7-030e-4881-8ab0-151195c29f92", Name: "test-group", Description: "test-group-desc"}
+	profile   = things.Profile{Name: "test-profile"}
 )
 
 func newService(tokens map[string]string) things.Service {
@@ -67,10 +68,22 @@ func TestCreateThings(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService(map[string]string{token: email})
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
+
+	ths := []things.Thing{{
+		Name:      "a",
+		GroupID:   grID,
+		ProfileID: prID,
+		Metadata:  map[string]interface{}{"test": "test"},
+	}}
+
+	svc = redis.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc  string
@@ -81,24 +94,21 @@ func TestCreateThings(t *testing.T) {
 	}{
 		{
 			desc: "create things successfully",
-			ths: []things.Thing{{
-				Name:     "a",
-				GroupID:  gr.ID,
-				Metadata: map[string]interface{}{"test": "test"},
-			}},
-			key: token,
-			err: nil,
+			ths:  ths,
+			key:  token,
+			err:  nil,
 			event: map[string]interface{}{
-				"id":        "123e4567-e89b-12d3-a456-000000000002",
-				"name":      "a",
-				"group_id":  gr.ID,
-				"metadata":  "{\"test\":\"test\"}",
-				"operation": thingCreate,
+				"id":         "123e4567-e89b-12d3-a456-000000000003",
+				"name":       "a",
+				"group_id":   grID,
+				"profile_id": prID,
+				"metadata":   "{\"test\":\"test\"}",
+				"operation":  thingCreate,
 			},
 		},
 		{
 			desc:  "create things with invalid credentials",
-			ths:   []things.Thing{{Name: "a", GroupID: gr.ID, Metadata: map[string]interface{}{"test": "test"}}},
+			ths:   ths,
 			key:   "",
 			err:   errors.ErrAuthentication,
 			event: nil,
@@ -133,10 +143,14 @@ func TestUpdateThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
 
 	// Create thing without sending event.
-	th := things.Thing{Name: "a", GroupID: gr.ID, Metadata: map[string]interface{}{"test": "test"}}
+	th := things.Thing{Name: "a", GroupID: grID, ProfileID: prID, Metadata: map[string]interface{}{"test": "test"}}
 	sths, err := svc.CreateThings(context.Background(), token, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
@@ -153,17 +167,19 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update existing thing successfully",
 			thing: things.Thing{
-				ID:       sth.ID,
-				Name:     "a",
-				Metadata: map[string]interface{}{"test": "test"},
+				ID:        sth.ID,
+				ProfileID: prID,
+				Name:      "a",
+				Metadata:  map[string]interface{}{"test": "test"},
 			},
 			key: token,
 			err: nil,
 			event: map[string]interface{}{
-				"id":        sth.ID,
-				"name":      "a",
-				"metadata":  "{\"test\":\"test\"}",
-				"operation": thingUpdate,
+				"id":         sth.ID,
+				"profile_id": sth.ProfileID,
+				"name":       "a",
+				"metadata":   "{\"test\":\"test\"}",
+				"operation":  thingUpdate,
 			},
 		},
 	}
@@ -195,9 +211,14 @@ func TestViewThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
+
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -214,9 +235,14 @@ func TestListThings(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
+
 	// Create thing without sending event.
-	_, err = svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	_, err = svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -256,9 +282,14 @@ func TestRemoveThing(t *testing.T) {
 	svc := newService(map[string]string{token: email})
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
+
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -487,10 +518,14 @@ func TestListProfilesByThing(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prID := prs[0].ID
 
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID})
+	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 

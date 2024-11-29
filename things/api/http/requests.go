@@ -67,10 +67,11 @@ func (req createThingsReq) validate() error {
 }
 
 type updateThingReq struct {
-	token    string
-	id       string
-	Name     string                 `json:"name,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	token     string
+	id        string
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateThingReq) validate() error {
@@ -79,6 +80,10 @@ func (req updateThingReq) validate() error {
 	}
 
 	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	if req.ProfileID == "" {
 		return apiutil.ErrMissingID
 	}
 
