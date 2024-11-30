@@ -37,13 +37,14 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <thing_id>] <user_token>",
+		Use:   "get [all | profile | by-id] <user_token> <id>",
 		Short: "Get things",
-		Long: `Get all things or get thing by id. Things can be filtered by name or metadata
-		all - lists all things
-		<thing_id> - shows thing with provided <thing_id>`,
+		Long: `Get all things, get things by profile or get thing by id.List of all things can be filtered by name or metadata
+		<all> - lists all things
+		<profile> - list things by profile based on defined <id>
+		<by-id> - shows thing with provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 2 || len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -58,22 +59,39 @@ var cmdThings = []cobra.Command{
 				Limit:    uint64(Limit),
 				Metadata: metadata,
 			}
-			if args[0] == "all" {
+
+			switch args[0] {
+			case "all":
 				l, err := sdk.Things(args[1], pageMetadata)
 				if err != nil {
 					logError(err)
 					return
 				}
+
 				logJSON(l)
 				return
-			}
-			t, err := sdk.Thing(args[0], args[1])
-			if err != nil {
-				logError(err)
+			case "profile":
+				tip, err := sdk.ThingsByProfile(args[1], args[2], uint64(Offset), uint64(Limit))
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(tip)
+				return
+			case "by-id":
+				t, err := sdk.Thing(args[2], args[1])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(t)
+				return
+			default:
+				logUsage(cmd.Use)
 				return
 			}
-
-			logJSON(t)
 		},
 	},
 	{
@@ -137,78 +155,14 @@ var cmdThings = []cobra.Command{
 			logOK()
 		},
 	},
-	{
-		Use:   "connect <thing_id> <profile_id> <user_token>",
-		Short: "Connect thing",
-		Long:  `Connect thing to the profile`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			connIDs := mfxsdk.ConnectionIDs{
-				ProfileID: args[1],
-				ThingIDs:  []string{args[0]},
-			}
-			if err := sdk.Connect(connIDs, args[2]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "disconnect <thing_id> <profile_id> <user_token>",
-		Short: "Disconnect thing",
-		Long:  `Disconnect thing from the profile`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			disconnIDs := mfxsdk.ConnectionIDs{
-				ProfileID: args[1],
-				ThingIDs:  []string{args[0]},
-			}
-
-			if err := sdk.Disconnect(disconnIDs, args[2]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "connections <thing_id> <user_token>",
-		Short: "Profile By Thing",
-		Long:  `View Profile by Thing`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			cl, err := sdk.ViewProfileByThing(args[1], args[0])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(cl)
-		},
-	},
 }
 
 // NewThingsCmd returns things command.
 func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "things [create | get | update | delete | identify | connect | disconnect | connections]",
+		Use:   "things [create | get | update | delete | identify]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update, identify or delete Thing, connect or disconnect Thing from Profile and get the list of Things connected to a Profile`,
+		Long:  `Things management: create, get, update, identify or delete Thing, get a list of Things to which the specified Profile is assigned `,
 	}
 
 	for i := range cmdThings {

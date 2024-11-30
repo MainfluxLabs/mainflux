@@ -37,14 +37,15 @@ var cmdProfiles = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <profile_id>] <user_token>",
+		Use:   "get [all | thing | by-id] <user_token> <id>",
 		Short: "Get profile",
-		Long: `Get all profiles or get profile by id. Profiles can be filtered by name or metadata.
-		all - lists all profiles
-		<profile_id> - shows thing with provided <profile_id>`,
+		Long: `Get all profiles, get profile by thing or get profile by id. Profiles can be filtered by name or metadata.
+		<all> - lists all profiles
+		<thing> - list profiles by thing based on defined <id>
+		<by-id> - shows thing with provided <id>`,
 
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 2 || len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -60,7 +61,8 @@ var cmdProfiles = []cobra.Command{
 				Metadata: metadata,
 			}
 
-			if args[0] == "all" {
+			switch args[0] {
+			case "all":
 				l, err := sdk.Profiles(args[1], pageMetadata)
 				if err != nil {
 					logError(err)
@@ -69,14 +71,28 @@ var cmdProfiles = []cobra.Command{
 
 				logJSON(l)
 				return
-			}
-			c, err := sdk.Profile(args[0], args[1])
-			if err != nil {
-				logError(err)
+			case "thing":
+				pbt, err := sdk.ViewProfileByThing(args[1], args[2])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(pbt)
+				return
+			case "by-id":
+				c, err := sdk.Profile(args[2], args[1])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(c)
+				return
+			default:
+				logUsage(cmd.Use)
 				return
 			}
-
-			logJSON(c)
 		},
 	},
 	{
@@ -121,33 +137,14 @@ var cmdProfiles = []cobra.Command{
 			logOK()
 		},
 	},
-	{
-		Use:   "connections <profile_id> <user_token>",
-		Short: "Connections list",
-		Long:  `List of Things connected to a Profile`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			cl, err := sdk.ThingsByProfile(args[1], args[0], uint64(Offset), uint64(Limit))
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			logJSON(cl)
-		},
-	},
 }
 
 // NewProfilesCmd returns profiles command.
 func NewProfilesCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "profiles [create | get | update | delete | connections]",
+		Use:   "profiles [create | get | update | delete]",
 		Short: "Profiles management",
-		Long:  `Profiles management: create, get, update or delete Profile and get list of Things connected to a Profile`,
+		Long:  `Profiles management: create, get, update or delete Profile, get Profile by Thing`,
 	}
 
 	for i := range cmdProfiles {
