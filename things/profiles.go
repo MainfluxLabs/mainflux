@@ -91,7 +91,7 @@ type ProfileRepository interface {
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ProfilesPage, error)
 }
 
-// ProfileCache contains profile-thing connection caching interface.
+// ProfileCache contains profile caching interface.
 type ProfileCache interface {
 	// Remove removes profile from cache.
 	Remove(context.Context, string) error

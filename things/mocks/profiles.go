@@ -13,14 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-// Connection represents connection between profile and thing that is used for
-// testing purposes.
-type Connection struct {
-	profileID string
-	thing     things.Thing
-	connected bool
-}
-
 var _ things.ProfileRepository = (*profileRepositoryMock)(nil)
 
 type profileRepositoryMock struct {

@@ -1,6 +1,6 @@
 # Mainflux Things and Profiles Provisioning Tool
 
-A simple utility to create a list of profiles and things connected to these profiles with possibility to create certificates for mTLS use case.
+A simple utility to create a list of profiles and things with possibility to create certificates for mTLS use case.
 
 This tool is useful for testing, and it creates a TOML format output (on stdout, can be redirected into the file as needed)
 that can be used by Mainflux MQTT benchmarking tool (`mqtt-bench`).
@@ -14,7 +14,7 @@ make
 ### Usage
 ```
 ./provision --help
-Tool for provisioning series of Mainflux profiles and things and connecting them together.
+Tool for provisioning series of Mainflux profiles and things.
 Complete documentation is available at https://mainfluxlabs.github.io/docs
 
 Usage:
@@ -25,7 +25,7 @@ Flags:
       --cakey string      ca.key for creating and signing things certificate (default "ca.key")
   -h, --help              help for provision
       --host string       address for mainflux instance (default "https://localhost")
-      --num int           number of profiles and things to create and connect (default 10)
+      --num int           number of profiles and things to create (default 10)
   -p, --password string   mainflux users password
       --ssl               create certificates for mTLS access
   -u, --username string   mainflux user
@@ -138,8 +138,8 @@ uCRt+TFMyEfqilipmNsV7esgbroiyEGXGMI8JdBY9OsnK6ZSlXaMnQ9vq2kK
 """
 
 # List of profiles that things can publish to
-# each profile is connected to each thing from things list
-# Things connected to profile 1f18afa1-29c4-4634-99d1-68dfa1b74e6a: 0eac601b-6d54-4767-b8b7-594aaf9990d3
+# each profile is assigned to each thing from things list
+# Things created with profile 1f18afa1-29c4-4634-99d1-68dfa1b74e6a: 0eac601b-6d54-4767-b8b7-594aaf9990d3
 [[profiles]]
 profile_id = "1f18afa1-29c4-4634-99d1-68dfa1b74e6a"
 

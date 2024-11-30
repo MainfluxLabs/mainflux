@@ -166,8 +166,6 @@ func encodeError(err error) error {
 		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.Contains(err, errors.ErrAuthorization):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.Contains(err, things.ErrEntityConnected):
-		return status.Error(codes.PermissionDenied, err.Error())
 	case errors.Contains(err, errors.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:

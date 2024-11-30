@@ -5,13 +5,6 @@ package things
 
 import (
 	"context"
-
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
-)
-
-var (
-	// ErrEntityConnected indicates error while checking connection in database
-	ErrEntityConnected = errors.New("check thing-profile connection in database error")
 )
 
 // Metadata to be used for Mainflux thing or profile for customized
@@ -61,8 +54,7 @@ type ThingRepository interface {
 	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
 
-	// RetrieveByProfile retrieves the subset of things owned by the specified
-	// user and connected or not connected to specified profile.
+	// RetrieveByProfile retrieves the subset of things to which the specified profile is assigned.
 	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned

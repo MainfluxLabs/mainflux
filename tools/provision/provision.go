@@ -224,20 +224,11 @@ func Provision(conf Config) {
 	}
 
 	fmt.Printf("# List of profiles that things can publish to\n" +
-		"# each profile is connected to each thing from things list\n")
+		"# each profile is assigned to each thing from things list\n")
 	for i := 0; i < conf.Num; i++ {
 		fmt.Printf("[[profiles]]\nprofile_id = \"%s\"\n\n", cIDs[i])
 	}
 
-	for _, cID := range cIDs {
-		conIDs := sdk.ConnectionIDs{
-			ProfileID: cID,
-			ThingIDs:  tIDs,
-		}
-		if err := s.Connect(conIDs, token); err != nil {
-			log.Fatalf("Failed to connect things %s to profile %s: %s", conIDs.ThingIDs, conIDs.ProfileID, err)
-		}
-	}
 }
 
 func publicKey(priv interface{}) interface{} {
