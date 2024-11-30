@@ -188,9 +188,9 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 		nq = fmt.Sprintf("AND %s", nq)
 	}
 
-	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata
-		FROM member_relations ore, orgs o
-		WHERE ore.org_id = o.id and ore.member_id = :member_id
+	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
+		FROM member_relations mr, orgs o
+		WHERE mr.org_id = o.id and mr.member_id = :member_id
 		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
 	params := map[string]interface{}{
