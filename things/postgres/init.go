@@ -163,9 +163,13 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_6",
 				Up: []string{
-					`ALTER TABLE things ADD COLUMN profile_id UUID NOT NULL;
+					`ALTER TABLE things ADD COLUMN profile_id UUID;
 						ALTER TABLE things ADD CONSTRAINT fk_things_profile_id
 						FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE ON UPDATE CASCADE;`,
+					`UPDATE things SET profile_id = conns.profile_id FROM connections conns
+						WHERE things.id = conns.thing_id;`,
+					`ALTER TABLE things ALTER COLUMN profile_id SET NOT NULL;`,
+					`DROP TABLE connections`,
 				},
 			},
 		},
