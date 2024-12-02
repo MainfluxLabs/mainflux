@@ -276,8 +276,8 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Post("/connections", kithttp.NewServer(
-		kitot.TraceServer(tracer, "get_conn_by_key")(getConnByKeyEndpoint(svc)),
-		decodeGetConnByKey,
+		kitot.TraceServer(tracer, "get_pub_conf_by_key")(getPubConfByKeyEndpoint(svc)),
+		decodeGetPubConfByKey,
 		encodeResponse,
 		opts...,
 	))
@@ -630,12 +630,12 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeGetConnByKey(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGetPubConfByKey(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := getConnByKeyReq{}
+	req := getPubConfByKeyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

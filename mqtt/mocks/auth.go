@@ -21,23 +21,23 @@ func NewClient(key map[string]string, conns map[string]string) auth.Client {
 	return MockClient{key: key, conns: conns}
 }
 
-func (cli MockClient) GetConnByKey(ctx context.Context, key string) (protomfx.ConnByKeyRes, error) {
+func (cli MockClient) GetPubConfByKey(ctx context.Context, key string) (protomfx.PubConfByKeyRes, error) {
 	thID, ok := cli.key[key]
 	if !ok {
-		return protomfx.ConnByKeyRes{}, errors.ErrAuthentication
+		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
 	}
 
 	chID, ok := cli.conns[thID]
 	if !ok {
-		return protomfx.ConnByKeyRes{}, errors.ErrAuthentication
+		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
 	}
 
-	conn := &protomfx.ConnByKeyRes{
+	pc := &protomfx.PubConfByKeyRes{
 		ThingID:   thID,
 		ProfileID: chID,
 	}
 
-	return *conn, nil
+	return *pc, nil
 }
 
 func (cli MockClient) Identify(ctx context.Context, thingKey string) (string, error) {

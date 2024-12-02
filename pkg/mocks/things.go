@@ -16,22 +16,20 @@ import (
 var _ things.Service = (*mainfluxThings)(nil)
 
 type mainfluxThings struct {
-	mu          sync.Mutex
-	counter     uint64
-	things      map[string]things.Thing
-	profiles    map[string]things.Profile
-	auth        protomfx.AuthServiceClient
-	connections map[string][]string
+	mu       sync.Mutex
+	counter  uint64
+	things   map[string]things.Thing
+	profiles map[string]things.Profile
+	auth     protomfx.AuthServiceClient
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
 func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
 	return &mainfluxThings{
-		things:      things,
-		profiles:    profiles,
-		auth:        auth,
-		connections: make(map[string][]string),
+		things:   things,
+		profiles: profiles,
+		auth:     auth,
 	}
 }
 
@@ -136,11 +134,7 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewProfileConfig(_ context.Context, prID string) (things.Config, error) {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) GetConnByKey(context.Context, string) (things.Connection, error) {
+func (svc *mainfluxThings) GetPubConfByKey(context.Context, string) (things.PubConfInfo, error) {
 	panic("not implemented")
 }
 

@@ -53,12 +53,6 @@ type ProfilesPage struct {
 	Profiles []Profile
 }
 
-// Connection represents a connection between a profile and a thing.
-type Connection struct {
-	ProfileID string
-	ThingID   string
-}
-
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {
 	// Save persists multiple profiles. Profiles are saved using a transaction. If one profile

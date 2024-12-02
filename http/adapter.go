@@ -34,15 +34,15 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Ser
 }
 
 func (as *adapterService) Publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	cr := &protomfx.ConnByKeyReq{
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	conn, err := as.things.GetConnByKey(ctx, cr)
+	pc, err := as.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return protomfx.Message{}, err
 	}
 
-	m = messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
+	m = messaging.CreateMessage(pc, msg.Protocol, msg.Subtopic, &msg.Payload)
 
 	return m, as.publisher.Publish(m)
 }

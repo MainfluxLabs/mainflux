@@ -855,21 +855,22 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getConnByKeyReq)
+		req := request.(getPubConfByKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		conn, err := svc.GetConnByKey(ctx, req.Key)
+		pc, err := svc.GetPubConfByKey(ctx, req.Key)
 		if err != nil {
 			return nil, err
 		}
 
-		res := connByKeyRes{
-			ProfileID: conn.ProfileID,
-			ThingID:   conn.ThingID,
+		res := pubConfByKeyRes{
+			ProfileID:     pc.ProfileID,
+			ThingID:       pc.ThingID,
+			ProfileConfig: pc.ProfileConfig,
 		}
 
 		return res, nil

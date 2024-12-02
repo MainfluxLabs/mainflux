@@ -18,7 +18,7 @@ message Message {
 }
 
 service ThingsService {
-    rpc GetConnByKey(ConnByKeyReq) returns (ConnByKeyRes) {}
+    rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
@@ -38,11 +38,11 @@ service AuthService {
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
 }
 
-message ConnByKeyReq {
+message PubConfByKeyReq {
     string key  = 1;
 }
 
-message ConnByKeyRes {
+message PubConfByKeyRes {
     string  profileID       = 1;
     string  thingID         = 2;
     Config  profileConfig   = 3;

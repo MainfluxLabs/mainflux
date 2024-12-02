@@ -166,12 +166,12 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	conn, err := h.things.GetConnByKey(context.Background(), &protomfx.ConnByKeyReq{Key: string(c.Password)})
+	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
 
-	m := messaging.CreateMessage(conn, protocol, subject, payload)
+	m := messaging.CreateMessage(pc, protocol, subject, payload)
 
 	for _, pub := range h.publishers {
 		if err := pub.Publish(m); err != nil {
@@ -238,17 +238,17 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) authAccess(c *session.Client) (protomfx.ConnByKeyRes, error) {
-	conn, err := h.things.GetConnByKey(context.Background(), &protomfx.ConnByKeyReq{Key: string(c.Password)})
+func (h *handler) authAccess(c *session.Client) (protomfx.PubConfByKeyRes, error) {
+	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
 	if err != nil {
-		return protomfx.ConnByKeyRes{}, err
+		return protomfx.PubConfByKeyRes{}, err
 	}
 
-	if conn.ThingID != c.Username {
-		return protomfx.ConnByKeyRes{}, ErrAuthentication
+	if pc.ThingID != c.Username {
+		return protomfx.PubConfByKeyRes{}, ErrAuthentication
 	}
 
-	return *conn, nil
+	return *pc, nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {

@@ -5,7 +5,6 @@ package things
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -79,12 +78,9 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveProfiles(ctx context.Context, token string, ids ...string) error
 
-	// ViewProfileConfig retrieves profile config.
-	ViewProfileConfig(ctx context.Context, prID string) (Config, error)
-
-	// GetConnByKey determines whether the profile can be accessed using the
+	// GetPubConfByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
-	GetConnByKey(ctx context.Context, key string) (Connection, error)
+	GetPubConfByKey(ctx context.Context, key string) (PubConfInfo, error)
 
 	// Authorize determines whether the group and its things and profiles can be accessed by
 	// the given user and returns error if it cannot.
@@ -96,10 +92,10 @@ type Service interface {
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
-	// Backup retrieves all things, profiles and connections for all users. Only accessible by admin.
+	// Backup retrieves all things, profiles, groups, and groups roles for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds things, profiles and connections from a backup. Only accessible by admin.
+	// Restore adds things, profiles, groups, and groups roles from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
 	Groups
@@ -130,6 +126,12 @@ type AuthorizeReq struct {
 	Object  string
 	Subject string
 	Action  string
+}
+
+type PubConfInfo struct {
+	ProfileID     string
+	ThingID       string
+	ProfileConfig map[string]interface{}
 }
 
 var _ Service = (*thingsService)(nil)
@@ -479,45 +481,26 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) ViewProfileConfig(ctx context.Context, prID string) (Config, error) {
-	profile, err := ts.profiles.RetrieveByID(ctx, prID)
-	if err != nil {
-		return Config{}, err
-	}
-
-	meta, err := json.Marshal(profile.Config)
-	if err != nil {
-		return Config{}, err
-	}
-
-	var config Config
-	if err := json.Unmarshal(meta, &config); err != nil {
-		return Config{}, err
-	}
-
-	return config, nil
-}
-
-func (ts *thingsService) GetConnByKey(ctx context.Context, thingKey string) (Connection, error) {
+func (ts *thingsService) GetPubConfByKey(ctx context.Context, thingKey string) (PubConfInfo, error) {
 	thID, err := ts.thingCache.ID(ctx, thingKey)
 	if err != nil {
 		id, err := ts.things.RetrieveByKey(ctx, thingKey)
 		if err != nil {
-			return Connection{}, err
+			return PubConfInfo{}, err
 		}
 		thID = id
 
 		if err := ts.thingCache.Save(ctx, thingKey, thID); err != nil {
-			return Connection{}, err
+			return PubConfInfo{}, err
 		}
 	}
 
 	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
 	if err != nil {
-		return Connection{}, err
+		return PubConfInfo{}, err
 	}
 
-	return Connection{ThingID: thID, ProfileID: profile.ID}, nil
+	return PubConfInfo{ProfileID: profile.ID, ThingID: thID, ProfileConfig: profile.Config}, nil
 }
 
 func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {

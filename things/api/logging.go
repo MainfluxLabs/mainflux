@@ -193,9 +193,9 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return lm.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, prID string) (config things.Config, err error) {
+func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key string) (pc things.PubConfInfo, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_profile_config for id %s took %s to complete", prID, time.Since(begin))
+		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -203,20 +203,7 @@ func (lm *loggingMiddleware) ViewProfileConfig(ctx context.Context, prID string)
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewProfileConfig(ctx, prID)
-}
-
-func (lm *loggingMiddleware) GetConnByKey(ctx context.Context, key string) (conn things.Connection, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_conn_by_key for thing %s took %s to complete", conn.ThingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.GetConnByKey(ctx, key)
+	return lm.svc.GetPubConfByKey(ctx, key)
 }
 
 func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) (err error) {

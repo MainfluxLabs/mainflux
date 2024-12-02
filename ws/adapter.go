@@ -130,14 +130,14 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, profileID,
 	return svc.pubsub.Unsubscribe(conn.ProfileID, subject)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*protomfx.ConnByKeyRes, error) {
-	ar := &protomfx.ConnByKeyReq{
+func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*protomfx.PubConfByKeyRes, error) {
+	ar := &protomfx.PubConfByKeyReq{
 		Key: thingKey,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, ar)
+	pc, err := svc.things.GetPubConfByKey(ctx, ar)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	return conn, nil
+	return pc, nil
 }

@@ -264,13 +264,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 }
 
-func getThingConn(ctx context.Context, key string) (*protomfx.ConnByKeyRes, error) {
-	conn, err := thingc.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: key})
+func getPubConfByKey(ctx context.Context, key string) (*protomfx.PubConfByKeyRes, error) {
+	pc, err := thingc.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: key})
 	if err != nil {
 		return nil, err
 	}
 
-	return conn, nil
+	return pc, nil
 }
 
 func isAdmin(ctx context.Context, token string) error {

@@ -2656,7 +2656,7 @@ func TestGetConnByThingKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 
-	data := toJSON(getConnByKeyReq{
+	data := toJSON(getPubConfByKeyReq{
 		Key: th.Key,
 	})
 
@@ -2710,7 +2710,7 @@ type identifyReq struct {
 	Token string `json:"token"`
 }
 
-type getConnByKeyReq struct {
+type getPubConfByKeyReq struct {
 	Key string `json:"key"`
 }
 

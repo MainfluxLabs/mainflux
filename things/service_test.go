@@ -1169,7 +1169,7 @@ func TestRemoveProfile(t *testing.T) {
 	}
 }
 
-func TestGetConnByKey(t *testing.T) {
+func TestGetPubConfByKey(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
@@ -1202,7 +1202,7 @@ func TestGetConnByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.GetConnByKey(context.Background(), tc.key)
+		_, err := svc.GetPubConfByKey(context.Background(), tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected '%s' got '%s'\n", desc, tc.err, err))
 	}
 }

@@ -313,20 +313,21 @@ func (res identityRes) Empty() bool {
 	return false
 }
 
-type connByKeyRes struct {
-	ProfileID string `json:"profile_id"`
-	ThingID   string `json:"thing_id"`
+type pubConfByKeyRes struct {
+	ProfileID     string                 `json:"profile_id"`
+	ThingID       string                 `json:"thing_id"`
+	ProfileConfig map[string]interface{} `json:"profile_config"`
 }
 
-func (res connByKeyRes) Code() int {
+func (res pubConfByKeyRes) Code() int {
 	return http.StatusOK
 }
 
-func (res connByKeyRes) Headers() map[string]string {
+func (res pubConfByKeyRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res connByKeyRes) Empty() bool {
+func (res pubConfByKeyRes) Empty() bool {
 	return false
 }
 

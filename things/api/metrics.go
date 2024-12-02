@@ -147,22 +147,13 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
+func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_profile_config").Add(1)
-		ms.latency.With("method", "view_profile_config").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
+		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewProfileConfig(ctx, prID)
-}
-
-func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "get_conn_by_key").Add(1)
-		ms.latency.With("method", "get_conn_by_key").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.GetConnByKey(ctx, key)
+	return ms.svc.GetPubConfByKey(ctx, key)
 }
 
 func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {

@@ -462,11 +462,11 @@ func (req identifyReq) validate() error {
 	return nil
 }
 
-type getConnByKeyReq struct {
+type getPubConfByKeyReq struct {
 	Key string `json:"key"`
 }
 
-func (req getConnByKeyReq) validate() error {
+func (req getPubConfByKeyReq) validate() error {
 	if req.Key == "" {
 		return apiutil.ErrBearerKey
 	}

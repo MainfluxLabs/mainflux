@@ -201,12 +201,8 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
-	return es.svc.ViewProfileConfig(ctx, prID)
-}
-
-func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
-	return es.svc.GetConnByKey(ctx, key)
+func (es eventStore) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
+	return es.svc.GetPubConfByKey(ctx, key)
 }
 
 func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {

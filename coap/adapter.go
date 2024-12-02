@@ -55,23 +55,23 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx.Message) error {
-	cr := &protomfx.ConnByKeyReq{
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, cr)
+	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
+	m := messaging.CreateMessage(pc, msg.Protocol, msg.Subtopic, &msg.Payload)
 
 	return svc.pubsub.Publish(m)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error {
-	cr := &protomfx.ConnByKeyReq{
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	if _, err := svc.things.GetConnByKey(ctx, cr); err != nil {
+	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
@@ -82,14 +82,14 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, profileID, subtop
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) error {
-	cr := &protomfx.ConnByKeyReq{
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, cr)
+	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, conn.ProfileID)
+	subject := fmt.Sprintf("%s.%s", profilesPrefix, pc.ProfileID)
 	if subtopic != "" {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
