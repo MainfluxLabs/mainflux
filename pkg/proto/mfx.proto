@@ -43,9 +43,8 @@ message PubConfByKeyReq {
 }
 
 message PubConfByKeyRes {
-    string  profileID       = 1;
-    string  thingID         = 2;
-    Config  profileConfig   = 3;
+    string  publisherID     = 1;
+    Config  profileConfig   = 2;
 }
 
 message Config {

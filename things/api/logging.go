@@ -195,7 +195,7 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 
 func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key string) (pc things.PubConfInfo, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.ThingID, time.Since(begin))
+		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.PublisherID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

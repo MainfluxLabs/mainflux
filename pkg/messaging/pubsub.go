@@ -94,9 +94,8 @@ type PubSub interface {
 func CreateMessage(pc *protomfx.PubConfByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
 	msg := protomfx.Message{
 		Protocol:      protocol,
-		ProfileID:     pc.ProfileID,
 		Subtopic:      subject,
-		Publisher:     pc.ThingID,
+		Publisher:     pc.PublisherID,
 		Payload:       *payload,
 		Created:       time.Now().UnixNano(),
 		ProfileConfig: pc.ProfileConfig,

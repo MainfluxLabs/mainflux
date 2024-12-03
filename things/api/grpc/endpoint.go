@@ -138,8 +138,7 @@ func buildPubConfResponse(pc things.PubConfInfo) (pubConfByKeyRes, error) {
 	}
 
 	res := pubConfByKeyRes{
-		profileID:     pc.ProfileID,
-		thingID:       pc.ThingID,
+		publisherID:   pc.PublisherID,
 		profileConfig: profileConfig,
 	}
 

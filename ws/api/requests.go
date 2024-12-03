@@ -6,8 +6,7 @@ package api
 import "github.com/gorilla/websocket"
 
 type getConnByKey struct {
-	thingKey  string
-	profileID string
-	subtopic  string
-	conn      *websocket.Conn
+	thingKey string
+	subtopic string
+	conn     *websocket.Conn
 }

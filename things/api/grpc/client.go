@@ -89,7 +89,7 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubC
 	}
 
 	pc := res.(pubConfByKeyRes)
-	return &protomfx.PubConfByKeyRes{ProfileID: pc.profileID, ThingID: pc.thingID, ProfileConfig: pc.profileConfig}, nil
+	return &protomfx.PubConfByKeyRes{PublisherID: pc.publisherID, ProfileConfig: pc.profileConfig}, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -174,7 +174,7 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func decodeGetPubConfByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.PubConfByKeyRes)
-	return pubConfByKeyRes{profileID: res.ProfileID, thingID: res.ThingID, profileConfig: res.ProfileConfig}, nil
+	return pubConfByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

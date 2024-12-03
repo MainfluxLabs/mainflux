@@ -244,7 +244,7 @@ func (h *handler) authAccess(c *session.Client) (protomfx.PubConfByKeyRes, error
 		return protomfx.PubConfByKeyRes{}, err
 	}
 
-	if pc.ThingID != c.Username {
+	if pc.PublisherID != c.Username {
 		return protomfx.PubConfByKeyRes{}, ErrAuthentication
 	}
 

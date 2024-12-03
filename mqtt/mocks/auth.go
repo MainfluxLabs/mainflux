@@ -27,14 +27,8 @@ func (cli MockClient) GetPubConfByKey(ctx context.Context, key string) (protomfx
 		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
 	}
 
-	chID, ok := cli.conns[thID]
-	if !ok {
-		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
-	}
-
 	pc := &protomfx.PubConfByKeyRes{
-		ThingID:   thID,
-		ProfileID: chID,
+		PublisherID: thID,
 	}
 
 	return *pc, nil

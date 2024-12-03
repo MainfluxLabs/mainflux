@@ -2636,82 +2636,9 @@ func TestIdentify(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", desc, tc.status, res.StatusCode))
 	}
 }
-func TestGetConnByThingKey(t *testing.T) {
-	svc := newService()
-	ts := newServer(svc)
-	defer ts.Close()
-
-	grs, err := svc.CreateGroups(context.Background(), token, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
-
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
-	require.Nil(t, err, fmt.Sprintf("failed to create profile: %s", err))
-	pr := prs[0]
-
-	thing.GroupID = gr.ID
-	thing.ProfileID = pr.ID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
-	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
-	th := ths[0]
-
-	data := toJSON(getPubConfByKeyReq{
-		Key: th.Key,
-	})
-
-	cases := map[string]struct {
-		contentType string
-		req         string
-		status      int
-	}{
-		"check access for an assigned profile to the thing": {
-			contentType: contentType,
-			req:         data,
-			status:      http.StatusOK,
-		},
-		"check access with invalid content type": {
-			contentType: wrongValue,
-			req:         data,
-			status:      http.StatusUnsupportedMediaType,
-		},
-		"check access with empty JSON request": {
-			contentType: contentType,
-			req:         "{}",
-			status:      http.StatusUnauthorized,
-		},
-		"check access with invalid JSON request": {
-			contentType: contentType,
-			req:         "}",
-			status:      http.StatusBadRequest,
-		},
-		"check access with empty request": {
-			contentType: contentType,
-			req:         emptyValue,
-			status:      http.StatusBadRequest,
-		},
-	}
-
-	for desc, tc := range cases {
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/connections", ts.URL),
-			contentType: tc.contentType,
-			body:        strings.NewReader(tc.req),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", desc, tc.status, res.StatusCode))
-	}
-}
 
 type identifyReq struct {
 	Token string `json:"token"`
-}
-
-type getPubConfByKeyReq struct {
-	Key string `json:"key"`
 }
 
 type thingRes struct {

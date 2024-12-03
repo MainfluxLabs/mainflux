@@ -50,7 +50,7 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Pub
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.PubConfByKeyRes{ProfileID: key, ThingID: svc.things[key]}, nil
+	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key]}, nil
 }
 
 func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {

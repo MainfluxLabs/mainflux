@@ -129,8 +129,7 @@ type AuthorizeReq struct {
 }
 
 type PubConfInfo struct {
-	ProfileID     string
-	ThingID       string
+	PublisherID   string
 	ProfileConfig map[string]interface{}
 }
 
@@ -500,7 +499,7 @@ func (ts *thingsService) GetPubConfByKey(ctx context.Context, thingKey string) (
 		return PubConfInfo{}, err
 	}
 
-	return PubConfInfo{ProfileID: profile.ID, ThingID: thID, ProfileConfig: profile.Config}, nil
+	return PubConfInfo{PublisherID: thID, ProfileConfig: profile.Config}, nil
 }
 
 func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {

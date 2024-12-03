@@ -15,11 +15,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const profilesPrefix = "profiles"
-
-// ErrUnsubscribe indicates an error to unsubscribe
-var ErrUnsubscribe = errors.New("unable to unsubscribe")
-
 // Service specifies CoAP service API.
 type Service interface {
 	// Publish Messssage
@@ -73,12 +68,8 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, subtopic string, 
 	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject, err := messaging.CreateSubject(subtopic)
-	if err != nil {
-		return err
-	}
 
-	return svc.pubsub.Subscribe(c.Token(), subject, c)
+	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, subtopic, token string) error {
@@ -89,10 +80,6 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key, subtopic, token
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject, err := messaging.CreateSubject(subtopic)
-	if err != nil {
-		return err
-	}
 
-	return svc.pubsub.Unsubscribe(token, subject)
+	return svc.pubsub.Unsubscribe(token, subtopic)
 }

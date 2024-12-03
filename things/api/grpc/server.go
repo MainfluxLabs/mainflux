@@ -136,7 +136,7 @@ func encodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 
 func encodeGetPubConfByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(pubConfByKeyRes)
-	return &protomfx.PubConfByKeyRes{ProfileID: res.profileID, ThingID: res.thingID, ProfileConfig: res.profileConfig}, nil
+	return &protomfx.PubConfByKeyRes{PublisherID: res.publisherID, ProfileConfig: res.profileConfig}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

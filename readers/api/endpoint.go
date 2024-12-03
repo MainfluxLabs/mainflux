@@ -44,7 +44,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			if err != nil {
 				return nil, err
 			}
-			req.pageMeta.Publisher = pc.ThingID
+			req.pageMeta.Publisher = pc.PublisherID
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {

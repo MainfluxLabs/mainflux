@@ -97,74 +97,52 @@ func TestSubscribe(t *testing.T) {
 	c := ws.NewClient(nil)
 
 	cases := []struct {
-		desc      string
-		thingKey  string
-		profileID string
-		subtopic  string
-		fail      bool
-		err       error
+		desc     string
+		thingKey string
+		subtopic string
+		fail     bool
+		err      error
 	}{
 		{
-			desc:      "subscribe with valid thingKey, profileID, subtopic",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      false,
-			err:       nil,
+			desc:     "subscribe with valid thingKey and subtopic",
+			thingKey: thingKey,
+			subtopic: subTopic,
+			fail:     false,
+			err:      nil,
 		},
 		{
-			desc:      "subscribe again with valid thingKey, profileID, subtopic",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      false,
-			err:       nil,
+			desc:     "subscribe again with valid thingKey and subtopic",
+			thingKey: thingKey,
+			subtopic: subTopic,
+			fail:     false,
+			err:      nil,
 		},
 		{
-			desc:      "subscribe with subscribe set to fail",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      true,
-			err:       ws.ErrFailedSubscription,
+			desc:     "subscribe with subscribe set to fail",
+			thingKey: thingKey,
+			subtopic: subTopic,
+			fail:     true,
+			err:      ws.ErrFailedSubscription,
 		},
 		{
-			desc:      "subscribe with invalid profileID and invalid thingKey",
-			thingKey:  "invalid",
-			profileID: "0",
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
+			desc:     "subscribe with invalid thingKey",
+			thingKey: "invalid",
+			subtopic: subTopic,
+			fail:     false,
+			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
-			desc:      "subscribe with empty profile",
-			thingKey:  thingKey,
-			profileID: "",
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
-		},
-		{
-			desc:      "subscribe with empty thingKey",
-			thingKey:  "",
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
-		},
-		{
-			desc:      "subscribe with empty thingKey and empty profile",
-			thingKey:  "",
-			profileID: "",
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
+			desc:     "subscribe with empty thingKey",
+			thingKey: "",
+			subtopic: subTopic,
+			fail:     false,
+			err:      ws.ErrUnauthorizedAccess,
 		},
 	}
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Subscribe(context.Background(), tc.thingKey, tc.profileID, tc.subtopic, c)
+		err := svc.Subscribe(context.Background(), tc.thingKey, tc.subtopic, c)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -174,66 +152,45 @@ func TestUnsubscribe(t *testing.T) {
 	svc, pubsub := newService(thingsClient)
 
 	cases := []struct {
-		desc      string
-		thingKey  string
-		profileID string
-		subtopic  string
-		fail      bool
-		err       error
+		desc     string
+		thingKey string
+		subtopic string
+		fail     bool
+		err      error
 	}{
 		{
-			desc:      "unsubscribe with valid thingKey, profileID, subtopic",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      false,
-			err:       nil,
+			desc:     "unsubscribe with valid thingKey and subtopic",
+			thingKey: thingKey,
+			subtopic: subTopic,
+			fail:     false,
+			err:      nil,
 		},
 		{
-			desc:      "unsubscribe with valid thingKey, profileID, and empty subtopic",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  "",
-			fail:      false,
-			err:       nil,
+			desc:     "unsubscribe with valid thingKey and empty subtopic",
+			thingKey: thingKey,
+			subtopic: "",
+			fail:     false,
+			err:      nil,
 		},
 		{
-			desc:      "unsubscribe  with unsubscribe set to fail",
-			thingKey:  thingKey,
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      true,
-			err:       ws.ErrFailedUnsubscribe,
+			desc:     "unsubscribe with unsubscribe set to fail",
+			thingKey: thingKey,
+			subtopic: subTopic,
+			fail:     true,
+			err:      ws.ErrFailedUnsubscribe,
 		},
 		{
-			desc:      "unsubscribe with empty profile",
-			thingKey:  thingKey,
-			profileID: "",
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
-		},
-		{
-			desc:      "unsubscribe with empty thingKey",
-			thingKey:  "",
-			profileID: profileID,
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
-		},
-		{
-			desc:      "unsubscribe with empty thingKey and empty profile",
-			thingKey:  "",
-			profileID: "",
-			subtopic:  subTopic,
-			fail:      false,
-			err:       ws.ErrUnauthorizedAccess,
+			desc:     "unsubscribe with empty thingKey",
+			thingKey: "",
+			subtopic: subTopic,
+			fail:     false,
+			err:      ws.ErrUnauthorizedAccess,
 		},
 	}
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.profileID, tc.subtopic)
+		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.subtopic)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

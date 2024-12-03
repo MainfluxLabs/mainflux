@@ -12,8 +12,7 @@ type identityRes struct {
 }
 
 type pubConfByKeyRes struct {
-	profileID     string
-	thingID       string
+	publisherID   string
 	profileConfig *protomfx.Config
 }
 
