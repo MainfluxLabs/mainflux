@@ -54,7 +54,7 @@ type ThingRepository interface {
 	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
 
-	// RetrieveByProfile retrieves the subset of things to which the specified profile is assigned.
+	// RetrieveByProfile retrieves the subset of things assigned to the specified profile.
 	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned

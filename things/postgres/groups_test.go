@@ -221,7 +221,7 @@ func TestRemoveGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
-	channelRepo := postgres.NewProfileRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
 	creationTime := time.Now().UTC()
@@ -253,7 +253,7 @@ func TestRemoveGroup(t *testing.T) {
 	group2, err = groupRepo.Save(context.Background(), group2)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	pr, err := channelRepo.Save(context.Background(), things.Profile{
+	pr, err := profileRepo.Save(context.Background(), things.Profile{
 		ID:      thID,
 		GroupID: group1.ID,
 	})

@@ -462,18 +462,6 @@ func (req identifyReq) validate() error {
 	return nil
 }
 
-type getPubConfByKeyReq struct {
-	Key string `json:"key"`
-}
-
-func (req getPubConfByKeyReq) validate() error {
-	if req.Key == "" {
-		return apiutil.ErrBearerKey
-	}
-
-	return nil
-}
-
 type groupRolesReq struct {
 	token        string
 	groupID      string

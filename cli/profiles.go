@@ -41,8 +41,8 @@ var cmdProfiles = []cobra.Command{
 		Short: "Get profile",
 		Long: `Get all profiles, get profile by thing or get profile by id. Profiles can be filtered by name or metadata.
 		<all> - lists all profiles
-		<thing> - list profiles by thing based on defined <id>
-		<by-id> - shows thing with provided <id>`,
+		<thing> - shows profile by thing with provided <id>
+		<by-id> - shows profile with provided <id>`,
 
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 || len(args) != 3 {

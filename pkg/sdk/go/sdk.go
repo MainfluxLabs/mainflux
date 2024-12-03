@@ -197,7 +197,7 @@ type SDK interface {
 	// Things returns page of things.
 	Things(token string, pm PageMetadata) (ThingsPage, error)
 
-	// ThingsByProfile returns page of things to which the specified profile is assigned.
+	// ThingsByProfile returns page of things assigned to the specified profile.
 	ThingsByProfile(token, profileID string, offset, limit uint64) (ThingsPage, error)
 
 	// Thing returns thing object by id.

@@ -855,28 +855,6 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getPubConfByKeyReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		pc, err := svc.GetPubConfByKey(ctx, req.Key)
-		if err != nil {
-			return nil, err
-		}
-
-		res := pubConfByKeyRes{
-			ProfileID:     pc.ProfileID,
-			ThingID:       pc.ThingID,
-			ProfileConfig: pc.ProfileConfig,
-		}
-
-		return res, nil
-	}
-}
-
 func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupRolesReq)

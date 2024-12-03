@@ -162,7 +162,7 @@ func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "things [create | get | update | delete | identify]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update, identify or delete Thing, get a list of Things to which the specified Profile is assigned `,
+		Long:  `Things management: create, get, update, identify or delete Thing, get a list of Things assigned to the specified Profile`,
 	}
 
 	for i := range cmdThings {
