@@ -8,7 +8,6 @@ package coap
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -28,10 +27,10 @@ type Service interface {
 
 	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
-	Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error
+	Subscribe(ctx context.Context, key, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key, profileID, subptopic, token string) error
+	Unsubscribe(ctx context.Context, key, subptopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -67,31 +66,33 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx
 	return svc.pubsub.Publish(m)
 }
 
-func (svc *adapterService) Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error {
+func (svc *adapterService) Subscribe(ctx context.Context, key, subtopic string, c Client) error {
 	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
 	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
+	subject, err := messaging.CreateSubject(subtopic)
+	if err != nil {
+		return err
 	}
+
 	return svc.pubsub.Subscribe(c.Token(), subject, c)
 }
 
-func (svc *adapterService) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) error {
+func (svc *adapterService) Unsubscribe(ctx context.Context, key, subtopic, token string) error {
 	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	pc, err := svc.things.GetPubConfByKey(ctx, cr)
+	_, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, pc.ProfileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
+	subject, err := messaging.CreateSubject(subtopic)
+	if err != nil {
+		return err
 	}
+
 	return svc.pubsub.Unsubscribe(token, subject)
 }
