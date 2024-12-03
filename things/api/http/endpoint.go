@@ -582,12 +582,12 @@ func removeGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listByIDReq)
+		req := request.(listGroupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token, req.id, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token, req.orgID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

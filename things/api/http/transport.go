@@ -537,7 +537,7 @@ func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	req := listByIDReq{
+	req := listGroupsReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMetadata: things.PageMetadata{
 			Offset:   o,
@@ -545,7 +545,7 @@ func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
 			Metadata: m,
 			Name:     n,
 		},
-		id: orgID,
+		orgID: orgID,
 	}
 	return req, nil
 }

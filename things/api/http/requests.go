@@ -506,6 +506,24 @@ func (req groupRolesReq) validate() error {
 	return nil
 }
 
+type listGroupsReq struct {
+	token        string
+	orgID        string
+	pageMetadata things.PageMetadata
+}
+
+func (req listGroupsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
+}
+
 type removeGroupRolesReq struct {
 	token     string
 	groupID   string
