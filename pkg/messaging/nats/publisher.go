@@ -55,7 +55,7 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	}
 
 	var subjects []string
-	subject := fmt.Sprintf("%s.%s.%s.%s", profilesPrefix, msg.ProfileID, format, messagesSuffix)
+	subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
 	if msg.ProfileConfig.Write {
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
