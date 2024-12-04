@@ -5,7 +5,6 @@ package http
 
 import (
 	"bytes"
-	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -21,7 +20,7 @@ var (
 	ErrSendRequest = errors.New("failed to send request")
 )
 
-func SendRequest(method, path string, body []byte, headers map[string]string) ([]byte, error) {
+func SendRequest(method, path string, body []byte, headers map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -42,11 +41,5 @@ func SendRequest(method, path string, body []byte, headers map[string]string) ([
 		return nil, err
 	}
 
-	responseData, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	return responseData, nil
+	return response, nil
 }
