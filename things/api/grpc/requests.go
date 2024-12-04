@@ -20,6 +20,18 @@ func (req pubConfByKeyReq) validate() error {
 	return nil
 }
 
+type configByThingIDReq struct {
+	thingID string
+}
+
+func (req configByThingIDReq) validate() error {
+	if req.thingID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type authorizeReq struct {
 	token   string
 	object  string

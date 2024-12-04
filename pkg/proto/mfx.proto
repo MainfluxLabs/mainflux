@@ -19,6 +19,7 @@ message Message {
 
 service ThingsService {
     rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
+    rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
@@ -54,6 +55,10 @@ message Config {
     string      smtpID      = 4;
     string      smppID      = 5;
     Transformer transformer = 6;
+}
+
+message ConfigByThingIDRes{
+    Config config = 1;
 }
 
 message Transformer {

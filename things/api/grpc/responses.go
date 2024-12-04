@@ -16,6 +16,10 @@ type pubConfByKeyRes struct {
 	profileConfig *protomfx.Config
 }
 
+type configByThingIDRes struct {
+	config *protomfx.Config
+}
+
 type emptyRes struct {
 	err error
 }

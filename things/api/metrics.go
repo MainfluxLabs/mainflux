@@ -156,6 +156,14 @@ func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key string) (t
 	return ms.svc.GetPubConfByKey(ctx, key)
 }
 
+func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_config_by_thing_id").Add(1)
+		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return ms.svc.GetConfigByThingID(ctx, thingID)
+}
+
 func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "authorize").Add(1)

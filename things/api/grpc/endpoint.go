@@ -24,7 +24,38 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return pubConfByKeyRes{}, err
 		}
 
-		return buildPubConfResponse(pc)
+		config, err := buildConfigResponse(pc.ProfileConfig)
+		if err != nil {
+			return pubConfByKeyRes{}, err
+		}
+
+		res := pubConfByKeyRes{
+			publisherID:   pc.PublisherID,
+			profileConfig: config,
+		}
+
+		return res, nil
+	}
+}
+
+func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(configByThingIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		c, err := svc.GetConfigByThingID(ctx, req.thingID)
+		if err != nil {
+			return configByThingIDRes{}, err
+		}
+
+		config, err := buildConfigResponse(c)
+		if err != nil {
+			return pubConfByKeyRes{}, err
+		}
+
+		return configByThingIDRes{config: config}, nil
 	}
 }
 
@@ -110,15 +141,15 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildPubConfResponse(pc things.PubConfInfo) (pubConfByKeyRes, error) {
-	cb, err := json.Marshal(pc.ProfileConfig)
+func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) {
+	cb, err := json.Marshal(conf)
 	if err != nil {
-		return pubConfByKeyRes{}, err
+		return &protomfx.Config{}, err
 	}
 
 	var config things.Config
 	if err := json.Unmarshal(cb, &config); err != nil {
-		return pubConfByKeyRes{}, err
+		return &protomfx.Config{}, err
 	}
 
 	transformer := &protomfx.Transformer{
@@ -137,10 +168,5 @@ func buildPubConfResponse(pc things.PubConfInfo) (pubConfByKeyRes, error) {
 		SmppID:      config.SmppID,
 	}
 
-	res := pubConfByKeyRes{
-		publisherID:   pc.PublisherID,
-		profileConfig: profileConfig,
-	}
-
-	return res, nil
+	return profileConfig, nil
 }

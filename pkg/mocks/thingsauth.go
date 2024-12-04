@@ -53,6 +53,10 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Pub
 	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key]}, nil
 }
 
+func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+	panic("implement me")
+}
+
 func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
 	gr, ok := svc.groups[in.GetToken()]
 	if !ok {

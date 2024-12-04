@@ -138,6 +138,10 @@ func (svc *mainfluxThings) GetPubConfByKey(context.Context, string) (things.PubC
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string) (map[string]interface{}, error) {
+	panic("implement me")
+}
+
 func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error {
 	panic("not implemented")
 }

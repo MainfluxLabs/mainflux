@@ -21,6 +21,7 @@ var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 type grpcClient struct {
 	timeout             time.Duration
 	getPubConfByKey     endpoint.Endpoint
+	getConfigByThingID  endpoint.Endpoint
 	authorize           endpoint.Endpoint
 	identify            endpoint.Endpoint
 	getGroupsByIDs      endpoint.Endpoint
@@ -40,6 +41,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeGetPubConfByKeyRequest,
 			decodeGetPubConfByKeyResponse,
 			protomfx.PubConfByKeyRes{},
+		).Endpoint()),
+		getConfigByThingID: kitot.TraceClient(tracer, "get_config_by_thing_id")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetConfigByThingID",
+			encodeGetConfigByThingIDRequest,
+			decodeGetConfigByThingIDResponse,
+			protomfx.ConfigByThingIDRes{},
 		).Endpoint()),
 		authorize: kitot.TraceClient(tracer, "authorize")(kitgrpc.NewClient(
 			conn,
@@ -90,6 +99,17 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubC
 
 	pc := res.(pubConfByKeyRes)
 	return &protomfx.PubConfByKeyRes{PublisherID: pc.publisherID, ProfileConfig: pc.profileConfig}, nil
+}
+
+func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+	res, err := client.getConfigByThingID(ctx, configByThingIDReq{thingID: req.GetValue()})
+	if err != nil {
+		return nil, err
+	}
+	c := res.(configByThingIDRes)
+	return &protomfx.ConfigByThingIDRes{Config: c.config}, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -147,6 +167,11 @@ func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (inter
 	return &protomfx.PubConfByKeyReq{Key: req.key}, nil
 }
 
+func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(configByThingIDReq)
+	return &protomfx.ThingID{Value: req.thingID}, nil
+}
+
 func encodeAuthorize(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authorizeReq)
 	return &protomfx.AuthorizeReq{Token: req.token, Object: req.object, Subject: req.subject, Action: req.action}, nil
@@ -175,6 +200,11 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 func decodeGetPubConfByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.PubConfByKeyRes)
 	return pubConfByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
+}
+
+func decodeGetConfigByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.ConfigByThingIDRes)
+	return configByThingIDRes{config: res.GetConfig()}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

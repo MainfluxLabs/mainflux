@@ -205,6 +205,10 @@ func (es eventStore) GetPubConfByKey(ctx context.Context, key string) (things.Pu
 	return es.svc.GetPubConfByKey(ctx, key)
 }
 
+func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+	return es.svc.GetConfigByThingID(ctx, thingID)
+}
+
 func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {
 	return es.svc.Authorize(ctx, req)
 }

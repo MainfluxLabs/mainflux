@@ -82,6 +82,9 @@ type Service interface {
 	// provided key and returns thing's id if access is allowed.
 	GetPubConfByKey(ctx context.Context, key string) (PubConfInfo, error)
 
+	// GetConfigByThingID returns profile config for given thing ID.
+	GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error)
+
 	// Authorize determines whether the group and its things and profiles can be accessed by
 	// the given user and returns error if it cannot.
 	Authorize(ctx context.Context, req AuthorizeReq) error
@@ -500,6 +503,14 @@ func (ts *thingsService) GetPubConfByKey(ctx context.Context, thingKey string) (
 	}
 
 	return PubConfInfo{PublisherID: thID, ProfileConfig: profile.Config}, nil
+}
+
+func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
+	return profile.Config, nil
 }
 
 func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
