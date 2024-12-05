@@ -48,9 +48,8 @@ func startServer() {
 
 func newService(tokens map[string]string) things.Service {
 	auth := mocks.NewAuthService("", usersList)
-	conns := make(chan thmocks.Connection)
-	thingsRepo := thmocks.NewThingRepository(conns)
-	profilesRepo := thmocks.NewProfileRepository(thingsRepo, conns)
+	thingsRepo := thmocks.NewThingRepository()
+	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
 	profileCache := thmocks.NewProfileCache()

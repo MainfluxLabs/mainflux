@@ -32,15 +32,15 @@ func handshake(svc ws.Service) http.HandlerFunc {
 		req.conn = conn
 		client := ws.NewClient(conn)
 
-		if err := svc.Subscribe(context.Background(), req.thingKey, req.profileID, req.subtopic, client); err != nil {
+		if err := svc.Subscribe(context.Background(), req.thingKey, req.subtopic, client); err != nil {
 			req.conn.Close()
 			return
 		}
 
-		logger.Debug(fmt.Sprintf("Successfully upgraded communication to WS on profile %s", req.profileID))
+		logger.Debug(fmt.Sprintf("Successfully upgraded communication to WS"))
 		msgs := make(chan []byte)
 
-		// Listen for messages received from the profile messages, and publish them to broker
+		// Listen for messages and publish them to broker
 		go process(svc, req, msgs)
 		go listen(conn, msgs)
 	}
@@ -108,7 +108,7 @@ func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 		}
 		svc.Publish(context.Background(), req.thingKey, m)
 	}
-	if err := svc.Unsubscribe(context.Background(), req.thingKey, req.profileID, req.subtopic); err != nil {
+	if err := svc.Unsubscribe(context.Background(), req.thingKey, req.subtopic); err != nil {
 		req.conn.Close()
 	}
 }
@@ -117,7 +117,7 @@ func encodeError(w http.ResponseWriter, err error) {
 	statusCode := http.StatusUnauthorized
 
 	switch err {
-	case ws.ErrEmptyID, ws.ErrEmptyTopic:
+	case ws.ErrEmptyTopic:
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:
 		statusCode = http.StatusForbidden

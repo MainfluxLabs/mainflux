@@ -5,46 +5,57 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
 
-func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(connByKeyReq)
+		req := request.(pubConfByKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		conn, err := svc.GetConnByKey(ctx, req.key)
+		pc, err := svc.GetPubConfByKey(ctx, req.key)
 		if err != nil {
-			return connByKeyRes{}, err
+			return pubConfByKeyRes{}, err
 		}
 
-		p, err := svc.ViewProfileConfig(ctx, conn.ProfileID)
+		config, err := buildConfigResponse(pc.ProfileConfig)
 		if err != nil {
-			return connByKeyRes{}, err
+			return pubConfByKeyRes{}, err
 		}
 
-		transformer := &protomfx.Transformer{
-			ValuesFilter: p.Transformer.ValuesFilter,
-			TimeField:    p.Transformer.TimeField,
-			TimeFormat:   p.Transformer.TimeFormat,
-			TimeLocation: p.Transformer.TimeLocation,
+		res := pubConfByKeyRes{
+			publisherID:   pc.PublisherID,
+			profileConfig: config,
 		}
 
-		config := &protomfx.Config{
-			ContentType: p.ContentType,
-			Write:       p.Write,
-			Transformer: transformer,
-			WebhookID:   p.WebhookID,
-			SmtpID:      p.SmtpID,
-			SmppID:      p.SmppID,
+		return res, nil
+	}
+}
+
+func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(configByThingIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
 		}
 
-		return connByKeyRes{profileID: conn.ProfileID, thingID: conn.ThingID, config: config}, nil
+		c, err := svc.GetConfigByThingID(ctx, req.thingID)
+		if err != nil {
+			return configByThingIDRes{}, err
+		}
+
+		config, err := buildConfigResponse(c)
+		if err != nil {
+			return pubConfByKeyRes{}, err
+		}
+
+		return configByThingIDRes{config: config}, nil
 	}
 }
 
@@ -128,4 +139,34 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return groupIDByThingIDRes{groupID: groupID}, nil
 	}
+}
+
+func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) {
+	cb, err := json.Marshal(conf)
+	if err != nil {
+		return &protomfx.Config{}, err
+	}
+
+	var config things.Config
+	if err := json.Unmarshal(cb, &config); err != nil {
+		return &protomfx.Config{}, err
+	}
+
+	transformer := &protomfx.Transformer{
+		ValuesFilter: config.Transformer.ValuesFilter,
+		TimeField:    config.Transformer.TimeField,
+		TimeFormat:   config.Transformer.TimeFormat,
+		TimeLocation: config.Transformer.TimeLocation,
+	}
+
+	profileConfig := &protomfx.Config{
+		ContentType: config.ContentType,
+		Write:       config.Write,
+		Transformer: transformer,
+		WebhookID:   config.WebhookID,
+		SmtpID:      config.SmtpID,
+		SmppID:      config.SmppID,
+	}
+
+	return profileConfig, nil
 }

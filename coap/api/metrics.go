@@ -40,20 +40,20 @@ func (mm *metricsMiddleware) Publish(ctx context.Context, key string, msg protom
 	return mm.svc.Publish(ctx, key, msg)
 }
 
-func (mm *metricsMiddleware) Subscribe(ctx context.Context, key, profileID, subtopic string, c coap.Client) error {
+func (mm *metricsMiddleware) Subscribe(ctx context.Context, key, subtopic string, c coap.Client) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "subscribe").Add(1)
 		mm.latency.With("method", "subscribe").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Subscribe(ctx, key, profileID, subtopic, c)
+	return mm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
-func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) error {
+func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, key, subtopic, token string) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "unsubscribe").Add(1)
 		mm.latency.With("method", "unsubscribe").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Unsubscribe(ctx, key, profileID, subtopic, token)
+	return mm.svc.Unsubscribe(ctx, key, subtopic, token)
 }

@@ -28,7 +28,7 @@ func NewThingsServiceClient(profiles map[string]string, things map[string]string
 	return &thingsServiceMock{profiles, things, groups}
 }
 
-func (svc thingsServiceMock) GetConnByKey(_ context.Context, in *protomfx.ConnByKeyReq, _ ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
+func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
 	key := in.GetKey()
 
 	if key == "invalid" {
@@ -50,7 +50,11 @@ func (svc thingsServiceMock) GetConnByKey(_ context.Context, in *protomfx.ConnBy
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.ConnByKeyRes{ProfileID: key, ThingID: svc.things[key]}, nil
+	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key]}, nil
+}
+
+func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+	panic("implement me")
 }
 
 func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {

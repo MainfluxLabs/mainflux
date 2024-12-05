@@ -9,9 +9,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrRetrieveGroupProfiles indicates failure to retrieve group profiles.
-var ErrRetrieveGroupProfiles = errors.New("failed to retrieve group profiles")
-
 // Identity contains ID and Email.
 type Identity struct {
 	ID    string
@@ -52,9 +49,6 @@ type GroupRepository interface {
 
 	// RetrieveByIDs retrieves groups by their ids
 	RetrieveByIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (GroupPage, error)
-
-	// RetrieveProfilesByGroup retrieves page of profiles that are assigned to a group identified by ID.
-	RetrieveProfilesByGroup(ctx context.Context, groupID string, pm PageMetadata) (ProfilesPage, error)
 
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)

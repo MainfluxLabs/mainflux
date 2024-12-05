@@ -24,7 +24,7 @@ servers:
           - '1883'
           - '8883'
       username:
-        description: Thing ID connected to the profile defined in the MQTT topic.
+        description: Thing ID.
       password:
         description: Thing Key corresponding to the Thing ID.
 
@@ -75,7 +75,7 @@ components:
 
   parameters:
     profileId:
-      description: Profile ID connected to the Thing ID defined in the username.
+      description: Profile ID assigned to the Thing ID defined in the username.
       schema:
         type: string
         format: uuid

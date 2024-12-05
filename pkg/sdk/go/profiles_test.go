@@ -343,27 +343,19 @@ func TestViewProfileByThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: name}
+	pr := sdk.Profile{Name: name}
+	pid, err := mainfluxSDK.CreateProfile(pr, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th := sdk.Thing{Name: name, ProfileID: pid}
 	tid, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	pr := sdk.Profile{Name: name}
-	cid, err := mainfluxSDK.CreateProfile(pr, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	connIDs := sdk.ConnectionIDs{
-		ProfileID: cid,
-		ThingIDs:  []string{tid},
-	}
-
-	resprofile := sdk.Profile{
-		ID:      cid,
+	resProfile := sdk.Profile{
+		ID:      pid,
 		GroupID: grID,
 		Name:    name,
 	}
-
-	err = mainfluxSDK.Connect(connIDs, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -377,7 +369,7 @@ func TestViewProfileByThing(t *testing.T) {
 			thing:    tid,
 			token:    token,
 			err:      nil,
-			response: resprofile,
+			response: resProfile,
 		},
 		{
 			desc:     "view profile by thing with invalid token",

@@ -40,11 +40,11 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		var page readers.MessagesPage
 		switch {
 		case req.key != "":
-			conn, err := getThingConn(ctx, req.key)
+			pc, err := getPubConfByKey(ctx, req.key)
 			if err != nil {
 				return nil, err
 			}
-			req.pageMeta.Publisher = conn.ThingID
+			req.pageMeta.Publisher = pc.PublisherID
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {

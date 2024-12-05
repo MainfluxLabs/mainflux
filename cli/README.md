@@ -46,12 +46,12 @@ mainfluxlabs-cli groups create '{"name":"<group_name>"}' <org_id> <user_token>
 
 #### Create Thing
 ```bash
-mainfluxlabs-cli things create '{"name":"<thing_name>"}' <group_id> <user_token>
+mainfluxlabs-cli things create '{"name":"<thing_name>","profile_id":"<profile_id>"}' <group_id> <user_token>
 ```
 
 #### Create Thing with metadata
 ```bash
-mainfluxlabs-cli things create '{"name":"<thing_name>", "metadata": {\"key1\":\"value1\"}}' <group_id> <user_token>
+mainfluxlabs-cli things create '{"name":"<thing_name>","profile_id":"<profile_id>","metadata": {\"key1\":\"value1\"}}' <group_id> <user_token>
 ```
 
 #### Bulk Provision Things
@@ -64,7 +64,7 @@ mainfluxlabs-cli provision things <file> <user_token>
 
 #### Update Thing
 ```bash
-mainfluxlabs-cli things update '{"name":"<new_name>"}' <thing_id> <user_token>
+mainfluxlabs-cli things update '{"name":"<new_name>","profile_id":"<profile_id>"}' <thing_id> <user_token>
 ```
 
 #### Remove Thing
@@ -115,58 +115,14 @@ mainfluxlabs-cli profiles get all --offset=1 --limit=5 <user_token>
 mainfluxlabs-cli profiles get <profile_id> <user_token>
 ```
 
-### Access control
-#### Connect Thing to Profile
-```bash
-mainfluxlabs-cli things connect <thing_id> <profile_id> <user_token>
-```
-
-#### Bulk Connect Things to Profiles
-```bash
-mainfluxlabs-cli provision connect <file> <user_token>
-```
-
-* `file` - A CSV or JSON file containing thing and profile ids
-* `user_token` - A valid user auth token for the current system
-
-An example CSV file might be
-
-```csv
-<thing_id>,<profile_id>
-<thing_id>,<profile_id>
-```
-
-in which the first column is thing IDs and the second column is profile IDs. A connection will be created for each thing to each profile. This example would result in 4 connections being created.
-
-A comparable JSON file would be
-
-```json
-{
-    "thing_ids": [
-        "<thing_id>",
-        "<thing_id>"
-    ],
-    "profile_ids": [
-        "<profile_id>",
-        "<profile_id>"
-    ]
-}
-```
-
-#### Disconnect Thing from Profile
-```bash
-mainfluxlabs-cli things disconnect <thing_id> <profile_id> <user_token>
-
-```
-
 #### Retrieve a Profile by Thing
 ```bash
-mainfluxlabs-cli things connections <thing_id> <user_token>
+mainfluxlabs-cli profiles thing <thing_id> <user_token>
 ```
 
-#### Retrieve a subset list of Things connected to Profile
+#### Retrieve a subset list of Things by Profile
 ```bash
-mainfluxlabs-cli profiles connections <profile_id> <user_token>
+mainfluxlabs-cli things profile <profile_id> <user_token>
 ```
 
 ### Messaging

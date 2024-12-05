@@ -166,8 +166,7 @@ paths:
     delete:
       summary: Removes a thing
       description: |
-        Removes a thing. The service will ensure that the removed thing is
-        disconnected from all of the existing profiles.
+        Removes a thing.
       tags:
         - things
       parameters:
@@ -302,7 +301,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
     patch:
       summary: Removes profiles
-      description: Removes profiles with provided identifiers
+      description: Removes profiles with provided identifiers if they are not assigned to any Thing.
       tags:
         - profiles
       requestBody:
@@ -395,60 +394,11 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /connect:
-    post:
-      summary: Connects thing and profile.
-      description: |
-        Connect things specified by IDs to profile specified by ID.
-        Profile and thing are owned by user identified using the provided access token.
-        In order for the connection to be successful, the things and the profile must be members of the same group.
-      tags:
-        - things
-      requestBody:
-        $ref: "#/components/requestBodies/ConnCreateReq"
-      responses:
-        '201':
-          $ref: "#/components/responses/ConnCreateRes"
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: A non-existent entity request.
-        '409':
-          description: Entity already exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /disconnect:
-    put:
-      summary: Disconnect things from the profile.
-      description: |
-        Disconnect a list of things specified by IDs from profile specified by ID.
-        Profile and things are owned by user identified using the provided access token.
-      tags:
-        - things
-      requestBody:
-        $ref: "#/components/requestBodies/DisconnReq"
-      responses:
-        '200':
-          $ref: "#/components/responses/DisconnRes"
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: A non-existent entity request.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
   /things/{thingId}/profiles:
     get:
-      summary: Retrieves profile connected to specified thing
+      summary: Retrieves profile by thing
       description: |
-        Retrieves profile connected to specified thing.
+        Retrieves profile assigned to specified thing.
       tags:
         - profiles
       parameters:
@@ -466,9 +416,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /profiles/{profileId}/things:
     get:
-      summary: List of things connected to specified profile
+      summary: List things by profile
       description: |
-        Retrieves list of things connected to specified profile with pagination
+        Retrieves list of things assigned to the specified profile with pagination
         metadata.
       tags:
         - things
@@ -476,7 +426,6 @@ paths:
         - $ref: "#/components/parameters/ProfileId"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Connected"
       responses:
         '200':
           $ref: "#/components/responses/ThingsPageRes"
@@ -695,27 +644,6 @@ paths:
           description: Failed due to non existing organization or group.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /connections:
-    post:
-      summary: Checks if thing has access to a profile.
-      description: |
-        Checks if a thing with a specified key has an access to a specified
-        profile and if it has, it returns that things id.
-      tags:
-        - access
-      requestBody:
-        $ref: "#/components/requestBodies/IdentityReq"
-      responses:
-        '200':
-          $ref: "#/components/responses/AccessGrantedRes"
-        '401':
-          description: |
-            Thing and profile are not connected, or thing with specified key doesn't
-            exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
   /identify:
     post:
       summary: Validates thing's key and returns it's ID if key is valid.
@@ -740,7 +668,7 @@ paths:
       summary: Retrieves backup of the things service.
       description: |
         Retrieves backup of the things service. Backup is a JSON file that contains
-        all groups, things, profiles, and connections.
+        all groups, things and profiles.
       tags:
         - backup
       responses:
@@ -755,7 +683,7 @@ paths:
       summary: Restores things service from backup.
       description: |
         Restores service from backup. Backup is a JSON file that contains
-        all groups, things, profiles, and connections that will be restored.
+        all groups, things and profiles that will be restored.
       tags:
         - backup
       requestBody:
@@ -804,6 +732,10 @@ components:
             Thing key that is used for thing auth. If there is
             not one provided service will generate one in UUID
             format.
+        profile_id:
+          type: string
+          format: uuid
+          description: Profile ID that will be assigned to the Thing
         name:
           type: string
           description: Free-form thing name.
@@ -866,6 +798,10 @@ components:
           type: string
           format: uuid
           description: The group identifier to which the thing belongs.
+        profile_id:
+          type: string
+          format: uuid
+          description: Profile ID assigned to the Thing
         metadata:
           type: object
           example: { "key": "value" }
@@ -978,39 +914,6 @@ components:
           description: Maximum number of items to return in one page.
       required:
         - profiles
-    ConnectionReqSchema:
-      type: object
-      properties:
-        profile_id:
-          type: string
-          example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
-          description: Profile ID.
-        thing_ids:
-          type: array
-          example: ["6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"]
-          description: Thing IDs
-          items:
-            type: string
-    ConnectionResSchema:
-      type: object
-      properties:
-        profile_id:
-          type: string
-          example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
-          description: Unique profile identifier generated by the service.
-        thing_id:
-          type: string
-          example: "6e3d5c1e-8d5a-4b3f-8f3f-4c4b4c4b4c4b"
-          description: Unique thing identifier generated by the service.      
-        name:
-          type: string
-          description: Free-form profile name.
-        metadata:
-          type: object
-          description: Arbitrary, object-encoded profile's data.
-      required:
-        - profile_id
-        - thing_id
     GroupsPage:
       type: object
       properties:
@@ -1105,7 +1008,7 @@ components:
         - description
         - created_at
         - updated_at
-    GroupCreateResSchema:
+    CreateGroupResSchema:
       type: object
       properties:
         id:
@@ -1254,17 +1157,10 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/ProfileResSchema"
-        connections:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/ConnectionResSchema"
       required:
         - groups
         - things
         - profiles
-        - connections
 
   parameters:
     ProfileId:
@@ -1317,14 +1213,6 @@ components:
         type: integer
         default: 0
         minimum: 0
-      required: false
-    Connected:
-      name: connected
-      description: Connection state of the subset to retrieve.
-      in: query
-      schema:
-        type: boolean
-        default: true
       required: false
     Name:
       name: name
@@ -1390,6 +1278,9 @@ components:
                 description: Free-form thing name.
               metadata:
                 type: object
+              profile_id:
+                type: string
+                format: uuid
     SearchThingsReq:
       description: JSON-formatted document describing search parameters.
       required: true
@@ -1454,20 +1345,6 @@ components:
                 items:
                   type: string
                   format: uuid
-    ConnCreateReq:
-      description: JSON-formatted document describing the new connection.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ConnectionReqSchema"
-    DisconnReq:
-      description: JSON-formatted document describing the entities for disconnection.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ConnectionReqSchema"
     IdentityReq:
       description: JSON-formatted document that contains thing key.
       required: true
@@ -1586,25 +1463,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ProfilesPage"
-    ConnCreateRes:
-      description: Thing registered.
-      headers:
-        Location:
-          content:
-            text/plain:
-              schema:
-                type: string
-                description: Created thing's relative URL.
-                example: /things/{thingId}
-    DisconnRes:
-      description: Things disconnected.
-    AccessGrantedRes:
-      description: |
-        Thing has access to the specified profile and the thing ID is returned.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Identity"
     IdentityRes:
       description: Thing ID returned.
       content:
@@ -1616,7 +1474,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupCreateResSchema"
+            $ref: "#/components/schemas/CreateGroupResSchema"
       headers:
         Location:
           content:

@@ -128,23 +128,15 @@ func TestRetrieveProfileByID(t *testing.T) {
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
 	group := createGroup(t, dbMiddleware)
-
+	prID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	thkey, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	th := things.Thing{
-		ID:      thID,
-		GroupID: group.ID,
-		Name:    thingName,
-		Key:     thkey,
-	}
-	ths, err := thingRepo.Save(context.Background(), th)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	th = ths[0]
-
-	prID, err := idProvider.ID()
+	nonexistentProfileID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
 	c := things.Profile{
 		ID:      prID,
 		GroupID: group.ID,
@@ -154,11 +146,16 @@ func TestRetrieveProfileByID(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	err = profileRepo.Connect(context.Background(), pr.ID, []string{th.ID})
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	nonexistentProfileID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	th := things.Thing{
+		ID:        thID,
+		GroupID:   group.ID,
+		ProfileID: prID,
+		Name:      thingName,
+		Key:       thkey,
+	}
+	ths, err := thingRepo.Save(context.Background(), th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th = ths[0]
 
 	cases := map[string]struct {
 		ID  string
@@ -306,37 +303,39 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 
 func TestRetrieveProfileByThing(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	group := createGroup(t, dbMiddleware)
-
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	th, err := thingRepo.Save(context.Background(), things.Thing{
-		ID:      thID,
-		GroupID: group.ID,
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	thID = th[0].ID
-
 	prID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pr := things.Profile{
-		ID:       prID,
-		GroupID:  group.ID,
-		Config:   things.Metadata{},
-		Metadata: things.Metadata{},
-	}
-
-	_, err = profileRepo.Save(context.Background(), pr)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	err = profileRepo.Connect(context.Background(), prID, []string{thID})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
+	thID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	thKey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	nonexistentThingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	c := things.Profile{
+		ID:       prID,
+		GroupID:  group.ID,
+		Name:     profileName,
+		Config:   map[string]interface{}{},
+		Metadata: things.Metadata{},
+	}
+	prs, err := profileRepo.Save(context.Background(), c)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	th := things.Thing{
+		ID:        thID,
+		GroupID:   group.ID,
+		ProfileID: prID,
+		Name:      thingName,
+		Key:       thKey,
+	}
+	_, err = thingRepo.Save(context.Background(), th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
 		thID    string
@@ -402,237 +401,6 @@ func TestRemoveProfile(t *testing.T) {
 	}
 }
 
-func TestConnect(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	group := createGroup(t, dbMiddleware)
-
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thID1, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey1, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	th := []things.Thing{
-		{
-			ID:       thID,
-			GroupID:  group.ID,
-			Name:     fmt.Sprintf("%s-%d", thingName, 1),
-			Key:      thkey,
-			Metadata: things.Metadata{},
-		},
-		{
-			ID:       thID1,
-			GroupID:  group.ID,
-			Name:     fmt.Sprintf("%s-%d", thingName, 2),
-			Key:      thkey1,
-			Metadata: things.Metadata{},
-		}}
-
-	ths, err := thingRepo.Save(context.Background(), th...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thID = ths[0].ID
-
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-
-	prID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prs, err := profileRepo.Save(context.Background(), things.Profile{
-		ID:      prID,
-		GroupID: group.ID,
-		Name:    profileName,
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	prID = prs[0].ID
-
-	nonexistentThingID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	nonexistentProfileID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	cases := []struct {
-		desc string
-		prID string
-		thID string
-		err  error
-	}{
-		{
-			desc: "connect existing profile and thing",
-			prID: prID,
-			thID: thID,
-			err:  nil,
-		},
-		{
-			desc: "connect connected profile and thing",
-			prID: prID,
-			thID: thID,
-			err:  errors.ErrConflict,
-		},
-		{
-			desc: "connect non-existing profile",
-			prID: nonexistentProfileID,
-			thID: thID1,
-			err:  errors.ErrNotFound,
-		},
-		{
-			desc: "connect non-existing thing",
-			prID: prID,
-			thID: nonexistentThingID,
-			err:  errors.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := profileRepo.Connect(context.Background(), tc.prID, []string{tc.thID})
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
-func TestDisconnect(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	group := createGroup(t, dbMiddleware)
-
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	th := things.Thing{
-		ID:       thID,
-		GroupID:  group.ID,
-		Name:     thingName,
-		Key:      thkey,
-		Metadata: map[string]interface{}{},
-	}
-	ths, err := thingRepo.Save(context.Background(), th)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thID = ths[0].ID
-
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-	prID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prs, err := profileRepo.Save(context.Background(), things.Profile{
-		ID:      prID,
-		GroupID: group.ID,
-		Name:    profileName,
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	pr := prs[0]
-	err = profileRepo.Connect(context.Background(), pr.ID, []string{thID})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	nonexistentThingID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	nonexistentProfileID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	cases := []struct {
-		desc string
-		prID string
-		thID string
-		err  error
-	}{
-		{
-			desc: "disconnect connected thing",
-			prID: prID,
-			thID: thID,
-			err:  nil,
-		},
-		{
-			desc: "disconnect non-connected thing",
-			prID: prID,
-			thID: thID,
-			err:  errors.ErrNotFound,
-		},
-		{
-			desc: "disconnect non-existing user",
-			prID: prID,
-			thID: thID,
-			err:  errors.ErrNotFound,
-		},
-		{
-			desc: "disconnect non-existing profile",
-			prID: nonexistentProfileID,
-			thID: thID,
-			err:  errors.ErrNotFound,
-		},
-		{
-			desc: "disconnect non-existing thing",
-			prID: prID,
-			thID: nonexistentThingID,
-			err:  errors.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := profileRepo.Disconnect(context.Background(), tc.prID, []string{tc.thID})
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
-func TestRetrieveConnByThingKey(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	group := createGroup(t, dbMiddleware)
-
-	thID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	thkey, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	th := things.Thing{
-		ID:      thID,
-		GroupID: group.ID,
-		Name:    thingName,
-		Key:     thkey,
-	}
-	ths, err := thingRepo.Save(context.Background(), th)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	thID = ths[0].ID
-
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-	prID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prs, err := profileRepo.Save(context.Background(), things.Profile{
-		ID:      prID,
-		GroupID: group.ID,
-		Name:    profileName,
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	prID = prs[0].ID
-	err = profileRepo.Connect(context.Background(), prID, []string{thID})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	cases := map[string]struct {
-		prID      string
-		key       string
-		hasAccess bool
-	}{
-		"access check for thing that has access": {
-			key:       th.Key,
-			hasAccess: true,
-		},
-		"access check for thing without access": {
-			key:       wrongID,
-			hasAccess: false,
-		},
-	}
-
-	for desc, tc := range cases {
-		_, err := profileRepo.RetrieveConnByThingKey(context.Background(), tc.key)
-		hasAccess := err == nil
-		assert.Equal(t, tc.hasAccess, hasAccess, fmt.Sprintf("%s: expected %t got %t\n", desc, tc.hasAccess, hasAccess))
-	}
-}
-
 func TestRetrieveAllProfiles(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
@@ -677,64 +445,6 @@ func TestRetrieveAllProfiles(t *testing.T) {
 	for desc, tc := range cases {
 		profiles, err := profileRepo.RetrieveAll(context.Background())
 		size := uint64(len(profiles))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
-func TestRetrieveAllConnections(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-
-	err := cleanTestTable(context.Background(), "connections", dbMiddleware)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	group := createGroup(t, dbMiddleware)
-
-	n := uint64(101)
-	for i := uint64(0); i < n; i++ {
-		suffix := n + i + 1
-		thkey, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		th := things.Thing{
-			ID:       fmt.Sprintf("%s%012d", prefixID, suffix),
-			GroupID:  group.ID,
-			Name:     fmt.Sprintf("%s-%d", thingName, suffix),
-			Key:      thkey,
-			Metadata: things.Metadata{},
-		}
-		ths, err := thingRepo.Save(context.Background(), th)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		thID := ths[0].ID
-
-		prs, err := profileRepo.Save(context.Background(), things.Profile{
-			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
-			GroupID: group.ID,
-			Name:    fmt.Sprintf("%s-%d", profileName, suffix),
-		})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		prID := prs[0].ID
-
-		err = profileRepo.Connect(context.Background(), prID, []string{thID})
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	cases := map[string]struct {
-		size uint64
-		err  error
-	}{
-		"retrieve all profiles": {
-			size: n,
-			err:  nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		connections, err := profileRepo.RetrieveAllConnections(context.Background())
-		size := uint64(len(connections))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))

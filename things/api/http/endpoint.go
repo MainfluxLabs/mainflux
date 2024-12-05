@@ -21,11 +21,12 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		ths := []things.Thing{}
 		for _, t := range req.Things {
 			th := things.Thing{
-				Name:     t.Name,
-				Key:      t.Key,
-				ID:       t.ID,
-				GroupID:  req.groupID,
-				Metadata: t.Metadata,
+				ID:        t.ID,
+				GroupID:   req.groupID,
+				ProfileID: t.ProfileID,
+				Name:      t.Name,
+				Key:       t.Key,
+				Metadata:  t.Metadata,
 			}
 			ths = append(ths, th)
 		}
@@ -42,11 +43,12 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 		for _, t := range saved {
 			th := thingRes{
-				ID:       t.ID,
-				Name:     t.Name,
-				Key:      t.Key,
-				GroupID:  t.GroupID,
-				Metadata: t.Metadata,
+				ID:        t.ID,
+				GroupID:   t.GroupID,
+				ProfileID: t.ProfileID,
+				Name:      t.Name,
+				Key:       t.Key,
+				Metadata:  t.Metadata,
 			}
 			res.Things = append(res.Things, th)
 		}
@@ -64,9 +66,10 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		thing := things.Thing{
-			ID:       req.id,
-			Name:     req.Name,
-			Metadata: req.Metadata,
+			ID:        req.id,
+			ProfileID: req.ProfileID,
+			Name:      req.Name,
+			Metadata:  req.Metadata,
 		}
 
 		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {
@@ -109,11 +112,12 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		res := viewThingRes{
-			ID:       thing.ID,
-			GroupID:  thing.GroupID,
-			Name:     thing.Name,
-			Key:      thing.Key,
-			Metadata: thing.Metadata,
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
 		}
 		return res, nil
 	}
@@ -144,11 +148,12 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 		for _, th := range page.Things {
 			view := viewThingRes{
-				ID:       th.ID,
-				GroupID:  th.GroupID,
-				Name:     th.Name,
-				Key:      th.Key,
-				Metadata: th.Metadata,
+				ID:        th.ID,
+				GroupID:   th.GroupID,
+				ProfileID: th.ProfileID,
+				Name:      th.Name,
+				Key:       th.Key,
+				Metadata:  th.Metadata,
 			}
 			res.Things = append(res.Things, view)
 		}
@@ -159,7 +164,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listByConnectionReq)
+		req := request.(listByIDReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -180,11 +185,12 @@ func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 		for _, th := range page.Things {
 			view := viewThingRes{
-				ID:       th.ID,
-				GroupID:  th.GroupID,
-				Key:      th.Key,
-				Name:     th.Name,
-				Metadata: th.Metadata,
+				ID:        th.ID,
+				GroupID:   th.GroupID,
+				ProfileID: th.ProfileID,
+				Key:       th.Key,
+				Name:      th.Name,
+				Metadata:  th.Metadata,
 			}
 			res.Things = append(res.Things, view)
 		}
@@ -418,37 +424,6 @@ func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func connectEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectionsReq)
-
-		if err := cr.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.Connect(ctx, cr.token, cr.ProfileID, cr.ThingIDs); err != nil {
-			return nil, err
-		}
-
-		return connectionsRes{}, nil
-	}
-}
-
-func disconnectEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		cr := request.(connectionsReq)
-		if err := cr.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.Disconnect(ctx, cr.token, cr.ProfileID, cr.ThingIDs); err != nil {
-			return nil, err
-		}
-
-		return connectionsRes{}, nil
-	}
-}
-
 func backupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
@@ -623,18 +598,12 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
+		req := request.(listByIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		pm := things.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
-		}
-
-		page, err := svc.ListThingsByGroup(ctx, req.token, req.id, pm)
+		page, err := svc.ListThingsByGroup(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -671,18 +640,12 @@ func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersReq)
+		req := request.(listByIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		pm := things.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
-		}
-
-		page, err := svc.ListProfilesByGroup(ctx, req.token, req.id, pm)
+		page, err := svc.ListProfilesByGroup(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -793,19 +756,19 @@ func buildProfilesByGroupResponse(cp things.ProfilesPage) profilesPageRes {
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:      []backupThingRes{},
-		Profiles:    []backupProfileRes{},
-		Connections: []backupConnectionRes{},
-		Groups:      []viewGroupRes{},
+		Things:   []backupThingRes{},
+		Profiles: []backupProfileRes{},
+		Groups:   []viewGroupRes{},
 	}
 
 	for _, thing := range backup.Things {
 		view := backupThingRes{
-			ID:       thing.ID,
-			GroupID:  thing.GroupID,
-			Name:     thing.Name,
-			Key:      thing.Key,
-			Metadata: thing.Metadata,
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
 		}
 		res.Things = append(res.Things, view)
 	}
@@ -815,26 +778,19 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			ID:       profile.ID,
 			GroupID:  profile.GroupID,
 			Name:     profile.Name,
+			Config:   profile.Config,
 			Metadata: profile.Metadata,
 		}
 		res.Profiles = append(res.Profiles, view)
-	}
-
-	for _, connection := range backup.Connections {
-		view := backupConnectionRes{
-			ProfileID: connection.ProfileID,
-			ThingID:   connection.ThingID,
-		}
-		res.Connections = append(res.Connections, view)
 	}
 
 	for _, group := range backup.Groups {
 		view := viewGroupRes{
 			ID:          group.ID,
 			Name:        group.Name,
+			OrgID:       group.OrgID,
 			Description: group.Description,
 			Metadata:    group.Metadata,
-			OrgID:       group.OrgID,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
 		}
@@ -862,14 +818,6 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 			Metadata: profile.Metadata,
 		}
 		backup.Profiles = append(backup.Profiles, pr)
-	}
-
-	for _, connection := range req.Connections {
-		conn := things.Connection{
-			ProfileID: connection.ProfileID,
-			ThingID:   connection.ThingID,
-		}
-		backup.Connections = append(backup.Connections, conn)
 	}
 
 	for _, group := range req.Groups {
@@ -901,27 +849,6 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 
 		res := identityRes{
 			ID: id,
-		}
-
-		return res, nil
-	}
-}
-
-func getConnByKeyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getConnByKeyReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		conn, err := svc.GetConnByKey(ctx, req.Key)
-		if err != nil {
-			return nil, err
-		}
-
-		res := connByKeyRes{
-			ProfileID: conn.ProfileID,
-			ThingID:   conn.ThingID,
 		}
 
 		return res, nil
@@ -995,17 +922,12 @@ func removeRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 func listRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listGroupMembersReq)
+		req := request.(listByIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		pm := things.PageMetadata{
-			Offset: req.offset,
-			Limit:  req.limit,
-		}
-
-		gpp, err := svc.ListRolesByGroup(ctx, req.token, req.groupID, pm)
+		gpp, err := svc.ListRolesByGroup(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

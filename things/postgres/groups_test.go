@@ -221,6 +221,7 @@ func TestRemoveGroup(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
 	creationTime := time.Now().UTC()
@@ -252,10 +253,17 @@ func TestRemoveGroup(t *testing.T) {
 	group2, err = groupRepo.Save(context.Background(), group2)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	_, err = thingRepo.Save(context.Background(), things.Thing{
+	pr, err := profileRepo.Save(context.Background(), things.Profile{
 		ID:      thID,
 		GroupID: group1.ID,
-		Key:     key,
+	})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	_, err = thingRepo.Save(context.Background(), things.Thing{
+		ID:        thID,
+		ProfileID: pr[0].ID,
+		GroupID:   group1.ID,
+		Key:       key,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -460,105 +468,6 @@ func TestRetrieveAllGroups(t *testing.T) {
 		size := len(gr)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
-func TestRetrieveProfilesByGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
-	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-
-	orgID := generateUUID(t)
-	creationTime := time.Now().UTC()
-	group := things.Group{
-		ID:        generateUUID(t),
-		Name:      fmt.Sprintf("%s-%d", groupName, 1),
-		OrgID:     orgID,
-		CreatedAt: creationTime,
-		UpdatedAt: creationTime,
-	}
-	group2 := things.Group{
-		ID:        generateUUID(t),
-		Name:      fmt.Sprintf("%s-%d", groupName, 2),
-		OrgID:     orgID,
-		CreatedAt: creationTime,
-		UpdatedAt: creationTime,
-	}
-
-	group, err := groupRepo.Save(context.Background(), group)
-	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
-	group2, err = groupRepo.Save(context.Background(), group2)
-	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
-
-	prID1, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prID2, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prID3, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	profiles := []things.Profile{
-		{
-			ID:       prID1,
-			Name:     fmt.Sprintf("%s-%d", profileName, 1),
-			GroupID:  group.ID,
-			Metadata: map[string]interface{}{},
-		},
-		{
-			ID:       prID2,
-			Name:     fmt.Sprintf("%s-%d", profileName, 2),
-			GroupID:  group.ID,
-			Metadata: map[string]interface{}{},
-		},
-		{
-			ID:       prID3,
-			Name:     fmt.Sprintf("%s-%d", profileName, 3),
-			GroupID:  group2.ID,
-			Metadata: map[string]interface{}{},
-		},
-	}
-	_, err = profileRepo.Save(context.Background(), profiles...)
-	require.Nil(t, err, fmt.Sprintf("profile save got unexpected error: %s", err))
-
-	cases := map[string]struct {
-		pagemeta things.PageMetadata
-		groupID  string
-		profiles []things.Profile
-		err      error
-	}{
-		"retrieve profiles ": {
-			pagemeta: things.PageMetadata{
-				Offset: 0,
-				Limit:  10,
-			},
-			groupID:  group.ID,
-			profiles: profiles[:2],
-			err:      nil,
-		},
-		"retrieve profiles by group without group id": {
-			pagemeta: things.PageMetadata{
-				Offset: 0,
-				Limit:  10,
-			},
-			groupID:  "",
-			profiles: nil,
-			err:      things.ErrRetrieveGroupProfiles,
-		},
-		"retrieve last profile by group": {
-			pagemeta: things.PageMetadata{
-				Offset: 1,
-				Limit:  1,
-			},
-			groupID:  group.ID,
-			profiles: profiles[1:2],
-			err:      nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		prs, err := groupRepo.RetrieveProfilesByGroup(context.Background(), tc.groupID, tc.pagemeta)
-		assert.Equal(t, tc.profiles, prs.Profiles, fmt.Sprintf("%s: expected %v got %v\n", desc, tc.profiles, prs.Profiles))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
 

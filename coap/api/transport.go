@@ -115,9 +115,9 @@ func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key string) e
 	}
 	if obs == startObserve {
 		c := coap.NewClient(c, m.Token, logger)
-		return service.Subscribe(context.Background(), key, msg.ProfileID, msg.Subtopic, c)
+		return service.Subscribe(context.Background(), key, msg.Subtopic, c)
 	}
-	return service.Unsubscribe(context.Background(), key, msg.ProfileID, msg.Subtopic, m.Token.String())
+	return service.Unsubscribe(context.Background(), key, msg.Subtopic, m.Token.String())
 }
 
 func decodeMessage(msg *mux.Message) (protomfx.Message, error) {

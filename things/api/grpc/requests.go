@@ -8,13 +8,25 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-type connByKeyReq struct {
+type pubConfByKeyReq struct {
 	key string
 }
 
-func (req connByKeyReq) validate() error {
+func (req pubConfByKeyReq) validate() error {
 	if req.key == "" {
 		return apiutil.ErrBearerKey
+	}
+
+	return nil
+}
+
+type configByThingIDReq struct {
+	thingID string
+}
+
+func (req configByThingIDReq) validate() error {
+	if req.thingID == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil
@@ -65,18 +77,6 @@ type getGroupsByIDsReq struct {
 
 func (req getGroupsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
-type configByThingIDReq struct {
-	thingID string
-}
-
-func (req configByThingIDReq) validate() error {
-	if req.thingID == "" {
 		return apiutil.ErrMissingID
 	}
 

@@ -147,40 +147,21 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
+func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_profile_config").Add(1)
-		ms.latency.With("method", "view_profile_config").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
+		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewProfileConfig(ctx, prID)
+	return ms.svc.GetPubConfByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) Connect(ctx context.Context, token, prID string, thIDs []string) error {
+func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "connect").Add(1)
-		ms.latency.With("method", "connect").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_config_by_thing_id").Add(1)
+		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-
-	return ms.svc.Connect(ctx, token, prID, thIDs)
-}
-
-func (ms *metricsMiddleware) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "disconnect").Add(1)
-		ms.latency.With("method", "disconnect").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.Disconnect(ctx, token, prID, thIDs)
-}
-
-func (ms *metricsMiddleware) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "get_conn_by_key").Add(1)
-		ms.latency.With("method", "get_conn_by_key").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.GetConnByKey(ctx, key)
+	return ms.svc.GetConfigByThingID(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {

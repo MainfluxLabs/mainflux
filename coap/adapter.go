@@ -8,18 +8,12 @@ package coap
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
-
-const profilesPrefix = "profiles"
-
-// ErrUnsubscribe indicates an error to unsubscribe
-var ErrUnsubscribe = errors.New("unable to unsubscribe")
 
 // Service specifies CoAP service API.
 type Service interface {
@@ -28,10 +22,10 @@ type Service interface {
 
 	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
-	Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error
+	Subscribe(ctx context.Context, key, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key, profileID, subptopic, token string) error
+	Unsubscribe(ctx context.Context, key, subptopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -55,43 +49,37 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx.Message) error {
-	cr := &protomfx.ConnByKeyReq{
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, cr)
+	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
+	m := messaging.CreateMessage(pc, msg.Protocol, msg.Subtopic, &msg.Payload)
 
 	return svc.pubsub.Publish(m)
 }
 
-func (svc *adapterService) Subscribe(ctx context.Context, key, profileID, subtopic string, c Client) error {
-	cr := &protomfx.ConnByKeyReq{
+func (svc *adapterService) Subscribe(ctx context.Context, key, subtopic string, c Client) error {
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	if _, err := svc.things.GetConnByKey(ctx, cr); err != nil {
+	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
-	}
-	return svc.pubsub.Subscribe(c.Token(), subject, c)
+
+	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
 }
 
-func (svc *adapterService) Unsubscribe(ctx context.Context, key, profileID, subtopic, token string) error {
-	cr := &protomfx.ConnByKeyReq{
+func (svc *adapterService) Unsubscribe(ctx context.Context, key, subtopic, token string) error {
+	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, cr)
+	_, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, conn.ProfileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
-	}
-	return svc.pubsub.Unsubscribe(token, subject)
+
+	return svc.pubsub.Unsubscribe(token, subtopic)
 }

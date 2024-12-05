@@ -14,10 +14,8 @@ import (
 )
 
 const (
-	thingsEndpoint     = "things"
-	connectEndpoint    = "connect"
-	disconnectEndpoint = "disconnect"
-	identifyEndpoint   = "identify"
+	thingsEndpoint   = "things"
+	identifyEndpoint = "identify"
 )
 
 type identifyThingReq struct {
@@ -277,52 +275,4 @@ func (sdk mfSDK) IdentifyThing(key string) (string, error) {
 	}
 
 	return i.ID, err
-}
-
-func (sdk mfSDK) Connect(connIDs ConnectionIDs, token string) error {
-	data, err := json.Marshal(connIDs)
-	if err != nil {
-		return err
-	}
-
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, connectEndpoint)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedConnect, errors.New(resp.Status))
-	}
-
-	return nil
-}
-
-func (sdk mfSDK) Disconnect(disconnIDs ConnectionIDs, token string) error {
-	data, err := json.Marshal(disconnIDs)
-	if err != nil {
-		return err
-	}
-
-	url := fmt.Sprintf("%s/%s", sdk.thingsURL, disconnectEndpoint)
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrFailedDisconnect, errors.New(resp.Status))
-	}
-
-	return nil
 }

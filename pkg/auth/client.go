@@ -13,7 +13,7 @@ import (
 // Client represents Auth cache.
 type Client interface {
 	Identify(ctx context.Context, thingKey string) (string, error)
-	GetConnByKey(ctx context.Context, thingKey string) (protomfx.ConnByKeyRes, error)
+	GetPubConfByKey(ctx context.Context, thingKey string) (protomfx.PubConfByKeyRes, error)
 }
 
 const (
@@ -51,19 +51,19 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	return thingID, nil
 }
 
-func (c client) GetConnByKey(ctx context.Context, thingKey string) (protomfx.ConnByKeyRes, error) {
-	req := &protomfx.ConnByKeyReq{
+func (c client) GetPubConfByKey(ctx context.Context, thingKey string) (protomfx.PubConfByKeyRes, error) {
+	req := &protomfx.PubConfByKeyReq{
 		Key: thingKey,
 	}
 
-	conn, err := c.things.GetConnByKey(ctx, req)
+	pc, err := c.things.GetPubConfByKey(ctx, req)
 	if err != nil {
-		return protomfx.ConnByKeyRes{}, err
+		return protomfx.PubConfByKeyRes{}, err
 	}
 
-	if conn != nil {
-		return *conn, nil
+	if pc != nil {
+		return *pc, nil
 	}
 
-	return protomfx.ConnByKeyRes{}, nil
+	return protomfx.PubConfByKeyRes{}, nil
 }

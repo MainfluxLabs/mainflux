@@ -20,7 +20,8 @@ var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout             time.Duration
-	getConnByKey        endpoint.Endpoint
+	getPubConfByKey     endpoint.Endpoint
+	getConfigByThingID  endpoint.Endpoint
 	authorize           endpoint.Endpoint
 	identify            endpoint.Endpoint
 	getGroupsByIDs      endpoint.Endpoint
@@ -33,13 +34,21 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 
 	return &grpcClient{
 		timeout: timeout,
-		getConnByKey: kitot.TraceClient(tracer, "get_conn_by_key")(kitgrpc.NewClient(
+		getPubConfByKey: kitot.TraceClient(tracer, "get_pub_conf_by_key")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"GetConnByKey",
-			encodeGetConnByKeyRequest,
-			decodeGetConnByKeyResponse,
-			protomfx.ConnByKeyRes{},
+			"GetPubConfByKey",
+			encodeGetPubConfByKeyRequest,
+			decodeGetPubConfByKeyResponse,
+			protomfx.PubConfByKeyRes{},
+		).Endpoint()),
+		getConfigByThingID: kitot.TraceClient(tracer, "get_config_by_thing_id")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetConfigByThingID",
+			encodeGetConfigByThingIDRequest,
+			decodeGetConfigByThingIDResponse,
+			protomfx.ConfigByThingIDRes{},
 		).Endpoint()),
 		authorize: kitot.TraceClient(tracer, "authorize")(kitgrpc.NewClient(
 			conn,
@@ -76,20 +85,31 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) GetConnByKey(ctx context.Context, req *protomfx.ConnByKeyReq, _ ...grpc.CallOption) (*protomfx.ConnByKeyRes, error) {
+func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	ar := connByKeyReq{
+	ar := pubConfByKeyReq{
 		key: req.GetKey(),
 	}
-	res, err := client.getConnByKey(ctx, ar)
+	res, err := client.getPubConfByKey(ctx, ar)
 	if err != nil {
 		return nil, err
 	}
 
-	cr := res.(connByKeyRes)
-	return &protomfx.ConnByKeyRes{ProfileID: cr.profileID, ThingID: cr.thingID, ProfileConfig: cr.config}, nil
+	pc := res.(pubConfByKeyRes)
+	return &protomfx.PubConfByKeyRes{PublisherID: pc.publisherID, ProfileConfig: pc.profileConfig}, nil
+}
+
+func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+	res, err := client.getConfigByThingID(ctx, configByThingIDReq{thingID: req.GetValue()})
+	if err != nil {
+		return nil, err
+	}
+	c := res.(configByThingIDRes)
+	return &protomfx.ConfigByThingIDRes{Config: c.config}, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
@@ -142,9 +162,14 @@ func (client grpcClient) GetGroupIDByThingID(ctx context.Context, req *protomfx.
 	return &protomfx.GroupID{Value: tg.groupID}, nil
 }
 
-func encodeGetConnByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(connByKeyReq)
-	return &protomfx.ConnByKeyReq{Key: req.key}, nil
+func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(pubConfByKeyReq)
+	return &protomfx.PubConfByKeyReq{Key: req.key}, nil
+}
+
+func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(configByThingIDReq)
+	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
 func encodeAuthorize(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -172,9 +197,14 @@ func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}
 	return identityRes{id: res.GetValue()}, nil
 }
 
-func decodeGetConnByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(*protomfx.ConnByKeyRes)
-	return connByKeyRes{profileID: res.ProfileID, thingID: res.ThingID, config: res.ProfileConfig}, nil
+func decodeGetPubConfByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.PubConfByKeyRes)
+	return pubConfByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
+}
+
+func decodeGetConfigByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.ConfigByThingIDRes)
+	return configByThingIDRes{config: res.GetConfig()}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

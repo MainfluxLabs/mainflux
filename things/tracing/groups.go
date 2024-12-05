@@ -8,13 +8,12 @@ import (
 )
 
 const (
-	saveGroupOp               = "save_group"
-	updateGroupOp             = "update_group"
-	removeGroupOp             = "remove_group"
-	retrieveAllOp             = "retrieve_all"
-	retrieveGroupByIDOp       = "retrieve_group_by_id"
-	retrieveGroupByIDsOp      = "retrieve_group_by_ids"
-	retrieveProfilesByGroupOp = "retrieve_profiles_by_group"
+	saveGroupOp          = "save_group"
+	updateGroupOp        = "update_group"
+	removeGroupOp        = "remove_group"
+	retrieveAllOp        = "retrieve_all"
+	retrieveGroupByIDOp  = "retrieve_group_by_id"
+	retrieveGroupByIDsOp = "retrieve_group_by_ids"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -85,12 +84,4 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByIDs(ctx, groupIDs, pm)
-}
-
-func (grm groupRepositoryMiddleware) RetrieveProfilesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveProfilesByGroupOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.RetrieveProfilesByGroup(ctx, groupID, pm)
 }

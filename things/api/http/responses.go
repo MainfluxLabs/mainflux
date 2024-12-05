@@ -14,7 +14,6 @@ var (
 	_ apiutil.Response = (*viewThingRes)(nil)
 	_ apiutil.Response = (*thingsPageRes)(nil)
 	_ apiutil.Response = (*profilesPageRes)(nil)
-	_ apiutil.Response = (*connectionsRes)(nil)
 	_ apiutil.Response = (*backupRes)(nil)
 	_ apiutil.Response = (*ThingsPageRes)(nil)
 	_ apiutil.Response = (*groupsRes)(nil)
@@ -39,12 +38,13 @@ func (res removeRes) Empty() bool {
 }
 
 type thingRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	created  bool
+	ID        string                 `json:"id"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	created   bool
 }
 
 type thingsRes struct {
@@ -69,11 +69,12 @@ func (res thingsRes) Empty() bool {
 }
 
 type viewThingRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (res viewThingRes) Code() int {
@@ -152,26 +153,13 @@ func (res profilesPageRes) Empty() bool {
 	return false
 }
 
-type connectionsRes struct{}
-
-func (res connectionsRes) Code() int {
-	return http.StatusOK
-}
-
-func (res connectionsRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res connectionsRes) Empty() bool {
-	return true
-}
-
 type backupThingRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type backupProfileRes struct {
@@ -182,16 +170,10 @@ type backupProfileRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type backupConnectionRes struct {
-	ProfileID string `json:"profile_id"`
-	ThingID   string `json:"thing_id"`
-}
-
 type backupRes struct {
-	Things      []backupThingRes      `json:"things"`
-	Profiles    []backupProfileRes    `json:"profiles"`
-	Connections []backupConnectionRes `json:"connections"`
-	Groups      []viewGroupRes        `json:"groups"`
+	Things   []backupThingRes   `json:"things"`
+	Profiles []backupProfileRes `json:"profiles"`
+	Groups   []viewGroupRes     `json:"groups"`
 }
 
 func (res backupRes) Code() int {
@@ -328,23 +310,6 @@ func (res identityRes) Headers() map[string]string {
 }
 
 func (res identityRes) Empty() bool {
-	return false
-}
-
-type connByKeyRes struct {
-	ProfileID string `json:"profile_id"`
-	ThingID   string `json:"thing_id"`
-}
-
-func (res connByKeyRes) Code() int {
-	return http.StatusOK
-}
-
-func (res connByKeyRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res connByKeyRes) Empty() bool {
 	return false
 }
 

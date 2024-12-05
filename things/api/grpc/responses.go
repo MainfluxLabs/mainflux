@@ -11,10 +11,13 @@ type identityRes struct {
 	id string
 }
 
-type connByKeyRes struct {
-	profileID string
-	thingID   string
-	config    *protomfx.Config
+type pubConfByKeyRes struct {
+	publisherID   string
+	profileConfig *protomfx.Config
+}
+
+type configByThingIDRes struct {
+	config *protomfx.Config
 }
 
 type emptyRes struct {
@@ -23,10 +26,6 @@ type emptyRes struct {
 
 type getGroupsByIDsRes struct {
 	groups []*protomfx.Group
-}
-
-type configByThingIDRes struct {
-	config *protomfx.Config
 }
 
 type groupIDByThingIDRes struct {

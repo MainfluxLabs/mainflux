@@ -91,34 +91,14 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateMessage(conn *protomfx.ConnByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
+func CreateMessage(pc *protomfx.PubConfByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
 	msg := protomfx.Message{
 		Protocol:      protocol,
-		ProfileID:     conn.ProfileID,
 		Subtopic:      subject,
-		Publisher:     conn.ThingID,
+		Publisher:     pc.PublisherID,
 		Payload:       *payload,
 		Created:       time.Now().UnixNano(),
-		ProfileConfig: &protomfx.Config{},
-	}
-
-	if conn.ProfileConfig == nil {
-		return msg
-	}
-
-	msg.ProfileConfig.Write = conn.ProfileConfig.Write
-	msg.ProfileConfig.WebhookID = conn.ProfileConfig.WebhookID
-	msg.ProfileConfig.SmtpID = conn.ProfileConfig.SmtpID
-	msg.ProfileConfig.SmppID = conn.ProfileConfig.SmppID
-	msg.ProfileConfig.ContentType = conn.ProfileConfig.ContentType
-
-	if conn.ProfileConfig.Transformer != nil {
-		msg.ProfileConfig.Transformer = &protomfx.Transformer{
-			ValuesFilter: conn.ProfileConfig.Transformer.ValuesFilter,
-			TimeField:    conn.ProfileConfig.Transformer.TimeField,
-			TimeFormat:   conn.ProfileConfig.Transformer.TimeFormat,
-			TimeLocation: conn.ProfileConfig.Transformer.TimeLocation,
-		}
+		ProfileConfig: pc.ProfileConfig,
 	}
 
 	return msg

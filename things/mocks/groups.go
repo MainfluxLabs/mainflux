@@ -165,62 +165,6 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 	return page, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveThingMembership(ctx context.Context, thingID string) (string, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	groupID, ok := grm.thingMembership[thingID]
-	if !ok {
-		return "", errors.ErrNotFound
-	}
-	return groupID, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveProfileMembership(ctx context.Context, profileID string) (string, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	groupID, ok := grm.profileMembership[profileID]
-	if !ok {
-		return "", errors.ErrNotFound
-	}
-
-	return groupID, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveProfilesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
-	grm.mu.Lock()
-	defer grm.mu.Unlock()
-
-	var items []things.Profile
-	prs, ok := grm.profiles[groupID]
-	if !ok {
-		return things.ProfilesPage{}, nil
-	}
-
-	first := uint64(pm.Offset)
-	last := first + uint64(pm.Limit)
-
-	if last > uint64(len(prs)) {
-		last = uint64(len(prs))
-	}
-
-	for i := first; i < last; i++ {
-		items = append(items, things.Profile{ID: prs[i]})
-	}
-
-	return things.ProfilesPage{
-		Profiles: items,
-		PageMetadata: things.PageMetadata{
-			Total: uint64(len(items)),
-		},
-	}, nil
-}
-
-func (grm *groupRepositoryMock) RetrieveGroupThingsByProfile(ctx context.Context, groupID, profileID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	panic("not implemented")
-}
-
 func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }

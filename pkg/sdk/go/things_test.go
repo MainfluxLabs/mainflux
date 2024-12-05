@@ -41,14 +41,14 @@ var (
 	metadata2 = map[string]interface{}{"meta": "data2"}
 	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
 	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
+	profile   = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000003", Name: "test1"}
 	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
 )
 
 func newThingsService() things.Service {
 	auth := mocks.NewAuthService("", usersList)
-	conns := make(chan thmocks.Connection)
-	thingsRepo := thmocks.NewThingRepository(conns)
-	profilesRepo := thmocks.NewProfileRepository(thingsRepo, conns)
+	thingsRepo := thmocks.NewThingRepository()
+	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
 	profileCache := thmocks.NewProfileCache()
@@ -85,6 +85,9 @@ func TestCreateThing(t *testing.T) {
 
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th1.ProfileID = prID
 
 	cases := []struct {
 		desc     string
@@ -143,13 +146,19 @@ func TestCreateThings(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prs, err := mainfluxSDK.CreateProfiles([]sdk.Profile{profile}, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	th1.ProfileID = prID
+	th2.ProfileID = prID
 	things := []sdk.Thing{
 		th1,
 		th2,
 	}
 	thsExtID := []sdk.Thing{
-		{GroupID: grID, ID: th1.ID, Name: "1", Key: "1", Metadata: metadata},
-		{GroupID: grID, ID: th2.ID, Name: "2", Key: "2", Metadata: metadata},
+		{GroupID: grID, ID: th1.ID, ProfileID: prID, Name: "1", Key: "1", Metadata: metadata},
+		{GroupID: grID, ID: th2.ID, ProfileID: prID, Name: "2", Key: "2", Metadata: metadata},
 	}
 	thsWrongExtID := []sdk.Thing{
 		{ID: "b0aa-000000000001", Name: "1", Key: "1", Metadata: metadata},
@@ -232,10 +241,14 @@ func TestThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th1.ProfileID = prID
 	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 2)
 	th1.GroupID = grID
+	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -289,11 +302,14 @@ func TestThings(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
-		th := sdk.Thing{GroupID: grID, ID: id, Name: name, Key: key, Metadata: metadata}
+		th := sdk.Thing{GroupID: grID, ID: id, ProfileID: prID, Name: name, Key: key, Metadata: metadata}
 		_, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -395,40 +411,26 @@ func TestThingsByProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pr := sdk.Profile{Name: "test_profile"}
-	cid, err := mainfluxSDK.CreateProfile(pr, grID, token)
+	prID, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var n = 10
-	var thsDiscoNum = 1
 	var ths []sdk.Thing
 	for i := 1; i < n+1; i++ {
 		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		th := sdk.Thing{
-			ID:       id,
-			Name:     name,
-			GroupID:  grID,
-			Metadata: metadata,
-			Key:      fmt.Sprintf("%s%012d", uuid.Prefix, 2*i+1),
+			ID:        id,
+			Name:      name,
+			GroupID:   grID,
+			ProfileID: prID,
+			Metadata:  metadata,
+			Key:       fmt.Sprintf("%s%012d", uuid.Prefix, 2*i+1),
 		}
-		tid, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
+		_, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		ths = append(ths, th)
-
-		// Don't connect last Thing
-		if i == n+1-thsDiscoNum {
-			break
-		}
-
-		// Don't connect last 2 Profiles
-		connIDs := sdk.ConnectionIDs{
-			ProfileID: cid,
-			ThingIDs:  []string{tid},
-		}
-
-		err = mainfluxSDK.Connect(connIDs, token)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
 	cases := []struct {
@@ -442,7 +444,7 @@ func TestThingsByProfile(t *testing.T) {
 	}{
 		{
 			desc:     "get a list of things by profile",
-			profile:  cid,
+			profile:  prID,
 			token:    token,
 			offset:   offset,
 			limit:    limit,
@@ -451,7 +453,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with invalid token",
-			profile:  cid,
+			profile:  prID,
 			token:    wrongValue,
 			offset:   offset,
 			limit:    limit,
@@ -460,7 +462,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with empty token",
-			profile:  cid,
+			profile:  prID,
 			token:    emptyValue,
 			offset:   offset,
 			limit:    limit,
@@ -469,7 +471,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with zero limit",
-			profile:  cid,
+			profile:  prID,
 			token:    token,
 			offset:   offset,
 			limit:    0,
@@ -478,7 +480,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with limit greater than max",
-			profile:  cid,
+			profile:  prID,
 			token:    token,
 			offset:   offset,
 			limit:    110,
@@ -487,7 +489,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with offset greater than max",
-			profile:  cid,
+			profile:  prID,
 			token:    token,
 			offset:   110,
 			limit:    limit,
@@ -496,7 +498,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 		{
 			desc:     "get a list of things by profile with invalid args (zero limit) and invalid token",
-			profile:  cid,
+			profile:  prID,
 			token:    wrongValue,
 			offset:   offset,
 			limit:    0,
@@ -526,6 +528,10 @@ func TestUpdateThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th1.ProfileID = prID
 	id, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th1.Name = "test2"
@@ -539,9 +545,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update existing thing",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: token,
 			err:   nil,
@@ -549,9 +556,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update non-existing thing",
 			thing: sdk.Thing{
-				ID:       "0",
-				Name:     "test_device",
-				Metadata: metadata,
+				ID:        "0",
+				ProfileID: prID,
+				Name:      "test_device",
+				Metadata:  metadata,
 			},
 			token: token,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusNotFound),
@@ -559,9 +567,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with invalid id",
 			thing: sdk.Thing{
-				ID:       emptyValue,
-				Name:     "test_device",
-				Metadata: metadata,
+				ID:        emptyValue,
+				ProfileID: prID,
+				Name:      "test_device",
+				Metadata:  metadata,
 			},
 			token: token,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusBadRequest),
@@ -569,9 +578,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with invalid token",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: wrongValue,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
@@ -579,9 +589,10 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc: "update profile with empty token",
 			thing: sdk.Thing{
-				ID:       id,
-				Name:     "test_app",
-				Metadata: metadata2,
+				ID:        id,
+				ProfileID: prID,
+				Name:      "test_app",
+				Metadata:  metadata2,
 			},
 			token: emptyValue,
 			err:   createError(sdk.ErrFailedUpdate, http.StatusUnauthorized),
@@ -609,6 +620,10 @@ func TestDeleteThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th1.ProfileID = prID
 	id, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -677,6 +692,10 @@ func TestDeleteThings(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th1.ProfileID = prID
 	id1, err := mainfluxSDK.CreateThing(th1, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thIDs := []string{id1}
@@ -755,6 +774,10 @@ func TestIdentifyThing(t *testing.T) {
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th.ProfileID = prID
 	id, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thing, err := mainfluxSDK.Thing(th.ID, token)
@@ -790,209 +813,5 @@ func TestIdentifyThing(t *testing.T) {
 		thingID, err := mainfluxAuthSDK.IdentifyThing(tc.thingKey)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
-	}
-}
-
-func TestConnect(t *testing.T) {
-	svc := newThingsService()
-
-	ts := newThingsServer(svc)
-	defer ts.Close()
-	sdkConf := sdk.Config{
-		ThingsURL:       ts.URL,
-		MsgContentType:  contentType,
-		TLSVerification: false,
-	}
-
-	mainfluxSDK := sdk.NewSDK(sdkConf)
-
-	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	group.Name = "test-group2"
-	grID2, err := mainfluxSDK.CreateGroup(group, orgID, otherToken)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thingID, err := mainfluxSDK.CreateThing(th1, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	cases := []struct {
-		desc      string
-		thingID   string
-		profileID string
-		token     string
-		err       error
-	}{
-		{
-			desc:      "connect existing thing to existing profile",
-			thingID:   thingID,
-			profileID: profileID1,
-			token:     token,
-			err:       nil,
-		},
-
-		{
-			desc:      "connect existing thing to non-existing profile",
-			thingID:   thingID,
-			profileID: "9",
-			token:     token,
-			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
-		},
-		{
-			desc:      "connect non-existing thing to existing profile",
-			thingID:   "9",
-			profileID: profileID1,
-			token:     token,
-			err:       createError(sdk.ErrFailedConnect, http.StatusNotFound),
-		},
-		{
-			desc:      "connect existing thing to profile with invalid ID",
-			thingID:   thingID,
-			profileID: emptyValue,
-			token:     token,
-			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
-		},
-		{
-			desc:      "connect thing with invalid ID to existing profile",
-			thingID:   emptyValue,
-			profileID: profileID1,
-			token:     token,
-			err:       createError(sdk.ErrFailedConnect, http.StatusBadRequest),
-		},
-
-		{
-			desc:      "connect existing thing to existing profile with invalid token",
-			thingID:   thingID,
-			profileID: profileID1,
-			token:     wrongValue,
-			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
-		},
-		{
-			desc:      "connect existing thing to existing profile with empty token",
-			thingID:   thingID,
-			profileID: profileID1,
-			token:     emptyValue,
-			err:       createError(sdk.ErrFailedConnect, http.StatusUnauthorized),
-		},
-		{
-			desc:      "connect thing to a profile from another group",
-			thingID:   thingID2,
-			profileID: profileID1,
-			token:     token,
-			err:       createError(sdk.ErrFailedConnect, http.StatusForbidden),
-		},
-	}
-
-	for _, tc := range cases {
-		connIDs := sdk.ConnectionIDs{
-			ProfileID: tc.profileID,
-			ThingIDs:  []string{tc.thingID},
-		}
-		err := mainfluxSDK.Connect(connIDs, tc.token)
-		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-	}
-}
-
-func TestDisconnect(t *testing.T) {
-	svc := newThingsService()
-
-	ts := newThingsServer(svc)
-	defer ts.Close()
-	sdkConf := sdk.Config{
-		ThingsURL:       ts.URL,
-		MsgContentType:  contentType,
-		TLSVerification: false,
-	}
-
-	mainfluxSDK := sdk.NewSDK(sdkConf)
-
-	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	group.Name = "test-group2"
-	grID2, err := mainfluxSDK.CreateGroup(group, orgID, otherToken)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thingID, err := mainfluxSDK.CreateThing(th1, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	thingID2, err := mainfluxSDK.CreateThing(th2, grID2, otherToken)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	profileID1, err := mainfluxSDK.CreateProfile(pr2, grID, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	connIDs := sdk.ConnectionIDs{
-		ProfileID: profileID1,
-		ThingIDs:  []string{thingID},
-	}
-	err = mainfluxSDK.Connect(connIDs, token)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	cases := []struct {
-		desc       string
-		disconnIDs sdk.ConnectionIDs
-		token      string
-		err        error
-	}{
-		{
-			desc:       "disconnect connected thing from profile",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
-			token:      token,
-			err:        nil,
-		},
-		{
-			desc:       "disconnect existing thing from non-existing profile",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: wrongID, ThingIDs: []string{thingID}},
-			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
-		},
-		{
-			desc:       "disconnect non-existing thing from existing profile",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{wrongID}},
-			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusNotFound),
-		},
-		{
-			desc:       "disconnect existing thing from profile with invalid ID",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: emptyValue, ThingIDs: []string{thingID}},
-			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
-		},
-		{
-			desc:       "disconnect thing with invalid ID from existing profile",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{emptyValue}},
-			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusBadRequest),
-		},
-		{
-			desc:       "disconnect existing thing from existing profile with invalid token",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
-			token:      wrongValue,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
-		},
-		{
-			desc:       "disconnect existing thing from existing profile with empty token",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID}},
-			token:      emptyValue,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusUnauthorized),
-		},
-		{
-			desc:       "disconnect thing from another group's profile",
-			disconnIDs: sdk.ConnectionIDs{ProfileID: profileID1, ThingIDs: []string{thingID2}},
-			token:      token,
-			err:        createError(sdk.ErrFailedDisconnect, http.StatusForbidden),
-		},
-	}
-
-	for _, tc := range cases {
-		err := mainfluxSDK.Disconnect(tc.disconnIDs, tc.token)
-		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

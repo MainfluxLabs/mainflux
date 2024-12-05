@@ -16,22 +16,20 @@ import (
 var _ things.Service = (*mainfluxThings)(nil)
 
 type mainfluxThings struct {
-	mu          sync.Mutex
-	counter     uint64
-	things      map[string]things.Thing
-	profiles    map[string]things.Profile
-	auth        protomfx.AuthServiceClient
-	connections map[string][]string
+	mu       sync.Mutex
+	counter  uint64
+	things   map[string]things.Thing
+	profiles map[string]things.Profile
+	auth     protomfx.AuthServiceClient
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
 func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
 	return &mainfluxThings{
-		things:      things,
-		profiles:    profiles,
-		auth:        auth,
-		connections: make(map[string][]string),
+		things:   things,
+		profiles: profiles,
+		auth:     auth,
 	}
 }
 
@@ -59,40 +57,6 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 	}
 
 	return things.Thing{}, errors.ErrNotFound
-}
-
-func (svc *mainfluxThings) Connect(_ context.Context, token string, prID string, thIDs []string) error {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	svc.connections[prID] = append(svc.connections[prID], thIDs...)
-
-	return nil
-}
-
-func (svc *mainfluxThings) Disconnect(_ context.Context, token string, prID string, thIDs []string) error {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	ids := svc.connections[prID]
-	var count int
-	var newConns []string
-	for _, thID := range thIDs {
-		for _, id := range ids {
-			if id == thID {
-				count++
-				continue
-			}
-			newConns = append(newConns, id)
-		}
-
-		if len(newConns)-len(ids) != count {
-			return errors.ErrNotFound
-		}
-		svc.connections[prID] = newConns
-	}
-
-	return nil
 }
 
 func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...string) error {
@@ -170,12 +134,12 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewProfileConfig(_ context.Context, prID string) (things.Config, error) {
+func (svc *mainfluxThings) GetPubConfByKey(context.Context, string) (things.PubConfInfo, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConnByKey(context.Context, string) (things.Connection, error) {
-	panic("not implemented")
+func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string) (map[string]interface{}, error) {
+	panic("implement me")
 }
 
 func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error {

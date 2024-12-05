@@ -28,24 +28,21 @@ var (
 	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
-func TestGetConnByKey(t *testing.T) {
+func TestGetPubConfByKey(t *testing.T) {
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	gr := grs[0]
+	grID := grs[0].ID
 
-	thing.GroupID = gr.ID
-	ths, err := svc.CreateThings(context.Background(), token, thing, thing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th1 := ths[0]
-	th2 := ths[1]
-
-	profile.GroupID = gr.ID
+	profile.GroupID = grID
 	prs, err := svc.CreateProfiles(context.Background(), token, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	pr := prs[0]
+	prID := prs[0].ID
 
-	err = svc.Connect(context.Background(), token, pr.ID, []string{th1.ID})
+	thing.GroupID = grID
+	thing.ProfileID = prID
+	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	thKey := ths[0].Key
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(usersAddr, grpc.WithInsecure())
@@ -58,13 +55,9 @@ func TestGetConnByKey(t *testing.T) {
 		key  string
 		code codes.Code
 	}{
-		"check if connected thing can access existing profile": {
-			key:  th1.Key,
+		"check if thing can access existing profile": {
+			key:  thKey,
 			code: codes.OK,
-		},
-		"check if unconnected thing can access existing profile": {
-			key:  th2.Key,
-			code: codes.PermissionDenied,
 		},
 		"check if thing with wrong access key can access existing profile": {
 			key:  wrong,
@@ -73,7 +66,7 @@ func TestGetConnByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetConnByKey(ctx, &protomfx.ConnByKeyReq{Key: tc.key})
+		_, err := cli.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: tc.key})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
@@ -81,6 +74,17 @@ func TestGetConnByKey(t *testing.T) {
 }
 
 func TestIdentify(t *testing.T) {
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
+
+	thing.GroupID = grID
+	thing.ProfileID = prID
 	ths, err := svc.CreateThings(context.Background(), token, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]

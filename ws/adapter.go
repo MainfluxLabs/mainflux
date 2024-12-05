@@ -8,35 +8,27 @@ package ws
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const (
-	profilesPrefix = "profiles"
-)
-
 var (
 	// ErrFailedMessagePublish indicates that message publishing failed.
 	ErrFailedMessagePublish = errors.New("failed to publish message")
 
-	// ErrFailedSubscription indicates that client couldn't subscribe to specified profile
-	ErrFailedSubscription = errors.New("failed to subscribe to a profile")
+	// ErrFailedSubscription indicates that client couldn't subscribe.
+	ErrFailedSubscription = errors.New("failed to subscribe")
 
-	// ErrFailedUnsubscribe indicates that client couldn't unsubscribe from specified profile
-	ErrFailedUnsubscribe = errors.New("failed to unsubscribe from a profile")
+	// ErrFailedUnsubscribe indicates that client couldn't unsubscribe.
+	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
 
-	// ErrUnauthorizedAccess indicates that client provided missing or invalid credentials
+	// ErrUnauthorizedAccess indicates that client provided missing or invalid credentials.
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
 
-	// ErrEmptyTopic indicate absence of thingKey in the request
+	// ErrEmptyTopic indicate absence of thingKey in the request.
 	ErrEmptyTopic = errors.New("empty topic")
-
-	// ErrEmptyID indicate absence of profileID in the request
-	ErrEmptyID = errors.New("empty id")
 )
 
 // Service specifies web socket service API.
@@ -45,10 +37,10 @@ type Service interface {
 	Publish(ctx context.Context, thingKey string, msg protomfx.Message) error
 
 	// Subscribe  subscribes to a profile with specified id.
-	Subscribe(ctx context.Context, thingKey, profileID, subtopic string, client *Client) error
+	Subscribe(ctx context.Context, thingKey, subtopic string, client *Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, thingKey, profileID, subtopic string) error
+	Unsubscribe(ctx context.Context, thingKey, subtopic string) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -66,9 +58,8 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	}
 }
 
-// Publish publishes the message using the broker
 func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg protomfx.Message) error {
-	conn, err := svc.authorize(ctx, thingKey)
+	pc, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
@@ -77,7 +68,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg pro
 		return ErrFailedMessagePublish
 	}
 
-	m := messaging.CreateMessage(conn, msg.Protocol, msg.Subtopic, &msg.Payload)
+	m := messaging.CreateMessage(pc, msg.Protocol, msg.Subtopic, &msg.Payload)
 
 	if err := svc.pubsub.Publish(m); err != nil {
 		return ErrFailedMessagePublish
@@ -86,58 +77,42 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg pro
 	return nil
 }
 
-// Subscribe subscribes the thingKey and profileID to the topic
-func (svc *adapterService) Subscribe(ctx context.Context, thingKey, profileID, subtopic string, c *Client) error {
-	if profileID == "" || thingKey == "" {
+func (svc *adapterService) Subscribe(ctx context.Context, thingKey, subtopic string, c *Client) error {
+	if thingKey == "" {
 		return ErrUnauthorizedAccess
 	}
 
-	conn, err := svc.authorize(ctx, thingKey)
+	pc, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	c.id = conn.ThingID
+	c.id = pc.PublisherID
 
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
-	}
-
-	if err := svc.pubsub.Subscribe(conn.ProfileID, subject, c); err != nil {
-		return ErrFailedSubscription
-	}
-
-	return nil
+	return svc.pubsub.Subscribe(c.id, subtopic, c)
 }
 
-// Unsubscribe unsubscribes the thing and profile from the topic.
-func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, profileID, subtopic string) error {
-	if profileID == "" || thingKey == "" {
+func (svc *adapterService) Unsubscribe(ctx context.Context, thingKey, subtopic string) error {
+	if thingKey == "" {
 		return ErrUnauthorizedAccess
 	}
 
-	conn, err := svc.authorize(ctx, thingKey)
+	pc, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, profileID)
-	if subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, subtopic)
-	}
-
-	return svc.pubsub.Unsubscribe(conn.ProfileID, subject)
+	return svc.pubsub.Unsubscribe(pc.PublisherID, subtopic)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*protomfx.ConnByKeyRes, error) {
-	ar := &protomfx.ConnByKeyReq{
+func (svc *adapterService) authorize(ctx context.Context, thingKey string) (*protomfx.PubConfByKeyRes, error) {
+	ar := &protomfx.PubConfByKeyReq{
 		Key: thingKey,
 	}
-	conn, err := svc.things.GetConnByKey(ctx, ar)
+	pc, err := svc.things.GetPubConfByKey(ctx, ar)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	return conn, nil
+	return pc, nil
 }

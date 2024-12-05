@@ -91,12 +91,6 @@ func (sdk mfSDK) ViewGroupByThing(thingID, token string) (Group, error)
 func (sdk mfSDK) UpdateGroup(group Group, token string) error
     UpdateGroup - updates existing group
     
-func (sdk mfSDK) Connect(conns ConnectionIDs, token string) error
-    Connect - connect things to profiles
-
-func (sdk mfSDK) Disconnect(conns ConnectionIDs, token string) error
-    Disconnect - disconnect things from a profile
-
 func (sdk mfSDK) CreateProfile(profile Profile, groupID, token string) (string, error)
     CreateProfile - creates new profile and generates UUID
 

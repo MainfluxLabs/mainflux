@@ -41,12 +41,6 @@ var (
 	// ErrFailedRemoval indicates that entity removal failed.
 	ErrFailedRemoval = errors.New("failed to remove entity")
 
-	// ErrFailedConnect indicates that connecting thing to profile failed.
-	ErrFailedConnect = errors.New("failed to connect thing to profile")
-
-	// ErrFailedDisconnect indicates that disconnecting thing from a profile failed.
-	ErrFailedDisconnect = errors.New("failed to disconnect thing from profile")
-
 	// ErrFailedPublish indicates that publishing message failed.
 	ErrFailedPublish = errors.New("failed to publish message")
 
@@ -108,11 +102,12 @@ type Group struct {
 
 // Thing represents mainflux thing.
 type Thing struct {
-	ID       string                 `json:"id,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	GroupID   string                 `json:"group_id,omitempty"`
+	ProfileID string                 `json:"profile_id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Key       string                 `json:"key,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Profile represents mainflux profile.
@@ -202,7 +197,7 @@ type SDK interface {
 	// Things returns page of things.
 	Things(token string, pm PageMetadata) (ThingsPage, error)
 
-	// ThingsByProfile returns page of things that are connected to specified profile.
+	// ThingsByProfile returns page of things assigned to the specified profile.
 	ThingsByProfile(token, profileID string, offset, limit uint64) (ThingsPage, error)
 
 	// Thing returns thing object by id.
@@ -244,12 +239,6 @@ type SDK interface {
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, groupID, token string) error
 
-	// Connect connects a list of things to a profile.
-	Connect(conns ConnectionIDs, token string) error
-
-	// Disconnect disconnects a list of things from a profile.
-	Disconnect(conns ConnectionIDs, token string) error
-
 	// CreateProfile creates new profile and returns its id.
 	CreateProfile(profile Profile, groupID, token string) (string, error)
 
@@ -259,7 +248,7 @@ type SDK interface {
 	// Profiles returns page of profiles.
 	Profiles(token string, pm PageMetadata) (ProfilesPage, error)
 
-	// ViewProfileByThing returns profile that are connected to specified thing.
+	// ViewProfileByThing returns profile that are assigned to specified thing.
 	ViewProfileByThing(token, thingID string) (Profile, error)
 
 	// Profile returns profile data by id.

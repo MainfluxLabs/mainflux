@@ -39,10 +39,11 @@ func (es eventStore) CreateThings(ctx context.Context, token string, ths ...thin
 
 	for _, thing := range sths {
 		event := createThingEvent{
-			id:       thing.ID,
-			groupID:  thing.GroupID,
-			name:     thing.Name,
-			metadata: thing.Metadata,
+			id:        thing.ID,
+			groupID:   thing.GroupID,
+			profileID: thing.ProfileID,
+			name:      thing.Name,
+			metadata:  thing.Metadata,
 		}
 		record := &redis.XAddArgs{
 			Stream:       streamID,
@@ -61,9 +62,10 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	}
 
 	event := updateThingEvent{
-		id:       thing.ID,
-		name:     thing.Name,
-		metadata: thing.Metadata,
+		id:        thing.ID,
+		profileID: thing.ProfileID,
+		name:      thing.Name,
+		metadata:  thing.Metadata,
 	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,
@@ -199,54 +201,12 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) ViewProfileConfig(ctx context.Context, prID string) (things.Config, error) {
-	return es.svc.ViewProfileConfig(ctx, prID)
+func (es eventStore) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
+	return es.svc.GetPubConfByKey(ctx, key)
 }
 
-func (es eventStore) Connect(ctx context.Context, token, prID string, thIDs []string) error {
-	if err := es.svc.Connect(ctx, token, prID, thIDs); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		event := connectThingEvent{
-			profileID: prID,
-			thingID:   thID,
-		}
-		record := &redis.XAddArgs{
-			Stream:       streamID,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
-	}
-
-	return nil
-}
-
-func (es eventStore) Disconnect(ctx context.Context, token, prID string, thIDs []string) error {
-	if err := es.svc.Disconnect(ctx, token, prID, thIDs); err != nil {
-		return err
-	}
-
-	for _, thID := range thIDs {
-		event := disconnectThingEvent{
-			profileID: prID,
-			thingID:   thID,
-		}
-		record := &redis.XAddArgs{
-			Stream:       streamID,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
-	}
-
-	return nil
-}
-
-func (es eventStore) GetConnByKey(ctx context.Context, key string) (things.Connection, error) {
-	return es.svc.GetConnByKey(ctx, key)
+func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+	return es.svc.GetConfigByThingID(ctx, thingID)
 }
 
 func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {

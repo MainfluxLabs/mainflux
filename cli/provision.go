@@ -79,37 +79,12 @@ var cmdProvision = []cobra.Command{
 		},
 	},
 	{
-		Use:   "connect <connections_file> <user_token>",
-		Short: "Provision connections",
-		Long:  `Bulk connect things to profiles`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			connIDs, err := connectionsFromFile(args[0])
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			err = sdk.Connect(connIDs, args[1])
-			if err != nil {
-				logError(err)
-				return
-			}
-		},
-	},
-	{
 		Use:   "test",
 		Short: "test",
-		Long: `Provisions test setup: one test user, two things and two profiles. \
-						Connect both things to one of the profiles, \
-						and only on thing to other profile.`,
+		Long:  `Provisions test setup: one test user, two things and two profiles.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			numThings := 3
-			numChan := 2
+			numProfs := 2
 			things := []mfxsdk.Thing{}
 			profiles := []mfxsdk.Profile{}
 			orgID := "1"
@@ -153,30 +128,8 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			// Create things
-			for i := 0; i < numThings; i++ {
-				n := fmt.Sprintf("d%d", i)
-
-				t := mfxsdk.Thing{
-					Name:    n,
-					GroupID: grID,
-				}
-
-				things = append(things, t)
-			}
-			things, err = sdk.CreateThings(things, grID, ut)
-			if err != nil {
-				logError(err)
-				return
-			}
-
-			var thIDs []string
-			for _, th := range things {
-				thIDs = append(thIDs, th.ID)
-			}
-
 			// Create profiles
-			for i := 0; i < numChan; i++ {
+			for i := 0; i < numProfs; i++ {
 				n := fmt.Sprintf("c%d", i)
 
 				c := mfxsdk.Profile{
@@ -192,27 +145,32 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			var chIDs []string
+			var prIDs []string
 			for _, ch := range profiles {
-				chIDs = append(chIDs, ch.ID)
+				prIDs = append(prIDs, ch.ID)
 			}
 
-			conIDs := mfxsdk.ConnectionIDs{
-				ProfileID: profiles[0].ID,
-				ThingIDs:  []string{things[0].ID, things[1].ID},
+			// Create things
+			for i := 0; i < numThings; i++ {
+				n := fmt.Sprintf("d%d", i)
+
+				t := mfxsdk.Thing{
+					Name:      n,
+					GroupID:   grID,
+					ProfileID: profiles[0].ID,
+				}
+
+				things = append(things, t)
 			}
-			if err := sdk.Connect(conIDs, ut); err != nil {
+			things, err = sdk.CreateThings(things, grID, ut)
+			if err != nil {
 				logError(err)
 				return
 			}
 
-			conIDs = mfxsdk.ConnectionIDs{
-				ProfileID: profiles[1].ID,
-				ThingIDs:  []string{things[2].ID},
-			}
-			if err := sdk.Connect(conIDs, ut); err != nil {
-				logError(err)
-				return
+			var thIDs []string
+			for _, th := range things {
+				thIDs = append(thIDs, th.ID)
 			}
 
 			logJSON(user, ut, gr, things, profiles)
@@ -223,7 +181,7 @@ var cmdProvision = []cobra.Command{
 // NewProvisionCmd returns provision command.
 func NewProvisionCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "provision [things | profiles | connect | test]",
+		Use:   "provision [things | profiles | test]",
 		Short: "Provision things and profiles from a config file",
 		Long:  `Provision things and profiles: use json or csv file to bulk provision things and profiles`,
 	}
@@ -327,48 +285,4 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	}
 
 	return profiles, nil
-}
-
-func connectionsFromFile(path string) (mfxsdk.ConnectionIDs, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return mfxsdk.ConnectionIDs{}, err
-	}
-
-	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		return mfxsdk.ConnectionIDs{}, err
-	}
-	defer file.Close()
-
-	connections := mfxsdk.ConnectionIDs{}
-	switch filepath.Ext(path) {
-	case csvExt:
-		reader := csv.NewReader(file)
-
-		for {
-			l, err := reader.Read()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return mfxsdk.ConnectionIDs{}, err
-			}
-
-			if len(l) < 1 {
-				return mfxsdk.ConnectionIDs{}, errors.New("empty line found in file")
-			}
-
-			connections.ThingIDs = append(connections.ThingIDs, l[0])
-			connections.ProfileID = l[1]
-		}
-	case jsonExt:
-		err := json.NewDecoder(file).Decode(&connections)
-		if err != nil {
-			return mfxsdk.ConnectionIDs{}, err
-		}
-	default:
-		return mfxsdk.ConnectionIDs{}, err
-	}
-
-	return connections, nil
 }
