@@ -98,7 +98,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
 			if ts != 0 {
-				ret.Created = ts
+				newMsg.Created = ts
 			}
 
 			res = append(res, newMsg)
