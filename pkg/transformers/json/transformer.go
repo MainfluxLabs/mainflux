@@ -63,10 +63,11 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
 	}
+	extractedPayload := extractPayload(payload, msg.ProfileConfig.Transformer.DataField)
 
-	switch p := payload.(type) {
+	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := transformPayload(p, msg.ProfileConfig.Transformer.ValuesFilter)
+		formattedPayload := filterPayloadFields(p, msg.ProfileConfig.Transformer.ValuesFilter)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
@@ -89,7 +90,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := transformPayload(v, msg.ProfileConfig.Transformer.ValuesFilter)
+			formattedPayload := filterPayloadFields(v, msg.ProfileConfig.Transformer.ValuesFilter)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
@@ -187,7 +188,26 @@ func (ts *transformerService) transformTimeField(payload map[string]interface{},
 	return 0, nil
 }
 
-func transformPayload(payload map[string]interface{}, valuesFilter []string) map[string]interface{} {
+func extractPayload(payload interface{}, dataField string) interface{} {
+	if dataField != "" {
+		p := payload
+		keys := strings.Split(dataField, ".")
+
+		for _, k := range keys {
+			if pv, ok := p.(map[string]interface{}); ok {
+				if val, exists := pv[k]; exists {
+					p = val
+				}
+			}
+		}
+
+		return p
+	}
+
+	return payload
+}
+
+func filterPayloadFields(payload map[string]interface{}, valuesFilter []string) map[string]interface{} {
 	if len(valuesFilter) == 0 {
 		return payload
 	}
