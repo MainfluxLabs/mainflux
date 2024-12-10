@@ -14,6 +14,8 @@ import (
 
 var errUnsupportedFormat = errors.New("unsupported time format")
 
+const baseISO8601Format = "2006-01-02T15:04:05"
+
 func parseTimestamp(format string, timestamp interface{}, location string) (time.Time, error) {
 	switch format {
 	case "unix", "unix_ms", "unix_us", "unix_ns":
@@ -144,6 +146,8 @@ func parseTime(format string, timestamp interface{}, location string) (time.Time
 			format = time.StampMicro
 		case "stampnano":
 			format = time.StampNano
+		case "iso8601":
+			format = baseISO8601Format
 		}
 		return time.ParseInLocation(format, ts, loc)
 	default:
