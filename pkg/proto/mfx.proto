@@ -62,7 +62,7 @@ message ConfigByThingIDRes{
 }
 
 message Transformer {
-    repeated string valuesFilter = 1;
+    repeated string dataFilters  = 1;
     string dataField             = 2;
     string timeField             = 3;
     string timeFormat            = 4;

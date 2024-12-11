@@ -67,7 +67,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, msg.ProfileConfig.Transformer.ValuesFilter)
+		formattedPayload := filterPayloadFields(p, msg.ProfileConfig.Transformer.DataFilters)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
@@ -90,7 +90,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := filterPayloadFields(v, msg.ProfileConfig.Transformer.ValuesFilter)
+			formattedPayload := filterPayloadFields(v, msg.ProfileConfig.Transformer.DataFilters)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
@@ -207,13 +207,13 @@ func extractPayload(payload interface{}, dataField string) interface{} {
 	return payload
 }
 
-func filterPayloadFields(payload map[string]interface{}, valuesFilter []string) map[string]interface{} {
-	if len(valuesFilter) == 0 {
+func filterPayloadFields(payload map[string]interface{}, dataFilters []string) map[string]interface{} {
+	if len(dataFilters) == 0 {
 		return payload
 	}
 
 	filteredPayload := make(map[string]interface{})
-	for _, key := range valuesFilter {
+	for _, key := range dataFilters {
 		value := findByKey(payload, key)
 		if value != nil {
 			filteredPayload[key] = value
