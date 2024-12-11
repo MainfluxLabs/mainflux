@@ -153,7 +153,7 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 	}
 
 	transformer := &protomfx.Transformer{
-		ValuesFilter: config.Transformer.ValuesFilter,
+		DataFilters:  config.Transformer.DataFilters,
 		DataField:    config.Transformer.DataField,
 		TimeField:    config.Transformer.TimeField,
 		TimeFormat:   config.Transformer.TimeFormat,

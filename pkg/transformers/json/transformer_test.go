@@ -29,10 +29,10 @@ const (
 )
 
 var (
-	valuesFilter = []string{"key1", "key2", "key3"}
+	dataFilters = []string{"key1", "key2", "key3"}
 )
 
-var config = &protomfx.Config{Transformer: &protomfx.Transformer{ValuesFilter: valuesFilter, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
+var config = &protomfx.Config{Transformer: &protomfx.Transformer{DataFilters: dataFilters, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}}
 
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
@@ -59,7 +59,7 @@ func TestTransformJSON(t *testing.T) {
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.ProfileConfig = &protomfx.Config{Transformer: &protomfx.Transformer{ValuesFilter: valuesFilter, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
+	microsMsg.ProfileConfig = &protomfx.Config{Transformer: &protomfx.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}}
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)

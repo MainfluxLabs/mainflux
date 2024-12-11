@@ -27,7 +27,7 @@ type Config struct {
 }
 
 type Transformer struct {
-	ValuesFilter []string `json:"values_filter"`
+	DataFilters  []string `json:"data_filters"`
 	DataField    string   `json:"data_field"`
 	TimeField    string   `json:"time_field"`
 	TimeFormat   string   `json:"time_format"`
