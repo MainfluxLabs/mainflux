@@ -5,19 +5,10 @@ package mqtt
 
 import (
 	"fmt"
-	"strings"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-)
-
-const (
-	profiles    = "profiles"
-	messages    = "messages"
-	senmlFormat = "senml"
-	jsonFormat  = "json"
 )
 
 // Forwarder specifies MQTT forwarder interface API.
@@ -42,7 +33,7 @@ func NewForwarder(topics []string, logger log.Logger) Forwarder {
 
 func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
 	for _, topic := range f.topics {
-		if err := sub.Subscribe(id, topic, handle(topic, pub, f.logger)); err != nil {
+		if err := sub.Subscribe(id, topic, handle(pub, f.logger)); err != nil {
 			return err
 		}
 	}
@@ -50,24 +41,10 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return nil
 }
 
-func handle(topic string, pub messaging.Publisher, logger log.Logger) handleFunc {
+func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 	return func(msg protomfx.Message) error {
 		if msg.Protocol == protocol {
 			return nil
-		}
-
-		switch topic {
-		case brokers.SubjectSenML:
-			topic = profiles + "/" + msg.ProfileID + "/" + senmlFormat + "/" + messages
-		case brokers.SubjectJSON:
-			topic = profiles + "/" + msg.ProfileID + "/" + jsonFormat + "/" + messages
-		default:
-			logger.Warn(fmt.Sprintf("Unknown topic: %s", topic))
-			return nil
-		}
-
-		if msg.Subtopic != "" {
-			topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
 		}
 
 		go func() {
