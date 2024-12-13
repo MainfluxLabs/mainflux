@@ -3,7 +3,7 @@
 
 MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
-SERVICES = users things http coap ws influxdb-writer influxdb-reader mongodb-writer \
+SERVICES = users things http coap ws mongodb-writer \
 	mongodb-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
 	auth mqtt certs smtp-notifier smpp-notifier webhooks
 DOCKERS = $(addprefix docker_,$(SERVICES))

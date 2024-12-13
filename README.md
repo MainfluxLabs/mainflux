@@ -19,7 +19,7 @@ For more details, check out the [official documentation][docs].
 - Device management and provisioning (Zero Touch provisioning)
 - Mutual TLS Authentication (mTLS) using X.509 Certificates
 - Fine-grained access control (policies, ABAC/RBAC)
-- Message persistence (Cassandra, InfluxDB, MongoDB and PostgresSQL)
+- Message persistence (Cassandra, MongoDB and PostgresSQL)
 - Platform logging and instrumentation support (Grafana, Prometheus and OpenTracing)
 - Event sourcing
 - Container-based deployment using [Docker][docker] and [Kubernetes][kubernetes]
