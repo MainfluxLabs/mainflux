@@ -49,7 +49,7 @@ const (
 	defMQTTPort          = "1883"
 	defTargetHost        = "0.0.0.0"
 	defTargetPort        = "1883"
-	defForwarderMode     = "disable"
+	defForwarder         = "false"
 	defTimeout           = "30s" // 30 seconds
 	defTargetHealthCheck = ""
 	defHTTPPort          = "8080"
@@ -89,7 +89,7 @@ const (
 	envTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
 	envTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
 	envTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
-	envForwarderMode     = "MF_MQTT_ADAPTER_FORWARDER_MODE"
+	envForwarder         = "MF_MQTT_ADAPTER_FORWARDER"
 	envTimeout           = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
 	envHTTPPort          = "MF_MQTT_ADAPTER_HTTP_PORT"
 	envHTTPTargetHost    = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
@@ -131,7 +131,7 @@ type config struct {
 	thingsConfig      clients.Config
 	targetHost        string
 	targetPort        string
-	forwarderMode     string
+	forwarder         string
 	timeout           time.Duration
 	targetHealthCheck string
 	wsPort            string
@@ -197,7 +197,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if cfg.forwarderMode == "enable" {
+	if cfg.forwarder == "true" {
 		subjects := []string{
 			brokers.SubjectSenML,
 			brokers.SubjectJSON,
@@ -332,7 +332,7 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
-		forwarderMode:     mainflux.Env(envForwarderMode, defForwarderMode),
+		forwarder:         mainflux.Env(envForwarder, defForwarder),
 		timeout:           mqttTimeout,
 		targetHealthCheck: mainflux.Env(envTargetHealthCheck, defTargetHealthCheck),
 		wsPort:            mainflux.Env(envWSPort, defWSPort),
