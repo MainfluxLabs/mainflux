@@ -12,15 +12,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
-const sep = "/"
-
 var (
-	keys = [...]string{"publisher", "protocol", "profile", "subtopic"}
-
 	// ErrTransform represents an error during parsing message.
 	ErrTransform = errors.New("unable to parse JSON object")
-	// ErrInvalidKey represents the use of a reserved message field.
-	ErrInvalidKey = errors.New("invalid object key")
 	// ErrInvalidTimeField represents the use an invalid time field.
 	ErrInvalidTimeField = errors.New("invalid time field")
 
@@ -108,68 +102,6 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	default:
 		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
-}
-
-// ParseFlat receives flat map that represents complex JSON objects and returns
-// the corresponding complex JSON object with nested maps. It's the opposite
-// of the Flatten function.
-func ParseFlat(flat interface{}) interface{} {
-	msg := make(map[string]interface{})
-	switch v := flat.(type) {
-	case map[string]interface{}:
-		for key, value := range v {
-			if value == nil {
-				continue
-			}
-			subKeys := strings.Split(key, sep)
-			n := len(subKeys)
-			if n == 1 {
-				msg[key] = value
-				continue
-			}
-			current := msg
-			for i, k := range subKeys {
-				if _, ok := current[k]; !ok {
-					current[k] = make(map[string]interface{})
-				}
-				if i == n-1 {
-					current[k] = value
-					break
-				}
-				current = current[k].(map[string]interface{})
-			}
-		}
-	}
-	return msg
-}
-
-// Flatten makes nested maps flat using composite keys created by concatenation of the nested keys.
-func Flatten(m map[string]interface{}) (map[string]interface{}, error) {
-	return flatten("", make(map[string]interface{}), m)
-}
-
-func flatten(prefix string, m, m1 map[string]interface{}) (map[string]interface{}, error) {
-	for k, v := range m1 {
-		if strings.Contains(k, sep) {
-			return nil, ErrInvalidKey
-		}
-		for _, key := range keys {
-			if k == key {
-				return nil, ErrInvalidKey
-			}
-		}
-		switch val := v.(type) {
-		case map[string]interface{}:
-			var err error
-			m, err = flatten(prefix+k+sep, m, val)
-			if err != nil {
-				return nil, err
-			}
-		default:
-			m[prefix+k] = v
-		}
-	}
-	return m, nil
 }
 
 func (ts *transformerService) transformTimeField(payload map[string]interface{}, transformer protomfx.Transformer) (int64, error) {
