@@ -21,8 +21,12 @@ const (
 	profilesPrefix   = "profiles"
 	profile          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic         = "engine"
+	anotherSubtopic  = "app"
+	subSubtopic      = "test"
 	tokenTimeout     = 100 * time.Millisecond
 	senmlContentType = "application/senml+json"
+	senmlFormat      = "senml"
+	messages         = "messages"
 )
 
 var (
@@ -35,29 +39,31 @@ var errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
 func TestPublisher(t *testing.T) {
 	msgChan := make(chan []byte)
+	topic := senmlFormat + "/" + messages
+	topicWithSubtopic := topic + "/" + subtopic
 
 	// Subscribing with topic, and with subtopic, so that we can publish messages.
 	client, err := newClient(address, "clientID1", brokerTimeout)
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	token := client.Subscribe(subtopic, qos, func(c mqtt.Client, m mqtt.Message) {
+	token := client.Subscribe(topicWithSubtopic, qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", subtopic))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", topicWithSubtopic))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
-	token = client.Subscribe(fmt.Sprintf("%s.%s", profile, subtopic), qos, func(c mqtt.Client, m mqtt.Message) {
+	token = client.Subscribe(fmt.Sprintf("%s/%s/%s", topic, anotherSubtopic, subSubtopic), qos, func(c mqtt.Client, m mqtt.Message) {
 		msgChan <- m.Payload()
 	})
 	if ok := token.WaitTimeout(tokenTimeout); !ok {
-		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s.%s", profile, subtopic)))
+		assert.Fail(t, fmt.Sprintf("failed to subscribe to topic %s", fmt.Sprintf("%s/%s/%s", topic, anotherSubtopic, subSubtopic)))
 	}
 	assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
 	t.Cleanup(func() {
-		token := client.Unsubscribe(topic, fmt.Sprintf("%s.%s", profile, subtopic))
+		token := client.Unsubscribe(topic)
 		token.WaitTimeout(tokenTimeout)
 		assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
@@ -83,6 +89,11 @@ func TestPublisher(t *testing.T) {
 			desc:     "publish message with subtopic",
 			payload:  data,
 			subtopic: subtopic,
+		},
+		{
+			desc:     "publish message with another subtopic",
+			payload:  data,
+			subtopic: fmt.Sprintf("%s.%s", anotherSubtopic, subSubtopic),
 		},
 	}
 	for _, tc := range cases {
@@ -200,6 +211,8 @@ func TestSubscribe(t *testing.T) {
 
 func TestPubSub(t *testing.T) {
 	msgChan := make(chan protomfx.Message)
+	topic := senmlFormat + "/" + messages
+	topicWithSubtopic := topic + "/" + subtopic
 
 	cases := []struct {
 		desc     string
@@ -210,21 +223,21 @@ func TestPubSub(t *testing.T) {
 	}{
 		{
 			desc:     "Subscribe to a topic with an ID",
-			topic:    subtopic,
+			topic:    topicWithSubtopic,
 			clientID: "clientid7",
 			err:      nil,
 			handler:  handler{false, "clientid7", msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
-			topic:    subtopic,
+			topic:    topicWithSubtopic,
 			clientID: "clientid8",
 			err:      nil,
 			handler:  handler{false, "clientid8", msgChan},
 		},
 		{
 			desc:     "Subscribe to a topic with a subtopic with an ID",
-			topic:    fmt.Sprintf("%s.%s", topic, subtopic),
+			topic:    topicWithSubtopic,
 			clientID: "clientid7",
 			err:      nil,
 			handler:  handler{false, "clientid7", msgChan},
@@ -238,7 +251,7 @@ func TestPubSub(t *testing.T) {
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
-			topic:    subtopic,
+			topic:    topicWithSubtopic,
 			clientID: "",
 			err:      messaging.ErrEmptyID,
 			handler:  handler{false, "", msgChan},

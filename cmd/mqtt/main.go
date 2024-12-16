@@ -49,6 +49,7 @@ const (
 	defMQTTPort          = "1883"
 	defTargetHost        = "0.0.0.0"
 	defTargetPort        = "1883"
+	defForwarder         = "false"
 	defTimeout           = "30s" // 30 seconds
 	defTargetHealthCheck = ""
 	defHTTPPort          = "8080"
@@ -66,7 +67,7 @@ const (
 	defESURL             = "localhost:6379"
 	defESPass            = ""
 	defESDB              = "0"
-	defAuthcacheURL      = "localhost:6379"
+	defAuthCacheURL      = "localhost:6379"
 	defAuthCachePass     = ""
 	defAuthCacheDB       = "0"
 	defDBHost            = "localhost"
@@ -88,6 +89,7 @@ const (
 	envTargetHost        = "MF_MQTT_ADAPTER_MQTT_TARGET_HOST"
 	envTargetPort        = "MF_MQTT_ADAPTER_MQTT_TARGET_PORT"
 	envTargetHealthCheck = "MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK"
+	envForwarder         = "MF_MQTT_ADAPTER_FORWARDER"
 	envTimeout           = "MF_MQTT_ADAPTER_FORWARDER_TIMEOUT"
 	envHTTPPort          = "MF_MQTT_ADAPTER_HTTP_PORT"
 	envHTTPTargetHost    = "MF_MQTT_ADAPTER_WS_TARGET_HOST"
@@ -129,6 +131,7 @@ type config struct {
 	thingsConfig      clients.Config
 	targetHost        string
 	targetPort        string
+	forwarder         string
 	timeout           time.Duration
 	targetHealthCheck string
 	wsPort            string
@@ -194,15 +197,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	subjects := []string{
-		brokers.SubjectSenML,
-		brokers.SubjectJSON,
-	}
+	if cfg.forwarder == "true" {
+		subjects := []string{
+			brokers.SubjectSenML,
+			brokers.SubjectJSON,
+		}
 
-	fwd := mqtt.NewForwarder(subjects, logger)
-	if err := fwd.Forward(svcName, nps, mpub); err != nil {
-		logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
-		os.Exit(1)
+		fwd := mqtt.NewForwarder(subjects, logger)
+		if err := fwd.Forward(svcName, nps, mpub); err != nil {
+			logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
+			os.Exit(1)
+		}
 	}
 
 	np, err := brokers.NewPublisher(cfg.brokerURL)
@@ -327,6 +332,7 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
+		forwarder:         mainflux.Env(envForwarder, defForwarder),
 		timeout:           mqttTimeout,
 		targetHealthCheck: mainflux.Env(envTargetHealthCheck, defTargetHealthCheck),
 		wsPort:            mainflux.Env(envWSPort, defWSPort),
@@ -341,7 +347,7 @@ func loadConfig() config {
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esPass:            mainflux.Env(envESPass, defESPass),
 		esDB:              mainflux.Env(envESDB, defESDB),
-		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthcacheURL),
+		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
 		authGRPCTimeout:   authGRPCTimeout,
