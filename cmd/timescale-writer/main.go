@@ -41,8 +41,6 @@ const (
 	defDBSSLCert     = ""
 	defDBSSLKey      = ""
 	defDBSSLRootCert = ""
-	defConfigPath    = "/config.toml"
-
 	envBrokerURL     = "MF_BROKER_URL"
 	envLogLevel      = "MF_TIMESCALE_WRITER_LOG_LEVEL"
 	envPort          = "MF_TIMESCALE_WRITER_PORT"
@@ -55,13 +53,11 @@ const (
 	envDBSSLCert     = "MF_TIMESCALE_WRITER_DB_SSL_CERT"
 	envDBSSLKey      = "MF_TIMESCALE_WRITER_DB_SSL_KEY"
 	envDBSSLRootCert = "MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT"
-	envConfigPath    = "MF_TIMESCALE_WRITER_CONFIG_PATH"
 )
 
 type config struct {
 	brokerURL  string
 	logLevel   string
-	configPath string
 	dbConfig   timescale.Config
 	httpConfig servers.Config
 }
@@ -131,7 +127,6 @@ func loadConfig() config {
 	return config{
 		brokerURL:  mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
-		configPath: mainflux.Env(envConfigPath, defConfigPath),
 		dbConfig:   dbConfig,
 		httpConfig: httpConfig,
 	}
