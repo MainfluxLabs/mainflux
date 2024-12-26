@@ -232,14 +232,22 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
-	pr, err := ts.profiles.RetrieveByID(ctx, profileID)
+	grID, err := ts.profileCache.GroupID(ctx, profileID)
 	if err != nil {
-		return Group{}, err
+		pr, err := ts.profiles.RetrieveByID(ctx, profileID)
+		if err != nil {
+			return Group{}, err
+		}
+		grID = pr.GroupID
+
+		if err := ts.profileCache.Save(ctx, pr.ID, pr.GroupID); err != nil {
+			return Group{}, err
+		}
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  pr.GroupID,
+		Object:  grID,
 		Subject: GroupSub,
 		Action:  Viewer,
 	}
@@ -247,7 +255,7 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, pr.GroupID)
+	gr, err := ts.groups.RetrieveByID(ctx, grID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -256,14 +264,22 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 }
 
 func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
-	th, err := ts.things.RetrieveByID(ctx, thingID)
+	grID, err := ts.thingCache.GroupID(ctx, thingID)
 	if err != nil {
-		return Group{}, err
+		th, err := ts.things.RetrieveByID(ctx, thingID)
+		if err != nil {
+			return Group{}, err
+		}
+		grID = th.GroupID
+
+		if err := ts.thingCache.SaveGroupID(ctx, th.ID, th.GroupID); err != nil {
+			return Group{}, err
+		}
 	}
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  th.GroupID,
+		Object:  grID,
 		Subject: GroupSub,
 		Action:  Viewer,
 	}
@@ -271,7 +287,7 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, th.GroupID)
+	gr, err := ts.groups.RetrieveByID(ctx, grID)
 	if err != nil {
 		return Group{}, err
 	}

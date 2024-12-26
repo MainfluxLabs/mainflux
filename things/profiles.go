@@ -88,6 +88,12 @@ type ProfileRepository interface {
 
 // ProfileCache contains profile caching interface.
 type ProfileCache interface {
+	// Save stores pair profile ID, group ID.
+	Save(context.Context, string, string) error
+
 	// Remove removes profile from cache.
 	Remove(context.Context, string) error
+
+	// GroupID returns group ID by given profile ID.
+	GroupID(context.Context, string) (string, error)
 }

@@ -11,12 +11,14 @@ import (
 )
 
 const (
+	saveProfileOp                = "save_profile"
 	saveProfilesOp               = "save_profiles"
 	updateProfileOp              = "update_profile"
 	retrieveProfileByIDOp        = "retrieve_profile_by_id"
 	retrieveByThingOp            = "retrieve_by_thing"
 	retrieveProfilesByGroupIDsOp = "retrieve_profiles_by_group_ids"
-	removeProfileOp              = "retrieve_profile"
+	retrieveGroupByProfileOp     = "retrieve_group_by_profile"
+	removeProfileOp              = "remove_profile"
 	retrieveAllProfilesOp        = "retrieve_all_profiles"
 )
 
@@ -115,6 +117,22 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 		tracer: tracer,
 		cache:  cache,
 	}
+}
+
+func (ccm profileCacheMiddleware) Save(ctx context.Context, profileID, groupID string) error {
+	span := createSpan(ctx, ccm.tracer, saveProfileOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return ccm.cache.Save(ctx, profileID, groupID)
+}
+
+func (ccm profileCacheMiddleware) GroupID(ctx context.Context, profileID string) (string, error) {
+	span := createSpan(ctx, ccm.tracer, retrieveGroupByProfileOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return ccm.cache.GroupID(ctx, profileID)
 }
 
 func (ccm profileCacheMiddleware) Remove(ctx context.Context, profileID string) error {

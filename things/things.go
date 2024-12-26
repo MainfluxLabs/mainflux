@@ -79,6 +79,15 @@ type ThingCache interface {
 	// Remove removes thing from cache.
 	Remove(context.Context, string) error
 
+	// SaveGroupID stores group id by given thing ID.
+	SaveGroupID(context.Context, string, string) error
+
+	// GroupID returns group ID by given thing ID.
+	GroupID(context.Context, string) (string, error)
+
+	// RemoveGroupID removes group ID by given thing ID.
+	RemoveGroupID(context.Context, string) error
+
 	// SaveRole stores pair groupID:memberID, role.
 	SaveRole(context.Context, string, string, string) error
 

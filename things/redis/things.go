@@ -32,12 +32,12 @@ func NewThingCache(client *redis.Client) things.ThingCache {
 }
 
 func (tc *thingCache) Save(ctx context.Context, thingKey string, thingID string) error {
-	tkey := fmt.Sprintf("%s:%s", keyPrefix, thingKey)
+	tkey := tkKey(thingKey)
 	if err := tc.client.Set(ctx, tkey, thingID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	tid := fmt.Sprintf("%s:%s", thPrefix, thingID)
+	tid := tidKey(thingID)
 	if err := tc.client.Set(ctx, tid, thingKey, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -45,7 +45,7 @@ func (tc *thingCache) Save(ctx context.Context, thingKey string, thingID string)
 }
 
 func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
-	tkey := fmt.Sprintf("%s:%s", keyPrefix, thingKey)
+	tkey := tkKey(thingKey)
 	thingID, err := tc.client.Get(ctx, tkey).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
@@ -55,7 +55,7 @@ func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
 }
 
 func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
-	tid := fmt.Sprintf("%s:%s", thPrefix, thingID)
+	tid := tidKey(thingID)
 	key, err := tc.client.Get(ctx, tid).Result()
 	// Redis returns Nil Reply when key does not exist.
 	if err == redis.Nil {
@@ -65,16 +65,45 @@ func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	tkey := fmt.Sprintf("%s:%s", keyPrefix, key)
+	tkey := tkKey(key)
 	if err := tc.client.Del(ctx, tkey, tid).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 	return nil
 }
 
-func (tc *thingCache) SaveRole(ctx context.Context, groupID, memberID, role string) (error) {
-	rkey := fmt.Sprintf("%s:%s:%s", grPrefix, groupID, memberID)
-	if err := tc.client.Set(ctx, rkey, role, 0).Err(); err != nil {
+func (tc *thingCache) SaveGroupID(ctx context.Context, thingID string, groupID string) error {
+	gk := gidKey(thingID)
+	if err := tc.client.Set(ctx, gk, groupID, 0).Err(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (tc *thingCache) GroupID(ctx context.Context, thingID string) (string, error) {
+	gk := gidKey(thingID)
+	groupID, err := tc.client.Get(ctx, gk).Result()
+	if err != nil {
+		return "", errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	return groupID, nil
+}
+
+func (tc *thingCache) RemoveGroupID(ctx context.Context, thingID string) error {
+	gk := gidKey(thingID)
+
+	if err := tc.client.Del(ctx, gk).Err(); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (tc *thingCache) SaveRole(ctx context.Context, groupID, memberID, role string) error {
+	rk := rKey(groupID, memberID)
+	if err := tc.client.Set(ctx, rk, role, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -82,8 +111,8 @@ func (tc *thingCache) SaveRole(ctx context.Context, groupID, memberID, role stri
 }
 
 func (tc *thingCache) Role(ctx context.Context, groupID, memberID string) (string, error) {
-	rkey := fmt.Sprintf("%s:%s:%s", grPrefix, groupID, memberID)
-	role, err := tc.client.Get(ctx, rkey).Result()
+	rk := rKey(groupID, memberID)
+	role, err := tc.client.Get(ctx, rk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -93,9 +122,25 @@ func (tc *thingCache) Role(ctx context.Context, groupID, memberID string) (strin
 
 func (tc *thingCache) RemoveRole(ctx context.Context, groupID, memberID string) error {
 	// Redis returns Nil Reply when key does not exist.
-	rKey := fmt.Sprintf("%s:%s:%s", grPrefix, groupID, memberID)
-	if err := tc.client.Del(ctx, rKey).Err(); err != nil {
+	rk := rKey(groupID, memberID)
+	if err := tc.client.Del(ctx, rk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 	return nil
+}
+
+func tkKey(thingKey string) string {
+	return fmt.Sprintf("%s:%s", keyPrefix, thingKey)
+}
+
+func tidKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", thPrefix, thingID)
+}
+
+func gidKey(thingID string) string {
+	return fmt.Sprintf("%s:%s:%s", thPrefix, thingID, grPrefix)
+}
+
+func rKey(groupID, memberID string) string {
+	return fmt.Sprintf("%s:%s:%s", grPrefix, groupID, memberID)
 }
