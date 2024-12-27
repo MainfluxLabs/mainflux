@@ -74,7 +74,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 	}
 
 	for _, gm := range gms {
-		if err := ts.thingCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
@@ -159,7 +159,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 	}
 
 	for _, gm := range gms {
-		rm, err := ts.thingCache.Role(ctx, grID, gm.MemberID)
+		rm, err := ts.groupCache.Role(ctx, grID, gm.MemberID)
 		if err != nil {
 			r, err := ts.roles.RetrieveRole(ctx, gm)
 			if err != nil {
@@ -177,7 +177,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 	}
 
 	for _, gm := range gms {
-		if err := ts.thingCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
@@ -198,7 +198,7 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 	}
 
 	for _, mid := range memberIDs {
-		rm, err := ts.thingCache.Role(ctx, groupID, mid)
+		rm, err := ts.groupCache.Role(ctx, groupID, mid)
 		if err != nil {
 			r, err := ts.roles.RetrieveRole(ctx, GroupMember{GroupID: groupID, MemberID: mid})
 			if err != nil {
@@ -215,7 +215,7 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 	}
 
 	for _, mID := range memberIDs {
-		if err := ts.thingCache.RemoveRole(ctx, groupID, mID); err != nil {
+		if err := ts.groupCache.RemoveRole(ctx, groupID, mID); err != nil {
 			return err
 		}
 	}

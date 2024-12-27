@@ -22,9 +22,6 @@ const (
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
 	retrieveAllThingsOp        = "retrieve_all_things"
-	saveRoleOp                 = "save_role"
-	retrieveRoleOp             = "retrieve_role"
-	removeRoleOp               = "remove_role"
 	saveGroupIDOp              = "save_group_id"
 	retrieveGroupByThingOP     = "retrieve_group_by_thing"
 	removeGroupIDOp            = "remove_group_id"
@@ -189,30 +186,6 @@ func (tcm thingCacheMiddleware) RemoveGroupID(ctx context.Context, thingID strin
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return tcm.cache.RemoveGroupID(ctx, thingID)
-}
-
-func (tcm thingCacheMiddleware) SaveRole(ctx context.Context, groupID, memberID, role string) error {
-	span := createSpan(ctx, tcm.tracer, saveRoleOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return tcm.cache.SaveRole(ctx, groupID, memberID, role)
-}
-
-func (tcm thingCacheMiddleware) Role(ctx context.Context, groupID, memberID string) (string, error) {
-	span := createSpan(ctx, tcm.tracer, retrieveRoleOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return tcm.cache.Role(ctx, groupID, memberID)
-}
-
-func (tcm thingCacheMiddleware) RemoveRole(ctx context.Context, groupID, memberID string) error {
-	span := createSpan(ctx, tcm.tracer, removeRoleOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return tcm.cache.RemoveRole(ctx, groupID, memberID)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

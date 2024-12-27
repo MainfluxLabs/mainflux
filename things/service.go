@@ -147,11 +147,12 @@ type thingsService struct {
 	roles        RolesRepository
 	profileCache ProfileCache
 	thingCache   ThingCache
+	groupCache   GroupCache
 	idProvider   uuid.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, roles RolesRepository, pcache ProfileCache, tcache ThingCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, roles RolesRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		users:        users,
@@ -161,6 +162,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 		roles:        roles,
 		profileCache: pcache,
 		thingCache:   tcache,
+		groupCache:   gcache,
 		idProvider:   idp,
 	}
 }

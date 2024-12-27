@@ -89,6 +89,27 @@ type Groups interface {
 	ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error)
 }
 
+// GroupCache contains group caching interface.
+type GroupCache interface {
+	// Save stores pair group id, org id.
+	Save(context.Context, string, string) error
+
+	// OrgID returns org ID for given group ID.
+	OrgID(context.Context, string) (string, error)
+
+	// Remove removes a group from cache.
+	Remove(context.Context, string) error
+
+	// SaveRole stores pair groupID:memberID, role.
+	SaveRole(context.Context, string, string, string) error
+
+	// Role returns a group member role by given groupID and memberID.
+	Role(context.Context, string, string) (string, error)
+
+	// RemoveRole removes a group member role from cache.
+	RemoveRole(context.Context, string, string) error
+}
+
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
 	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
@@ -123,7 +144,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		if err := ts.thingCache.SaveRole(ctx, group.ID, userID, Owner); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, group.ID, userID, Owner); err != nil {
 			return []Group{}, err
 		}
 
@@ -190,6 +211,10 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			Action:  Owner,
 		}
 		if err := ts.Authorize(ctx, ar); err != nil {
+			return err
+		}
+
+		if err := ts.groupCache.Remove(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -296,11 +321,20 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	group, err := ts.groups.RetrieveByID(ctx, groupID)
+	grOrgID, err := ts.groupCache.OrgID(ctx, groupID)
 	if err != nil {
-		return err
+		group, err := ts.groups.RetrieveByID(ctx, groupID)
+		if err != nil {
+			return err
+		}
+		grOrgID = group.OrgID
+
+		if err := ts.groupCache.Save(ctx, group.ID, group.OrgID); err != nil {
+			return err
+		}
 	}
-	if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Owner); err == nil {
+
+	if err := ts.canAccessOrg(ctx, token, grOrgID, auth.OrgSub, Owner); err == nil {
 		return nil
 	}
 
@@ -314,7 +348,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		GroupID:  groupID,
 	}
 
-	role, err := ts.thingCache.Role(ctx, gp.GroupID, gp.MemberID)
+	role, err := ts.groupCache.Role(ctx, gp.GroupID, gp.MemberID)
 	if err != nil {
 		r, err := ts.roles.RetrieveRole(ctx, gp)
 		if err != nil {
@@ -322,7 +356,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		if err := ts.thingCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
 			return err
 		}
 	}

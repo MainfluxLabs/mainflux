@@ -14,6 +14,10 @@ const (
 	retrieveAllOp        = "retrieve_all"
 	retrieveGroupByIDOp  = "retrieve_group_by_id"
 	retrieveGroupByIDsOp = "retrieve_group_by_ids"
+	retrieveOrgByGroupOp = "retrieve_org_by_group"
+	saveRoleOp           = "save_role"
+	retrieveRoleOp       = "retrieve_role"
+	removeRoleOp         = "remove_role"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -84,4 +88,66 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByIDs(ctx, groupIDs, pm)
+}
+
+type groupCacheMiddleware struct {
+	tracer opentracing.Tracer
+	cache  things.GroupCache
+}
+
+// GroupCacheMiddleware tracks request and their latency, and adds spans
+// to context.
+func GroupCacheMiddleware(tracer opentracing.Tracer, cache things.GroupCache) things.GroupCache {
+	return groupCacheMiddleware{
+		tracer: tracer,
+		cache:  cache,
+	}
+}
+
+func (gcm groupCacheMiddleware) Save(ctx context.Context, groupID, orgID string) error {
+	span := createSpan(ctx, gcm.tracer, saveGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.Save(ctx, groupID, orgID)
+}
+
+func (gcm groupCacheMiddleware) OrgID(ctx context.Context, groupID string) (string, error) {
+	span := createSpan(ctx, gcm.tracer, retrieveOrgByGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.OrgID(ctx, groupID)
+}
+
+func (gcm groupCacheMiddleware) Remove(ctx context.Context, groupID string) error {
+	span := createSpan(ctx, gcm.tracer, removeGroupOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.Remove(ctx, groupID)
+}
+
+func (gcm groupCacheMiddleware) SaveRole(ctx context.Context, groupID, memberID, role string) error {
+	span := createSpan(ctx, gcm.tracer, saveRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.SaveRole(ctx, groupID, memberID, role)
+}
+
+func (gcm groupCacheMiddleware) Role(ctx context.Context, groupID, memberID string) (string, error) {
+	span := createSpan(ctx, gcm.tracer, retrieveRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.Role(ctx, groupID, memberID)
+}
+
+func (gcm groupCacheMiddleware) RemoveRole(ctx context.Context, groupID, memberID string) error {
+	span := createSpan(ctx, gcm.tracer, removeRoleOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return gcm.cache.RemoveRole(ctx, groupID, memberID)
 }
