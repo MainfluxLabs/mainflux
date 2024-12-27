@@ -249,8 +249,8 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  thing.ID,
-		Subject: ThingSub,
+		Object:  thGroup,
+		Subject: GroupSub,
 		Action:  Editor,
 	}
 	if err := ts.Authorize(ctx, ar); err != nil {
@@ -292,18 +292,18 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 }
 
 func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  id,
-		Subject: ThingSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	thing, err := ts.things.RetrieveByID(ctx, id)
+	if err != nil {
 		return Thing{}, err
 	}
 
-	thing, err := ts.things.RetrieveByID(ctx, id)
-	if err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  thing.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Thing{}, err
 	}
 
@@ -432,18 +432,18 @@ func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profil
 }
 
 func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Profile, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  id,
-		Subject: ProfileSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	profile, err := ts.profiles.RetrieveByID(ctx, id)
+	if err != nil {
 		return Profile{}, err
 	}
 
-	profile, err := ts.profiles.RetrieveByID(ctx, id)
-	if err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  profile.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Profile{}, err
 	}
 
@@ -469,18 +469,18 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 }
 
 func (ts *thingsService) ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  thID,
-		Subject: ThingSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
+	if err != nil {
 		return Profile{}, err
 	}
 
-	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
-	if err != nil {
+	ar := AuthorizeReq{
+		Token:   token,
+		Object:  profile.GroupID,
+		Subject: GroupSub,
+		Action:  Viewer,
+	}
+	if err := ts.Authorize(ctx, ar); err != nil {
 		return Profile{}, err
 	}
 
