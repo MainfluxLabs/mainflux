@@ -91,14 +91,14 @@ type Groups interface {
 
 // GroupCache contains group caching interface.
 type GroupCache interface {
-	// Save stores pair group id, org id.
-	Save(context.Context, string, string) error
+	// SaveOrgID stores pair group id, org id.
+	SaveOrgID(context.Context, string, string) error
 
 	// OrgID returns org ID for given group ID.
 	OrgID(context.Context, string) (string, error)
 
-	// Remove removes a group from cache.
-	Remove(context.Context, string) error
+	// RemoveOrgID removes org ID by given group ID.
+	RemoveOrgID(context.Context, string) error
 
 	// SaveRole stores pair groupID:memberID, role.
 	SaveRole(context.Context, string, string, string) error
@@ -214,7 +214,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.groupCache.Remove(ctx, id); err != nil {
+		if err := ts.groupCache.RemoveOrgID(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -265,7 +265,7 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 		}
 		grID = pr.GroupID
 
-		if err := ts.profileCache.Save(ctx, pr.ID, pr.GroupID); err != nil {
+		if err := ts.profileCache.SaveGroupID(ctx, pr.ID, pr.GroupID); err != nil {
 			return Group{}, err
 		}
 	}
@@ -329,7 +329,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		grOrgID = group.OrgID
 
-		if err := ts.groupCache.Save(ctx, group.ID, group.OrgID); err != nil {
+		if err := ts.groupCache.SaveOrgID(ctx, group.ID, group.OrgID); err != nil {
 			return err
 		}
 	}

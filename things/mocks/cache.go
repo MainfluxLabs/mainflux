@@ -13,16 +13,16 @@ import (
 )
 
 type thingCacheMock struct {
-	mu        sync.Mutex
-	things    map[string]string
-	thsGroups map[string]string
+	mu       sync.Mutex
+	things   map[string]string
+	thGroups map[string]string
 }
 
 // NewThingCache returns mock cache instance.
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{
-		things:    make(map[string]string),
-		thsGroups: make(map[string]string),
+		things:   make(map[string]string),
+		thGroups: make(map[string]string),
 	}
 }
 
@@ -64,7 +64,7 @@ func (tcm *thingCacheMock) SaveGroupID(_ context.Context, thingID string, groupI
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	tcm.thsGroups[thingID] = groupID
+	tcm.thGroups[thingID] = groupID
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (tcm *thingCacheMock) GroupID(_ context.Context, thingID string) (string, e
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	groupID, ok := tcm.thsGroups[thingID]
+	groupID, ok := tcm.thGroups[thingID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -84,28 +84,28 @@ func (tcm *thingCacheMock) RemoveGroupID(_ context.Context, thingID string) erro
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	delete(tcm.thsGroups, thingID)
+	delete(tcm.thGroups, thingID)
 
 	return nil
 }
 
 type profileCacheMock struct {
 	mu       sync.Mutex
-	profiles map[string]string
+	prGroups map[string]string
 }
 
 // NewProfileCache returns mock cache instance.
 func NewProfileCache() things.ProfileCache {
 	return &profileCacheMock{
-		profiles: make(map[string]string),
+		prGroups: make(map[string]string),
 	}
 }
 
-func (ccm *profileCacheMock) Save(_ context.Context, profileID string, groupID string) error {
+func (ccm *profileCacheMock) SaveGroupID(_ context.Context, profileID string, groupID string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	ccm.profiles[profileID] = groupID
+	ccm.prGroups[profileID] = groupID
 	return nil
 }
 
@@ -113,7 +113,7 @@ func (ccm *profileCacheMock) GroupID(_ context.Context, profileID string) (strin
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	groupID, ok := ccm.profiles[profileID]
+	groupID, ok := ccm.prGroups[profileID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -121,33 +121,33 @@ func (ccm *profileCacheMock) GroupID(_ context.Context, profileID string) (strin
 	return groupID, nil
 }
 
-func (ccm *profileCacheMock) Remove(_ context.Context, profileID string) error {
+func (ccm *profileCacheMock) RemoveGroupID(_ context.Context, profileID string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
-	delete(ccm.profiles, profileID)
+	delete(ccm.prGroups, profileID)
 	return nil
 }
 
 type groupCacheMock struct {
 	mu     sync.Mutex
-	groups map[string]string
+	grOrgs map[string]string
 	roles  map[string]string
 }
 
 // NewGroupCache returns mock cache instance.
 func NewGroupCache() things.GroupCache {
 	return &groupCacheMock{
-		groups: make(map[string]string),
+		grOrgs: make(map[string]string),
 		roles:  make(map[string]string),
 	}
 }
 
-func (gcm *groupCacheMock) Save(_ context.Context, groupID, orgID string) error {
+func (gcm *groupCacheMock) SaveOrgID(_ context.Context, groupID, orgID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	gcm.groups[groupID] = orgID
+	gcm.grOrgs[groupID] = orgID
 	return nil
 }
 
@@ -155,7 +155,7 @@ func (gcm *groupCacheMock) OrgID(_ context.Context, groupID string) (string, err
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	orgID, ok := gcm.groups[groupID]
+	orgID, ok := gcm.grOrgs[groupID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -163,11 +163,11 @@ func (gcm *groupCacheMock) OrgID(_ context.Context, groupID string) (string, err
 	return orgID, nil
 }
 
-func (gcm *groupCacheMock) Remove(_ context.Context, groupID string) error {
+func (gcm *groupCacheMock) RemoveOrgID(_ context.Context, groupID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	delete(gcm.groups, groupID)
+	delete(gcm.grOrgs, groupID)
 	return nil
 }
 
@@ -175,7 +175,7 @@ func (gcm *groupCacheMock) SaveRole(_ context.Context, groupID, memberID, role s
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := fmt.Sprintf("%s:%s", groupID, memberID)
+	key := rKey(groupID, memberID)
 	gcm.roles[key] = role
 	return nil
 }
@@ -184,7 +184,7 @@ func (gcm *groupCacheMock) Role(_ context.Context, groupID, memberID string) (st
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := fmt.Sprintf("%s:%s", groupID, memberID)
+	key := rKey(groupID, memberID)
 	role, ok := gcm.roles[key]
 	if !ok {
 		return "", errors.ErrNotFound
@@ -197,8 +197,12 @@ func (gcm *groupCacheMock) RemoveRole(_ context.Context, groupID, memberID strin
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := fmt.Sprintf("%s:%s", groupID, memberID)
+	key := rKey(groupID, memberID)
 	delete(gcm.roles, key)
 
 	return nil
+}
+
+func rKey(groupID, memberID string) string {
+	return fmt.Sprintf("%s:%s", groupID, memberID)
 }

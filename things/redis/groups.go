@@ -9,7 +9,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const grPrefix = "group"
+const (
+	grPrefix  = "group"
+	orgSuffix = "org"
+)
 
 var _ things.GroupCache = (*groupCache)(nil)
 
@@ -24,8 +27,8 @@ func NewGroupCache(client *redis.Client) things.GroupCache {
 	}
 }
 
-func (gc *groupCache) Save(ctx context.Context, groupID, orgID string) error {
-	gk := gidKey(groupID)
+func (gc *groupCache) SaveOrgID(ctx context.Context, groupID, orgID string) error {
+	gk := goKey(groupID)
 	if err := gc.client.Set(ctx, gk, orgID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -34,7 +37,7 @@ func (gc *groupCache) Save(ctx context.Context, groupID, orgID string) error {
 }
 
 func (gc *groupCache) OrgID(ctx context.Context, groupID string) (string, error) {
-	gk := gidKey(groupID)
+	gk := goKey(groupID)
 	orgID, err := gc.client.Get(ctx, gk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
@@ -43,8 +46,8 @@ func (gc *groupCache) OrgID(ctx context.Context, groupID string) (string, error)
 	return orgID, nil
 }
 
-func (gc *groupCache) Remove(ctx context.Context, groupID string) error {
-	gk := gidKey(groupID)
+func (gc *groupCache) RemoveOrgID(ctx context.Context, groupID string) error {
+	gk := goKey(groupID)
 	if err := gc.client.Del(ctx, gk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
@@ -80,8 +83,8 @@ func (gc *groupCache) RemoveRole(ctx context.Context, groupID, memberID string) 
 	return nil
 }
 
-func gidKey(groupID string) string {
-	return fmt.Sprintf("%s:%s", grPrefix, groupID)
+func goKey(groupID string) string {
+	return fmt.Sprintf("%s:%s:%s", grPrefix, groupID, orgSuffix)
 }
 
 func rKey(groupID, memberID string) string {

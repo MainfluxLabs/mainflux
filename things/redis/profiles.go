@@ -24,8 +24,8 @@ type profileCache struct {
 func NewProfileCache(client *redis.Client) things.ProfileCache {
 	return profileCache{client: client}
 }
-func (pc profileCache) Save(ctx context.Context, profileID string, groupID string) error {
-	pk := pidKey(profileID)
+func (pc profileCache) SaveGroupID(ctx context.Context, profileID string, groupID string) error {
+	pk := pgKey(profileID)
 	if err := pc.client.Set(ctx, pk, groupID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -33,8 +33,8 @@ func (pc profileCache) Save(ctx context.Context, profileID string, groupID strin
 	return nil
 }
 
-func (pc profileCache) Remove(ctx context.Context, profileID string) error {
-	pk := pidKey(profileID)
+func (pc profileCache) RemoveGroupID(ctx context.Context, profileID string) error {
+	pk := pgKey(profileID)
 	if err := pc.client.Del(ctx, pk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
@@ -43,7 +43,7 @@ func (pc profileCache) Remove(ctx context.Context, profileID string) error {
 }
 
 func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, error) {
-	pk := pidKey(profileID)
+	pk := pgKey(profileID)
 	groupID, err := pc.client.Get(ctx, pk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
@@ -52,6 +52,6 @@ func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, e
 	return groupID, nil
 }
 
-func pidKey(profileID string) string {
-	return fmt.Sprintf("%s:%s", prPrefix, profileID)
+func pgKey(profileID string) string {
+	return fmt.Sprintf("%s:%s:%s", prPrefix, profileID, grPrefix)
 }

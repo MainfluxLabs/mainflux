@@ -188,7 +188,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 			}
 			prGrID = profile.GroupID
 
-			if err := ts.profileCache.Save(ctx, profile.ID, profile.GroupID); err != nil {
+			if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
 				return []Thing{}, err
 			}
 		}
@@ -267,7 +267,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 		prGrID = profile.GroupID
 
-		if err := ts.profileCache.Save(ctx, profile.ID, profile.GroupID); err != nil {
+		if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
 			return err
 		}
 	}
@@ -507,7 +507,7 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			}
 		}
 
-		if err := ts.profileCache.Remove(ctx, id); err != nil {
+		if err := ts.profileCache.RemoveGroupID(ctx, id); err != nil {
 			return err
 		}
 	}

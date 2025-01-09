@@ -22,9 +22,9 @@ const (
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
 	retrieveAllThingsOp        = "retrieve_all_things"
-	saveGroupIDOp              = "save_group_id"
-	retrieveGroupByThingOP     = "retrieve_group_by_thing"
-	removeGroupIDOp            = "remove_group_id"
+	saveGroupIDByThingIDOp     = "save_group_id_by_thing_id"
+	retrieveGroupIDByThingIDOp = "retrieve_group_id_by_thing_id"
+	removeGroupIDByThingIDOp   = "remove_group_id_by_thing_id"
 )
 
 var (
@@ -165,7 +165,7 @@ func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) erro
 }
 
 func (tcm thingCacheMiddleware) SaveGroupID(ctx context.Context, thingID string, groupID string) error {
-	span := createSpan(ctx, tcm.tracer, saveGroupIDOp)
+	span := createSpan(ctx, tcm.tracer, saveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -173,7 +173,7 @@ func (tcm thingCacheMiddleware) SaveGroupID(ctx context.Context, thingID string,
 }
 
 func (tcm thingCacheMiddleware) GroupID(ctx context.Context, thingID string) (string, error) {
-	span := createSpan(ctx, tcm.tracer, retrieveGroupByThingOP)
+	span := createSpan(ctx, tcm.tracer, retrieveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -181,7 +181,7 @@ func (tcm thingCacheMiddleware) GroupID(ctx context.Context, thingID string) (st
 }
 
 func (tcm thingCacheMiddleware) RemoveGroupID(ctx context.Context, thingID string) error {
-	span := createSpan(ctx, tcm.tracer, removeGroupIDOp)
+	span := createSpan(ctx, tcm.tracer, removeGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
