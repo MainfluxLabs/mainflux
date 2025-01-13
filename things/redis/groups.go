@@ -10,26 +10,31 @@ import (
 )
 
 const (
-	grPrefix  = "group"
-	orgSuffix = "org"
+	grKey   = "group"
+	grsKey  = "groups"
+	mbrKey  = "member"
+	mbrsKey = "members"
+	orgKey  = "org"
 )
 
 var _ things.GroupCache = (*groupCache)(nil)
 
 type groupCache struct {
-	client *redis.Client
+	client  *redis.Client
+	thCache things.ThingCache
 }
 
 // NewGroupCache returns redis group cache implementation.
-func NewGroupCache(client *redis.Client) things.GroupCache {
+func NewGroupCache(client *redis.Client, thCache things.ThingCache) things.GroupCache {
 	return &groupCache{
-		client: client,
+		client:  client,
+		thCache: thCache,
 	}
 }
 
 func (gc *groupCache) SaveOrgID(ctx context.Context, groupID, orgID string) error {
-	gk := goKey(groupID)
-	if err := gc.client.Set(ctx, gk, orgID, 0).Err(); err != nil {
+	gok := groupOrgKey(groupID)
+	if err := gc.client.Set(ctx, gok, orgID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -37,8 +42,8 @@ func (gc *groupCache) SaveOrgID(ctx context.Context, groupID, orgID string) erro
 }
 
 func (gc *groupCache) OrgID(ctx context.Context, groupID string) (string, error) {
-	gk := goKey(groupID)
-	orgID, err := gc.client.Get(ctx, gk).Result()
+	gok := groupOrgKey(groupID)
+	orgID, err := gc.client.Get(ctx, gok).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -46,18 +51,48 @@ func (gc *groupCache) OrgID(ctx context.Context, groupID string) (string, error)
 	return orgID, nil
 }
 
-func (gc *groupCache) RemoveOrgID(ctx context.Context, groupID string) error {
-	gk := goKey(groupID)
-	if err := gc.client.Del(ctx, gk).Err(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+func (gc *groupCache) Remove(ctx context.Context, groupID string) error {
+	var (
+		cursor uint64
+		keys   []string
+		err    error
+	)
+
+	if err := gc.clearGroup(ctx, groupID, thsKey, prsKey, mbrsKey); err != nil {
+		return err
+	}
+
+	// Using this key pattern will delete keys starting with the prefix 'group:<group_id>' such as:
+	// group:<group_id>:org, group:<group_id>:things, group:<group_id>:profiles, group:<group_id>:members
+	key := fmt.Sprintf("%s:%s:*", grKey, groupID)
+	for {
+		keys, cursor, err = gc.client.Scan(ctx, cursor, key, 100).Result()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		if len(keys) > 0 {
+			if err := gc.client.Unlink(ctx, keys...).Err(); err != nil {
+				return errors.Wrap(errors.ErrRemoveEntity, err)
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
 	}
 
 	return nil
 }
 
 func (gc *groupCache) SaveRole(ctx context.Context, groupID, memberID, role string) error {
-	rk := rKey(groupID, memberID)
-	if err := gc.client.Set(ctx, rk, role, 0).Err(); err != nil {
+	mgk := memberGroupsKey(memberID)
+	if err := gc.client.HSet(ctx, mgk, groupID, role).Err(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	gmk := groupMembersKey(groupID)
+	if err := gc.client.SAdd(ctx, gmk, memberID).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -65,8 +100,8 @@ func (gc *groupCache) SaveRole(ctx context.Context, groupID, memberID, role stri
 }
 
 func (gc *groupCache) Role(ctx context.Context, groupID, memberID string) (string, error) {
-	rk := rKey(groupID, memberID)
-	role, err := gc.client.Get(ctx, rk).Result()
+	mgk := memberGroupsKey(memberID)
+	role, err := gc.client.HGet(ctx, mgk, groupID).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -75,18 +110,74 @@ func (gc *groupCache) Role(ctx context.Context, groupID, memberID string) (strin
 }
 
 func (gc *groupCache) RemoveRole(ctx context.Context, groupID, memberID string) error {
-	// Redis returns Nil Reply when key does not exist.
-	rk := rKey(groupID, memberID)
-	if err := gc.client.Del(ctx, rk).Err(); err != nil {
+	mgk := memberGroupsKey(memberID)
+	if _, err := gc.client.HDel(ctx, mgk, groupID).Result(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
+
+	gmk := groupMembersKey(groupID)
+	if _, err := gc.client.SRem(ctx, gmk, memberID).Result(); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
 	return nil
 }
 
-func goKey(groupID string) string {
-	return fmt.Sprintf("%s:%s:%s", grPrefix, groupID, orgSuffix)
+func (gc *groupCache) GroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
+	mgk := memberGroupsKey(memberID)
+	groups, err := gc.client.HKeys(ctx, mgk).Result()
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	return groups, nil
 }
 
-func rKey(groupID, memberID string) string {
-	return fmt.Sprintf("%s:%s:%s", grPrefix, groupID, memberID)
+func groupOrgKey(groupID string) string {
+	return fmt.Sprintf("%s:%s:%s", grKey, groupID, orgKey)
+}
+
+func groupMembersKey(groupID string) string {
+	return fmt.Sprintf("%s:%s:%s", grKey, groupID, mbrsKey)
+}
+
+func memberGroupsKey(memberID string) string {
+	return fmt.Sprintf("%s:%s:%s", mbrKey, memberID, grsKey)
+}
+
+func (gc *groupCache) clearGroup(ctx context.Context, groupID string, entityTypes ...string) error {
+	var gKey string
+	for _, entityType := range entityTypes {
+		esKey := fmt.Sprintf("%s:%s:%s", grKey, groupID, entityType)
+		entities, err := gc.client.SMembers(ctx, esKey).Result()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		for _, entityID := range entities {
+			switch entityType {
+			case thsKey:
+				gKey = thingGroupKey(entityID)
+				if err := gc.client.Del(ctx, gKey).Err(); err != nil {
+					return errors.Wrap(errors.ErrRemoveEntity, err)
+				}
+
+				if err := gc.thCache.Remove(ctx, entityID); err != nil {
+					return err
+				}
+			case prsKey:
+				gKey = profileGroupKey(entityID)
+				if err := gc.client.Del(ctx, gKey).Err(); err != nil {
+					return errors.Wrap(errors.ErrRemoveEntity, err)
+				}
+			case mbrsKey:
+				gKey = memberGroupsKey(entityID)
+				if _, err := gc.client.HDel(ctx, gKey, groupID).Result(); err != nil {
+					return errors.Wrap(errors.ErrRemoveEntity, err)
+				}
+			}
+		}
+	}
+
+	return nil
 }

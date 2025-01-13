@@ -12,7 +12,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const prPrefix = "profile"
+const (
+	prKey  = "profile"
+	prsKey = "profiles"
+)
 
 var _ things.ProfileCache = (*profileCache)(nil)
 
@@ -25,8 +28,13 @@ func NewProfileCache(client *redis.Client) things.ProfileCache {
 	return profileCache{client: client}
 }
 func (pc profileCache) SaveGroupID(ctx context.Context, profileID string, groupID string) error {
-	pk := pgKey(profileID)
-	if err := pc.client.Set(ctx, pk, groupID, 0).Err(); err != nil {
+	pgk := profileGroupKey(profileID)
+	if err := pc.client.Set(ctx, pgk, groupID, 0).Err(); err != nil {
+		return errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	gpk := groupProfilesKey(groupID)
+	if err := pc.client.SAdd(ctx, gpk, profileID).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -34,8 +42,21 @@ func (pc profileCache) SaveGroupID(ctx context.Context, profileID string, groupI
 }
 
 func (pc profileCache) RemoveGroupID(ctx context.Context, profileID string) error {
-	pk := pgKey(profileID)
-	if err := pc.client.Del(ctx, pk).Err(); err != nil {
+	pgk := profileGroupKey(profileID)
+	groupID, err := pc.client.Get(ctx, pgk).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil
+		}
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	if err := pc.client.Del(ctx, pgk).Err(); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	gpk := groupProfilesKey(groupID)
+	if err := pc.client.SRem(ctx, gpk, profileID).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
@@ -43,8 +64,8 @@ func (pc profileCache) RemoveGroupID(ctx context.Context, profileID string) erro
 }
 
 func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, error) {
-	pk := pgKey(profileID)
-	groupID, err := pc.client.Get(ctx, pk).Result()
+	pgk := profileGroupKey(profileID)
+	groupID, err := pc.client.Get(ctx, pgk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -52,6 +73,10 @@ func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, e
 	return groupID, nil
 }
 
-func pgKey(profileID string) string {
-	return fmt.Sprintf("%s:%s:%s", prPrefix, profileID, grPrefix)
+func profileGroupKey(profileID string) string {
+	return fmt.Sprintf("%s:%s:%s", prKey, profileID, grKey)
+}
+
+func groupProfilesKey(groupID string) string {
+	return fmt.Sprintf("%s:%s:%s", grKey, groupID, prsKey)
 }

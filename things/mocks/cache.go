@@ -6,6 +6,7 @@ package mocks
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -163,7 +164,7 @@ func (gcm *groupCacheMock) OrgID(_ context.Context, groupID string) (string, err
 	return orgID, nil
 }
 
-func (gcm *groupCacheMock) RemoveOrgID(_ context.Context, groupID string) error {
+func (gcm *groupCacheMock) Remove(_ context.Context, groupID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -201,6 +202,21 @@ func (gcm *groupCacheMock) RemoveRole(_ context.Context, groupID, memberID strin
 	delete(gcm.roles, key)
 
 	return nil
+}
+
+func (gcm *groupCacheMock) GroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
+	gcm.mu.Lock()
+	defer gcm.mu.Unlock()
+
+	groups := []string{}
+	for k := range gcm.roles {
+		parts := strings.Split(k, ":")
+		if parts[1] == memberID {
+			groups = append(groups, parts[0])
+		}
+	}
+
+	return groups, nil
 }
 
 func rKey(groupID, memberID string) string {

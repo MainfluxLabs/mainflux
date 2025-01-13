@@ -97,10 +97,10 @@ type GroupCache interface {
 	// OrgID returns org ID for given group ID.
 	OrgID(context.Context, string) (string, error)
 
-	// RemoveOrgID removes org ID by given group ID.
-	RemoveOrgID(context.Context, string) error
+	// Remove removes org ID by given group ID and all entities related to that group.
+	Remove(context.Context, string) error
 
-	// SaveRole stores pair groupID:memberID, role.
+	// SaveRole stores member's role for given group ID.
 	SaveRole(context.Context, string, string, string) error
 
 	// Role returns a group member role by given groupID and memberID.
@@ -108,6 +108,9 @@ type GroupCache interface {
 
 	// RemoveRole removes a group member role from cache.
 	RemoveRole(context.Context, string, string) error
+
+	// GroupIDsByMember returns the IDs of the groups the member belongs to.
+	GroupIDsByMember(context.Context, string) ([]string, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
@@ -144,7 +147,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		if err := ts.groupCache.SaveRole(ctx, group.ID, userID, Owner); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, gr.ID, userID, Owner); err != nil {
 			return []Group{}, err
 		}
 
@@ -185,9 +188,12 @@ func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, user.GetId())
+	grIDs, err := ts.groupCache.GroupIDsByMember(ctx, user.GetId())
 	if err != nil {
-		return GroupPage{}, err
+		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, user.GetId())
+		if err != nil {
+			return GroupPage{}, err
+		}
 	}
 
 	return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
@@ -214,7 +220,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.groupCache.RemoveOrgID(ctx, id); err != nil {
+		if err := ts.groupCache.Remove(ctx, id); err != nil {
 			return err
 		}
 	}

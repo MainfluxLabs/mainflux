@@ -232,6 +232,11 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 	if len(ths) == 0 {
 		return Thing{}, errors.ErrCreateEntity
 	}
+
+	if err := ts.thingCache.SaveGroupID(ctx, thing.ID, thing.GroupID); err != nil {
+		return Thing{}, err
+	}
+
 	return ths[0], nil
 }
 
@@ -322,9 +327,12 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.groupCache.GroupIDsByMember(ctx, res.GetId())
 	if err != nil {
-		return ThingsPage{}, err
+		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
+		if err != nil {
+			return ThingsPage{}, err
+		}
 	}
 
 	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
@@ -416,6 +424,10 @@ func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (P
 		return Profile{}, errors.ErrCreateEntity
 	}
 
+	if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
+		return Profile{}, err
+	}
+
 	return prs[0], nil
 }
 
@@ -462,9 +474,12 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.groupCache.GroupIDsByMember(ctx, res.GetId())
 	if err != nil {
-		return ProfilesPage{}, err
+		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
+		if err != nil {
+			return ProfilesPage{}, err
+		}
 	}
 
 	return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
