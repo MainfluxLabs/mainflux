@@ -43,7 +43,7 @@ func TestRemove(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := profileCache.RemoveGroupID(context.Background(), tc.pid)
+		err := profileCache.RemoveGroup(context.Background(), tc.pid)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

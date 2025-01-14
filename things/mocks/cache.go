@@ -61,7 +61,7 @@ func (tcm *thingCacheMock) Remove(_ context.Context, id string) error {
 	return nil
 }
 
-func (tcm *thingCacheMock) SaveGroupID(_ context.Context, thingID string, groupID string) error {
+func (tcm *thingCacheMock) SaveGroup(_ context.Context, thingID string, groupID string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
@@ -69,7 +69,7 @@ func (tcm *thingCacheMock) SaveGroupID(_ context.Context, thingID string, groupI
 	return nil
 }
 
-func (tcm *thingCacheMock) GroupID(_ context.Context, thingID string) (string, error) {
+func (tcm *thingCacheMock) ViewGroup(_ context.Context, thingID string) (string, error) {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
@@ -81,7 +81,7 @@ func (tcm *thingCacheMock) GroupID(_ context.Context, thingID string) (string, e
 	return groupID, nil
 }
 
-func (tcm *thingCacheMock) RemoveGroupID(_ context.Context, thingID string) error {
+func (tcm *thingCacheMock) RemoveGroup(_ context.Context, thingID string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
@@ -102,7 +102,7 @@ func NewProfileCache() things.ProfileCache {
 	}
 }
 
-func (ccm *profileCacheMock) SaveGroupID(_ context.Context, profileID string, groupID string) error {
+func (ccm *profileCacheMock) SaveGroup(_ context.Context, profileID string, groupID string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -110,7 +110,7 @@ func (ccm *profileCacheMock) SaveGroupID(_ context.Context, profileID string, gr
 	return nil
 }
 
-func (ccm *profileCacheMock) GroupID(_ context.Context, profileID string) (string, error) {
+func (ccm *profileCacheMock) ViewGroup(_ context.Context, profileID string) (string, error) {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -122,7 +122,7 @@ func (ccm *profileCacheMock) GroupID(_ context.Context, profileID string) (strin
 	return groupID, nil
 }
 
-func (ccm *profileCacheMock) RemoveGroupID(_ context.Context, profileID string) error {
+func (ccm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) error {
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -144,7 +144,7 @@ func NewGroupCache() things.GroupCache {
 	}
 }
 
-func (gcm *groupCacheMock) SaveOrgID(_ context.Context, groupID, orgID string) error {
+func (gcm *groupCacheMock) SaveOrg(_ context.Context, groupID, orgID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -152,7 +152,7 @@ func (gcm *groupCacheMock) SaveOrgID(_ context.Context, groupID, orgID string) e
 	return nil
 }
 
-func (gcm *groupCacheMock) OrgID(_ context.Context, groupID string) (string, error) {
+func (gcm *groupCacheMock) ViewOrg(_ context.Context, groupID string) (string, error) {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -164,7 +164,7 @@ func (gcm *groupCacheMock) OrgID(_ context.Context, groupID string) (string, err
 	return orgID, nil
 }
 
-func (gcm *groupCacheMock) Remove(_ context.Context, groupID string) error {
+func (gcm *groupCacheMock) RemoveOrg(_ context.Context, groupID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -181,7 +181,7 @@ func (gcm *groupCacheMock) SaveRole(_ context.Context, groupID, memberID, role s
 	return nil
 }
 
-func (gcm *groupCacheMock) Role(_ context.Context, groupID, memberID string) (string, error) {
+func (gcm *groupCacheMock) ViewRole(_ context.Context, groupID, memberID string) (string, error) {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -204,7 +204,7 @@ func (gcm *groupCacheMock) RemoveRole(_ context.Context, groupID, memberID strin
 	return nil
 }
 
-func (gcm *groupCacheMock) GroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
+func (gcm *groupCacheMock) GroupMemberships(_ context.Context, memberID string) ([]string, error) {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 

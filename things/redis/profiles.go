@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	prKey  = "profile"
-	prsKey = "profiles"
+	profileGroupPrefix  = "pr_gr"
+	groupProfilesPrefix = "gr_prs"
 )
 
 var _ things.ProfileCache = (*profileCache)(nil)
@@ -25,9 +25,9 @@ type profileCache struct {
 
 // NewProfileCache returns redis profile cache implementation.
 func NewProfileCache(client *redis.Client) things.ProfileCache {
-	return profileCache{client: client}
+	return &profileCache{client: client}
 }
-func (pc profileCache) SaveGroupID(ctx context.Context, profileID string, groupID string) error {
+func (pc *profileCache) SaveGroup(ctx context.Context, profileID string, groupID string) error {
 	pgk := profileGroupKey(profileID)
 	if err := pc.client.Set(ctx, pgk, groupID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
@@ -41,7 +41,7 @@ func (pc profileCache) SaveGroupID(ctx context.Context, profileID string, groupI
 	return nil
 }
 
-func (pc profileCache) RemoveGroupID(ctx context.Context, profileID string) error {
+func (pc *profileCache) RemoveGroup(ctx context.Context, profileID string) error {
 	pgk := profileGroupKey(profileID)
 	groupID, err := pc.client.Get(ctx, pgk).Result()
 	if err != nil {
@@ -63,7 +63,7 @@ func (pc profileCache) RemoveGroupID(ctx context.Context, profileID string) erro
 	return nil
 }
 
-func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, error) {
+func (pc *profileCache) ViewGroup(ctx context.Context, profileID string) (string, error) {
 	pgk := profileGroupKey(profileID)
 	groupID, err := pc.client.Get(ctx, pgk).Result()
 	if err != nil {
@@ -74,9 +74,9 @@ func (pc profileCache) GroupID(ctx context.Context, profileID string) (string, e
 }
 
 func profileGroupKey(profileID string) string {
-	return fmt.Sprintf("%s:%s:%s", prKey, profileID, grKey)
+	return fmt.Sprintf("%s:%s", profileGroupPrefix, profileID)
 }
 
 func groupProfilesKey(groupID string) string {
-	return fmt.Sprintf("%s:%s:%s", grKey, groupID, prsKey)
+	return fmt.Sprintf("%s:%s", groupProfilesPrefix, groupID)
 }

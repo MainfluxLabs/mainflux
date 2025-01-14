@@ -120,26 +120,26 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 	}
 }
 
-func (ccm profileCacheMiddleware) SaveGroupID(ctx context.Context, profileID, groupID string) error {
+func (ccm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
 	span := createSpan(ctx, ccm.tracer, saveGroupIDByProfileIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.SaveGroupID(ctx, profileID, groupID)
+	return ccm.cache.SaveGroup(ctx, profileID, groupID)
 }
 
-func (ccm profileCacheMiddleware) GroupID(ctx context.Context, profileID string) (string, error) {
+func (ccm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
 	span := createSpan(ctx, ccm.tracer, retrieveGroupIDByProfileIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.GroupID(ctx, profileID)
+	return ccm.cache.ViewGroup(ctx, profileID)
 }
 
-func (ccm profileCacheMiddleware) RemoveGroupID(ctx context.Context, profileID string) error {
+func (ccm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
 	span := createSpan(ctx, ccm.tracer, removeGroupIDByProfileIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.RemoveGroupID(ctx, profileID)
+	return ccm.cache.RemoveGroup(ctx, profileID)
 }

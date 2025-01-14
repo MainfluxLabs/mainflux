@@ -180,7 +180,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 			return nil, err
 		}
 
-		prGrID, err := ts.profileCache.GroupID(ctx, thing.ProfileID)
+		prGrID, err := ts.profileCache.ViewGroup(ctx, thing.ProfileID)
 		if err != nil {
 			profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
 			if err != nil {
@@ -188,7 +188,7 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 			}
 			prGrID = profile.GroupID
 
-			if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
+			if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
 				return []Thing{}, err
 			}
 		}
@@ -233,7 +233,7 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 		return Thing{}, errors.ErrCreateEntity
 	}
 
-	if err := ts.thingCache.SaveGroupID(ctx, thing.ID, thing.GroupID); err != nil {
+	if err := ts.thingCache.SaveGroup(ctx, thing.ID, thing.GroupID); err != nil {
 		return Thing{}, err
 	}
 
@@ -241,7 +241,7 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	thGroup, err := ts.thingCache.GroupID(ctx, thing.ID)
+	thGroup, err := ts.thingCache.ViewGroup(ctx, thing.ID)
 	if err != nil {
 		th, err := ts.things.RetrieveByID(ctx, thing.ID)
 		if err != nil {
@@ -249,7 +249,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 		thGroup = th.GroupID
 
-		if err := ts.thingCache.SaveGroupID(ctx, th.ID, th.GroupID); err != nil {
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
 			return err
 		}
 	}
@@ -264,7 +264,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	prGrID, err := ts.profileCache.GroupID(ctx, thing.ProfileID)
+	prGrID, err := ts.profileCache.ViewGroup(ctx, thing.ProfileID)
 	if err != nil {
 		profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
 		if err != nil {
@@ -272,7 +272,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 		prGrID = profile.GroupID
 
-		if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
+		if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
 			return err
 		}
 	}
@@ -327,7 +327,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groupCache.GroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.groupCache.GroupMemberships(ctx, res.GetId())
 	if err != nil {
 		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
 		if err != nil {
@@ -373,7 +373,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.thingCache.RemoveGroupID(ctx, id); err != nil {
+		if err := ts.thingCache.RemoveGroup(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -424,7 +424,7 @@ func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (P
 		return Profile{}, errors.ErrCreateEntity
 	}
 
-	if err := ts.profileCache.SaveGroupID(ctx, profile.ID, profile.GroupID); err != nil {
+	if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
 		return Profile{}, err
 	}
 
@@ -474,7 +474,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groupCache.GroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.groupCache.GroupMemberships(ctx, res.GetId())
 	if err != nil {
 		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
 		if err != nil {
@@ -522,7 +522,7 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			}
 		}
 
-		if err := ts.profileCache.RemoveGroupID(ctx, id); err != nil {
+		if err := ts.profileCache.RemoveGroup(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -602,7 +602,7 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
-	thGrID, err := ts.thingCache.GroupID(ctx, thingID)
+	thGrID, err := ts.thingCache.ViewGroup(ctx, thingID)
 	if err != nil {
 		th, err := ts.things.RetrieveByID(ctx, thingID)
 		if err != nil {
@@ -610,7 +610,7 @@ func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string
 		}
 		thGrID = th.GroupID
 
-		if err := ts.thingCache.SaveGroupID(ctx, th.ID, th.GroupID); err != nil {
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
 			return "", err
 		}
 	}

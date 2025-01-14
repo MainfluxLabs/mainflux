@@ -159,7 +159,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 	}
 
 	for _, gm := range gms {
-		rm, err := ts.groupCache.Role(ctx, grID, gm.MemberID)
+		rm, err := ts.groupCache.ViewRole(ctx, grID, gm.MemberID)
 		if err != nil {
 			r, err := ts.roles.RetrieveRole(ctx, gm)
 			if err != nil {
@@ -198,7 +198,7 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 	}
 
 	for _, mid := range memberIDs {
-		rm, err := ts.groupCache.Role(ctx, groupID, mid)
+		rm, err := ts.groupCache.ViewRole(ctx, groupID, mid)
 		if err != nil {
 			r, err := ts.roles.RetrieveRole(ctx, GroupMember{GroupID: groupID, MemberID: mid})
 			if err != nil {

@@ -164,28 +164,28 @@ func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) erro
 	return tcm.cache.Remove(ctx, thingID)
 }
 
-func (tcm thingCacheMiddleware) SaveGroupID(ctx context.Context, thingID string, groupID string) error {
+func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {
 	span := createSpan(ctx, tcm.tracer, saveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.SaveGroupID(ctx, thingID, groupID)
+	return tcm.cache.SaveGroup(ctx, thingID, groupID)
 }
 
-func (tcm thingCacheMiddleware) GroupID(ctx context.Context, thingID string) (string, error) {
+func (tcm thingCacheMiddleware) ViewGroup(ctx context.Context, thingID string) (string, error) {
 	span := createSpan(ctx, tcm.tracer, retrieveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.GroupID(ctx, thingID)
+	return tcm.cache.ViewGroup(ctx, thingID)
 }
 
-func (tcm thingCacheMiddleware) RemoveGroupID(ctx context.Context, thingID string) error {
+func (tcm thingCacheMiddleware) RemoveGroup(ctx context.Context, thingID string) error {
 	span := createSpan(ctx, tcm.tracer, removeGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.RemoveGroupID(ctx, thingID)
+	return tcm.cache.RemoveGroup(ctx, thingID)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
