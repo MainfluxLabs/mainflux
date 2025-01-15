@@ -18,15 +18,13 @@ const (
 var _ things.GroupCache = (*groupCache)(nil)
 
 type groupCache struct {
-	client  *redis.Client
-	thCache things.ThingCache
+	client *redis.Client
 }
 
 // NewGroupCache returns redis group cache implementation.
-func NewGroupCache(client *redis.Client, thCache things.ThingCache) things.GroupCache {
+func NewGroupCache(client *redis.Client) things.GroupCache {
 	return &groupCache{
-		client:  client,
-		thCache: thCache,
+		client: client,
 	}
 }
 

@@ -347,7 +347,7 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	thingCache := rediscache.NewThingCache(cacheClient)
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 
-	groupCache := rediscache.NewGroupCache(cacheClient, thingCache)
+	groupCache := rediscache.NewGroupCache(cacheClient)
 	groupCache = tracing.GroupCacheMiddleware(cacheTracer, groupCache)
 	idProvider := uuid.New()
 
