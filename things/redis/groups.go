@@ -141,10 +141,12 @@ func (gc *groupCache) removeGroupRelations(ctx context.Context, groupID string) 
 			case groupThingsPrefix:
 				tgKey := thingGroupKey(entityID)
 				tik := thingIDKey(entityID)
-				thingKey, _ := gc.client.Get(ctx, tik).Result()
-				tkk := thingKeyKey(thingKey)
+				removalKeys = append(removalKeys, tgKey, tik)
 
-				removalKeys = append(removalKeys, tgKey, tik, tkk)
+				if thingKey, err := gc.client.Get(ctx, tik).Result(); err == nil {
+					tkk := thingKeyKey(thingKey)
+					removalKeys = append(removalKeys, tkk)
+				}
 			case groupProfilesPrefix:
 				pgKey := profileGroupKey(entityID)
 				removalKeys = append(removalKeys, pgKey)
