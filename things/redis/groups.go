@@ -48,8 +48,49 @@ func (gc *groupCache) ViewOrg(ctx context.Context, groupID string) (string, erro
 }
 
 func (gc *groupCache) RemoveOrg(ctx context.Context, groupID string) error {
-	if err := gc.removeGroupRelations(ctx, groupID); err != nil {
-		return err
+	removalKeys := []string{
+		groupOrgKey(groupID),
+		groupThingsKey(groupID),
+		groupProfilesKey(groupID),
+		groupMembersKey(groupID),
+	}
+	pipe := gc.client.Pipeline()
+	prefixes := []string{groupThingsPrefix, groupProfilesPrefix, groupMembersPrefix}
+
+	for _, prefix := range prefixes {
+		esKey := fmt.Sprintf("%s:%s", prefix, groupID)
+		entities, err := gc.client.SMembers(ctx, esKey).Result()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		for _, entityID := range entities {
+			switch prefix {
+			case groupThingsPrefix:
+				tgKey := thingGroupKey(entityID)
+				tik := thingIDKey(entityID)
+				removalKeys = append(removalKeys, tgKey, tik)
+
+				if thingKey, err := gc.client.Get(ctx, tik).Result(); err == nil {
+					tkk := thingKeyKey(thingKey)
+					removalKeys = append(removalKeys, tkk)
+				}
+			case groupProfilesPrefix:
+				pgKey := profileGroupKey(entityID)
+				removalKeys = append(removalKeys, pgKey)
+			case groupMembersPrefix:
+				mgKey := memberGroupsKey(entityID)
+				pipe.HDel(ctx, mgKey, groupID)
+			}
+		}
+	}
+
+	if err := gc.client.Unlink(ctx, removalKeys...).Err(); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -113,58 +154,4 @@ func groupMembersKey(groupID string) string {
 
 func memberGroupsKey(memberID string) string {
 	return fmt.Sprintf("%s:%s", memberGroupsPrefix, memberID)
-}
-
-func groupKeys(groupID string) []string {
-	return []string{
-		groupOrgKey(groupID),
-		groupThingsKey(groupID),
-		groupProfilesKey(groupID),
-		groupMembersKey(groupID),
-	}
-}
-
-func (gc *groupCache) removeGroupRelations(ctx context.Context, groupID string) error {
-	removalKeys := groupKeys(groupID)
-	pipe := gc.client.Pipeline()
-	prefixes := []string{groupThingsPrefix, groupProfilesPrefix, groupMembersPrefix}
-
-	for _, prefix := range prefixes {
-		esKey := fmt.Sprintf("%s:%s", prefix, groupID)
-		entities, err := gc.client.SMembers(ctx, esKey).Result()
-		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
-		}
-
-		for _, entityID := range entities {
-			switch prefix {
-			case groupThingsPrefix:
-				tgKey := thingGroupKey(entityID)
-				tik := thingIDKey(entityID)
-				removalKeys = append(removalKeys, tgKey, tik)
-
-				if thingKey, err := gc.client.Get(ctx, tik).Result(); err == nil {
-					tkk := thingKeyKey(thingKey)
-					removalKeys = append(removalKeys, tkk)
-				}
-			case groupProfilesPrefix:
-				pgKey := profileGroupKey(entityID)
-				removalKeys = append(removalKeys, pgKey)
-			case groupMembersPrefix:
-				mgKey := memberGroupsKey(entityID)
-				pipe.HDel(ctx, mgKey, groupID)
-			}
-		}
-	}
-	if len(removalKeys) > 0 {
-		if err := gc.client.Unlink(ctx, removalKeys...).Err(); err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
-		}
-	}
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
-
-	return nil
 }

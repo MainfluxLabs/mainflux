@@ -241,13 +241,13 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	thGroup, err := ts.thingCache.ViewGroup(ctx, thing.ID)
+	thGrID, err := ts.thingCache.ViewGroup(ctx, thing.ID)
 	if err != nil {
 		th, err := ts.things.RetrieveByID(ctx, thing.ID)
 		if err != nil {
 			return err
 		}
-		thGroup = th.GroupID
+		thGrID = th.GroupID
 
 		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
 			return err
@@ -256,7 +256,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 
 	ar := AuthorizeReq{
 		Token:   token,
-		Object:  thGroup,
+		Object:  thGrID,
 		Subject: GroupSub,
 		Action:  Editor,
 	}
@@ -266,18 +266,18 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 
 	prGrID, err := ts.profileCache.ViewGroup(ctx, thing.ProfileID)
 	if err != nil {
-		profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
+		pr, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
 		if err != nil {
 			return err
 		}
-		prGrID = profile.GroupID
+		prGrID = pr.GroupID
 
-		if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
+		if err := ts.profileCache.SaveGroup(ctx, pr.ID, pr.GroupID); err != nil {
 			return err
 		}
 	}
 
-	if prGrID != thGroup {
+	if prGrID != thGrID {
 		return errors.ErrAuthorization
 	}
 
@@ -564,17 +564,33 @@ func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
 	var groupID string
 	switch ar.Subject {
 	case ThingSub:
-		thing, err := ts.things.RetrieveByID(ctx, ar.Object)
+		grID, err := ts.thingCache.ViewGroup(ctx, ar.Object)
 		if err != nil {
-			return err
+			thing, err := ts.things.RetrieveByID(ctx, ar.Object)
+			if err != nil {
+				return err
+			}
+			grID = thing.GroupID
+
+			if err := ts.thingCache.SaveGroup(ctx, thing.ID, thing.GroupID); err != nil {
+				return err
+			}
 		}
-		groupID = thing.GroupID
+		groupID = grID
 	case ProfileSub:
-		profile, err := ts.profiles.RetrieveByID(ctx, ar.Object)
+		grID, err := ts.profileCache.ViewGroup(ctx, ar.Object)
 		if err != nil {
-			return err
+			profile, err := ts.profiles.RetrieveByID(ctx, ar.Object)
+			if err != nil {
+				return err
+			}
+			grID = profile.GroupID
+
+			if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
+				return err
+			}
 		}
-		groupID = profile.GroupID
+		groupID = grID
 	case GroupSub:
 		groupID = ar.Object
 	default:
