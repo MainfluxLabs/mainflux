@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	profileGroupPrefix  = "pr_gr"
-	groupProfilesPrefix = "gr_prs"
+	groupByProfilePrefix  = "gr_by_pr"
+	profilesByGroupPrefix = "prs_by_gr"
 )
 
 var _ things.ProfileCache = (*profileCache)(nil)
@@ -28,13 +28,13 @@ func NewProfileCache(client *redis.Client) things.ProfileCache {
 	return &profileCache{client: client}
 }
 func (pc *profileCache) SaveGroup(ctx context.Context, profileID string, groupID string) error {
-	pgk := profileGroupKey(profileID)
-	if err := pc.client.Set(ctx, pgk, groupID, 0).Err(); err != nil {
+	gk := groupByProfileIDKey(profileID)
+	if err := pc.client.Set(ctx, gk, groupID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	gpk := groupProfilesKey(groupID)
-	if err := pc.client.SAdd(ctx, gpk, profileID).Err(); err != nil {
+	pk := profilesByGroupIDKey(groupID)
+	if err := pc.client.SAdd(ctx, pk, profileID).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -42,8 +42,8 @@ func (pc *profileCache) SaveGroup(ctx context.Context, profileID string, groupID
 }
 
 func (pc *profileCache) RemoveGroup(ctx context.Context, profileID string) error {
-	pgk := profileGroupKey(profileID)
-	groupID, err := pc.client.Get(ctx, pgk).Result()
+	gk := groupByProfileIDKey(profileID)
+	groupID, err := pc.client.Get(ctx, gk).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return nil
@@ -51,12 +51,12 @@ func (pc *profileCache) RemoveGroup(ctx context.Context, profileID string) error
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	if err := pc.client.Del(ctx, pgk).Err(); err != nil {
+	if err := pc.client.Del(ctx, gk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	gpk := groupProfilesKey(groupID)
-	if err := pc.client.SRem(ctx, gpk, profileID).Err(); err != nil {
+	pk := profilesByGroupIDKey(groupID)
+	if err := pc.client.SRem(ctx, pk, profileID).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
@@ -64,8 +64,8 @@ func (pc *profileCache) RemoveGroup(ctx context.Context, profileID string) error
 }
 
 func (pc *profileCache) ViewGroup(ctx context.Context, profileID string) (string, error) {
-	pgk := profileGroupKey(profileID)
-	groupID, err := pc.client.Get(ctx, pgk).Result()
+	gk := groupByProfileIDKey(profileID)
+	groupID, err := pc.client.Get(ctx, gk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -73,10 +73,10 @@ func (pc *profileCache) ViewGroup(ctx context.Context, profileID string) (string
 	return groupID, nil
 }
 
-func profileGroupKey(profileID string) string {
-	return fmt.Sprintf("%s:%s", profileGroupPrefix, profileID)
+func groupByProfileIDKey(profileID string) string {
+	return fmt.Sprintf("%s:%s", groupByProfilePrefix, profileID)
 }
 
-func groupProfilesKey(groupID string) string {
-	return fmt.Sprintf("%s:%s", groupProfilesPrefix, groupID)
+func profilesByGroupIDKey(groupID string) string {
+	return fmt.Sprintf("%s:%s", profilesByGroupPrefix, groupID)
 }

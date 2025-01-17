@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	thingKeyPrefix    = "th_key"
-	thingIDPrefix     = "th_id"
-	thingGroupPrefix  = "th_gr"
-	groupThingsPrefix = "gr_ths"
+	keyByIDPrefix       = "key_by_id"
+	idByKeyPrefix       = "id_by_key"
+	groupByThingPrefix  = "gr_by_th"
+	thingsByGroupPrefix = "ths_by_gr"
 )
 
 var _ things.ThingCache = (*thingCache)(nil)
@@ -33,21 +33,21 @@ func NewThingCache(client *redis.Client) things.ThingCache {
 }
 
 func (tc *thingCache) Save(ctx context.Context, thingKey string, thingID string) error {
-	tkk := thingKeyKey(thingKey)
-	if err := tc.client.Set(ctx, tkk, thingID, 0).Err(); err != nil {
+	ik := idByThingKeyKey(thingKey)
+	if err := tc.client.Set(ctx, ik, thingID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	tik := thingIDKey(thingID)
-	if err := tc.client.Set(ctx, tik, thingKey, 0).Err(); err != nil {
+	kk := keyByThingIDKey(thingID)
+	if err := tc.client.Set(ctx, kk, thingKey, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 	return nil
 }
 
 func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
-	tkk := thingKeyKey(thingKey)
-	thingID, err := tc.client.Get(ctx, tkk).Result()
+	ik := idByThingKeyKey(thingKey)
+	thingID, err := tc.client.Get(ctx, ik).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -56,8 +56,8 @@ func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
 }
 
 func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
-	tik := thingIDKey(thingID)
-	key, err := tc.client.Get(ctx, tik).Result()
+	kk := keyByThingIDKey(thingID)
+	thingKey, err := tc.client.Get(ctx, kk).Result()
 	// Redis returns Nil Reply when key does not exist.
 	if err == redis.Nil {
 		return nil
@@ -66,21 +66,21 @@ func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	tkk := thingKeyKey(key)
-	if err := tc.client.Del(ctx, tkk, tik).Err(); err != nil {
+	ik := idByThingKeyKey(thingKey)
+	if err := tc.client.Del(ctx, ik, kk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 	return nil
 }
 
 func (tc *thingCache) SaveGroup(ctx context.Context, thingID string, groupID string) error {
-	tgk := thingGroupKey(thingID)
-	if err := tc.client.Set(ctx, tgk, groupID, 0).Err(); err != nil {
+	gk := groupByThingIDKey(thingID)
+	if err := tc.client.Set(ctx, gk, groupID, 0).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	gtk := groupThingsKey(groupID)
-	if err := tc.client.SAdd(ctx, gtk, thingID).Err(); err != nil {
+	tk := thingsByGroupIDKey(groupID)
+	if err := tc.client.SAdd(ctx, tk, thingID).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
@@ -88,8 +88,8 @@ func (tc *thingCache) SaveGroup(ctx context.Context, thingID string, groupID str
 }
 
 func (tc *thingCache) ViewGroup(ctx context.Context, thingID string) (string, error) {
-	tgk := thingGroupKey(thingID)
-	groupID, err := tc.client.Get(ctx, tgk).Result()
+	gk := groupByThingIDKey(thingID)
+	groupID, err := tc.client.Get(ctx, gk).Result()
 	if err != nil {
 		return "", errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -98,9 +98,9 @@ func (tc *thingCache) ViewGroup(ctx context.Context, thingID string) (string, er
 }
 
 func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
-	tgk := thingGroupKey(thingID)
+	gk := groupByThingIDKey(thingID)
 
-	groupID, err := tc.client.Get(ctx, tgk).Result()
+	groupID, err := tc.client.Get(ctx, gk).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return nil
@@ -108,30 +108,30 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	if err := tc.client.Del(ctx, tgk).Err(); err != nil {
+	if err := tc.client.Del(ctx, gk).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
-	gtk := groupThingsKey(groupID)
-	if err := tc.client.SRem(ctx, gtk, thingID).Err(); err != nil {
+	tk := thingsByGroupIDKey(groupID)
+	if err := tc.client.SRem(ctx, tk, thingID).Err(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
 	return nil
 }
 
-func thingKeyKey(thingKey string) string {
-	return fmt.Sprintf("%s:%s", thingKeyPrefix, thingKey)
+func idByThingKeyKey(thingKey string) string {
+	return fmt.Sprintf("%s:%s", idByKeyPrefix, thingKey)
 }
 
-func thingIDKey(thingID string) string {
-	return fmt.Sprintf("%s:%s", thingIDPrefix, thingID)
+func keyByThingIDKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", keyByIDPrefix, thingID)
 }
 
-func thingGroupKey(thingID string) string {
-	return fmt.Sprintf("%s:%s", thingGroupPrefix, thingID)
+func groupByThingIDKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", groupByThingPrefix, thingID)
 }
 
-func groupThingsKey(groupID string) string {
-	return fmt.Sprintf("%s:%s", groupThingsPrefix, groupID)
+func thingsByGroupIDKey(groupID string) string {
+	return fmt.Sprintf("%s:%s", thingsByGroupPrefix, groupID)
 }
