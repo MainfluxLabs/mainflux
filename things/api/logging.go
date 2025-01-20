@@ -78,6 +78,19 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, thingKey string) (metadata things.Metadata, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_metadata_by_key took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewMetadataByKey(ctx, thingKey)
+}
+
 func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things took %s to complete", time.Since(begin))

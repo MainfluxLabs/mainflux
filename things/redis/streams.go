@@ -88,6 +88,10 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
+func (es eventStore) ViewMetadataByKey(ctx context.Context, thingKey string) (things.Metadata, error) {
+	return es.svc.ViewMetadataByKey(ctx, thingKey)
+}
+
 func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThings(ctx, token, pm)
 }

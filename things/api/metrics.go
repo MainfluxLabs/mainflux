@@ -66,6 +66,15 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, thingKey string) (things.Metadata, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_metadata_by_key").Add(1)
+		ms.latency.With("method", "view_metadata_by_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewMetadataByKey(ctx, thingKey)
+}
+
 func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things").Add(1)

@@ -89,6 +89,10 @@ func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) er
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ViewMetadataByKey(context.Context, string) (things.Metadata, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }

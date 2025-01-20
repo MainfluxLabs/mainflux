@@ -74,6 +74,9 @@ type Service interface {
 	// the provided key.
 	ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error)
 
+	// ViewMetadataByKey retrieves metadata about the thing identified by the given key.
+	ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error)
+
 	// RemoveProfiles removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveProfiles(ctx context.Context, token string, ids ...string) error
@@ -315,6 +318,20 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	}
 
 	return thing, nil
+}
+
+func (ts *thingsService) ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error) {
+	thingID, err := ts.Identify(ctx, thingKey)
+	if err != nil {
+		return Metadata{}, err
+	}
+
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return Metadata{}, err
+	}
+
+	return thing.Metadata, nil
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
