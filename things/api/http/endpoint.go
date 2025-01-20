@@ -719,10 +719,11 @@ func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
 
 	for _, t := range tp.Things {
 		view := thingRes{
-			ID:       t.ID,
-			Metadata: t.Metadata,
-			Name:     t.Name,
-			Key:      t.Key,
+			ID:        t.ID,
+			Metadata:  t.Metadata,
+			Name:      t.Name,
+			Key:       t.Key,
+			ProfileID: t.ProfileID,
 		}
 		res.Things = append(res.Things, view)
 	}
