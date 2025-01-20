@@ -14,20 +14,11 @@ var (
 	// ErrUnassignMember indicates failure to unassign member from an org.
 	ErrUnassignMember = errors.New("failed to unassign member from org")
 
-	// ErrAssignGroup indicates failure to assign group to org.
-	ErrAssignGroup = errors.New("failed to assign group to org")
-
-	// ErrUnassignGroup indicates failure to unassign group from org.
-	ErrUnassignGroup = errors.New("failed to unassign group from org")
-
 	// ErrOrgNotEmpty indicates org is not empty, can't be deleted.
 	ErrOrgNotEmpty = errors.New("org is not empty")
 
 	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
 	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
-
-	// ErrOrgGroupAlreadyAssigned indicates that group is already assigned.
-	ErrOrgGroupAlreadyAssigned = errors.New("org group is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.

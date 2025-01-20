@@ -60,9 +60,10 @@ func newService() things.Service {
 	rolesRepo := mocks.NewRolesRepository()
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
+	groupCache := mocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func TestInit(t *testing.T) {
@@ -321,10 +322,12 @@ func TestListThings(t *testing.T) {
 	profile.GroupID = grID
 	profile2 := profile
 	profile2.GroupID = grID2
-	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile2)
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prs2, err := svc.CreateProfiles(context.Background(), otherToken, profile2)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
-	prID2 := prs[1].ID
+	prID2 := prs2[0].ID
 
 	m := make(map[string]interface{})
 	m["serial"] = "123456"

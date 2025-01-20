@@ -190,23 +190,3 @@ func (crm *profileRepositoryMock) RetrieveAll(_ context.Context) ([]things.Profi
 
 	return prs, nil
 }
-
-type profileCacheMock struct {
-	mu       sync.Mutex
-	profiles map[string]string
-}
-
-// NewProfileCache returns mock cache instance.
-func NewProfileCache() things.ProfileCache {
-	return &profileCacheMock{
-		profiles: make(map[string]string),
-	}
-}
-
-func (ccm *profileCacheMock) Remove(_ context.Context, profileID string) error {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
-
-	delete(ccm.profiles, profileID)
-	return nil
-}

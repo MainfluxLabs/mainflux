@@ -79,7 +79,7 @@ type ProfileRepository interface {
 	// RetrieveAll retrieves all profiles for all users.
 	RetrieveAll(ctx context.Context) ([]Profile, error)
 
-	// RetrieveByAdmin  retrieves all profiles for all users with pagination.
+	// RetrieveByAdmin retrieves all profiles for all users with pagination.
 	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ProfilesPage, error)
 
 	// RetrieveByGroupIDs retrieves the subset of profiles specified by given group ids.
@@ -88,6 +88,12 @@ type ProfileRepository interface {
 
 // ProfileCache contains profile caching interface.
 type ProfileCache interface {
-	// Remove removes profile from cache.
-	Remove(context.Context, string) error
+	// SaveGroup stores group ID by given profile ID.
+	SaveGroup(context.Context, string, string) error
+
+	// RemoveGroup removes group ID by given profile ID.
+	RemoveGroup(context.Context, string) error
+
+	// ViewGroup returns group ID by given profile ID.
+	ViewGroup(context.Context, string) (string, error)
 }

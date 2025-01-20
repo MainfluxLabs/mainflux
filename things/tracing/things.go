@@ -22,9 +22,9 @@ const (
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
 	retrieveAllThingsOp        = "retrieve_all_things"
-	saveRoleOp                 = "save_role"
-	retrieveRoleOp             = "retrieve_role"
-	removeRoleOp               = "remove_role"
+	saveGroupIDByThingIDOp     = "save_group_id_by_thing_id"
+	retrieveGroupIDByThingIDOp = "retrieve_group_id_by_thing_id"
+	removeGroupIDByThingIDOp   = "remove_group_id_by_thing_id"
 )
 
 var (
@@ -164,28 +164,28 @@ func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) erro
 	return tcm.cache.Remove(ctx, thingID)
 }
 
-func (tcm thingCacheMiddleware) SaveRole(ctx context.Context, groupID, memberID, role string) error {
-	span := createSpan(ctx, tcm.tracer, saveRoleOp)
+func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {
+	span := createSpan(ctx, tcm.tracer, saveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.SaveRole(ctx, groupID, memberID, role)
+	return tcm.cache.SaveGroup(ctx, thingID, groupID)
 }
 
-func (tcm thingCacheMiddleware) Role(ctx context.Context, groupID, memberID string) (string, error) {
-	span := createSpan(ctx, tcm.tracer, retrieveRoleOp)
+func (tcm thingCacheMiddleware) ViewGroup(ctx context.Context, thingID string) (string, error) {
+	span := createSpan(ctx, tcm.tracer, retrieveGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.Role(ctx, groupID, memberID)
+	return tcm.cache.ViewGroup(ctx, thingID)
 }
 
-func (tcm thingCacheMiddleware) RemoveRole(ctx context.Context, groupID, memberID string) error {
-	span := createSpan(ctx, tcm.tracer, removeRoleOp)
+func (tcm thingCacheMiddleware) RemoveGroup(ctx context.Context, thingID string) error {
+	span := createSpan(ctx, tcm.tracer, removeGroupIDByThingIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.RemoveRole(ctx, groupID, memberID)
+	return tcm.cache.RemoveGroup(ctx, thingID)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

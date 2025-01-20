@@ -11,13 +11,16 @@ import (
 )
 
 const (
+	saveGroupIDByProfileIDOp     = "save_group_id_by_profile_id"
 	saveProfilesOp               = "save_profiles"
 	updateProfileOp              = "update_profile"
 	retrieveProfileByIDOp        = "retrieve_profile_by_id"
 	retrieveByThingOp            = "retrieve_by_thing"
 	retrieveProfilesByGroupIDsOp = "retrieve_profiles_by_group_ids"
-	removeProfileOp              = "retrieve_profile"
+	removeProfileOp              = "remove_profile"
+	removeGroupIDByProfileIDOp   = "remove_group_id_by_profile_id"
 	retrieveAllProfilesOp        = "retrieve_all_profiles"
+	retrieveGroupIDByProfileIDOp = "retrieve_group_id_by_profile_id"
 )
 
 var (
@@ -117,10 +120,26 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 	}
 }
 
-func (ccm profileCacheMiddleware) Remove(ctx context.Context, profileID string) error {
-	span := createSpan(ctx, ccm.tracer, removeProfileOp)
+func (ccm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
+	span := createSpan(ctx, ccm.tracer, saveGroupIDByProfileIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.Remove(ctx, profileID)
+	return ccm.cache.SaveGroup(ctx, profileID, groupID)
+}
+
+func (ccm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
+	span := createSpan(ctx, ccm.tracer, retrieveGroupIDByProfileIDOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return ccm.cache.ViewGroup(ctx, profileID)
+}
+
+func (ccm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
+	span := createSpan(ctx, ccm.tracer, removeGroupIDByProfileIDOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return ccm.cache.RemoveGroup(ctx, profileID)
 }
