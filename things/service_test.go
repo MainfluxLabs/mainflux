@@ -50,6 +50,7 @@ var (
 	admin       = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList   = []users.User{admin, user, otherUser}
 	group       = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
+	metadata    = map[string]interface{}{"test": "data"}
 )
 
 func newService() things.Service {
@@ -309,6 +310,55 @@ func TestViewThing(t *testing.T) {
 	}
 }
 
+func TestViewMetadataByKey(t *testing.T) {
+	svc := newService()
+	idProvider := uuid.New()
+
+	key, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	thing := things.Thing{
+		GroupID:   grID,
+		ProfileID: prID,
+		Name:      "test-meta",
+		Key:       key,
+		Metadata:  metadata,
+	}
+	_, err = svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	otherKey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := map[string]struct {
+		key string
+		err error
+	}{
+		"view thing metadata": {
+			key: key,
+			err: nil,
+		},
+		"view metadata from a non-existing thing": {
+			key: otherKey,
+			err: errors.ErrNotFound,
+		},
+	}
+
+	for desc, tc := range cases {
+		_, err := svc.ViewMetadataByKey(context.Background(), tc.key)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
 func TestListThings(t *testing.T) {
 	svc := newService()
 	grs, err := svc.CreateGroups(context.Background(), token, group)
@@ -328,10 +378,7 @@ func TestListThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 	prID2 := prs2[0].ID
-
-	m := make(map[string]interface{})
-	m["serial"] = "123456"
-	thingList[0].Metadata = m
+	thingList[0].Metadata = metadata
 
 	var ths1 []things.Thing
 	var suffix uint64
@@ -473,7 +520,7 @@ func TestListThings(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    nUser,
-				Metadata: m,
+				Metadata: metadata,
 			},
 			size: nUser,
 			err:  nil,
@@ -868,10 +915,7 @@ func TestListProfiles(t *testing.T) {
 	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr2 := grs2[0]
-
-	meta := things.Metadata{}
-	meta["name"] = "test-profile"
-	profile.Metadata = meta
+	profileList[0].Metadata = metadata
 
 	var prs1 []things.Profile
 	var suffix uint64
@@ -1006,7 +1050,7 @@ func TestListProfiles(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    nUser,
-				Metadata: meta,
+				Metadata: metadata,
 			},
 			size: nUser,
 			err:  nil,
@@ -1292,7 +1336,7 @@ func TestBackup(t *testing.T) {
 				Name:      name,
 				GroupID:   gr.ID,
 				ProfileID: pr.ID,
-				Metadata:  map[string]interface{}{"test": "data"},
+				Metadata:  metadata,
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
