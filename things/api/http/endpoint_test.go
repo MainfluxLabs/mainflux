@@ -36,10 +36,8 @@ const (
 	otherUserEmail = "other_user@example.com"
 	token          = email
 	adminToken     = adminEmail
-	otherToken     = otherUserEmail
 	wrongValue     = "wrong_value"
 	emptyValue     = ""
-	invalidValue   = "invalid"
 	wrongID        = 0
 	password       = "password"
 	maxNameSize    = 1024
@@ -55,19 +53,15 @@ const (
 var (
 	thing = things.Thing{
 		Name:     "test_app",
-		Metadata: map[string]interface{}{"test": "data"},
-	}
-	thing1 = things.Thing{
-		Name:     "test_app1",
-		Metadata: map[string]interface{}{"test": "data"},
+		Metadata: metadata,
 	}
 	profile = things.Profile{
 		Name:     "test",
-		Metadata: map[string]interface{}{"test": "data"},
+		Metadata: metadata,
 	}
 	profile1 = things.Profile{
 		Name:     "test1",
-		Metadata: map[string]interface{}{"test": "data"},
+		Metadata: metadata,
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
 	searchThingReq = things.PageMetadata{
@@ -79,6 +73,7 @@ var (
 	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
 	group     = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
+	metadata  = map[string]interface{}{"test": "data"}
 )
 
 type testRequest struct {
@@ -86,6 +81,7 @@ type testRequest struct {
 	method      string
 	url         string
 	contentType string
+	key         string
 	token       string
 	body        io.Reader
 }
@@ -94,6 +90,9 @@ func (tr testRequest) make() (*http.Response, error) {
 	req, err := http.NewRequest(tr.method, tr.url, tr.body)
 	if err != nil {
 		return nil, err
+	}
+	if tr.key != "" {
+		req.Header.Set("Authorization", apiutil.ThingPrefix+tr.key)
 	}
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
@@ -326,7 +325,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid id",
 			req:         data,
-			id:          invalidValue,
+			id:          wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -482,7 +481,7 @@ func TestUpdateKey(t *testing.T) {
 		{
 			desc:        "update thing with invalid id",
 			req:         dummyData,
-			id:          invalidValue,
+			id:          wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -610,7 +609,7 @@ func TestViewThing(t *testing.T) {
 		},
 		{
 			desc:   "view thing by passing invalid id",
-			id:     invalidValue,
+			id:     wrongValue,
 			auth:   token,
 			status: http.StatusNotFound,
 			res:    thingRes{},
@@ -627,6 +626,83 @@ func TestViewThing(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		var body thingRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestViewMetadataByKey(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	key, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	profile.GroupID = grID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
+
+	thing := things.Thing{
+		GroupID:   grID,
+		ProfileID: prID,
+		Name:      "test-meta",
+		Key:       key,
+		Metadata:  metadata,
+	}
+	ths, err := svc.CreateThings(context.Background(), token, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	th := ths[0]
+
+	metaRes := viewMetadataRes{
+		Metadata: th.Metadata,
+	}
+	otherKey, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		res    viewMetadataRes
+	}{
+		{
+			desc:   "view thing metadata",
+			auth:   key,
+			status: http.StatusOK,
+			res:    metaRes,
+		},
+		{
+			desc:   "view metadata from a non-existing thing",
+			auth:   otherKey,
+			status: http.StatusNotFound,
+			res:    viewMetadataRes{},
+		},
+		{
+			desc:   "view thing metadata with empty key",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			res:    viewMetadataRes{},
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    fmt.Sprintf("%s/things/metadata", ts.URL),
+			key:    tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body viewMetadataRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
@@ -1556,7 +1632,7 @@ func TestUpdateProfile(t *testing.T) {
 		{
 			desc:        "update profile with invalid id",
 			req:         updateData,
-			id:          invalidValue,
+			id:          wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusNotFound,
@@ -1691,7 +1767,7 @@ func TestViewProfile(t *testing.T) {
 		},
 		{
 			desc:   "view profile with invalid id",
-			id:     invalidValue,
+			id:     wrongValue,
 			auth:   token,
 			status: http.StatusNotFound,
 			res:    profileRes{},
@@ -1727,7 +1803,7 @@ func TestListProfiles(t *testing.T) {
 	for i := 0; i < n; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: map[string]interface{}{"test": "data"}}
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
 
 		prs, err := svc.CreateProfiles(context.Background(), token, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -2313,7 +2389,7 @@ func TestBackup(t *testing.T) {
 			things.Profile{
 				Name:     name,
 				GroupID:  gr.ID,
-				Metadata: map[string]interface{}{"test": "data"},
+				Metadata: metadata,
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		pr := prs[0]
@@ -2330,7 +2406,7 @@ func TestBackup(t *testing.T) {
 				Name:      name,
 				GroupID:   gr.ID,
 				ProfileID: pr.ID,
-				Metadata:  map[string]interface{}{"test": "data"},
+				Metadata:  metadata,
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
@@ -2442,7 +2518,7 @@ func TestRestore(t *testing.T) {
 		ID:       thId,
 		Name:     nameKey,
 		Key:      thKey,
-		Metadata: map[string]interface{}{"test": "data"},
+		Metadata: metadata,
 	}
 
 	var groups []things.Group
@@ -2467,7 +2543,7 @@ func TestRestore(t *testing.T) {
 			ID:       prID,
 			GroupID:  emptyValue,
 			Name:     name,
-			Metadata: map[string]interface{}{"test": "data"},
+			Metadata: metadata,
 		})
 	}
 
@@ -2640,6 +2716,10 @@ func TestIdentify(t *testing.T) {
 
 type identifyReq struct {
 	Token string `json:"token"`
+}
+
+type viewMetadataRes struct {
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type thingRes struct {

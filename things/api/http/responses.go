@@ -89,6 +89,22 @@ func (res viewThingRes) Empty() bool {
 	return false
 }
 
+type viewMetadataRes struct {
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (res viewMetadataRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewMetadataRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewMetadataRes) Empty() bool {
+	return false
+}
+
 type thingsPageRes struct {
 	pageRes
 	Things []viewThingRes `json:"things"`

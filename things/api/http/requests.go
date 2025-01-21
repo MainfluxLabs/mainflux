@@ -116,6 +116,18 @@ func (req updateKeyReq) validate() error {
 	return nil
 }
 
+type viewMetadataReq struct {
+	key string
+}
+
+func (req viewMetadataReq) validate() error {
+	if req.key == "" {
+		return apiutil.ErrBearerKey
+	}
+
+	return nil
+}
+
 type createProfileReq struct {
 	Name     string                 `json:"name,omitempty"`
 	ID       string                 `json:"id,omitempty"`

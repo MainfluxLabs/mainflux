@@ -123,6 +123,27 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func viewMetadataByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewMetadataReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		metadata, err := svc.ViewMetadataByKey(ctx, req.key)
+		if err != nil {
+			return nil, err
+		}
+
+		res := viewMetadataRes{
+			Metadata: metadata,
+		}
+
+		return res, nil
+	}
+}
+
 func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listResourcesReq)

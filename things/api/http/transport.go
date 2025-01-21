@@ -79,6 +79,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/things/metadata", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_metadata_by_key")(viewMetadataByKeyEndpoint(svc)),
+		decodeViewMetadata,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing")(viewThingEndpoint(svc)),
 		decodeRequest,
@@ -324,6 +331,14 @@ func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeViewMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	req := viewMetadataReq{
+		key: apiutil.ExtractThingKey(r),
 	}
 
 	return req, nil
