@@ -225,6 +225,25 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /metadata:
+    get:
+      summary: Retrieves thing metadata
+      description: Retrieves metadata about the thing identified by the given key
+      tags:
+        - things
+      security:
+        - thingKeyAuth: []
+      responses:
+        '200':
+          $ref: "#/components/responses/MetadataRes"
+        '401':
+          description: Missing or invalid bearer entity key.
+        '404':
+          description: Thing does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
 
   /groups/{groupId}/profiles:
     post:
@@ -841,6 +860,13 @@ components:
           description: Maximum number of items to return in one page.
       required:
         - things
+    MetadataResSchema:
+      type: object
+      properties:
+        metadata:
+          type: object
+          example: { "key": "value" }
+          description: Object-encoded thing's data.
     ProfileReqSchema:
       type: object
       properties:
@@ -1443,6 +1469,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsPage"
+    MetadataRes:
+      description: Thing metadata retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MetadataResSchema'
     CreateProfilesRes:
       description: Profiles created.
       content:
@@ -1528,6 +1560,12 @@ components:
       bearerFormat: JWT
       description: |
         * Users access: "Authorization: Bearer <user_token>"
+    thingKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        * Things access: "Authorization: Thing <thing_key>"
 
 security:
   - bearerAuth: []

@@ -697,7 +697,7 @@ func TestViewMetadataByKey(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/things/metadata", ts.URL),
+			url:    fmt.Sprintf("%s/metadata", ts.URL),
 			key:    tc.auth,
 		}
 		res, err := req.make()

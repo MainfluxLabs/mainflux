@@ -79,7 +79,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/things/metadata", kithttp.NewServer(
+	r.Get("/metadata", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_metadata_by_key")(viewMetadataByKeyEndpoint(svc)),
 		decodeViewMetadata,
 		encodeResponse,
