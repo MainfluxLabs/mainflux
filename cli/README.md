@@ -82,6 +82,11 @@ mainfluxlabs-cli things get all --offset=1 --limit=5 <user_token>
 mainfluxlabs-cli things get <thing_id> <user_token>
 ```
 
+#### Retrieve Metadata By Key
+```bash
+mainfluxlabs-cli things metadata <thing_key>
+```
+
 #### Create Profile
 ```bash
 mainfluxlabs-cli profiles create '{"name":"<profile_name>"}' <group_id> <user_token>
