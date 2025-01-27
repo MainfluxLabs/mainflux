@@ -95,6 +95,25 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
+		Use:   "metadata <thing_key>",
+		Short: "Get thing metadata",
+		Long:  "Get metadata about the thing identified by the given key",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 1 {
+				logUsage(cmd.Use)
+				return
+			}
+
+			meta, err := sdk.MetadataByKey(args[0])
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			logJSON(meta)
+		},
+	},
+	{
 		Use:   "delete <thing_id> <user_token>",
 		Short: "Delete thing",
 		Long:  `Removes thing from database`,
@@ -160,9 +179,9 @@ var cmdThings = []cobra.Command{
 // NewThingsCmd returns things command.
 func NewThingsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "things [create | get | update | delete | identify]",
+		Use:   "things [create | get | update | delete | identify | metadata]",
 		Short: "Things management",
-		Long:  `Things management: create, get, update, identify or delete Thing, get a list of Things assigned to the specified Profile`,
+		Long:  `Things management: create, get, update, identify or delete Thing, get thing metadata, get a list of Things assigned to the specified Profile`,
 	}
 
 	for i := range cmdThings {

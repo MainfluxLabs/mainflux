@@ -165,6 +165,8 @@ type Key struct {
 	ExpiresAt time.Time
 }
 
+type Metadata map[string]interface{}
+
 // SDK contains Mainflux API.
 type SDK interface {
 	// CreateUser creates mainflux user.
@@ -202,6 +204,9 @@ type SDK interface {
 
 	// Thing returns thing object by id.
 	Thing(id, token string) (Thing, error)
+
+	// MetadataByKey retrieves metadata about the thing identified by the given key.
+	MetadataByKey(thingKey string) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error

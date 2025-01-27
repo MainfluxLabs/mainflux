@@ -28,7 +28,6 @@ const (
 	adminEmail  = "admin@example.com"
 	otherEmail  = "other_user@example.com"
 	token       = email
-	otherToken  = otherEmail
 	wrongValue  = "wrong_value"
 	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
 	wrongID     = "999"
@@ -285,6 +284,69 @@ func TestThing(t *testing.T) {
 		respTh, err := mainfluxSDK.Thing(tc.thID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, respTh, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, respTh))
+	}
+}
+
+func TestMetadataByKey(t *testing.T) {
+	svc := newThingsService()
+	ts := newThingsServer(svc)
+	defer ts.Close()
+
+	sdkConf := sdk.Config{
+		ThingsURL:       ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+	}
+	mainfluxSDK := sdk.NewSDK(sdkConf)
+
+	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th1.ProfileID = prID
+	th1.GroupID = grID
+	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 1)
+	_, err = mainfluxSDK.CreateThing(th1, grID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	otherKey := fmt.Sprintf("%s%012d", uuid.Prefix, 2)
+
+	res := sdk.Metadata{
+		"metadata": th1.Metadata,
+	}
+
+	cases := []struct {
+		desc     string
+		key      string
+		err      error
+		response sdk.Metadata
+	}{
+		{
+			desc:     "get thing metadata",
+			key:      th1.Key,
+			err:      nil,
+			response: res,
+		},
+		{
+			desc:     "get metadata from a non-existing thing",
+			key:      otherKey,
+			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
+			response: sdk.Metadata{},
+		},
+		{
+			desc:     "get thing metadata with empty key",
+			key:      "",
+			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+			response: sdk.Metadata{},
+		},
+	}
+
+	for _, tc := range cases {
+		resMeta, err := mainfluxSDK.MetadataByKey(tc.key)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
 }
 

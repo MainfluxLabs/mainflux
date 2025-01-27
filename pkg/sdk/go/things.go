@@ -170,6 +170,37 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	return t, nil
 }
 
+func (sdk mfSDK) MetadataByKey(thingKey string) (Metadata, error) {
+	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return Metadata{}, err
+	}
+
+	resp, err := sdk.sendThingRequest(req, thingKey, string(CTJSON))
+	if err != nil {
+		return Metadata{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return Metadata{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return Metadata{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var meta Metadata
+	if err := json.Unmarshal(body, &meta); err != nil {
+		return Metadata{}, err
+	}
+
+	return meta, nil
+}
+
 func (sdk mfSDK) UpdateThing(t Thing, thingID, token string) error {
 	data, err := json.Marshal(t)
 	if err != nil {

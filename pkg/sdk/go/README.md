@@ -54,6 +54,9 @@ func (sdk mfSDK) ThingsByProfile(token, profileID string, offset, limit uint64) 
 	
 func (sdk mfSDK) Thing(id, token string) (Thing, error)
     Thing - gets thing by id.
+    
+func (sdk mfSDK) MetadataByKey(thingKey string) (Metadata, error)
+    MetadataByKey - gets thing metadata by key.
 
 func (sdk mfSDK) UpdateThing(thing Thing, token string) error
     UpdateThing - updates existing thing
