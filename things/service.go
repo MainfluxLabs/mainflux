@@ -183,17 +183,9 @@ func (ts *thingsService) CreateThings(ctx context.Context, token string, things 
 			return nil, err
 		}
 
-		prGrID, err := ts.profileCache.ViewGroup(ctx, thing.ProfileID)
+		prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
 		if err != nil {
-			profile, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
-			if err != nil {
-				return []Thing{}, err
-			}
-			prGrID = profile.GroupID
-
-			if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
-				return []Thing{}, err
-			}
+			return []Thing{}, err
 		}
 
 		if prGrID != thing.GroupID {
@@ -236,25 +228,13 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 		return Thing{}, errors.ErrCreateEntity
 	}
 
-	if err := ts.thingCache.SaveGroup(ctx, thing.ID, thing.GroupID); err != nil {
-		return Thing{}, err
-	}
-
 	return ths[0], nil
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	thGrID, err := ts.thingCache.ViewGroup(ctx, thing.ID)
+	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
 	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thing.ID)
-		if err != nil {
-			return err
-		}
-		thGrID = th.GroupID
-
-		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
-			return err
-		}
+		return err
 	}
 
 	ar := AuthorizeReq{
@@ -267,17 +247,9 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	prGrID, err := ts.profileCache.ViewGroup(ctx, thing.ProfileID)
+	prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
 	if err != nil {
-		pr, err := ts.profiles.RetrieveByID(ctx, thing.ProfileID)
-		if err != nil {
-			return err
-		}
-		prGrID = pr.GroupID
-
-		if err := ts.profileCache.SaveGroup(ctx, pr.ID, pr.GroupID); err != nil {
-			return err
-		}
+		return err
 	}
 
 	if prGrID != thGrID {
@@ -344,12 +316,9 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groupCache.GroupMemberships(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMemberID(ctx, res.GetId())
 	if err != nil {
-		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
-		if err != nil {
-			return ThingsPage{}, err
-		}
+		return ThingsPage{}, err
 	}
 
 	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
@@ -441,10 +410,6 @@ func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (P
 		return Profile{}, errors.ErrCreateEntity
 	}
 
-	if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
-		return Profile{}, err
-	}
-
 	return prs[0], nil
 }
 
@@ -491,12 +456,9 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groupCache.GroupMemberships(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMemberID(ctx, res.GetId())
 	if err != nil {
-		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, res.GetId())
-		if err != nil {
-			return ProfilesPage{}, err
-		}
+		return ProfilesPage{}, err
 	}
 
 	return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
@@ -531,12 +493,6 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 		}
 		if err := ts.Authorize(ctx, ar); err != nil {
 			return err
-		}
-
-		if things, err := ts.things.RetrieveByProfile(ctx, id, PageMetadata{}); err == nil {
-			if things.PageMetadata.Total > 0 {
-				return errors.ErrAuthorization
-			}
 		}
 
 		if err := ts.profileCache.RemoveGroup(ctx, id); err != nil {
@@ -581,31 +537,15 @@ func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
 	var groupID string
 	switch ar.Subject {
 	case ThingSub:
-		grID, err := ts.thingCache.ViewGroup(ctx, ar.Object)
+		grID, err := ts.getGroupIDByThingID(ctx, ar.Object)
 		if err != nil {
-			thing, err := ts.things.RetrieveByID(ctx, ar.Object)
-			if err != nil {
-				return err
-			}
-			grID = thing.GroupID
-
-			if err := ts.thingCache.SaveGroup(ctx, thing.ID, thing.GroupID); err != nil {
-				return err
-			}
+			return err
 		}
 		groupID = grID
 	case ProfileSub:
-		grID, err := ts.profileCache.ViewGroup(ctx, ar.Object)
+		grID, err := ts.getGroupIDByProfileID(ctx, ar.Object)
 		if err != nil {
-			profile, err := ts.profiles.RetrieveByID(ctx, ar.Object)
-			if err != nil {
-				return err
-			}
-			grID = profile.GroupID
-
-			if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
-				return err
-			}
+			return err
 		}
 		groupID = grID
 	case GroupSub:
@@ -635,20 +575,7 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
-	thGrID, err := ts.thingCache.ViewGroup(ctx, thingID)
-	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thingID)
-		if err != nil {
-			return "", err
-		}
-		thGrID = th.GroupID
-
-		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
-			return "", err
-		}
-	}
-
-	return thGrID, nil
+	return ts.getGroupIDByThingID(ctx, thingID)
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
@@ -776,4 +703,49 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 	}
 
 	return nil
+}
+
+func (ts *thingsService) getGroupIDByThingID(ctx context.Context, thID string) (string, error) {
+	grID, err := ts.thingCache.ViewGroup(ctx, thID)
+	if err != nil {
+		th, err := ts.things.RetrieveByID(ctx, thID)
+		if err != nil {
+			return "", err
+		}
+		grID = th.GroupID
+
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
+			return "", err
+		}
+	}
+
+	return grID, nil
+}
+
+func (ts *thingsService) getGroupIDByProfileID(ctx context.Context, prID string) (string, error) {
+	grID, err := ts.profileCache.ViewGroup(ctx, prID)
+	if err != nil {
+		pr, err := ts.profiles.RetrieveByID(ctx, prID)
+		if err != nil {
+			return "", err
+		}
+		grID = pr.GroupID
+
+		if err := ts.profileCache.SaveGroup(ctx, pr.ID, pr.GroupID); err != nil {
+			return "", err
+		}
+	}
+
+	return grID, nil
+}
+
+func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID string) ([]string, error) {
+	grIDs, err := ts.groupCache.GroupMemberships(ctx, memberID)
+	if err != nil {
+		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, memberID)
+		if err != nil {
+			return []string{}, err
+		}
+	}
+	return grIDs, nil
 }
