@@ -188,12 +188,9 @@ func (ts *thingsService) ListGroups(ctx context.Context, token, orgID string, pm
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.groupCache.GroupMemberships(ctx, user.GetId())
+	grIDs, err := ts.getGroupIDsByMemberID(ctx, user.GetId())
 	if err != nil {
-		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, user.GetId())
-		if err != nil {
-			return GroupPage{}, err
-		}
+		return GroupPage{}, err
 	}
 
 	return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
@@ -263,17 +260,9 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
-	grID, err := ts.profileCache.ViewGroup(ctx, profileID)
+	grID, err := ts.getGroupIDByProfileID(ctx, profileID)
 	if err != nil {
-		pr, err := ts.profiles.RetrieveByID(ctx, profileID)
-		if err != nil {
-			return Group{}, err
-		}
-		grID = pr.GroupID
-
-		if err := ts.profileCache.SaveGroup(ctx, pr.ID, pr.GroupID); err != nil {
-			return Group{}, err
-		}
+		return Group{}, err
 	}
 
 	ar := AuthorizeReq{
@@ -295,17 +284,9 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 }
 
 func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
-	grID, err := ts.thingCache.ViewGroup(ctx, thingID)
+	grID, err := ts.getGroupIDByThingID(ctx, thingID)
 	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thingID)
-		if err != nil {
-			return Group{}, err
-		}
-		grID = th.GroupID
-
-		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
-			return Group{}, err
-		}
+		return Group{}, err
 	}
 
 	ar := AuthorizeReq{

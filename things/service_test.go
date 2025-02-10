@@ -1202,12 +1202,6 @@ func TestRemoveProfile(t *testing.T) {
 			token: token,
 			err:   errors.ErrNotFound,
 		},
-		{
-			desc:  "remove assigned profiles",
-			id:    prID1,
-			token: token,
-			err:   errors.ErrAuthorization,
-		},
 	}
 
 	for _, tc := range cases {

@@ -2128,12 +2128,6 @@ func TestRemoveProfile(t *testing.T) {
 			auth:   token,
 			status: http.StatusNotFound,
 		},
-		{
-			desc:   "remove assigned profile",
-			id:     prID1,
-			auth:   token,
-			status: http.StatusForbidden,
-		},
 	}
 
 	for _, tc := range cases {
@@ -2226,13 +2220,6 @@ func TestRemoveProfiles(t *testing.T) {
 			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "remove assigned profiles",
-			data:        []string{prs[2].ID},
-			auth:        token,
-			contentType: contentType,
-			status:      http.StatusForbidden,
 		},
 	}
 

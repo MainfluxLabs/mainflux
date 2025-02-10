@@ -172,6 +172,14 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE connections`,
 				},
 			},
+			{
+				Id: "things_7",
+				Up: []string{
+					`ALTER TABLE things DROP CONSTRAINT fk_things_profile_id;
+						ALTER TABLE things ADD CONSTRAINT fk_things_profile_id
+						FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE RESTRICT ON UPDATE CASCADE;`,
+				},
+			},
 		},
 	}
 

@@ -368,18 +368,38 @@ func TestRetrieveProfileByThing(t *testing.T) {
 
 func TestRemoveProfile(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	group := createGroup(t, dbMiddleware)
 
-	prID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	prs, err := profileRepo.Save(context.Background(), things.Profile{
-		ID:      prID,
+	prID1 := generateUUID(t)
+	prID2 := generateUUID(t)
+	thID := generateUUID(t)
+	thKey := generateUUID(t)
+
+	_, err := profileRepo.Save(context.Background(), things.Profile{
+		ID:      prID1,
 		GroupID: group.ID,
-	})
+		Name:    profileName,
+	},
+		things.Profile{
+			ID:      prID2,
+			GroupID: group.ID,
+			Name:    profileName + "2",
+		})
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	prID = prs[0].ID
+
+	th := things.Thing{
+		ID:        thID,
+		GroupID:   group.ID,
+		ProfileID: prID2,
+		Name:      thingName,
+		Key:       thKey,
+	}
+	_, err = thingRepo.Save(context.Background(), th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
 		prID string
@@ -390,8 +410,12 @@ func TestRemoveProfile(t *testing.T) {
 			err:  errors.ErrRemoveEntity,
 		},
 		"remove profile": {
-			prID: prID,
+			prID: prID1,
 			err:  nil,
+		},
+		"remove assigned profile": {
+			prID: prID2,
+			err:  errors.ErrRemoveEntity,
 		},
 	}
 
@@ -405,7 +429,9 @@ func TestRetrieveAllProfiles(t *testing.T) {
 	dbMiddleware := postgres.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
-	err := cleanTestTable(context.Background(), "profiles", dbMiddleware)
+	err := cleanTestTable(context.Background(), "things", dbMiddleware)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	err = cleanTestTable(context.Background(), "profiles", dbMiddleware)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	metadata := things.Metadata{
