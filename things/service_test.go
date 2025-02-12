@@ -58,8 +58,8 @@ func newService() things.Service {
 	auth := authmock.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
-	groupsRepo := mocks.NewGroupRepository()
 	rolesRepo := mocks.NewRolesRepository()
+	groupsRepo := mocks.NewGroupRepository(rolesRepo)
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
 	groupCache := mocks.NewGroupCache()
@@ -705,6 +705,188 @@ func TestListThingsByProfile(t *testing.T) {
 	}
 }
 
+func TestListThingsByOrg(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), adminToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	var ths []things.Thing
+	for i := uint64(0); i < n; i++ {
+		suffix := i + 1
+		th := thing
+		th.GroupID = gr.ID
+		th.ProfileID = pr.ID
+		th.Name = fmt.Sprintf("%s%012d", prefixName, suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		ths = append(ths, th)
+	}
+
+	_, err = svc.CreateThings(context.Background(), adminToken, ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	grs2, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr2 := grs2[0]
+
+	profile.GroupID = gr2.ID
+	prs2, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr2 := prs2[0]
+
+	var ths2 []things.Thing
+	for i := n; i < n+8; i++ {
+		suffix := i + 1
+		th2 := thing
+		th2.GroupID = gr2.ID
+		th2.ProfileID = pr2.ID
+		th2.Name = fmt.Sprintf("%s%012d", prefixName, suffix)
+		th2.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		ths2 = append(ths2, th2)
+	}
+
+	_, err = svc.CreateThings(context.Background(), token, ths2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := map[string]struct {
+		token        string
+		orgID        string
+		pageMetadata things.PageMetadata
+		size         uint64
+		err          error
+	}{
+		"list things by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		"list things by org from groups to which another user belongs": {
+			token: token,
+			orgID: gr2.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n + 8,
+			},
+			size: 8,
+			err:  nil,
+		},
+		"list things by org from groups the user doesn't belong to": {
+			token: otherToken,
+			orgID: gr2.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n + 8,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list all things by org with no limit": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list half of things by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n / 2,
+				Limit:  n,
+			},
+			size: n / 2,
+			err:  nil,
+		},
+		"list last thing by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n - 1,
+				Limit:  n,
+			},
+			size: 1,
+			err:  nil,
+		},
+		"list empty set of things by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n + 1,
+				Limit:  n,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list things by org with wrong credentials": {
+			token: wrongValue,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		"list things by non-existent org with": {
+			token: adminToken,
+			orgID: "non-existent",
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list all things by org sorted by name ascendant": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "asc",
+			},
+			size: n,
+			err:  nil,
+		},
+		"list all things by org sorted by name descendent": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "desc",
+			},
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := svc.ListThingsByOrg(context.Background(), tc.token, tc.orgID, tc.pageMetadata)
+		size := uint64(len(page.Things))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+		// Check if Things by Profile list have been sorted properly
+		testSortThings(t, tc.pageMetadata, page.Things)
+	}
+}
+
 func TestRemoveThings(t *testing.T) {
 	svc := newService()
 	grs, err := svc.CreateGroups(context.Background(), token, group)
@@ -1087,6 +1269,174 @@ func TestListProfiles(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 		// Check if profiles list have been sorted properly
+		testSortProfiles(t, tc.pageMetadata, page.Profiles)
+	}
+}
+
+func TestListProfilesByOrg(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), adminToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grs2, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	gr, gr2 := grs[0], grs2[0]
+	var prs1 []things.Profile
+	for i := uint64(0); i < n; i++ {
+		suffix := i + 1
+		pr := profile
+		pr.GroupID = gr.ID
+		pr.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		pr.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		prs1 = append(prs1, pr)
+	}
+
+	var prs2 []things.Profile
+	for i := n; i < n+8; i++ {
+		suffix := i + 1
+		pr2 := profile
+		pr2.GroupID = gr2.ID
+		pr2.Name = fmt.Sprintf("%s%d", prefixName, suffix)
+		pr2.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+
+		prs2 = append(prs2, pr2)
+	}
+
+	_, err = svc.CreateProfiles(context.Background(), adminToken, prs1...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	_, err = svc.CreateProfiles(context.Background(), token, prs2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := map[string]struct {
+		token        string
+		orgID        string
+		pageMetadata things.PageMetadata
+		size         uint64
+		err          error
+	}{
+		"list profiles by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		"list profiles by org from groups to which another user belongs": {
+			token: token,
+			orgID: gr2.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n + 8,
+			},
+			size: 8,
+			err:  nil,
+		},
+		"list profiles by org from groups the user doesn't belong to": {
+			token: otherToken,
+			orgID: gr2.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n + 8,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list profiles by org with no limit": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Limit: 0,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list half of profiles by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n / 2,
+				Limit:  n,
+			},
+			size: n / 2,
+			err:  nil,
+		},
+		"list last profile by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n - 1,
+				Limit:  n,
+			},
+			size: 1,
+			err:  nil,
+		},
+		"list empty set of profiles by org": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: n + 1,
+				Limit:  n,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list profiles by org with wrong credentials": {
+			token: wrongValue,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		"list profiles by non-existent org with": {
+			token: adminToken,
+			orgID: "non-existent",
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			err:  nil,
+		},
+		"list all profiles by org sorted by name ascendant": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "asc",
+			},
+			size: n,
+			err:  nil,
+		},
+		"list all profiles by org sorted by name descendent": {
+			token: adminToken,
+			orgID: gr.OrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+				Order:  "name",
+				Dir:    "desc",
+			},
+			size: n,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		page, err := svc.ListProfilesByOrg(context.Background(), tc.token, tc.orgID, tc.pageMetadata)
+		size := uint64(len(page.Profiles))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+		// Check if Things by Profile list have been sorted properly
 		testSortProfiles(t, tc.pageMetadata, page.Profiles)
 	}
 }

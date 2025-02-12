@@ -150,6 +150,35 @@ func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, erro
 	return gp.Groups, nil
 }
 
+func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error) {
+	var groupIDs []string
+
+	q := `SELECT g.id FROM groups g
+          JOIN group_roles gr ON g.id = gr.group_id
+          WHERE g.org_id = :org_id AND gr.member_id = :member_id`
+
+	params := map[string]interface{}{
+		"org_id":    orgID,
+		"member_id": memberID,
+	}
+
+	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var groupID string
+		if err := rows.Scan(&groupID); err != nil {
+			return nil, err
+		}
+		groupIDs = append(groupIDs, groupID)
+	}
+
+	return groupIDs, nil
+}
+
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	dbu := dbGroup{
 		ID: id,

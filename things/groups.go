@@ -53,6 +53,9 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
+	// RetrieveIDsByOrg retrieves org group IDs the member belongs to
+	RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error)
+
 	// RetrieveByAdmin retrieves all groups with pagination.
 	RetrieveByAdmin(ctx context.Context, orgID string, pm PageMetadata) (GroupPage, error)
 }
