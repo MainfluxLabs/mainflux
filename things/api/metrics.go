@@ -93,6 +93,15 @@ func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, prI
 	return ms.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
+func (ms *metricsMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_things_by_org").Add(1)
+		ms.latency.With("method", "list_things_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListThingsByOrg(ctx, token, orgID, pm)
+}
+
 func (ms *metricsMiddleware) RemoveThings(ctx context.Context, token string, id ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_things").Add(1)
@@ -136,6 +145,15 @@ func (ms *metricsMiddleware) ListProfiles(ctx context.Context, token string, pm 
 	}(time.Now())
 
 	return ms.svc.ListProfiles(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_profiles_by_org").Add(1)
+		ms.latency.With("method", "list_profiles_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListProfilesByOrg(ctx, token, orgID, pm)
 }
 
 func (ms *metricsMiddleware) ViewProfileByThing(ctx context.Context, token, thID string) (things.Profile, error) {
