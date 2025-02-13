@@ -37,11 +37,11 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | profile | by-id] <user_token> <id>",
+		Use:   "get [all | by-profile | by-id] <id> <user_token>",
 		Short: "Get things",
 		Long: `Get all things, get things by profile or get thing by id.List of all things can be filtered by name or metadata
 		<all> - lists all things
-		<profile> - list things by profile based on defined <id>
+		<by-profile> - list things by profile based on defined <id>
 		<by-id> - shows thing with provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 || len(args) != 3 {
@@ -54,7 +54,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 			pageMetadata := mfxsdk.PageMetadata{
-				Name:     "",
+				Name:     Name,
 				Offset:   uint64(Offset),
 				Limit:    uint64(Limit),
 				Metadata: metadata,
@@ -70,7 +70,7 @@ var cmdThings = []cobra.Command{
 
 				logJSON(l)
 				return
-			case "profile":
+			case "by-profile":
 				tip, err := sdk.ThingsByProfile(args[1], args[2], uint64(Offset), uint64(Limit))
 				if err != nil {
 					logError(err)
@@ -80,7 +80,7 @@ var cmdThings = []cobra.Command{
 				logJSON(tip)
 				return
 			case "by-id":
-				t, err := sdk.Thing(args[2], args[1])
+				t, err := sdk.Thing(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return

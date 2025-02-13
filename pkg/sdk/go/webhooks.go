@@ -131,14 +131,14 @@ func (sdk mfSDK) UpdateWebhook(wh Webhook, webhookID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) DeleteWebhooks(ids []string, groupID, token string) error {
+func (sdk mfSDK) DeleteWebhooks(ids []string, token string) error {
 	delReq := deleteWebhooksReq{WebhookIDs: ids}
 	data, err := json.Marshal(delReq)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", sdk.webhooksURL, groupsEndpoint, groupID, webhooksEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.webhooksURL, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err

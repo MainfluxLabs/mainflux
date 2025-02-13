@@ -56,7 +56,7 @@ mainfluxlabs-cli things create '{"name":"<thing_name>","profile_id":"<profile_id
 
 #### Bulk Provision Things
 ```bash
-mainfluxlabs-cli provision things <file> <user_token>
+mainfluxlabs-cli provision things <file> <group_id> <user_token>
 ```
 
 * `file` - A CSV or JSON file containing things
@@ -74,17 +74,27 @@ mainfluxlabs-cli things delete <thing_id> <user_token>
 
 #### Retrieve a subset list of provisioned Things
 ```bash
-mainfluxlabs-cli things get all --offset=1 --limit=5 <user_token>
+mainfluxlabs-cli things get all <user_token>
 ```
 
-#### Retrieve Thing By ID
+#### Retrieve Thing by ID
 ```bash
-mainfluxlabs-cli things get <thing_id> <user_token>
+mainfluxlabs-cli things get by-id <thing_id> <user_token>
 ```
 
-#### Retrieve Metadata By Key
+#### Retrieve Things by Profile
+```bash
+mainfluxlabs-cli things get by-profile <profile_id> <user_token>
+```
+
+#### Retrieve Metadata by Key
 ```bash
 mainfluxlabs-cli things metadata <thing_key>
+```
+
+#### Retrieve Thing ID by Key
+```bash
+mainfluxlabs-cli things identify <thing_key>
 ```
 
 #### Create Profile
@@ -94,7 +104,7 @@ mainfluxlabs-cli profiles create '{"name":"<profile_name>"}' <group_id> <user_to
 
 #### Bulk Provision Profiles
 ```bash
-mainfluxlabs-cli provision profiles <file> <user_token>
+mainfluxlabs-cli provision profiles <file> <group_id> <user_token>
 ```
 
 * `file` - A CSV or JSON file containing profiles
@@ -112,22 +122,17 @@ mainfluxlabs-cli profiles delete <profile_id> <user_token>
 
 #### Retrieve a subset list of provisioned Profiles
 ```bash
-mainfluxlabs-cli profiles get all --offset=1 --limit=5 <user_token>
+mainfluxlabs-cli profiles get all <user_token>
 ```
 
-#### Retrieve Profile By ID
+#### Retrieve Profile by ID
 ```bash
-mainfluxlabs-cli profiles get <profile_id> <user_token>
+mainfluxlabs-cli profiles get by-id <profile_id> <user_token>
 ```
 
 #### Retrieve a Profile by Thing
 ```bash
-mainfluxlabs-cli profiles thing <thing_id> <user_token>
-```
-
-#### Retrieve a subset list of Things by Profile
-```bash
-mainfluxlabs-cli things profile <profile_id> <user_token>
+mainfluxlabs-cli profiles get by-thing <thing_id> <user_token>
 ```
 
 ### Messaging
@@ -142,126 +147,131 @@ mainfluxlabs-cli messages read <profile_id> <thing_auth_token>
 ```
 
 ### Groups
-#### Create new group
+#### Create Group
 ```bash
 mainfluxlabs-cli groups create '{"name":"<group_name>","description":"<description>","metadata":{"key":"value",...}}' <org_id> <user_token>
 ```
 
-#### Delete group
+#### Delete Group
 ```bash
 mainfluxlabs-cli groups delete <group_id> <user_token>
 ```
 
-#### Get group by id
+#### Get Group by ID
 ```bash
 mainfluxlabs-cli groups get <group_id> <user_token>
 ```
 
-#### List all groups
+#### List all Groups
 ```bash
 mainfluxlabs-cli groups get all <user_token>
 ```
 
-#### Update group
+#### Update Group
 ```bash
 mainfluxlabs-cli groups update '{"name":"<new_name>"}' <group_id> <user_token>
 ```
 
-#### List things by group
+#### List Things by Group
 ```bash
 mainfluxlabs-cli groups things <group_id> <user_token>
 ```
 
-#### View group by thing
+#### View Group by Thing
 ```bash
 mainfluxlabs-cli groups thing <thing_id> <user_token>
 ```
 
-#### List profiles by group
+#### List Profiles by Group
 ```bash
 mainfluxlabs-cli groups profiles <group_id> <user_token>
 ```
 
-#### View group by profile
+#### View Group by Profile
 ```bash
 mainfluxlabs-cli groups profile <profile_id> <user_token>
 ```
 
 ### Orgs
-#### Create new org
+#### Create Org
 ```bash
 mainfluxlabs-cli orgs create '{"name":"<org_name>","description":"<description>","metadata":{"key":"value",...}}' <user_token>
 ```
 
-#### Get org by id
+#### Get Org by ID
 ```bash
 mainfluxlabs-cli orgs get <org_id> <user_token>
 ```
 
-#### List all orgs
+#### List all Orgs
 ```bash
 mainfluxlabs-cli orgs get all <user_token>
 ```
 
-#### Update org
+#### Update Org
 ```bash
 mainfluxlabs-cli orgs update '{"name":"<new_name>"}' <org_id> <user_token>
 ```
 
-#### Delete org
+#### Delete Org
 ```bash
 mainfluxlabs-cli orgs delete <org_id> <user_token>
 ```
 
-#### Assign user to an org
+#### Assign Member to Org
 ```bash
 mainfluxlabs-cli orgs assign '[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]' <org_id> <user_token>
 ```
 
-#### Unassign user from org
+#### Unassign Member from Org
 ```bash
 mainfluxlabs-cli orgs unassign '["<member_id>"]' <org_id> <user_token>
 ```
 
-#### Update members
+#### Get Member from Org
+```bash
+mainfluxlabs-cli orgs member <org_id> <member_id> <user_token>
+```
+
+#### Update Members
 ```bash
 mainfluxlabs-cli orgs update-members '[{"member_id":"<member_id>","role":"<new_role>"}]' <org_id> <user_token>
 ```
 
-#### List users by org
+#### List Members by Org
 ```bash
 mainfluxlabs-cli orgs members <org_id> <user_token>
 ```
 
-#### List orgs that user belongs to
+#### List Orgs that Member belongs to
 ```bash
 mainfluxlabs-cli orgs memberships <member_id> <user_token>
 ```
 
 ### Webhooks
-#### Create new webhooks
+#### Create Webhooks
 ```bash
 mainfluxlabs-cli webhooks create '[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]' <group_id> <user_token>
 ```
 
-#### Get webhook by id
+#### Get Webhook by ID
 ```bash
 mainfluxlabs-cli webhooks get by-id <id> <user_token>
 ```
 
-#### Get webhooks by group
+#### Get Webhooks by Group
 ```bash
-mainfluxlabs-cli webhooks get group <group_id> <user_token>
+mainfluxlabs-cli webhooks get by-group <group_id> <user_token>
 ```
 
-#### Update webhook
+#### Update Webhook
 ```bash
 mainfluxlabs-cli webhooks update '{"name":"<new_name>","url":"<http://webhook-url.com>"}' <webhook_id> <user_token>
 ```
 
-#### Delete webhooks
+#### Delete Webhooks
 ```bash
-mainfluxlabs-cli webhooks delete '["<webhook_id>"]' <group_id> <user_token>
+mainfluxlabs-cli webhooks delete '["<webhook_id>"]' <user_token>
 ```
 
 ### Keys management

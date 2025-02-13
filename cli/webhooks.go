@@ -31,10 +31,10 @@ var cmdWebhooks = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [group | by-id] <id> <user_token>",
+		Use:   "get [by-group | by-id] <id> <user_token>",
 		Short: "Get webhooks",
 		Long: `Get all webhooks by group or get webhook by id:
-		<group> - lists all webhooks by group by provided <id>
+		<by-group> - lists all webhooks by group by provided <id>
 		<by-id> - shows webhook by provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
@@ -42,7 +42,7 @@ var cmdWebhooks = []cobra.Command{
 				return
 			}
 
-			if args[0] == "group" {
+			if args[0] == "by-group" {
 				l, err := sdk.ListWebhooksByGroup(args[1], args[2])
 				if err != nil {
 					logError(err)
@@ -62,7 +62,7 @@ var cmdWebhooks = []cobra.Command{
 	},
 	{
 		Use:   "update <JSON_webhook> <webhook_id> <user_token>",
-		Short: "Update webhook by id",
+		Short: "Update webhook",
 		Long:  `Update webhook record`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
@@ -85,7 +85,7 @@ var cmdWebhooks = []cobra.Command{
 		},
 	},
 	{
-		Use:   "delete <JSON_ids> <group_id> <user_token>",
+		Use:   "delete <JSON_ids> <user_token>",
 		Short: "Delete webhooks",
 		Long:  `Delete webhooks by provided IDs`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -98,7 +98,7 @@ var cmdWebhooks = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.DeleteWebhooks(ids, args[1], args[2]); err != nil {
+			if err := sdk.DeleteWebhooks(ids, args[1]); err != nil {
 				logError(err)
 				return
 			}
