@@ -402,7 +402,7 @@ func TestViewProfileByThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		pr, err := mainfluxSDK.ViewProfileByThing(tc.token, tc.thing)
+		pr, err := mainfluxSDK.ViewProfileByThing(tc.thing, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, pr, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, pr))
 	}

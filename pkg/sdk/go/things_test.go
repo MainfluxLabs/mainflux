@@ -570,7 +570,7 @@ func TestThingsByProfile(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ThingsByProfile(tc.token, tc.profile, tc.offset, tc.limit)
+		page, err := mainfluxSDK.ThingsByProfile(tc.profile, tc.token, tc.offset, tc.limit)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}

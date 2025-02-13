@@ -96,7 +96,7 @@ func (sdk mfSDK) Profiles(token string, pm PageMetadata) (ProfilesPage, error) {
 	return cp, nil
 }
 
-func (sdk mfSDK) ViewProfileByThing(token, thingID string) (Profile, error) {
+func (sdk mfSDK) ViewProfileByThing(thingID, token string) (Profile, error) {
 	url := fmt.Sprintf("%s/things/%s/profiles", sdk.thingsURL, thingID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

@@ -37,11 +37,11 @@ var cmdProfiles = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | thing | by-id] <user_token> <id>",
+		Use:   "get [all | by-thing | by-id] <id> <user_token>",
 		Short: "Get profile",
 		Long: `Get all profiles, get profile by thing or get profile by id. Profiles can be filtered by name or metadata.
 		<all> - lists all profiles
-		<thing> - shows profile by thing with provided <id>
+		<by-thing> - shows profile by thing with provided <id>
 		<by-id> - shows profile with provided <id>`,
 
 		Run: func(cmd *cobra.Command, args []string) {
@@ -55,7 +55,7 @@ var cmdProfiles = []cobra.Command{
 				return
 			}
 			pageMetadata := mfxsdk.PageMetadata{
-				Name:     "",
+				Name:     Name,
 				Offset:   uint64(Offset),
 				Limit:    uint64(Limit),
 				Metadata: metadata,
@@ -71,7 +71,7 @@ var cmdProfiles = []cobra.Command{
 
 				logJSON(l)
 				return
-			case "thing":
+			case "by-thing":
 				pbt, err := sdk.ViewProfileByThing(args[1], args[2])
 				if err != nil {
 					logError(err)
@@ -81,7 +81,7 @@ var cmdProfiles = []cobra.Command{
 				logJSON(pbt)
 				return
 			case "by-id":
-				c, err := sdk.Profile(args[2], args[1])
+				c, err := sdk.Profile(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return

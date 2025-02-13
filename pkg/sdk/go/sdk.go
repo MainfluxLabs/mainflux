@@ -200,7 +200,7 @@ type SDK interface {
 	Things(token string, pm PageMetadata) (ThingsPage, error)
 
 	// ThingsByProfile returns page of things assigned to the specified profile.
-	ThingsByProfile(token, profileID string, offset, limit uint64) (ThingsPage, error)
+	ThingsByProfile(profileID, token string, offset, limit uint64) (ThingsPage, error)
 
 	// Thing returns thing object by id.
 	Thing(id, token string) (Thing, error)
@@ -254,7 +254,7 @@ type SDK interface {
 	Profiles(token string, pm PageMetadata) (ProfilesPage, error)
 
 	// ViewProfileByThing returns profile that are assigned to specified thing.
-	ViewProfileByThing(token, thingID string) (Profile, error)
+	ViewProfileByThing(thingID, token string) (Profile, error)
 
 	// Profile returns profile data by id.
 	Profile(id, token string) (Profile, error)
@@ -332,7 +332,7 @@ type SDK interface {
 	UpdateWebhook(wh Webhook, webhookID, token string) error
 
 	// DeleteWebhooks removes existing webhooks.
-	DeleteWebhooks(ids []string, groupID, token string) error
+	DeleteWebhooks(ids []string, token string) error
 
 	// SendMessage send message.
 	SendMessage(profileID, msg, token string) error
