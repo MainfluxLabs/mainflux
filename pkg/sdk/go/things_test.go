@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -42,10 +43,11 @@ var (
 	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
 	profile   = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000003", Name: "test1"}
 	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
+	orgs      = []auth.Org{{ID: orgID, OwnerID: user.ID}}
 )
 
 func newThingsService() things.Service {
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, orgs)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()

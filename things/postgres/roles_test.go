@@ -145,7 +145,7 @@ func TestRetrieveRole(t *testing.T) {
 				MemberID: memberID,
 			},
 			role: "",
-			err:  errors.ErrRetrieveEntity,
+			err:  errors.ErrNotFound,
 		},
 		{
 			desc: "retrieve group role without member id",
@@ -154,7 +154,7 @@ func TestRetrieveRole(t *testing.T) {
 				MemberID: "",
 			},
 			role: "",
-			err:  errors.ErrRetrieveEntity,
+			err:  errors.ErrNotFound,
 		},
 	}
 

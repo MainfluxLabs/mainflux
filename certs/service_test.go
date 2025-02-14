@@ -64,7 +64,7 @@ const (
 var usersList = []users.User{{Email: email, Password: password}}
 
 func newService() (certs.Service, error) {
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, nil)
 	ac := auth
 	server := newThingsServer(newThingsService(ac))
 	config := mfsdk.Config{

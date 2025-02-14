@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -26,9 +27,13 @@ const (
 	email    = "user@example.com"
 	token    = email
 	password = "password"
+	orgID    = "374106f7-030e-4881-8ab0-151195c29f92"
 )
 
-var usersList = []users.User{{Email: email, Password: password}}
+var (
+	usersList = []users.User{{Email: email, Password: password}}
+	orgsList  = []auth.Org{{ID: orgID, OwnerID: email}}
+)
 
 var svc things.Service
 
@@ -47,7 +52,7 @@ func startServer() {
 }
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()

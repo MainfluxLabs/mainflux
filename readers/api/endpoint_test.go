@@ -90,7 +90,7 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() protomfx.AuthServiceClient {
-	return mocks.NewAuthService(admin.ID, usersList)
+	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
 func TestListAllMessages(t *testing.T) {

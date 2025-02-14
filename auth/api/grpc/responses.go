@@ -19,3 +19,7 @@ type emptyRes struct {
 type retrieveRoleRes struct {
 	role string
 }
+
+type ownerIDByOrgIDRes struct {
+	ownerID string
+}

@@ -50,11 +50,12 @@ var (
 	admin       = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList   = []users.User{admin, user, otherUser}
 	group       = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
+	orgsList    = []auth.Org{{ID: orgID, OwnerID: token}}
 	metadata    = map[string]interface{}{"test": "data"}
 )
 
 func newService() things.Service {
-	auth := authmock.NewAuthService(admin.ID, usersList)
+	auth := authmock.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
 	groupsRepo := mocks.NewGroupRepository()
@@ -1297,6 +1298,7 @@ func TestBackup(t *testing.T) {
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
 		group := things.Group{
+			OrgID:       orgID,
 			Name:        "test-group-" + num,
 			Description: "test group desc",
 		}

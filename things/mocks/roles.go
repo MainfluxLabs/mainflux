@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -39,7 +40,13 @@ func (mrm *rolesRepositoryMock) RetrieveRole(_ context.Context, gp things.GroupM
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	return mrm.groupRolesByID[gp.MemberID].Role, nil
+	for _, gr := range mrm.groupRoles {
+		if gr.GroupID == gp.GroupID {
+			return mrm.groupRolesByID[gp.MemberID].Role, nil
+		}
+	}
+
+	return "", errors.ErrNotFound
 }
 
 func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(_ context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {

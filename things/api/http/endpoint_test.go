@@ -68,11 +68,12 @@ var (
 		Limit:  5,
 		Offset: 0,
 	}
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Editor}
-	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Owner}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Owner}
+	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Editor}
 	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
 	group     = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
+	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}}
 	metadata  = map[string]interface{}{"test": "data"}
 )
 
@@ -104,7 +105,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList)
+	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()
@@ -2256,6 +2257,7 @@ func TestRemoveGroups(t *testing.T) {
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
 		group := things.Group{
+			OrgID:       orgID,
 			Name:        "test-group-" + num,
 			Description: "test group desc",
 		}
@@ -2298,14 +2300,14 @@ func TestRemoveGroups(t *testing.T) {
 		{
 			desc:        "remove groups without group ids",
 			data:        []string{},
-			auth:        wrongValue,
+			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove groups with empty group ids",
 			data:        []string{emptyValue},
-			auth:        wrongValue,
+			auth:        token,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
