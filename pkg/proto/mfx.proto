@@ -35,6 +35,7 @@ service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
+    rpc GetOwnerIDByOrgID(GetOwnerIDByOrgIDReq) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
 }
@@ -74,6 +75,15 @@ message ThingID {
 }
 
 message GroupID {
+    string value = 1;
+}
+
+message GetOwnerIDByOrgIDReq {
+    string orgID = 1;
+    string token = 2;
+}
+
+message OwnerID {
     string value = 1;
 }
 

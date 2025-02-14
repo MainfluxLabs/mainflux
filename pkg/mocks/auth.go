@@ -107,6 +107,10 @@ func (svc authServiceMock) canAccessOrg(userID, action string) error {
 	}
 }
 
+func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.GetOwnerIDByOrgIDReq, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+	panic("not implemented")
+}
+
 func (svc authServiceMock) AssignRole(_ context.Context, in *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
