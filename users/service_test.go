@@ -41,7 +41,7 @@ var (
 func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	userRepo := usmocks.NewUserRepository(usersList)
-	authSvc := mocks.NewAuthService(admin.ID, usersList)
+	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
 	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
@@ -380,7 +380,7 @@ func TestChangePassword(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	svc := newService()
-	authSvc := mocks.NewAuthService("", []users.User{registerUser})
+	authSvc := mocks.NewAuthService("", []users.User{registerUser}, nil)
 
 	resetToken, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))

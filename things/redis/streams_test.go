@@ -43,16 +43,17 @@ const (
 )
 
 var (
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Editor}
-	otherUser = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Owner}
+	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Owner}
+	otherUser = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Editor}
 	admin     = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
 	group     = things.Group{OrgID: "374106f7-030e-4881-8ab0-151195c29f92", Name: "test-group", Description: "test-group-desc"}
+	orgsList  = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
 	profile   = things.Profile{Name: "test-profile"}
 )
 
 func newService(tokens map[string]string) things.Service {
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupsRepo := thmocks.NewGroupRepository()

@@ -91,14 +91,8 @@ type Groups interface {
 
 // GroupCache contains group caching interface.
 type GroupCache interface {
-	// SaveOrg stores pair group id, org id.
-	SaveOrg(context.Context, string, string) error
-
-	// ViewOrg returns org ID for given group ID.
-	ViewOrg(context.Context, string) (string, error)
-
-	// RemoveOrg removes org ID by given group ID and all entities related to that group.
-	RemoveOrg(context.Context, string) error
+	// RemoveGroupEntities removes all entities related to the group identified by ID.
+	RemoveGroupEntities(context.Context, string) error
 
 	// SaveRole stores member's role for given group ID.
 	SaveRole(context.Context, string, string, string) error
@@ -224,7 +218,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.groupCache.RemoveOrg(ctx, id); err != nil {
+		if err := ts.groupCache.RemoveGroupEntities(ctx, id); err != nil {
 			return err
 		}
 	}

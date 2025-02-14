@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	orgByGroupPrefix     = "org_by_gr"
 	membersByGroupPrefix = "mbs_by_gr"
 	groupsByMemberPrefix = "grs_by_mb"
 )
@@ -28,28 +27,8 @@ func NewGroupCache(client *redis.Client) things.GroupCache {
 	}
 }
 
-func (gc *groupCache) SaveOrg(ctx context.Context, groupID, orgID string) error {
-	ok := orgByGroupIDKey(groupID)
-	if err := gc.client.Set(ctx, ok, orgID, 0).Err(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
-func (gc *groupCache) ViewOrg(ctx context.Context, groupID string) (string, error) {
-	ok := orgByGroupIDKey(groupID)
-	orgID, err := gc.client.Get(ctx, ok).Result()
-	if err != nil {
-		return "", errors.Wrap(errors.ErrNotFound, err)
-	}
-
-	return orgID, nil
-}
-
-func (gc *groupCache) RemoveOrg(ctx context.Context, groupID string) error {
+func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) error {
 	removalKeys := []string{
-		orgByGroupIDKey(groupID),
 		thingsByGroupIDKey(groupID),
 		profilesByGroupIDKey(groupID),
 		membersByGroupIDKey(groupID),
@@ -114,7 +93,10 @@ func (gc *groupCache) ViewRole(ctx context.Context, groupID, memberID string) (s
 	gk := groupsByMemberIDKey(memberID)
 	role, err := gc.client.HGet(ctx, gk, groupID).Result()
 	if err != nil {
-		return "", errors.Wrap(errors.ErrNotFound, err)
+		if err == redis.Nil {
+			return "", errors.Wrap(errors.ErrNotFound, err)
+		}
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return role, nil
@@ -142,10 +124,6 @@ func (gc *groupCache) GroupMemberships(ctx context.Context, memberID string) ([]
 	}
 
 	return groups, nil
-}
-
-func orgByGroupIDKey(groupID string) string {
-	return fmt.Sprintf("%s:%s", orgByGroupPrefix, groupID)
 }
 
 func membersByGroupIDKey(groupID string) string {

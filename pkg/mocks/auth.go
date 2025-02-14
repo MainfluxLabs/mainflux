@@ -19,21 +19,28 @@ var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
 type authServiceMock struct {
 	roles        map[string]string
 	usersByEmail map[string]users.User
+	orgs         map[string]auth.Org
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(adminID string, userList []users.User) protomfx.AuthServiceClient {
+func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) protomfx.AuthServiceClient {
 	usersByEmail := make(map[string]users.User)
 	roles := map[string]string{auth.RootSub: adminID}
+	orgs := make(map[string]auth.Org)
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
 		roles[user.Role] = user.ID
 	}
 
+	for _, o := range orgList {
+		orgs[o.ID] = o
+	}
+
 	return &authServiceMock{
 		roles:        roles,
 		usersByEmail: usersByEmail,
+		orgs:         orgs,
 	}
 }
 
@@ -107,8 +114,13 @@ func (svc authServiceMock) canAccessOrg(userID, action string) error {
 	}
 }
 
-func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.GetOwnerIDByOrgIDReq, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
-	panic("not implemented")
+func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, req *protomfx.GetOwnerIDByOrgIDReq, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+	for id, org := range svc.orgs {
+		if id == req.OrgID {
+			return &protomfx.OwnerID{Value: org.OwnerID}, nil
+		}
+	}
+	return nil, errors.ErrNotFound
 }
 
 func (svc authServiceMock) AssignRole(_ context.Context, in *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {

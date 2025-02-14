@@ -25,7 +25,7 @@ const wrongID = ""
 var (
 	thing   = things.Thing{Name: "test_app", Metadata: map[string]interface{}{"test": "test"}}
 	profile = things.Profile{Name: "test", Metadata: map[string]interface{}{"test": "test", "config": things.Config{ContentType: "application/json"}}}
-	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
+	group   = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
 )
 
 func TestGetPubConfByKey(t *testing.T) {
