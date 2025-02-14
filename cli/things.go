@@ -44,7 +44,7 @@ var cmdThings = []cobra.Command{
 		<by-profile> - list things by profile based on defined <id>
 		<by-id> - shows thing with provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 || len(args) != 3 {
+			if len(args) != 2 && len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
