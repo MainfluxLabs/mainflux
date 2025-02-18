@@ -39,11 +39,11 @@ var cmdOrgs = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <org_id>] <user_token>",
+		Use:   "get <all | org_id> <user_token>",
 		Short: "Get org",
 		Long: `Get all orgs or org by id.
 		all - lists all orgs
-		<org_id> - shows org with provided org ID`,
+		org_id - shows org with provided <org_id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
 				logUsage(cmd.Use)

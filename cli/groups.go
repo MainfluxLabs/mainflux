@@ -41,11 +41,11 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | <group_id>] <user_token>",
+		Use:   "get <all | group_id> <user_token>",
 		Short: "Get group",
 		Long: `Get all users groups or group by id.
 		all - lists all groups
-		<group_id> - shows group with provided group ID`,
+		group_id - shows group with provided <group_id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
 				logUsage(cmd.Use)

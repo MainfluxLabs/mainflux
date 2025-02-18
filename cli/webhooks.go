@@ -31,11 +31,11 @@ var cmdWebhooks = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [by-group | by-id] <id> <user_token>",
+		Use:   "get <by-group | by-id> <id> <user_token>",
 		Short: "Get webhooks",
 		Long: `Get all webhooks by group or get webhook by id:
-		<by-group> - lists all webhooks by group by provided <id>
-		<by-id> - shows webhook by provided <id>`,
+		by-group - lists all webhooks by group by provided <id>
+		by-id - shows webhook by provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)

@@ -33,8 +33,6 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			cli.ParseConfig()
-
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
@@ -81,7 +79,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(
 		&sdkConf.CertsURL,
 		"certs-url",
-		"s",
+		"c",
 		sdkConf.CertsURL,
 		"Certs service URL",
 	)
@@ -132,14 +130,6 @@ func main() {
 		"i",
 		sdkConf.TLSVerification,
 		"Do not check for TLS cert",
-	)
-
-	rootCmd.PersistentFlags().StringVarP(
-		&cli.ConfigPath,
-		"config",
-		"c",
-		cli.ConfigPath,
-		"Config path",
 	)
 
 	rootCmd.PersistentFlags().BoolVarP(
@@ -197,6 +187,14 @@ func main() {
 		"f",
 		"",
 		"Message format query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Subtopic,
+		"subtopic",
+		"s",
+		"",
+		"Subtopic query parameter",
 	)
 
 	if err := rootCmd.Execute(); err != nil {

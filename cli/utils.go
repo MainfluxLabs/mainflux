@@ -24,8 +24,8 @@ var (
 	Metadata string = ""
 	// Format query parameter
 	Format string = ""
-	// ConfigPath config path parameter
-	ConfigPath string = ""
+	// Subtopic query parameter
+	Subtopic string = ""
 	// RawOutput raw output mode
 	RawOutput bool = false
 )

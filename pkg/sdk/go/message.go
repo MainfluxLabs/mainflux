@@ -14,7 +14,7 @@ import (
 )
 
 func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
-	subtopic = fmt.Sprintf("/%s", strings.Replace(subtopic, ".", "/", -1))
+	subtopic = strings.Replace(subtopic, ".", "/", -1)
 	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
 
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(msg))
@@ -35,7 +35,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 }
 
 func (sdk mfSDK) ReadMessages(subtopic, format, token string) (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/reader/messages", sdk.readerURL)
+	url := fmt.Sprintf("%s/messages", sdk.readerURL)
 	sep := "?"
 	if subtopic != "" {
 		url += sep + "subtopic=" + subtopic
