@@ -19,7 +19,7 @@ func main() {
 	sdkConf := sdk.Config{
 		AuthURL:         defURL,
 		ThingsURL:       defURL,
-		WebhooksURL:     defURL,
+		WebhooksURL:     fmt.Sprintf("%s/svcwebhooks", defURL),
 		UsersURL:        defURL,
 		ReaderURL:       defURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
@@ -33,8 +33,6 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			cli.ParseConfig()
-
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
@@ -81,7 +79,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(
 		&sdkConf.CertsURL,
 		"certs-url",
-		"s",
+		"c",
 		sdkConf.CertsURL,
 		"Certs service URL",
 	)
@@ -134,14 +132,6 @@ func main() {
 		"Do not check for TLS cert",
 	)
 
-	rootCmd.PersistentFlags().StringVarP(
-		&cli.ConfigPath,
-		"config",
-		"c",
-		cli.ConfigPath,
-		"Config path",
-	)
-
 	rootCmd.PersistentFlags().BoolVarP(
 		&cli.RawOutput,
 		"raw",
@@ -189,6 +179,22 @@ func main() {
 		"m",
 		"",
 		"Metadata query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Format,
+		"format",
+		"f",
+		"",
+		"Message format query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Subtopic,
+		"subtopic",
+		"s",
+		"",
+		"Subtopic query parameter",
 	)
 
 	if err := rootCmd.Execute(); err != nil {

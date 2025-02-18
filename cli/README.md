@@ -138,12 +138,14 @@ mainfluxlabs-cli profiles get by-thing <thing_id> <user_token>
 ### Messaging
 #### Send a message over HTTP
 ```bash
-mainfluxlabs-cli messages send <profile_id> '[{"bn":"Dev1","n":"temp","v":20}, {"n":"hum","v":40}, {"bn":"Dev2", "n":"temp","v":20}, {"n":"hum","v":40}]' <thing_auth_token>
+mainfluxlabs-cli messages send [subtopic] '[{"bn":"Dev1","n":"temp","v":20}, {"n":"hum","v":40}, {"bn":"Dev2", "n":"temp","v":20}, {"n":"hum","v":40}]' <thing_key>
 ```
 
 #### Read messages over HTTP
+* Read messages from a specific subtopic by adding a flag `-s=<subtopic>`
+* Reading SenML messages is the default. To read JSON messages add the flag `-f=json`
 ```bash
-mainfluxlabs-cli messages read <profile_id> <thing_auth_token>
+mainfluxlabs-cli messages read <thing_key>
 ```
 
 ### Groups

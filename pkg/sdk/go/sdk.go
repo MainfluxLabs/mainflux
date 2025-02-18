@@ -81,6 +81,8 @@ type PageMetadata struct {
 	Total    uint64                 `json:"total"`
 	Offset   uint64                 `json:"offset"`
 	Limit    uint64                 `json:"limit"`
+	Subtopic string                 `json:"subtopic,omitempty"`
+	Format   string                 `json:"format,omitempty"`
 	Level    uint64                 `json:"level,omitempty"`
 	Email    string                 `json:"email,omitempty"`
 	Name     string                 `json:"name,omitempty"`
@@ -335,10 +337,10 @@ type SDK interface {
 	DeleteWebhooks(ids []string, token string) error
 
 	// SendMessage send message.
-	SendMessage(profileID, msg, token string) error
+	SendMessage(subtopic, msg, token string) error
 
 	// ReadMessages read messages.
-	ReadMessages(profileID, token string) (MessagesPage, error)
+	ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error)
 
 	// SetContentType sets message content type.
 	SetContentType(ct ContentType) error
@@ -465,6 +467,12 @@ func (pm PageMetadata) query() (string, error) {
 	}
 	if pm.Type != "" {
 		q.Add("type", pm.Type)
+	}
+	if pm.Subtopic != "" {
+		q.Add("subtopic", pm.Subtopic)
+	}
+	if pm.Format != "" {
+		q.Add("format", pm.Format)
 	}
 	if pm.Metadata != nil {
 		md, err := json.Marshal(pm.Metadata)

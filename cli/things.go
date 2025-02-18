@@ -37,12 +37,12 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get [all | by-profile | by-id] <id> <user_token>",
+		Use:   "get <all | by-profile | by-id> <id> <user_token>",
 		Short: "Get things",
 		Long: `Get all things, get things by profile or get thing by id.List of all things can be filtered by name or metadata
-		<all> - lists all things
-		<by-profile> - list things by profile based on defined <id>
-		<by-id> - shows thing with provided <id>`,
+		all - lists all things
+		by-profile - list things by profile based on defined <id>
+		by-id - shows thing with provided <id>`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 && len(args) != 3 {
 				logUsage(cmd.Use)

@@ -22,8 +22,10 @@ var (
 	Email string = ""
 	// Metadata query parameter
 	Metadata string = ""
-	// ConfigPath config path parameter
-	ConfigPath string = ""
+	// Format query parameter
+	Format string = ""
+	// Subtopic query parameter
+	Subtopic string = ""
 	// RawOutput raw output mode
 	RawOutput bool = false
 )

@@ -3,21 +3,30 @@
 
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/spf13/cobra"
+)
 
 var cmdMessages = []cobra.Command{
 	{
-		Use:   "send <profile_id.subtopic> <JSON_string> <thing_key>",
+		Use:   "send [subtopic] <JSON_string> <thing_key>",
 		Short: "Send messages",
-		Long:  `Sends message on the profile`,
+		Long:  `Sends message`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
+			switch len(args) {
+			case 2:
+				if err := sdk.SendMessage("", args[0], args[1]); err != nil {
+					logError(err)
+					return
+				}
+			case 3:
+				if err := sdk.SendMessage(args[0], args[1], args[2]); err != nil {
+					logError(err)
+					return
+				}
+			default:
 				logUsage(cmd.Use)
-				return
-			}
-
-			if err := sdk.SendMessage(args[0], args[1], args[2]); err != nil {
-				logError(err)
 				return
 			}
 
@@ -25,16 +34,23 @@ var cmdMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "read <profile_id.subtopic> <thing_key>",
+		Use:   "read <thing_key>",
 		Short: "Read messages",
-		Long:  `Reads all profile messages`,
+		Long:  `Reads all messages`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 1 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			m, err := sdk.ReadMessages(args[0], args[1])
+			pm := mfxsdk.PageMetadata{
+				Offset:   uint64(Offset),
+				Limit:    uint64(Limit),
+				Format:   Format,
+				Subtopic: Subtopic,
+			}
+
+			m, err := sdk.ReadMessages(pm, args[0])
 			if err != nil {
 				logError(err)
 				return
