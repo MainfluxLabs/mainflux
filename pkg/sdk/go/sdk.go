@@ -335,10 +335,10 @@ type SDK interface {
 	DeleteWebhooks(ids []string, token string) error
 
 	// SendMessage send message.
-	SendMessage(profileID, msg, token string) error
+	SendMessage(subtopic, msg, token string) error
 
 	// ReadMessages read messages.
-	ReadMessages(profileID, token string) (MessagesPage, error)
+	ReadMessages(subtopic, format, token string) (map[string]interface{}, error)
 
 	// SetContentType sets message content type.
 	SetContentType(ct ContentType) error

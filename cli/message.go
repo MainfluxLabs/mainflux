@@ -7,7 +7,7 @@ import "github.com/spf13/cobra"
 
 var cmdMessages = []cobra.Command{
 	{
-		Use:   "send <profile_id.subtopic> <JSON_string> <thing_key>",
+		Use:   "send <subtopic> <JSON_string> <thing_key>",
 		Short: "Send messages",
 		Long:  `Sends message on the profile`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -25,7 +25,7 @@ var cmdMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "read <profile_id.subtopic> <thing_key>",
+		Use:   "read <subtopic> <thing_key>",
 		Short: "Read messages",
 		Long:  `Reads all profile messages`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -34,7 +34,7 @@ var cmdMessages = []cobra.Command{
 				return
 			}
 
-			m, err := sdk.ReadMessages(args[0], args[1])
+			m, err := sdk.ReadMessages(args[0], Format, args[1])
 			if err != nil {
 				logError(err)
 				return

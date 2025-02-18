@@ -13,15 +13,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-func (sdk mfSDK) SendMessage(profileName, msg, key string) error {
-	profileNameParts := strings.SplitN(profileName, ".", 2)
-	profileID := profileNameParts[0]
-	subtopicPart := ""
-	if len(profileNameParts) == 2 {
-		subtopicPart = fmt.Sprintf("/%s", strings.Replace(profileNameParts[1], ".", "/", -1))
-	}
-
-	url := fmt.Sprintf("%s/profiles/%s/messages/%s", sdk.httpAdapterURL, profileID, subtopicPart)
+func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
+	subtopic = fmt.Sprintf("/%s", strings.Replace(subtopic, ".", "/", -1))
+	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
 
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(msg))
 	if err != nil {
@@ -40,37 +34,41 @@ func (sdk mfSDK) SendMessage(profileName, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(profileName, token string) (MessagesPage, error) {
-	profileNameParts := strings.SplitN(profileName, ".", 2)
-	profileID := profileNameParts[0]
-	subtopicPart := ""
-	if len(profileNameParts) == 2 {
-		subtopicPart = fmt.Sprintf("?subtopic=%s", strings.Replace(profileNameParts[1], ".", "/", -1))
+func (sdk mfSDK) ReadMessages(subtopic, format, token string) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/reader/messages", sdk.readerURL)
+	sep := "?"
+	if subtopic != "" {
+		url += sep + "subtopic=" + subtopic
+	}
+	if format != "" {
+		if subtopic != "" {
+			sep = "&"
+		}
+		url += sep + "format=" + format
 	}
 
-	url := fmt.Sprintf("%s/profiles/%s/messages%s", sdk.readerURL, profileID, subtopicPart)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return MessagesPage{}, err
+		return nil, err
 	}
 
-	resp, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+	resp, err := sdk.sendThingRequest(req, token, string(sdk.msgContentType))
 	if err != nil {
-		return MessagesPage{}, err
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return MessagesPage{}, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return MessagesPage{}, errors.Wrap(ErrFailedRead, errors.New(resp.Status))
+		return nil, errors.Wrap(ErrFailedRead, errors.New(resp.Status))
 	}
 
-	var mp MessagesPage
+	var mp map[string]interface{}
 	if err := json.Unmarshal(body, &mp); err != nil {
-		return MessagesPage{}, err
+		return nil, err
 	}
 
 	return mp, nil

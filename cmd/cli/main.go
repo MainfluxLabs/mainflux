@@ -19,7 +19,7 @@ func main() {
 	sdkConf := sdk.Config{
 		AuthURL:         defURL,
 		ThingsURL:       defURL,
-		WebhooksURL:     defURL,
+		WebhooksURL:     fmt.Sprintf("%s/svcwebhooks", defURL),
 		UsersURL:        defURL,
 		ReaderURL:       defURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
@@ -189,6 +189,14 @@ func main() {
 		"m",
 		"",
 		"Metadata query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&cli.Format,
+		"format",
+		"f",
+		"",
+		"Message format query parameter",
 	)
 
 	if err := rootCmd.Execute(); err != nil {
