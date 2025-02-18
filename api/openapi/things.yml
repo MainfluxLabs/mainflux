@@ -244,6 +244,25 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/things:
+    get:
+      summary: Retrieves things by org
+      description: |
+        Retrieves an array of things that belong to the org identified by id
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
 
   /groups/{groupId}/profiles:
     post:
@@ -456,6 +475,25 @@ paths:
           description: A non-existent entity request.
         '422':
           description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/profiles:
+    get:
+      summary: Retrieves profiles by org
+      description: |
+        Retrieves an array of profiles that belong to the org identified by id
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesPageRes"
+        '401':
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 

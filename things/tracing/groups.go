@@ -15,6 +15,7 @@ const (
 	retrieveAllOp              = "retrieve_all"
 	retrieveGroupByIDOp        = "retrieve_group_by_id"
 	retrieveGroupByIDsOp       = "retrieve_group_by_ids"
+	retrieveGroupIDsByOrgOp    = "retrieve_group_ids_by_org"
 	retrieveOrgIDByGroupIDOp   = "retrieve_org_id_by_group_id"
 	saveRoleOp                 = "save_role"
 	retrieveRoleOp             = "retrieve_role"
@@ -90,6 +91,14 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByIDs(ctx, groupIDs, pm)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error) {
+	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrgOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveIDsByOrg(ctx, orgID, memberID)
 }
 
 type groupCacheMiddleware struct {
