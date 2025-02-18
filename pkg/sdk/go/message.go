@@ -13,6 +13,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+const messagesEndpoint = "messages"
+
 func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	subtopic = strings.Replace(subtopic, ".", "/", -1)
 	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
@@ -34,17 +36,10 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(subtopic, format, token string) (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/messages", sdk.readerURL)
-	sep := "?"
-	if subtopic != "" {
-		url += sep + "subtopic=" + subtopic
-	}
-	if format != "" {
-		if subtopic != "" {
-			sep = "&"
-		}
-		url += sep + "format=" + format
+func (sdk mfSDK) ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error) {
+	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

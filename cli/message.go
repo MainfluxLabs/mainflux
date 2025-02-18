@@ -3,7 +3,10 @@
 
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/spf13/cobra"
+)
 
 var cmdMessages = []cobra.Command{
 	{
@@ -42,7 +45,14 @@ var cmdMessages = []cobra.Command{
 				return
 			}
 
-			m, err := sdk.ReadMessages(Subtopic, Format, args[0])
+			pm := mfxsdk.PageMetadata{
+				Offset:   uint64(Offset),
+				Limit:    uint64(Limit),
+				Format:   Format,
+				Subtopic: Subtopic,
+			}
+
+			m, err := sdk.ReadMessages(pm, args[0])
 			if err != nil {
 				logError(err)
 				return
