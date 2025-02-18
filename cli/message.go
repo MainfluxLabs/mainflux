@@ -14,11 +14,6 @@ var cmdMessages = []cobra.Command{
 		Short: "Send messages",
 		Long:  `Sends message`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 && len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
 			switch len(args) {
 			case 2:
 				if err := sdk.SendMessage("", args[0], args[1]); err != nil {
@@ -30,6 +25,9 @@ var cmdMessages = []cobra.Command{
 					logError(err)
 					return
 				}
+			default:
+				logUsage(cmd.Use)
+				return
 			}
 
 			logOK()
