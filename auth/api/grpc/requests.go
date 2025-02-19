@@ -67,7 +67,6 @@ func (req authReq) validate() error {
 
 type ownerIDByOrgIDReq struct {
 	orgID string
-	token string
 }
 
 func (req ownerIDByOrgIDReq) validate() error {

@@ -114,9 +114,9 @@ func (svc authServiceMock) canAccessOrg(userID, action string) error {
 	}
 }
 
-func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, req *protomfx.GetOwnerIDByOrgIDReq, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, req *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	for id, org := range svc.orgs {
-		if id == req.OrgID {
+		if id == req.Value {
 			return &protomfx.OwnerID{Value: org.OwnerID}, nil
 		}
 	}

@@ -89,7 +89,7 @@ func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) 
 	return res.(*empty.Empty), nil
 }
 
-func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.GetOwnerIDByOrgIDReq) (*protomfx.OwnerID, error) {
+func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
 	_, res, err := s.getOwnerIDByOrgID.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -155,8 +155,8 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 }
 
 func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.GetOwnerIDByOrgIDReq)
-	return ownerIDByOrgIDReq{orgID: req.GetOrgID(), token: req.GetToken()}, nil
+	req := grpcReq.(*protomfx.OrgID)
+	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
 }
 
 func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

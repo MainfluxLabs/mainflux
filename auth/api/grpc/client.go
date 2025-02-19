@@ -157,11 +157,11 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	}, nil
 }
 
-func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.GetOwnerIDByOrgIDReq, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.getOwnerIDByOrgID(ctx, ownerIDByOrgIDReq{orgID: req.GetOrgID(), token: req.GetToken()})
+	res, err := client.getOwnerIDByOrgID(ctx, ownerIDByOrgIDReq{orgID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.Ge
 
 func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(ownerIDByOrgIDReq)
-	return &protomfx.GetOwnerIDByOrgIDReq{OrgID: req.orgID, Token: req.token}, nil
+	return &protomfx.OrgID{Value: req.orgID}, nil
 }
 
 func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

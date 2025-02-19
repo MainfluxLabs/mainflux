@@ -83,6 +83,9 @@ type Orgs interface {
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
+	// GetOwnerIDByOrgID returns an owner ID for a given org ID.
+	GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error)
+
 	// Backup retrieves all orgs and org members. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -239,6 +242,15 @@ func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID 
 	}
 
 	return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
+}
+
+func (svc service) GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error) {
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
+	if err != nil {
+		return "", err
+	}
+
+	return org.OwnerID, nil
 }
 
 func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {

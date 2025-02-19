@@ -85,12 +85,12 @@ func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		org, err := svc.ViewOrg(ctx, req.token, req.orgID)
+		ownerID, err := svc.GetOwnerIDByOrgID(ctx, req.orgID)
 		if err != nil {
 			return ownerIDByOrgIDReq{}, err
 		}
 
-		return ownerIDByOrgIDRes{ownerID: org.OwnerID}, nil
+		return ownerIDByOrgIDRes{ownerID: ownerID}, nil
 	}
 }
 

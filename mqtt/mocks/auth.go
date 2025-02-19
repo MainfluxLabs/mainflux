@@ -81,7 +81,7 @@ func (svc authServiceMock) Authorize(ctx context.Context, req *protomfx.Authoriz
 	return &empty.Empty{}, nil
 }
 
-func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.GetOwnerIDByOrgIDReq, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	panic("not implemented")
 }
 

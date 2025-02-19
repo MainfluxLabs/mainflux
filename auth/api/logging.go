@@ -159,6 +159,19 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth
 	return lm.svc.ListOrgs(ctx, token, pm)
 }
 
+func (lm *loggingMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string) (ownerID string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_owner_id_by_org_id for id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOwnerIDByOrgID(ctx, orgID)
+}
+
 func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (om auth.OrgMember, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_member for org id %s and member id %s took %s to complete", orgID, memberID, time.Since(begin))

@@ -116,7 +116,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 
 	grs := []Group{}
 	for _, group := range groups {
-		oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.GetOwnerIDByOrgIDReq{OrgID: group.OrgID, Token: token})
+		oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: group.OrgID})
 		if err != nil {
 			return []Group{}, err
 		}

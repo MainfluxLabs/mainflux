@@ -49,7 +49,7 @@ func (repo singleUserRepo) Authorize(ctx context.Context, req *protomfx.Authoriz
 	return &empty.Empty{}, errUnsupported
 }
 
-func (repo singleUserRepo) GetOwnerIDByOrgID(ctx context.Context, in *protomfx.GetOwnerIDByOrgIDReq, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (repo singleUserRepo) GetOwnerIDByOrgID(ctx context.Context, in *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	return &protomfx.OwnerID{}, errUnsupported
 }
 
