@@ -122,9 +122,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 		}
 		ownerID := oid.GetValue()
 
-		members := []GroupMember{
-			{MemberID: ownerID, Role: Owner},
-		}
+		members := []GroupMember{{MemberID: ownerID, Role: Owner}}
 		if ownerID != userID {
 			if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Editor); err != nil {
 				return nil, err
@@ -139,14 +137,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 
 		for i := range members {
 			members[i].GroupID = gr.ID
+			if err := ts.roles.SaveRolesByGroup(ctx, members[i]); err != nil {
+				return []Group{}, err
+			}
 
 			if err := ts.groupCache.SaveRole(ctx, gr.ID, members[i].MemberID, members[i].Role); err != nil {
 				return []Group{}, err
 			}
-		}
-
-		if err := ts.roles.SaveRolesByGroup(ctx, members...); err != nil {
-			return []Group{}, err
 		}
 
 		grs = append(grs, gr)
