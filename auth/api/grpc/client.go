@@ -23,12 +23,13 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue        endpoint.Endpoint
-	identify     endpoint.Endpoint
-	authorize    endpoint.Endpoint
-	retrieveRole endpoint.Endpoint
-	assignRole   endpoint.Endpoint
-	timeout      time.Duration
+	issue             endpoint.Endpoint
+	identify          endpoint.Endpoint
+	authorize         endpoint.Endpoint
+	getOwnerIDByOrgID endpoint.Endpoint
+	retrieveRole      endpoint.Endpoint
+	assignRole        endpoint.Endpoint
+	timeout           time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -57,6 +58,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeAuthorizeRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
+		).Endpoint()),
+		getOwnerIDByOrgID: kitot.TraceClient(tracer, "get_owner_id_by_org_id")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetOwnerIDByOrgID",
+			encodeGetOwnerIDByOrgIDRequest,
+			decodeGetOwnerIDByOrgIDResponse,
+			protomfx.OwnerID{},
 		).Endpoint()),
 		retrieveRole: kitot.TraceClient(tracer, "retrieve_role")(kitgrpc.NewClient(
 			conn,
@@ -148,6 +157,29 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	}, nil
 }
 
+func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.getOwnerIDByOrgID(ctx, ownerIDByOrgIDReq{orgID: req.GetValue()})
+	if err != nil {
+		return nil, err
+	}
+
+	oid := res.(ownerIDByOrgIDRes)
+	return &protomfx.OwnerID{Value: oid.ownerID}, nil
+}
+
+func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(ownerIDByOrgIDReq)
+	return &protomfx.OrgID{Value: req.orgID}, nil
+}
+
+func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.OwnerID)
+	return ownerIDByOrgIDRes{ownerID: res.GetValue()}, nil
+}
+
 func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
@@ -192,13 +224,6 @@ func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interfac
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
-}
-
-func decodeAssignResponse(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(authReq)
-	return &protomfx.AuthorizeReq{
-		Token: req.Token,
-	}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {

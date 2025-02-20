@@ -91,14 +91,8 @@ type Groups interface {
 
 // GroupCache contains group caching interface.
 type GroupCache interface {
-	// SaveOrg stores pair group id, org id.
-	SaveOrg(context.Context, string, string) error
-
-	// ViewOrg returns org ID for given group ID.
-	ViewOrg(context.Context, string) (string, error)
-
-	// RemoveOrg removes org ID by given group ID and all entities related to that group.
-	RemoveOrg(context.Context, string) error
+	// RemoveGroupEntities removes all entities related to the group identified by ID.
+	RemoveGroupEntities(context.Context, string) error
 
 	// SaveRole stores member's role for given group ID.
 	SaveRole(context.Context, string, string, string) error
@@ -118,37 +112,38 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 	if err != nil {
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-
-	orgID := groups[0].OrgID
 	userID := user.GetId()
-	timestamp := getTimestmap()
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Editor); err != nil {
-		return []Group{}, err
-	}
 
 	grs := []Group{}
 	for _, group := range groups {
-		group.CreatedAt = timestamp
-		group.UpdatedAt = timestamp
+		oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: group.OrgID})
+		if err != nil {
+			return []Group{}, err
+		}
+		ownerID := oid.GetValue()
+
+		members := []GroupMember{{MemberID: ownerID, Role: Owner}}
+		if ownerID != userID {
+			if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Editor); err != nil {
+				return nil, err
+			}
+			members = append(members, GroupMember{MemberID: userID, Role: Admin})
+		}
 
 		gr, err := ts.createGroup(ctx, group)
 		if err != nil {
 			return []Group{}, err
 		}
 
-		gm := GroupMember{
-			MemberID: userID,
-			GroupID:  gr.ID,
-			Role:     Owner,
-		}
+		for i := range members {
+			members[i].GroupID = gr.ID
+			if err := ts.roles.SaveRolesByGroup(ctx, members[i]); err != nil {
+				return []Group{}, err
+			}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
-			return []Group{}, err
-		}
-
-		if err := ts.groupCache.SaveRole(ctx, gr.ID, userID, Owner); err != nil {
-			return []Group{}, err
+			if err := ts.groupCache.SaveRole(ctx, gr.ID, members[i].MemberID, members[i].Role); err != nil {
+				return []Group{}, err
+			}
 		}
 
 		grs = append(grs, gr)
@@ -158,6 +153,9 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 }
 
 func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, error) {
+	timestamp := getTimestmap()
+	group.CreatedAt, group.UpdatedAt = timestamp, timestamp
+
 	id, err := ts.idProvider.ID()
 	if err != nil {
 		return Group{}, err
@@ -217,7 +215,7 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.groupCache.RemoveOrg(ctx, id); err != nil {
+		if err := ts.groupCache.RemoveGroupEntities(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -308,20 +306,7 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	grOrgID, err := ts.groupCache.ViewOrg(ctx, groupID)
-	if err != nil {
-		group, err := ts.groups.RetrieveByID(ctx, groupID)
-		if err != nil {
-			return err
-		}
-		grOrgID = group.OrgID
-
-		if err := ts.groupCache.SaveOrg(ctx, group.ID, group.OrgID); err != nil {
-			return err
-		}
-	}
-
-	if err := ts.canAccessOrg(ctx, token, grOrgID, auth.OrgSub, Owner); err == nil {
+	if err := ts.isAdmin(ctx, token); err == nil {
 		return nil
 	}
 
@@ -330,20 +315,20 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
-	gp := GroupMember{
+	gm := GroupMember{
 		MemberID: user.Id,
 		GroupID:  groupID,
 	}
 
-	role, err := ts.groupCache.ViewRole(ctx, gp.GroupID, gp.MemberID)
+	role, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
 	if err != nil {
-		r, err := ts.roles.RetrieveRole(ctx, gp)
+		r, err := ts.roles.RetrieveRole(ctx, gm)
 		if err != nil {
 			return err
 		}
 		role = r
 
-		if err := ts.groupCache.SaveRole(ctx, gp.GroupID, gp.MemberID, r); err != nil {
+		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, r); err != nil {
 			return err
 		}
 	}

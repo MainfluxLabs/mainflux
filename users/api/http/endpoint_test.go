@@ -89,7 +89,7 @@ func (tr testRequest) make() (*http.Response, error) {
 func newService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
 	hasher := usmocks.NewHasher()
-	auth := mocks.NewAuthService(admin.ID, usersList)
+	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
 	return users.New(usersRepo, hasher, auth, email, idProvider, passRegex)
 }
@@ -200,7 +200,7 @@ func TestLogin(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, nil)
 
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
@@ -263,7 +263,7 @@ func TestUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, nil)
 
 	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
@@ -581,7 +581,7 @@ func TestPasswordReset(t *testing.T) {
 		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, nil)
 
 	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
@@ -649,7 +649,7 @@ func TestPasswordChange(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	auth := mocks.NewAuthService("", usersList)
+	auth := mocks.NewAuthService("", usersList, nil)
 
 	reqData := struct {
 		Token    string `json:"token,omitempty"`

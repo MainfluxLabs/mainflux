@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -56,25 +57,17 @@ func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, gms ...things.Gr
 	return nil
 }
 
-func (pr rolesRepository) RetrieveRole(ctc context.Context, gp things.GroupMember) (string, error) {
-	q := `SELECT role FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
-
-	params := map[string]interface{}{
-		"member_id": gp.MemberID,
-		"group_id":  gp.GroupID,
-	}
-
-	rows, err := pr.db.NamedQueryContext(ctc, q, params)
-	if err != nil {
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
+func (pr rolesRepository) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
+	q := `SELECT role FROM group_roles WHERE member_id = $1 AND group_id = $2;`
 
 	var role string
-	for rows.Next() {
-		if err := rows.Scan(&role); err != nil {
-			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+	if err := pr.db.QueryRowxContext(ctx, q, gp.MemberID, gp.GroupID).Scan(&role); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return "", errors.Wrap(errors.ErrNotFound, err)
 		}
+
+		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return role, nil

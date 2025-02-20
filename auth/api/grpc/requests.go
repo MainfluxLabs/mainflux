@@ -65,6 +65,18 @@ func (req authReq) validate() error {
 	return nil
 }
 
+type ownerIDByOrgIDReq struct {
+	orgID string
+}
+
+func (req ownerIDByOrgIDReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type assignRoleReq struct {
 	ID   string
 	Role string
