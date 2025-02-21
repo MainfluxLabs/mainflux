@@ -91,12 +91,20 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 	return grm.repo.RetrieveByIDs(ctx, groupIDs, pm)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error) {
+func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
 	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrgOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveIDsByOrg(ctx, orgID, memberID)
+	return grm.repo.RetrieveIDsByOrg(ctx, orgID)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveIDsByMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByMemberOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveIDsByMember(ctx, orgID, memberID)
 }
 
 type groupCacheMiddleware struct {

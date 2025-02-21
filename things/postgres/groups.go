@@ -150,35 +150,26 @@ func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, erro
 	return gp.Groups, nil
 }
 
-func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error) {
-	var groupIDs []string
+func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
 	q := `SELECT id FROM groups WHERE org_id = :org_id`
 	params := map[string]interface{}{
 		"org_id": orgID,
 	}
 
-	if memberID != "" {
-		q = `SELECT g.id FROM groups g
+	return gr.retrieveIDs(ctx, q, params)
+}
+
+func (gr groupRepository) RetrieveIDsByMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+	q := `SELECT g.id FROM groups g
           JOIN group_roles gr ON g.id = gr.group_id
           WHERE g.org_id = :org_id AND gr.member_id = :member_id`
-		params["member_id"] = memberID
+
+	params := map[string]interface{}{
+		"org_id":    orgID,
+		"member_id": memberID,
 	}
 
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var groupID string
-		if err := rows.Scan(&groupID); err != nil {
-			return nil, err
-		}
-		groupIDs = append(groupIDs, groupID)
-	}
-
-	return groupIDs, nil
+	return gr.retrieveIDs(ctx, q, params)
 }
 
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
@@ -211,6 +202,25 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 
 func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	return gr.retrieve(ctx, []string{}, orgID, pm)
+}
+
+func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]interface{}) ([]string, error) {
+	var ids []string
+	rows, err := gr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID string, pm things.PageMetadata) (things.GroupPage, error) {

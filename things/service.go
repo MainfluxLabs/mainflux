@@ -332,7 +332,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 
 func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, ""); err == nil {
+		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
 			return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
 		}
 		return ThingsPage{}, err
@@ -347,7 +347,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByMember(ctx, orgID, user.GetId())
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -497,7 +497,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 
 func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, ""); err == nil {
+		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
 			return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
 		}
 		return ProfilesPage{}, err
@@ -512,7 +512,7 @@ func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, or
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByMember(ctx, orgID, user.GetId())
 	if err != nil {
 		return ProfilesPage{}, err
 	}
