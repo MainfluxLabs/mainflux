@@ -215,9 +215,6 @@ paths:
         - groups
       parameters:
         - $ref: "#/components/parameters/ThingId"
-        - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
           $ref: "#/components/responses/GroupRes"

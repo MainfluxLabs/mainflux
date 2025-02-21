@@ -152,14 +152,16 @@ func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, erro
 
 func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID, memberID string) ([]string, error) {
 	var groupIDs []string
+	q := `SELECT id FROM groups WHERE org_id = :org_id`
+	params := map[string]interface{}{
+		"org_id": orgID,
+	}
 
-	q := `SELECT g.id FROM groups g
+	if memberID != "" {
+		q = `SELECT g.id FROM groups g
           JOIN group_roles gr ON g.id = gr.group_id
           WHERE g.org_id = :org_id AND gr.member_id = :member_id`
-
-	params := map[string]interface{}{
-		"org_id":    orgID,
-		"member_id": memberID,
+		params["member_id"] = memberID
 	}
 
 	rows, err := gr.db.NamedQueryContext(ctx, q, params)

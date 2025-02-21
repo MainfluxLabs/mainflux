@@ -112,10 +112,15 @@ func (grm *groupRepositoryMock) RetrieveIDsByOrg(ctx context.Context, orgID, mem
 
 	var grIDs []string
 	ids, _ := grm.roles.RetrieveGroupIDsByMember(ctx, memberID)
-	for k, gr := range grm.groups {
+	for _, gr := range grm.groups {
+		if memberID == "" && gr.OrgID == orgID {
+			grIDs = append(grIDs, gr.ID)
+			continue
+		}
+
 		for _, id := range ids {
-			if gr.OrgID == orgID && k == id {
-				grIDs = append(grIDs, k)
+			if gr.OrgID == orgID && gr.ID == id {
+				grIDs = append(grIDs, gr.ID)
 			}
 		}
 	}

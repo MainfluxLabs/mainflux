@@ -331,6 +331,13 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 }
 
 func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error) {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, ""); err == nil {
+			return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
+		}
+		return ThingsPage{}, err
+	}
+
 	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
 		return ThingsPage{}, err
 	}
@@ -345,12 +352,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 		return ThingsPage{}, err
 	}
 
-	ths, err := ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
-	if err != nil {
-		return ThingsPage{}, err
-	}
-
-	return ths, err
+	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error) {
@@ -494,6 +496,13 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 }
 
 func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error) {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID, ""); err == nil {
+			return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
+		}
+		return ProfilesPage{}, err
+	}
+
 	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
 		return ProfilesPage{}, err
 	}
@@ -508,12 +517,7 @@ func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, or
 		return ProfilesPage{}, err
 	}
 
-	prs, err := ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
-	if err != nil {
-		return ProfilesPage{}, err
-	}
-
-	return prs, err
+	return ts.profiles.RetrieveByGroupIDs(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error) {
