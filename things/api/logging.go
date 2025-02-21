@@ -116,6 +116,18 @@ func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prI
 	return lm.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
+func (lm *loggingMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (tp things.ThingsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_things_by_org for id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListThingsByOrg(ctx, token, orgID, pm)
+}
+
 func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_things took %s to complete", time.Since(begin))
@@ -179,6 +191,18 @@ func (lm *loggingMiddleware) ListProfiles(ctx context.Context, token string, pm 
 	}(time.Now())
 
 	return lm.svc.ListProfiles(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (prs things.ProfilesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_profiles_by_org for id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListProfilesByOrg(ctx, token, orgID, pm)
 }
 
 func (lm *loggingMiddleware) ViewProfileByThing(ctx context.Context, token, thID string) (_ things.Profile, err error) {

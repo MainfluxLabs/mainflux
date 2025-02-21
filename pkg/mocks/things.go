@@ -105,6 +105,10 @@ func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, 
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ListThingsByOrg(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error) {
 	panic("not implemented")
 }
@@ -131,6 +135,10 @@ func (svc *mainfluxThings) UpdateProfile(context.Context, string, things.Profile
 }
 
 func (svc *mainfluxThings) ListProfiles(context.Context, string, things.PageMetadata) (things.ProfilesPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListProfilesByOrg(context.Context, string, string, things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 

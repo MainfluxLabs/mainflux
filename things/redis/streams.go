@@ -100,6 +100,10 @@ func (es eventStore) ListThingsByProfile(ctx context.Context, token, prID string
 	return es.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
+func (es eventStore) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ThingsPage, error) {
+	return es.svc.ListThingsByOrg(ctx, token, orgID, pm)
+}
+
 func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, error) {
 	return es.svc.Backup(ctx, token)
 }
@@ -178,6 +182,10 @@ func (es eventStore) ViewProfile(ctx context.Context, token, id string) (things.
 
 func (es eventStore) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfiles(ctx, token, pm)
+}
+
+func (es eventStore) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+	return es.svc.ListProfilesByOrg(ctx, token, orgID, pm)
 }
 
 func (es eventStore) ViewProfileByThing(ctx context.Context, token, thID string) (things.Profile, error) {

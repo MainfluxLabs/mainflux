@@ -157,29 +157,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := thingsPageRes{
-			pageRes: pageRes{
-				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
-				Order:  page.Order,
-				Dir:    page.Dir,
-			},
-			Things: []viewThingRes{},
-		}
-		for _, th := range page.Things {
-			view := viewThingRes{
-				ID:        th.ID,
-				GroupID:   th.GroupID,
-				ProfileID: th.ProfileID,
-				Name:      th.Name,
-				Key:       th.Key,
-				Metadata:  th.Metadata,
-			}
-			res.Things = append(res.Things, view)
-		}
-
-		return res, nil
+		return buildThingsResponse(page), nil
 	}
 }
 
@@ -196,27 +174,7 @@ func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := thingsPageRes{
-			pageRes: pageRes{
-				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
-			},
-			Things: []viewThingRes{},
-		}
-		for _, th := range page.Things {
-			view := viewThingRes{
-				ID:        th.ID,
-				GroupID:   th.GroupID,
-				ProfileID: th.ProfileID,
-				Key:       th.Key,
-				Name:      th.Name,
-				Metadata:  th.Metadata,
-			}
-			res.Things = append(res.Things, view)
-		}
-
-		return res, nil
+		return buildThingsResponse(page), nil
 	}
 }
 
@@ -361,30 +319,7 @@ func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := profilesPageRes{
-			pageRes: pageRes{
-				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
-				Order:  page.Order,
-				Dir:    page.Dir,
-			},
-			Profiles: []profileRes{},
-		}
-		// Cast profiles
-		for _, pr := range page.Profiles {
-			view := profileRes{
-				ID:       pr.ID,
-				GroupID:  pr.GroupID,
-				Name:     pr.Name,
-				Config:   pr.Config,
-				Metadata: pr.Metadata,
-			}
-
-			res.Profiles = append(res.Profiles, view)
-		}
-
-		return res, nil
+		return buildProfilesResponse(page), nil
 	}
 }
 
@@ -617,6 +552,22 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listByIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListThingsByOrg(ctx, req.token, req.id, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildThingsResponse(page), nil
+	}
+}
+
 func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listByIDReq)
@@ -629,7 +580,7 @@ func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildThingsByGroupResponse(page), nil
+		return buildThingsResponse(page), nil
 	}
 }
 
@@ -659,6 +610,22 @@ func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listByIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListProfilesByOrg(ctx, req.token, req.id, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildProfilesResponse(page), nil
+	}
+}
+
 func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listByIDReq)
@@ -671,7 +638,7 @@ func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildProfilesByGroupResponse(page), nil
+		return buildProfilesResponse(page), nil
 	}
 }
 
@@ -727,12 +694,14 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	return res
 }
 
-func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
+func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	res := ThingsPageRes{
 		pageRes: pageRes{
 			Total:  tp.Total,
 			Offset: tp.Offset,
 			Limit:  tp.Limit,
+			Order:  tp.Order,
+			Dir:    tp.Dir,
 			Name:   tp.Name,
 		},
 		Things: []thingRes{},
@@ -741,10 +710,11 @@ func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
 	for _, t := range tp.Things {
 		view := thingRes{
 			ID:        t.ID,
-			Metadata:  t.Metadata,
+			GroupID:   t.GroupID,
+			ProfileID: t.ProfileID,
 			Name:      t.Name,
 			Key:       t.Key,
-			ProfileID: t.ProfileID,
+			Metadata:  t.Metadata,
 		}
 		res.Things = append(res.Things, view)
 	}
@@ -752,23 +722,26 @@ func buildThingsByGroupResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildProfilesByGroupResponse(cp things.ProfilesPage) profilesPageRes {
+func buildProfilesResponse(pp things.ProfilesPage) profilesPageRes {
 	res := profilesPageRes{
 		pageRes: pageRes{
-			Total:  cp.Total,
-			Offset: cp.Offset,
-			Limit:  cp.Limit,
-			Name:   cp.Name,
+			Total:  pp.Total,
+			Offset: pp.Offset,
+			Limit:  pp.Limit,
+			Order:  pp.Order,
+			Dir:    pp.Dir,
+			Name:   pp.Name,
 		},
 		Profiles: []profileRes{},
 	}
 
-	for _, pr := range cp.Profiles {
+	for _, pr := range pp.Profiles {
 		c := profileRes{
 			ID:       pr.ID,
+			GroupID:  pr.GroupID,
+			Name:     pr.Name,
 			Config:   pr.Config,
 			Metadata: pr.Metadata,
-			Name:     pr.Name,
 		}
 		res.Profiles = append(res.Profiles, c)
 	}

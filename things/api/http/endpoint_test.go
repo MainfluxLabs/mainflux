@@ -35,6 +35,7 @@ const (
 	adminEmail     = "admin@example.com"
 	otherUserEmail = "other_user@example.com"
 	token          = email
+	otherToken     = otherUserEmail
 	adminToken     = adminEmail
 	wrongValue     = "wrong_value"
 	emptyValue     = ""
@@ -45,6 +46,7 @@ const (
 	ascKey         = "asc"
 	descKey        = "desc"
 	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2         = "374106f7-030e-4881-8ab0-151195c29f93"
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
 	noLimit        = -1
@@ -73,7 +75,7 @@ var (
 	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
 	group     = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
-	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
 	metadata  = map[string]interface{}{"test": "data"}
 )
 
@@ -108,8 +110,8 @@ func newService() things.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	groupsRepo := thmocks.NewGroupRepository()
 	rolesRepo := thmocks.NewRolesRepository()
+	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
@@ -1312,6 +1314,232 @@ func TestListThingsByProfile(t *testing.T) {
 	}
 }
 
+func TestListThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), adminToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr, gr2 := grs[0], grs2[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	profile.GroupID = gr2.ID
+	prs2, err := svc.CreateProfiles(context.Background(), otherToken, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr, pr2 := prs[0], prs2[0]
+
+	data := []thingRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		thing1 := thing
+		thing1.Name = fmt.Sprintf("%s%012d", prefix, suffix)
+		thing1.ID = fmt.Sprintf("%s%012d", prefix, suffix)
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), adminToken, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, thingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	data2 := []thingRes{}
+	for i := 0; i < n; i++ {
+		suffix := n + i + 1
+		thing2 := thing
+		thing2.Name = fmt.Sprintf("%s%012d", prefix, suffix)
+		thing2.ID = fmt.Sprintf("%s%012d", prefix, suffix)
+		thing2.GroupID = gr2.ID
+		thing2.ProfileID = pr2.ID
+
+		ths2, err := svc.CreateThings(context.Background(), otherToken, thing2)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th2 := ths2[0]
+
+		data2 = append(data2, thingRes{
+			ID:        th2.ID,
+			GroupID:   th2.GroupID,
+			ProfileID: th2.ProfileID,
+			Name:      th2.Name,
+			Key:       th2.Key,
+			Metadata:  th2.Metadata,
+		})
+	}
+
+	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []thingRes
+	}{
+		{
+			desc:   "get a list of things by org",
+			auth:   otherToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, n, 5),
+			res:    data2[0:5],
+		},
+		{
+			desc:   "get a list of things by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 100),
+			res:    data[0:100],
+		},
+		{
+			desc:   "get a list of things by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with negative offset",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, -2, 5),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with negative limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 1, -5),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with no limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 1, 0),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org without offset",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, orgID, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of things by org without limit",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d", thingURL, orgID, 1),
+			res:    data[1:11],
+		},
+		{
+			desc:   "get a list of things by org with redundant query params",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&value=something", thingURL, orgID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of things by org with limit greater than max",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 110),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with default URL",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things", thingURL, orgID),
+			res:    data[0:10],
+		},
+		{
+			desc:   "get a list of things by org with invalid number of params",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things%s", thingURL, orgID, "?offset=4&limit=4&limit=5&offset=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with invalid offset",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things%s", thingURL, orgID, "?offset=e&limit=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with invalid limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things%s", thingURL, orgID, "?offset=5&limit=e"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org sorted by name ascendant",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&order=%s&dir=%s", thingURL, orgID, 0, 5, nameKey, ascKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of things by org sorted by name descendent",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&order=%s&dir=%s", thingURL, orgID, 0, 5, nameKey, descKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of things by org sorted with invalid order",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&order=%s&dir=%s", thingURL, orgID, 0, 5, "wrong", ascKey),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org sorted by name with invalid direction",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d&order=%s&dir=%s", thingURL, orgID, 0, 5, nameKey, "wrong"),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data thingsPageRes
+		json.NewDecoder(res.Body).Decode(&data)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, data.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Things))
+	}
+}
+
 func TestRemoveThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -1965,6 +2193,216 @@ func TestListProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", profileURL, 0, 6, nameKey, "wrong"),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body profilesPageRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
+func TestListProfilesByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), adminToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr, gr2 := grs[0], grs2[0]
+
+	data := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data = append(data, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	data2 := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := n + i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr2.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), otherToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data2 = append(data2, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+	profileURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []profileRes
+	}{
+		{
+			desc:   "get a list of profiles by org the user belongs to",
+			auth:   otherToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, n, 5),
+			res:    data2[0:5],
+		},
+		{
+			desc:   "get a list of profiles by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 100),
+			res:    data[0:100],
+		},
+		{
+			desc:   "get a list of profiles by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 1),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with negative offset",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, -2, 5),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with negative limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 1, -5),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with no limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 1, 0),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org without offset",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?limit=%d", profileURL, orgID, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of profiles by org without limit",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d", profileURL, orgID, 1),
+			res:    data[1:11],
+		},
+		{
+			desc:   "get a list of profiles by org with redundant query params",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&value=something", profileURL, orgID, 0, 5),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of profiles by org with limit greater than max",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 110),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with default URL",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles", profileURL, orgID),
+			res:    data[0:10],
+		},
+		{
+			desc:   "get a list of profiles by org with invalid number of params",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=4&limit=4&limit=5&offset=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with invalid offset",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=e&limit=5"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with invalid limit",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=5&limit=e"),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org sorted by name ascendant",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, ascKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of profiles by org sorted by name descendent",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, descKey),
+			res:    data[0:5],
+		},
+		{
+			desc:   "get a list of profiles by org sorted with invalid order",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, "wrong", ascKey),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org sorted by name with invalid direction",
+			auth:   adminToken,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, "wrong"),
 			res:    nil,
 		},
 	}
