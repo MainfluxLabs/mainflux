@@ -98,8 +98,8 @@ type Service interface {
 	// the given user and returns error if it cannot.
 	Authorize(ctx context.Context, req AuthorizeReq) error
 
-	// AuthorizeThing determines whether a given thing has access to a group with a key.
-	AuthorizeThing(ctx context.Context, req AuthorizeThingReq) error
+	// AuthorizeThingKey determines whether a given thing has access to a group with a key.
+	AuthorizeThingKey(ctx context.Context, req AuthorizeThingKeyReq) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key string) (string, error)
@@ -143,7 +143,7 @@ type AuthorizeReq struct {
 	Action  string
 }
 
-type AuthorizeThingReq struct {
+type AuthorizeThingKeyReq struct {
 	Key     string
 	GroupID string
 }
@@ -621,7 +621,7 @@ func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
 	return ts.canAccessGroup(ctx, ar.Token, groupID, ar.Action)
 }
 
-func (ts *thingsService) AuthorizeThing(ctx context.Context, atr AuthorizeThingReq) error {
+func (ts *thingsService) AuthorizeThingKey(ctx context.Context, atr AuthorizeThingKeyReq) error {
 	thID, err := ts.Identify(ctx, atr.Key)
 	if err != nil {
 		return err

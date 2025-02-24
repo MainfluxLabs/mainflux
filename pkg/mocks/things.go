@@ -158,7 +158,7 @@ func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) AuthorizeThing(context.Context, things.AuthorizeThingReq) error {
+func (svc *mainfluxThings) AuthorizeThingKey(context.Context, things.AuthorizeThingKeyReq) error {
 	panic("not implemented")
 }
 

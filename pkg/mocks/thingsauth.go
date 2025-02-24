@@ -86,7 +86,7 @@ func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.Authorize
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) AuthorizeThing(_ context.Context, req *protomfx.AuthorizeThingReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc thingsServiceMock) AuthorizeThingKey(_ context.Context, req *protomfx.AuthorizeThingKeyReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	if th, ok := svc.things[req.GetKey()]; ok {
 		if th.GroupID == req.GroupID {
 			return &empty.Empty{}, nil

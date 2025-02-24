@@ -268,9 +268,9 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeR
 	return lm.svc.Authorize(ctx, ar)
 }
 
-func (lm *loggingMiddleware) AuthorizeThing(ctx context.Context, atr things.AuthorizeThingReq) (err error) {
+func (lm *loggingMiddleware) AuthorizeThingKey(ctx context.Context, atr things.AuthorizeThingKeyReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method authorize_thing took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method authorize_thing_key took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -278,7 +278,7 @@ func (lm *loggingMiddleware) AuthorizeThing(ctx context.Context, atr things.Auth
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.AuthorizeThing(ctx, atr)
+	return lm.svc.AuthorizeThingKey(ctx, atr)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {

@@ -225,8 +225,8 @@ func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) err
 	return es.svc.Authorize(ctx, req)
 }
 
-func (es eventStore) AuthorizeThing(ctx context.Context, req things.AuthorizeThingReq) error {
-	return es.svc.AuthorizeThing(ctx, req)
+func (es eventStore) AuthorizeThingKey(ctx context.Context, req things.AuthorizeThingKeyReq) error {
+	return es.svc.AuthorizeThingKey(ctx, req)
 }
 
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {

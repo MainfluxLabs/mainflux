@@ -24,7 +24,7 @@ type grpcServer struct {
 	getPubConfByKey     kitgrpc.Handler
 	getConfigByThingID  kitgrpc.Handler
 	authorize           kitgrpc.Handler
-	authorizeThing      kitgrpc.Handler
+	authorizeThingKey   kitgrpc.Handler
 	identify            kitgrpc.Handler
 	getGroupsByIDs      kitgrpc.Handler
 	getGroupIDByThingID kitgrpc.Handler
@@ -48,9 +48,9 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeAuthorizeRequest,
 			encodeEmptyResponse,
 		),
-		authorizeThing: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "authorize_thing")(authorizeThingEndpoint(svc)),
-			decodeAuthorizeThingRequest,
+		authorizeThingKey: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "authorize_thing_key")(authorizeThingKeyEndpoint(svc)),
+			decodeAuthorizeThingKeyRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -97,8 +97,8 @@ func (gs *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq)
 	return res.(*empty.Empty), nil
 }
 
-func (gs *grpcServer) AuthorizeThing(ctx context.Context, req *protomfx.AuthorizeThingReq) (*empty.Empty, error) {
-	_, res, err := gs.authorizeThing.ServeGRPC(ctx, req)
+func (gs *grpcServer) AuthorizeThingKey(ctx context.Context, req *protomfx.AuthorizeThingKeyReq) (*empty.Empty, error) {
+	_, res, err := gs.authorizeThingKey.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -148,9 +148,9 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	return authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}, nil
 }
 
-func decodeAuthorizeThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.AuthorizeThingReq)
-	return authorizeThingReq{key: req.GetKey(), groupID: req.GetGroupID()}, nil
+func decodeAuthorizeThingKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.AuthorizeThingKeyReq)
+	return authorizeThingKeyReq{key: req.GetKey(), groupID: req.GetGroupID()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
