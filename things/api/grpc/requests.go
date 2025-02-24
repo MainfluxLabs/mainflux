@@ -59,6 +59,23 @@ func (req authorizeReq) validate() error {
 	return nil
 }
 
+type thingAccessReq struct {
+	key string
+	id  string
+}
+
+func (req thingAccessReq) validate() error {
+	if req.key == "" {
+		return apiutil.ErrBearerKey
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingID
+	}
+
+	return nil
+}
+
 type identifyReq struct {
 	key string
 }

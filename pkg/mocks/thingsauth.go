@@ -13,18 +13,19 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
-	profiles map[string]string
-	things   map[string]string
+	profiles map[string]things.Profile
+	things   map[string]things.Thing
 	groups   map[string]things.Group
 }
 
 // NewThingsServiceClient returns mock implementation of things service
-func NewThingsServiceClient(profiles map[string]string, things map[string]string, groups map[string]things.Group) protomfx.ThingsServiceClient {
+func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group) protomfx.ThingsServiceClient {
 	return &thingsServiceMock{profiles, things, groups}
 }
 
@@ -50,7 +51,7 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Pub
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key]}, nil
+	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key].ID}, nil
 }
 
 func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
@@ -65,14 +66,14 @@ func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.Authorize
 
 	switch in.GetSubject() {
 	case things.ThingSub:
-		if id, ok := svc.things[in.GetToken()]; ok {
-			if id == gr.ID {
+		if th, ok := svc.things[in.GetToken()]; ok {
+			if th.GroupID == gr.ID {
 				return &empty.Empty{}, nil
 			}
 		}
 	case things.ProfileSub:
-		if id, ok := svc.profiles[in.GetToken()]; ok {
-			if id == gr.ID {
+		if pr, ok := svc.profiles[in.GetToken()]; ok {
+			if pr.GroupID == gr.ID {
 				return &empty.Empty{}, nil
 			}
 		}
@@ -85,9 +86,19 @@ func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.Authorize
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
+func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	if th, ok := svc.things[req.GetKey()]; ok {
+		if th.GroupID == req.GetId() {
+			return &empty.Empty{}, nil
+		}
+	}
+
+	return &empty.Empty{}, errors.ErrAuthorization
+}
+
 func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
-	if c, ok := svc.things[token.GetValue()]; ok {
-		return &protomfx.ThingID{Value: c}, nil
+	if th, ok := svc.things[token.GetValue()]; ok {
+		return &protomfx.ThingID{Value: th.ID}, nil
 	}
 	return nil, errors.ErrAuthentication
 }
@@ -104,8 +115,8 @@ func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.Gro
 }
 
 func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
-	if gr, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.GroupID{Value: gr}, nil
+	if th, ok := svc.things[in.GetValue()]; ok {
+		return &protomfx.GroupID{Value: th.GroupID}, nil
 	}
 	return nil, errors.ErrNotFound
 }

@@ -225,6 +225,10 @@ func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) err
 	return es.svc.Authorize(ctx, req)
 }
 
+func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
+	return es.svc.CanThingAccessGroup(ctx, req)
+}
+
 func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
 	return es.svc.Identify(ctx, key)
 }

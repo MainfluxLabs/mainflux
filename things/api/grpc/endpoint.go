@@ -81,6 +81,26 @@ func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(thingAccessReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		r := things.ThingAccessReq{
+			Key: req.key,
+			ID:  req.id,
+		}
+
+		if err := svc.CanThingAccessGroup(ctx, r); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(identifyReq)

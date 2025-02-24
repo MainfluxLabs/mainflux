@@ -31,7 +31,7 @@ func newService() mqtt.Service {
 	mockAuthzDB := map[string][]mocks.SubjectSet{}
 	mockAuthzDB[adminUser] = []mocks.SubjectSet{{Object: "authorities", Relation: "member"}}
 	mockAuthzDB["*"] = []mocks.SubjectSet{{Object: "user", Relation: "create"}}
-	tc := thmocks.NewThingsServiceClient(nil, map[string]string{exampleUser1: groupID}, map[string]things.Group{exampleUser1: {ID: groupID}})
+	tc := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{exampleUser1: {GroupID: groupID}}, map[string]things.Group{exampleUser1: {ID: groupID}})
 	ac := mocks.NewAuth(map[string]string{exampleUser1: exampleUser1, adminUser: adminUser}, mockAuthzDB)
 	return mqtt.NewMqttService(ac, tc, repo, idProvider)
 }

@@ -24,6 +24,7 @@ type grpcServer struct {
 	getPubConfByKey     kitgrpc.Handler
 	getConfigByThingID  kitgrpc.Handler
 	authorize           kitgrpc.Handler
+	canThingAccessGroup kitgrpc.Handler
 	identify            kitgrpc.Handler
 	getGroupsByIDs      kitgrpc.Handler
 	getGroupIDByThingID kitgrpc.Handler
@@ -45,6 +46,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		authorize: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "authorize")(authorizeEndpoint(svc)),
 			decodeAuthorizeRequest,
+			encodeEmptyResponse,
+		),
+		canThingAccessGroup: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
+			decodeCanThingAccessGroupRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -84,6 +90,15 @@ func (gs *grpcServer) GetConfigByThingID(ctx context.Context, req *protomfx.Thin
 
 func (gs *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
 	_, res, err := gs.authorize.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
+func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*empty.Empty, error) {
+	_, res, err := gs.canThingAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -131,6 +146,11 @@ func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.AuthorizeReq)
 	return authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}, nil
+}
+
+func decodeCanThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.ThingAccessReq)
+	return thingAccessReq{key: req.GetKey(), id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

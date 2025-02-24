@@ -158,6 +158,10 @@ func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 	panic("not implemented")
 }

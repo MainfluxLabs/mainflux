@@ -10,6 +10,7 @@ import (
 
 	thmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/mocks"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) 
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
 	svc, _ := newService(thingsClient)
 
 	cases := []struct {
@@ -91,7 +92,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
 	svc, pubsub := newService(thingsClient)
 
 	c := ws.NewClient(nil)
@@ -148,7 +149,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient := thmock.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
+	thingsClient := thmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
 	svc, pubsub := newService(thingsClient)
 
 	cases := []struct {

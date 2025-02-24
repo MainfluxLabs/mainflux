@@ -268,6 +268,19 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeR
 	return lm.svc.Authorize(ctx, ar)
 }
 
+func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_thing_access_group took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanThingAccessGroup(ctx, req)
+}
+
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for thing %s took %s to complete", id, time.Since(begin))

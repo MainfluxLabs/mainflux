@@ -13,6 +13,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/api"
 	"github.com/MainfluxLabs/mainflux/ws/mocks"
@@ -75,7 +76,7 @@ func handshake(tsURL, profileID, subtopic, thingKey string, addHeader bool) (*we
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := thmocks.NewThingsServiceClient(map[string]string{thingKey: profileID}, nil, nil)
+	thingsClient := thmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
 	svc, _ := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()

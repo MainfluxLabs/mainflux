@@ -29,7 +29,6 @@ import (
 
 const (
 	svcName       = "test-service"
-	thingToken    = "1"
 	userEmail     = "test@example.com"
 	adminEmail    = "admin@example.com"
 	invalid       = "invalid"
@@ -140,7 +139,7 @@ func TestListAllMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(map[string]string{userEmail: ""}, nil, nil)
+	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
 	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
