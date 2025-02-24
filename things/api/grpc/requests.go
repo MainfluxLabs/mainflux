@@ -59,18 +59,18 @@ func (req authorizeReq) validate() error {
 	return nil
 }
 
-type authorizeThingKeyReq struct {
-	key     string
-	groupID string
+type thingAccessReq struct {
+	key string
+	id  string
 }
 
-func (req authorizeThingKeyReq) validate() error {
+func (req thingAccessReq) validate() error {
 	if req.key == "" {
 		return apiutil.ErrBearerKey
 	}
 
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
+	if req.id == "" {
+		return apiutil.ErrMissingID
 	}
 
 	return nil

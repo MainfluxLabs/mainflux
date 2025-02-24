@@ -200,13 +200,13 @@ func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeR
 	return ms.svc.Authorize(ctx, ar)
 }
 
-func (ms *metricsMiddleware) AuthorizeThingKey(ctx context.Context, atr things.AuthorizeThingKeyReq) error {
+func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "authorize_thing_key").Add(1)
-		ms.latency.With("method", "authorize_thing_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "can_thing_access_group").Add(1)
+		ms.latency.With("method", "can_thing_access_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AuthorizeThingKey(ctx, atr)
+	return ms.svc.CanThingAccessGroup(ctx, req)
 }
 
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {

@@ -81,19 +81,19 @@ func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func authorizeThingKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(authorizeThingKeyReq)
+		req := request.(thingAccessReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		atr := things.AuthorizeThingKeyReq{
-			Key:     req.key,
-			GroupID: req.groupID,
+		r := things.ThingAccessReq{
+			Key: req.key,
+			ID:  req.id,
 		}
 
-		if err := svc.AuthorizeThingKey(ctx, atr); err != nil {
+		if err := svc.CanThingAccessGroup(ctx, r); err != nil {
 			return emptyRes{}, err
 		}
 

@@ -21,7 +21,7 @@ service ThingsService {
     rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
     rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
-    rpc AuthorizeThingKey(AuthorizeThingKeyReq) returns (google.protobuf.Empty) {}
+    rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
@@ -112,9 +112,9 @@ message AuthorizeReq {
     string action  = 4;
 }
 
-message AuthorizeThingKeyReq {
+message ThingAccessReq {
     string key     = 1;
-    string groupID = 2;
+    string id      = 2;
 }
 
 message User {
