@@ -24,6 +24,7 @@ type grpcServer struct {
 	getPubConfByKey     kitgrpc.Handler
 	getConfigByThingID  kitgrpc.Handler
 	authorize           kitgrpc.Handler
+	authorizeThing      kitgrpc.Handler
 	identify            kitgrpc.Handler
 	getGroupsByIDs      kitgrpc.Handler
 	getGroupIDByThingID kitgrpc.Handler
@@ -45,6 +46,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		authorize: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "authorize")(authorizeEndpoint(svc)),
 			decodeAuthorizeRequest,
+			encodeEmptyResponse,
+		),
+		authorizeThing: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "authorize_thing")(authorizeThingEndpoint(svc)),
+			decodeAuthorizeThingRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -84,6 +90,15 @@ func (gs *grpcServer) GetConfigByThingID(ctx context.Context, req *protomfx.Thin
 
 func (gs *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
 	_, res, err := gs.authorize.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
+func (gs *grpcServer) AuthorizeThing(ctx context.Context, req *protomfx.AuthorizeThingReq) (*empty.Empty, error) {
+	_, res, err := gs.authorizeThing.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -131,6 +146,11 @@ func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.AuthorizeReq)
 	return authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}, nil
+}
+
+func decodeAuthorizeThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.AuthorizeThingReq)
+	return authorizeThingReq{key: req.GetKey(), groupID: req.GetGroupID()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

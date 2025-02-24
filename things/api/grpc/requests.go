@@ -59,6 +59,23 @@ func (req authorizeReq) validate() error {
 	return nil
 }
 
+type authorizeThingReq struct {
+	key     string
+	groupID string
+}
+
+func (req authorizeThingReq) validate() error {
+	if req.key == "" {
+		return apiutil.ErrBearerKey
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	return nil
+}
+
 type identifyReq struct {
 	key string
 }

@@ -81,6 +81,26 @@ func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func authorizeThingEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(authorizeThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		atr := things.AuthorizeThingReq{
+			Key:     req.key,
+			GroupID: req.groupID,
+		}
+
+		if err := svc.AuthorizeThing(ctx, atr); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(identifyReq)

@@ -23,6 +23,7 @@ type grpcClient struct {
 	getPubConfByKey     endpoint.Endpoint
 	getConfigByThingID  endpoint.Endpoint
 	authorize           endpoint.Endpoint
+	authorizeThing      endpoint.Endpoint
 	identify            endpoint.Endpoint
 	getGroupsByIDs      endpoint.Endpoint
 	getGroupIDByThingID endpoint.Endpoint
@@ -54,7 +55,15 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"Authorize",
-			encodeAuthorize,
+			encodeAuthorizeRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
+		).Endpoint()),
+		authorizeThing: kitot.TraceClient(tracer, "authorize_thing")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"AuthorizeThing",
+			encodeAuthorizeThingRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -123,6 +132,17 @@ func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeR
 	return &empty.Empty{}, er.err
 }
 
+func (client grpcClient) AuthorizeThing(ctx context.Context, req *protomfx.AuthorizeThingReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+	ar := authorizeThingReq{key: req.GetKey(), groupID: req.GetGroupID()}
+	res, err := client.authorizeThing(ctx, ar)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
 func (client grpcClient) Identify(ctx context.Context, req *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
@@ -172,9 +192,14 @@ func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
-func encodeAuthorize(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(authorizeReq)
 	return &protomfx.AuthorizeReq{Token: req.token, Object: req.object, Subject: req.subject, Action: req.action}, nil
+}
+
+func encodeAuthorizeThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(authorizeThingReq)
+	return &protomfx.AuthorizeThingReq{Key: req.key, GroupID: req.groupID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

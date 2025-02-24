@@ -200,6 +200,15 @@ func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeR
 	return ms.svc.Authorize(ctx, ar)
 }
 
+func (ms *metricsMiddleware) AuthorizeThing(ctx context.Context, atr things.AuthorizeThingReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "authorize_thing").Add(1)
+		ms.latency.With("method", "authorize_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AuthorizeThing(ctx, atr)
+}
+
 func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)
