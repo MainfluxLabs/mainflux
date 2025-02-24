@@ -347,7 +347,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByMember(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByOrgMember(ctx, orgID, user.GetId())
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -512,7 +512,7 @@ func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, or
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByMember(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByOrgMember(ctx, orgID, user.GetId())
 	if err != nil {
 		return ProfilesPage{}, err
 	}

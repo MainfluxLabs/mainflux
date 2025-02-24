@@ -53,8 +53,8 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
-	// RetrieveIDsByMember retrieves org group IDs the member belongs to
-	RetrieveIDsByMember(ctx context.Context, orgID, memberID string) ([]string, error)
+	// RetrieveIDsByOrgMember retrieves org group IDs the member belongs to
+	RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error)
 
 	// RetrieveIDsByOrg retrieves all group IDs by org
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)

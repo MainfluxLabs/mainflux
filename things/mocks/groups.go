@@ -106,7 +106,7 @@ func (grm *groupRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Group
 	return items, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveIDsByMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+func (grm *groupRepositoryMock) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 

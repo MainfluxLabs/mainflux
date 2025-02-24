@@ -159,7 +159,7 @@ func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([
 	return gr.retrieveIDs(ctx, q, params)
 }
 
-func (gr groupRepository) RetrieveIDsByMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+func (gr groupRepository) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
 	q := `SELECT g.id FROM groups g
           JOIN group_roles gr ON g.id = gr.group_id
           WHERE g.org_id = :org_id AND gr.member_id = :member_id`
