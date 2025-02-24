@@ -80,8 +80,16 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "messages_2",
 				Up: []string{
-					`ALTER TABLE messages DROP CONSTRAINT messages_pkey`,
-					`ALTER TABLE json DROP CONSTRAINT json_pkey`,
+					`CREATE TABLE IF NOT EXISTS json (
+						created       BIGINT,
+						subtopic      VARCHAR(254),
+						publisher     VARCHAR(254),
+						protocol      TEXT,
+						payload       JSONB
+					)`,
+				},
+				Down: []string{
+					"DROP TABLE json",
 				},
 			},
 		},
