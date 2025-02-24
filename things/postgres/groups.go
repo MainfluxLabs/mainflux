@@ -150,6 +150,28 @@ func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, erro
 	return gp.Groups, nil
 }
 
+func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	q := `SELECT id FROM groups WHERE org_id = :org_id`
+	params := map[string]interface{}{
+		"org_id": orgID,
+	}
+
+	return gr.retrieveIDs(ctx, q, params)
+}
+
+func (gr groupRepository) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+	q := `SELECT g.id FROM groups g
+          JOIN group_roles gr ON g.id = gr.group_id
+          WHERE g.org_id = :org_id AND gr.member_id = :member_id`
+
+	params := map[string]interface{}{
+		"org_id":    orgID,
+		"member_id": memberID,
+	}
+
+	return gr.retrieveIDs(ctx, q, params)
+}
+
 func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
 	dbu := dbGroup{
 		ID: id,
@@ -180,6 +202,25 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 
 func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	return gr.retrieve(ctx, []string{}, orgID, pm)
+}
+
+func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]interface{}) ([]string, error) {
+	var ids []string
+	rows, err := gr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID string, pm things.PageMetadata) (things.GroupPage, error) {

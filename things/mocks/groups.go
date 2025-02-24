@@ -28,16 +28,18 @@ type groupRepositoryMock struct {
 	profileMembership map[string]string
 	// Map of group profile where group id is a key and profile ids are values.
 	profiles map[string][]string
+	roles    things.RolesRepository
 }
 
 // NewGroupRepository creates in-memory user repository
-func NewGroupRepository() things.GroupRepository {
+func NewGroupRepository(roles things.RolesRepository) things.GroupRepository {
 	return &groupRepositoryMock{
 		groups:            make(map[string]things.Group),
 		thingMembership:   make(map[string]string),
 		things:            make(map[string][]string),
 		profileMembership: make(map[string]string),
 		profiles:          make(map[string][]string),
+		roles:             roles,
 	}
 }
 
@@ -102,6 +104,39 @@ func (grm *groupRepositoryMock) RetrieveAll(ctx context.Context) ([]things.Group
 	}
 
 	return items, nil
+}
+
+func (grm *groupRepositoryMock) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var grIDs []string
+	ids, _ := grm.roles.RetrieveGroupIDsByMember(ctx, memberID)
+	for _, gr := range grm.groups {
+		for _, id := range ids {
+			if gr.OrgID == orgID && gr.ID == id {
+				grIDs = append(grIDs, gr.ID)
+			}
+		}
+	}
+
+	return grIDs, nil
+}
+
+func (grm *groupRepositoryMock) RetrieveIDsByOrg(_ context.Context, orgID string) ([]string, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var grIDs []string
+	for _, gr := range grm.groups {
+		if gr.OrgID == orgID {
+			grIDs = append(grIDs, gr.ID)
+			continue
+		}
+
+	}
+
+	return grIDs, nil
 }
 
 func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
