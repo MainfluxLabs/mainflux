@@ -14,13 +14,10 @@ import (
 )
 
 const (
-	Viewer     = "viewer"
-	Editor     = "editor"
-	Admin      = "admin"
-	Owner      = "owner"
-	ThingSub   = "thing"
-	ProfileSub = "profile"
-	GroupSub   = "group"
+	Viewer = "viewer"
+	Editor = "editor"
+	Admin  = "admin"
+	Owner  = "owner"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -94,9 +91,14 @@ type Service interface {
 	// GetConfigByThingID returns profile config for given thing ID.
 	GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error)
 
-	// Authorize determines whether the group and its things and profiles can be accessed by
-	// the given user and returns error if it cannot.
-	Authorize(ctx context.Context, req AuthorizeReq) error
+	// CanUserAccessThing determines whether a user has access to a thing.
+	CanUserAccessThing(ctx context.Context, req UserAccessReq) error
+
+	// CanUserAccessProfile determines whether a user has access to a profile.
+	CanUserAccessProfile(ctx context.Context, req UserAccessReq) error
+
+	// CanUserAccessGroup determines whether a user has access to a group.
+	CanUserAccessGroup(ctx context.Context, req UserAccessReq) error
 
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
@@ -136,11 +138,10 @@ type Backup struct {
 	GroupRoles []GroupMember
 }
 
-type AuthorizeReq struct {
-	Token   string
-	Object  string
-	Subject string
-	Action  string
+type UserAccessReq struct {
+	Token  string
+	ID     string
+	Action string
 }
 
 type ThingAccessReq struct {
@@ -187,13 +188,12 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {
 	ths := []Thing{}
 	for _, thing := range things {
-		ar := AuthorizeReq{
-			Token:   token,
-			Object:  thing.GroupID,
-			Subject: GroupSub,
-			Action:  Editor,
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     thing.GroupID,
+			Action: Editor,
 		}
-		if err := ts.Authorize(ctx, ar); err != nil {
+		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 			return nil, err
 		}
 
@@ -246,18 +246,17 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     thing.ID,
+		Action: Editor,
+	}
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  thGrID,
-		Subject: GroupSub,
-		Action:  Editor,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
+	if err != nil {
 		return err
 	}
 
@@ -274,13 +273,12 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 }
 
 func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  id,
-		Subject: ThingSub,
-		Action:  Editor,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     id,
+		Action: Editor,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return err
 	}
 
@@ -288,18 +286,17 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 }
 
 func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing, error) {
-	thing, err := ts.things.RetrieveByID(ctx, id)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     id,
+		Action: Viewer,
+	}
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return Thing{}, err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  thing.GroupID,
-		Subject: GroupSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	thing, err := ts.things.RetrieveByID(ctx, id)
+	if err != nil {
 		return Thing{}, err
 	}
 
@@ -364,13 +361,12 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 }
 
 func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  prID,
-		Subject: ProfileSub,
-		Action:  Viewer,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     prID,
+		Action: Viewer,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -384,13 +380,12 @@ func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID st
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		ar := AuthorizeReq{
-			Token:   token,
-			Object:  id,
-			Subject: ThingSub,
-			Action:  Editor,
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     id,
+			Action: Editor,
 		}
-		if err := ts.Authorize(ctx, ar); err != nil {
+		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 			return err
 		}
 
@@ -413,13 +408,12 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 func (ts *thingsService) CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error) {
 	prs := []Profile{}
 	for _, profile := range profiles {
-		ar := AuthorizeReq{
-			Token:   token,
-			Object:  profile.GroupID,
-			Subject: GroupSub,
-			Action:  Editor,
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     profile.GroupID,
+			Action: Editor,
 		}
-		if err := ts.Authorize(ctx, ar); err != nil {
+		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 			return nil, err
 		}
 
@@ -453,13 +447,12 @@ func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (P
 }
 
 func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profile Profile) error {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  profile.ID,
-		Subject: ProfileSub,
-		Action:  Editor,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     profile.ID,
+		Action: Editor,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 		return err
 	}
 
@@ -467,18 +460,17 @@ func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profil
 }
 
 func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Profile, error) {
-	profile, err := ts.profiles.RetrieveByID(ctx, id)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     id,
+		Action: Viewer,
+	}
+	if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 		return Profile{}, err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  profile.GroupID,
-		Subject: GroupSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	profile, err := ts.profiles.RetrieveByID(ctx, id)
+	if err != nil {
 		return Profile{}, err
 	}
 
@@ -529,18 +521,17 @@ func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, or
 }
 
 func (ts *thingsService) ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error) {
-	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     thID,
+		Action: Viewer,
+	}
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return Profile{}, err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  profile.GroupID,
-		Subject: GroupSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
+	if err != nil {
 		return Profile{}, err
 	}
 
@@ -549,13 +540,12 @@ func (ts *thingsService) ViewProfileByThing(ctx context.Context, token, thID str
 
 func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		ar := AuthorizeReq{
-			Token:   token,
-			Object:  id,
-			Subject: ProfileSub,
-			Action:  Editor,
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     id,
+			Action: Editor,
 		}
-		if err := ts.Authorize(ctx, ar); err != nil {
+		if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 			return err
 		}
 
@@ -594,31 +584,30 @@ func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
+
 	return profile.Config, nil
 }
 
-func (ts *thingsService) Authorize(ctx context.Context, ar AuthorizeReq) error {
-	var groupID string
-	switch ar.Subject {
-	case ThingSub:
-		grID, err := ts.getGroupIDByThingID(ctx, ar.Object)
-		if err != nil {
-			return err
-		}
-		groupID = grID
-	case ProfileSub:
-		grID, err := ts.getGroupIDByProfileID(ctx, ar.Object)
-		if err != nil {
-			return err
-		}
-		groupID = grID
-	case GroupSub:
-		groupID = ar.Object
-	default:
-		return errors.ErrAuthorization
+func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessReq) error {
+	grID, err := ts.getGroupIDByThingID(ctx, req.ID)
+	if err != nil {
+		return err
 	}
 
-	return ts.canAccessGroup(ctx, ar.Token, groupID, ar.Action)
+	return ts.canAccessGroup(ctx, req.Token, grID, req.Action)
+}
+
+func (ts *thingsService) CanUserAccessProfile(ctx context.Context, req UserAccessReq) error {
+	grID, err := ts.getGroupIDByProfileID(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+
+	return ts.canAccessGroup(ctx, req.Token, grID, req.Action)
+}
+
+func (ts *thingsService) CanUserAccessGroup(ctx context.Context, req UserAccessReq) error {
+	return ts.canAccessGroup(ctx, req.Token, req.ID, req.Action)
 }
 
 func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error {
@@ -732,13 +721,12 @@ func getTimestmap() time.Time {
 }
 
 func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  groupID,
-		Subject: GroupSub,
-		Action:  Viewer,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Viewer,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return ThingsPage{}, err
 	}
 
@@ -746,13 +734,12 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 }
 
 func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ProfilesPage, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  groupID,
-		Subject: GroupSub,
-		Action:  Viewer,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Viewer,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return ProfilesPage{}, err
 	}
 

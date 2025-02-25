@@ -12,21 +12,24 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/golang/protobuf/ptypes/empty"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout             time.Duration
-	getPubConfByKey     endpoint.Endpoint
-	getConfigByThingID  endpoint.Endpoint
-	authorize           endpoint.Endpoint
-	canThingAccessGroup endpoint.Endpoint
-	identify            endpoint.Endpoint
-	getGroupsByIDs      endpoint.Endpoint
-	getGroupIDByThingID endpoint.Endpoint
+	timeout              time.Duration
+	getPubConfByKey      endpoint.Endpoint
+	getConfigByThingID   endpoint.Endpoint
+	canUserAccessThing   endpoint.Endpoint
+	canUserAccessProfile endpoint.Endpoint
+	canUserAccessGroup   endpoint.Endpoint
+	canThingAccessGroup  endpoint.Endpoint
+	identify             endpoint.Endpoint
+	getGroupsByIDs       endpoint.Endpoint
+	getGroupIDByThingID  endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -51,11 +54,27 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeGetConfigByThingIDResponse,
 			protomfx.ConfigByThingIDRes{},
 		).Endpoint()),
-		authorize: kitot.TraceClient(tracer, "authorize")(kitgrpc.NewClient(
+		canUserAccessThing: kitot.TraceClient(tracer, "can_user_access_thing")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"Authorize",
-			encodeAuthorizeRequest,
+			"CanUserAccessThing",
+			encodeUserAccessRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
+		).Endpoint()),
+		canUserAccessProfile: kitot.TraceClient(tracer, "can_user_access_profile")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CanUserAccessProfile",
+			encodeUserAccessRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
+		).Endpoint()),
+		canUserAccessGroup: kitot.TraceClient(tracer, "can_user_access_group")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CanUserAccessGroup",
+			encodeUserAccessRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -63,7 +82,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"CanThingAccessGroup",
-			encodeCanThingAccessGroupRequest,
+			encodeThingAccessRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -121,9 +140,31 @@ func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.T
 	return &protomfx.ConfigByThingIDRes{Config: c.config}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	ar := authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}
-	res, err := client.authorize(ctx, ar)
+func (client grpcClient) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	res, err := client.canUserAccessThing(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
+func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	res, err := client.canUserAccessProfile(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
+func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	res, err := client.canUserAccessGroup(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -192,12 +233,12 @@ func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
-func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(authorizeReq)
-	return &protomfx.AuthorizeReq{Token: req.token, Object: req.object, Subject: req.subject, Action: req.action}, nil
+func encodeUserAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(userAccessReq)
+	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
-func encodeCanThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeThingAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingAccessReq)
 	return &protomfx.ThingAccessReq{Key: req.key, Id: req.id}, nil
 }

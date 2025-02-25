@@ -32,24 +32,19 @@ func (req configByThingIDReq) validate() error {
 	return nil
 }
 
-type authorizeReq struct {
-	token   string
-	object  string
-	subject string
-	action  string
+type userAccessReq struct {
+	token  string
+	id     string
+	action string
 }
 
-func (req authorizeReq) validate() error {
+func (req userAccessReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.object == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingID
-	}
-
-	if req.subject != things.ThingSub && req.subject != things.ProfileSub && req.subject != things.GroupSub {
-		return apiutil.ErrInvalidSubject
 	}
 
 	if req.action != things.Admin && req.action != things.Viewer && req.action != things.Editor {

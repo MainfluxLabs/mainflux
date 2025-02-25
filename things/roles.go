@@ -57,23 +57,20 @@ type Roles interface {
 }
 
 func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
-	grID := gms[0].GroupID
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  grID,
-		Subject: GroupSub,
-		Action:  Admin,
-	}
-
-	if err := ts.Authorize(ctx, ar); err != nil {
-		return err
-	}
-
-	if err := ts.roles.SaveRolesByGroup(ctx, gms...); err != nil {
-		return err
-	}
-
 	for _, gm := range gms {
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     gm.GroupID,
+			Action: Admin,
+		}
+		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+			return err
+		}
+
+		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
+			return err
+		}
+
 		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
@@ -83,14 +80,13 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 }
 
 func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  groupID,
-		Subject: GroupSub,
-		Action:  Viewer,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Viewer,
 	}
 
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return GroupMembersPage{}, err
 	}
 
@@ -146,20 +142,18 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 }
 
 func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
-	grID := gms[0].GroupID
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  grID,
-		Subject: GroupSub,
-		Action:  Admin,
-	}
-
-	if err := ts.Authorize(ctx, ar); err != nil {
-		return err
-	}
-
 	for _, gm := range gms {
-		rm, err := ts.groupCache.ViewRole(ctx, grID, gm.MemberID)
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     gm.GroupID,
+			Action: Admin,
+		}
+
+		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+			return err
+		}
+
+		rm, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
 		if err != nil {
 			r, err := ts.roles.RetrieveRole(ctx, gm)
 			if err != nil {
@@ -186,14 +180,13 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 }
 
 func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  groupID,
-		Subject: GroupSub,
-		Action:  Admin,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Admin,
 	}
 
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return err
 	}
 

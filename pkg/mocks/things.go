@@ -154,8 +154,16 @@ func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string)
 	panic("implement me")
 }
 
-func (svc *mainfluxThings) Authorize(context.Context, things.AuthorizeReq) error {
-	panic("not implemented")
+func (svc *mainfluxThings) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
+	panic("implement me")
+}
+
+func (svc *mainfluxThings) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) error {
+	panic("implement me")
+}
+
+func (svc *mainfluxThings) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) error {
+	panic("implement me")
 }
 
 func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {

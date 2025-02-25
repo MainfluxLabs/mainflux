@@ -21,13 +21,15 @@ import (
 var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	getPubConfByKey     kitgrpc.Handler
-	getConfigByThingID  kitgrpc.Handler
-	authorize           kitgrpc.Handler
-	canThingAccessGroup kitgrpc.Handler
-	identify            kitgrpc.Handler
-	getGroupsByIDs      kitgrpc.Handler
-	getGroupIDByThingID kitgrpc.Handler
+	getPubConfByKey      kitgrpc.Handler
+	getConfigByThingID   kitgrpc.Handler
+	canUserAccessThing   kitgrpc.Handler
+	canUserAccessProfile kitgrpc.Handler
+	canUserAccessGroup   kitgrpc.Handler
+	canThingAccessGroup  kitgrpc.Handler
+	identify             kitgrpc.Handler
+	getGroupsByIDs       kitgrpc.Handler
+	getGroupIDByThingID  kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -43,14 +45,24 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeGetConfigByThingIDRequest,
 			encodeGetConfigByThingIDResponse,
 		),
-		authorize: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "authorize")(authorizeEndpoint(svc)),
-			decodeAuthorizeRequest,
+		canUserAccessThing: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_user_access_thing")(canUserAccessThingEndpoint(svc)),
+			decodeUserAccessRequest,
+			encodeEmptyResponse,
+		),
+		canUserAccessProfile: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_user_access_profile")(canUserAccessProfileEndpoint(svc)),
+			decodeUserAccessRequest,
+			encodeEmptyResponse,
+		),
+		canUserAccessGroup: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_user_access_group")(canUserAccessGroupEndpoint(svc)),
+			decodeUserAccessRequest,
 			encodeEmptyResponse,
 		),
 		canThingAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
-			decodeCanThingAccessGroupRequest,
+			decodeThingAccessRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -88,8 +100,26 @@ func (gs *grpcServer) GetConfigByThingID(ctx context.Context, req *protomfx.Thin
 	return res.(*protomfx.ConfigByThingIDRes), nil
 }
 
-func (gs *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
-	_, res, err := gs.authorize.ServeGRPC(ctx, req)
+func (gs *grpcServer) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+	_, res, err := gs.canUserAccessThing.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
+func (gs *grpcServer) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+	_, res, err := gs.canUserAccessProfile.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
+func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+	_, res, err := gs.canUserAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -143,12 +173,12 @@ func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 	return configByThingIDReq{thingID: req.GetValue()}, nil
 }
 
-func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.AuthorizeReq)
-	return authorizeReq{token: req.GetToken(), object: req.GetObject(), subject: req.GetSubject(), action: req.GetAction()}, nil
+func decodeUserAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.UserAccessReq)
+	return userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}, nil
 }
 
-func decodeCanThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeThingAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
 	return thingAccessReq{key: req.GetKey(), id: req.GetId()}, nil
 }

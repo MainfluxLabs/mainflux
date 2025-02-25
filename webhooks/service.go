@@ -87,7 +87,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Editor})
+	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Editor})
 	if err != nil {
 		return Webhook{}, err
 	}
@@ -111,7 +111,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
-	_, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: groupID, Subject: things.GroupSub, Action: things.Viewer})
+	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -130,7 +130,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 		return Webhook{}, err
 	}
 
-	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Viewer}); err != nil {
+	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Viewer}); err != nil {
 		return Webhook{}, err
 	}
 
@@ -143,7 +143,7 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 		return err
 	}
 
-	if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: wh.GroupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
+	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: wh.GroupID, Action: things.Editor}); err != nil {
 		return err
 	}
 
@@ -156,7 +156,7 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids
 		if err != nil {
 			return err
 		}
-		if _, err := ws.things.Authorize(ctx, &protomfx.AuthorizeReq{Token: token, Object: webhook.GroupID, Subject: things.GroupSub, Action: things.Editor}); err != nil {
+		if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Editor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}

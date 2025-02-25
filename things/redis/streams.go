@@ -221,8 +221,16 @@ func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (ma
 	return es.svc.GetConfigByThingID(ctx, thingID)
 }
 
-func (es eventStore) Authorize(ctx context.Context, req things.AuthorizeReq) error {
-	return es.svc.Authorize(ctx, req)
+func (es eventStore) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
+	return es.svc.CanUserAccessThing(ctx, req)
+}
+
+func (es eventStore) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) error {
+	return es.svc.CanUserAccessProfile(ctx, req)
+}
+
+func (es eventStore) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) error {
+	return es.svc.CanUserAccessGroup(ctx, req)
 }
 
 func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
