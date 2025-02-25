@@ -58,29 +58,44 @@ func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.
 	panic("implement me")
 }
 
-func (svc thingsServiceMock) Authorize(_ context.Context, in *protomfx.AuthorizeReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	gr, ok := svc.groups[in.GetToken()]
+func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	gr, ok := svc.groups[req.GetToken()]
 	if !ok {
 		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	switch in.GetSubject() {
-	case things.ThingSub:
-		if th, ok := svc.things[in.GetToken()]; ok {
-			if th.GroupID == gr.ID {
-				return &empty.Empty{}, nil
-			}
-		}
-	case things.ProfileSub:
-		if pr, ok := svc.profiles[in.GetToken()]; ok {
-			if pr.GroupID == gr.ID {
-				return &empty.Empty{}, nil
-			}
-		}
-	case things.GroupSub:
-		if in.GetObject() == gr.ID {
+	if th, ok := svc.things[req.GetToken()]; ok {
+		if th.GroupID == gr.ID {
 			return &empty.Empty{}, nil
 		}
+	}
+
+	return &empty.Empty{}, errors.ErrAuthorization
+}
+
+func (svc thingsServiceMock) CanUserAccessProfile(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	gr, ok := svc.groups[req.GetToken()]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
+	}
+
+	if pr, ok := svc.profiles[req.GetToken()]; ok {
+		if pr.GroupID == gr.ID {
+			return &empty.Empty{}, nil
+		}
+	}
+
+	return &empty.Empty{}, errors.ErrAuthorization
+}
+
+func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	gr, ok := svc.groups[req.GetToken()]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
+	}
+
+	if req.GetId() == gr.ID {
+		return &empty.Empty{}, nil
 	}
 
 	return &empty.Empty{}, errors.ErrAuthorization

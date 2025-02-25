@@ -59,21 +59,62 @@ func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func authorizeEndpoint(svc things.Service) endpoint.Endpoint {
+func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(authorizeReq)
+		req := request.(userAccessReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		ar := things.AuthorizeReq{
-			Token:   req.token,
-			Object:  req.object,
-			Subject: req.subject,
-			Action:  req.action,
+		r := things.UserAccessReq{
+			Token:  req.token,
+			ID:     req.id,
+			Action: req.action,
 		}
 
-		if err := svc.Authorize(ctx, ar); err != nil {
+		if err := svc.CanUserAccessThing(ctx, r); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
+func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(userAccessReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		r := things.UserAccessReq{
+			Token:  req.token,
+			ID:     req.id,
+			Action: req.action,
+		}
+
+		if err := svc.CanUserAccessProfile(ctx, r); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
+func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(userAccessReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		r := things.UserAccessReq{
+			Token:  req.token,
+			ID:     req.id,
+			Action: req.action,
+		}
+
+		if err := svc.CanUserAccessGroup(ctx, r); err != nil {
 			return emptyRes{}, err
 		}
 

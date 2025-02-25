@@ -211,13 +211,12 @@ func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]G
 
 func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		ar := AuthorizeReq{
-			Token:   token,
-			Object:  id,
-			Subject: GroupSub,
-			Action:  Owner,
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     id,
+			Action: Owner,
 		}
-		if err := ts.Authorize(ctx, ar); err != nil {
+		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 			return err
 		}
 
@@ -230,13 +229,12 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  group.ID,
-		Subject: GroupSub,
-		Action:  Admin,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     group.ID,
+		Action: Admin,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return Group{}, err
 	}
 	group.UpdatedAt = getTimestmap()
@@ -245,13 +243,12 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 }
 
 func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (Group, error) {
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  groupID,
-		Subject: GroupSub,
-		Action:  Viewer,
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Viewer,
 	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return Group{}, err
 	}
 
@@ -264,18 +261,17 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
-	grID, err := ts.getGroupIDByProfileID(ctx, profileID)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     profileID,
+		Action: Viewer,
+	}
+	if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 		return Group{}, err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  grID,
-		Subject: GroupSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	grID, err := ts.getGroupIDByProfileID(ctx, profileID)
+	if err != nil {
 		return Group{}, err
 	}
 
@@ -288,18 +284,17 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, p
 }
 
 func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thingID string) (Group, error) {
-	grID, err := ts.getGroupIDByThingID(ctx, thingID)
-	if err != nil {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Viewer,
+	}
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return Group{}, err
 	}
 
-	ar := AuthorizeReq{
-		Token:   token,
-		Object:  grID,
-		Subject: GroupSub,
-		Action:  Viewer,
-	}
-	if err := ts.Authorize(ctx, ar); err != nil {
+	grID, err := ts.getGroupIDByThingID(ctx, thingID)
+	if err != nil {
 		return Group{}, err
 	}
 

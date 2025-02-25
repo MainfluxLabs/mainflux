@@ -20,7 +20,9 @@ message Message {
 service ThingsService {
     rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
     rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
-    rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
+    rpc CanUserAccessThing(UserAccessReq) returns (google.protobuf.Empty) {}
+    rpc CanUserAccessProfile(UserAccessReq) returns (google.protobuf.Empty) {}
+    rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
@@ -110,6 +112,12 @@ message AuthorizeReq {
     string object  = 2;
     string subject = 3;
     string action  = 4;
+}
+
+message UserAccessReq {
+    string token   = 1;
+    string id      = 2;
+    string action  = 3;
 }
 
 message ThingAccessReq {

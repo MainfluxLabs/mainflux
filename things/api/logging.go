@@ -255,9 +255,9 @@ func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID str
 	return lm.svc.GetConfigByThingID(ctx, thingID)
 }
 
-func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) (err error) {
+func (lm *loggingMiddleware) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method can_user_access_thing took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -265,7 +265,33 @@ func (lm *loggingMiddleware) Authorize(ctx context.Context, ar things.AuthorizeR
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Authorize(ctx, ar)
+	return lm.svc.CanUserAccessThing(ctx, req)
+}
+
+func (lm *loggingMiddleware) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_user_access_profile took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanUserAccessProfile(ctx, req)
+}
+
+func (lm *loggingMiddleware) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_user_access_group took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanUserAccessGroup(ctx, req)
 }
 
 func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) (err error) {

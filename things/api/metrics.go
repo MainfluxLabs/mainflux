@@ -191,13 +191,31 @@ func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID str
 	return ms.svc.GetConfigByThingID(ctx, thingID)
 }
 
-func (ms *metricsMiddleware) Authorize(ctx context.Context, ar things.AuthorizeReq) error {
+func (ms *metricsMiddleware) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "authorize").Add(1)
-		ms.latency.With("method", "authorize").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "can_user_access_thing").Add(1)
+		ms.latency.With("method", "can_user_access_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Authorize(ctx, ar)
+	return ms.svc.CanUserAccessThing(ctx, req)
+}
+
+func (ms *metricsMiddleware) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_user_access_profile").Add(1)
+		ms.latency.With("method", "can_user_access_profile").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanUserAccessProfile(ctx, req)
+}
+
+func (ms *metricsMiddleware) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_user_access_group").Add(1)
+		ms.latency.With("method", "can_user_access_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanUserAccessGroup(ctx, req)
 }
 
 func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
