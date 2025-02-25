@@ -81,6 +81,36 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func updateThingsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(updateThingsReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		ths := []things.Thing{}
+		for _, t := range req.Things {
+			th := things.Thing{
+				ID:        t.ID,
+				ProfileID: t.ProfileID,
+				Name:      t.Name,
+				Metadata:  t.Metadata,
+			}
+			ths = append(ths, th)
+		}
+
+		if err := svc.UpdateThings(ctx, req.token, ths...); err != nil {
+			return nil, err
+		}
+
+		res := thingsRes{
+			created: false,
+		}
+		return res, nil
+	}
+}
+
 func updateKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateKeyReq)

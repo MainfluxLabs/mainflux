@@ -48,6 +48,15 @@ func (ms *metricsMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return ms.svc.UpdateThing(ctx, token, thing)
 }
 
+func (ms *metricsMiddleware) UpdateThings(ctx context.Context, token string, things ...things.Thing) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_things").Add(1)
+		ms.latency.With("method", "update_things").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateThings(ctx, token, things...)
+}
+
 func (ms *metricsMiddleware) UpdateKey(ctx context.Context, token, id, key string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_key").Add(1)

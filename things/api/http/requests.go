@@ -94,6 +94,40 @@ func (req updateThingReq) validate() error {
 	return nil
 }
 
+type updateReq struct {
+	ProfileID string                 `json:"profile_id"`
+	Name      string                 `json:"name,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type updateThingsReq struct {
+	token  string
+	Things []updateReq
+}
+
+func (req updateThingsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	for _, thing := range req.Things {
+		if thing.ProfileID == "" {
+			return apiutil.ErrMissingID
+		}
+
+		if thing.ID != "" {
+			return apiutil.ErrMissingID
+		}
+
+		if thing.Name == "" || len(thing.Name) > maxNameSize {
+			return apiutil.ErrNameSize
+		}
+	}
+
+	return nil
+}
+
 type updateKeyReq struct {
 	token string
 	id    string
