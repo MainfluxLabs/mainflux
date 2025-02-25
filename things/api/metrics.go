@@ -290,13 +290,22 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (t
 	return ms.svc.ViewGroup(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListGroups(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_group").Add(1)
-		ms.latency.With("method", "list_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_groups").Add(1)
+		ms.latency.With("method", "list_groups").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListGroups(ctx, token, orgID, pm)
+	return ms.svc.ListGroups(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_groups_by_org").Add(1)
+		ms.latency.With("method", "list_groups_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
 func (ms *metricsMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {

@@ -186,7 +186,11 @@ func (svc *mainfluxThings) CreateGroups(_ context.Context, token string, groups 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(_ context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(_ context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupsByOrg(_ context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 

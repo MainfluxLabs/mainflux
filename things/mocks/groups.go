@@ -200,6 +200,6 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 	return page, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }

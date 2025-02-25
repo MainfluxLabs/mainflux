@@ -257,8 +257,12 @@ func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...thin
 	return es.svc.CreateGroups(ctx, token, grs...)
 }
 
-func (es eventStore) ListGroups(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
-	return es.svc.ListGroups(ctx, token, orgID, pm)
+func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroups(ctx, token, pm)
+}
+
+func (es eventStore) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+	return es.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
 func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {

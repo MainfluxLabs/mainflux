@@ -398,7 +398,7 @@ func (lm *loggingMiddleware) ViewGroup(ctx context.Context, token, id string) (g
 	return lm.svc.ViewGroup(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListGroups(ctx context.Context, token, orgID string, pm things.PageMetadata) (g things.GroupPage, err error) {
+func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (g things.GroupPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_groups took %s to complete", time.Since(begin))
 		if err != nil {
@@ -408,7 +408,20 @@ func (lm *loggingMiddleware) ListGroups(ctx context.Context, token, orgID string
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListGroups(ctx, token, orgID, pm)
+	return lm.svc.ListGroups(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (g things.GroupPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_groups_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
 func (lm *loggingMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) (g []things.Group, err error) {
