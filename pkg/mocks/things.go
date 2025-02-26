@@ -85,6 +85,10 @@ func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) er
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) UpdateThings(context.Context, string, ...things.Thing) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) error {
 	panic("not implemented")
 }

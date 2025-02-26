@@ -77,6 +77,10 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	return nil
 }
 
+func (es eventStore) UpdateThings(ctx context.Context, token string, things ...things.Thing) error {
+	return es.svc.UpdateThings(ctx, token, things...);
+}
+
 // UpdateKey doesn't send event because key shouldn't be sent over stream.
 // Maybe we can start publishing this event at some point, without key value
 // in order to notify adapters to disconnect connected things after key update.
