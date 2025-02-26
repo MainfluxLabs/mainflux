@@ -516,16 +516,40 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves groups by org
+      description: |
+        Retrieves list of groups assigned to the specified org.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Metadata"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupsPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /groups:
     get:
       summary: Retrieves all groups.
       description: |
-        Retrieves all groups up to a max level of hierarchy that can be fetched in one
-        request ( max level = 5). Result can be filtered by metadata. Groups will
-        be returned as JSON array or JSON tree.
+        Retrieves list of all groups.
       tags:
         - groups
       parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':

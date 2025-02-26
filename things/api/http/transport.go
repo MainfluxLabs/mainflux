@@ -198,6 +198,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/orgs/:id/groups", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_groups_by_org")(listGroupsByOrgEndpoint(svc)),
+		decodeListByID,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Patch("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_groups")(removeGroupsEndpoint(svc)),
 		decodeRemoveGroups,

@@ -142,7 +142,7 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 }
 
 func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	gp, err := gr.retrieve(ctx, []string{}, "", things.PageMetadata{})
+	gp, err := gr.retrieve(ctx, []string{}, things.PageMetadata{})
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 		return things.GroupPage{}, nil
 	}
 
-	grPage, err := gr.retrieve(ctx, groupIDs, "", pm)
+	grPage, err := gr.retrieve(ctx, groupIDs, pm)
 	if err != nil {
 		return things.GroupPage{}, err
 	}
@@ -200,8 +200,8 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	return grPage, nil
 }
 
-func (gr groupRepository) RetrieveByAdmin(ctx context.Context, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
-	return gr.retrieve(ctx, []string{}, orgID, pm)
+func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+	return gr.retrieve(ctx, []string{}, pm)
 }
 
 func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]interface{}) ([]string, error) {
@@ -223,7 +223,7 @@ func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params 
 	return ids, nil
 }
 
-func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
 	idsq := getIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -248,11 +248,6 @@ func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID
 		query = append(query, nq)
 	}
 
-	if orgID != "" {
-		orgq := "org_id = :org_id"
-		query = append(query, orgq)
-	}
-
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
@@ -260,7 +255,6 @@ func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, orgID
 	q := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
 	params := map[string]interface{}{
-		"org_id":   orgID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,

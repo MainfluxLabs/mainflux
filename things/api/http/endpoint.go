@@ -543,7 +543,23 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListGroups(ctx, req.token, req.orgID, req.pageMetadata)
+		page, err := svc.ListGroups(ctx, req.token, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildGroupsResponse(page), nil
+	}
+}
+
+func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listByIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListGroupsByOrg(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
