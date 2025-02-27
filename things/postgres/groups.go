@@ -142,12 +142,25 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 }
 
 func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
-	gp, err := gr.retrieve(ctx, []string{}, things.PageMetadata{})
+	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups"
+
+	var items []dbGroup
+	err := gr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return gp.Groups, nil
+	var groups []things.Group
+	for _, i := range items {
+		gr, err := toGroup(i)
+		if err != nil {
+			return []things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		groups = append(groups, gr)
+	}
+
+	return groups, nil
 }
 
 func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
@@ -192,16 +205,47 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 		return things.GroupPage{}, nil
 	}
 
-	grPage, err := gr.retrieve(ctx, groupIDs, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	iq := getIDsQuery(groupIDs)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
-		return things.GroupPage{}, err
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	whereClause := buildWhereClause(iq, nq, mq)
+	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 	}
 
-	return grPage, nil
+	return gr.retrieve(ctx, query, cquery, params)
 }
 
 func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
-	return gr.retrieve(ctx, []string{}, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	if err != nil {
+		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := buildWhereClause(nq, mq)
+	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	return gr.retrieve(ctx, query, cquery, params)
 }
 
 func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]interface{}) ([]string, error) {
@@ -223,45 +267,8 @@ func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params 
 	return ids, nil
 }
 
-func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
-	idsq := getIDsQuery(groupIDs)
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := dbutil.GetOrderQuery(pm.Order)
-	dq := dbutil.GetDirQuery(pm.Dir)
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
-	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	var whereClause string
-	var query []string
-	if idsq != "" {
-		query = append(query, idsq)
-	}
-
-	if mq != "" {
-		query = append(query, mq)
-	}
-
-	if nq != "" {
-		query = append(query, nq)
-	}
-
-	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	q := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	params := map[string]interface{}{
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": meta,
-	}
-
-	rows, err := gr.db.NamedQueryContext(ctx, q, params)
+func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.GroupPage, error) {
+	rows, err := gr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -280,9 +287,7 @@ func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, pm th
 		items = append(items, gr)
 	}
 
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM groups %s;", whereClause)
-
-	total, err := total(ctx, gr.db, cq, params)
+	total, err := total(ctx, gr.db, cquery, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -291,10 +296,8 @@ func (gr groupRepository) retrieve(ctx context.Context, groupIDs []string, pm th
 		Groups: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
 		},
 	}
 

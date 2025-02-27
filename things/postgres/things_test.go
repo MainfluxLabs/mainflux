@@ -18,7 +18,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const maxNameSize = 1024
+const (
+	maxNameSize = 1024
+	descDir     = "desc"
+	ascDir      = "asc"
+	idOrder     = "id"
+	nameOrder   = "name"
+)
 
 var (
 	invalidName = strings.Repeat("m", maxNameSize+1)
@@ -451,12 +457,16 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n,
 		},
 		"retrieve all things by group IDs without limit": {
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
+				Dir:   descDir,
+				Order: idOrder,
 			},
 			size: n,
 		},
@@ -464,6 +474,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n - offset,
 		},
@@ -472,6 +484,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 				Offset: 0,
 				Limit:  n,
 				Name:   "test-thing-101",
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 1,
 		},
@@ -480,6 +494,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 				Offset: 0,
 				Limit:  n,
 				Name:   "wrong",
+				Order:  nameOrder,
+				Dir:    descDir,
 			},
 			size: 0,
 		},
@@ -488,6 +504,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 				Offset:   0,
 				Limit:    n,
 				Metadata: metadata,
+				Dir:      descDir,
+				Order:    idOrder,
 			},
 			size: metaNum,
 		},
@@ -496,6 +514,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 				Offset:   0,
 				Limit:    n,
 				Metadata: wrongMeta,
+				Order:    nameOrder,
+				Dir:      descDir,
 			},
 			size: 0,
 		},
@@ -503,8 +523,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Order:  "name",
-				Dir:    "asc",
+				Order:  nameOrder,
+				Dir:    ascDir,
 			},
 			size: n,
 		},
@@ -512,8 +532,8 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Order:  "name",
-				Dir:    "desc",
+				Order:  nameOrder,
+				Dir:    descDir,
 			},
 			size: n,
 		},
@@ -653,6 +673,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n,
 		},
@@ -661,6 +683,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			prID: prID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
+				Dir:   descDir,
+				Order: idOrder,
 			},
 			size: n,
 		},
@@ -669,6 +693,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n - (n / 2),
 		},
@@ -677,6 +703,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 		},
@@ -694,8 +722,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Order:  "name",
-				Dir:    "asc",
+				Order:  nameOrder,
+				Dir:    ascDir,
 			},
 			size: n,
 		},
@@ -704,8 +732,8 @@ func TestRetrieveByProfile(t *testing.T) {
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Order:  "name",
-				Dir:    "desc",
+				Order:  nameOrder,
+				Dir:    descDir,
 			},
 			size: n,
 		},

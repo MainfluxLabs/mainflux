@@ -109,8 +109,8 @@ func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
 	return tp, nil
 }
 
-func (sdk mfSDK) ThingsByProfile(prID, token string, offset, limit uint64) (ThingsPage, error) {
-	url := fmt.Sprintf("%s/profiles/%s/things?offset=%d&limit=%d", sdk.thingsURL, prID, offset, limit)
+func (sdk mfSDK) ThingsByProfile(prID, token string, pm PageMetadata) (ThingsPage, error) {
+	url := fmt.Sprintf("%s/profiles/%s/things?offset=%d&limit=%d&dir=%s", sdk.thingsURL, prID, pm.Offset, pm.Limit, pm.Dir)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return ThingsPage{}, err

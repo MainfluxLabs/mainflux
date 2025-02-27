@@ -122,16 +122,42 @@ func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 }
 
 func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
-	prPage, err := cr.retrieve(ctx, []string{}, true, things.PageMetadata{})
+	query := "SELECT id, group_id, name, metadata, config FROM profiles"
+
+	var items []dbProfile
+	err := cr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return []things.Profile{}, err
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return prPage.Profiles, nil
+	var profiles []things.Profile
+	for _, i := range items {
+		profiles = append(profiles, toProfile(i))
+	}
+
+	return profiles, nil
 }
 
 func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
-	return cr.retrieve(ctx, []string{}, false, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	if err != nil {
+		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := buildWhereClause(nq, mq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	return cr.retrieve(ctx, query, cquery, params)
 }
 
 func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
@@ -187,60 +213,36 @@ func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []s
 		return things.ProfilesPage{}, nil
 	}
 
-	prPage, err := cr.retrieve(ctx, groupIDs, false, pm)
-	if err != nil {
-		return things.ProfilesPage{}, err
-	}
-
-	return prPage, nil
-}
-
-func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ProfilesPage, error) {
-	idsq := getGroupIDsQuery(groupIDs)
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := dbutil.GetOrderQuery(pm.Order)
-	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	meta, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	giq := getGroupIDsQuery(groupIDs)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	var query []string
-	if idsq != "" {
-		query = append(query, idsq)
-	}
-	if mq != "" {
-		query = append(query, mq)
-	}
-	if nq != "" {
-		query = append(query, nq)
-	}
-
-	var whereClause string
-	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	q := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	if allRows {
-		q = "SELECT id, group_id, name, metadata, config FROM profiles"
-	}
+	whereClause := buildWhereClause(giq, nq, mq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": meta,
 	}
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+
+	return cr.retrieve(ctx, query, cquery, params)
+}
+
+func (cr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ProfilesPage, error) {
+	rows, err := cr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	items := []things.Profile{}
+	var items []things.Profile
 	for rows.Next() {
 		dbpr := dbProfile{}
 		if err := rows.StructScan(&dbpr); err != nil {
@@ -251,9 +253,7 @@ func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, all
 		items = append(items, pr)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
-
-	total, err := total(ctx, cr.db, cq, params)
+	total, err := total(ctx, cr.db, cquery, params)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -262,10 +262,8 @@ func (cr profileRepository) retrieve(ctx context.Context, groupIDs []string, all
 		Profiles: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
 		},
 	}
 

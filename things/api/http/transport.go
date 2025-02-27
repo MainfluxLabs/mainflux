@@ -200,7 +200,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 
 	r.Get("/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
-		decodeListGroups,
+		decodeList,
 		encodeResponse,
 		opts...,
 	))
@@ -445,12 +445,12 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	or, err := apiutil.ReadStringQuery(r, orderKey, "")
+	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := apiutil.ReadStringQuery(r, dirKey, "")
+	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
 	if err != nil {
 		return nil, err
 	}
@@ -500,12 +500,12 @@ func decodeListByID(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	or, err := apiutil.ReadStringQuery(r, orderKey, "")
+	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := apiutil.ReadStringQuery(r, dirKey, "")
+	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
 	if err != nil {
 		return nil, err
 	}
@@ -544,45 +544,6 @@ func decodeCreateGroups(_ context.Context, r *http.Request) (interface{}, error)
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return req, nil
-}
-
-func decodeListGroups(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	orgID, err := apiutil.ReadStringQuery(r, orgKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	req := listGroupsReq{
-		token: apiutil.ExtractBearerToken(r),
-		pageMetadata: things.PageMetadata{
-			Offset:   o,
-			Limit:    l,
-			Metadata: m,
-			Name:     n,
-		},
-		orgID: orgID,
-	}
 	return req, nil
 }
 
@@ -640,7 +601,7 @@ func decodeUpdateThings(_ context.Context, r *http.Request) (interface{}, error)
 	}
 
 	req := updateThingsReq{
-    token: apiutil.ExtractBearerToken(r),
+		token: apiutil.ExtractBearerToken(r),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

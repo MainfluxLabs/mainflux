@@ -48,7 +48,10 @@ func (dm database) NamedQueryContext(ctx context.Context, query string, args int
 
 func (dm database) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	addSpanTags(ctx, query)
-	return dm.db.SelectContext(ctx, dest, query, args)
+	if len(args) > 0 {
+		dm.db.SelectContext(ctx, dest, query, args)
+	}
+	return dm.db.SelectContext(ctx, dest, query)
 }
 
 func (dm database) GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
