@@ -211,12 +211,12 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 
 	var orgs []auth.Org
 	for _, i := range items {
-		th, err := toOrg(i)
+		org, err := toOrg(i)
 		if err != nil {
 			return []auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		orgs = append(orgs, th)
+		orgs = append(orgs, org)
 	}
 
 	return orgs, nil
