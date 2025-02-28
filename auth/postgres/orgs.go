@@ -21,12 +21,12 @@ import (
 var _ auth.OrgRepository = (*orgRepository)(nil)
 
 type orgRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
 // repository.
-func NewOrgRepo(db Database) auth.OrgRepository {
+func NewOrgRepo(db dbutil.Database) auth.OrgRepository {
 	return &orgRepository{
 		db: db,
 	}
@@ -322,7 +322,7 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 	}, nil
 }
 
-func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+func total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

@@ -19,13 +19,13 @@ import (
 var _ auth.MembersRepository = (*membersRepository)(nil)
 
 type membersRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 var membersIDFkey = "member_relations_org_id_fkey"
 
 // NewMembersRepo instantiates a PostgreSQL implementation of members repository.
-func NewMembersRepo(db Database) auth.MembersRepository {
+func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
 	return &membersRepository{
 		db: db,
 	}

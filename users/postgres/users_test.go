@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -68,7 +69,7 @@ func TestUserSave(t *testing.T) {
 		},
 	}
 
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewUserRepo(dbMiddleware)
 
 	for _, tc := range cases {
@@ -78,7 +79,7 @@ func TestUserSave(t *testing.T) {
 }
 
 func TestSingleUserRetrieval(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewUserRepo(dbMiddleware)
 
 	email := "user-retrieval@example.com"
@@ -111,7 +112,7 @@ func TestSingleUserRetrieval(t *testing.T) {
 }
 
 func TestRetrieveByIDs(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 	metaNum := uint64(2)
 	var nUsers = uint64(usersNum)
@@ -286,7 +287,7 @@ func TestRetrieveAll(t *testing.T) {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", usersTable))
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 	metaNum := uint64(2)
 	var nUsers = uint64(usersNum)
@@ -330,7 +331,7 @@ func TestRetrieveAll(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	userRepo := postgres.NewUserRepo(dbMiddleware)
 
 	uid, err := idProvider.ID()

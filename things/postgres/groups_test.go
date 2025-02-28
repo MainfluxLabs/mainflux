@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -31,7 +32,7 @@ var (
 )
 
 func TestSaveGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	orgID := generateUUID(t)
 	grID := generateUUID(t)
@@ -87,7 +88,7 @@ func TestSaveGroup(t *testing.T) {
 }
 
 func TestRetrieveGroupByID(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	orgID := generateUUID(t)
 
@@ -132,7 +133,7 @@ func TestRetrieveGroupByID(t *testing.T) {
 }
 
 func TestUpdateGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
@@ -218,7 +219,7 @@ func TestUpdateGroup(t *testing.T) {
 }
 
 func TestRemoveGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
@@ -274,7 +275,7 @@ func TestRemoveGroup(t *testing.T) {
 }
 
 func TestRetrieveByIDs(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
@@ -440,7 +441,7 @@ func TestRetrieveByIDs(t *testing.T) {
 }
 
 func TestRetrieveAllGroups(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 
 	err := cleanTestTable(context.Background(), "groups", dbMiddleware)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -495,7 +496,7 @@ func generateUUID(t *testing.T) string {
 	return id
 }
 
-func createGroup(t *testing.T, dbMiddleware postgres.Database) things.Group {
+func createGroup(t *testing.T, dbMiddleware dbutil.Database) things.Group {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	grID := generateUUID(t)

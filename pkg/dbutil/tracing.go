@@ -1,4 +1,4 @@
-package postgres
+package dbutil
 
 import (
 	"context"
@@ -19,6 +19,7 @@ type Database interface {
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
 	NamedQueryContext(context.Context, string, interface{}) (*sqlx.Rows, error)
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	GetContext(context.Context, interface{}, string, ...interface{}) error
 	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
 }
@@ -43,6 +44,11 @@ func (dm database) QueryRowxContext(ctx context.Context, query string, args ...i
 func (dm database) NamedQueryContext(ctx context.Context, query string, args interface{}) (*sqlx.Rows, error) {
 	addSpanTags(ctx, query)
 	return dm.db.NamedQueryContext(ctx, query, args)
+}
+
+func (dm database) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	addSpanTags(ctx, query)
+	return dm.db.SelectContext(ctx, dest, query, args...)
 }
 
 func (dm database) GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {

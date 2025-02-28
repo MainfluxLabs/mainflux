@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -14,11 +15,11 @@ import (
 var _ auth.KeyRepository = (*repo)(nil)
 
 type repo struct {
-	db Database
+	db dbutil.Database
 }
 
 // New instantiates a PostgreSQL implementation of key repository.
-func New(db Database) auth.KeyRepository {
+func New(db dbutil.Database) auth.KeyRepository {
 	return &repo{
 		db: db,
 	}

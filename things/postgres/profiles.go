@@ -22,12 +22,12 @@ import (
 var _ things.ProfileRepository = (*profileRepository)(nil)
 
 type profileRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewProfileRepository instantiates a PostgreSQL implementation of profile
 // repository.
-func NewProfileRepository(db Database) things.ProfileRepository {
+func NewProfileRepository(db dbutil.Database) things.ProfileRepository {
 	return &profileRepository{
 		db: db,
 	}
@@ -350,7 +350,7 @@ func getIDsQuery(ids []string) string {
 	return fmt.Sprintf("id IN ('%s') ", strings.Join(ids, "','"))
 }
 
-func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+func total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

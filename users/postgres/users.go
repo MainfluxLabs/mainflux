@@ -20,12 +20,12 @@ import (
 var _ users.UserRepository = (*userRepository)(nil)
 
 type userRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewUserRepo instantiates a PostgreSQL implementation of user
 // repository.
-func NewUserRepo(db Database) users.UserRepository {
+func NewUserRepo(db dbutil.Database) users.UserRepository {
 	return &userRepository{
 		db: db,
 	}
@@ -305,7 +305,7 @@ func toDBUser(u users.User) (dbUser, error) {
 	}, nil
 }
 
-func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+func total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

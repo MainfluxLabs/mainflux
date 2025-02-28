@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/jackc/pgerrcode"
@@ -13,11 +14,11 @@ import (
 var _ things.RolesRepository = (*rolesRepository)(nil)
 
 type rolesRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewRolesRepository instantiates a PostgreSQL implementation of roles repository.
-func NewRolesRepository(db Database) things.RolesRepository {
+func NewRolesRepository(db dbutil.Database) things.RolesRepository {
 	return &rolesRepository{
 		db: db,
 	}

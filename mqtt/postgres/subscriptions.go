@@ -14,11 +14,11 @@ import (
 var _ mqtt.Repository = (*mqttRepository)(nil)
 
 type mqttRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewRepository instantiates a PostgreSQL implementation of mqt repository.
-func NewRepository(db Database) mqtt.Repository {
+func NewRepository(db dbutil.Database) mqtt.Repository {
 	return &mqttRepository{db: db}
 }
 
@@ -138,7 +138,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 
 }
 
-func (mr *mqttRepository) total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+func (mr *mqttRepository) total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
 	rows, err := mr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

@@ -21,12 +21,12 @@ import (
 var _ things.ThingRepository = (*thingRepository)(nil)
 
 type thingRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewThingRepository instantiates a PostgreSQL implementation of thing
 // repository.
-func NewThingRepository(db Database) things.ThingRepository {
+func NewThingRepository(db dbutil.Database) things.ThingRepository {
 	return &thingRepository{
 		db: db,
 	}
