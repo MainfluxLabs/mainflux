@@ -102,7 +102,7 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 
 	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
 
-	total, err := total(ctx, pr.db, cq, params)
+	total, err := dbutil.Total(ctx, pr.db, cq, params)
 	if err != nil {
 		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

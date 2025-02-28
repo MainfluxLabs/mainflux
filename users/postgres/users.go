@@ -205,7 +205,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM users %s;`, emq)
 
-	total, err := total(ctx, ur.db, cq, params)
+	total, err := dbutil.Total(ctx, ur.db, cq, params)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -303,21 +303,6 @@ func toDBUser(u users.User) (dbUser, error) {
 		Metadata: data,
 		Status:   u.Status,
 	}, nil
-}
-
-func total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
-	rows, err := db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-	return total, nil
 }
 
 func toUser(dbu dbUser) (users.User, error) {

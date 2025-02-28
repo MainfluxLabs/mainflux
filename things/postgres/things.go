@@ -304,7 +304,7 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 		items = append(items, th)
 	}
 
-	total, err := total(ctx, tr.db, cquery, params)
+	total, err := dbutil.Total(ctx, tr.db, cquery, params)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

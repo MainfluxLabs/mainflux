@@ -287,7 +287,7 @@ func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, pa
 		items = append(items, gr)
 	}
 
-	total, err := total(ctx, gr.db, cquery, params)
+	total, err := dbutil.Total(ctx, gr.db, cquery, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

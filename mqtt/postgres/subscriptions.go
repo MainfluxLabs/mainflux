@@ -122,7 +122,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 	}
 
 	cq := `SELECT COUNT(*) FROM subscriptions WHERE group_id= :group_id;`
-	total, err := mr.total(ctx, mr.db, cq, params)
+	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -136,21 +136,6 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 		Subscriptions: items,
 	}, nil
 
-}
-
-func (mr *mqttRepository) total(ctx context.Context, db dbutil.Database, query string, params interface{}) (uint64, error) {
-	rows, err := mr.db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-	return total, nil
 }
 
 type dbSubscription struct {
