@@ -222,9 +222,9 @@ type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`
 	Limit  uint64 `json:"limit"`
-	Order  string `json:"order"`
-	Dir    string `json:"direction"`
-	Name   string `json:"name"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"direction,omitempty"`
+	Name   string `json:"name,omitempty"`
 }
 
 type ThingsPageRes struct {

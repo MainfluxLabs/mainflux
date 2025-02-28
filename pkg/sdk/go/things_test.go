@@ -386,6 +386,7 @@ func TestThings(t *testing.T) {
 		token    string
 		offset   uint64
 		limit    uint64
+		dir      string
 		err      error
 		response []sdk.Thing
 		name     string
@@ -396,6 +397,7 @@ func TestThings(t *testing.T) {
 			token:    token,
 			offset:   offset,
 			limit:    limit,
+			dir:      ascDir,
 			err:      nil,
 			response: things[0:limit],
 			metadata: make(map[string]interface{}),
@@ -452,6 +454,7 @@ func TestThings(t *testing.T) {
 			Total:    total,
 			Offset:   tc.offset,
 			Limit:    tc.limit,
+			Dir:      tc.dir,
 			Metadata: tc.metadata,
 		}
 		page, err := mainfluxSDK.Things(tc.token, filter)
@@ -504,6 +507,7 @@ func TestThingsByProfile(t *testing.T) {
 		token    string
 		offset   uint64
 		limit    uint64
+		dir      string
 		err      error
 		response []sdk.Thing
 	}{
@@ -513,6 +517,7 @@ func TestThingsByProfile(t *testing.T) {
 			token:    token,
 			offset:   offset,
 			limit:    limit,
+			dir:      ascDir,
 			err:      nil,
 			response: ths[0:limit],
 		},
@@ -522,6 +527,7 @@ func TestThingsByProfile(t *testing.T) {
 			token:    wrongValue,
 			offset:   offset,
 			limit:    limit,
+			dir:      ascDir,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
 		},
@@ -558,6 +564,7 @@ func TestThingsByProfile(t *testing.T) {
 			token:    token,
 			offset:   110,
 			limit:    limit,
+			dir:      ascDir,
 			err:      nil,
 			response: []sdk.Thing{},
 		},
@@ -572,7 +579,13 @@ func TestThingsByProfile(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		page, err := mainfluxSDK.ThingsByProfile(tc.profile, tc.token, tc.offset, tc.limit)
+		filter := sdk.PageMetadata{
+			Total:  total,
+			Offset: tc.offset,
+			Limit:  tc.limit,
+			Dir:    tc.dir,
+		}
+		page, err := mainfluxSDK.ThingsByProfile(tc.profile, tc.token, filter)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}

@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	ascDir  = "asc"
 	name    = "name"
 	groupID = "371106m2-131g-5286-2mc1-540295c29f95"
 )
@@ -254,6 +255,7 @@ func TestProfiles(t *testing.T) {
 		token    string
 		offset   uint64
 		limit    uint64
+		dir      string
 		name     string
 		err      error
 		response []sdk.Profile
@@ -264,6 +266,7 @@ func TestProfiles(t *testing.T) {
 			token:    token,
 			offset:   offset,
 			limit:    limit,
+			dir:      ascDir,
 			err:      nil,
 			response: profiles[0:limit],
 			metadata: make(map[string]interface{}),
@@ -320,6 +323,7 @@ func TestProfiles(t *testing.T) {
 			Total:    total,
 			Offset:   tc.offset,
 			Limit:    tc.limit,
+			Dir:      tc.dir,
 			Metadata: tc.metadata,
 		}
 

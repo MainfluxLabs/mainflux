@@ -340,13 +340,11 @@ func (req listByIDReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+	if req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+	if req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
 		return apiutil.ErrInvalidDirection
 	}
 
@@ -535,24 +533,6 @@ func (req groupRolesReq) validate() error {
 		if gm.ID == "" {
 			return apiutil.ErrMissingID
 		}
-	}
-
-	return nil
-}
-
-type listGroupsReq struct {
-	token        string
-	orgID        string
-	pageMetadata things.PageMetadata
-}
-
-func (req listGroupsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
 	}
 
 	return nil

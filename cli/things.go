@@ -71,7 +71,7 @@ var cmdThings = []cobra.Command{
 				logJSON(l)
 				return
 			case "by-profile":
-				tip, err := sdk.ThingsByProfile(args[1], args[2], uint64(Offset), uint64(Limit))
+				tip, err := sdk.ThingsByProfile(args[1], args[2], pageMetadata)
 				if err != nil {
 					logError(err)
 					return

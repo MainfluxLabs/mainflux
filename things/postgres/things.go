@@ -10,11 +10,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofrs/uuid"
-
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -181,30 +180,73 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 		return things.ThingsPage{}, nil
 	}
 
-	thPage, err := tr.retrieve(ctx, groupIDs, false, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	giq := getGroupIDsQuery(groupIDs)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
 	if err != nil {
-		return things.ThingsPage{}, err
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return thPage, nil
+	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	return tr.retrieve(ctx, query, cquery, params)
 }
 
 func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
-	thPage, err := tr.retrieve(ctx, []string{}, true, things.PageMetadata{})
+	query := "SELECT id, group_id, profile_id, name, key, metadata FROM things"
+
+	var items []dbThing
+	err := tr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return []things.Thing{}, err
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return thPage.Things, nil
+	var ths []things.Thing
+	for _, i := range items {
+		th, err := toThing(i)
+		if err != nil {
+			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		ths = append(ths, th)
+	}
+
+	return ths, nil
 }
 
 func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
-	return tr.retrieve(ctx, []string{}, false, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	if err != nil {
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(nq, mq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	return tr.retrieve(ctx, query, cquery, params)
 }
 
 func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
-	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
@@ -212,10 +254,9 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	var q, qc string
-	q = fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things 
-				WHERE profile_id = :profile_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc = `SELECT COUNT(*) FROM things WHERE profile_id = $1;`
+	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things 
+				WHERE profile_id = :profile_id ORDER BY %s %s %s;`, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := `SELECT COUNT(*) FROM things WHERE profile_id = :profile_id;`
 
 	params := map[string]interface{}{
 		"profile_id": prID,
@@ -223,40 +264,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 		"offset":     pm.Offset,
 	}
 
-	rows, err := tr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []things.Thing
-	for rows.Next() {
-		dbth := dbThing{}
-		if err := rows.StructScan(&dbth); err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		th, err := toThing(dbth)
-		if err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		items = append(items, th)
-	}
-
-	var total uint64
-	if err := tr.db.GetContext(ctx, &total, qc, prID); err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return things.ThingsPage{
-		Things: items,
-		PageMetadata: things.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}, nil
+	return tr.retrieve(ctx, query, cquery, params)
 }
 
 func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
@@ -274,47 +282,8 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRows bool, pm things.PageMetadata) (things.ThingsPage, error) {
-	idsq := getGroupIDsQuery(groupIDs)
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	oq := dbutil.GetOrderQuery(pm.Order)
-	dq := dbutil.GetDirQuery(pm.Dir)
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
-	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	var query []string
-	if idsq != "" {
-		query = append(query, idsq)
-	}
-	if mq != "" {
-		query = append(query, mq)
-	}
-	if nq != "" {
-		query = append(query, nq)
-	}
-
-	var whereClause string
-	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	q := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-
-	if allRows {
-		q = "SELECT id, group_id, profile_id, name, key, metadata FROM things"
-	}
-
-	params := map[string]interface{}{
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": m,
-	}
-
-	rows, err := tr.db.NamedQueryContext(ctx, q, params)
+func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ThingsPage, error) {
+	rows, err := tr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -335,9 +304,7 @@ func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRo
 		items = append(items, th)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
-
-	total, err := total(ctx, tr.db, cq, params)
+	total, err := total(ctx, tr.db, cquery, params)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -346,10 +313,8 @@ func (tr thingRepository) retrieve(ctx context.Context, groupIDs []string, allRo
 		Things: items,
 		PageMetadata: things.PageMetadata{
 			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
 		},
 	}
 

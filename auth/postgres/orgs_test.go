@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	orgName              = "test"
-	orgDesc              = "test_description"
-	invalidID            = "invalid"
-	n                    = uint64(10)
-	orgsTable            = "orgs"
+	orgName   = "test"
+	orgDesc   = "test_description"
+	invalidID = "invalid"
+	n         = uint64(10)
+	orgsTable = "orgs"
 )
 
 func TestSave(t *testing.T) {
@@ -590,7 +590,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrRetrieveOrgsByMember,
+			err:  errors.ErrRetrieveEntity,
 		},
 		{
 			desc:     "retrieve orgs by member without member id",
@@ -601,7 +601,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Total:  0,
 			},
 			size: 0,
-			err:  auth.ErrRetrieveOrgsByMember,
+			err:  errors.ErrRetrieveEntity,
 		},
 	}
 

@@ -23,6 +23,7 @@ type Database interface {
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
 	QueryxContext(context.Context, string, ...interface{}) (*sqlx.Rows, error)
 	NamedQueryContext(context.Context, string, interface{}) (*sqlx.Rows, error)
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 }
 
@@ -41,6 +42,14 @@ func (d database) NamedQueryContext(ctx context.Context, query string, args inte
 func (d database) NamedExecContext(ctx context.Context, query string, args interface{}) (sql.Result, error) {
 	addSpanTags(ctx, query)
 	return d.db.NamedExecContext(ctx, query, args)
+}
+
+func (dm database) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	addSpanTags(ctx, query)
+	if len(args) > 0 {
+		dm.db.SelectContext(ctx, dest, query, args)
+	}
+	return dm.db.SelectContext(ctx, dest, query)
 }
 
 func (d database) QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row {

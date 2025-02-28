@@ -9,7 +9,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -156,42 +155,88 @@ func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm 
 		return auth.OrgsPage{}, errors.ErrRetrieveEntity
 	}
 
-	return or.retrieve(ctx, ownerID, pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	ownq := "owner_id = :owner_id"
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(ownq, nq, mq)
+	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
+
+	params := map[string]interface{}{
+		"owner_id": ownerID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"name":     name,
+		"metadata": m,
+	}
+
+	return or.retrieve(ctx, query, cquery, params)
 }
 
 func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	return or.retrieve(ctx, "", pm)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	if err != nil {
+		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(nq, mq)
+	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
+
+	params := map[string]interface{}{
+		"name":     name,
+		"metadata": m,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	return or.retrieve(ctx, query, cquery, params)
 }
 
 func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	orPage, err := or.retrieve(ctx, "", auth.PageMetadata{})
+	query := "SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs"
+
+	var items []dbOrg
+	err := or.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return orPage.Orgs, nil
+	var orgs []auth.Org
+	for _, i := range items {
+		org, err := toOrg(i)
+		if err != nil {
+			return []auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		orgs = append(orgs, org)
+	}
+
+	return orgs, nil
 }
 
 func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
 
-	nq, name := dbutil.GetNameQuery(pm.Name)
+	moq, miq := "mr.org_id = o.id", "mr.member_id = :member_id"
+	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
-	if mq != "" {
-		mq = fmt.Sprintf("AND %s", mq)
-	}
-
-	if nq != "" {
-		nq = fmt.Sprintf("AND %s", nq)
-	}
-
-	q := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
+	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
 		FROM member_relations mr, orgs o
-		WHERE mr.org_id = o.id and mr.member_id = :member_id
-		%s %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
+		%s ORDER BY id %s;`, whereClause, olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations mr, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{
 		"member_id": memberID,
@@ -201,83 +246,11 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 		"metadata":  meta,
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
-	}
-	defer rows.Close()
-
-	var items []auth.Org
-	for rows.Next() {
-		dbg := dbOrg{}
-		if err := rows.StructScan(&dbg); err != nil {
-			return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
-		}
-		og, err := toOrg(dbg)
-		if err != nil {
-			return auth.OrgsPage{}, err
-		}
-		items = append(items, og)
-	}
-
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations ore, orgs o
-		WHERE ore.org_id = o.id and ore.member_id = :member_id %s %s`, mq, nq)
-
-	total, err := total(ctx, or.db, cq, params)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
-	}
-
-	page := auth.OrgsPage{
-		Orgs: items,
-		PageMetadata: auth.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return or.retrieve(ctx, query, cquery, params)
 }
 
-func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	ownq := dbutil.GetOwnerQuery(ownerID)
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	meta, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	var query []string
-	if ownq != "" {
-		query = append(query, ownq)
-	}
-
-	if mq != "" {
-		query = append(query, mq)
-	}
-
-	if nq != "" {
-		query = append(query, nq)
-	}
-
-	var whereClause string
-	if len(query) > 0 {
-		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
-	}
-
-	q := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
-
-	params := map[string]interface{}{
-		"owner_id": ownerID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": meta,
-	}
-
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+func (or orgRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (auth.OrgsPage, error) {
+	rows, err := or.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -298,9 +271,7 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 		items = append(items, or)
 	}
 
-	cq := fmt.Sprintf("SELECT COUNT(*) FROM orgs %s;", whereClause)
-
-	total, err := total(ctx, or.db, cq, params)
+	total, err := total(ctx, or.db, cquery, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -309,8 +280,8 @@ func (or orgRepository) retrieve(ctx context.Context, ownerID string, pm auth.Pa
 		Orgs: items,
 		PageMetadata: auth.PageMetadata{
 			Total:  total,
-			Limit:  pm.Limit,
-			Offset: pm.Offset,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
 		},
 	}
 

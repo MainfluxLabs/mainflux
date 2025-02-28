@@ -21,14 +21,6 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
-func GetOwnerQuery(ownerID string) string {
-	if ownerID == "" {
-		return ""
-	}
-
-	return "owner_id = :owner_id"
-}
-
 func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
@@ -62,9 +54,25 @@ func GetDirQuery(dir string) string {
 		return "DESC"
 	}
 }
+
 func GetOffsetLimitQuery(limit uint64) string {
 	if limit != 0 {
 		return "LIMIT :limit OFFSET :offset"
+	}
+
+	return ""
+}
+
+func BuildWhereClause(filters ...string) string {
+	var queryFilters []string
+	for _, filter := range filters {
+		if filter != "" {
+			queryFilters = append(queryFilters, filter)
+		}
+	}
+
+	if len(queryFilters) > 0 {
+		return fmt.Sprintf(" WHERE %s", strings.Join(queryFilters, " AND "))
 	}
 
 	return ""

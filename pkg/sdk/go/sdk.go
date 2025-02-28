@@ -81,6 +81,8 @@ type PageMetadata struct {
 	Total    uint64                 `json:"total"`
 	Offset   uint64                 `json:"offset"`
 	Limit    uint64                 `json:"limit"`
+	Order    string                 `json:"order"`
+	Dir      string                 `json:"dir"`
 	Subtopic string                 `json:"subtopic,omitempty"`
 	Format   string                 `json:"format,omitempty"`
 	Level    uint64                 `json:"level,omitempty"`
@@ -202,7 +204,7 @@ type SDK interface {
 	Things(token string, pm PageMetadata) (ThingsPage, error)
 
 	// ThingsByProfile returns page of things assigned to the specified profile.
-	ThingsByProfile(profileID, token string, offset, limit uint64) (ThingsPage, error)
+	ThingsByProfile(profileID, token string, pm PageMetadata) (ThingsPage, error)
 
 	// Thing returns thing object by id.
 	Thing(id, token string) (Thing, error)
@@ -473,6 +475,12 @@ func (pm PageMetadata) query() (string, error) {
 	}
 	if pm.Format != "" {
 		q.Add("format", pm.Format)
+	}
+	if pm.Order != "" {
+		q.Add("order", pm.Order)
+	}
+	if pm.Dir != "" {
+		q.Add("dir", pm.Dir)
 	}
 	if pm.Metadata != nil {
 		md, err := json.Marshal(pm.Metadata)
