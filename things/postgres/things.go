@@ -188,7 +188,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	whereClause := buildWhereClause(giq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
@@ -232,7 +232,7 @@ func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	whereClause := buildWhereClause(nq, mq)
+	whereClause := dbutil.BuildWhereClause(nq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
@@ -319,21 +319,6 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 	}
 
 	return page, nil
-}
-
-func buildWhereClause(filters ...string) string {
-	var queryFilters []string
-	for _, filter := range filters {
-		if filter != "" {
-			queryFilters = append(queryFilters, filter)
-		}
-	}
-
-	if len(queryFilters) > 0 {
-		return fmt.Sprintf(" WHERE %s", strings.Join(queryFilters, " AND "))
-	}
-
-	return ""
 }
 
 type dbThing struct {

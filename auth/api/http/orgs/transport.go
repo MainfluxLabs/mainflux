@@ -125,32 +125,6 @@ func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listMembersByOrgReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, idKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
-	return req, nil
-}
-
 func decodeListOrgsByMember(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
 	if err != nil {

@@ -146,7 +146,7 @@ func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm things.PageM
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	whereClause := buildWhereClause(nq, mq)
+	whereClause := dbutil.BuildWhereClause(nq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
@@ -221,7 +221,7 @@ func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []s
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	whereClause := buildWhereClause(giq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 

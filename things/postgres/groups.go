@@ -212,7 +212,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
-	whereClause := buildWhereClause(iq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(iq, nq, mq)
 	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
@@ -234,7 +234,7 @@ func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	whereClause := buildWhereClause(nq, mq)
+	whereClause := dbutil.BuildWhereClause(nq, mq)
 	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
