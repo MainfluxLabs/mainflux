@@ -83,27 +83,6 @@ func (req listOrgsReq) validate() error {
 	return nil
 }
 
-type listOrgsByMemberReq struct {
-	token    string
-	id       string
-	name     string
-	offset   uint64
-	limit    uint64
-	metadata auth.OrgMetadata
-}
-
-func (req listOrgsByMemberReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
-	}
-
-	return nil
-}
-
 type orgReq struct {
 	token string
 	id    string
