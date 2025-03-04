@@ -69,14 +69,6 @@ func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) 
 	return orm.repo.RetrieveByID(ctx, id)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveByOwner)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return orm.repo.RetrieveByOwner(ctx, ownerID, pm)
-}
-
 func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAll)
 	defer span.Finish()

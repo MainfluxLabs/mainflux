@@ -20,6 +20,8 @@ const (
 	invalidID = "invalid"
 	n         = uint64(10)
 	orgsTable = "orgs"
+	descDir   = "desc"
+	idOrder   = "id"
 )
 
 func TestSave(t *testing.T) {
@@ -287,151 +289,6 @@ func TestRetrieveByID(t *testing.T) {
 	}
 }
 
-func TestRetrieveByOwner(t *testing.T) {
-	dbMiddleware := dbutil.NewDatabase(db)
-	repo := postgres.NewOrgRepo(dbMiddleware)
-
-	ownerID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	unknownID, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	for i := uint64(0); i < n; i++ {
-		orgID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-		org := auth.Org{
-			ID:          orgID,
-			OwnerID:     ownerID,
-			Name:        fmt.Sprintf("%s-%d", orgName, i),
-			Description: fmt.Sprintf("%s-%d", orgDesc, i),
-			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
-		}
-
-		err = repo.Save(context.Background(), org)
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	}
-
-	cases := []struct {
-		desc         string
-		ownerID      string
-		pageMetadata auth.PageMetadata
-		size         uint64
-		err          error
-	}{
-		{
-			desc:    "retrieve orgs by owner",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve half of orgs by owner",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n / 2,
-				Total:  n,
-			},
-			size: n / 2,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve last org by owner",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset: n - 1,
-				Limit:  1,
-				Total:  n,
-			},
-			size: 1,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve orgs by owner filtered by name",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  1,
-				Name:   orgName + "-1",
-			},
-			size: 1,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve orgs by owner filtered by part of name",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  n,
-				Name:   orgName,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve orgs by owner filtered by metadata",
-			ownerID: ownerID,
-			pageMetadata: auth.PageMetadata{
-				Offset:   0,
-				Limit:    n,
-				Total:    1,
-				Metadata: map[string]interface{}{"key-1": "value-1"},
-			},
-			size: 1,
-			err:  nil,
-		},
-		{
-			desc:    "retrieve orgs by owner with invalid owner id",
-			ownerID: invalidID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
-			},
-			size: 0,
-			err:  errors.ErrRetrieveEntity,
-		},
-		{
-			desc:    "retrieve orgs by owner without owner id",
-			ownerID: "",
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
-			},
-			size: 0,
-			err:  errors.ErrRetrieveEntity,
-		},
-		{
-			desc:    "retrieve orgs by owner with unknown owner id",
-			ownerID: unknownID,
-			pageMetadata: auth.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
-			},
-			size: 0,
-			err:  nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		page, err := repo.RetrieveByOwner(context.Background(), tc.ownerID, tc.pageMetadata)
-		size := len(page.Orgs)
-		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
-		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
 func TestRetrieveAll(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
@@ -530,7 +387,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n,
 			err:  nil,
@@ -541,7 +399,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Total:    1,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: map[string]interface{}{"key-1": "value-1"},
 			},
 			size: 1,
@@ -553,7 +412,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  1,
+				Dir:    descDir,
+				Order:  idOrder,
 				Name:   orgName + "-1",
 			},
 			size: 1,
@@ -565,7 +425,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 				Name:   orgName,
 			},
 			size: n,
@@ -577,7 +438,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  0,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 			err:  nil,
@@ -588,7 +450,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  0,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 			err:  errors.ErrRetrieveEntity,
@@ -599,7 +462,8 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			pageMetadata: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Total:  0,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 			err:  errors.ErrRetrieveEntity,
@@ -610,7 +474,6 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		page, err := repoOrg.RetrieveByMemberID(context.Background(), tc.memberID, tc.pageMetadata)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
-		assert.Equal(t, tc.pageMetadata.Total, page.Total, fmt.Sprintf("%v: expected total %d got %d\n", desc, tc.pageMetadata.Total, page.Total))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

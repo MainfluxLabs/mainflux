@@ -5,7 +5,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-const maxNameSize = 254
+const (
+	maxLimitSize = 100
+	maxNameSize  = 254
+	nameOrder    = "name"
+	idOrder      = "id"
+	ascDir       = "asc"
+	descDir      = "desc"
+)
 
 type createOrgsReq struct {
 	token       string
@@ -46,12 +53,8 @@ func (req updateOrgReq) validate() error {
 }
 
 type listOrgsReq struct {
-	token    string
-	id       string
-	name     string
-	offset   uint64
-	limit    uint64
-	metadata auth.OrgMetadata
+	token        string
+	pageMetadata auth.PageMetadata
 }
 
 func (req listOrgsReq) validate() error {
@@ -59,24 +62,22 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return nil
-}
-
-type listMembersByOrgReq struct {
-	token    string
-	id       string
-	offset   uint64
-	limit    uint64
-	metadata auth.OrgMetadata
-}
-
-func (req listMembersByOrgReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
 	}
 
-	if req.id == "" {
-		return apiutil.ErrMissingID
+	if len(req.pageMetadata.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	if req.pageMetadata.Order != "" &&
+		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.pageMetadata.Dir != "" &&
+		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		return apiutil.ErrInvalidDirection
 	}
 
 	return nil

@@ -468,7 +468,7 @@ func TestListMembers(t *testing.T) {
 			desc:   "list org members with invalid org id",
 			token:  token,
 			url:    fmt.Sprintf("%s/orgs/%s/members?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
-			status: http.StatusOK,
+			status: http.StatusNotFound,
 			res:    nil,
 		},
 		{

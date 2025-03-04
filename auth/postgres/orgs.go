@@ -9,6 +9,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -150,34 +151,6 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	return toOrg(dbo)
 }
 
-func (or orgRepository) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
-	if ownerID == "" {
-		return auth.OrgsPage{}, errors.ErrRetrieveEntity
-	}
-
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	ownq := "owner_id = :owner_id"
-	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
-	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	whereClause := dbutil.BuildWhereClause(ownq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
-	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
-
-	params := map[string]interface{}{
-		"owner_id": ownerID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"name":     name,
-		"metadata": m,
-	}
-
-	return or.retrieve(ctx, query, cquery, params)
-}
-
 func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -187,7 +160,7 @@ func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadat
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s %s;`, whereClause, olq)
+	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
 
 	params := map[string]interface{}{
@@ -234,8 +207,7 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
 	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
-		FROM member_relations mr, orgs o
-		%s ORDER BY id %s;`, whereClause, olq)
+				FROM member_relations mr, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations mr, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{

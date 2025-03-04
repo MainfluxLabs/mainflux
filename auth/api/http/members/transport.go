@@ -20,7 +20,6 @@ const (
 	offsetKey   = "offset"
 	limitKey    = "limit"
 	metadataKey = "metadata"
-	nameKey     = "name"
 	defOffset   = 0
 	defLimit    = 10
 	orgIDKey    = "orgID"

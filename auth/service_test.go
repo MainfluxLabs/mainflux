@@ -403,10 +403,8 @@ func TestListOrgs(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("org-%d", i)
-		description := fmt.Sprintf("description-%d", i)
-		org.Name = name
-		org.Description = description
+		org.Name = fmt.Sprintf("org-%d", i)
+		org.Description = fmt.Sprintf("description-%d", i)
 		_, err := svc.CreateOrg(context.Background(), ownerToken, org)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	}
@@ -1168,7 +1166,7 @@ func TestListMembersByOrg(t *testing.T) {
 			orgID: invalid,
 			meta:  auth.PageMetadata{},
 			size:  0,
-			err:   nil,
+			err:   errors.ErrNotFound,
 		},
 	}
 

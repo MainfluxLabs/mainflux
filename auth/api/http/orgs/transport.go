@@ -22,9 +22,10 @@ const (
 	limitKey    = "limit"
 	metadataKey = "metadata"
 	nameKey     = "name"
+	orderKey    = "order"
+	dirKey      = "dir"
 	defOffset   = 0
 	defLimit    = 10
-	orgIDKey    = "orgID"
 	idKey       = "id"
 )
 
@@ -68,13 +69,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/members/:id/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_orgs_by_member")(listOrgsByMemberEndpoint(svc)),
-		decodeListOrgsByMember,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
 		decodeBackup,
@@ -113,46 +107,26 @@ func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listOrgsReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, orgIDKey),
-		name:     n,
-		offset:   o,
-		limit:    l,
-		metadata: m,
-	}
-
-	return req, nil
-}
-
-func decodeListOrgsByMember(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	req := listOrgsByMemberReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, idKey),
-		name:     n,
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		token: apiutil.ExtractBearerToken(r),
+		pageMetadata: auth.PageMetadata{
+			Offset:   o,
+			Limit:    l,
+			Name:     n,
+			Order:    or,
+			Dir:      d,
+			Metadata: m,
+		},
 	}
 
 	return req, nil

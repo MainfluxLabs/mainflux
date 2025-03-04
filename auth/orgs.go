@@ -38,10 +38,12 @@ type Org struct {
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
 	Total    uint64
-	Offset   uint64
-	Limit    uint64
-	Name     string
-	Metadata OrgMetadata
+	Offset   uint64      `json:"offset,omitempty"`
+	Limit    uint64      `json:"limit,omitempty"`
+	Name     string      `json:"name,omitempty"`
+	Order    string      `json:"order,omitempty"`
+	Dir      string      `json:"dir,omitempty"`
+	Metadata OrgMetadata `json:"metadata,omitempty"`
 }
 
 // OrgsPage contains page related metadata as well as list of orgs that
@@ -77,9 +79,6 @@ type Orgs interface {
 	// ListOrgs retrieves orgs.
 	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
-	// ListOrgsByMember retrieves all orgs for member that is identified with memberID belongs to.
-	ListOrgsByMember(ctx context.Context, token, memberID string, pm PageMetadata) (OrgsPage, error)
-
 	// RemoveOrg removes the org identified with the provided ID.
 	RemoveOrg(ctx context.Context, token, id string) error
 
@@ -106,9 +105,6 @@ type OrgRepository interface {
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
-
-	// RetrieveByOwner retrieves orgs by owner.
-	RetrieveByOwner(ctx context.Context, ownerID string, pm PageMetadata) (OrgsPage, error)
 
 	// RetrieveAll retrieves all orgs.
 	RetrieveAll(ctx context.Context) ([]Org, error)
@@ -172,7 +168,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) 
 		return OrgsPage{}, err
 	}
 
-	return svc.orgs.RetrieveByOwner(ctx, user.ID, pm)
+	return svc.orgs.RetrieveByMemberID(ctx, user.ID, pm)
 }
 
 func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
@@ -225,23 +221,6 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	}
 
 	return org, nil
-}
-
-func (svc service) ListOrgsByMember(ctx context.Context, token string, memberID string, pm PageMetadata) (OrgsPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
-	}
-
-	user, err := svc.Identify(ctx, token)
-	if err != nil {
-		return OrgsPage{}, err
-	}
-
-	if user.ID != memberID {
-		return OrgsPage{}, errors.ErrAuthorization
-	}
-
-	return svc.orgs.RetrieveByMemberID(ctx, memberID, pm)
 }
 
 func (svc service) GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error) {

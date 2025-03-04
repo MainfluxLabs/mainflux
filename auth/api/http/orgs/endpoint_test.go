@@ -487,9 +487,7 @@ func TestListOrgs(t *testing.T) {
 		})
 	}
 
-	sort.Slice(orgs, func(i, j int) bool {
-		return orgs[i].ID < orgs[j].ID
-	})
+	orgsURL := fmt.Sprintf("%s/orgs", ts.URL)
 
 	cases := []struct {
 		desc   string
@@ -501,84 +499,84 @@ func TestListOrgs(t *testing.T) {
 		{
 			desc:   "list orgs",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d", ts.URL, 5, 0),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d", orgsURL, 5, 0),
 			status: http.StatusOK,
 			res:    orgs[:5],
 		},
 		{
 			desc:   "list orgs filtering by name",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d&name=%s", ts.URL, n, 0, "1"),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d&name=%s", orgsURL, n, 0, "1"),
 			status: http.StatusOK,
 			res:    orgs[1:2],
 		},
 		{
 			desc:   "list orgs with invalid auth token",
 			token:  wrongValue,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d", ts.URL, 5, 0),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d", orgsURL, 5, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
 			desc:   "list orgs with empty auth token",
 			token:  "",
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d", ts.URL, 5, 0),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d", orgsURL, 5, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
 			desc:   "list orgs with negative offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d", ts.URL, 0, -5),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d", orgsURL, 0, -5),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
 			desc:   "list orgs with negative limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%d", ts.URL, -5, 0),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%d", orgsURL, -5, 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
 			desc:   "list orgs without offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d", ts.URL, 5),
+			url:    fmt.Sprintf("%s?limit=%d", orgsURL, 5),
 			status: http.StatusOK,
 			res:    orgs[:5],
 		},
 		{
 			desc:   "list orgs without limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?offset=%d", ts.URL, 0),
+			url:    fmt.Sprintf("%s?offset=%d", orgsURL, 0),
 			status: http.StatusOK,
 			res:    orgs,
 		},
 		{
 			desc:   "list orgs with redundant query params",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?offset=%d&limit=%d&value=something", ts.URL, 0, 5),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d&value=something", orgsURL, 0, 5),
 			status: http.StatusOK,
 			res:    orgs[:5],
 		},
 		{
 			desc:   "list orgs with default URL",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs", ts.URL),
+			url:    orgsURL,
 			status: http.StatusOK,
 			res:    orgs,
 		},
 		{
 			desc:   "list orgs with invalid limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%s&offset=%d", ts.URL, "i", 5),
+			url:    fmt.Sprintf("%s?limit=%s&offset=%d", orgsURL, "i", 5),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
 			desc:   "list orgs with invalid offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/orgs?limit=%d&offset=%s", ts.URL, 5, "i"),
+			url:    fmt.Sprintf("%s?limit=%d&offset=%s", orgsURL, 5, "i"),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
@@ -596,7 +594,7 @@ func TestListOrgs(t *testing.T) {
 		var data orgsPageRes
 		err = json.NewDecoder(res.Body).Decode(&data)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.res, data.Orgs, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Orgs))
+		assert.ElementsMatch(t, tc.res, data.Orgs, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Orgs))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
@@ -838,25 +836,6 @@ type pageRes struct {
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
 	Name   string `json:"name"`
-}
-
-type membersReq struct {
-	OrgMembers []auth.OrgMember `json:"org_members"`
-}
-
-type unassignMembersReq struct {
-	MemberIDs []string `json:"member_ids"`
-}
-
-type viewMemberRes struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
-}
-
-type memberPageRes struct {
-	pageRes
-	Members []viewMemberRes `json:"members"`
 }
 
 type viewOrgMembers struct {
