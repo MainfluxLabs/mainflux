@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -184,7 +185,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 		items = filteredItems
 	}
 
-	items = sortItems(pm, items, func(i int) (string, string) {
+	items = mocks.SortItems(pm.Order, pm.Dir, items, func(i int) (string, string) {
 		return items[i].Name, items[i].ID
 	})
 

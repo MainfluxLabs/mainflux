@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -134,7 +135,7 @@ func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs [
 		items = filteredItems
 	}
 
-	items = sortItems(pm, items, func(i int) (string, string) {
+	items = mocks.SortItems(pm.Order, pm.Dir, items, func(i int) (string, string) {
 		return items[i].Name, items[i].ID
 	})
 
@@ -173,7 +174,7 @@ func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string
 	}
 
 	// Sort Things by Profile list
-	ths = sortItems(pm, ths, func(i int) (string, string) {
+	ths = mocks.SortItems(pm.Order, pm.Dir, ths, func(i int) (string, string) {
 		return ths[i].Name, ths[i].ID
 	})
 

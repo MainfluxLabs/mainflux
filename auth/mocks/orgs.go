@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
@@ -135,7 +136,7 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 		orgs = filteredItems
 	}
 
-	orgs = sortItems(pm, orgs, func(i int) (string, string) {
+	orgs = mocks.SortItems(pm.Order, pm.Dir, orgs, func(i int) (string, string) {
 		return orgs[i].Name, orgs[i].ID
 	})
 
@@ -193,31 +194,4 @@ func sortOrgsByID(orgs map[string]auth.Org) []string {
 	sort.Strings(keys)
 
 	return keys
-}
-
-func sortItems[T any](pm auth.PageMetadata, items []T, getFields func(i int) (string, string)) []T {
-	sort.SliceStable(items, sortByMeta(pm, getFields))
-	return items
-}
-
-func sortByMeta(pm auth.PageMetadata, getFields func(i int) (string, string)) func(i, j int) bool {
-	return func(i, j int) bool {
-		nameI, idI := getFields(i)
-		nameJ, idJ := getFields(j)
-
-		switch pm.Order {
-		case "name":
-			if pm.Dir == "asc" {
-				return nameI < nameJ
-			}
-			return nameI > nameJ
-		case "id":
-			if pm.Dir == "asc" {
-				return idI < idJ
-			}
-			return idI > idJ
-		default:
-			return idI < idJ
-		}
-	}
 }
