@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -107,7 +108,7 @@ func (ms *metricsMiddleware) ViewOrg(ctx context.Context, token, id string) (aut
 	return ms.svc.ViewOrg(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_orgs").Add(1)
 		ms.latency.With("method", "list_orgs").Observe(time.Since(begin).Seconds())
@@ -161,7 +162,7 @@ func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 	return ms.svc.ViewMember(ctx, token, orgID, memberID)
 }
 
-func (ms *metricsMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (ms *metricsMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_members_by_org").Add(1)
 		ms.latency.With("method", "list_members_by_org").Observe(time.Since(begin).Seconds())

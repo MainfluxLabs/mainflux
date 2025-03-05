@@ -5,7 +5,6 @@ package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -40,7 +39,7 @@ func (req *notifierReq) validate() error {
 type listNotifiersReq struct {
 	token        string
 	id           string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listNotifiersReq) validate() error {

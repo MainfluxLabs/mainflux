@@ -10,6 +10,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/metrics"
 )
@@ -41,7 +42,7 @@ func (ms *metricsMiddleware) CreateWebhooks(ctx context.Context, token string, w
 	return ms.svc.CreateWebhooks(ctx, token, webhooks...)
 }
 
-func (ms *metricsMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
+func (ms *metricsMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_webhooks_by_group").Add(1)
 		ms.latency.With("method", "list_webhooks_by_group").Observe(time.Since(begin).Seconds())

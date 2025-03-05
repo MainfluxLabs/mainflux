@@ -2,6 +2,8 @@ package webhooks
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 type Metadata map[string]interface{}
@@ -16,7 +18,7 @@ type Webhook struct {
 }
 
 type WebhooksPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	Webhooks []Webhook
 }
 
@@ -28,7 +30,7 @@ type WebhookRepository interface {
 
 	// RetrieveByGroupID retrieves webhooks related to
 	// a certain group identified by a given ID.
-	RetrieveByGroupID(ctx context.Context, groupID string, pm PageMetadata) (WebhooksPage, error)
+	RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
 	// RetrieveByID retrieves the webhook having the provided identifier
 	RetrieveByID(ctx context.Context, id string) (Webhook, error)

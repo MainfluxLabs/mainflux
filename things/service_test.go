@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -414,13 +415,13 @@ func TestListThings(t *testing.T) {
 
 	cases := map[string]struct {
 		token        string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list things as user from another group": {
 			token: otherToken,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  5,
 			},
@@ -429,7 +430,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things as admin": {
 			token: adminToken,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -438,7 +439,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things with no limit": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 			},
 			size: 0,
@@ -446,7 +447,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list half": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  n2,
 			},
@@ -455,7 +456,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list last thing": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 - 1,
 				Limit:  n2,
 			},
@@ -464,7 +465,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list empty set": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: uint64(n2) + 1,
 				Limit:  n2,
 			},
@@ -473,7 +474,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with wrong credentials": {
 			token: wrongValue,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -482,7 +483,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with existing name": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Name:   "test-1",
@@ -492,7 +493,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with non-existent name": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Name:   "wrong",
@@ -502,7 +503,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list with metadata": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset:   0,
 				Limit:    n2,
 				Metadata: metadata,
@@ -512,7 +513,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things sorted by name ascendant": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Order:  "name",
@@ -523,7 +524,7 @@ func TestListThings(t *testing.T) {
 		},
 		"list all things sorted by name descendent": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Order:  "name",
@@ -579,14 +580,14 @@ func TestListThingsByProfile(t *testing.T) {
 	cases := map[string]struct {
 		token        string
 		prID         string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list all things by existing profile": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -596,7 +597,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list all things by existing profile with no limit": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 			},
 			size: n,
@@ -605,7 +606,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list half of things by existing profile": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
 			},
@@ -615,7 +616,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list last thing by existing profile": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
 			},
@@ -625,7 +626,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list empty set of things by existing profile": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n + 1,
 				Limit:  n,
 			},
@@ -635,7 +636,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list things by existing profile with wrong credentials": {
 			token: wrongValue,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -645,7 +646,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list things by non-existent profile with wrong credentials": {
 			token: token,
 			prID:  "non-existent",
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -655,7 +656,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list all things by profile sorted by name ascendant": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -667,7 +668,7 @@ func TestListThingsByProfile(t *testing.T) {
 		"list all things by profile sorted by name descendent": {
 			token: token,
 			prID:  pr.ID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -737,14 +738,14 @@ func TestListThingsByOrg(t *testing.T) {
 	cases := map[string]struct {
 		token        string
 		orgID        string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list things by org as admin": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -754,7 +755,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list things by org as org owner": {
 			token: token,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -764,7 +765,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list things by org from groups the user belongs to": {
 			token: otherToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  5,
 			},
@@ -774,7 +775,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list all things by org with no limit": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 			},
 			size: 0,
@@ -783,7 +784,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list half of things by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  n2,
 			},
@@ -793,7 +794,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list last thing by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 - 1,
 				Limit:  n2,
 			},
@@ -803,7 +804,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list empty set of things by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 + 1,
 				Limit:  n2,
 			},
@@ -813,7 +814,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list things by org with wrong credentials": {
 			token: wrongValue,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -823,7 +824,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list things by non-existent org": {
 			token: adminToken,
 			orgID: "non-existent",
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -833,7 +834,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list all things by org sorted by name ascendant": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -845,7 +846,7 @@ func TestListThingsByOrg(t *testing.T) {
 		"list all things by org sorted by name descendent": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -1109,13 +1110,13 @@ func TestListProfiles(t *testing.T) {
 
 	cases := map[string]struct {
 		token        string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list profiles as user from another group": {
 			token: otherToken,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  5,
 			},
@@ -1124,7 +1125,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list all profiles as admin": {
 			token: adminToken,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -1133,7 +1134,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list all profiles with no limit": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 			},
 			size: 0,
@@ -1141,7 +1142,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list half": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  n2,
 			},
@@ -1150,7 +1151,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list last profile": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 - 1,
 				Limit:  n2,
 			},
@@ -1159,7 +1160,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list empty set": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: uint64(n2) + 1,
 				Limit:  n2,
 			},
@@ -1168,7 +1169,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list with wrong credentials": {
 			token: wrongValue,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -1177,7 +1178,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list with existing name": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Name:   "test-1",
@@ -1187,7 +1188,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list with non-existent name": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Name:   "wrong",
@@ -1197,7 +1198,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list all profiles with metadata": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset:   0,
 				Limit:    n2,
 				Metadata: metadata,
@@ -1207,7 +1208,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list all profiles sorted by name ascendant": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Order:  "name",
@@ -1218,7 +1219,7 @@ func TestListProfiles(t *testing.T) {
 		},
 		"list all profiles sorted by name descendent": {
 			token: token,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 				Order:  "name",
@@ -1278,14 +1279,14 @@ func TestListProfilesByOrg(t *testing.T) {
 	cases := map[string]struct {
 		token        string
 		orgID        string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"list profiles by org as admin": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -1295,7 +1296,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list profiles by org as org owner": {
 			token: token,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
 			},
@@ -1305,7 +1306,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list profiles by org from groups the user belongs to": {
 			token: otherToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  5,
 			},
@@ -1315,7 +1316,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list profiles by org with no limit": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 			},
 			size: 0,
@@ -1324,7 +1325,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list half of profiles by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n,
 				Limit:  n2,
 			},
@@ -1334,7 +1335,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list last profile by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 - 1,
 				Limit:  n2,
 			},
@@ -1344,7 +1345,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list empty set of profiles by org": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n2 + 1,
 				Limit:  n2,
 			},
@@ -1354,7 +1355,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list profiles by org with wrong credentials": {
 			token: wrongValue,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -1364,7 +1365,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list profiles by non-existent org": {
 			token: adminToken,
 			orgID: "non-existent",
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1374,7 +1375,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list all profiles by org sorted by name ascendant": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -1386,7 +1387,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		"list all profiles by org sorted by name descendent": {
 			token: adminToken,
 			orgID: orgID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  "name",
@@ -1773,7 +1774,7 @@ func TestRestore(t *testing.T) {
 	}
 }
 
-func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
+func testSortThings(t *testing.T, pm apiutil.PageMetadata, ths []things.Thing) {
 	switch pm.Order {
 	case "name":
 		current := ths[0]
@@ -1791,7 +1792,7 @@ func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
 	}
 }
 
-func testSortProfiles(t *testing.T, pm things.PageMetadata, prs []things.Profile) {
+func testSortProfiles(t *testing.T, pm apiutil.PageMetadata, prs []things.Profile) {
 	switch pm.Order {
 	case "name":
 		current := prs[0]

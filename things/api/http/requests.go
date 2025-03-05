@@ -292,7 +292,7 @@ func (req resourceReq) validate() error {
 
 type listResourcesReq struct {
 	token        string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req *listResourcesReq) validate() error {
@@ -324,7 +324,7 @@ func (req *listResourcesReq) validate() error {
 type listByIDReq struct {
 	token        string
 	id           string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listByIDReq) validate() error {

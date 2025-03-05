@@ -120,7 +120,7 @@ func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error)
 	req := listWebhooksReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, idKey),
-		pageMetadata: webhooks.PageMetadata{
+		pageMetadata: apiutil.PageMetadata{
 			Offset: o,
 			Limit:  l,
 			Order:  or,

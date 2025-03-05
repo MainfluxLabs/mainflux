@@ -1,7 +1,6 @@
 package orgs
 
 import (
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -54,7 +53,7 @@ func (req updateOrgReq) validate() error {
 
 type listOrgsReq struct {
 	token        string
-	pageMetadata auth.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listOrgsReq) validate() error {

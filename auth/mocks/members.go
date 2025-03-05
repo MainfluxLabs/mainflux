@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -99,7 +100,7 @@ func (mrm *membersRepositoryMock) RetrieveRole(ctx context.Context, memberID, or
 	return "", errors.ErrNotFound
 }
 
-func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -114,7 +115,7 @@ func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID str
 
 	return auth.OrgMembersPage{
 		OrgMembers: oms,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(mrm.membersByOrgID[orgID])),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

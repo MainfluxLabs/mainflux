@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -451,11 +452,11 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 	}{
 		"retrieve all things by group IDs": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -464,7 +465,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve all things by group IDs without limit": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 				Dir:   descDir,
 				Order: idOrder,
@@ -472,7 +473,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve subset of things by group IDs": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: offset,
 				Limit:  n,
 				Dir:    descDir,
@@ -481,7 +482,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: n - offset,
 		},
 		"retrieve things by group IDs with existing name": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Name:   "test-thing-101",
@@ -491,7 +492,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: 1,
 		},
 		"retrieve things by group IDs with non-existing name": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Name:   "wrong",
@@ -501,7 +502,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things by group IDs with existing metadata": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset:   0,
 				Limit:    n,
 				Metadata: metadata,
@@ -511,7 +512,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: metaNum,
 		},
 		"retrieve things by group IDs with non-existing metadata": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset:   0,
 				Limit:    n,
 				Metadata: wrongMeta,
@@ -521,7 +522,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: 0,
 		},
 		"retrieve things by group IDs sorted by name ascendant": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -530,7 +531,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve things by group IDs sorted by name descendent": {
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -665,13 +666,13 @@ func TestRetrieveByProfile(t *testing.T) {
 
 	cases := map[string]struct {
 		prID         string
-		pageMetadata things.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		"retrieve all things by profile": {
 			prID: prID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -682,7 +683,7 @@ func TestRetrieveByProfile(t *testing.T) {
 
 		"retrieve all things by profile without limit": {
 			prID: prID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Limit: 0,
 				Dir:   descDir,
 				Order: idOrder,
@@ -691,7 +692,7 @@ func TestRetrieveByProfile(t *testing.T) {
 		},
 		"retrieve subset of things by profile": {
 			prID: prID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
 				Dir:    descDir,
@@ -701,7 +702,7 @@ func TestRetrieveByProfile(t *testing.T) {
 		},
 		"retrieve things by non-existing profile": {
 			prID: nonexistentProfileID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -711,7 +712,7 @@ func TestRetrieveByProfile(t *testing.T) {
 		},
 		"retrieve things with malformed UUID": {
 			prID: "wrong",
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -720,7 +721,7 @@ func TestRetrieveByProfile(t *testing.T) {
 		},
 		"retrieve all things by profile sorted by name ascendant": {
 			prID: prID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -730,7 +731,7 @@ func TestRetrieveByProfile(t *testing.T) {
 		},
 		"retrieve all things by profile sorted by name descendent": {
 			prID: prID,
-			pageMetadata: things.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -800,7 +801,7 @@ func TestRemoveThing(t *testing.T) {
 	}
 }
 
-func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
+func testSortThings(t *testing.T, pm apiutil.PageMetadata, ths []things.Thing) {
 	if len(ths) < 1 {
 		return
 	}

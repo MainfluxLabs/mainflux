@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
 const (
@@ -94,7 +93,7 @@ func (req *webhookReq) validate() error {
 type listWebhooksReq struct {
 	token        string
 	id           string
-	pageMetadata webhooks.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listWebhooksReq) validate() error {

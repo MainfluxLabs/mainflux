@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -20,7 +21,7 @@ type Service interface {
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group identified by the provided ID.
-	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (things.NotifiersPage, error)
+	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error)
 
 	// ViewNotifier retrieves data about the notifier identified with the provided ID
 	ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error)
@@ -129,7 +130,7 @@ func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.
 	return nfs[0], nil
 }
 
-func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (things.NotifiersPage, error) {
+func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error) {
 	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return things.NotifiersPage{}, err

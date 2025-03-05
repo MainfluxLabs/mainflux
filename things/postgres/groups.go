@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -200,7 +201,7 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	return toGroup(dbu)
 }
 
-func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	if len(groupIDs) == 0 {
 		return things.GroupPage{}, nil
 	}
@@ -226,7 +227,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	return gr.retrieve(ctx, query, cquery, params)
 }
 
-func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
@@ -294,7 +295,7 @@ func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, pa
 
 	page := things.GroupPage{
 		Groups: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: params["offset"].(uint64),
 			Limit:  params["limit"].(uint64),

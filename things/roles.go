@@ -3,6 +3,7 @@ package things
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -15,7 +16,7 @@ type GroupMember struct {
 }
 
 type GroupMembersPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	GroupMembers []GroupMember
 }
 
@@ -27,7 +28,7 @@ type RolesRepository interface {
 	RetrieveRole(ctc context.Context, gp GroupMember) (string, error)
 
 	// RetrieveRolesByGroup retrieves page of group roles by groupID.
-	RetrieveRolesByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupMembersPage, error)
+	RetrieveRolesByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
 	// RetrieveAllRolesByGroup retrieves all group roles by group ID. This is used for backup.
 	RetrieveAllRolesByGroup(ctx context.Context) ([]GroupMember, error)
@@ -47,7 +48,7 @@ type Roles interface {
 	CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
 
 	// ListRolesByGroup retrieves a page of roles for a group that is identified by the provided ID.
-	ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error)
+	ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
 	// UpdateRolesByGroup updates roles of the group identified by the provided ID.
 	UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
@@ -79,7 +80,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 	return nil
 }
 
-func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembersPage, error) {
+func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -131,7 +132,7 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 
 	page := GroupMembersPage{
 		GroupMembers: gms,
-		PageMetadata: PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  gpp.Total,
 			Offset: gpp.Offset,
 			Limit:  gpp.Limit,

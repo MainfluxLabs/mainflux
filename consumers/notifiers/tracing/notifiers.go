@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
 )
@@ -37,7 +38,7 @@ func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...things.No
 	return n.repo.Save(ctx, nfs...)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm things.PageMetadata) (things.NotifiersPage, error) {
+func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error) {
 	span := createSpan(ctx, n.tracer, "retrieve_by_group_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

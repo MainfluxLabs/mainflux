@@ -80,7 +80,7 @@ func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...things.Notifie
 	return nfs, nil
 }
 
-func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm things.PageMetadata) (res things.NotifiersPage, err error) {
+func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm apiutil.PageMetadata) (res things.NotifiersPage, err error) {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 	var items []things.Notifier
@@ -99,7 +99,7 @@ func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID 
 
 	return things.NotifiersPage{
 		Notifiers: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(items)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

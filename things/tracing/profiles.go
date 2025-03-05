@@ -6,6 +6,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
 )
@@ -66,7 +67,7 @@ func (crm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id stri
 	return crm.repo.RetrieveByID(ctx, id)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	span := createSpan(ctx, crm.tracer, retrieveProfilesByGroupIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -98,7 +99,7 @@ func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]thing
 	return crm.repo.RetrieveAll(ctx)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (crm profileRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllProfilesOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

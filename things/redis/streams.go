@@ -6,6 +6,7 @@ package redis
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
 )
@@ -78,7 +79,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 }
 
 func (es eventStore) UpdateThings(ctx context.Context, token string, things ...things.Thing) error {
-	return es.svc.UpdateThings(ctx, token, things...);
+	return es.svc.UpdateThings(ctx, token, things...)
 }
 
 // UpdateKey doesn't send event because key shouldn't be sent over stream.
@@ -96,15 +97,15 @@ func (es eventStore) ViewMetadataByKey(ctx context.Context, thingKey string) (th
 	return es.svc.ViewMetadataByKey(ctx, thingKey)
 }
 
-func (es eventStore) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (es eventStore) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThings(ctx, token, pm)
 }
 
-func (es eventStore) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (es eventStore) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
-func (es eventStore) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (es eventStore) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByOrg(ctx, token, orgID, pm)
 }
 
@@ -184,11 +185,11 @@ func (es eventStore) ViewProfile(ctx context.Context, token, id string) (things.
 	return es.svc.ViewProfile(ctx, token, id)
 }
 
-func (es eventStore) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (es eventStore) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfiles(ctx, token, pm)
 }
 
-func (es eventStore) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (es eventStore) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfilesByOrg(ctx, token, orgID, pm)
 }
 
@@ -249,11 +250,11 @@ func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (s
 	return es.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
-func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
@@ -261,11 +262,11 @@ func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...thin
 	return es.svc.CreateGroups(ctx, token, grs...)
 }
 
-func (es eventStore) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+func (es eventStore) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	return es.svc.ListGroups(ctx, token, pm)
 }
 
-func (es eventStore) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (es eventStore) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	return es.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
@@ -297,7 +298,7 @@ func (es eventStore) CreateRolesByGroup(ctx context.Context, token string, gms .
 	return es.svc.CreateRolesByGroup(ctx, token, gms...)
 }
 
-func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
+func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	return es.svc.ListRolesByGroup(ctx, token, groupID, pm)
 }
 

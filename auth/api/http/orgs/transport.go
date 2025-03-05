@@ -119,7 +119,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req := listOrgsReq{
 		token: apiutil.ExtractBearerToken(r),
-		pageMetadata: auth.PageMetadata{
+		pageMetadata: apiutil.PageMetadata{
 			Offset:   o,
 			Limit:    l,
 			Name:     n,

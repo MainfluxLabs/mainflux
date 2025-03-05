@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -82,7 +83,7 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pm := auth.PageMetadata{
+		pm := apiutil.PageMetadata{
 			Offset:   req.offset,
 			Limit:    req.limit,
 			Metadata: req.metadata,

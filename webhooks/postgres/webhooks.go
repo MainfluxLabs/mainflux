@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -66,7 +67,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	return whs, nil
 }
 
-func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -111,7 +112,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 
 	page := webhooks.WebhooksPage{
 		Webhooks: items,
-		PageMetadata: webhooks.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

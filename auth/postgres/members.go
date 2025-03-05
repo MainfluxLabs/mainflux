@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -31,7 +32,7 @@ func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
 	}
 }
 
-func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
 	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
@@ -76,7 +77,7 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 
 	page := auth.OrgMembersPage{
 		OrgMembers: oms,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -257,7 +258,7 @@ type dbOrgMemberPage struct {
 	Offset   uint64        `db:"offset"`
 }
 
-func toDBOrgMemberPage(memberID, orgID string, pm auth.PageMetadata) (dbOrgMemberPage, error) {
+func toDBOrgMemberPage(memberID, orgID string, pm apiutil.PageMetadata) (dbOrgMemberPage, error) {
 	return dbOrgMemberPage{
 		OrgID:    orgID,
 		MemberID: memberID,

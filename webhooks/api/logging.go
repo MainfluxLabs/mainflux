@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -40,7 +41,7 @@ func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, w
 	return lm.svc.CreateWebhooks(ctx, token, webhooks...)
 }
 
-func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm webhooks.PageMetadata) (response webhooks.WebhooksPage, err error) {
+func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (response webhooks.WebhooksPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_webhooks_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

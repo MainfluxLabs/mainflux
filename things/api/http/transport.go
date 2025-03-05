@@ -462,7 +462,7 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 
 	req := listResourcesReq{
 		token: apiutil.ExtractBearerToken(r),
-		pageMetadata: things.PageMetadata{
+		pageMetadata: apiutil.PageMetadata{
 			Offset:   o,
 			Limit:    l,
 			Name:     n,
@@ -518,7 +518,7 @@ func decodeListByID(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listByIDReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, idKey),
-		pageMetadata: things.PageMetadata{
+		pageMetadata: apiutil.PageMetadata{
 			Offset:   o,
 			Limit:    l,
 			Name:     n,

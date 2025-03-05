@@ -14,7 +14,6 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -122,7 +121,7 @@ func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error
 	req := listNotifiersReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, idKey),
-		pageMetadata: things.PageMetadata{
+		pageMetadata: apiutil.PageMetadata{
 			Offset: o,
 			Limit:  l,
 			Order:  or,

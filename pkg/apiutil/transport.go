@@ -15,6 +15,17 @@ import (
 	"github.com/go-zoo/bone"
 )
 
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64
+	Offset   uint64                 `json:"offset,omitempty"`
+	Limit    uint64                 `json:"limit,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
 func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp.ErrorEncoder {
 	return func(ctx context.Context, err error, w http.ResponseWriter) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -377,14 +378,14 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 	cases := []struct {
 		desc         string
 		memberID     string
-		pageMetadata auth.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		{
 			desc:     "retrieve orgs by member",
 			memberID: memberID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -396,7 +397,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filtered by metadata",
 			memberID: memberID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset:   0,
 				Limit:    n,
 				Dir:      descDir,
@@ -409,7 +410,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filter by name",
 			memberID: memberID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -422,7 +423,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filter by part of the name",
 			memberID: memberID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -435,7 +436,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member with unknown member id",
 			memberID: unknownID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -447,7 +448,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member with invalid member id",
 			memberID: invalidID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -459,7 +460,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member without member id",
 			memberID: "",
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -77,7 +78,7 @@ func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org,
 	return orm.repo.RetrieveAll(ctx)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -85,7 +86,7 @@ func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm auth.
 	return orm.repo.RetrieveByAdmin(ctx, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByMemberID(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveOrgsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

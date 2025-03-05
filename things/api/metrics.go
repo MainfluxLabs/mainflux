@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
@@ -84,7 +85,7 @@ func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, thingKey str
 	return ms.svc.ViewMetadataByKey(ctx, thingKey)
 }
 
-func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things").Add(1)
 		ms.latency.With("method", "list_things").Observe(time.Since(begin).Seconds())
@@ -93,7 +94,7 @@ func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm th
 	return ms.svc.ListThings(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_profile").Add(1)
 		ms.latency.With("method", "list_things_by_profile").Observe(time.Since(begin).Seconds())
@@ -102,7 +103,7 @@ func (ms *metricsMiddleware) ListThingsByProfile(ctx context.Context, token, prI
 	return ms.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
-func (ms *metricsMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (ms *metricsMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_org").Add(1)
 		ms.latency.With("method", "list_things_by_org").Observe(time.Since(begin).Seconds())
@@ -147,7 +148,7 @@ func (ms *metricsMiddleware) ViewProfile(ctx context.Context, token, id string) 
 	return ms.svc.ViewProfile(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (ms *metricsMiddleware) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_profiles").Add(1)
 		ms.latency.With("method", "list_profiles").Observe(time.Since(begin).Seconds())
@@ -156,7 +157,7 @@ func (ms *metricsMiddleware) ListProfiles(ctx context.Context, token string, pm 
 	return ms.svc.ListProfiles(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (ms *metricsMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_profiles_by_org").Add(1)
 		ms.latency.With("method", "list_profiles_by_org").Observe(time.Since(begin).Seconds())
@@ -299,7 +300,7 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (t
 	return ms.svc.ViewGroup(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_groups").Add(1)
 		ms.latency.With("method", "list_groups").Observe(time.Since(begin).Seconds())
@@ -308,7 +309,7 @@ func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm th
 	return ms.svc.ListGroups(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (ms *metricsMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_groups_by_org").Add(1)
 		ms.latency.With("method", "list_groups_by_org").Observe(time.Since(begin).Seconds())
@@ -326,7 +327,7 @@ func (ms *metricsMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []str
 	return ms.svc.ListGroupsByIDs(ctx, groupIDs)
 }
 
-func (ms *metricsMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (tp things.ThingsPage, err error) {
+func (ms *metricsMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (tp things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_group").Add(1)
 		ms.latency.With("method", "list_things_by_group").Observe(time.Since(begin).Seconds())
@@ -353,7 +354,7 @@ func (ms *metricsMiddleware) RemoveGroups(ctx context.Context, token string, ids
 	return ms.svc.RemoveGroups(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (ms *metricsMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_profiles_by_group").Add(1)
 		ms.latency.With("method", "list_profiles_by_group").Observe(time.Since(begin).Seconds())
@@ -380,7 +381,7 @@ func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token strin
 	return ms.svc.CreateRolesByGroup(ctx, token, gms...)
 }
 
-func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
+func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_roles_by_group").Add(1)
 		ms.latency.With("method", "list_roles_by_group").Observe(time.Since(begin).Seconds())

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -195,14 +196,14 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 	cases := []struct {
 		desc     string
 		groupID  string
-		pageMeta things.PageMetadata
+		pageMeta apiutil.PageMetadata
 		size     uint64
 		err      error
 	}{
 		{
 			desc:    "retrieve group roles",
 			groupID: group.ID,
-			pageMeta: things.PageMetadata{
+			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  5,
 				Total:  n,
@@ -213,7 +214,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 		{
 			desc:    "retrieve last group role",
 			groupID: group.ID,
-			pageMeta: things.PageMetadata{
+			pageMeta: apiutil.PageMetadata{
 				Offset: n - 1,
 				Limit:  1,
 				Total:  n,
@@ -224,7 +225,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 		{
 			desc:    "retrieve group roles with invalid group id",
 			groupID: invalidID,
-			pageMeta: things.PageMetadata{
+			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -234,7 +235,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 		{
 			desc:    "retrieve group roles without group id",
 			groupID: "",
-			pageMeta: things.PageMetadata{
+			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,

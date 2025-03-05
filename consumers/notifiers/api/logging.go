@@ -12,6 +12,7 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -40,7 +41,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, 
 	return lm.svc.CreateNotifiers(ctx, token, notifiers...)
 }
 
-func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm things.PageMetadata) (res things.NotifiersPage, err error) {
+func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res things.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

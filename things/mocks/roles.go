@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -46,7 +47,7 @@ func (mrm *rolesRepositoryMock) RetrieveRole(_ context.Context, gm things.GroupM
 	return "", errors.ErrNotFound
 }
 
-func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(_ context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
+func (mrm *rolesRepositoryMock) RetrieveRolesByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	panic("not implemented")
 }
 
