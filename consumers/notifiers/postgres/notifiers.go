@@ -19,11 +19,11 @@ import (
 var _ notifiers.NotifierRepository = (*notifierRepository)(nil)
 
 type notifierRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewNotifierRepository instantiates a PostgreSQL implementation of notifier repository.
-func NewNotifierRepository(db Database) notifiers.NotifierRepository {
+func NewNotifierRepository(db dbutil.Database) notifiers.NotifierRepository {
 	return &notifierRepository{
 		db: db,
 	}

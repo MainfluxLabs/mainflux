@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/jackc/pgerrcode"
@@ -13,11 +14,11 @@ import (
 var _ things.RolesRepository = (*rolesRepository)(nil)
 
 type rolesRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewRolesRepository instantiates a PostgreSQL implementation of roles repository.
-func NewRolesRepository(db Database) things.RolesRepository {
+func NewRolesRepository(db dbutil.Database) things.RolesRepository {
 	return &rolesRepository{
 		db: db,
 	}
@@ -101,7 +102,7 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 
 	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
 
-	total, err := total(ctx, pr.db, cq, params)
+	total, err := dbutil.Total(ctx, pr.db, cq, params)
 	if err != nil {
 		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

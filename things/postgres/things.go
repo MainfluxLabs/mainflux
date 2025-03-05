@@ -21,12 +21,12 @@ import (
 var _ things.ThingRepository = (*thingRepository)(nil)
 
 type thingRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewThingRepository instantiates a PostgreSQL implementation of thing
 // repository.
-func NewThingRepository(db Database) things.ThingRepository {
+func NewThingRepository(db dbutil.Database) things.ThingRepository {
 	return &thingRepository{
 		db: db,
 	}
@@ -304,7 +304,7 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 		items = append(items, th)
 	}
 
-	total, err := total(ctx, tr.db, cquery, params)
+	total, err := dbutil.Total(ctx, tr.db, cquery, params)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

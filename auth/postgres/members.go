@@ -19,13 +19,13 @@ import (
 var _ auth.MembersRepository = (*membersRepository)(nil)
 
 type membersRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 var membersIDFkey = "member_relations_org_id_fkey"
 
 // NewMembersRepo instantiates a PostgreSQL implementation of members repository.
-func NewMembersRepo(db Database) auth.MembersRepository {
+func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
 	return &membersRepository{
 		db: db,
 	}
@@ -69,7 +69,7 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, member_relations ore
 					   WHERE ore.org_id = :org_id AND ore.org_id = o.id %s;`, mq)
 
-	total, err := total(ctx, or.db, cq, dbmp)
+	total, err := dbutil.Total(ctx, or.db, cq, dbmp)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}

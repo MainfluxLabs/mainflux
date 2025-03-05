@@ -11,8 +11,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/ulid"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
@@ -22,13 +22,12 @@ import (
 const email = "user-save@example.com"
 
 var (
-	expTime      = time.Now().Add(5 * time.Minute)
-	idProvider   = uuid.New()
-	ulidProvider = ulid.New()
+	expTime    = time.Now().Add(5 * time.Minute)
+	idProvider = uuid.New()
 )
 
 func TestKeySave(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.New(dbMiddleware)
 
 	id, err := idProvider.ID()
@@ -70,7 +69,7 @@ func TestKeySave(t *testing.T) {
 }
 
 func TestKeyRetrieve(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.New(dbMiddleware)
 
 	id, err := idProvider.ID()
@@ -118,7 +117,7 @@ func TestKeyRetrieve(t *testing.T) {
 }
 
 func TestKeyRemove(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.New(dbMiddleware)
 
 	id, err := idProvider.ID()

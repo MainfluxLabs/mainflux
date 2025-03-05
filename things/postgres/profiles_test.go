@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -18,7 +19,7 @@ import (
 const prefixID = "fe6b4e92-cc98-425e-b0aa-"
 
 func TestSaveProfiles(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	group := createGroup(t, dbMiddleware)
@@ -77,7 +78,7 @@ func TestSaveProfiles(t *testing.T) {
 }
 
 func TestUpdateProfile(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	group := createGroup(t, dbMiddleware)
@@ -123,7 +124,7 @@ func TestUpdateProfile(t *testing.T) {
 }
 
 func TestRetrieveProfileByID(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 
@@ -182,7 +183,7 @@ func TestRetrieveProfileByID(t *testing.T) {
 }
 
 func TestRetrieveProfilesByGroupIDs(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	metadata := things.Metadata{
@@ -316,7 +317,7 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 }
 
 func TestRetrieveProfileByThing(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -381,7 +382,7 @@ func TestRetrieveProfileByThing(t *testing.T) {
 }
 
 func TestRemoveProfile(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -440,7 +441,7 @@ func TestRemoveProfile(t *testing.T) {
 }
 
 func TestRetrieveAllProfiles(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ const (
 )
 
 func TestAssignMembers(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
@@ -122,7 +123,7 @@ func TestAssignMembers(t *testing.T) {
 }
 
 func TestUnassignMembers(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
@@ -215,7 +216,7 @@ func TestUnassignMembers(t *testing.T) {
 }
 
 func TestRetrieveRole(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
@@ -298,7 +299,7 @@ func TestRetrieveRole(t *testing.T) {
 }
 
 func TestUpdateMembers(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
@@ -416,7 +417,7 @@ func TestUpdateMembers(t *testing.T) {
 }
 
 func TestRetrieveMembersByOrg(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 
@@ -518,7 +519,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 }
 
 func TestRetrieveAllMembersByOrg(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 

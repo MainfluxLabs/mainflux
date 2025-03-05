@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,7 @@ const (
 )
 
 func TestSave(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	id, err := idProvider.ID()
@@ -90,7 +91,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -160,7 +161,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -232,7 +233,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestRetrieveByID(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -287,7 +288,7 @@ func TestRetrieveByID(t *testing.T) {
 }
 
 func TestRetrieveByOwner(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
@@ -432,7 +433,7 @@ func TestRetrieveByOwner(t *testing.T) {
 }
 
 func TestRetrieveAll(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", orgsTable))
@@ -478,7 +479,7 @@ func TestRetrieveAll(t *testing.T) {
 }
 
 func TestRetrieveOrgsByMember(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewMembersRepo(dbMiddleware)
 

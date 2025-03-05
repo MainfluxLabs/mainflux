@@ -18,11 +18,11 @@ import (
 var _ webhooks.WebhookRepository = (*webhookRepository)(nil)
 
 type webhookRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewWebhookRepository instantiates a PostgreSQL implementation of webhook repository.
-func NewWebhookRepository(db Database) webhooks.WebhookRepository {
+func NewWebhookRepository(db dbutil.Database) webhooks.WebhookRepository {
 	return &webhookRepository{
 		db: db,
 	}

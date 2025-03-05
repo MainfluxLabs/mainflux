@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestSaveRolesByGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
@@ -102,7 +103,7 @@ func TestSaveRolesByGroup(t *testing.T) {
 }
 
 func TestRetrieveRole(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
@@ -166,7 +167,7 @@ func TestRetrieveRole(t *testing.T) {
 }
 
 func TestRetrieveRolesByGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
@@ -253,7 +254,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 }
 
 func TestRemoveRolesByGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 
@@ -316,7 +317,7 @@ func TestRemoveRolesByGroup(t *testing.T) {
 }
 
 func TestUpdateRolesByGroup(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
 

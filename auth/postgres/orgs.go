@@ -21,12 +21,12 @@ import (
 var _ auth.OrgRepository = (*orgRepository)(nil)
 
 type orgRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewOrgRepo instantiates a PostgreSQL implementation of org
 // repository.
-func NewOrgRepo(db Database) auth.OrgRepository {
+func NewOrgRepo(db dbutil.Database) auth.OrgRepository {
 	return &orgRepository{
 		db: db,
 	}
@@ -271,7 +271,7 @@ func (or orgRepository) retrieve(ctx context.Context, query, cquery string, para
 		items = append(items, or)
 	}
 
-	total, err := total(ctx, or.db, cquery, params)
+	total, err := dbutil.Total(ctx, or.db, cquery, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -320,21 +320,6 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 		UpdatedAt:   dbo.UpdatedAt,
 		CreatedAt:   dbo.CreatedAt,
 	}, nil
-}
-
-func total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
-	rows, err := db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-	return total, nil
 }
 
 // dbOrgMetadata type for handling metadata properly in database/sql

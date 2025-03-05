@@ -20,12 +20,12 @@ import (
 var _ things.GroupRepository = (*groupRepository)(nil)
 
 type groupRepository struct {
-	db Database
+	db dbutil.Database
 }
 
 // NewGroupRepository instantiates a PostgreSQL implementation of group
 // repository.
-func NewGroupRepository(db Database) things.GroupRepository {
+func NewGroupRepository(db dbutil.Database) things.GroupRepository {
 	return &groupRepository{
 		db: db,
 	}
@@ -287,7 +287,7 @@ func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, pa
 		items = append(items, gr)
 	}
 
-	total, err := total(ctx, gr.db, cquery, params)
+	total, err := dbutil.Total(ctx, gr.db, cquery, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

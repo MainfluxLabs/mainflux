@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -32,7 +33,7 @@ var (
 )
 
 func TestSaveThings(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -116,7 +117,7 @@ func TestSaveThings(t *testing.T) {
 }
 
 func TestUpdateThing(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -207,7 +208,7 @@ func TestUpdateThing(t *testing.T) {
 
 func TestUpdateKey(t *testing.T) {
 	newKey := "new-key"
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -286,7 +287,7 @@ func TestUpdateKey(t *testing.T) {
 }
 
 func TestRetrieveThingByID(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -343,7 +344,7 @@ func TestRetrieveThingByID(t *testing.T) {
 }
 
 func TestRetrieveByKey(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -397,7 +398,7 @@ func TestRetrieveByKey(t *testing.T) {
 }
 
 func TestRetrieveThingsByGroupIDs(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
@@ -551,7 +552,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 }
 
 func TestRetrieveAllThings(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
@@ -621,7 +622,7 @@ func TestRetrieveAllThings(t *testing.T) {
 }
 
 func TestRetrieveByProfile(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -751,7 +752,7 @@ func TestRetrieveByProfile(t *testing.T) {
 }
 
 func TestRemoveThing(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -821,7 +822,7 @@ func testSortThings(t *testing.T, pm things.PageMetadata, ths []things.Thing) {
 	}
 }
 
-func cleanTestTable(ctx context.Context, table string, db postgres.Database) error {
+func cleanTestTable(ctx context.Context, table string, db dbutil.Database) error {
 	q := fmt.Sprintf(`DELETE FROM %s CASCADE;`, table)
 	_, err := db.NamedExecContext(ctx, q, map[string]interface{}{})
 	return err

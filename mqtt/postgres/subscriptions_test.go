@@ -7,6 +7,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,7 @@ const (
 )
 
 func TestSave(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRepository(dbMiddleware)
 
 	grID, err := idProvider.ID()
@@ -76,7 +77,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRepository(dbMiddleware)
 
 	grID, err := idProvider.ID()
@@ -128,7 +129,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 	_, err := db.Exec("DELETE FROM subscriptions")
 	require.Nil(t, err, fmt.Sprintf("cleanup must not fail: %s", err))
 
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRepository(dbMiddleware)
 
 	var subs []mqtt.Subscription

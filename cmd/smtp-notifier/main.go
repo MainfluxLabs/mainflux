@@ -22,6 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
@@ -243,7 +244,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient) notifiers.Service {
 	idp := uuid.New()
-	database := postgres.NewDatabase(db)
+	database := dbutil.NewDatabase(db)
 
 	agent, err := email.New(&c.emailConf)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ const (
 )
 
 func TestSaveRole(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
 	userID, err := idProvider.ID()
@@ -75,7 +76,7 @@ func TestSaveRole(t *testing.T) {
 }
 
 func TestRetrieve(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
 	userID, err := idProvider.ID()
@@ -120,7 +121,7 @@ func TestRetrieve(t *testing.T) {
 }
 
 func TestUpdateRole(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
 	userID, err := idProvider.ID()
@@ -168,7 +169,7 @@ func TestUpdateRole(t *testing.T) {
 }
 
 func TestDeleteRole(t *testing.T) {
-	dbMiddleware := postgres.NewDatabase(db)
+	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
 	userID, err := idProvider.ID()
