@@ -5,8 +5,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-const maxNameSize = 254
-
 type listMembersByOrgReq struct {
 	token    string
 	id       string
@@ -90,23 +88,6 @@ func (req unassignMembersReq) validate() error {
 
 	if len(req.MemberIDs) == 0 {
 		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type orgReq struct {
-	token string
-	id    string
-}
-
-func (req orgReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
 	}
 
 	return nil

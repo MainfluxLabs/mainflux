@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -105,7 +106,7 @@ func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 		items = filteredItems
 	}
 
-	items = sortItems(pm, items, func(i int) (string, string) {
+	items = mocks.SortItems(pm.Order, pm.Dir, items, func(i int) (string, string) {
 		return items[i].Name, items[i].ID
 	})
 

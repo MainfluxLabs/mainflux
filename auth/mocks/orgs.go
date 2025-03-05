@@ -8,14 +8,16 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 
 type orgRepositoryMock struct {
-	mu         sync.Mutex
-	orgs       map[string]auth.Org
-	members    auth.MembersRepository
+	mu      sync.Mutex
+	orgs    map[string]auth.Org
+	members auth.MembersRepository
 }
 
 // NewOrgRepository returns mock of org repository
@@ -110,13 +112,33 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 
 	members, _ := orm.members.RetrieveAll(ctx)
 	orgs := []auth.Org{}
-	for _, m := range members[pm.Offset:pm.Offset+pm.Limit] {
-		if m.MemberID == memberID {
-			if strings.Contains(orm.orgs[m.OrgID].Name, pm.Name) {
-				orgs = append(orgs, orm.orgs[m.OrgID])
+
+	first := uint64(pm.Offset) + 1
+	last := first + pm.Limit
+	for _, m := range members {
+		for _, o := range orm.orgs {
+			if m.MemberID == memberID && m.OrgID == o.ID {
+				id := uuid.ParseID(o.ID)
+				if id >= first && id < last {
+					orgs = append(orgs, orm.orgs[m.OrgID])
+				}
 			}
 		}
 	}
+
+	if pm.Name != "" {
+		var filteredItems []auth.Org
+		for _, o := range orgs {
+			if strings.Contains(o.Name, pm.Name) {
+				filteredItems = append(filteredItems, o)
+			}
+		}
+		orgs = filteredItems
+	}
+
+	orgs = mocks.SortItems(pm.Order, pm.Dir, orgs, func(i int) (string, string) {
+		return orgs[i].Name, orgs[i].ID
+	})
 
 	return auth.OrgsPage{
 		Orgs: orgs,
@@ -147,7 +169,7 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 	keys := sortOrgsByID(orm.orgs)
 
 	orgs := make([]auth.Org, 0)
-	for _, k := range keys[pm.Offset:pm.Offset+pm.Limit] {
+	for _, k := range keys[pm.Offset : pm.Offset+pm.Limit] {
 		// filter by name
 		if strings.Contains(orm.orgs[k].Name, pm.Name) {
 			orgs = append(orgs, orm.orgs[k])

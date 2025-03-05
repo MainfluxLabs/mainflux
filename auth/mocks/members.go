@@ -11,15 +11,15 @@ import (
 var _ auth.MembersRepository = (*membersRepositoryMock)(nil)
 
 type membersRepositoryMock struct {
-	mu          sync.Mutex
-	members        map[string]auth.OrgMember
+	mu             sync.Mutex
+	members        map[string][]auth.OrgMember
 	membersByOrgID map[string][]auth.OrgMember
 }
 
 // NewMembersRepository returns mock of org repository
 func NewMembersRepository() auth.MembersRepository {
 	return &membersRepositoryMock{
-		members: make(map[string]auth.OrgMember),
+		members:        make(map[string][]auth.OrgMember),
 		membersByOrgID: make(map[string][]auth.OrgMember),
 	}
 }
@@ -39,7 +39,7 @@ func (mrm *membersRepositoryMock) Save(ctx context.Context, oms ...auth.OrgMembe
 			OrgID:    om.OrgID,
 		}
 
-		mrm.members[om.MemberID] = m
+		mrm.members[om.MemberID] = append(mrm.members[om.MemberID], m)
 		mrm.membersByOrgID[om.OrgID] = append(mrm.membersByOrgID[om.OrgID], m)
 	}
 
@@ -51,11 +51,11 @@ func (mrm *membersRepositoryMock) Remove(ctx context.Context, orgID string, memb
 	defer mrm.mu.Unlock()
 
 	for _, memberID := range memberIDs {
-		if _, ok := mrm.members[memberID]; !ok{
+		if _, ok := mrm.members[memberID]; !ok {
 			return errors.ErrNotFound
 		}
 
-		if _, ok := mrm.membersByOrgID[orgID]; !ok{
+		if _, ok := mrm.membersByOrgID[orgID]; !ok {
 			return errors.ErrNotFound
 		}
 
@@ -73,9 +73,11 @@ func (mrm *membersRepositoryMock) Update(ctx context.Context, oms ...auth.OrgMem
 		if _, ok := mrm.members[om.MemberID]; !ok {
 			return errors.ErrNotFound
 		}
-		mrm.members[om.MemberID] = auth.OrgMember{
-			MemberID: om.MemberID,
-			Role:     om.Role,
+		mrm.members[om.MemberID] = []auth.OrgMember{
+			{
+				MemberID: om.MemberID,
+				Role:     om.Role,
+			},
 		}
 	}
 
@@ -86,11 +88,15 @@ func (mrm *membersRepositoryMock) RetrieveRole(ctx context.Context, memberID, or
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	if _, ok := mrm.members[memberID]; !ok {
-		return "", errors.ErrNotFound
+	if members, ok := mrm.members[memberID]; ok {
+		for _, m := range members {
+			if m.OrgID == orgID {
+				return m.Role, nil
+			}
+		}
 	}
 
-	return mrm.members[memberID].Role, nil
+	return "", errors.ErrNotFound
 }
 
 func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
@@ -99,7 +105,7 @@ func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID str
 
 	oms := []auth.OrgMember{}
 	i := uint64(0)
-	for _, m := range mrm.membersByOrgID[orgID]{
+	for _, m := range mrm.membersByOrgID[orgID] {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			oms = append(oms, m)
 		}
@@ -109,7 +115,7 @@ func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID str
 	return auth.OrgMembersPage{
 		OrgMembers: oms,
 		PageMetadata: auth.PageMetadata{
-			Total:  uint64(len(mrm.members)),
+			Total:  uint64(len(mrm.membersByOrgID[orgID])),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -121,8 +127,8 @@ func (mrm *membersRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.OrgMe
 	defer mrm.mu.Unlock()
 
 	oms := []auth.OrgMember{}
-	for _, m := range mrm.members {
-		oms = append(oms, m)
+	for _, members := range mrm.members {
+		oms = append(oms, members...)
 	}
 
 	return oms, nil

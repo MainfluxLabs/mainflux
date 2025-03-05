@@ -100,37 +100,7 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pm := auth.PageMetadata{
-			Name:     req.name,
-			Metadata: req.metadata,
-			Offset:   req.offset,
-			Limit:    req.limit,
-		}
-
-		page, err := svc.ListOrgs(ctx, req.token, pm)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildOrgsResponse(page), nil
-	}
-}
-
-func listOrgsByMemberEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listOrgsByMemberReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		pm := auth.PageMetadata{
-			Name:     req.name,
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
-		}
-
-		page, err := svc.ListOrgsByMember(ctx, req.token, req.id, pm)
+		page, err := svc.ListOrgs(ctx, req.token, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
