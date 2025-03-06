@@ -22,14 +22,10 @@ import (
 )
 
 const (
-	contentType            = "application/json"
 	octetStreamContentType = "application/octet-stream"
-	offsetKey              = "offset"
-	limitKey               = "limit"
 	formatKey              = "format"
 	subtopicKey            = "subtopic"
 	protocolKey            = "protocol"
-	nameKey                = "name"
 	valueKey               = "v"
 	stringValueKey         = "vs"
 	dataValueKey           = "vd"
@@ -37,8 +33,6 @@ const (
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
-	defLimit               = 10
-	defOffset              = 0
 	defFormat              = "messages"
 )
 
@@ -82,13 +76,13 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	return mux
 }
 
-func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, error) {
-	offset, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
 
-	limit, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +102,7 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	name, err := apiutil.ReadStringQuery(r, nameKey, "")
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +167,8 @@ func decodeListAllMessages(ctx context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeRestore(ctx context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -187,7 +181,7 @@ func decodeRestore(ctx context.Context, r *http.Request) (interface{}, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -257,7 +251,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

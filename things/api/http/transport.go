@@ -18,22 +18,8 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-)
-
-const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	nameKey     = "name"
-	orderKey    = "order"
-	dirKey      = "dir"
-	metadataKey = "metadata"
-	orgKey      = "org_id"
-	idKey       = "id"
-	defOffset   = 0
-	defLimit    = 10
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -317,13 +303,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 }
 
 func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createThingsReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -333,13 +319,13 @@ func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateThingReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -349,13 +335,13 @@ func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateKeyReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -373,13 +359,13 @@ func decodeViewMetadata(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeCreateProfiles(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createProfilesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Profiles); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -389,13 +375,13 @@ func decodeCreateProfiles(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeUpdateProfile(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateProfileReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -405,7 +391,7 @@ func decodeUpdateProfile(_ context.Context, r *http.Request) (interface{}, error
 }
 
 func decodeRemoveProfiles(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -423,53 +409,21 @@ func decodeRemoveProfiles(_ context.Context, r *http.Request) (interface{}, erro
 func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := resourceReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
 }
 
 func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listResourcesReq{
-		token: apiutil.ExtractBearerToken(r),
-		pageMetadata: apiutil.PageMetadata{
-			Offset:   o,
-			Limit:    l,
-			Name:     n,
-			Order:    or,
-			Dir:      d,
-			Metadata: m,
-		},
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
 	}
 
 	return req, nil
@@ -485,60 +439,28 @@ func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeListByID(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listByIDReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
-		pageMetadata: apiutil.PageMetadata{
-			Offset:   o,
-			Limit:    l,
-			Name:     n,
-			Order:    or,
-			Dir:      d,
-			Metadata: m,
-		},
+		token:        apiutil.ExtractBearerToken(r),
+		id:           bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
 	}
 
 	return req, nil
 }
 
 func decodeCreateGroups(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := createGroupsReq{
 		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, idKey),
+		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Groups); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -548,12 +470,12 @@ func decodeCreateGroups(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeUpdateGroup(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateGroupReq{
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -564,7 +486,7 @@ func decodeUpdateGroup(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeRemoveGroups(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -580,7 +502,7 @@ func decodeRemoveGroups(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeRemoveThings(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -596,7 +518,7 @@ func decodeRemoveThings(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeUpdateThings(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -618,7 +540,7 @@ func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -631,7 +553,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -644,13 +566,13 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := groupRolesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -661,13 +583,13 @@ func decodeGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeRemoveGroupRoles(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := removeGroupRolesReq{
 		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -678,7 +600,7 @@ func decodeRemoveGroupRoles(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -739,7 +661,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

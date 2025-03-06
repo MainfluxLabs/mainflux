@@ -5,12 +5,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
+const maxLimitSize = 100
+
 type listMembersByOrgReq struct {
-	token    string
-	id       string
-	offset   uint64
-	limit    uint64
-	metadata auth.OrgMetadata
+	token  string
+	id     string
+	offset uint64
+	limit  uint64
 }
 
 func (req listMembersByOrgReq) validate() error {
@@ -20,6 +21,10 @@ func (req listMembersByOrgReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingID
+	}
+
+	if req.limit > maxLimitSize {
+		return apiutil.ErrLimitSize
 	}
 
 	return nil

@@ -15,6 +15,25 @@ import (
 	"github.com/go-zoo/bone"
 )
 
+const (
+	OffsetKey   = "offset"
+	LimitKey    = "limit"
+	NameKey     = "name"
+	OrderKey    = "order"
+	DirKey      = "dir"
+	MetadataKey = "metadata"
+	IDKey       = "id"
+
+	NameOrder       = "name"
+	IDOrder         = "id"
+	AscDir          = "asc"
+	DescDir         = "desc"
+	ContentTypeJSON = "application/json"
+
+	DefOffset = 0
+	DefLimit  = 10
+)
+
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
 	Total    uint64
@@ -81,26 +100,6 @@ func ReadUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
 
 	strval := vals[0]
 	val, err := strconv.ParseUint(strval, 10, 64)
-	if err != nil {
-		return 0, ErrInvalidQueryParams
-	}
-
-	return val, nil
-}
-
-// ReadIntQuery reads the value of int64 http query parameters for a given key
-func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
-	vals := bone.GetQuery(r, key)
-	if len(vals) > 1 {
-		return 0, ErrInvalidQueryParams
-	}
-
-	if len(vals) == 0 {
-		return def, nil
-	}
-
-	strval := vals[0]
-	val, err := strconv.ParseInt(strval, 10, 64)
 	if err != nil {
 		return 0, ErrInvalidQueryParams
 	}
@@ -207,4 +206,45 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 	}
 
 	return val, nil
+}
+
+func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
+	o, err := ReadUintQuery(r, OffsetKey, DefOffset)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	l, err := ReadLimitQuery(r, LimitKey, DefLimit)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	n, err := ReadStringQuery(r, NameKey, "")
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	or, err := ReadStringQuery(r, OrderKey, IDOrder)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	d, err := ReadStringQuery(r, DirKey, DescDir)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	m, err := ReadMetadataQuery(r, MetadataKey, nil)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
+	return PageMetadata{
+		Offset:   o,
+		Limit:    l,
+		Name:     n,
+		Order:    or,
+		Dir:      d,
+		Metadata: m,
+	}, nil
 }

@@ -11,38 +11,6 @@ import (
 
 const maxLimitSize = 1000
 
-type listProfileMessagesReq struct {
-	profileID   string
-	token    string
-	key      string
-	pageMeta readers.PageMetadata
-}
-
-func (req listProfileMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.pageMeta.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if req.pageMeta.Offset < 0 {
-		return apiutil.ErrOffsetSize
-	}
-
-	if req.pageMeta.Comparator != "" &&
-		req.pageMeta.Comparator != readers.EqualKey &&
-		req.pageMeta.Comparator != readers.LowerThanKey &&
-		req.pageMeta.Comparator != readers.LowerThanEqualKey &&
-		req.pageMeta.Comparator != readers.GreaterThanKey &&
-		req.pageMeta.Comparator != readers.GreaterThanEqualKey {
-		return apiutil.ErrInvalidComparator
-	}
-
-	return nil
-}
-
 type listAllMessagesReq struct {
 	token    string
 	key      string

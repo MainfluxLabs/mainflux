@@ -18,19 +18,13 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	emailKey    = "email"
-	metadataKey = "metadata"
-	statusKey   = "status"
-	defOffset   = 0
-	defLimit    = 10
+	emailKey  = "email"
+	statusKey = "status"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -161,12 +155,12 @@ func decodeViewProfile(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
 
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	l, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +170,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +200,7 @@ func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -219,7 +213,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -238,7 +232,7 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -251,7 +245,7 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -266,7 +260,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 }
 
 func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -279,7 +273,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 }
 
 func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -307,7 +301,7 @@ func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -324,7 +318,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		w.WriteHeader(ar.Code())
 
 		if ar.Empty() {
@@ -376,7 +370,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

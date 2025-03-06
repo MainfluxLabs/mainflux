@@ -20,14 +20,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	defOffset   = 0
-	defLimit    = 10
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -49,13 +41,13 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 	return r
 }
 
-func decodeListSubscriptions(ctx context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+func decodeListSubscriptions(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
 
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
+	l, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +64,7 @@ func decodeListSubscriptions(ctx context.Context, r *http.Request) (interface{},
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -105,7 +97,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

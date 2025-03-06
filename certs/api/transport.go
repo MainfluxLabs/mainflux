@@ -18,14 +18,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	defOffset   = 0
-	defLimit    = 10
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -69,7 +61,7 @@ func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -87,11 +79,11 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
+	l, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +107,7 @@ func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
-	if r.Header.Get("Content-Type") != contentType {
+	if r.Header.Get("Content-Type") != apiutil.ContentTypeJSON {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -161,7 +153,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

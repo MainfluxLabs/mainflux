@@ -21,17 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	contentType = "application/json"
-	idKey       = "id"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	orderKey    = "order"
-	dirKey      = "dir"
-	defOffset   = 0
-	defLimit    = 10
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -78,11 +67,11 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 }
 
 func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, idKey)}
+	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, apiutil.IDKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -91,54 +80,34 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := webhookReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, idKey)}
+	req := webhookReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, apiutil.IDKey)}
 
 	return req, nil
 }
 
 func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	or, err := apiutil.ReadStringQuery(r, orderKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, dirKey, "")
+	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listWebhooksReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
-		pageMetadata: apiutil.PageMetadata{
-			Offset: o,
-			Limit:  l,
-			Order:  or,
-			Dir:    d,
-		},
+		token:        apiutil.ExtractBearerToken(r),
+		id:           bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
 	}
 
 	return req, nil
 }
 
 func decodeUpdateWebhook(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateWebhookReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -148,7 +117,7 @@ func decodeUpdateWebhook(_ context.Context, r *http.Request) (interface{}, error
 }
 
 func decodeRemoveWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -164,7 +133,7 @@ func decodeRemoveWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -220,7 +189,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

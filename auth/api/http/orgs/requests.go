@@ -7,10 +7,6 @@ import (
 const (
 	maxLimitSize = 100
 	maxNameSize  = 254
-	nameOrder    = "name"
-	idOrder      = "id"
-	ascDir       = "asc"
-	descDir      = "desc"
 )
 
 type createOrgsReq struct {
@@ -70,12 +66,12 @@ func (req listOrgsReq) validate() error {
 	}
 
 	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
 	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
 		return apiutil.ErrInvalidDirection
 	}
 

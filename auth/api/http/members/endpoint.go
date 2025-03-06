@@ -84,10 +84,10 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		pm := apiutil.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Metadata: req.metadata,
+			Offset: req.offset,
+			Limit:  req.limit,
 		}
+
 		page, err := svc.ListMembersByOrg(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
