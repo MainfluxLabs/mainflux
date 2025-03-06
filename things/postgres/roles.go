@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -74,8 +76,9 @@ func (pr rolesRepository) RetrieveRole(ctx context.Context, gp things.GroupMembe
 	return role, nil
 }
 
-func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
-	q := `SELECT member_id, role FROM group_roles WHERE group_id = :group_id LIMIT :limit OFFSET :offset;`
+func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles WHERE group_id = :group_id %s;`, olq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -109,7 +112,7 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 
 	page := things.GroupMembersPage{
 		GroupMembers: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

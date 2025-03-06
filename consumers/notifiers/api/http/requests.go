@@ -5,17 +5,12 @@ package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
 	minLen       = 1
 	maxLimitSize = 100
 	maxNameSize  = 254
-	nameOrder    = "name"
-	idOrder      = "id"
-	ascDir       = "asc"
-	descDir      = "desc"
 )
 
 type apiReq interface {
@@ -40,7 +35,7 @@ func (req *notifierReq) validate() error {
 type listNotifiersReq struct {
 	token        string
 	id           string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listNotifiersReq) validate() error {
@@ -57,12 +52,12 @@ func (req listNotifiersReq) validate() error {
 	}
 
 	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
 	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
 		return apiutil.ErrInvalidDirection
 	}
 

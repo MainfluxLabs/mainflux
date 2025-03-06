@@ -3,6 +3,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/opentracing/opentracing-go"
 )
@@ -33,7 +34,7 @@ func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks
 	return wrm.repo.Save(ctx, whs...)
 }
 
-func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	span := createSpan(ctx, wrm.tracer, "retrieve_by_group_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

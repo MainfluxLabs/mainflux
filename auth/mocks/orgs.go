@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -80,7 +81,7 @@ func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth
 	return org, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 	keys := sortOrgsByID(orm.orgs)
@@ -98,7 +99,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 
 	return auth.OrgsPage{
 		Orgs: orgs,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -106,7 +107,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID strin
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -142,7 +143,7 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 
 	return auth.OrgsPage{
 		Orgs: orgs,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -162,7 +163,7 @@ func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, erro
 	return orgs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -178,7 +179,7 @@ func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm auth.PageM
 
 	return auth.OrgsPage{
 		Orgs: orgs,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(orm.orgs)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

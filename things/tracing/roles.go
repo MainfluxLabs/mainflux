@@ -7,6 +7,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -52,7 +53,7 @@ func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things
 	return prm.repo.RetrieveRole(ctx, gp)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveRolesByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
+func (prm rolesRepositoryMiddleware) RetrieveRolesByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	span := createSpan(ctx, prm.tracer, retrieveRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

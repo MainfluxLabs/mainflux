@@ -15,10 +15,6 @@ import (
 const (
 	maxLimitSize = 100
 	maxNameSize  = 1024
-	nameOrder    = "name"
-	idOrder      = "id"
-	ascDir       = "asc"
-	descDir      = "desc"
 )
 
 type createThingReq struct {
@@ -292,7 +288,7 @@ func (req resourceReq) validate() error {
 
 type listResourcesReq struct {
 	token        string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req *listResourcesReq) validate() error {
@@ -309,12 +305,12 @@ func (req *listResourcesReq) validate() error {
 	}
 
 	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
 	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
 		return apiutil.ErrInvalidDirection
 	}
 
@@ -324,7 +320,7 @@ func (req *listResourcesReq) validate() error {
 type listByIDReq struct {
 	token        string
 	id           string
-	pageMetadata things.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listByIDReq) validate() error {
@@ -340,11 +336,11 @@ func (req listByIDReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+	if req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
-	if req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+	if req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
 		return apiutil.ErrInvalidDirection
 	}
 

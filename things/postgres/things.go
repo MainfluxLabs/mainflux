@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -175,7 +176,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ThingsPage{}, nil
 	}
@@ -224,7 +225,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	return ths, nil
 }
 
-func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
@@ -246,7 +247,7 @@ func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMet
 	return tr.retrieve(ctx, query, cquery, params)
 }
 
-func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
@@ -311,7 +312,7 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 
 	page := things.ThingsPage{
 		Things: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: params["offset"].(uint64),
 			Limit:  params["limit"].(uint64),

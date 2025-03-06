@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -151,7 +152,7 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	return toOrg(dbo)
 }
 
-func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
@@ -195,7 +196,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	return orgs, nil
 }
 
-func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
@@ -250,7 +251,7 @@ func (or orgRepository) retrieve(ctx context.Context, query, cquery string, para
 
 	page := auth.OrgsPage{
 		Orgs: items,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: params["offset"].(uint64),
 			Limit:  params["limit"].(uint64),

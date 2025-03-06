@@ -16,15 +16,8 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	metadataKey = "metadata"
-	defOffset   = 0
-	defLimit    = 10
-	orgIDKey    = "orgID"
-	memberKey   = "memberID"
-	idKey       = "id"
+	orgIDKey  = "orgID"
+	memberKey = "memberID"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -72,27 +65,21 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 }
 
 func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, error) {
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
+	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
 
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
+	l, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listMembersByOrgReq{
-		token:    apiutil.ExtractBearerToken(r),
-		id:       bone.GetValue(r, idKey),
-		offset:   o,
-		limit:    l,
-		metadata: m,
+		token:  apiutil.ExtractBearerToken(r),
+		id:     bone.GetValue(r, apiutil.IDKey),
+		offset: o,
+		limit:  l,
 	}
 	return req, nil
 }
@@ -100,7 +87,7 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := membersReq{
 		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, idKey),
+		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -133,7 +120,7 @@ func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error
 func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, error) {
 	req := unassignMembersReq{
 		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, idKey),
+		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -144,7 +131,7 @@ func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -196,7 +183,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

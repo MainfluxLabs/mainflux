@@ -8,15 +8,16 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
 const (
-	assignMembers         = "assign_members"
-	unassignMembers       = "unassign_members"
-	updateMembers         = "update_members"
-	retrieveMembersByOrg  = "retrieve_members_by_org"
-	retrieveAllMembers    = "retrieve_all_members"
+	assignMembers        = "assign_members"
+	unassignMembers      = "unassign_members"
+	updateMembers        = "update_members"
+	retrieveMembersByOrg = "retrieve_members_by_org"
+	retrieveAllMembers   = "retrieve_all_members"
 )
 
 var _ auth.MembersRepository = (*membersRepositoryMiddleware)(nil)
@@ -66,7 +67,7 @@ func (orm membersRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, 
 	return orm.repo.RetrieveRole(ctx, orgID, memberID)
 }
 
-func (orm membersRepositoryMiddleware) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
+func (orm membersRepositoryMiddleware) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveMembersByOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

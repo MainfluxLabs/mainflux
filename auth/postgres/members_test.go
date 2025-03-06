@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -459,14 +460,14 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 	cases := []struct {
 		desc         string
 		orgID        string
-		pageMetadata auth.PageMetadata
+		pageMetadata apiutil.PageMetadata
 		size         uint64
 		err          error
 	}{
 		{
 			desc:  "retrieve members by org",
 			orgID: orgID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  n,
@@ -477,7 +478,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 		{
 			desc:  "retrieve members by org with unknown org id",
 			orgID: unknownID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -488,7 +489,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 		{
 			desc:  "retrieve members by org with invalid org id",
 			orgID: invalidID,
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -499,7 +500,7 @@ func TestRetrieveMembersByOrg(t *testing.T) {
 		{
 			desc:  "retrieve members by org without org id",
 			orgID: "",
-			pageMetadata: auth.PageMetadata{
+			pageMetadata: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,

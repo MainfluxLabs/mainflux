@@ -16,19 +16,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
-const (
-	contentType = "application/json"
-	offsetKey   = "offset"
-	limitKey    = "limit"
-	metadataKey = "metadata"
-	nameKey     = "name"
-	orderKey    = "order"
-	dirKey      = "dir"
-	defOffset   = 0
-	defLimit    = 10
-	idKey       = "id"
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
@@ -87,53 +74,21 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 }
 
 func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
-	m, err := apiutil.ReadMetadataQuery(r, metadataKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	n, err := apiutil.ReadStringQuery(r, nameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	o, err := apiutil.ReadUintQuery(r, offsetKey, defOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadUintQuery(r, limitKey, defLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	or, err := apiutil.ReadStringQuery(r, orderKey, idOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, dirKey, descDir)
+	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	req := listOrgsReq{
-		token: apiutil.ExtractBearerToken(r),
-		pageMetadata: auth.PageMetadata{
-			Offset:   o,
-			Limit:    l,
-			Name:     n,
-			Order:    or,
-			Dir:      d,
-			Metadata: m,
-		},
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
 	}
 
 	return req, nil
 }
 
 func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -146,12 +101,12 @@ func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeUpdateOrg(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := updateOrgReq{
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -164,7 +119,7 @@ func decodeUpdateOrg(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := orgReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, idKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
@@ -191,7 +146,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -243,7 +198,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

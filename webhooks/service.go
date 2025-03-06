@@ -26,7 +26,7 @@ type Service interface {
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
-	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error)
+	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided
 	// ID, that belongs to the user identified by the provided key.
@@ -41,16 +41,6 @@ type Service interface {
 	RemoveWebhooks(ctx context.Context, token string, id ...string) error
 
 	consumers.Consumer
-}
-
-type PageMetadata struct {
-	Total    uint64
-	Offset   uint64                 `json:"offset,omitempty"`
-	Limit    uint64                 `json:"limit,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type webhooksService struct {
@@ -110,7 +100,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	return whs[0], nil
 }
 
-func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
+func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
 	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return WebhooksPage{}, err

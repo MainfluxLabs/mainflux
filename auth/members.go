@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -20,7 +21,7 @@ type OrgMember struct {
 // OrgMembersPage contains page related metadata as well as list of members that
 // belong to this page.
 type OrgMembersPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	OrgMembers []OrgMember
 }
 
@@ -38,7 +39,7 @@ type MembersRepository interface {
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
 	// RetrieveByOrgID retrieves members assigned to an org identified by orgID.
-	RetrieveByOrgID(ctx context.Context, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembersPage, error)
 
 	// RetrieveAll retrieves all members.
 	RetrieveAll(ctx context.Context) ([]OrgMember, error)
@@ -57,7 +58,7 @@ type Members interface {
 	UpdateMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error
 
 	// ListMembersByOrg retrieves members assigned to an org identified by orgID.
-	ListMembersByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembersPage, error)
+	ListMembersByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (OrgMembersPage, error)
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
@@ -185,7 +186,7 @@ func (svc service) UpdateMembers(ctx context.Context, token, orgID string, membe
 	return nil
 }
 
-func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembersPage, error) {
+func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (OrgMembersPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembersPage{}, err
 	}
@@ -222,7 +223,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 
 	mpg := OrgMembersPage{
 		OrgMembers: oms,
-		PageMetadata: PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  omp.Total,
 			Offset: omp.Offset,
 			Limit:  omp.Limit,

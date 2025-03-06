@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -151,7 +152,7 @@ func (grm *groupRepositoryMock) RetrieveByID(ctx context.Context, id string) (th
 	return val, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
@@ -191,7 +192,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 
 	page := things.GroupPage{
 		Groups: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(items)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -201,6 +202,6 @@ func (grm *groupRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string,
 	return page, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }

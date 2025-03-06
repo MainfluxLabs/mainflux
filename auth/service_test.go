@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -415,14 +416,14 @@ func TestListOrgs(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		meta  auth.PageMetadata
+		meta  apiutil.PageMetadata
 		size  uint64
 		err   error
 	}{
 		{
 			desc:  "list orgs",
 			token: ownerToken,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -431,7 +432,7 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs as system admin",
 			token: superAdminToken,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -440,19 +441,19 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs with wrong credentials",
 			token: invalid,
-			meta:  auth.PageMetadata{},
+			meta:  apiutil.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list orgs without credentials",
 			token: "",
-			meta:  auth.PageMetadata{},
+			meta:  apiutil.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list half of total orgs",
 			token: ownerToken,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
 			},
@@ -461,7 +462,7 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list last org",
 			token: ownerToken,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
 			},
@@ -1063,7 +1064,7 @@ func TestListMembersByOrg(t *testing.T) {
 		desc  string
 		token string
 		orgID string
-		meta  auth.PageMetadata
+		meta  apiutil.PageMetadata
 		size  uint64
 		err   error
 	}{
@@ -1071,7 +1072,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members as owner",
 			token: ownerToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1082,7 +1083,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members as admin",
 			token: adminToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1093,7 +1094,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members as editor",
 			token: editorToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1104,7 +1105,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members as viewer",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1115,7 +1116,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members as system admin",
 			token: superAdminToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1126,7 +1127,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list half org members",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: 0,
 				Limit:  n / 2,
 			},
@@ -1137,7 +1138,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list last org member",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: auth.PageMetadata{
+			meta: apiutil.PageMetadata{
 				Offset: n - 1,
 				Limit:  1,
 			},
@@ -1148,7 +1149,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members with wrong credentials",
 			token: invalid,
 			orgID: or.ID,
-			meta:  auth.PageMetadata{},
+			meta:  apiutil.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		},
@@ -1156,7 +1157,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list org members without credentials",
 			token: "",
 			orgID: or.ID,
-			meta:  auth.PageMetadata{},
+			meta:  apiutil.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		},
@@ -1164,7 +1165,7 @@ func TestListMembersByOrg(t *testing.T) {
 			desc:  "list members from non-existing org",
 			token: ownerToken,
 			orgID: invalid,
-			meta:  auth.PageMetadata{},
+			meta:  apiutil.PageMetadata{},
 			size:  0,
 			err:   errors.ErrNotFound,
 		},

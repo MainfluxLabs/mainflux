@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -101,7 +102,7 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -141,7 +142,7 @@ func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs [
 
 	page := things.ThingsPage{
 		Things: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  trm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -151,7 +152,7 @@ func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs [
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -180,7 +181,7 @@ func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string
 
 	page := things.ThingsPage{
 		Things: ths,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(ths)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -229,7 +230,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, 
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -244,7 +245,7 @@ func (trm *thingRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.Pag
 
 	page := things.ThingsPage{
 		Things: ths,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  trm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

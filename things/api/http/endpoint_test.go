@@ -66,7 +66,7 @@ var (
 		Metadata: metadata,
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
-	searchThingReq = things.PageMetadata{
+	searchThingReq = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}

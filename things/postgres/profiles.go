@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -138,7 +139,7 @@ func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, 
 	return profiles, nil
 }
 
-func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
@@ -208,7 +209,7 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}
@@ -260,7 +261,7 @@ func (cr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 
 	page := things.ProfilesPage{
 		Profiles: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: params["offset"].(uint64),
 			Limit:  params["limit"].(uint64),

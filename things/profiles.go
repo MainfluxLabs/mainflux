@@ -5,6 +5,8 @@ package things
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 // Profile represents a Mainflux "communication group". This group contains the
@@ -43,14 +45,14 @@ type Notifier struct {
 }
 
 type NotifiersPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	Notifiers []Notifier
 }
 
 // ProfilesPage contains page related metadata as well as list of profiles that
 // belong to this page.
 type ProfilesPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	Profiles []Profile
 }
 
@@ -80,10 +82,10 @@ type ProfileRepository interface {
 	RetrieveAll(ctx context.Context) ([]Profile, error)
 
 	// RetrieveByAdmin retrieves all profiles for all users with pagination.
-	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ProfilesPage, error)
+	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
 
 	// RetrieveByGroupIDs retrieves the subset of profiles specified by given group ids.
-	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ProfilesPage, error)
+	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)
 }
 
 // ProfileCache contains profile caching interface.

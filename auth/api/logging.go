@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 var _ auth.Service = (*loggingMiddleware)(nil)
@@ -146,7 +147,7 @@ func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o a
 	return lm.svc.ViewOrg(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm auth.PageMetadata) (gp auth.OrgsPage, err error) {
+func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (gp auth.OrgsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_orgs took %s to complete", time.Since(begin))
 		if err != nil {
@@ -185,7 +186,7 @@ func (lm *loggingMiddleware) ViewMember(ctx context.Context, token, orgID, membe
 	return lm.svc.ViewMember(ctx, token, orgID, memberID)
 }
 
-func (lm *loggingMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadata) (op auth.OrgMembersPage, err error) {
+func (lm *loggingMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (op auth.OrgMembersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_members_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -97,7 +98,7 @@ func (svc *mainfluxThings) ViewMetadataByKey(context.Context, string) (things.Me
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThings(context.Context, string, apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -105,11 +106,11 @@ func (svc *mainfluxThings) ViewProfileByThing(context.Context, string, string) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByOrg(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByOrg(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -138,11 +139,11 @@ func (svc *mainfluxThings) UpdateProfile(context.Context, string, things.Profile
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfiles(context.Context, string, things.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfiles(context.Context, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfilesByOrg(context.Context, string, string, things.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfilesByOrg(context.Context, string, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
@@ -182,7 +183,7 @@ func (svc *mainfluxThings) GetGroupIDByThingID(_ context.Context, thingID string
 	panic("implement me")
 }
 
-func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -190,11 +191,11 @@ func (svc *mainfluxThings) CreateGroups(_ context.Context, token string, groups 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(_ context.Context, token string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(_ context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupsByOrg(_ context.Context, token, orgID string, pm things.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroupsByOrg(_ context.Context, token, orgID string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
@@ -222,7 +223,7 @@ func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token string, p
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
@@ -230,7 +231,7 @@ func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token string, g
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm things.PageMetadata) (things.GroupMembersPage, error) {
+func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	panic("not implemented")
 }
 

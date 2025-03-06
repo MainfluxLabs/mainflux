@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -31,21 +32,18 @@ func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
 	}
 }
 
-func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembersPage, error) {
-	_, mq, err := dbutil.GetMetadataQuery("orgs", pm.Metadata)
-	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
+func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations 
+					  WHERE org_id = :org_id %s`, olq)
+
+	params := map[string]interface{}{
+		"org_id": orgID,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
 	}
 
-	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations
-					  WHERE org_id = :org_id %s LIMIT :limit OFFSET :offset`, mq)
-
-	dbmp, err := toDBOrgMemberPage("", orgID, pm)
-	if err != nil {
-		return auth.OrgMembersPage{}, err
-	}
-
-	rows, err := or.db.NamedQueryContext(ctx, q, dbmp)
+	rows, err := or.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}
@@ -66,17 +64,16 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 		oms = append(oms, om)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM orgs o, member_relations ore
-					   WHERE ore.org_id = :org_id AND ore.org_id = o.id %s;`, mq)
+	cq := `SELECT COUNT(*) FROM member_relations WHERE org_id = :org_id;`
 
-	total, err := dbutil.Total(ctx, or.db, cq, dbmp)
+	total, err := dbutil.Total(ctx, or.db, cq, params)
 	if err != nil {
 		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
 	}
 
 	page := auth.OrgMembersPage{
 		OrgMembers: oms,
-		PageMetadata: auth.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -247,24 +244,6 @@ type dbMember struct {
 	Role      string    `db:"role"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
-}
-
-type dbOrgMemberPage struct {
-	OrgID    string        `db:"org_id"`
-	MemberID string        `db:"member_id"`
-	Metadata dbOrgMetadata `db:"metadata"`
-	Limit    uint64        `db:"limit"`
-	Offset   uint64        `db:"offset"`
-}
-
-func toDBOrgMemberPage(memberID, orgID string, pm auth.PageMetadata) (dbOrgMemberPage, error) {
-	return dbOrgMemberPage{
-		OrgID:    orgID,
-		MemberID: memberID,
-		Metadata: dbOrgMetadata(pm.Metadata),
-		Offset:   pm.Offset,
-		Limit:    pm.Limit,
-	}, nil
 }
 
 type dbOrgMember struct {

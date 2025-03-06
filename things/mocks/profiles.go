@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -72,7 +73,7 @@ func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	return things.Profile{}, errors.ErrNotFound
 }
 
-func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -112,7 +113,7 @@ func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 
 	page := things.ProfilesPage{
 		Profiles: items,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  crm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
@@ -122,7 +123,7 @@ func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 	return page, nil
 }
 
-func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
+func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -141,7 +142,7 @@ func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm things.P
 
 	page := things.ProfilesPage{
 		Profiles: prs,
-		PageMetadata: things.PageMetadata{
+		PageMetadata: apiutil.PageMetadata{
 			Total:  crm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,

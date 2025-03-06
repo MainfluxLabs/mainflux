@@ -8,17 +8,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
 const (
 	minLen       = 1
 	maxLimitSize = 100
 	maxNameSize  = 254
-	nameOrder    = "name"
-	idOrder      = "id"
-	ascDir       = "asc"
-	descDir      = "desc"
 )
 
 var ErrInvalidUrl = errors.New("missing or invalid url")
@@ -94,7 +89,7 @@ func (req *webhookReq) validate() error {
 type listWebhooksReq struct {
 	token        string
 	id           string
-	pageMetadata webhooks.PageMetadata
+	pageMetadata apiutil.PageMetadata
 }
 
 func (req listWebhooksReq) validate() error {
@@ -111,12 +106,12 @@ func (req listWebhooksReq) validate() error {
 	}
 
 	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != nameOrder && req.pageMetadata.Order != idOrder {
+		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
 	}
 
 	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != ascDir && req.pageMetadata.Dir != descDir {
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
 		return apiutil.ErrInvalidDirection
 	}
 

@@ -5,6 +5,8 @@ package things
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 // Metadata to be used for Mainflux thing or profile for customized
@@ -25,7 +27,7 @@ type Thing struct {
 // ThingsPage contains page related metadata as well as list of things that
 // belong to this page.
 type ThingsPage struct {
-	PageMetadata
+	apiutil.PageMetadata
 	Things []Thing
 }
 
@@ -52,10 +54,10 @@ type ThingRepository interface {
 	RetrieveByKey(ctx context.Context, key string) (string, error)
 
 	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
-	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
+	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
 
 	// RetrieveByProfile retrieves the subset of things assigned to the specified profile.
-	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
+	RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
@@ -65,7 +67,7 @@ type ThingRepository interface {
 	RetrieveAll(ctx context.Context) ([]Thing, error)
 
 	// RetrieveByAdmin retrieves all things for all users with pagination.
-	RetrieveByAdmin(ctx context.Context, pm PageMetadata) (ThingsPage, error)
+	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
 }
 
 // ThingCache contains thing caching interface.

@@ -6,6 +6,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -86,7 +87,7 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingsByGroupIDsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -94,7 +95,7 @@ func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids
 	return trm.repo.RetrieveByGroupIDs(ctx, ids, pm)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingsByProfileOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -118,7 +119,7 @@ func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.
 	return trm.repo.RetrieveAll(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
