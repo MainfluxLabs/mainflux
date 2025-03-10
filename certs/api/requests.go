@@ -21,7 +21,7 @@ func (req addCertsReq) validate() error {
 	}
 
 	if req.ThingID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.TTL == "" || req.KeyType == "" || req.KeyBits == 0 {
@@ -39,12 +39,18 @@ type listReq struct {
 }
 
 func (req *listReq) validate() error {
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if req.limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
+
 	return nil
 }
 
@@ -58,7 +64,7 @@ func (req *viewReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	if req.serialID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingCertID
 	}
 
 	return nil
@@ -75,7 +81,7 @@ func (req *revokeReq) validate() error {
 	}
 
 	if req.certID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingCertID
 	}
 
 	return nil

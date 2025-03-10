@@ -81,7 +81,7 @@ func (req *webhookReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingWebhookID
 	}
 	return nil
 }
@@ -98,7 +98,7 @@ func (req listWebhooksReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {
@@ -133,7 +133,7 @@ func (req updateWebhookReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingWebhookID
 	}
 
 	if len(req.Name) > maxNameSize {
@@ -164,7 +164,7 @@ func (req removeWebhooksReq) validate() error {
 
 	for _, whID := range req.WebhookIDs {
 		if whID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingWebhookID
 		}
 	}
 

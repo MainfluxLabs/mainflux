@@ -24,13 +24,34 @@ var (
 	// ErrMissingOrgID indicates missing org ID.
 	ErrMissingOrgID = errors.New("missing org id")
 
+	// ErrMissingThingID indicates missing thing ID.
+	ErrMissingThingID = errors.New("missing thing id")
+
+	// ErrMissingProfileID indicates missing profile ID.
+	ErrMissingProfileID = errors.New("missing profile id")
+
+	// ErrMissingGroupMemberID indicates missing group member ID.
+	ErrMissingGroupMemberID = errors.New("missing group member id")
+
+	// ErrMissingOrgMemberID indicates missing org member ID.
+	ErrMissingOrgMemberID = errors.New("missing org member id")
+
+	// ErrMissingWebhookID indicates missing webhook ID.
+	ErrMissingWebhookID = errors.New("missing webhook id")
+
+	// ErrMissingNotifierID indicates missing notifier ID.
+	ErrMissingNotifierID = errors.New("missing notifier id")
+
+	// ErrMissingUserID indicates missing user ID.
+	ErrMissingUserID = errors.New("missing user id")
+
 	// ErrMissingRole indicates missing role.
 	ErrMissingRole = errors.New("missing role")
 
 	// ErrMissingObject indicates missing object.
 	ErrMissingObject = errors.New("missing object")
 
-	// ErrMissingSubject indicates invalid subject.
+	// ErrInvalidSubject indicates invalid subject.
 	ErrInvalidSubject = errors.New("invalid subject")
 
 	// ErrInvalidAction indicates invalid action.
@@ -66,6 +87,9 @@ var (
 	// ErrEmptyList indicates that entity data is empty.
 	ErrEmptyList = errors.New("empty list provided")
 
+	// ErrMissingCertID indicates missing cert ID.
+	ErrMissingCertID = errors.New("missing cert id")
+
 	// ErrMissingCertData indicates missing cert data (ttl, key_type or key_bits).
 	ErrMissingCertData = errors.New("missing certificate data")
 
@@ -93,9 +117,6 @@ var (
 	// ErrInvalidComparator indicates an invalid comparator.
 	ErrInvalidComparator = errors.New("invalid comparator")
 
-	// ErrMissingMemberType indicates missing group member type.
-	ErrMissingMemberType = errors.New("missing group member type")
-
 	// ErrInvalidAPIKey indicates an invalid API key type.
 	ErrInvalidAPIKey = errors.New("invalid api key type")
 
@@ -110,9 +131,6 @@ var (
 
 	// ErrNotFoundParam indicates that the parameter was not found in the query
 	ErrNotFoundParam = errors.New("parameter not found in the query")
-
-	// ErrInvalidMemberRole indicates an invalid member role.
-	ErrInvalidMemberRole = errors.New("invalid member role")
 
 	// ErrMalformedEntity indicates a malformed entity specification.
 	ErrMalformedEntity = errors.New("malformed entity specification")
