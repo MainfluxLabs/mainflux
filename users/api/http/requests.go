@@ -165,7 +165,7 @@ func (req changeUserStatusReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingUserID
 	}
 	return nil
 }
@@ -204,7 +204,7 @@ func (req restoreReq) validate() error {
 	}
 
 	if req.Admin.ID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingUserID
 	}
 
 	return nil

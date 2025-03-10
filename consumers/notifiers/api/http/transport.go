@@ -14,6 +14,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -153,19 +154,14 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
+	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingNotifierID,
 		err == apiutil.ErrMissingGroupID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
@@ -174,21 +170,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrInvalidContact:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
+	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }

@@ -223,7 +223,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, nil):
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrEmptyList,
@@ -245,17 +244,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, readers.ErrReadMessages),
 		errors.Contains(err, errors.ErrCreateEntity):
 		w.WriteHeader(http.StatusInternalServerError)
-
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }
 
 func getPubConfByKey(ctx context.Context, key string) (*protomfx.PubConfByKeyRes, error) {

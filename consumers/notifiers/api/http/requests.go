@@ -27,7 +27,7 @@ func (req *notifierReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingNotifierID
 	}
 	return nil
 }
@@ -44,7 +44,7 @@ func (req listNotifiersReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {
@@ -124,7 +124,7 @@ func (req updateNotifierReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingNotifierID
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
@@ -154,7 +154,7 @@ func (req removeNotifiersReq) validate() error {
 
 	for _, nfID := range req.NotifierIDs {
 		if nfID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingNotifierID
 		}
 	}
 
