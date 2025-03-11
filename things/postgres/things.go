@@ -74,7 +74,11 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	q := `UPDATE things SET name = :name, metadata = :metadata WHERE id = :id;`
+	nq := ""
+	if t.Name != "" {
+		nq = "name = :name,"
+	}
+	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
 
 	dbth, err := toDBThing(t)
 	if err != nil {

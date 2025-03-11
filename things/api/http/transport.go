@@ -59,7 +59,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Put("/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_things")(updateThingsEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_things_metadata")(updateThingsMetadataEndpoint(svc)),
 		decodeUpdateThings,
 		encodeResponse,
 		opts...,
@@ -526,7 +526,7 @@ func decodeUpdateThings(_ context.Context, r *http.Request) (interface{}, error)
 		token: apiutil.ExtractBearerToken(r),
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
