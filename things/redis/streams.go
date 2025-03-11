@@ -78,8 +78,8 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	return nil
 }
 
-func (es eventStore) UpdateThings(ctx context.Context, token string, things ...things.Thing) error {
-	return es.svc.UpdateThings(ctx, token, things...)
+func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {
+	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
 // UpdateKey doesn't send event because key shouldn't be sent over stream.

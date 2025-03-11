@@ -81,7 +81,7 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func updateThingsEndpoint(svc things.Service) endpoint.Endpoint {
+func updateThingsMetadataEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateThingsReq)
 
@@ -98,7 +98,7 @@ func updateThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			ths = append(ths, th)
 		}
 
-		if err := svc.UpdateThings(ctx, req.token, ths...); err != nil {
+		if err := svc.UpdateThingsMetadata(ctx, req.token, ths...); err != nil {
 			return nil, err
 		}
 

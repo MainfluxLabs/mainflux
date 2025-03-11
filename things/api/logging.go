@@ -53,13 +53,13 @@ func (lm *loggingMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return lm.svc.UpdateThing(ctx, token, thing)
 }
 
-func (lm *loggingMiddleware) UpdateThings(ctx context.Context, token string, things ...things.Thing) (err error) {
+func (lm *loggingMiddleware) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) (err error) {
 	defer func(begin time.Time) {
 		var ids []string
 		for _, thing := range things {
 			ids = append(ids, thing.ID)
 		}
-		message := fmt.Sprintf("Method update_things for ids %s took %s to complete", ids, time.Since(begin))
+		message := fmt.Sprintf("Method update_things_metadata for ids %s took %s to complete", ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -67,7 +67,7 @@ func (lm *loggingMiddleware) UpdateThings(ctx context.Context, token string, thi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UpdateThings(ctx, token, things...)
+	return lm.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
 func (lm *loggingMiddleware) UpdateKey(ctx context.Context, token, id, key string) (err error) {

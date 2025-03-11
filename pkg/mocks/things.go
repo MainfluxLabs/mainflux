@@ -86,7 +86,7 @@ func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateThings(context.Context, string, ...things.Thing) error {
+func (svc *mainfluxThings) UpdateThingsMetadata(context.Context, string, ...things.Thing) error {
 	panic("not implemented")
 }
 

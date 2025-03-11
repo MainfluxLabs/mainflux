@@ -59,7 +59,7 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Put("/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_things")(updateThingsEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_things_metadata")(updateThingsMetadataEndpoint(svc)),
 		decodeUpdateThings,
 		encodeResponse,
 		opts...,

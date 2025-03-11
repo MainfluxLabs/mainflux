@@ -31,9 +31,9 @@ type Service interface {
 	// belongs to the user identified by the provided token.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
 
-	// UpdateThings updates the things identified by the provided IDs, that
+	// UpdateThingsMetadata updates the things metadata identified by the provided IDs, that
 	// belongs to the user identified by the provided token.
-	UpdateThings(ctx context.Context, token string, things ...Thing) error
+	UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error
 
 	// UpdateKey updates key value of the existing thing. A non-nil error is
 	// returned to indicate operation failure.
@@ -239,7 +239,7 @@ func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, 
 	return ths[0], nil
 }
 
-func (ts *thingsService) updateThing(ctx context.Context, token string, thing Thing) error {
+func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     thing.ID,
@@ -266,11 +266,7 @@ func (ts *thingsService) updateThing(ctx context.Context, token string, thing Th
 	return ts.things.Update(ctx, thing)
 }
 
-func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {
-	return ts.updateThing(ctx, token, thing)
-}
-
-func (ts *thingsService) UpdateThings(ctx context.Context, token string, things ...Thing) error {
+func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {
 	for _, thing := range things {
 		ar := UserAccessReq{
 			Token:  token,
