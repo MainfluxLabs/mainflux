@@ -151,41 +151,23 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingOrgID,
+		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrMissingMemberType,
 		err == apiutil.ErrNameSize,
-		err == apiutil.ErrInvalidMemberRole,
+		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrInvalidRole,
 		err == apiutil.ErrInvalidQueryParams:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
+	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, errors.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, auth.ErrOrgMemberAlreadyAssigned):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
-		w.WriteHeader(http.StatusInternalServerError)
-
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }

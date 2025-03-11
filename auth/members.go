@@ -9,6 +9,17 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
+var (
+	// ErrAssignMember indicates failure to assign member to org.
+	ErrAssignMember = errors.New("failed to assign member to org")
+
+	// ErrUnassignMember indicates failure to unassign member from an org.
+	ErrUnassignMember = errors.New("failed to unassign member from org")
+
+	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
+	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
+)
+
 type OrgMember struct {
 	MemberID  string
 	OrgID     string

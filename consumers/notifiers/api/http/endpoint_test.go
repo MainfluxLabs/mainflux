@@ -47,7 +47,7 @@ var (
 	invalidEmails   = []string{"invalid@example.com", "invalid@invalid"}
 	invalidPhones   = []string{"0610120120", "0622220123"}
 	metadata        = map[string]interface{}{"test": "data"}
-	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
+	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 

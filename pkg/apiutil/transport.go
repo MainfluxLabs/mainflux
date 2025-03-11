@@ -51,6 +51,14 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 		switch {
 		case errors.Contains(err, ErrBearerToken),
 			errors.Contains(err, ErrMissingID),
+			errors.Contains(err, ErrMissingThingID),
+			errors.Contains(err, ErrMissingProfileID),
+			errors.Contains(err, ErrMissingGroupID),
+			errors.Contains(err, ErrMissingMemberID),
+			errors.Contains(err, ErrMissingOrgID),
+			errors.Contains(err, ErrMissingWebhookID),
+			errors.Contains(err, ErrMissingNotifierID),
+			errors.Contains(err, ErrMissingUserID),
 			errors.Contains(err, ErrMissingRole),
 			errors.Contains(err, ErrInvalidSubject),
 			errors.Contains(err, ErrMissingObject),
@@ -64,6 +72,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidOrder),
 			errors.Contains(err, ErrInvalidDirection),
 			errors.Contains(err, ErrEmptyList),
+			errors.Contains(err, ErrMissingCertID),
 			errors.Contains(err, ErrMissingCertData),
 			errors.Contains(err, ErrInvalidTopic),
 			errors.Contains(err, ErrInvalidContact),
@@ -73,7 +82,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingConfPass),
 			errors.Contains(err, ErrInvalidResetPass),
 			errors.Contains(err, ErrInvalidComparator),
-			errors.Contains(err, ErrMissingMemberType),
 			errors.Contains(err, ErrInvalidAPIKey),
 			errors.Contains(err, ErrMaxLevelExceeded),
 			errors.Contains(err, ErrUnsupportedContentType),
@@ -84,6 +92,35 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 		}
 
 		enc(ctx, err, w)
+	}
+}
+
+func EncodeError(err error, w http.ResponseWriter) {
+	switch {
+	case errors.Contains(err, errors.ErrAuthentication):
+		w.WriteHeader(http.StatusUnauthorized)
+	case errors.Contains(err, errors.ErrAuthorization):
+		w.WriteHeader(http.StatusForbidden)
+	case errors.Contains(err, errors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, errors.ErrConflict):
+		w.WriteHeader(http.StatusConflict)
+	case errors.Contains(err, errors.ErrCreateEntity),
+		errors.Contains(err, errors.ErrUpdateEntity),
+		errors.Contains(err, errors.ErrRetrieveEntity),
+		errors.Contains(err, errors.ErrRemoveEntity):
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func WriteErrorResponse(err error, w http.ResponseWriter) {
+	if errorVal, ok := err.(errors.Error); ok {
+		w.Header().Set("Content-Type", ContentTypeJSON)
+		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorVal.Msg()}); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
 

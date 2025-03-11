@@ -42,7 +42,7 @@ const (
 var (
 	headers       = map[string]string{"Content-Type:": "application/json"}
 	webhook       = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
-	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingID.Error()})
+	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
 

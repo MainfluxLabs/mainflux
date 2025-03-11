@@ -20,7 +20,7 @@ func (req listMembersByOrgReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	if req.limit > maxLimitSize {
@@ -41,8 +41,12 @@ func (req memberReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.orgID == "" || req.memberID == "" {
-		return apiutil.ErrMissingID
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
 	}
 
 	return nil
@@ -60,7 +64,7 @@ func (req membersReq) validate() error {
 	}
 
 	if req.orgID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	if len(req.OrgMembers) == 0 {
@@ -69,7 +73,7 @@ func (req membersReq) validate() error {
 
 	for _, m := range req.OrgMembers {
 		if m.Role != auth.Admin && m.Role != auth.Viewer && m.Role != auth.Editor {
-			return apiutil.ErrInvalidMemberRole
+			return apiutil.ErrInvalidRole
 		}
 	}
 
@@ -88,7 +92,7 @@ func (req unassignMembersReq) validate() error {
 	}
 
 	if req.orgID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	if len(req.MemberIDs) == 0 {

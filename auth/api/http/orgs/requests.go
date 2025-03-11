@@ -41,7 +41,7 @@ func (req updateOrgReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func (req orgReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil

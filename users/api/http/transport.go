@@ -338,41 +338,23 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingHost,
 		err == apiutil.ErrMissingPass,
 		err == apiutil.ErrMissingConfPass,
+		err == apiutil.ErrMissingUserID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidResetPass:
+		err == apiutil.ErrEmailSize,
+		err == apiutil.ErrInvalidResetPass,
+		err == apiutil.ErrInvalidStatus:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
+	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrConflict),
-		errors.Contains(err, errors.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-
 	case errors.Contains(err, uuid.ErrGeneratingID),
 		errors.Contains(err, users.ErrRecoveryToken):
 		w.WriteHeader(http.StatusInternalServerError)
-
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
-		w.WriteHeader(http.StatusInternalServerError)
-
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }

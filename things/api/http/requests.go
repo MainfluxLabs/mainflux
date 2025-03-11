@@ -46,7 +46,7 @@ func (req createThingsReq) validate() error {
 
 	for _, thing := range req.Things {
 		if thing.ProfileID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingProfileID
 		}
 		if thing.ID != "" {
 			if err := validateUUID(thing.ID); err != nil {
@@ -76,11 +76,11 @@ func (req updateThingReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.ProfileID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingProfileID
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
@@ -109,11 +109,11 @@ func (req updateThingsReq) validate() error {
 
 	for _, thing := range req.Things {
 		if thing.ProfileID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingProfileID
 		}
 
 		if thing.ID != "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingThingID
 		}
 
 		if thing.Name == "" || len(thing.Name) > maxNameSize {
@@ -136,7 +136,7 @@ func (req updateKeyReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.Key == "" {
@@ -213,7 +213,7 @@ func (req updateProfileReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingProfileID
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
@@ -239,7 +239,7 @@ func (req removeThingsReq) validate() error {
 
 	for _, thingID := range req.ThingIDs {
 		if thingID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingThingID
 		}
 	}
 
@@ -262,7 +262,7 @@ func (req removeProfilesReq) validate() error {
 
 	for _, profileID := range req.ProfileIDs {
 		if profileID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingProfileID
 		}
 	}
 
@@ -448,7 +448,7 @@ func (req updateGroupReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
@@ -483,7 +483,7 @@ func (req removeGroupsReq) validate() error {
 
 	for _, groupID := range req.GroupIDs {
 		if groupID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingGroupID
 		}
 	}
 
@@ -514,7 +514,7 @@ func (req groupRolesReq) validate() error {
 	}
 
 	if req.groupID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.GroupMembers) == 0 {
@@ -527,7 +527,7 @@ func (req groupRolesReq) validate() error {
 		}
 
 		if gm.ID == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingMemberID
 		}
 	}
 
@@ -546,7 +546,7 @@ func (req removeGroupRolesReq) validate() error {
 	}
 
 	if req.groupID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.MemberIDs) == 0 {
@@ -555,7 +555,7 @@ func (req removeGroupRolesReq) validate() error {
 
 	for _, id := range req.MemberIDs {
 		if id == "" {
-			return apiutil.ErrMissingID
+			return apiutil.ErrMissingMemberID
 		}
 	}
 

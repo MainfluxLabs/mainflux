@@ -6,12 +6,9 @@ package http
 import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const maxLimitSize = 100
-
-var errAuthHeader = errors.New("missing or invalid auth header")
 
 type apiReq interface {
 	validate() error
@@ -30,7 +27,7 @@ func (req listSubscriptionsReq) validate() error {
 	}
 
 	if req.token == "" && req.key == "" {
-		return errAuthHeader
+		return apiutil.ErrBearerToken
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {

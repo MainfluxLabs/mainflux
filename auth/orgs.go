@@ -9,17 +9,8 @@ import (
 )
 
 var (
-	// ErrAssignMember indicates failure to assign member to org.
-	ErrAssignMember = errors.New("failed to assign member to org")
-
-	// ErrUnassignMember indicates failure to unassign member from an org.
-	ErrUnassignMember = errors.New("failed to unassign member from org")
-
 	// ErrOrgNotEmpty indicates org is not empty, can't be deleted.
 	ErrOrgNotEmpty = errors.New("org is not empty")
-
-	// ErrOrgMemberAlreadyAssigned indicates that members is already assigned.
-	ErrOrgMemberAlreadyAssigned = errors.New("org member is already assigned")
 )
 
 // OrgMetadata defines the Metadata type.

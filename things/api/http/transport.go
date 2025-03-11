@@ -619,15 +619,9 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	// ErrNotFound can be masked by ErrAuthentication, but it has priority.
-	case errors.Contains(err, errors.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken,
+	case err == apiutil.ErrBearerToken,
 		err == apiutil.ErrBearerKey:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
@@ -635,35 +629,25 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingThingID,
+		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,
+		err == apiutil.ErrMissingMemberID,
+		err == apiutil.ErrMissingOrgID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrInvalidOrder,
 		err == apiutil.ErrInvalidDirection,
-		err == apiutil.ErrInvalidIDFormat:
+		err == apiutil.ErrInvalidIDFormat,
+		err == apiutil.ErrInvalidRole:
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, errors.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
-
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
-		w.WriteHeader(http.StatusInternalServerError)
-
 	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
-
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }
