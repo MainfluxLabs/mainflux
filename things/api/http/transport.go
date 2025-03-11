@@ -632,7 +632,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingThingID,
 		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,
-		err == apiutil.ErrMissingGroupMemberID,
+		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrMissingOrgID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,

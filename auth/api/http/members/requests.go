@@ -46,7 +46,7 @@ func (req memberReq) validate() error {
 	}
 
 	if req.memberID == "" {
-		return apiutil.ErrMissingOrgMemberID
+		return apiutil.ErrMissingMemberID
 	}
 
 	return nil

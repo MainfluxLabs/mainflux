@@ -152,6 +152,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrMissingOrgID,
+		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrLimitSize,

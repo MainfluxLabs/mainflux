@@ -30,11 +30,8 @@ var (
 	// ErrMissingProfileID indicates missing profile ID.
 	ErrMissingProfileID = errors.New("missing profile id")
 
-	// ErrMissingGroupMemberID indicates missing group member ID.
-	ErrMissingGroupMemberID = errors.New("missing group member id")
-
-	// ErrMissingOrgMemberID indicates missing org member ID.
-	ErrMissingOrgMemberID = errors.New("missing org member id")
+	// ErrMissingMemberID indicates missing member ID.
+	ErrMissingMemberID = errors.New("missing member id")
 
 	// ErrMissingWebhookID indicates missing webhook ID.
 	ErrMissingWebhookID = errors.New("missing webhook id")

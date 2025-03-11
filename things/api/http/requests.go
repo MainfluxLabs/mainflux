@@ -527,7 +527,7 @@ func (req groupRolesReq) validate() error {
 		}
 
 		if gm.ID == "" {
-			return apiutil.ErrMissingGroupMemberID
+			return apiutil.ErrMissingMemberID
 		}
 	}
 
@@ -555,7 +555,7 @@ func (req removeGroupRolesReq) validate() error {
 
 	for _, id := range req.MemberIDs {
 		if id == "" {
-			return apiutil.ErrMissingGroupMemberID
+			return apiutil.ErrMissingMemberID
 		}
 	}
 
