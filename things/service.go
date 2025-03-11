@@ -272,7 +272,17 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 
 func (ts *thingsService) UpdateThings(ctx context.Context, token string, things ...Thing) error {
 	for _, thing := range things {
-		if err := ts.updateThing(ctx, token, thing); err != nil {
+		ar := UserAccessReq{
+			Token:  token,
+			ID:     thing.ID,
+			Action: Editor,
+		}
+
+		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
+			return err
+		}
+
+		if err := ts.things.Update(ctx, thing); err != nil {
 			return err
 		}
 	}

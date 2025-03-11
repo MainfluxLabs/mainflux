@@ -92,10 +92,8 @@ func updateThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		ths := []things.Thing{}
 		for _, t := range req.Things {
 			th := things.Thing{
-				ID:        t.ID,
-				ProfileID: t.ProfileID,
-				Name:      t.Name,
-				Metadata:  t.Metadata,
+				ID:       t.ID,
+				Metadata: t.Metadata,
 			}
 			ths = append(ths, th)
 		}

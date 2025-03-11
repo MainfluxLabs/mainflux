@@ -526,7 +526,7 @@ func decodeUpdateThings(_ context.Context, r *http.Request) (interface{}, error)
 		token: apiutil.ExtractBearerToken(r),
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

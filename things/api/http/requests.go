@@ -91,10 +91,8 @@ func (req updateThingReq) validate() error {
 }
 
 type updateReq struct {
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	ID       string                 `json:"id,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type updateThingsReq struct {
@@ -108,16 +106,8 @@ func (req updateThingsReq) validate() error {
 	}
 
 	for _, thing := range req.Things {
-		if thing.ProfileID == "" {
-			return apiutil.ErrMissingProfileID
-		}
-
-		if thing.ID != "" {
+		if thing.ID == "" {
 			return apiutil.ErrMissingThingID
-		}
-
-		if thing.Name == "" || len(thing.Name) > maxNameSize {
-			return apiutil.ErrNameSize
 		}
 	}
 
