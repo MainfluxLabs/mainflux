@@ -59,7 +59,7 @@ func migrateDB(db *sqlx.DB) error {
 						bool_value    BOOL,
 						data_value    TEXT,
 						sum           FLOAT,
-						time          FlOAT,
+						time          FLOAT,
 						update_time   FLOAT,
 						PRIMARY KEY   (time, publisher, subtopic, name)
 					)`,
@@ -90,6 +90,12 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{
 					"DROP TABLE json",
+				},
+			},
+			{
+				Id: "messages_3",
+				Up: []string{
+					`ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_pkey`,
 				},
 			},
 		},
