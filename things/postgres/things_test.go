@@ -653,13 +653,9 @@ func TestRetrieveByProfile(t *testing.T) {
 		}
 		ths = append(ths, th)
 	}
-	thsc, err := thingRepo.Save(context.Background(), ths...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var thIDs []string
-	for _, thID := range thsc {
-		thIDs = append(thIDs, thID.ID)
-	}
+	_, err = thingRepo.Save(context.Background(), ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonexistentProfileID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))

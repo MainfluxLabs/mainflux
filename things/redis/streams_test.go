@@ -57,7 +57,7 @@ func newService(tokens map[string]string) things.Service {
 	auth := mocks.NewAuthService("", usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewRolesRepository()
+	rolesRepo := thmocks.NewGroupMembersRepository()
 	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()

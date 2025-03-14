@@ -49,7 +49,7 @@ var (
 
 	// ErrInvalidContentType indicates that non-existent message content type
 	// was passed.
-	ErrInvalidContentType = errors.New("Unknown Content Type")
+	ErrInvalidContentType = errors.New("unknown content-type")
 
 	// ErrFetchHealth indicates that fetching of health check failed.
 	ErrFetchHealth = errors.New("failed to fetch health check")
@@ -344,8 +344,8 @@ type SDK interface {
 	// ReadMessages read messages.
 	ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error)
 
-	// SetContentType sets message content type.
-	SetContentType(ct ContentType) error
+	// ValidateContentType sets message content type.
+	ValidateContentType(ct ContentType) error
 
 	// Health returns things service health check.
 	Health() (mainflux.HealthInfo, error)

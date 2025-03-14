@@ -13,20 +13,20 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ things.RolesRepository = (*rolesRepository)(nil)
+var _ things.GroupMembersRepository = (*rolesRepository)(nil)
 
 type rolesRepository struct {
 	db dbutil.Database
 }
 
-// NewRolesRepository instantiates a PostgreSQL implementation of roles repository.
-func NewRolesRepository(db dbutil.Database) things.RolesRepository {
+// NewGroupMembersRepository instantiates a PostgreSQL implementation of roles repository.
+func NewGroupMembersRepository(db dbutil.Database) things.GroupMembersRepository {
 	return &rolesRepository{
 		db: db,
 	}
 }
 
-func (pr rolesRepository) SaveRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
+func (pr rolesRepository) Save(ctx context.Context, gms ...things.GroupMember) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (pr rolesRepository) RetrieveRole(ctx context.Context, gp things.GroupMembe
 	return role, nil
 }
 
-func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (pr rolesRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles WHERE group_id = :group_id %s;`, olq)
 
@@ -122,7 +122,7 @@ func (pr rolesRepository) RetrieveRolesByGroup(ctx context.Context, groupID stri
 	return page, nil
 }
 
-func (pr rolesRepository) RetrieveAllRolesByGroup(ctx context.Context) ([]things.GroupMember, error) {
+func (pr rolesRepository) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
 	q := `SELECT member_id, group_id, role FROM group_roles;`
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

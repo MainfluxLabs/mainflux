@@ -30,11 +30,11 @@ type groupRepositoryMock struct {
 	profileMembership map[string]string
 	// Map of group profile where group id is a key and profile ids are values.
 	profiles map[string][]string
-	roles    things.RolesRepository
+	roles    things.GroupMembersRepository
 }
 
 // NewGroupRepository creates in-memory user repository
-func NewGroupRepository(roles things.RolesRepository) things.GroupRepository {
+func NewGroupRepository(roles things.GroupMembersRepository) things.GroupRepository {
 	return &groupRepositoryMock{
 		groups:            make(map[string]things.Group),
 		thingMembership:   make(map[string]string),

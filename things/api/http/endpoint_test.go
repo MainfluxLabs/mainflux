@@ -110,7 +110,7 @@ func newService() things.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewRolesRepository()
+	rolesRepo := thmocks.NewGroupMembersRepository()
 	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()

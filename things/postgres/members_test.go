@@ -14,10 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSaveRolesByGroup(t *testing.T) {
+func TestSave(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
+	rolesRepo := postgres.NewGroupMembersRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -98,7 +98,7 @@ func TestSaveRolesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := rolesRepo.SaveRolesByGroup(context.Background(), tc.gms...)
+		err := rolesRepo.Save(context.Background(), tc.gms...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -106,7 +106,7 @@ func TestSaveRolesByGroup(t *testing.T) {
 func TestRetrieveRole(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
+	rolesRepo := postgres.NewGroupMembersRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -125,7 +125,7 @@ func TestRetrieveRole(t *testing.T) {
 		MemberID: memberID,
 	}
 
-	err = rolesRepo.SaveRolesByGroup(context.Background(), gm)
+	err = rolesRepo.Save(context.Background(), gm)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -167,10 +167,10 @@ func TestRetrieveRole(t *testing.T) {
 	}
 }
 
-func TestRetrieveRolesByGroup(t *testing.T) {
+func TestRetrieveByGroup(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
+	rolesRepo := postgres.NewGroupMembersRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -189,7 +189,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 			GroupID:  gr.ID,
 			Role:     things.Viewer,
 		}
-		err = rolesRepo.SaveRolesByGroup(context.Background(), gm)
+		err = rolesRepo.Save(context.Background(), gm)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -247,7 +247,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gpp, err := rolesRepo.RetrieveRolesByGroup(context.Background(), tc.groupID, tc.pageMeta)
+		gpp, err := rolesRepo.RetrieveByGroup(context.Background(), tc.groupID, tc.pageMeta)
 		size := len(gpp.GroupMembers)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
@@ -257,7 +257,7 @@ func TestRetrieveRolesByGroup(t *testing.T) {
 func TestRemoveRolesByGroup(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
+	rolesRepo := postgres.NewGroupMembersRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -279,7 +279,7 @@ func TestRemoveRolesByGroup(t *testing.T) {
 			Role:     things.Viewer,
 		}
 
-		err = rolesRepo.SaveRolesByGroup(context.Background(), gp)
+		err = rolesRepo.Save(context.Background(), gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -320,7 +320,7 @@ func TestRemoveRolesByGroup(t *testing.T) {
 func TestUpdateRolesByGroup(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	rolesRepo := postgres.NewRolesRepository(dbMiddleware)
+	rolesRepo := postgres.NewGroupMembersRepository(dbMiddleware)
 
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
@@ -347,7 +347,7 @@ func TestUpdateRolesByGroup(t *testing.T) {
 		},
 	}
 
-	err = rolesRepo.SaveRolesByGroup(context.Background(), gpByIDs...)
+	err = rolesRepo.Save(context.Background(), gpByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
