@@ -124,17 +124,17 @@ func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64
 func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error)
     ViewGroupByProfile retrieves a group by profile
     
-func (sdk mfSDK) CreateRolesByGroup(roles []GroupMember, groupID, token string) error
-    CreateRolesByGroup - creates new roles by group
+func (sdk mfSDK) CreateGroupMembers(roles []GroupMember, groupID, token string) error
+    CreateGroupMembers - creates new roles by group
     
-func (sdk mfSDK) UpdateRolesByGroup(roles []GroupMember, groupID, token string) error
-    UpdateRolesByGroup - updates existing group roles.
+func (sdk mfSDK) UpdateGroupMembers(roles []GroupMember, groupID, token string) error
+    UpdateGroupMembers - updates existing group roles.
 	
-func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error
-    RemoveRolesByGroup - removes existing group roles
+func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error
+    RemoveGroupMembers - removes existing group roles
 	
-func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
-    ListRolesByGroup - lists roles by group
+func (sdk mfSDK) ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
+    ListGroupMembers - lists roles by group
  
 func (sdk mfSDK) CreateOrg(org Org, token string) error
     CreateOrg - registers new org

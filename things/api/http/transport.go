@@ -248,28 +248,28 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service, logger log.Logge
 	))
 
 	r.Post("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_roles_by_group")(createRolesByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "create_roles_by_group")(CreateGroupMembersEndpoint(svc)),
 		decodeGroupRoles,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_roles_by_group")(listRolesByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_roles_by_group")(ListGroupMembersEndpoint(svc)),
 		decodeListByID,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Put("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_roles_by_group")(updateRolesByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "update_roles_by_group")(UpdateGroupMembersEndpoint(svc)),
 		decodeGroupRoles,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Patch("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_roles_by_group")(removeRolesByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "remove_roles_by_group")(RemoveGroupMembersEndpoint(svc)),
 		decodeRemoveGroupRoles,
 		encodeResponse,
 		opts...,

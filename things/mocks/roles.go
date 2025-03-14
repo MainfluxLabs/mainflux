@@ -12,14 +12,14 @@ import (
 var _ things.GroupMembersRepository = (*groupMembersRepositoryMock)(nil)
 
 type groupMembersRepositoryMock struct {
-	mu         sync.Mutex
-	groupRoles map[string][]things.GroupMember
+	mu           sync.Mutex
+	groupMembers map[string][]things.GroupMember
 }
 
 // NewGroupMembersRepository returns mock of roles repository
 func NewGroupMembersRepository() things.GroupMembersRepository {
 	return &groupMembersRepositoryMock{
-		groupRoles: make(map[string][]things.GroupMember),
+		groupMembers: make(map[string][]things.GroupMember),
 	}
 }
 
@@ -28,7 +28,7 @@ func (mrm *groupMembersRepositoryMock) Save(_ context.Context, gms ...things.Gro
 	defer mrm.mu.Unlock()
 
 	for _, g := range gms {
-		mrm.groupRoles[g.GroupID] = append(mrm.groupRoles[g.GroupID], g)
+		mrm.groupMembers[g.GroupID] = append(mrm.groupMembers[g.GroupID], g)
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (mrm *groupMembersRepositoryMock) RetrieveRole(_ context.Context, gm things
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	for _, mbr := range mrm.groupRoles[gm.GroupID] {
+	for _, mbr := range mrm.groupMembers[gm.GroupID] {
 		if mbr.MemberID == gm.MemberID {
 			return mbr.Role, nil
 		}
@@ -56,7 +56,7 @@ func (mrm *groupMembersRepositoryMock) RetrieveGroupIDsByMember(_ context.Contex
 	defer mrm.mu.Unlock()
 
 	var grIDs []string
-	for grID, mbrs := range mrm.groupRoles {
+	for grID, mbrs := range mrm.groupMembers {
 		for _, gr := range mbrs {
 			if gr.MemberID == memberID {
 				grIDs = append(grIDs, grID)
@@ -73,17 +73,17 @@ func (mrm *groupMembersRepositoryMock) RetrieveAll(_ context.Context) ([]things.
 	defer mrm.mu.Unlock()
 
 	var mbrs []things.GroupMember
-	for _, mb := range mrm.groupRoles {
+	for _, mb := range mrm.groupMembers {
 		mbrs = append(mbrs, mb...)
 	}
 
 	return mbrs, nil
 }
 
-func (mrm *groupMembersRepositoryMock) UpdateRolesByGroup(_ context.Context, gms ...things.GroupMember) error {
+func (mrm *groupMembersRepositoryMock) Update(_ context.Context, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 
-func (mrm *groupMembersRepositoryMock) RemoveRolesByGroup(_ context.Context, groupID string, memberIDs ...string) error {
+func (mrm *groupMembersRepositoryMock) Remove(_ context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

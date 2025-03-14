@@ -337,7 +337,7 @@ func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error) {
 	return g, nil
 }
 
-func (sdk mfSDK) CreateRolesByGroup(roles []GroupMember, groupID, token string) error {
+func (sdk mfSDK) CreateGroupMembers(roles []GroupMember, groupID, token string) error {
 	data, err := json.Marshal(roles)
 	if err != nil {
 		return err
@@ -363,7 +363,7 @@ func (sdk mfSDK) CreateRolesByGroup(roles []GroupMember, groupID, token string) 
 	return nil
 }
 
-func (sdk mfSDK) UpdateRolesByGroup(roles []GroupMember, groupID, token string) error {
+func (sdk mfSDK) UpdateGroupMembers(roles []GroupMember, groupID, token string) error {
 	data, err := json.Marshal(roles)
 	if err != nil {
 		return err
@@ -387,7 +387,7 @@ func (sdk mfSDK) UpdateRolesByGroup(roles []GroupMember, groupID, token string) 
 	return nil
 }
 
-func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error {
+func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error {
 	delReq := unassignMemberReq{MemberIDs: ids}
 	data, err := json.Marshal(delReq)
 	if err != nil {
@@ -413,7 +413,7 @@ func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error) {
+func (sdk mfSDK) ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

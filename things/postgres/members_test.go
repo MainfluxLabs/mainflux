@@ -254,7 +254,7 @@ func TestRetrieveByGroup(t *testing.T) {
 	}
 }
 
-func TestRemoveRolesByGroup(t *testing.T) {
+func TestRemoveGroupMembers(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
@@ -312,12 +312,12 @@ func TestRemoveRolesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := groupMembersRepo.RemoveRolesByGroup(context.Background(), tc.groupID, tc.memberIDs...)
+		err := groupMembersRepo.Remove(context.Background(), tc.groupID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdateRolesByGroup(t *testing.T) {
+func TestUpdateGroupMembers(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
@@ -385,7 +385,7 @@ func TestUpdateRolesByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := groupMembersRepo.UpdateRolesByGroup(context.Background(), tc.gpByID)
+		err := groupMembersRepo.Update(context.Background(), tc.gpByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

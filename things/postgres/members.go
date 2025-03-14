@@ -157,7 +157,7 @@ func (pr rolesRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID
 	return groupIDs, nil
 }
 
-func (pr rolesRepository) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
+func (pr rolesRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
@@ -173,7 +173,7 @@ func (pr rolesRepository) RemoveRolesByGroup(ctx context.Context, groupID string
 	return nil
 }
 
-func (pr rolesRepository) UpdateRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
+func (pr rolesRepository) Update(ctx context.Context, gms ...things.GroupMember) error {
 	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gms {
