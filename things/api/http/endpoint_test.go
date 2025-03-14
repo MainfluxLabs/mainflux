@@ -110,14 +110,14 @@ func newService() things.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewRolesRepository()
-	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
+	groupMembersRepo := thmocks.NewGroupMembersRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembersRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {
@@ -144,6 +144,7 @@ func TestCreateThings(t *testing.T) {
 	profile1 := profile
 	profile1.GroupID = grID1
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
@@ -280,6 +281,7 @@ func TestUpdateThing(t *testing.T) {
 	profile1.GroupID = grID1
 	profile.GroupID = grID
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
 
 	thing.GroupID = grID
@@ -2690,7 +2692,6 @@ func TestRemoveGroups(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	var groups []things.Group
 	var groupIDs []string
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
@@ -2703,7 +2704,6 @@ func TestRemoveGroups(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		gr := grs[0]
 
-		groups = append(groups, gr)
 		groupIDs = append(groupIDs, gr.ID)
 	}
 

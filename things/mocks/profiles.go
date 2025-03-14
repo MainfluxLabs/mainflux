@@ -127,10 +127,6 @@ func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
-	if pm.Limit < 0 {
-		return things.ProfilesPage{}, nil
-	}
-
 	i := uint64(0)
 	var prs []things.Profile
 	for _, pr := range crm.profiles {

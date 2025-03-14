@@ -124,17 +124,17 @@ func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64
 func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error)
     ViewGroupByProfile retrieves a group by profile
     
-func (sdk mfSDK) CreateRolesByGroup(roles []GroupMember, groupID, token string) error
-    CreateRolesByGroup - creates new roles by group
+func (sdk mfSDK) CreateGroupMembers(roles []GroupMember, groupID, token string) error
+    CreateGroupMembers - creates new roles by group
     
-func (sdk mfSDK) UpdateRolesByGroup(roles []GroupMember, groupID, token string) error
-    UpdateRolesByGroup - updates existing group roles.
+func (sdk mfSDK) UpdateGroupMembers(roles []GroupMember, groupID, token string) error
+    UpdateGroupMembers - updates existing group roles.
 	
-func (sdk mfSDK) RemoveRolesByGroup(ids []string, groupID, token string) error
-    RemoveRolesByGroup - removes existing group roles
+func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error
+    RemoveGroupMembers - removes existing group roles
 	
-func (sdk mfSDK) ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
-    ListRolesByGroup - lists roles by group
+func (sdk mfSDK) ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
+    ListGroupMembers - lists roles by group
  
 func (sdk mfSDK) CreateOrg(org Org, token string) error
     CreateOrg - registers new org
@@ -190,8 +190,8 @@ func (sdk mfSDK) SendMessage(profileID, msg, token string) error
 func (sdk mfSDK) ReadMessages(profileID, token string) (MessagesPage, error)
     ReadMessages - read messages of specified profile
 
-func (sdk mfSDK) SetContentType(ct ContentType) error
-    SetContentType - set message content type. Available options are SenML JSON, custom JSON and custom binary (octet-stream).
+func (sdk mfSDK) ValidateContentType(ct ContentType) error
+    ValidateContentType - validate message content type. Available options are SenML JSON, custom JSON and custom binary (octet-stream).
 
 func (sdk mfSDK) Health() (mainflux.HealthInfo, error)
     Health - things service health check

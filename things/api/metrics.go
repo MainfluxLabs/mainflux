@@ -372,38 +372,38 @@ func (ms *metricsMiddleware) ViewGroupByProfile(ctx context.Context, token, prof
 	return ms.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (ms *metricsMiddleware) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
+func (ms *metricsMiddleware) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_roles_by_group").Add(1)
 		ms.latency.With("method", "create_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateRolesByGroup(ctx, token, gms...)
+	return ms.svc.CreateGroupMembers(ctx, token, gms...)
 }
 
-func (ms *metricsMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (ms *metricsMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_roles_by_group").Add(1)
 		ms.latency.With("method", "list_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListRolesByGroup(ctx, token, groupID, pm)
+	return ms.svc.ListGroupMembers(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
+func (ms *metricsMiddleware) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_roles_by_group").Add(1)
 		ms.latency.With("method", "update_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateRolesByGroup(ctx, token, gms...)
+	return ms.svc.UpdateGroupMembers(ctx, token, gms...)
 }
 
-func (ms *metricsMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ms *metricsMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_roles_by_group").Add(1)
 		ms.latency.With("method", "remove_roles_by_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
+	return ms.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
 }

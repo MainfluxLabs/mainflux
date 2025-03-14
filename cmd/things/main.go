@@ -26,8 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
-	authhttpapi "github.com/MainfluxLabs/mainflux/things/api/http"
-	thhttpapi "github.com/MainfluxLabs/mainflux/things/api/http"
+	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
 	rediscache "github.com/MainfluxLabs/mainflux/things/redis"
 	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
@@ -181,11 +180,11 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, thhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, authhttpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -352,10 +351,10 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	groupCache = tracing.GroupCacheMiddleware(cacheTracer, groupCache)
 	idProvider := uuid.New()
 
-	rolesRepo := postgres.NewRolesRepository(db)
-	rolesRepo = tracing.RolesRepositoryMiddleware(dbTracer, rolesRepo)
+	groupMembersRepo := postgres.NewGroupMembersRepository(db)
+	groupMembersRepo = tracing.GroupMembersRepositoryMiddleware(dbTracer, groupMembersRepo)
 
-	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

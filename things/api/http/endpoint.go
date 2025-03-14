@@ -894,7 +894,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func CreateGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupRolesReq)
 		if err := req.validate(); err != nil {
@@ -911,7 +911,7 @@ func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			gms = append(gms, gp)
 		}
 
-		if err := svc.CreateRolesByGroup(ctx, req.token, gms...); err != nil {
+		if err := svc.CreateGroupMembers(ctx, req.token, gms...); err != nil {
 			return nil, err
 		}
 
@@ -919,7 +919,7 @@ func createRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func UpdateGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupRolesReq)
 		if err := req.validate(); err != nil {
@@ -936,7 +936,7 @@ func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			gms = append(gms, gp)
 		}
 
-		if err := svc.UpdateRolesByGroup(ctx, req.token, gms...); err != nil {
+		if err := svc.UpdateGroupMembers(ctx, req.token, gms...); err != nil {
 			return nil, err
 		}
 
@@ -944,14 +944,14 @@ func updateRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func removeRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func RemoveGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(removeGroupRolesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveRolesByGroup(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
+		if err := svc.RemoveGroupMembers(ctx, req.token, req.groupID, req.MemberIDs...); err != nil {
 			return nil, err
 		}
 
@@ -959,14 +959,14 @@ func removeRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listRolesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func ListGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listByIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		gpp, err := svc.ListRolesByGroup(ctx, req.token, req.id, req.pageMetadata)
+		gpp, err := svc.ListGroupMembers(ctx, req.token, req.id, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

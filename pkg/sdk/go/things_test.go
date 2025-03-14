@@ -15,7 +15,6 @@ import (
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	authapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -50,14 +49,14 @@ func newThingsService() things.Service {
 	auth := mocks.NewAuthService("", usersList, orgs)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewRolesRepository()
-	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
+	groupMembersRepo := thmocks.NewGroupMembersRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembersRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {
@@ -68,7 +67,7 @@ func newThingsServer(svc things.Service) *httptest.Server {
 
 func newAuthServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := authapi.MakeHandler(mocktracer.New(), svc, logger)
+	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger)
 	return httptest.NewServer(mux)
 }
 

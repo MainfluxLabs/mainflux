@@ -49,7 +49,7 @@ var (
 
 	// ErrInvalidContentType indicates that non-existent message content type
 	// was passed.
-	ErrInvalidContentType = errors.New("Unknown Content Type")
+	ErrInvalidContentType = errors.New("unknown content-type")
 
 	// ErrFetchHealth indicates that fetching of health check failed.
 	ErrFetchHealth = errors.New("failed to fetch health check")
@@ -278,17 +278,17 @@ type SDK interface {
 	// ViewGroupByProfile retrieves a group that the specified profile is a member of.
 	ViewGroupByProfile(profileID, token string) (Group, error)
 
-	// CreateRolesByGroup creates new roles by group.
-	CreateRolesByGroup(roles []GroupMember, groupID, token string) error
+	// CreateGroupMembers creates new roles by group.
+	CreateGroupMembers(roles []GroupMember, groupID, token string) error
 
-	// UpdateRolesByGroup updates existing group roles.
-	UpdateRolesByGroup(roles []GroupMember, groupID, token string) error
+	// UpdateGroupMembers updates existing group roles.
+	UpdateGroupMembers(roles []GroupMember, groupID, token string) error
 
-	// RemoveRolesByGroup removes existing group roles.
-	RemoveRolesByGroup(ids []string, groupID, token string) error
+	// RemoveGroupMembers removes existing group roles.
+	RemoveGroupMembers(ids []string, groupID, token string) error
 
-	// ListRolesByGroup lists roles that are specified for a certain group.
-	ListRolesByGroup(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
+	// ListGroupMembers lists roles that are specified for a certain group.
+	ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
 
 	// CreateOrg registers new org.
 	CreateOrg(org Org, token string) error
@@ -344,8 +344,8 @@ type SDK interface {
 	// ReadMessages read messages.
 	ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error)
 
-	// SetContentType sets message content type.
-	SetContentType(ct ContentType) error
+	// ValidateContentType sets message content type.
+	ValidateContentType(ct ContentType) error
 
 	// Health returns things service health check.
 	Health() (mainflux.HealthInfo, error)

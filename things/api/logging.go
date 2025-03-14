@@ -520,7 +520,7 @@ func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, gro
 	return lm.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
+func (lm *loggingMiddleware) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_roles_by_group took %s to complete", time.Since(begin))
 		if err != nil {
@@ -529,10 +529,10 @@ func (lm *loggingMiddleware) CreateRolesByGroup(ctx context.Context, token strin
 		}
 	}(time.Now())
 
-	return lm.svc.CreateRolesByGroup(ctx, token, gms...)
+	return lm.svc.CreateGroupMembers(ctx, token, gms...)
 }
 
-func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (gpp things.GroupMembersPage, err error) {
+func (lm *loggingMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (gpp things.GroupMembersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -541,10 +541,10 @@ func (lm *loggingMiddleware) ListRolesByGroup(ctx context.Context, token, groupI
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListRolesByGroup(ctx, token, groupID, pm)
+	return lm.svc.ListGroupMembers(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
+func (lm *loggingMiddleware) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_roles_by_group took %s to complete", time.Since(begin))
 		if err != nil {
@@ -553,10 +553,10 @@ func (lm *loggingMiddleware) UpdateRolesByGroup(ctx context.Context, token strin
 		}
 	}(time.Now())
 
-	return lm.svc.UpdateRolesByGroup(ctx, token, gms...)
+	return lm.svc.UpdateGroupMembers(ctx, token, gms...)
 }
 
-func (lm *loggingMiddleware) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
+func (lm *loggingMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -565,5 +565,5 @@ func (lm *loggingMiddleware) RemoveRolesByGroup(ctx context.Context, token, grou
 		}
 	}(time.Now())
 
-	return lm.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
+	return lm.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
 }

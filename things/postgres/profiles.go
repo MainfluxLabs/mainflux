@@ -167,10 +167,9 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 		return things.Profile{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	var q string
-	q = fmt.Sprintf(`SELECT pr.id, pr.group_id, pr.name, pr.metadata, pr.config
-				FROM things ths, profiles pr
-				WHERE ths.profile_id = pr.id and ths.id = :thing;`)
+	q := `SELECT pr.id, pr.group_id, pr.name, pr.metadata, pr.config
+		FROM things ths, profiles pr
+		WHERE ths.profile_id = pr.id and ths.id = :thing;`
 	params := map[string]interface{}{
 		"thing": thID,
 	}

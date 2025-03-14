@@ -227,18 +227,18 @@ func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateRolesByGroup(_ context.Context, token string, gms ...things.GroupMember) error {
+func (svc *mainfluxThings) CreateGroupMembers(_ context.Context, token string, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListRolesByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (svc *mainfluxThings) ListGroupMembers(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateRolesByGroup(_ context.Context, token string, gms ...things.GroupMember) error {
+func (svc *mainfluxThings) UpdateGroupMembers(_ context.Context, token string, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveRolesByGroup(_ context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemoveGroupMembers(_ context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

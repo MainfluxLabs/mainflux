@@ -22,7 +22,7 @@ var cmdGroupRoles = []cobra.Command{
 				logError(err)
 				return
 			}
-			err := sdk.CreateRolesByGroup(gm, args[1], args[2])
+			err := sdk.CreateGroupMembers(gm, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -39,7 +39,7 @@ var cmdGroupRoles = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListRolesByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+			up, err := sdk.ListGroupMembers(args[0], args[1], uint64(Offset), uint64(Limit))
 			if err != nil {
 				logError(err)
 				return
@@ -63,7 +63,7 @@ var cmdGroupRoles = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateRolesByGroup(roles, args[1], args[2]); err != nil {
+			if err := sdk.UpdateGroupMembers(roles, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -85,7 +85,7 @@ var cmdGroupRoles = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.RemoveRolesByGroup(ids, args[1], args[2]); err != nil {
+			if err := sdk.RemoveGroupMembers(ids, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

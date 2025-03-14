@@ -97,7 +97,7 @@ func TestSendMessage(t *testing.T) {
 	}
 }
 
-func TestSetContentType(t *testing.T) {
+func TestValidateContentType(t *testing.T) {
 	profileID := "1"
 	atoken := "auth_token"
 	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
@@ -130,7 +130,7 @@ func TestSetContentType(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		err := mainfluxSDK.SetContentType(tc.cType)
+		err := mainfluxSDK.ValidateContentType(tc.cType)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 	}
 }

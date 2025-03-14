@@ -147,7 +147,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 
 		for i := range members {
 			members[i].GroupID = gr.ID
-			if err := ts.roles.SaveRolesByGroup(ctx, members[i]); err != nil {
+			if err := ts.groupMembers.Save(ctx, members[i]); err != nil {
 				return []Group{}, err
 			}
 
@@ -346,7 +346,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 
 	role, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
 	if err != nil {
-		r, err := ts.roles.RetrieveRole(ctx, gm)
+		r, err := ts.groupMembers.RetrieveRole(ctx, gm)
 		if err != nil {
 			return err
 		}

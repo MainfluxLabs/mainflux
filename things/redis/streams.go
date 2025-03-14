@@ -294,18 +294,18 @@ func (es eventStore) ViewGroupByProfile(ctx context.Context, token string, profi
 	return es.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (es eventStore) CreateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
-	return es.svc.CreateRolesByGroup(ctx, token, gms...)
+func (es eventStore) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
+	return es.svc.CreateGroupMembers(ctx, token, gms...)
 }
 
-func (es eventStore) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
-	return es.svc.ListRolesByGroup(ctx, token, groupID, pm)
+func (es eventStore) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+	return es.svc.ListGroupMembers(ctx, token, groupID, pm)
 }
 
-func (es eventStore) UpdateRolesByGroup(ctx context.Context, token string, gms ...things.GroupMember) error {
-	return es.svc.UpdateRolesByGroup(ctx, token, gms...)
+func (es eventStore) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
+	return es.svc.UpdateGroupMembers(ctx, token, gms...)
 }
 
-func (es eventStore) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	return es.svc.RemoveRolesByGroup(ctx, token, groupID, memberIDs...)
+func (es eventStore) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	return es.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
 }
