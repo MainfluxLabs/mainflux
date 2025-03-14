@@ -278,7 +278,16 @@ func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string,
 			return err
 		}
 
-		if err := ts.things.Update(ctx, thing); err != nil {
+		th, err := ts.things.RetrieveByID(ctx, thing.ID)
+		if err != nil {
+			return err
+		}
+
+		for k, v := range thing.Metadata {
+			th.Metadata[k] = v
+		}
+
+		if err := ts.things.Update(ctx, th); err != nil {
 			return err
 		}
 	}
