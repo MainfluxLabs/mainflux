@@ -44,23 +44,23 @@ func TestMain(m *testing.M) {
 }
 
 func startServer() {
-	svc = newService(map[string]string{token: email})
+	svc = newService()
 	listener, _ := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	server := grpc.NewServer()
 	protomfx.RegisterThingsServiceServer(server, grpcapi.NewServer(mocktracer.New(), svc))
 	go server.Serve(listener)
 }
 
-func newService(tokens map[string]string) things.Service {
+func newService() things.Service {
 	auth := mocks.NewAuthService("", usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewGroupMembersRepository()
-	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
+	groupMembers := thmocks.NewGroupMembersRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembers)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembers, profileCache, thingCache, groupCache, idProvider)
 }

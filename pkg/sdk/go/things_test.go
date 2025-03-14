@@ -49,14 +49,14 @@ func newThingsService() things.Service {
 	auth := mocks.NewAuthService("", usersList, orgs)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	rolesRepo := thmocks.NewGroupMembersRepository()
-	groupsRepo := thmocks.NewGroupRepository(rolesRepo)
+	groupMembers := thmocks.NewGroupMembersRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembers)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembers, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {

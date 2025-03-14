@@ -58,14 +58,14 @@ func newService() things.Service {
 	auth := authmock.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
-	rolesRepo := mocks.NewGroupMembersRepository()
-	groupsRepo := mocks.NewGroupRepository(rolesRepo)
+	groupMembersRepo := mocks.NewGroupMembersRepository()
+	groupsRepo := mocks.NewGroupRepository(groupMembersRepo)
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
 	groupCache := mocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, rolesRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func TestInit(t *testing.T) {

@@ -191,7 +191,7 @@ func (sdk mfSDK) ReadMessages(profileID, token string) (MessagesPage, error)
     ReadMessages - read messages of specified profile
 
 func (sdk mfSDK) ValidateContentType(ct ContentType) error
-    ValidateContentType - set message content type. Available options are SenML JSON, custom JSON and custom binary (octet-stream).
+    ValidateContentType - validate message content type. Available options are SenML JSON, custom JSON and custom binary (octet-stream).
 
 func (sdk mfSDK) Health() (mainflux.HealthInfo, error)
     Health - things service health check

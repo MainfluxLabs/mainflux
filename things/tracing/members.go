@@ -22,22 +22,22 @@ const (
 	retrieveAllRolesByGroup  = "retrieve_all_roles_by_group"
 )
 
-var _ things.GroupMembersRepository = (*rolesRepositoryMiddleware)(nil)
+var _ things.GroupMembersRepository = (*groupMembersRepositoryMiddleware)(nil)
 
-type rolesRepositoryMiddleware struct {
+type groupMembersRepositoryMiddleware struct {
 	tracer opentracing.Tracer
 	repo   things.GroupMembersRepository
 }
 
 // GroupMembersRepositoryMiddleware tracks request and their latency, and adds spans to context.
 func GroupMembersRepositoryMiddleware(tracer opentracing.Tracer, pr things.GroupMembersRepository) things.GroupMembersRepository {
-	return rolesRepositoryMiddleware{
+	return groupMembersRepositoryMiddleware{
 		tracer: tracer,
 		repo:   pr,
 	}
 }
 
-func (prm rolesRepositoryMiddleware) Save(ctx context.Context, gms ...things.GroupMember) error {
+func (prm groupMembersRepositoryMiddleware) Save(ctx context.Context, gms ...things.GroupMember) error {
 	span := createSpan(ctx, prm.tracer, saveRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -45,7 +45,7 @@ func (prm rolesRepositoryMiddleware) Save(ctx context.Context, gms ...things.Gro
 	return prm.repo.Save(ctx, gms...)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
+func (prm groupMembersRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
 	span := createSpan(ctx, prm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -53,7 +53,7 @@ func (prm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, gp things
 	return prm.repo.RetrieveRole(ctx, gp)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (prm groupMembersRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	span := createSpan(ctx, prm.tracer, retrieveRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -61,7 +61,7 @@ func (prm rolesRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupI
 	return prm.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
+func (prm groupMembersRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	span := createSpan(ctx, prm.tracer, retrieveGroupIDsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -69,7 +69,7 @@ func (prm rolesRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Contex
 	return prm.repo.RetrieveGroupIDsByMember(ctx, memberID)
 }
 
-func (prm rolesRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
+func (prm groupMembersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
 	span := createSpan(ctx, prm.tracer, retrieveAllRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -77,7 +77,7 @@ func (prm rolesRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.
 	return prm.repo.RetrieveAll(ctx)
 }
 
-func (prm rolesRepositoryMiddleware) UpdateRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
+func (prm groupMembersRepositoryMiddleware) UpdateRolesByGroup(ctx context.Context, gms ...things.GroupMember) error {
 	span := createSpan(ctx, prm.tracer, updateRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -85,7 +85,7 @@ func (prm rolesRepositoryMiddleware) UpdateRolesByGroup(ctx context.Context, gms
 	return prm.repo.UpdateRolesByGroup(ctx, gms...)
 }
 
-func (prm rolesRepositoryMiddleware) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
+func (prm groupMembersRepositoryMiddleware) RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error {
 	span := createSpan(ctx, prm.tracer, removeRolesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

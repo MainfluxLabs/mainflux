@@ -9,21 +9,21 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-var _ things.GroupMembersRepository = (*rolesRepositoryMock)(nil)
+var _ things.GroupMembersRepository = (*groupMembersRepositoryMock)(nil)
 
-type rolesRepositoryMock struct {
+type groupMembersRepositoryMock struct {
 	mu         sync.Mutex
 	groupRoles map[string][]things.GroupMember
 }
 
 // NewGroupMembersRepository returns mock of roles repository
 func NewGroupMembersRepository() things.GroupMembersRepository {
-	return &rolesRepositoryMock{
+	return &groupMembersRepositoryMock{
 		groupRoles: make(map[string][]things.GroupMember),
 	}
 }
 
-func (mrm *rolesRepositoryMock) Save(_ context.Context, gms ...things.GroupMember) error {
+func (mrm *groupMembersRepositoryMock) Save(_ context.Context, gms ...things.GroupMember) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -34,7 +34,7 @@ func (mrm *rolesRepositoryMock) Save(_ context.Context, gms ...things.GroupMembe
 	return nil
 }
 
-func (mrm *rolesRepositoryMock) RetrieveRole(_ context.Context, gm things.GroupMember) (string, error) {
+func (mrm *groupMembersRepositoryMock) RetrieveRole(_ context.Context, gm things.GroupMember) (string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -47,11 +47,11 @@ func (mrm *rolesRepositoryMock) RetrieveRole(_ context.Context, gm things.GroupM
 	return "", errors.ErrNotFound
 }
 
-func (mrm *rolesRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (mrm *groupMembersRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	panic("not implemented")
 }
 
-func (mrm *rolesRepositoryMock) RetrieveGroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
+func (mrm *groupMembersRepositoryMock) RetrieveGroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -68,7 +68,7 @@ func (mrm *rolesRepositoryMock) RetrieveGroupIDsByMember(_ context.Context, memb
 	return grIDs, nil
 }
 
-func (mrm *rolesRepositoryMock) RetrieveAll(_ context.Context) ([]things.GroupMember, error) {
+func (mrm *groupMembersRepositoryMock) RetrieveAll(_ context.Context) ([]things.GroupMember, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -80,10 +80,10 @@ func (mrm *rolesRepositoryMock) RetrieveAll(_ context.Context) ([]things.GroupMe
 	return mbrs, nil
 }
 
-func (mrm *rolesRepositoryMock) UpdateRolesByGroup(_ context.Context, gms ...things.GroupMember) error {
+func (mrm *groupMembersRepositoryMock) UpdateRolesByGroup(_ context.Context, gms ...things.GroupMember) error {
 	panic("not implemented")
 }
 
-func (mrm *rolesRepositoryMock) RemoveRolesByGroup(_ context.Context, groupID string, memberIDs ...string) error {
+func (mrm *groupMembersRepositoryMock) RemoveRolesByGroup(_ context.Context, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }
