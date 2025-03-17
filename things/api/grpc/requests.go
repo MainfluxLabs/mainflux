@@ -26,7 +26,7 @@ type configByThingIDReq struct {
 
 func (req configByThingIDReq) validate() error {
 	if req.thingID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil
@@ -65,7 +65,7 @@ func (req thingAccessReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil
@@ -89,7 +89,7 @@ type getGroupsByIDsReq struct {
 
 func (req getGroupsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil
@@ -101,7 +101,7 @@ type groupIDByThingIDReq struct {
 
 func (req groupIDByThingIDReq) validate() error {
 	if req.thingID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil

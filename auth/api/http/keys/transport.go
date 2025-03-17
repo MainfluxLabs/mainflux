@@ -90,7 +90,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingKeyID,
 		err == apiutil.ErrInvalidAPIKey:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthentication),

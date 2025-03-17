@@ -175,7 +175,8 @@ func encodeError(err error) error {
 		return nil
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrInvalidAuthKey,
-		err == apiutil.ErrMissingID:
+		err == apiutil.ErrMissingOrgID,
+		err == apiutil.ErrMissingUserID:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, auth.ErrKeyExpired),

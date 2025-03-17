@@ -76,22 +76,22 @@ func TestSave(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "save group roles",
+			desc: "save group members",
 			gms:  gms,
 			err:  nil,
 		},
 		{
-			desc: "save group roles without group ids",
+			desc: "save group members without group ids",
 			gms:  gmsWithoutGroupIDs,
 			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save group roles without member id",
+			desc: "save group members without member id",
 			gms:  gmsWithoutMemberIDs,
 			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save existing group roles",
+			desc: "save existing group members",
 			gms:  gms,
 			err:  errors.ErrConflict,
 		},
@@ -201,7 +201,7 @@ func TestRetrieveByGroup(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "retrieve group roles",
+			desc:    "retrieve group members",
 			groupID: group.ID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -212,7 +212,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve last group role",
+			desc:    "retrieve last group member",
 			groupID: group.ID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: n - 1,
@@ -223,7 +223,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve group roles with invalid group id",
+			desc:    "retrieve group members with invalid group id",
 			groupID: invalidID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -233,7 +233,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err: errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve group roles without group id",
+			desc:    "retrieve group members without group id",
 			groupID: "",
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -292,19 +292,19 @@ func TestRemoveGroupMembers(t *testing.T) {
 		err       error
 	}{
 		{
-			desc:      "remove group roles without group id",
+			desc:      "remove group members without group id",
 			groupID:   "",
 			memberIDs: memberIDs,
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group roles without member ids",
+			desc:      "remove group members without member ids",
 			groupID:   group.ID,
 			memberIDs: []string{""},
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group roles",
+			desc:      "remove group members",
 			groupID:   group.ID,
 			memberIDs: memberIDs,
 			err:       nil,
@@ -356,7 +356,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 		err    error
 	}{
 		{
-			desc: "update group roles without group id",
+			desc: "update group members without group id",
 			gpByID: things.GroupMember{
 				MemberID: memberID,
 				GroupID:  "",
@@ -365,7 +365,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group roles without member id",
+			desc: "update group members without member id",
 			gpByID: things.GroupMember{
 				MemberID: "",
 				GroupID:  group.ID,
@@ -374,7 +374,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group roles",
+			desc: "update group members",
 			gpByID: things.GroupMember{
 				MemberID: memberID,
 				GroupID:  group.ID,

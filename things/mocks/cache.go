@@ -131,14 +131,14 @@ func (ccm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) er
 }
 
 type groupCacheMock struct {
-	mu    sync.Mutex
-	roles map[string]string
+	mu      sync.Mutex
+	members map[string]string
 }
 
 // NewGroupCache returns mock cache instance.
 func NewGroupCache() things.GroupCache {
 	return &groupCacheMock{
-		roles: make(map[string]string),
+		members: make(map[string]string),
 	}
 }
 
@@ -146,12 +146,12 @@ func (gcm *groupCacheMock) RemoveGroupEntities(_ context.Context, groupID string
 	return nil
 }
 
-func (gcm *groupCacheMock) SaveRole(_ context.Context, groupID, memberID, role string) error {
+func (gcm *groupCacheMock) SaveGroupMember(_ context.Context, groupID, memberID, role string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := rKey(groupID, memberID)
-	gcm.roles[key] = role
+	key := mKey(groupID, memberID)
+	gcm.members[key] = role
 	return nil
 }
 
@@ -159,8 +159,8 @@ func (gcm *groupCacheMock) ViewRole(_ context.Context, groupID, memberID string)
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := rKey(groupID, memberID)
-	role, ok := gcm.roles[key]
+	key := mKey(groupID, memberID)
+	role, ok := gcm.members[key]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -168,12 +168,12 @@ func (gcm *groupCacheMock) ViewRole(_ context.Context, groupID, memberID string)
 	return role, nil
 }
 
-func (gcm *groupCacheMock) RemoveRole(_ context.Context, groupID, memberID string) error {
+func (gcm *groupCacheMock) RemoveGroupMember(_ context.Context, groupID, memberID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	key := rKey(groupID, memberID)
-	delete(gcm.roles, key)
+	key := mKey(groupID, memberID)
+	delete(gcm.members, key)
 
 	return nil
 }
@@ -183,7 +183,7 @@ func (gcm *groupCacheMock) GroupMemberships(_ context.Context, memberID string) 
 	defer gcm.mu.Unlock()
 
 	groups := []string{}
-	for k := range gcm.roles {
+	for k := range gcm.members {
 		parts := strings.Split(k, ":")
 		if parts[1] == memberID {
 			groups = append(groups, parts[0])
@@ -193,6 +193,6 @@ func (gcm *groupCacheMock) GroupMemberships(_ context.Context, memberID string) 
 	return groups, nil
 }
 
-func rKey(groupID, memberID string) string {
+func mKey(groupID, memberID string) string {
 	return fmt.Sprintf("%s:%s", groupID, memberID)
 }

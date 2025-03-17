@@ -522,7 +522,7 @@ func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_roles_by_group took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method create_group_members took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -534,7 +534,7 @@ func (lm *loggingMiddleware) CreateGroupMembers(ctx context.Context, token strin
 
 func (lm *loggingMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (gpp things.GroupMembersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_group_members for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 		}
@@ -546,7 +546,7 @@ func (lm *loggingMiddleware) ListGroupMembers(ctx context.Context, token, groupI
 
 func (lm *loggingMiddleware) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_roles_by_group took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method update_group_members took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -558,7 +558,7 @@ func (lm *loggingMiddleware) UpdateGroupMembers(ctx context.Context, token strin
 
 func (lm *loggingMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_roles_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_group_members for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

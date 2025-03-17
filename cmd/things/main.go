@@ -180,11 +180,11 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(thingsHttpTracer, svc, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {

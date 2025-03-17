@@ -234,6 +234,7 @@ func encodeError(err error) error {
 		return nil
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingGroupID,
 		err == apiutil.ErrBearerKey:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):

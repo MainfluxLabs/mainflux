@@ -374,8 +374,8 @@ func (ms *metricsMiddleware) ViewGroupByProfile(ctx context.Context, token, prof
 
 func (ms *metricsMiddleware) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_roles_by_group").Add(1)
-		ms.latency.With("method", "create_roles_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_group_members").Add(1)
+		ms.latency.With("method", "create_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.CreateGroupMembers(ctx, token, gms...)
@@ -383,8 +383,8 @@ func (ms *metricsMiddleware) CreateGroupMembers(ctx context.Context, token strin
 
 func (ms *metricsMiddleware) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_roles_by_group").Add(1)
-		ms.latency.With("method", "list_roles_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_group_members").Add(1)
+		ms.latency.With("method", "list_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.ListGroupMembers(ctx, token, groupID, pm)
@@ -392,8 +392,8 @@ func (ms *metricsMiddleware) ListGroupMembers(ctx context.Context, token, groupI
 
 func (ms *metricsMiddleware) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_roles_by_group").Add(1)
-		ms.latency.With("method", "update_roles_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_group_members").Add(1)
+		ms.latency.With("method", "update_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.UpdateGroupMembers(ctx, token, gms...)
@@ -401,8 +401,8 @@ func (ms *metricsMiddleware) UpdateGroupMembers(ctx context.Context, token strin
 
 func (ms *metricsMiddleware) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_roles_by_group").Add(1)
-		ms.latency.With("method", "remove_roles_by_group").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_group_members").Add(1)
+		ms.latency.With("method", "remove_group_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)

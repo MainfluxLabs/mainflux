@@ -42,7 +42,7 @@ func (req keyReq) validate() error {
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingKeyID
 	}
 	return nil
 }

@@ -48,6 +48,9 @@ var (
 	// ErrMissingObject indicates missing object.
 	ErrMissingObject = errors.New("missing object")
 
+	// ErrMissingKeyID indicates missing ID of key.
+	ErrMissingKeyID = errors.New("missing key ID")
+
 	// ErrInvalidSubject indicates invalid subject.
 	ErrInvalidSubject = errors.New("invalid subject")
 

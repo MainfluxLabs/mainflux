@@ -104,14 +104,14 @@ type GroupCache interface {
 	// RemoveGroupEntities removes all entities related to the group identified by ID.
 	RemoveGroupEntities(context.Context, string) error
 
-	// SaveRole stores member's role for given group ID.
-	SaveRole(context.Context, string, string, string) error
+	// SaveGroupMember stores member's role for given group ID.
+	SaveGroupMember(context.Context, string, string, string) error
 
 	// ViewRole returns a group member role by given groupID and memberID.
 	ViewRole(context.Context, string, string) (string, error)
 
-	// RemoveRole removes a group member role from cache.
-	RemoveRole(context.Context, string, string) error
+	// RemoveGroupMember removes a group member from cache.
+	RemoveGroupMember(context.Context, string, string) error
 
 	// GroupMemberships returns the IDs of the groups the member belongs to.
 	GroupMemberships(context.Context, string) ([]string, error)
@@ -151,7 +151,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 				return []Group{}, err
 			}
 
-			if err := ts.groupCache.SaveRole(ctx, gr.ID, members[i].MemberID, members[i].Role); err != nil {
+			if err := ts.groupCache.SaveGroupMember(ctx, gr.ID, members[i].MemberID, members[i].Role); err != nil {
 				return []Group{}, err
 			}
 		}
@@ -352,7 +352,7 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		}
 		role = r
 
-		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, r); err != nil {
+		if err := ts.groupCache.SaveGroupMember(ctx, gm.GroupID, gm.MemberID, r); err != nil {
 			return err
 		}
 	}

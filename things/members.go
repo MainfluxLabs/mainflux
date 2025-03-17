@@ -44,16 +44,16 @@ type GroupMembersRepository interface {
 }
 
 type GroupMembers interface {
-	// CreateGroupMembers creates roles of the group identified by the provided ID.
+	// CreateGroupMembers creates members of the group identified by the provided ID.
 	CreateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error
 
-	// ListGroupMembers retrieves a page of roles for a group that is identified by the provided ID.
+	// ListGroupMembers retrieves a page of members for a group that is identified by the provided ID.
 	ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
-	// UpdateGroupMembers updates roles of the group identified by the provided ID.
+	// UpdateGroupMembers updates members of the group identified by the provided ID.
 	UpdateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error
 
-	// RemoveGroupMembers removes roles of the group identified by the provided ID.
+	// RemoveGroupMembers removes members of the group identified by the provided ID.
 	RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
@@ -72,7 +72,7 @@ func (ts *thingsService) CreateGroupMembers(ctx context.Context, token string, g
 			return err
 		}
 
-		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
+		if err := ts.groupCache.SaveGroupMember(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
@@ -172,7 +172,7 @@ func (ts *thingsService) UpdateGroupMembers(ctx context.Context, token string, g
 	}
 
 	for _, gm := range gms {
-		if err := ts.groupCache.SaveRole(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
+		if err := ts.groupCache.SaveGroupMember(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
 	}
@@ -209,7 +209,7 @@ func (ts *thingsService) RemoveGroupMembers(ctx context.Context, token, groupID 
 	}
 
 	for _, mID := range memberIDs {
-		if err := ts.groupCache.RemoveRole(ctx, groupID, mID); err != nil {
+		if err := ts.groupCache.RemoveGroupMember(ctx, groupID, mID); err != nil {
 			return err
 		}
 	}

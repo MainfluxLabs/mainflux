@@ -165,7 +165,7 @@ func (ws *webhooksService) Consume(message interface{}) error {
 		msgs := v.Data
 		for _, msg := range msgs {
 			if msg.ProfileConfig["webhook_id"] == nil {
-				return apiutil.ErrMissingID
+				return apiutil.ErrMissingWebhookID
 			}
 
 			wh, err := ws.webhooks.RetrieveByID(ctx, msg.ProfileConfig["webhook_id"].(string))

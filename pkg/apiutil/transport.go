@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
+	"github.com/gofrs/uuid"
 )
 
 const (
@@ -62,6 +63,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingRole),
 			errors.Contains(err, ErrInvalidSubject),
 			errors.Contains(err, ErrMissingObject),
+			errors.Contains(err, ErrMissingKeyID),
 			errors.Contains(err, ErrInvalidAction),
 			errors.Contains(err, ErrBearerKey),
 			errors.Contains(err, ErrInvalidAuthKey),
@@ -284,4 +286,35 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Dir:      d,
 		Metadata: m,
 	}, nil
+}
+
+func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {
+	if pm.Limit > uint64(maxLimitSize) {
+		return ErrLimitSize
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return ErrNameSize
+	}
+
+	if pm.Order != "" &&
+		pm.Order != NameOrder && pm.Order != IDOrder {
+		return ErrInvalidOrder
+	}
+
+	if pm.Dir != "" &&
+		pm.Dir != AscDir && pm.Dir != DescDir {
+		return ErrInvalidDirection
+	}
+
+	return nil
+}
+
+func ValidateUUID(extID string) (err error) {
+	id, err := uuid.FromString(extID)
+	if id.String() != extID || err != nil {
+		return ErrInvalidIDFormat
+	}
+
+	return nil
 }
