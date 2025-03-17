@@ -20,44 +20,44 @@ type GroupMembersPage struct {
 	GroupMembers []GroupMember
 }
 
-type RolesRepository interface {
-	// SaveRolesByGroup saves group roles by group ID.
-	SaveRolesByGroup(ctx context.Context, gms ...GroupMember) error
+type GroupMembersRepository interface {
+	// Save saves group members.
+	Save(ctx context.Context, gms ...GroupMember) error
 
-	// RetrieveRole retrieves group role by group ID.
+	// RetrieveRole retrieves group role by group ID and member ID.
 	RetrieveRole(ctc context.Context, gp GroupMember) (string, error)
 
-	// RetrieveRolesByGroup retrieves page of group roles by groupID.
-	RetrieveRolesByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
+	// RetrieveByGroup retrieves page of group members by group ID.
+	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
-	// RetrieveAllRolesByGroup retrieves all group roles by group ID. This is used for backup.
-	RetrieveAllRolesByGroup(ctx context.Context) ([]GroupMember, error)
+	// RetrieveAll retrieves all group members. This is used for backup.
+	RetrieveAll(ctx context.Context) ([]GroupMember, error)
 
 	// RetrieveGroupIDsByMember retrieves the IDs of the groups to which the member belongs
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)
 
-	// RemoveRolesByGroup removes group roles by group ID.
-	RemoveRolesByGroup(ctx context.Context, groupID string, memberIDs ...string) error
+	// Remove removes group members.
+	Remove(ctx context.Context, groupID string, memberIDs ...string) error
 
-	// UpdateRolesByGroup updates group roles by group ID.
-	UpdateRolesByGroup(ctx context.Context, gms ...GroupMember) error
+	// Update updates group members.
+	Update(ctx context.Context, gms ...GroupMember) error
 }
 
-type Roles interface {
-	// CreateRolesByGroup creates roles of the group identified by the provided ID.
-	CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
+type GroupMembers interface {
+	// CreateGroupMembers creates roles of the group identified by the provided ID.
+	CreateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error
 
-	// ListRolesByGroup retrieves a page of roles for a group that is identified by the provided ID.
-	ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
+	// ListGroupMembers retrieves a page of roles for a group that is identified by the provided ID.
+	ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
-	// UpdateRolesByGroup updates roles of the group identified by the provided ID.
-	UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error
+	// UpdateGroupMembers updates roles of the group identified by the provided ID.
+	UpdateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error
 
-	// RemoveRolesByGroup removes roles of the group identified by the provided ID.
-	RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error
+	// RemoveGroupMembers removes roles of the group identified by the provided ID.
+	RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
-func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
+func (ts *thingsService) CreateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error {
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -68,7 +68,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 			return err
 		}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
+		if err := ts.groupMembers.Save(ctx, gm); err != nil {
 			return err
 		}
 
@@ -80,7 +80,7 @@ func (ts *thingsService) CreateRolesByGroup(ctx context.Context, token string, g
 	return nil
 }
 
-func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error) {
+func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -91,7 +91,7 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 		return GroupMembersPage{}, err
 	}
 
-	gpp, err := ts.roles.RetrieveRolesByGroup(ctx, groupID, pm)
+	gpp, err := ts.groupMembers.RetrieveByGroup(ctx, groupID, pm)
 	if err != nil {
 		return GroupMembersPage{}, err
 	}
@@ -142,7 +142,7 @@ func (ts *thingsService) ListRolesByGroup(ctx context.Context, token, groupID st
 	return page, nil
 }
 
-func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, gms ...GroupMember) error {
+func (ts *thingsService) UpdateGroupMembers(ctx context.Context, token string, gms ...GroupMember) error {
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -156,7 +156,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 
 		rm, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
 		if err != nil {
-			r, err := ts.roles.RetrieveRole(ctx, gm)
+			r, err := ts.groupMembers.RetrieveRole(ctx, gm)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 		}
 	}
 
-	if err := ts.roles.UpdateRolesByGroup(ctx, gms...); err != nil {
+	if err := ts.groupMembers.Update(ctx, gms...); err != nil {
 		return err
 	}
 
@@ -180,7 +180,7 @@ func (ts *thingsService) UpdateRolesByGroup(ctx context.Context, token string, g
 	return nil
 }
 
-func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID string, memberIDs ...string) error {
+func (ts *thingsService) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -194,7 +194,7 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 	for _, mid := range memberIDs {
 		rm, err := ts.groupCache.ViewRole(ctx, groupID, mid)
 		if err != nil {
-			r, err := ts.roles.RetrieveRole(ctx, GroupMember{GroupID: groupID, MemberID: mid})
+			r, err := ts.groupMembers.RetrieveRole(ctx, GroupMember{GroupID: groupID, MemberID: mid})
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func (ts *thingsService) RemoveRolesByGroup(ctx context.Context, token, groupID 
 			return errors.ErrAuthorization
 		}
 	}
-	if err := ts.roles.RemoveRolesByGroup(ctx, groupID, memberIDs...); err != nil {
+	if err := ts.groupMembers.Remove(ctx, groupID, memberIDs...); err != nil {
 		return err
 	}
 

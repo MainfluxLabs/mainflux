@@ -69,12 +69,10 @@ func (sdk mfSDK) ReadMessages(pm PageMetadata, token string) (map[string]interfa
 	return mp, nil
 }
 
-func (sdk mfSDK) SetContentType(ct ContentType) error {
+func (sdk mfSDK) ValidateContentType(ct ContentType) error {
 	if ct != CTJSON && ct != CTJSONSenML && ct != CTBinary {
 		return ErrInvalidContentType
 	}
-
-	sdk.msgContentType = ct
 
 	return nil
 }

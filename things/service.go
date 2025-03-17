@@ -122,14 +122,14 @@ type Service interface {
 
 	Groups
 
-	Roles
+	GroupMembers
 }
 
 type Backup struct {
-	Things     []Thing
-	Profiles   []Profile
-	Groups     []Group
-	GroupRoles []GroupMember
+	Things       []Thing
+	Profiles     []Profile
+	Groups       []Group
+	GroupMembers []GroupMember
 }
 
 type UserAccessReq struct {
@@ -156,7 +156,7 @@ type thingsService struct {
 	things       ThingRepository
 	profiles     ProfileRepository
 	groups       GroupRepository
-	roles        RolesRepository
+	groupMembers GroupMembersRepository
 	profileCache ProfileCache
 	thingCache   ThingCache
 	groupCache   GroupCache
@@ -164,14 +164,14 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, roles RolesRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, groupMembers GroupMembersRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
 	return &thingsService{
 		auth:         auth,
 		users:        users,
 		things:       things,
 		profiles:     profiles,
 		groups:       groups,
-		roles:        roles,
+		groupMembers: groupMembers,
 		profileCache: pcache,
 		thingCache:   tcache,
 		groupCache:   gcache,
@@ -682,7 +682,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupsRoles, err := ts.roles.RetrieveAllRolesByGroup(ctx)
+	groupMembers, err := ts.groupMembers.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -698,10 +698,10 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:     things,
-		Profiles:   profiles,
-		Groups:     groups,
-		GroupRoles: groupsRoles,
+		Things:       things,
+		Profiles:     profiles,
+		Groups:       groups,
+		GroupMembers: groupMembers,
 	}, nil
 }
 
@@ -724,14 +724,14 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	for _, g := range backup.GroupRoles {
+	for _, g := range backup.GroupMembers {
 		gm := GroupMember{
 			MemberID: g.MemberID,
 			GroupID:  g.GroupID,
 			Role:     g.Role,
 		}
 
-		if err := ts.roles.SaveRolesByGroup(ctx, gm); err != nil {
+		if err := ts.groupMembers.Save(ctx, gm); err != nil {
 			return err
 		}
 	}
@@ -834,7 +834,7 @@ func (ts *thingsService) getGroupIDByProfileID(ctx context.Context, prID string)
 func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID string) ([]string, error) {
 	grIDs, err := ts.groupCache.GroupMemberships(ctx, memberID)
 	if err != nil {
-		grIDs, err = ts.roles.RetrieveGroupIDsByMember(ctx, memberID)
+		grIDs, err = ts.groupMembers.RetrieveGroupIDsByMember(ctx, memberID)
 		if err != nil {
 			return []string{}, err
 		}

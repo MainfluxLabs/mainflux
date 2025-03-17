@@ -155,9 +155,8 @@ func TestRetrieveProfileByID(t *testing.T) {
 		Name:      thingName,
 		Key:       thkey,
 	}
-	ths, err := thingRepo.Save(context.Background(), th)
+	_, err = thingRepo.Save(context.Background(), th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	th = ths[0]
 
 	cases := map[string]struct {
 		ID  string

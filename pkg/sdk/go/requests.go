@@ -3,14 +3,6 @@
 
 package sdk
 
-type groupThingsReq struct {
-	Things []string `json:"things"`
-}
-
-type groupProfilesReq struct {
-	Profiles []string `json:"profiles"`
-}
-
 // UserPasswordReq contains old and new passwords
 type UserPasswordReq struct {
 	OldPassword string `json:"old_password,omitempty"`
