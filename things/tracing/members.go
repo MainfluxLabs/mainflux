@@ -14,8 +14,8 @@ import (
 
 const (
 	saveGroupMembers         = "save_group_members"
-	UpdateGroupMembers       = "update_group_members"
-	RemoveGroupMembers       = "remove_group_members"
+	updateGroupMembers       = "update_group_members"
+	removeGroupMembers       = "remove_group_members"
 	retrieveRole             = "retrieve_role"
 	retrieveByGroup          = "retrieve_by_group"
 	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
@@ -78,7 +78,7 @@ func (prm groupMembersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]
 }
 
 func (prm groupMembersRepositoryMiddleware) Update(ctx context.Context, gms ...things.GroupMember) error {
-	span := createSpan(ctx, prm.tracer, UpdateGroupMembers)
+	span := createSpan(ctx, prm.tracer, updateGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -86,7 +86,7 @@ func (prm groupMembersRepositoryMiddleware) Update(ctx context.Context, gms ...t
 }
 
 func (prm groupMembersRepositoryMiddleware) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
-	span := createSpan(ctx, prm.tracer, RemoveGroupMembers)
+	span := createSpan(ctx, prm.tracer, removeGroupMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
