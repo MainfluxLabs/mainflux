@@ -58,7 +58,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"CanUserAccessThing",
-			encodeUserAccessRequest,
+			encodeUserAccessThingRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -66,7 +66,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"CanUserAccessProfile",
-			encodeUserAccessRequest,
+			encodeUserAccessProfileRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -74,7 +74,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"CanUserAccessGroup",
-			encodeUserAccessRequest,
+			encodeUserAccessGroupRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -82,7 +82,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"CanThingAccessGroup",
-			encodeThingAccessRequest,
+			encodeThingAccessGroupRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -141,7 +141,7 @@ func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.T
 }
 
 func (client grpcClient) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	r := userAccessThingReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
 	res, err := client.canUserAccessThing(ctx, r)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (client grpcClient) CanUserAccessThing(ctx context.Context, req *protomfx.U
 }
 
 func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	r := userAccessProfileReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
 	res, err := client.canUserAccessProfile(ctx, r)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx
 }
 
 func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}
+	r := userAccessGroupReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
 	res, err := client.canUserAccessGroup(ctx, r)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.U
 }
 
 func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	r := thingAccessReq{key: req.GetKey(), id: req.GetId()}
+	r := thingAccessGroupReq{key: req.GetKey(), id: req.GetId()}
 	res, err := client.canThingAccessGroup(ctx, r)
 	if err != nil {
 		return nil, err
@@ -233,13 +233,23 @@ func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
-func encodeUserAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(userAccessReq)
+func encodeUserAccessThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(userAccessThingReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
-func encodeThingAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(thingAccessReq)
+func encodeUserAccessProfileRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(userAccessProfileReq)
+	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
+}
+
+func encodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(userAccessGroupReq)
+	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
+}
+
+func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(thingAccessGroupReq)
 	return &protomfx.ThingAccessReq{Key: req.key, Id: req.id}, nil
 }
 

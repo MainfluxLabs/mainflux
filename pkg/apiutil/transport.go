@@ -51,7 +51,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 	return func(ctx context.Context, err error, w http.ResponseWriter) {
 		switch {
 		case errors.Contains(err, ErrBearerToken),
-			errors.Contains(err, ErrMissingID),
 			errors.Contains(err, ErrMissingThingID),
 			errors.Contains(err, ErrMissingProfileID),
 			errors.Contains(err, ErrMissingGroupID),

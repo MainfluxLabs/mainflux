@@ -47,22 +47,22 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		),
 		canUserAccessThing: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_user_access_thing")(canUserAccessThingEndpoint(svc)),
-			decodeUserAccessRequest,
+			decodeUserAccessThingRequest,
 			encodeEmptyResponse,
 		),
 		canUserAccessProfile: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_user_access_profile")(canUserAccessProfileEndpoint(svc)),
-			decodeUserAccessRequest,
+			decodeUserAccessProfileRequest,
 			encodeEmptyResponse,
 		),
 		canUserAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_user_access_group")(canUserAccessGroupEndpoint(svc)),
-			decodeUserAccessRequest,
+			decodeUserAccessGroupRequest,
 			encodeEmptyResponse,
 		),
 		canThingAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
-			decodeThingAccessRequest,
+			decodeThingAccessGroupRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -173,14 +173,24 @@ func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (in
 	return configByThingIDReq{thingID: req.GetValue()}, nil
 }
 
-func decodeUserAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeUserAccessThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.UserAccessReq)
-	return userAccessReq{token: req.GetToken(), id: req.GetId(), action: req.GetAction()}, nil
+	return userAccessThingReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}, nil
 }
 
-func decodeThingAccessRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeUserAccessProfileRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.UserAccessReq)
+	return userAccessProfileReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}, nil
+}
+
+func decodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.UserAccessReq)
+	return userAccessGroupReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}, nil
+}
+
+func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
-	return thingAccessReq{key: req.GetKey(), id: req.GetId()}, nil
+	return thingAccessGroupReq{key: req.GetKey(), id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -233,8 +243,11 @@ func encodeError(err error) error {
 	case err == nil:
 		return nil
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingID,
+		err == apiutil.ErrMissingThingID,
+		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,
+		err == apiutil.ErrInvalidAction,
+		err == apiutil.ErrBearerToken,
 		err == apiutil.ErrBearerKey:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):

@@ -61,7 +61,7 @@ func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userAccessReq)
+		req := request.(userAccessThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
 
 func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userAccessReq)
+		req := request.(userAccessProfileReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
 
 func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userAccessReq)
+		req := request.(userAccessGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(thingAccessReq)
+		req := request.(thingAccessGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
