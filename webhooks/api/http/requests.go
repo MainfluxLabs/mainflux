@@ -18,10 +18,6 @@ const (
 
 var ErrInvalidUrl = errors.New("missing or invalid url")
 
-type apiReq interface {
-	validate() error
-}
-
 type createWebhookReq struct {
 	ID       string                 `json:"id,omitempty"`
 	Name     string                 `json:"name"`

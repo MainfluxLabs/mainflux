@@ -44,10 +44,7 @@ func (res webhookResponse) Headers() map[string]string {
 }
 
 func (res webhookResponse) Empty() bool {
-	if res.updated {
-		return true
-	}
-	return false
+	return res.updated
 }
 
 type webhooksRes struct {

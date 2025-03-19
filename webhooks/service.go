@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -46,7 +45,6 @@ type Service interface {
 type webhooksService struct {
 	things     protomfx.ThingsServiceClient
 	webhooks   WebhookRepository
-	subscriber messaging.Subscriber
 	forwarder  Forwarder
 	idProvider uuid.IDProvider
 }

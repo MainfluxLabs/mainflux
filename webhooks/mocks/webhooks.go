@@ -14,7 +14,6 @@ var _ webhooks.WebhookRepository = (*webhookRepositoryMock)(nil)
 
 type webhookRepositoryMock struct {
 	mu       sync.Mutex
-	counter  uint64
 	webhooks map[string]webhooks.Webhook
 }
 
