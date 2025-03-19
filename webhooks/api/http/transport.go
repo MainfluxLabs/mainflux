@@ -36,9 +36,15 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 		encodeResponse,
 		opts...,
 	))
+	r.Get("/things/:id/webhooks", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_webhooks_by_thing")(listWebhooksByThingEndpoint(svc)),
+		decodeListThingWebhooks,
+		encodeResponse,
+		opts...,
+	))
 	r.Get("/groups/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
-		decodeListWebhooks,
+		decodeListGroupWebhooks,
 		encodeResponse,
 		opts...,
 	))
@@ -86,7 +92,7 @@ func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -94,7 +100,22 @@ func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error)
 
 	req := listWebhooksReq{
 		token:        apiutil.ExtractBearerToken(r),
-		id:           bone.GetValue(r, apiutil.IDKey),
+		groupID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListThingWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listWebhooksThingReq{
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
 

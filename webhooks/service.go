@@ -27,6 +27,10 @@ type Service interface {
 	// related to a certain group identified by the provided ID.
 	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
+	// ListWebhooksByGroup retrieves data about a subset of webhooks
+	// related to a certain group identified by the provided ID.
+	ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+
 	// ViewWebhook retrieves data about the webhook identified with the provided
 	// ID, that belongs to the user identified by the provided key.
 	ViewWebhook(ctx context.Context, token, id string) (Webhook, error)
@@ -111,6 +115,20 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 	}
 
 	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID, pm)
+	if err != nil {
+		return WebhooksPage{}, err
+	}
+
+	return webhooks, nil
+}
+
+func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	if err != nil {
+		return WebhooksPage{}, err
+	}
+
+	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID, pm)
 	if err != nil {
 		return WebhooksPage{}, err
 	}

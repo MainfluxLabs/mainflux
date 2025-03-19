@@ -84,7 +84,7 @@ func (req *webhookReq) validate() error {
 
 type listWebhooksReq struct {
 	token        string
-	id           string
+	groupID      string
 	pageMetadata apiutil.PageMetadata
 }
 
@@ -93,8 +93,40 @@ func (req listWebhooksReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMetadata.Order != "" &&
+		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.pageMetadata.Dir != "" &&
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
+	return nil
+}
+
+type listWebhooksThingReq struct {
+	token        string
+	thingID      string
+	pageMetadata apiutil.PageMetadata
+}
+
+func (req listWebhooksThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {

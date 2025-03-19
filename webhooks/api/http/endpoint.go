@@ -45,7 +45,23 @@ func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListWebhooksByGroup(ctx, req.token, req.id, req.pageMetadata)
+		page, err := svc.ListWebhooksByGroup(ctx, req.token, req.groupID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildWebhooksByGroupResponse(page), nil
+	}
+}
+
+func listWebhooksByThingEndpoint(svc webhooks.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listWebhooksThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListWebhooksByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

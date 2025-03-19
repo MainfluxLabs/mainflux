@@ -51,6 +51,15 @@ func (ms *metricsMiddleware) ListWebhooksByGroup(ctx context.Context, token, gro
 	return ms.svc.ListWebhooksByGroup(ctx, token, groupID, pm)
 }
 
+func (ms *metricsMiddleware) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_webhooks_by_thing").Add(1)
+		ms.latency.With("method", "list_webhooks_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListWebhooksByThing(ctx, token, thingID, pm)
+}
+
 func (ms *metricsMiddleware) ViewWebhook(ctx context.Context, token, id string) (webhooks.Webhook, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_webhook").Add(1)
