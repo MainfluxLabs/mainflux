@@ -34,7 +34,7 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 			}
 		}
 
-		wrm.webhooks[wh.ThingID] = wh
+		wrm.webhooks[wh.ID] = wh
 	}
 
 	return whs, nil
@@ -50,7 +50,7 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 
 	for _, wh := range wrm.webhooks {
 		if wh.GroupID == groupID {
-			id := uuid.ParseID(wh.ThingID)
+			id := uuid.ParseID(wh.ID)
 			if id >= first && id < last || pm.Limit == 0 {
 				items = append(items, wh)
 			}
@@ -76,7 +76,7 @@ func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (we
 	defer wrm.mu.Unlock()
 
 	for _, wh := range wrm.webhooks {
-		if wh.ThingID == id {
+		if wh.ID == id {
 			return wh, nil
 		}
 	}
@@ -88,10 +88,10 @@ func (wrm *webhookRepositoryMock) Update(_ context.Context, w webhooks.Webhook) 
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 
-	if _, ok := wrm.webhooks[w.ThingID]; !ok {
+	if _, ok := wrm.webhooks[w.ID]; !ok {
 		return errors.ErrNotFound
 	}
-	wrm.webhooks[w.ThingID] = w
+	wrm.webhooks[w.ID] = w
 
 	return nil
 }

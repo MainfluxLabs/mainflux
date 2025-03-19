@@ -21,6 +21,7 @@ const (
 	token       = "admin@example.com"
 	wrongValue  = "wrong-value"
 	emptyValue  = ""
+	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID     = "574106f7-030e-4881-8ab0-151195c29f94"
 	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
 	prefixName  = "test-webhook-"
@@ -33,11 +34,11 @@ const (
 var (
 	headers  = map[string]string{"Content-Type:": "application/json"}
 	metadata = map[string]interface{}{"test": "data"}
-	webhook  = webhooks.Webhook{GroupID: groupID, Name: webhookName, Url: "https://test.webhook.com", Headers: headers, Metadata: metadata}
+	webhook  = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: webhookName, Url: "https://test.webhook.com", Headers: headers, Metadata: metadata}
 )
 
 func newService() webhooks.Service {
-	ths := mocks.NewThingsServiceClient(nil, map[string]things.Thing{token: {ID: webhook.ThingID}}, map[string]things.Group{token: {ID: groupID}})
+	ths := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingID: {ID: thingID, GroupID: groupID}, token: {ID: thingID, GroupID: groupID}}, map[string]things.Group{token: {ID: groupID}})
 	webhookRepo := whMock.NewWebhookRepository()
 	forwarder := whMock.NewForwarder()
 	idProvider := uuid.NewMock()
@@ -52,13 +53,13 @@ func TestCreateWebhooks(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
 		name := fmt.Sprintf("%s%012d", prefixName, i+1)
 		webhook1 := webhook
-		webhook1.ThingID = id
+		webhook1.ID = id
 		webhook1.Name = name
 		whs = append(whs, webhook1)
 	}
 
-	invalidGroupWh := webhook
-	invalidGroupWh.GroupID = emptyValue
+	invalidThingWh := webhook
+	invalidThingWh.ThingID = emptyValue
 
 	invalidNameWh := webhook
 	invalidNameWh.Name = emptyValue
@@ -85,10 +86,10 @@ func TestCreateWebhooks(t *testing.T) {
 			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "create webhook with invalid group id",
-			webhooks: []webhooks.Webhook{invalidGroupWh},
+			desc:     "create webhook with invalid thing id",
+			webhooks: []webhooks.Webhook{invalidThingWh},
 			token:    token,
-			err:      errors.ErrAuthorization,
+			err:      errors.ErrNotFound,
 		},
 		{
 			desc:     "create webhook with invalid name",
@@ -104,9 +105,9 @@ func TestCreateWebhooks(t *testing.T) {
 		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		_, err := svc.CreateWebhooks(context.Background(), tc.token, tc.webhooks...)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", desc, tc.err, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
@@ -117,7 +118,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
 		name := fmt.Sprintf("%s%012d", prefixName, i+1)
 		webhook1 := webhook
-		webhook1.ThingID = id
+		webhook1.ID = id
 		webhook1.Name = name
 		whs = append(whs, webhook1)
 	}
@@ -238,7 +239,7 @@ func TestUpdateWebhook(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	wh := whs[0]
 
-	invalidWh := webhooks.Webhook{ThingID: emptyValue, Name: wh.Name, Url: wh.Url, GroupID: wh.GroupID, Headers: wh.Headers}
+	invalidWh := webhooks.Webhook{ID: emptyValue, Name: wh.Name, Url: wh.Url, GroupID: wh.GroupID, Headers: wh.Headers}
 
 	cases := []struct {
 		desc    string
@@ -284,12 +285,12 @@ func TestViewWebhook(t *testing.T) {
 		err   error
 	}{
 		"view existing webhook": {
-			id:    wh.ThingID,
+			id:    wh.ID,
 			token: token,
 			err:   nil,
 		},
 		"view webhook with wrong credentials": {
-			id:    wh.ThingID,
+			id:    wh.ID,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
@@ -320,13 +321,13 @@ func TestRemoveWebhooks(t *testing.T) {
 	}{
 		{
 			desc:  "remove webhook with wrong credentials",
-			id:    wh.ThingID,
+			id:    wh.ID,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
 		{
 			desc:  "remove existing webhook",
-			id:    wh.ThingID,
+			id:    wh.ID,
 			token: token,
 			err:   nil,
 		},
@@ -348,33 +349,12 @@ func TestConsume(t *testing.T) {
 	svc := newService()
 	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	wh := whs[0]
 
 	validJson := json.Messages{
 		Data: []json.Message{{
+			Publisher: whs[0].ThingID,
 			ProfileConfig: map[string]interface{}{
-				"webhook_id": wh.ThingID,
-			},
-			Payload: map[string]interface{}{
-				"key1": "val1",
-				"key2": float64(123),
-			}},
-		},
-	}
-
-	withoutWh := json.Messages{
-		Data: []json.Message{{
-			Payload: map[string]interface{}{
-				"key1": "val1",
-				"key2": float64(123),
-			}},
-		},
-	}
-
-	emptyWh := json.Messages{
-		Data: []json.Message{{
-			ProfileConfig: map[string]interface{}{
-				"webhook_id": emptyValue,
+				"webhook": true,
 			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
@@ -392,16 +372,6 @@ func TestConsume(t *testing.T) {
 			desc: "forward message",
 			msg:  validJson,
 			err:  nil,
-		},
-		{
-			desc: "forward message without webhook id",
-			msg:  withoutWh,
-			err:  apiutil.ErrMissingWebhookID,
-		},
-		{
-			desc: "forward message with empty webhook id",
-			msg:  emptyWh,
-			err:  errors.ErrNotFound,
 		},
 	}
 

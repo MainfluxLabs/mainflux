@@ -231,7 +231,7 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dbwh := dbWebhook{ThingID: id}
-		q := `DELETE FROM webhooks WHERE thing_id = :thing_id;`
+		q := `DELETE FROM webhooks WHERE id = :id;`
 
 		_, err := wr.db.NamedExecContext(ctx, q, dbwh)
 		if err != nil {
