@@ -131,12 +131,12 @@ func (gcm groupCacheMiddleware) RemoveGroupEntities(ctx context.Context, groupID
 	return gcm.cache.RemoveGroupEntities(ctx, groupID)
 }
 
-func (gcm groupCacheMiddleware) SaveRole(ctx context.Context, groupID, memberID, role string) error {
+func (gcm groupCacheMiddleware) SaveGroupMember(ctx context.Context, groupID, memberID, role string) error {
 	span := createSpan(ctx, gcm.tracer, saveRoleOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return gcm.cache.SaveRole(ctx, groupID, memberID, role)
+	return gcm.cache.SaveGroupMember(ctx, groupID, memberID, role)
 }
 
 func (gcm groupCacheMiddleware) ViewRole(ctx context.Context, groupID, memberID string) (string, error) {
@@ -147,12 +147,12 @@ func (gcm groupCacheMiddleware) ViewRole(ctx context.Context, groupID, memberID 
 	return gcm.cache.ViewRole(ctx, groupID, memberID)
 }
 
-func (gcm groupCacheMiddleware) RemoveRole(ctx context.Context, groupID, memberID string) error {
+func (gcm groupCacheMiddleware) RemoveGroupMember(ctx context.Context, groupID, memberID string) error {
 	span := createSpan(ctx, gcm.tracer, removeRoleOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return gcm.cache.RemoveRole(ctx, groupID, memberID)
+	return gcm.cache.RemoveGroupMember(ctx, groupID, memberID)
 }
 
 func (gcm groupCacheMiddleware) GroupMemberships(ctx context.Context, memberID string) ([]string, error) {

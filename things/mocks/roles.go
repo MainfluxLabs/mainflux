@@ -16,7 +16,7 @@ type groupMembersRepositoryMock struct {
 	groupMembers map[string][]things.GroupMember
 }
 
-// NewGroupMembersRepository returns mock of roles repository
+// NewGroupMembersRepository returns mock of members repository
 func NewGroupMembersRepository() things.GroupMembersRepository {
 	return &groupMembersRepositoryMock{
 		groupMembers: make(map[string][]things.GroupMember),

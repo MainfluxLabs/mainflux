@@ -79,7 +79,8 @@ func encodeError(err error) error {
 	case err == nil:
 		return nil
 	case errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingID:
+		err == apiutil.ErrMissingUserID,
+		err == apiutil.ErrMissingEmail:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())

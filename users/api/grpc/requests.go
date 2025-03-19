@@ -11,7 +11,7 @@ type getUsersByIDsReq struct {
 
 func (req getUsersByIDsReq) validate() error {
 	if len(req.ids) == 0 {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingUserID
 	}
 
 	return nil

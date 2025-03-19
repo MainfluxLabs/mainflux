@@ -396,7 +396,7 @@ func TestConsume(t *testing.T) {
 		{
 			desc: "forward message without webhook id",
 			msg:  withoutWh,
-			err:  apiutil.ErrMissingID,
+			err:  apiutil.ErrMissingWebhookID,
 		},
 		{
 			desc: "forward message with empty webhook id",

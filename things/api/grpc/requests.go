@@ -26,25 +26,20 @@ type configByThingIDReq struct {
 
 func (req configByThingIDReq) validate() error {
 	if req.thingID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil
 }
 
-type userAccessReq struct {
+type accessReq struct {
 	token  string
-	id     string
 	action string
 }
 
-func (req userAccessReq) validate() error {
+func (req accessReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingID
 	}
 
 	if req.action != things.Admin && req.action != things.Viewer && req.action != things.Editor {
@@ -54,18 +49,57 @@ func (req userAccessReq) validate() error {
 	return nil
 }
 
-type thingAccessReq struct {
+type userAccessThingReq struct {
+	accessReq
+	id string
+}
+
+func (req userAccessThingReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return req.accessReq.validate()
+}
+
+type userAccessProfileReq struct {
+	accessReq
+	id string
+}
+
+func (req userAccessProfileReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingProfileID
+	}
+
+	return req.accessReq.validate()
+}
+
+type userAccessGroupReq struct {
+	accessReq
+	id string
+}
+
+func (req userAccessGroupReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	return req.accessReq.validate()
+}
+
+type thingAccessGroupReq struct {
 	key string
 	id  string
 }
 
-func (req thingAccessReq) validate() error {
+func (req thingAccessGroupReq) validate() error {
 	if req.key == "" {
 		return apiutil.ErrBearerKey
 	}
 
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil
@@ -89,7 +123,7 @@ type getGroupsByIDsReq struct {
 
 func (req getGroupsByIDsReq) validate() error {
 	if len(req.ids) == 0 {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil
@@ -101,7 +135,7 @@ type groupIDByThingIDReq struct {
 
 func (req groupIDByThingIDReq) validate() error {
 	if req.thingID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil

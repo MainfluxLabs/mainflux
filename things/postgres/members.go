@@ -13,21 +13,21 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ things.GroupMembersRepository = (*rolesRepository)(nil)
+var _ things.GroupMembersRepository = (*membersRepository)(nil)
 
-type rolesRepository struct {
+type membersRepository struct {
 	db dbutil.Database
 }
 
-// NewGroupMembersRepository instantiates a PostgreSQL implementation of roles repository.
+// NewGroupMembersRepository instantiates a PostgreSQL implementation of members repository.
 func NewGroupMembersRepository(db dbutil.Database) things.GroupMembersRepository {
-	return &rolesRepository{
+	return &membersRepository{
 		db: db,
 	}
 }
 
-func (pr rolesRepository) Save(ctx context.Context, gms ...things.GroupMember) error {
-	tx, err := pr.db.BeginTxx(ctx, nil)
+func (mr membersRepository) Save(ctx context.Context, gms ...things.GroupMember) error {
+	tx, err := mr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (pr rolesRepository) Save(ctx context.Context, gms ...things.GroupMember) e
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembers(g)
-		if _, err := pr.db.NamedExecContext(ctx, q, dbgm); err != nil {
+		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
 			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -60,11 +60,11 @@ func (pr rolesRepository) Save(ctx context.Context, gms ...things.GroupMember) e
 	return nil
 }
 
-func (pr rolesRepository) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
+func (mr membersRepository) RetrieveRole(ctx context.Context, gp things.GroupMember) (string, error) {
 	q := `SELECT role FROM group_roles WHERE member_id = $1 AND group_id = $2;`
 
 	var role string
-	if err := pr.db.QueryRowxContext(ctx, q, gp.MemberID, gp.GroupID).Scan(&role); err != nil {
+	if err := mr.db.QueryRowxContext(ctx, q, gp.MemberID, gp.GroupID).Scan(&role); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return "", errors.Wrap(errors.ErrNotFound, err)
@@ -76,7 +76,7 @@ func (pr rolesRepository) RetrieveRole(ctx context.Context, gp things.GroupMembe
 	return role, nil
 }
 
-func (pr rolesRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (mr membersRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles WHERE group_id = :group_id %s;`, olq)
 
@@ -86,7 +86,7 @@ func (pr rolesRepository) RetrieveByGroup(ctx context.Context, groupID string, p
 		"offset":   pm.Offset,
 	}
 
-	rows, err := pr.db.NamedQueryContext(ctx, q, params)
+	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -105,7 +105,7 @@ func (pr rolesRepository) RetrieveByGroup(ctx context.Context, groupID string, p
 
 	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
 
-	total, err := dbutil.Total(ctx, pr.db, cq, params)
+	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
 		return things.GroupMembersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -122,10 +122,10 @@ func (pr rolesRepository) RetrieveByGroup(ctx context.Context, groupID string, p
 	return page, nil
 }
 
-func (pr rolesRepository) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
+func (mr membersRepository) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
 	q := `SELECT member_id, group_id, role FROM group_roles;`
 
-	rows, err := pr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -145,19 +145,19 @@ func (pr rolesRepository) RetrieveAll(ctx context.Context) ([]things.GroupMember
 	return items, nil
 }
 
-func (pr rolesRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
+func (mr membersRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	var groupIDs []string
 
 	q := `SELECT group_id FROM group_roles WHERE member_id = $1;`
 
-	if err := pr.db.SelectContext(ctx, &groupIDs, q, memberID); err != nil {
+	if err := mr.db.SelectContext(ctx, &groupIDs, q, memberID); err != nil {
 		return nil, err
 	}
 
 	return groupIDs, nil
 }
 
-func (pr rolesRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
+func (mr membersRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
 	q := `DELETE FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
@@ -166,19 +166,19 @@ func (pr rolesRepository) Remove(ctx context.Context, groupID string, memberIDs 
 			GroupID:  groupID,
 		}
 
-		if _, err := pr.db.NamedExecContext(ctx, q, dbgp); err != nil {
+		if _, err := mr.db.NamedExecContext(ctx, q, dbgp); err != nil {
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
 	}
 	return nil
 }
 
-func (pr rolesRepository) Update(ctx context.Context, gms ...things.GroupMember) error {
+func (mr membersRepository) Update(ctx context.Context, gms ...things.GroupMember) error {
 	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembers(g)
-		row, err := pr.db.NamedExecContext(ctx, q, dbgm)
+		row, err := mr.db.NamedExecContext(ctx, q, dbgm)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {

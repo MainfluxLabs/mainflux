@@ -71,7 +71,7 @@ type ownerIDByOrgIDReq struct {
 
 func (req ownerIDByOrgIDReq) validate() error {
 	if req.orgID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func (req assignRoleReq) validate() error {
 	}
 
 	if req.ID == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil
@@ -100,7 +100,7 @@ type retrieveRoleReq struct {
 
 func (req retrieveRoleReq) validate() error {
 	if req.id == "" {
-		return apiutil.ErrMissingID
+		return apiutil.ErrMissingUserID
 	}
 
 	return nil

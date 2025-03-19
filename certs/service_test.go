@@ -416,7 +416,7 @@ func TestViewCert(t *testing.T) {
 
 func newThingsServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger)
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
