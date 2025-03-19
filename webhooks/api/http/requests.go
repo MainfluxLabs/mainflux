@@ -28,7 +28,7 @@ type createWebhookReq struct {
 
 type createWebhooksReq struct {
 	token    string
-	groupID  string
+	thingID  string
 	Webhooks []createWebhookReq `json:"webhooks"`
 }
 
@@ -37,7 +37,7 @@ func (req createWebhooksReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
+	if req.thingID == "" {
 		return apiutil.ErrMissingGroupID
 	}
 
@@ -116,7 +116,7 @@ func (req listWebhooksReq) validate() error {
 
 type updateWebhookReq struct {
 	token    string
-	thingID  string
+	id       string
 	Name     string                 `json:"name"`
 	Url      string                 `json:"url"`
 	Headers  map[string]string      `json:"headers,omitempty"`
@@ -128,7 +128,7 @@ func (req updateWebhookReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.thingID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingWebhookID
 	}
 

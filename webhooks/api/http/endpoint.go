@@ -20,7 +20,7 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		whs := []webhooks.Webhook{}
 		for _, wReq := range req.Webhooks {
 			wh := webhooks.Webhook{
-				GroupID:  req.groupID,
+				ThingID:  req.thingID,
 				Name:     wReq.Name,
 				Url:      wReq.Url,
 				Headers:  wReq.Headers,
@@ -78,7 +78,7 @@ func updateWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		webhook := webhooks.Webhook{
-			ThingID:  req.thingID,
+			ID:       req.id,
 			Name:     req.Name,
 			Url:      req.Url,
 			Headers:  req.Headers,

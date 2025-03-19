@@ -122,6 +122,61 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	return page, nil
 }
 
+func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
+	}
+
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE thing_id = :thing_id ORDER BY %s %s %s;`, oq, dq, olq)
+	qc := `SELECT COUNT(*) FROM webhooks WHERE thing_id = $1;`
+
+	params := map[string]interface{}{
+		"thing_id": thingID,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+	}
+
+	rows, err := wr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []webhooks.Webhook
+	for rows.Next() {
+		dbWh := dbWebhook{}
+		if err := rows.StructScan(&dbWh); err != nil {
+			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+		webhook, err := toWebhook(dbWh)
+		if err != nil {
+			return webhooks.WebhooksPage{}, err
+		}
+
+		items = append(items, webhook)
+	}
+
+	var total uint64
+	if err := wr.db.GetContext(ctx, &total, qc, thingID); err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
 	q := `SELECT thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
 

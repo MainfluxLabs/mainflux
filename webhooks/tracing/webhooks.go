@@ -42,6 +42,14 @@ func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, gr
 	return wrm.repo.RetrieveByGroupID(ctx, groupID, pm)
 }
 
+func (wrm webhookRepositoryMiddleware) RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	span := createSpan(ctx, wrm.tracer, "retrieve_by_thing_id")
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return wrm.repo.RetrieveByThingID(ctx, thingID, pm)
+}
+
 func (wrm webhookRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
 	span := createSpan(ctx, wrm.tracer, "retrieve_webhook_by_id")
 	defer span.Finish()

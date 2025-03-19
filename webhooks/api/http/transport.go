@@ -72,7 +72,7 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, apiutil.IDKey)}
+	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, apiutil.IDKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -107,8 +107,8 @@ func decodeUpdateWebhook(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	req := updateWebhookReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)

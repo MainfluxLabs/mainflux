@@ -67,6 +67,10 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 	}, nil
 }
 
+func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	return webhooks.WebhooksPage{}, nil
+}
+
 func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (webhooks.Webhook, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()

@@ -26,6 +26,7 @@ type pageRes struct {
 }
 
 type webhookResponse struct {
+	ID         string                 `json:"id"`
 	ThingID    string                 `json:"thing_id"`
 	GroupID    string                 `json:"group_id"`
 	Name       string                 `json:"name"`

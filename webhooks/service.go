@@ -132,7 +132,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 }
 
 func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webhook Webhook) error {
-	wh, err := ws.webhooks.RetrieveByID(ctx, webhook.ThingID)
+	wh, err := ws.webhooks.RetrieveByID(ctx, webhook.ID)
 	if err != nil {
 		return err
 	}
@@ -168,17 +168,15 @@ func (ws *webhooksService) Consume(message interface{}) error {
 	if v, ok := message.(json.Messages); ok {
 		msgs := v.Data
 		for _, msg := range msgs {
-			if msg.ProfileConfig["webhook_id"] == nil {
-				return apiutil.ErrMissingWebhookID
-			}
-
-			wh, err := ws.webhooks.RetrieveByID(ctx, msg.ProfileConfig["webhook_id"].(string))
+			whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher, apiutil.PageMetadata{})
 			if err != nil {
 				return err
 			}
 
-			if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
-				return errors.Wrap(ErrForward, err)
+			for _, wh := range whs.Webhooks {
+				if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
+					return errors.Wrap(ErrForward, err)
+				}
 			}
 		}
 	}

@@ -33,6 +33,10 @@ type WebhookRepository interface {
 	// a certain group identified by a given ID.
 	RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
+	// RetrieveByThingID retrieves webhooks related to
+	// a certain thing identified by a given ID.
+	RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+
 	// RetrieveByID retrieves the webhook having the provided identifier
 	RetrieveByID(ctx context.Context, id string) (Webhook, error)
 
