@@ -46,22 +46,16 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "webhooks_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS webhooks (
-						id          UUID PRIMARY KEY,
+						thing_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
 						name        VARCHAR(254) NOT NULL,
 						url         VARCHAR(254) NOT NULL,
 						headers     JSONB,
 						metadata    JSONB,    
-						CONSTRAINT  unique_group_name UNIQUE (group_id, name)
+						PRIMARY KEY (thing_id, name)
 					)`,
 				},
 				Down: []string{"DROP TABLE webhooks"},
-			},
-			{
-				Id: "webhooks_2",
-				Up: []string{
-					`ALTER TABLE webhooks RENAME COLUMN id TO thing_id`,
-				},
 			},
 		},
 	}
