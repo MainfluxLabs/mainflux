@@ -178,7 +178,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 }
 
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
-	q := `SELECT thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
+	q := `SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
 
 	dbwh := dbWebhook{ThingID: id}
 	if err := wr.db.QueryRowxContext(ctx, q, id).StructScan(&dbwh); err != nil {

@@ -38,7 +38,7 @@ func (req createWebhooksReq) validate() error {
 	}
 
 	if req.thingID == "" {
-		return apiutil.ErrMissingGroupID
+		return apiutil.ErrMissingThingID
 	}
 
 	if len(req.Webhooks) < minLen {

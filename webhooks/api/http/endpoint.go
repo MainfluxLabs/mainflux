@@ -120,8 +120,9 @@ func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage) WebhooksPageRes {
 
 	for _, wh := range wp.Webhooks {
 		webhook := webhookResponse{
-			ThingID:    wh.ThingID,
+			ID:         wh.ID,
 			GroupID:    wh.GroupID,
+			ThingID:    wh.ThingID,
 			Name:       wh.Name,
 			Url:        wh.Url,
 			ResHeaders: wh.Headers,
@@ -137,8 +138,9 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 	res := webhooksRes{Webhooks: []webhookResponse{}, created: created}
 	for _, wh := range webhooks {
 		webhook := webhookResponse{
-			ThingID:    wh.ThingID,
+			ID:         wh.ID,
 			GroupID:    wh.GroupID,
+			ThingID:    wh.ThingID,
 			Name:       wh.Name,
 			Url:        wh.Url,
 			ResHeaders: wh.Headers,
@@ -152,8 +154,9 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 
 func buildWebhookResponse(webhook webhooks.Webhook, updated bool) webhookResponse {
 	wh := webhookResponse{
-		ThingID:    webhook.ThingID,
+		ID:         webhook.ID,
 		GroupID:    webhook.GroupID,
+		ThingID:    webhook.ThingID,
 		Name:       webhook.Name,
 		Url:        webhook.Url,
 		ResHeaders: webhook.Headers,
