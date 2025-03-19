@@ -85,10 +85,8 @@ type PageMetadata struct {
 	Dir      string                 `json:"dir"`
 	Subtopic string                 `json:"subtopic,omitempty"`
 	Format   string                 `json:"format,omitempty"`
-	Level    uint64                 `json:"level,omitempty"`
 	Email    string                 `json:"email,omitempty"`
 	Name     string                 `json:"name,omitempty"`
-	Type     string                 `json:"type,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -458,17 +456,11 @@ func (pm PageMetadata) query() (string, error) {
 	q.Add("total", strconv.FormatUint(pm.Total, 10))
 	q.Add("offset", strconv.FormatUint(pm.Offset, 10))
 	q.Add("limit", strconv.FormatUint(pm.Limit, 10))
-	if pm.Level != 0 {
-		q.Add("level", strconv.FormatUint(pm.Level, 10))
-	}
 	if pm.Email != "" {
 		q.Add("email", pm.Email)
 	}
 	if pm.Name != "" {
 		q.Add("name", pm.Name)
-	}
-	if pm.Type != "" {
-		q.Add("type", pm.Type)
 	}
 	if pm.Subtopic != "" {
 		q.Add("subtopic", pm.Subtopic)
