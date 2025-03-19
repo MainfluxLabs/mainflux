@@ -75,16 +75,16 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Editor})
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.ThingID, Action: things.Editor})
 	if err != nil {
 		return Webhook{}, err
 	}
 
-	id, err := ws.idProvider.ID()
+	grID, err := ws.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: webhook.ThingID})
 	if err != nil {
 		return Webhook{}, err
 	}
-	webhook.ID = id
+	webhook.GroupID = grID.GetValue()
 
 	whs, err := ws.webhooks.Save(ctx, *webhook)
 	if err != nil {
@@ -126,7 +126,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 }
 
 func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webhook Webhook) error {
-	wh, err := ws.webhooks.RetrieveByID(ctx, webhook.ID)
+	wh, err := ws.webhooks.RetrieveByID(ctx, webhook.ThingID)
 	if err != nil {
 		return err
 	}

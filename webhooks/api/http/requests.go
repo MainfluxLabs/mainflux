@@ -116,7 +116,7 @@ func (req listWebhooksReq) validate() error {
 
 type updateWebhookReq struct {
 	token    string
-	id       string
+	thingID  string
 	Name     string                 `json:"name"`
 	Url      string                 `json:"url"`
 	Headers  map[string]string      `json:"headers,omitempty"`
@@ -128,7 +128,7 @@ func (req updateWebhookReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.thingID == "" {
 		return apiutil.ErrMissingWebhookID
 	}
 

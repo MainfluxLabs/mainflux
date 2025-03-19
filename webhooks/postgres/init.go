@@ -57,6 +57,12 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{"DROP TABLE webhooks"},
 			},
+			{
+				Id: "webhooks_2",
+				Up: []string{
+					`ALTER TABLE webhooks RENAME COLUMN id TO thing_id`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

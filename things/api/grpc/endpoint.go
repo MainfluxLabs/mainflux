@@ -225,7 +225,7 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		ContentType: config.ContentType,
 		Write:       config.Write,
 		Transformer: transformer,
-		WebhookID:   config.WebhookID,
+		Webhook:     config.Webhook,
 		SmtpID:      config.SmtpID,
 		SmppID:      config.SmppID,
 	}

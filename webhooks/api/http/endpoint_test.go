@@ -213,7 +213,7 @@ func TestCreateWebhooks(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, tc.groupID),
+			url:         fmt.Sprintf("%s/things/%s/webhooks", ts.URL, tc.groupID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -228,7 +228,7 @@ func TestCreateWebhooks(t *testing.T) {
 }
 
 type webhookRes struct {
-	ID         string                 `json:"id"`
+	ThingID    string                 `json:"thing_id"`
 	GroupID    string                 `json:"group_id"`
 	Name       string                 `json:"name"`
 	Url        string                 `json:"url"`
@@ -253,14 +253,14 @@ func TestListWebhooksByGroup(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
 		name := fmt.Sprintf("%s%012d", prefixName, i+1)
 		webhook1 := webhook
-		webhook1.ID = id
+		webhook1.ThingID = id
 		webhook1.Name = name
 
 		whs, err := svc.CreateWebhooks(context.Background(), token, webhook1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		w := whs[0]
 		whRes := webhookRes{
-			ID:         w.ID,
+			ThingID:    w.ThingID,
 			GroupID:    w.GroupID,
 			Name:       w.Name,
 			Url:        w.Url,
@@ -462,7 +462,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update existing webhook",
 			req:         data,
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusOK,
@@ -470,7 +470,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update webhook with empty JSON request",
 			req:         "{}",
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -494,7 +494,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update webhook with empty user token",
 			req:         data,
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: contentType,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
@@ -502,7 +502,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update webhook with invalid data format",
 			req:         "{",
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -510,7 +510,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update webhook with empty request",
 			req:         "",
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -518,7 +518,7 @@ func TestUpdateWebhook(t *testing.T) {
 		{
 			desc:        "update webhook without content type",
 			req:         data,
-			id:          wh1.ID,
+			id:          wh1.ThingID,
 			contentType: "",
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
@@ -557,7 +557,7 @@ func TestViewWebhook(t *testing.T) {
 	wh := whs[0]
 
 	data := toJSON(webhookRes{
-		ID:         wh.ID,
+		ThingID:    wh.ThingID,
 		GroupID:    wh.GroupID,
 		Name:       wh.Name,
 		Url:        wh.Url,
@@ -574,14 +574,14 @@ func TestViewWebhook(t *testing.T) {
 	}{
 		{
 			desc:   "view existing webhook",
-			id:     wh.ID,
+			id:     wh.ThingID,
 			auth:   token,
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
 			desc:   "view webhook with empty token",
-			id:     wh.ID,
+			id:     wh.ThingID,
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			res:    missingTokRes,
@@ -626,7 +626,7 @@ func TestRemoveWebhooks(t *testing.T) {
 
 	var webhookIDs []string
 	for _, wh := range grWhs {
-		webhookIDs = append(webhookIDs, wh.ID)
+		webhookIDs = append(webhookIDs, wh.ThingID)
 	}
 
 	cases := []struct {

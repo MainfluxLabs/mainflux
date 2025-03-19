@@ -22,7 +22,7 @@ type Profile struct {
 type Config struct {
 	ContentType string      `json:"content_type"`
 	Write       bool        `json:"write"`
-	WebhookID   string      `json:"webhook_id"`
+	Webhook     bool        `json:"webhook"`
 	Transformer Transformer `json:"transformer"`
 	SmtpID      string      `json:"smtp_id"`
 	SmppID      string      `json:"smpp_id"`

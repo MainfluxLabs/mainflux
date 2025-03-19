@@ -78,7 +78,7 @@ func updateWebhookEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		}
 
 		webhook := webhooks.Webhook{
-			ID:       req.id,
+			ThingID:  req.thingID,
 			Name:     req.Name,
 			Url:      req.Url,
 			Headers:  req.Headers,
@@ -120,7 +120,7 @@ func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage) WebhooksPageRes {
 
 	for _, wh := range wp.Webhooks {
 		webhook := webhookResponse{
-			ID:         wh.ID,
+			ThingID:    wh.ThingID,
 			GroupID:    wh.GroupID,
 			Name:       wh.Name,
 			Url:        wh.Url,
@@ -137,7 +137,7 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 	res := webhooksRes{Webhooks: []webhookResponse{}, created: created}
 	for _, wh := range webhooks {
 		webhook := webhookResponse{
-			ID:         wh.ID,
+			ThingID:    wh.ThingID,
 			GroupID:    wh.GroupID,
 			Name:       wh.Name,
 			Url:        wh.Url,
@@ -152,7 +152,7 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 
 func buildWebhookResponse(webhook webhooks.Webhook, updated bool) webhookResponse {
 	wh := webhookResponse{
-		ID:         webhook.ID,
+		ThingID:    webhook.ThingID,
 		GroupID:    webhook.GroupID,
 		Name:       webhook.Name,
 		Url:        webhook.Url,

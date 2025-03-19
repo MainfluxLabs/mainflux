@@ -69,7 +69,7 @@ func (lm *loggingMiddleware) ViewWebhook(ctx context.Context, token, id string) 
 
 func (lm *loggingMiddleware) UpdateWebhook(ctx context.Context, token string, webhook webhooks.Webhook) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_webhook for id %s took %s to complete", webhook.ID, time.Since(begin))
+		message := fmt.Sprintf("Method update_webhook for id %s took %s to complete", webhook.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

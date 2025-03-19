@@ -30,7 +30,7 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 
 	r := bone.New()
 
-	r.Post("/groups/:id/webhooks", kithttp.NewServer(
+	r.Post("/things/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_webhooks")(createWebhooksEndpoint(svc)),
 		decodeCreateWebhooks,
 		encodeResponse,
@@ -107,8 +107,8 @@ func decodeUpdateWebhook(_ context.Context, r *http.Request) (interface{}, error
 	}
 
 	req := updateWebhookReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
