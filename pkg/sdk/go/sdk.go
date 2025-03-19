@@ -340,7 +340,7 @@ type SDK interface {
 	SendMessage(subtopic, msg, token string) error
 
 	// ReadMessages read messages.
-	ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error)
+	ReadMessages(pm PageMetadata, isAdmin bool, token string) (map[string]interface{}, error)
 
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error
