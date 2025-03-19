@@ -182,14 +182,8 @@ func (sdk mfSDK) Groups(meta PageMetadata, token string) (GroupsPage, error) {
 	if meta.Limit != 0 {
 		q.Add("limit", strconv.FormatUint(meta.Limit, 10))
 	}
-	if meta.Level != 0 {
-		q.Add("level", strconv.FormatUint(meta.Level, 10))
-	}
 	if meta.Name != "" {
 		q.Add("name", meta.Name)
-	}
-	if meta.Type != "" {
-		q.Add("type", meta.Type)
 	}
 	u.RawQuery = q.Encode()
 	return sdk.getGroups(token, u.String())
