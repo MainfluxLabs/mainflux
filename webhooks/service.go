@@ -86,6 +86,12 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	}
 	webhook.GroupID = grID.GetValue()
 
+	id, err := ws.idProvider.ID()
+	if err != nil {
+		return Webhook{}, err
+	}
+	webhook.ID = id
+
 	whs, err := ws.webhooks.Save(ctx, *webhook)
 	if err != nil {
 		return Webhook{}, err

@@ -9,6 +9,7 @@ import (
 type Metadata map[string]interface{}
 
 type Webhook struct {
+	ID       string
 	ThingID  string
 	GroupID  string
 	Name     string

@@ -35,7 +35,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO webhooks (thing_id, group_id, name, url, headers, metadata) VALUES (:thing_id, :group_id, :name, :url, :headers, :metadata);`
+	q := `INSERT INTO webhooks (id, thing_id, group_id, name, url, headers, metadata) VALUES (:id, :thing_id, :group_id, :name, :url, :headers, :metadata);`
 
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
@@ -76,7 +76,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
 	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = $1;`
 
 	params := map[string]interface{}{
@@ -123,7 +123,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 }
 
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
-	q := `SELECT group_id, name, url, headers, metadata FROM webhooks WHERE thing_id = $1;`
+	q := `SELECT thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
 
 	dbwh := dbWebhook{ThingID: id}
 	if err := wr.db.QueryRowxContext(ctx, q, id).StructScan(&dbwh); err != nil {
@@ -139,7 +139,7 @@ func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhoo
 }
 
 func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) error {
-	q := `UPDATE webhooks SET name = :name, url = :url, headers = :headers, metadata = :metadata WHERE thing_id = :thing_id;`
+	q := `UPDATE webhooks SET name = :name, url = :url, headers = :headers, metadata = :metadata WHERE id = :id;`
 
 	dbwh, err := toDBWebhook(w)
 	if err != nil {
@@ -188,6 +188,7 @@ func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 }
 
 type dbWebhook struct {
+	ID       string `db:"id"`
 	ThingID  string `db:"thing_id"`
 	GroupID  string `db:"group_id"`
 	Name     string `db:"name"`
@@ -216,6 +217,7 @@ func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	}
 
 	return dbWebhook{
+		ID:       wh.ID,
 		ThingID:  wh.ThingID,
 		GroupID:  wh.GroupID,
 		Name:     wh.Name,
