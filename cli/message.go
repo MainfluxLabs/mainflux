@@ -34,29 +34,37 @@ var cmdMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "read <thing_key>",
+		Use:   "read [by-admin] <auth_token>",
 		Short: "Read messages",
 		Long:  `Reads all messages`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				logUsage(cmd.Use)
-				return
-			}
-
 			pm := mfxsdk.PageMetadata{
 				Offset:   uint64(Offset),
 				Limit:    uint64(Limit),
 				Format:   Format,
 				Subtopic: Subtopic,
 			}
+			switch len(args) {
+			case 1:
+				m, err := sdk.ReadMessages(pm, false, args[0])
+				if err != nil {
+					logError(err)
+					return
+				}
 
-			m, err := sdk.ReadMessages(pm, args[0])
-			if err != nil {
-				logError(err)
+				logJSON(m)
+			case 2:
+				m, err := sdk.ReadMessages(pm, true, args[1])
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(m)
+			default:
+				logUsage(cmd.Use)
 				return
 			}
-
-			logJSON(m)
 		},
 	},
 }

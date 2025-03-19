@@ -144,8 +144,10 @@ mainfluxlabs-cli messages send [subtopic] '[{"bn":"Dev1","n":"temp","v":20}, {"n
 #### Read messages over HTTP
 * Read messages from a specific subtopic by adding a flag `-s=<subtopic>`
 * Reading SenML messages is the default. To read JSON messages add the flag `-f=json`
+* Setting the `by-admin` flag allows the admin to list all messages of a certain format, from all publishers
+* If `by-admin` is set, `auth_token` will be `admin_token`, otherwise `auth_token` is `thing_key`
 ```bash
-mainfluxlabs-cli messages read <thing_key>
+mainfluxlabs-cli messages read [by-admin] <auth_token>
 ```
 
 ### Groups
