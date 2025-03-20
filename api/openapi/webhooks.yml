@@ -5,15 +5,15 @@ info:
   version: 1.0.0
 
 paths:
-  /groups/{groupId}/webhooks:
+  /things/{thingId}/webhooks:
     post:
       summary: Adds new webhooks
       description: |
-        Adds new webhooks to the list of webhooks for certain group identified by the provided ID
+        Adds new webhooks to the list of webhooks for certain thing identified by the provided ID
       tags:
         - webhooks
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/ThingId"
       requestBody:
         $ref: "#/components/requestBodies/WebhooksCreateReq"
       responses:
@@ -29,6 +29,27 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves webhooks by thing
+      description: Retrieves list of webhooks related to a certain thing identified by the provided ID.
+      tags:
+        - webhooks
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/WebhooksListRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+/groups/{groupId}/webhooks:
     get:
       summary: Retrieves webhooks by group
       description: Retrieves list of webhooks related to a certain group identified by the provided ID.
@@ -47,24 +68,6 @@ paths:
           description: Failed to perform authorization over the entity
         '422':
           description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    patch:
-      summary: Removes webhooks
-      description: Removes webhooks with provided identifiers
-      tags:
-        - webhooks
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      requestBody:
-        $ref: "#/components/requestBodies/WebhookRemoveReq"
-      responses:
-        '204':
-          description: Webhook removed.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
   /webhooks/{webhookId}:
@@ -107,6 +110,25 @@ paths:
           description: Webhook does not exist.
         '415':
           description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /webhooks:
+    patch:
+      summary: Removes webhooks
+      description: Removes webhooks with provided identifiers
+      tags:
+        - webhooks
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/WebhookRemoveReq"
+      responses:
+        '204':
+          description: Webhook removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -179,7 +201,14 @@ components:
         type: string
         format: uuid
       required: true
-
+    ThingId:
+      name: thingId
+      description: Thing identifier refers to the thing for which the webhook is being created.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
 
   requestBodies:
     WebhooksCreateReq:
