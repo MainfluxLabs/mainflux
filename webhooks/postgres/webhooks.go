@@ -97,7 +97,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	tq := "thing_id = :thing:_id"
+	tq := "thing_id = :thing_id"
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
