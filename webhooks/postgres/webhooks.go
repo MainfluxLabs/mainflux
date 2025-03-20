@@ -77,7 +77,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = $1;`
+	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = :group_id;`
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -98,7 +98,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE thing_id = :thing_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM webhooks WHERE thing_id = $1;`
+	qc := `SELECT COUNT(*) FROM webhooks WHERE thing_id = :thing_id;`
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
