@@ -14,7 +14,6 @@ var _ webhooks.WebhookRepository = (*webhookRepositoryMock)(nil)
 
 type webhookRepositoryMock struct {
 	mu       sync.Mutex
-	counter  uint64
 	webhooks map[string]webhooks.Webhook
 }
 
@@ -51,6 +50,33 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 
 	for _, wh := range wrm.webhooks {
 		if wh.GroupID == groupID {
+			id := uuid.ParseID(wh.ID)
+			if id >= first && id < last || pm.Limit == 0 {
+				items = append(items, wh)
+			}
+		}
+	}
+
+	return webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  uint64(len(items)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
+}
+
+func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	wrm.mu.Lock()
+	defer wrm.mu.Unlock()
+	var items []webhooks.Webhook
+
+	first := uint64(pm.Offset) + 1
+	last := first + uint64(pm.Limit)
+
+	for _, wh := range wrm.webhooks {
+		if wh.ThingID == thingID {
 			id := uuid.ParseID(wh.ID)
 			if id >= first && id < last || pm.Limit == 0 {
 				items = append(items, wh)

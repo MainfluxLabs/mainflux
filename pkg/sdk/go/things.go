@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -62,7 +62,7 @@ func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, e
 		return []Thing{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return []Thing{}, err
 	}
@@ -92,7 +92,7 @@ func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -122,7 +122,7 @@ func (sdk mfSDK) ThingsByProfile(prID, token string, pm PageMetadata) (ThingsPag
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -153,7 +153,7 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Thing{}, err
 	}
@@ -184,7 +184,7 @@ func (sdk mfSDK) MetadataByKey(thingKey string) (Metadata, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -291,7 +291,7 @@ func (sdk mfSDK) IdentifyThing(key string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

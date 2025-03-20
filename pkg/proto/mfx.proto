@@ -55,7 +55,7 @@ message PubConfByKeyRes {
 message Config {
     string      contentType = 1;
     bool        write       = 2;
-    string      webhookID   = 3;
+    bool        webhook     = 3;
     string      smtpID      = 4;
     string      smppID      = 5;
     Transformer transformer = 6;

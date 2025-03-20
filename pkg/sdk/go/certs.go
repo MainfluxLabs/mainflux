@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -41,7 +41,7 @@ func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token st
 	if res.StatusCode != http.StatusOK {
 		return Cert{}, ErrCerts
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return Cert{}, err
 	}

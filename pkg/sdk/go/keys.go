@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -47,7 +47,7 @@ func (sdk mfSDK) Issue(token string, d time.Duration) (KeyRes, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return KeyRes{}, err
 	}
@@ -96,7 +96,7 @@ func (sdk mfSDK) RetrieveKey(id, token string) (retrieveKeyRes, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return retrieveKeyRes{}, err
 	}

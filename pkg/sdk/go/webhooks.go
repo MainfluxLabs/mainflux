@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -12,13 +12,13 @@ import (
 
 const webhooksEndpoint = "webhooks"
 
-func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error) {
+func (sdk mfSDK) CreateWebhooks(whs []Webhook, thingID, token string) ([]Webhook, error) {
 	data, err := json.Marshal(whs)
 	if err != nil {
 		return []Webhook{}, err
 	}
 
-	url := fmt.Sprintf("%s/groups/%s/%s", sdk.webhooksURL, groupID, webhooksEndpoint)
+	url := fmt.Sprintf("%s/things/%s/%s", sdk.webhooksURL, thingID, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return []Webhook{}, err
@@ -34,7 +34,7 @@ func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook
 		return []Webhook{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return []Webhook{}, err
 	}
@@ -60,7 +60,37 @@ func (sdk mfSDK) ListWebhooksByGroup(groupID, token string) (Webhooks, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Webhooks{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return Webhooks{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var ws Webhooks
+	if err := json.Unmarshal(body, &ws); err != nil {
+		return Webhooks{}, err
+	}
+
+	return ws, nil
+}
+
+func (sdk mfSDK) ListWebhooksByThing(thingID, token string) (Webhooks, error) {
+	url := fmt.Sprintf("%s/things/%s/%s", sdk.webhooksURL, thingID, webhooksEndpoint)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return Webhooks{}, err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return Webhooks{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Webhooks{}, err
 	}
@@ -90,7 +120,7 @@ func (sdk mfSDK) Webhook(webhookID, token string) (Webhook, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Webhook{}, err
 	}

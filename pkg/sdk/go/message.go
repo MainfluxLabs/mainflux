@@ -6,7 +6,7 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -65,7 +65,7 @@ func (sdk mfSDK) ReadMessages(pm PageMetadata, isAdmin bool, token string) (map[
 }
 
 func decodeMessages(response *http.Response) (map[string]interface{}, error) {
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}

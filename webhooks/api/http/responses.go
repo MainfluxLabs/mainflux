@@ -28,6 +28,7 @@ type pageRes struct {
 type webhookResponse struct {
 	ID         string                 `json:"id"`
 	GroupID    string                 `json:"group_id"`
+	ThingID    string                 `json:"thing_id"`
 	Name       string                 `json:"name"`
 	Url        string                 `json:"url"`
 	ResHeaders map[string]string      `json:"headers,omitempty"`
@@ -44,10 +45,7 @@ func (res webhookResponse) Headers() map[string]string {
 }
 
 func (res webhookResponse) Empty() bool {
-	if res.updated {
-		return true
-	}
-	return false
+	return res.updated
 }
 
 type webhooksRes struct {

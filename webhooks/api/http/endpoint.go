@@ -20,7 +20,7 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		whs := []webhooks.Webhook{}
 		for _, wReq := range req.Webhooks {
 			wh := webhooks.Webhook{
-				GroupID:  req.groupID,
+				ThingID:  req.thingID,
 				Name:     wReq.Name,
 				Url:      wReq.Url,
 				Headers:  wReq.Headers,
@@ -40,12 +40,28 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 
 func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listWebhooksReq)
+		req := request.(listWebhooksByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListWebhooksByGroup(ctx, req.token, req.id, req.pageMetadata)
+		page, err := svc.ListWebhooksByGroup(ctx, req.token, req.groupID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildWebhooksByGroupResponse(page), nil
+	}
+}
+
+func listWebhooksByThingEndpoint(svc webhooks.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listWebhooksByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListWebhooksByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -122,6 +138,7 @@ func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage) WebhooksPageRes {
 		webhook := webhookResponse{
 			ID:         wh.ID,
 			GroupID:    wh.GroupID,
+			ThingID:    wh.ThingID,
 			Name:       wh.Name,
 			Url:        wh.Url,
 			ResHeaders: wh.Headers,
@@ -139,6 +156,7 @@ func buildWebhooksResponse(webhooks []webhooks.Webhook, created bool) webhooksRe
 		webhook := webhookResponse{
 			ID:         wh.ID,
 			GroupID:    wh.GroupID,
+			ThingID:    wh.ThingID,
 			Name:       wh.Name,
 			Url:        wh.Url,
 			ResHeaders: wh.Headers,
@@ -154,6 +172,7 @@ func buildWebhookResponse(webhook webhooks.Webhook, updated bool) webhookRespons
 	wh := webhookResponse{
 		ID:         webhook.ID,
 		GroupID:    webhook.GroupID,
+		ThingID:    webhook.ThingID,
 		Name:       webhook.Name,
 		Url:        webhook.Url,
 		ResHeaders: webhook.Headers,

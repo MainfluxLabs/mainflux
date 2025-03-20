@@ -255,7 +255,7 @@ mainfluxlabs-cli orgs memberships <member_id> <user_token>
 ### Webhooks
 #### Create Webhooks
 ```bash
-mainfluxlabs-cli webhooks create '[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]' <group_id> <user_token>
+mainfluxlabs-cli webhooks create '[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]' <thing_id> <user_token>
 ```
 
 #### Get Webhook by ID

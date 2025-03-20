@@ -18,10 +18,6 @@ const (
 
 var ErrInvalidUrl = errors.New("missing or invalid url")
 
-type apiReq interface {
-	validate() error
-}
-
 type createWebhookReq struct {
 	ID       string                 `json:"id,omitempty"`
 	Name     string                 `json:"name"`
@@ -32,7 +28,7 @@ type createWebhookReq struct {
 
 type createWebhooksReq struct {
 	token    string
-	groupID  string
+	thingID  string
 	Webhooks []createWebhookReq `json:"webhooks"`
 }
 
@@ -41,8 +37,8 @@ func (req createWebhooksReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if len(req.Webhooks) < minLen {
@@ -86,36 +82,40 @@ func (req *webhookReq) validate() error {
 	return nil
 }
 
-type listWebhooksReq struct {
+type listWebhooksByGroupReq struct {
 	token        string
-	id           string
+	groupID      string
 	pageMetadata apiutil.PageMetadata
 }
 
-func (req listWebhooksReq) validate() error {
+func (req listWebhooksByGroupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+}
+
+type listWebhooksByThingReq struct {
+	token        string
+	thingID      string
+	pageMetadata apiutil.PageMetadata
+}
+
+func (req listWebhooksByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
-		return apiutil.ErrInvalidOrder
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type updateWebhookReq struct {

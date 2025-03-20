@@ -47,12 +47,6 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		Publisher: msg.Publisher,
 	}
 
-	if msg.ProfileConfig.WebhookID != "" {
-		ret.ProfileConfig = map[string]interface{}{
-			"webhook_id": msg.ProfileConfig.WebhookID,
-		}
-	}
-
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)

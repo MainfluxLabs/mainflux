@@ -54,6 +54,19 @@ func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, gro
 	return lm.svc.ListWebhooksByGroup(ctx, token, groupID, pm)
 }
 
+func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (response webhooks.WebhooksPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_webhooks_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListWebhooksByThing(ctx, token, thingID, pm)
+}
+
 func (lm *loggingMiddleware) ViewWebhook(ctx context.Context, token, id string) (response webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_webhook for id %s took %s to complete", id, time.Since(begin))

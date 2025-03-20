@@ -30,15 +30,21 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 
 	r := bone.New()
 
-	r.Post("/groups/:id/webhooks", kithttp.NewServer(
+	r.Post("/things/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_webhooks")(createWebhooksEndpoint(svc)),
 		decodeCreateWebhooks,
 		encodeResponse,
 		opts...,
 	))
+	r.Get("/things/:id/webhooks", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_webhooks_by_thing")(listWebhooksByThingEndpoint(svc)),
+		decodeListThingWebhooks,
+		encodeResponse,
+		opts...,
+	))
 	r.Get("/groups/:id/webhooks", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
-		decodeListWebhooks,
+		decodeListGroupWebhooks,
 		encodeResponse,
 		opts...,
 	))
@@ -72,7 +78,7 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, apiutil.IDKey)}
+	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, apiutil.IDKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -86,15 +92,30 @@ func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listWebhooksReq{
+	req := listWebhooksByGroupReq{
 		token:        apiutil.ExtractBearerToken(r),
-		id:           bone.GetValue(r, apiutil.IDKey),
+		groupID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListThingWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listWebhooksByThingReq{
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
 
@@ -164,6 +185,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingWebhookID,
+		err == apiutil.ErrMissingThingID,
 		err == apiutil.ErrMissingGroupID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,

@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -27,6 +26,10 @@ type Service interface {
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
 	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+
+	// ListWebhooksByThing retrieves data about a subset of webhooks
+	// related to a certain thing identified by the provided ID.
+	ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided
 	// ID, that belongs to the user identified by the provided key.
@@ -46,7 +49,6 @@ type Service interface {
 type webhooksService struct {
 	things     protomfx.ThingsServiceClient
 	webhooks   WebhookRepository
-	subscriber messaging.Subscriber
 	forwarder  Forwarder
 	idProvider uuid.IDProvider
 }
@@ -77,10 +79,16 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, web
 }
 
 func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Editor})
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.ThingID, Action: things.Editor})
 	if err != nil {
 		return Webhook{}, err
 	}
+
+	grID, err := ws.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: webhook.ThingID})
+	if err != nil {
+		return Webhook{}, err
+	}
+	webhook.GroupID = grID.GetValue()
 
 	id, err := ws.idProvider.ID()
 	if err != nil {
@@ -107,6 +115,20 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 	}
 
 	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID, pm)
+	if err != nil {
+		return WebhooksPage{}, err
+	}
+
+	return webhooks, nil
+}
+
+func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	if err != nil {
+		return WebhooksPage{}, err
+	}
+
+	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID, pm)
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -164,17 +186,15 @@ func (ws *webhooksService) Consume(message interface{}) error {
 	if v, ok := message.(json.Messages); ok {
 		msgs := v.Data
 		for _, msg := range msgs {
-			if msg.ProfileConfig["webhook_id"] == nil {
-				return apiutil.ErrMissingWebhookID
-			}
-
-			wh, err := ws.webhooks.RetrieveByID(ctx, msg.ProfileConfig["webhook_id"].(string))
+			whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher, apiutil.PageMetadata{})
 			if err != nil {
 				return err
 			}
 
-			if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
-				return errors.Wrap(ErrForward, err)
+			for _, wh := range whs.Webhooks {
+				if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
+					return errors.Wrap(ErrForward, err)
+				}
 			}
 		}
 	}

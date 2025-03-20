@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -56,7 +56,7 @@ func (sdk mfSDK) Org(id, token string) (Org, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Org{}, err
 	}
@@ -147,7 +147,7 @@ func (sdk mfSDK) getOrgs(token, url string) (OrgsPage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return OrgsPage{}, err
 	}
@@ -176,7 +176,7 @@ func (sdk mfSDK) ViewMember(orgID, memberID, token string) (Member, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Member{}, err
 	}
@@ -293,7 +293,7 @@ func (sdk mfSDK) ListMembersByOrg(orgID, token string, offset, limit uint64) (Me
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return MembersPage{}, err
 	}
@@ -323,7 +323,7 @@ func (sdk mfSDK) ListOrgsByMember(memberID, token string, offset, limit uint64) 
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return OrgsPage{}, err
 	}

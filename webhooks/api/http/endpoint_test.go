@@ -32,6 +32,7 @@ const (
 	contentType = "application/json"
 	emptyValue  = ""
 	groupID     = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
 	prefixName  = "test-webhook-"
 	nameKey     = "name"
@@ -41,7 +42,7 @@ const (
 
 var (
 	headers       = map[string]string{"Content-Type:": "application/json"}
-	webhook       = webhooks.Webhook{GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
+	webhook       = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
 	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 )
@@ -58,12 +59,12 @@ func toJSON(data interface{}) string {
 }
 
 func newService() webhooks.Service {
-	groups := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
+	ths := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingID: {ID: thingID, GroupID: groupID}, token: {ID: thingID, GroupID: groupID}}, map[string]things.Group{token: {ID: groupID}})
 	webhookRepo := whmocks.NewWebhookRepository()
 	forwarder := whmocks.NewForwarder()
 	idProvider := uuid.NewMock()
 
-	return webhooks.New(groups, webhookRepo, forwarder, idProvider)
+	return webhooks.New(ths, webhookRepo, forwarder, idProvider)
 }
 
 type testRequest struct {
@@ -104,7 +105,7 @@ func TestCreateWebhooks(t *testing.T) {
 	cases := []struct {
 		desc        string
 		data        string
-		groupID     string
+		thingID     string
 		contentType string
 		auth        string
 		status      int
@@ -113,7 +114,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create valid webhooks",
 			data:        validData,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusCreated,
@@ -122,7 +123,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with empty request",
 			data:        emptyValue,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -131,25 +132,25 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid request format",
 			data:        "}{",
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
 		},
 		{
-			desc:        "create webhooks with invalid group id",
+			desc:        "create webhooks with invalid thing id",
 			data:        validData,
-			groupID:     wrongValue,
+			thingID:     wrongValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusForbidden,
 			response:    emptyValue,
 		},
 		{
-			desc:        "create webhooks with empty group id",
+			desc:        "create webhooks with empty thing id",
 			data:        validData,
-			groupID:     emptyValue,
+			thingID:     emptyValue,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -158,7 +159,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid name",
 			data:        invalidName,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -167,7 +168,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid url",
 			data:        invalidUrl,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -176,7 +177,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with empty JSON array",
 			data:        "[]",
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -185,7 +186,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook with wrong auth token",
 			data:        validData,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
@@ -194,7 +195,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook with empty auth token",
 			data:        validData,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
@@ -203,7 +204,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhook without content type",
 			data:        validData,
-			groupID:     groupID,
+			thingID:     thingID,
 			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
@@ -214,7 +215,7 @@ func TestCreateWebhooks(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/webhooks", ts.URL, tc.groupID),
+			url:         fmt.Sprintf("%s/things/%s/webhooks", ts.URL, tc.thingID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -231,6 +232,7 @@ func TestCreateWebhooks(t *testing.T) {
 type webhookRes struct {
 	ID         string                 `json:"id"`
 	GroupID    string                 `json:"group_id"`
+	ThingID    string                 `json:"thing_id"`
 	Name       string                 `json:"name"`
 	Url        string                 `json:"url"`
 	ResHeaders map[string]string      `json:"headers"`
@@ -263,6 +265,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		whRes := webhookRes{
 			ID:         w.ID,
 			GroupID:    w.GroupID,
+			ThingID:    w.ThingID,
 			Name:       w.Name,
 			Url:        w.Url,
 			ResHeaders: w.Headers,
@@ -559,6 +562,7 @@ func TestViewWebhook(t *testing.T) {
 
 	data := toJSON(webhookRes{
 		ID:         wh.ID,
+		ThingID:    wh.ThingID,
 		GroupID:    wh.GroupID,
 		Name:       wh.Name,
 		Url:        wh.Url,

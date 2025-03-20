@@ -72,7 +72,7 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		subjects = append(subjects, subjectSMPP)
 	}
 
-	if msg.ProfileConfig.WebhookID != "" {
+	if msg.ProfileConfig.Webhook {
 		subjects = append(subjects, subjectWebhook)
 	}
 
