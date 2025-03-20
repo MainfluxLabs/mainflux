@@ -40,7 +40,7 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 
 func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listWebhooksReq)
+		req := request.(listWebhooksByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 
 func listWebhooksByThingEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listWebhooksThingReq)
+		req := request.(listWebhooksByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

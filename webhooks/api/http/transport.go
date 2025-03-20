@@ -98,7 +98,7 @@ func decodeListGroupWebhooks(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	req := listWebhooksReq{
+	req := listWebhooksByGroupReq{
 		token:        apiutil.ExtractBearerToken(r),
 		groupID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
@@ -113,7 +113,7 @@ func decodeListThingWebhooks(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	req := listWebhooksThingReq{
+	req := listWebhooksByThingReq{
 		token:        apiutil.ExtractBearerToken(r),
 		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,

@@ -82,13 +82,13 @@ func (req *webhookReq) validate() error {
 	return nil
 }
 
-type listWebhooksReq struct {
+type listWebhooksByGroupReq struct {
 	token        string
 	groupID      string
 	pageMetadata apiutil.PageMetadata
 }
 
-func (req listWebhooksReq) validate() error {
+func (req listWebhooksByGroupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -100,13 +100,13 @@ func (req listWebhooksReq) validate() error {
 	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
-type listWebhooksThingReq struct {
+type listWebhooksByThingReq struct {
 	token        string
 	thingID      string
 	pageMetadata apiutil.PageMetadata
 }
 
-func (req listWebhooksThingReq) validate() error {
+func (req listWebhooksByThingReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
