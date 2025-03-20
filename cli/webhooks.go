@@ -9,7 +9,7 @@ import (
 
 var cmdWebhooks = []cobra.Command{
 	{
-		Use:   "create <JSON_webhooks> <group_id> <user_token>",
+		Use:   "create <JSON_webhooks> <thing_id> <user_token>",
 		Short: "Create webhooks",
 		Long:  `Create webhooks for certain group.`,
 		Run: func(cmd *cobra.Command, args []string) {

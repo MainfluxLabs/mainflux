@@ -85,41 +85,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 		"offset":   pm.Offset,
 	}
 
-	rows, err := wr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []webhooks.Webhook
-	for rows.Next() {
-		dbWh := dbWebhook{}
-		if err := rows.StructScan(&dbWh); err != nil {
-			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		webhook, err := toWebhook(dbWh)
-		if err != nil {
-			return webhooks.WebhooksPage{}, err
-		}
-
-		items = append(items, webhook)
-	}
-
-	var total uint64
-	if err := wr.db.GetContext(ctx, &total, qc, groupID); err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := webhooks.WebhooksPage{
-		Webhooks: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return wr.retrieve(ctx, q, qc, params)
 }
 
 func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
@@ -140,41 +106,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 		"offset":   pm.Offset,
 	}
 
-	rows, err := wr.db.NamedQueryContext(ctx, q, params)
-	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []webhooks.Webhook
-	for rows.Next() {
-		dbWh := dbWebhook{}
-		if err := rows.StructScan(&dbWh); err != nil {
-			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-		webhook, err := toWebhook(dbWh)
-		if err != nil {
-			return webhooks.WebhooksPage{}, err
-		}
-
-		items = append(items, webhook)
-	}
-
-	var total uint64
-	if err := wr.db.GetContext(ctx, &total, qc, thingID); err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := webhooks.WebhooksPage{
-		Webhooks: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
+	return wr.retrieve(ctx, q, qc, params)
 }
 
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
@@ -240,6 +172,45 @@ func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 	}
 
 	return nil
+}
+
+func (wr webhookRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (webhooks.WebhooksPage, error) {
+	rows, err := wr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []webhooks.Webhook
+	for rows.Next() {
+		dbWh := dbWebhook{}
+		if err := rows.StructScan(&dbWh); err != nil {
+			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		wh, err := toWebhook(dbWh)
+		if err != nil {
+			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		items = append(items, wh)
+	}
+
+	total, err := dbutil.Total(ctx, wr.db, cquery, params)
+	if err != nil {
+		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  total,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
+		},
+	}
+
+	return page, nil
 }
 
 type dbWebhook struct {

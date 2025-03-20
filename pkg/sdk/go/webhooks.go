@@ -12,13 +12,13 @@ import (
 
 const webhooksEndpoint = "webhooks"
 
-func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error) {
+func (sdk mfSDK) CreateWebhooks(whs []Webhook, thingID, token string) ([]Webhook, error) {
 	data, err := json.Marshal(whs)
 	if err != nil {
 		return []Webhook{}, err
 	}
 
-	url := fmt.Sprintf("%s/groups/%s/%s", sdk.webhooksURL, groupID, webhooksEndpoint)
+	url := fmt.Sprintf("%s/things/%s/%s", sdk.webhooksURL, thingID, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return []Webhook{}, err
