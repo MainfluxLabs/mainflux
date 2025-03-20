@@ -327,6 +327,9 @@ type SDK interface {
 	// ListWebhooksByGroup lists webhooks who belong to a specified group.
 	ListWebhooksByGroup(groupID, token string) (Webhooks, error)
 
+	// ListWebhooksByThing lists webhooks who belong to a specified tthing.
+	ListWebhooksByThing(thingID, token string) (Webhooks, error)
+
 	// Webhook returns webhook data by id.
 	Webhook(webhookID, token string) (Webhook, error)
 

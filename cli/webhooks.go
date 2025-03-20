@@ -31,7 +31,7 @@ var cmdWebhooks = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get <by-group | by-id> <id> <user_token>",
+		Use:   "get <by-thing | by-group | by-id> <id> <user_token>",
 		Short: "Get webhooks",
 		Long: `Get all webhooks by group or get webhook by id:
 		by-group - lists all webhooks by group by provided <id>
@@ -42,22 +42,32 @@ var cmdWebhooks = []cobra.Command{
 				return
 			}
 
-			if args[0] == "by-group" {
+			switch args[0] {
+			case "by-group":
 				l, err := sdk.ListWebhooksByGroup(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(l)
-				return
-			}
-			w, err := sdk.Webhook(args[1], args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
+			case "by-thing":
+				l, err := sdk.ListWebhooksByThing(args[1], args[2])
+				if err != nil {
+					logError(err)
+					return
+				}
+				logJSON(l)
+			case "by-id":
+				w, err := sdk.Webhook(args[1], args[2])
+				if err != nil {
+					logError(err)
+					return
+				}
 
-			logJSON(w)
+				logJSON(w)
+			default:
+				return
+			}
 		},
 	},
 	{

@@ -67,8 +67,31 @@ func (wrm *webhookRepositoryMock) RetrieveByGroupID(_ context.Context, groupID s
 	}, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
-	return webhooks.WebhooksPage{}, nil
+func (wrm *webhookRepositoryMock) RetrieveByThingID(_ context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+	wrm.mu.Lock()
+	defer wrm.mu.Unlock()
+	var items []webhooks.Webhook
+
+	first := uint64(pm.Offset) + 1
+	last := first + uint64(pm.Limit)
+
+	for _, wh := range wrm.webhooks {
+		if wh.ThingID == thingID {
+			id := uuid.ParseID(wh.ID)
+			if id >= first && id < last || pm.Limit == 0 {
+				items = append(items, wh)
+			}
+		}
+	}
+
+	return webhooks.WebhooksPage{
+		Webhooks: items,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  uint64(len(items)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
 }
 
 func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (webhooks.Webhook, error) {

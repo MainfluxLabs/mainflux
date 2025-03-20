@@ -59,15 +59,13 @@ func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.
 }
 
 func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	gr, ok := svc.groups[req.GetToken()]
+	th, ok := svc.things[req.GetToken()]
 	if !ok {
 		return &empty.Empty{}, errors.ErrAuthentication
 	}
 
-	if th, ok := svc.things[req.GetToken()]; ok {
-		if th.GroupID == gr.ID {
-			return &empty.Empty{}, nil
-		}
+	if req.GetId() == th.ID {
+		return &empty.Empty{}, nil
 	}
 
 	return &empty.Empty{}, errors.ErrAuthorization

@@ -6,7 +6,7 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -52,7 +52,7 @@ func (sdk mfSDK) ReadMessages(pm PageMetadata, token string) (map[string]interfa
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

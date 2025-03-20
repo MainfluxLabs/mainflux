@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -53,7 +53,7 @@ func (sdk mfSDK) CreateGroups(groups []Group, orgID, token string) ([]Group, err
 		return []Group{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return []Group{}, err
 	}
@@ -124,7 +124,7 @@ func (sdk mfSDK) ListThingsByGroup(groupID, token string, offset, limit uint64) 
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -154,7 +154,7 @@ func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -201,7 +201,7 @@ func (sdk mfSDK) getGroups(token, url string) (GroupsPage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return GroupsPage{}, err
 	}
@@ -230,7 +230,7 @@ func (sdk mfSDK) Group(id, token string) (Group, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Group{}, err
 	}
@@ -284,7 +284,7 @@ func (sdk mfSDK) ViewGroupByThing(thingID, token string) (Group, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Group{}, err
 	}
@@ -314,7 +314,7 @@ func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Group{}, err
 	}
@@ -420,7 +420,7 @@ func (sdk mfSDK) ListGroupMembers(groupID, token string, offset, limit uint64) (
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return GroupMembersPage{}, err
 	}

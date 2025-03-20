@@ -6,7 +6,7 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -22,7 +22,7 @@ func (sdk mfSDK) Health() (mainflux.HealthInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return mainflux.HealthInfo{}, err
 	}

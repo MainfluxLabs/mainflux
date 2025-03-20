@@ -89,7 +89,7 @@ func TestCreateWebhooks(t *testing.T) {
 			desc:     "create webhook with invalid thing id",
 			webhooks: []webhooks.Webhook{invalidThingWh},
 			token:    token,
-			err:      errors.ErrNotFound,
+			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "create webhook with invalid name",
@@ -225,11 +225,133 @@ func TestListWebhooksByGroup(t *testing.T) {
 		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		page, err := svc.ListWebhooksByGroup(context.Background(), tc.token, tc.grID, tc.pageMetadata)
 		size := uint64(len(page.Webhooks))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%v: expected %v got %v\n", desc, tc.size, size))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%v: expected %v got %v\n", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestListWebhooksByThing(t *testing.T) {
+	svc := newService()
+	var whs []webhooks.Webhook
+	for i := 0; i < 10; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		webhook1 := webhook
+		webhook1.ID = id
+		webhook1.Name = name
+		whs = append(whs, webhook1)
+	}
+	whs, err := svc.CreateWebhooks(context.Background(), token, whs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	cases := []struct {
+		desc         string
+		token        string
+		thingID      string
+		pageMetadata apiutil.PageMetadata
+		size         uint64
+		err          error
+	}{
+		{
+			desc:    "list the webhooks by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+			},
+			size: uint64(len(whs)),
+			err:  nil,
+		},
+		{
+			desc:    "list the webhooks by thing with no limit",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
+		},
+		{
+			desc:    "list last webhook by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: uint64(len(whs)) - 1,
+				Limit:  uint64(len(whs)),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "list empty set of webhooks by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: uint64(len(whs)) + 1,
+				Limit:  uint64(len(whs)),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:    "list webhooks with invalid auth token",
+			token:   wrongValue,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:    "list webhooks with invalid thing id",
+			token:   token,
+			thingID: emptyValue,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  0,
+			},
+			size: 0,
+			err:  errors.ErrAuthorization,
+		},
+		{
+			desc:    "list webhooks by thing sorted by name ascendant",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    ascKey,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
+		},
+		{
+			desc:    "list webhooks by thing sorted by name descendent",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    descKey,
+			},
+			size: uint64(len(whs)),
+			err:  nil,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListWebhooksByThing(context.Background(), tc.token, tc.thingID, tc.pageMetadata)
+		size := uint64(len(page.Webhooks))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%v: expected %v got %v\n", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 

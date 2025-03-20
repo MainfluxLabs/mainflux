@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -50,7 +50,7 @@ func (sdk mfSDK) CreateProfiles(prs []Profile, groupID, token string) ([]Profile
 		return []Profile{}, errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return []Profile{}, err
 	}
@@ -79,7 +79,7 @@ func (sdk mfSDK) Profiles(token string, pm PageMetadata) (ProfilesPage, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -109,7 +109,7 @@ func (sdk mfSDK) ViewProfileByThing(thingID, token string) (Profile, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Profile{}, err
 	}
@@ -139,7 +139,7 @@ func (sdk mfSDK) Profile(id, token string) (Profile, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Profile{}, err
 	}

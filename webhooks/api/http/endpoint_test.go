@@ -144,7 +144,7 @@ func TestCreateWebhooks(t *testing.T) {
 			thingID:     wrongValue,
 			contentType: contentType,
 			auth:        token,
-			status:      http.StatusNotFound,
+			status:      http.StatusForbidden,
 			response:    emptyValue,
 		},
 		{
