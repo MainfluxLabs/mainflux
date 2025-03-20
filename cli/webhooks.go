@@ -11,7 +11,7 @@ var cmdWebhooks = []cobra.Command{
 	{
 		Use:   "create <JSON_webhooks> <thing_id> <user_token>",
 		Short: "Create webhooks",
-		Long:  `Create webhooks for certain group.`,
+		Long:  `Create webhooks for certain thing.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
