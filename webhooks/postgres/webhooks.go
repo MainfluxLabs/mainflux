@@ -294,6 +294,7 @@ func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	}
 
 	return webhooks.Webhook{
+		ID:       dbW.ID,
 		ThingID:  dbW.ThingID,
 		GroupID:  dbW.GroupID,
 		Name:     dbW.Name,
