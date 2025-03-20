@@ -72,15 +72,19 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	gq := "group_id = :group_id"
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	whereClause := dbutil.BuildWhereClause(gq, nq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM webhooks WHERE group_id = :group_id;`
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM webhooks WHERE %s;`, gq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
+		"name":     name,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -93,15 +97,19 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
+	tq := "thing_id = :thing:_id"
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
+	whereClause := dbutil.BuildWhereClause(tq, nq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE thing_id = :thing_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM webhooks WHERE thing_id = :thing_id;`
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM webhooks WHERE %s;`, tq)
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
+		"name":     name,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
