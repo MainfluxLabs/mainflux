@@ -36,7 +36,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(pm PageMetadata, token string) (map[string]interface{}, error) {
+func (sdk mfSDK) ReadMessages(pm PageMetadata, isAdmin bool, token string) (map[string]interface{}, error) {
 	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
 	if err != nil {
 		return nil, err
@@ -47,18 +47,31 @@ func (sdk mfSDK) ReadMessages(pm PageMetadata, token string) (map[string]interfa
 		return nil, err
 	}
 
-	resp, err := sdk.sendThingRequest(req, token, string(sdk.msgContentType))
+	if isAdmin {
+		response, err := sdk.sendRequest(req, token, string(sdk.msgContentType))
+		if err != nil {
+			return nil, err
+		}
+
+		return decodeMessages(response)
+	}
+
+	response, err := sdk.sendThingRequest(req, token, string(sdk.msgContentType))
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	return decodeMessages(response)
+}
+
+func decodeMessages(response *http.Response) (map[string]interface{}, error) {
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Wrap(ErrFailedRead, errors.New(resp.Status))
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Wrap(ErrFailedRead, errors.New(response.Status))
 	}
 
 	var mp map[string]interface{}
