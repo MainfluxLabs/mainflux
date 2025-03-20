@@ -180,7 +180,7 @@ func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID strin
 func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
 	q := `SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks WHERE id = $1;`
 
-	dbwh := dbWebhook{ThingID: id}
+	dbwh := dbWebhook{ID: id}
 	if err := wr.db.QueryRowxContext(ctx, q, id).StructScan(&dbwh); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
@@ -230,7 +230,7 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 
 func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		dbwh := dbWebhook{ThingID: id}
+		dbwh := dbWebhook{ID: id}
 		q := `DELETE FROM webhooks WHERE id = :id;`
 
 		_, err := wr.db.NamedExecContext(ctx, q, dbwh)

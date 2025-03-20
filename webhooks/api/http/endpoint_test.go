@@ -168,7 +168,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with invalid url",
 			data:        invalidUrl,
-			thingID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -177,7 +177,7 @@ func TestCreateWebhooks(t *testing.T) {
 		{
 			desc:        "create webhooks with empty JSON array",
 			data:        "[]",
-			thingID:     groupID,
+			thingID:     thingID,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,

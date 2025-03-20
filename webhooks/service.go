@@ -27,8 +27,8 @@ type Service interface {
 	// related to a certain group identified by the provided ID.
 	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
-	// ListWebhooksByGroup retrieves data about a subset of webhooks
-	// related to a certain group identified by the provided ID.
+	// ListWebhooksByThing retrieves data about a subset of webhooks
+	// related to a certain thing identified by the provided ID.
 	ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided
