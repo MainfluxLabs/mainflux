@@ -17,7 +17,7 @@ import (
 var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	roles        map[string]string
+	roles        map[string][]string
 	usersByEmail map[string]users.User
 	orgs         map[string]auth.Org
 }
@@ -25,12 +25,12 @@ type authServiceMock struct {
 // NewAuthService creates mock of users service.
 func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) protomfx.AuthServiceClient {
 	usersByEmail := make(map[string]users.User)
-	roles := map[string]string{auth.RootSub: adminID}
+	roles := map[string][]string{auth.RootSub: {adminID}}
 	orgs := make(map[string]auth.Org)
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
-		roles[user.Role] = user.ID
+		roles[user.Role] = append(roles[user.Role], user.ID)
 	}
 
 	for _, o := range orgList {
@@ -69,7 +69,7 @@ func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeR
 
 	switch req.Subject {
 	case auth.RootSub:
-		if svc.roles[auth.RootSub] != u.ID {
+		if !contains(svc.roles[auth.RootSub], u.ID) {
 			return &empty.Empty{}, errors.ErrAuthorization
 		}
 	case auth.OrgSub:
@@ -83,14 +83,24 @@ func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeR
 	return &empty.Empty{}, nil
 }
 
+func contains(ids []string, id string) bool {
+	for _, existingID := range ids {
+		if existingID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func (svc authServiceMock) canAccessOrg(userID, action string) error {
-	isOwner := svc.roles[auth.RootSub] == userID || svc.roles[auth.Owner] == userID
-	isEditor := isOwner || svc.roles[auth.Editor] == userID
-	isViewer := isEditor || svc.roles[auth.Viewer] == userID
+	isRoot := contains(svc.roles[auth.RootSub], userID)
+	isOwner := isRoot || contains(svc.roles[auth.Owner], userID)
+	isEditor := isOwner || contains(svc.roles[auth.Editor], userID)
+	isViewer := isEditor || contains(svc.roles[auth.Viewer], userID)
 
 	switch action {
 	case auth.RootSub:
-		if svc.roles[auth.RootSub] != userID {
+		if !isRoot {
 			return errors.ErrAuthorization
 		}
 		return nil
@@ -123,10 +133,10 @@ func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, req *protomfx.Or
 	return nil, errors.ErrNotFound
 }
 
-func (svc authServiceMock) AssignRole(_ context.Context, in *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(_ context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
+func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	panic("not implemented")
 }

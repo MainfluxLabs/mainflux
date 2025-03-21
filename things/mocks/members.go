@@ -48,7 +48,27 @@ func (mrm *groupMembersRepositoryMock) RetrieveRole(_ context.Context, gm things
 }
 
 func (mrm *groupMembersRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
-	panic("not implemented")
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	gms := []things.GroupMember{}
+	i := uint64(0)
+	for _, m := range mrm.groupMembers[groupID] {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+			gms = append(gms, m)
+		}
+		i++
+	}
+
+	return things.GroupMembersPage{
+		GroupMembers: gms,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  uint64(len(mrm.groupMembers[groupID])),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
+
 }
 
 func (mrm *groupMembersRepositoryMock) RetrieveGroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
@@ -81,9 +101,47 @@ func (mrm *groupMembersRepositoryMock) RetrieveAll(_ context.Context) ([]things.
 }
 
 func (mrm *groupMembersRepositoryMock) Update(_ context.Context, gms ...things.GroupMember) error {
-	panic("not implemented")
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	for _, gm := range gms {
+		if _, ok := mrm.groupMembers[gm.GroupID]; !ok {
+			return errors.ErrNotFound
+		}
+		mrm.groupMembers[gm.GroupID] = []things.GroupMember{
+			{
+				MemberID: gm.MemberID,
+				Role:     gm.Role,
+			},
+		}
+	}
+
+	return nil
 }
 
 func (mrm *groupMembersRepositoryMock) Remove(_ context.Context, groupID string, memberIDs ...string) error {
-	panic("not implemented")
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	members, ok := mrm.groupMembers[groupID]
+	if !ok {
+		return errors.ErrNotFound
+	}
+
+	for _, memberID := range memberIDs {
+		found := false
+		for i, member := range members {
+			if member.MemberID == memberID {
+				members = append(members[:i], members[i+1:]...)
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return errors.ErrNotFound
+		}
+	}
+
+	return nil
 }
