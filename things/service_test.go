@@ -1629,12 +1629,14 @@ func TestCreateGroups(t *testing.T) {
 			token: token,
 			group: group,
 			err:   nil,
-		}, {
+		},
+		{
 			desc:  "create group with wrong credentials",
 			token: wrongValue,
 			group: group,
 			err:   errors.ErrAuthentication,
-		}, {
+		},
+		{
 			desc:  "create group without credentials",
 			token: emptyValue,
 			group: group,
