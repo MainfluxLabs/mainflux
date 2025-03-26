@@ -171,10 +171,17 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
 
-	m := messaging.CreateMessage(pc, protocol, subject, payload)
+	msg := protomfx.Message{
+		Protocol:      protocol,
+		Subtopic:      subject,
+		Publisher:     pc.PublisherID,
+		Payload:       *payload,
+		Created:       time.Now().UnixNano(),
+		ProfileConfig: pc.ProfileConfig,
+	}
 
 	for _, pub := range h.publishers {
-		if err := pub.Publish(m); err != nil {
+		if err := pub.Publish(msg); err != nil {
 			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
 		}
 	}
