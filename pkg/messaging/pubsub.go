@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -89,19 +88,6 @@ type Subscriber interface {
 type PubSub interface {
 	Publisher
 	Subscriber
-}
-
-func CreateMessage(pc *protomfx.PubConfByKeyRes, protocol, subject string, payload *[]byte) protomfx.Message {
-	msg := protomfx.Message{
-		Protocol:      protocol,
-		Subtopic:      subject,
-		Publisher:     pc.PublisherID,
-		Payload:       *payload,
-		Created:       time.Now().UnixNano(),
-		ProfileConfig: pc.ProfileConfig,
-	}
-
-	return msg
 }
 
 func ExtractSubtopic(path string) (string, error) {
