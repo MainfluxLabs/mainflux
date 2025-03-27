@@ -4,8 +4,12 @@
 package nats
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -21,6 +25,7 @@ const (
 	subjectSMTP    = "smtp"
 	subjectSMPP    = "smpp"
 	subjectWebhook = "webhook"
+	subjectAlarm   = "alarm"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -43,6 +48,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	}
 	return ret, nil
 }
+
 func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	format, err := getFormat(msg.ProfileConfig.ContentType)
 	if err != nil {
@@ -64,12 +70,43 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		subjects = append(subjects, subject)
 	}
 
-	if msg.ProfileConfig.SmtpID != "" {
-		subjects = append(subjects, subjectSMTP)
+	if msg.ProfileConfig.GetSmtpID() != "" {
+		notification, err := createNotification(msg)
+		if err != nil {
+			return err
+		}
+
+		if err := pub.conn.Publish(subjectSMTP, notification); err != nil {
+			return err
+		}
 	}
 
-	if msg.ProfileConfig.SmppID != "" {
-		subjects = append(subjects, subjectSMPP)
+	if msg.ProfileConfig.GetSmppID() != "" {
+		notification, err := createNotification(msg)
+		if err != nil {
+			return err
+		}
+
+		if err := pub.conn.Publish(subjectSMPP, notification); err != nil {
+			return err
+		}
+	}
+
+	if msg.ProfileConfig.GetRule() != "" {
+		valid, err := isPayloadValidForRule(data, msg.ProfileConfig.GetRule())
+		if err != nil {
+			return err
+		}
+		if !valid {
+			alarm, err := createAlarm(msg)
+			if err != nil {
+				return err
+			}
+
+			if err := pub.conn.Publish(subjectAlarm, alarm); err != nil {
+				return err
+			}
+		}
 	}
 
 	if msg.ProfileConfig.Webhook {
@@ -100,5 +137,102 @@ func getFormat(ct string) (format string, err error) {
 		return messaging.CBORFormat, nil
 	default:
 		return messaging.SenMLFormat, nil
+	}
+}
+
+func createNotification(msg protomfx.Message) ([]byte, error) {
+	notification := protomfx.Notification{
+		PublisherID: msg.GetPublisher(),
+		Subtopic:    msg.GetSubtopic(),
+		Payload:     msg.GetPayload(),
+		Protocol:    msg.GetProtocol(),
+		SmtpID:      msg.GetProfileConfig().GetSmtpID(),
+		SmppID:      msg.GetProfileConfig().GetSmppID(),
+	}
+
+	data, err := proto.Marshal(&notification)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func createAlarm(msg protomfx.Message) ([]byte, error) {
+	alarm := protomfx.Alarm{
+		ProfileID:   msg.GetProfileID(),
+		PublisherID: msg.GetPublisher(),
+		Subtopic:    msg.GetSubtopic(),
+		Payload:     msg.GetPayload(),
+		Protocol:    msg.GetProtocol(),
+		Condition:   msg.GetProfileConfig().GetRule(),
+	}
+
+	data, err := proto.Marshal(&alarm)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func isPayloadValidForRule(payload []byte, rule string) (bool, error) {
+	var (
+		errInvalidRule      = errors.New("invalid rule format")
+		errInvalidValueType = errors.New("invalid value type")
+		payloadMap          map[string]interface{}
+	)
+
+	if err := json.Unmarshal(payload, &payloadMap); err != nil {
+		return false, err
+	}
+
+	ruleParts := strings.Fields(rule)
+	if len(ruleParts) != 3 {
+		return false, errInvalidRule
+	}
+
+	param := ruleParts[0]
+	operator := ruleParts[1]
+	ruleValue, err := strconv.ParseFloat(ruleParts[2], 64)
+	if err != nil {
+		return false, err
+	}
+
+	value := messaging.FindParam(payloadMap, param)
+	if value == nil {
+		return false, nil
+	}
+
+	var payloadValue float64
+	switch v := value.(type) {
+	case string:
+		payloadValue, err = strconv.ParseFloat(v, 64)
+		if err != nil {
+			return false, err
+		}
+	case float64:
+		payloadValue = v
+	default:
+		return false, errInvalidValueType
+	}
+
+	return isValidValue(operator, payloadValue, ruleValue), nil
+}
+
+func isValidValue(operator string, val1, val2 float64) bool {
+	switch operator {
+	case "==":
+		return val1 == val2
+	case ">=":
+		return val1 >= val2
+	case "<=":
+		return val1 <= val2
+	case ">":
+		return val1 > val2
+	case "<":
+		return val1 < val2
+	default:
+		return false
 	}
 }

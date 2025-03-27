@@ -59,13 +59,13 @@ func New(idp uuid.IDProvider, notifier Notifier, notifierRepo NotifierRepository
 func (ns *notifierService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	msg, ok := message.(protomfx.Message)
+	msg, ok := message.(protomfx.Notification)
 	if !ok {
 		return errors.ErrMessage
 	}
 
-	if msg.ProfileConfig.SmtpID != "" {
-		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.ProfileConfig.SmtpID)
+	if msg.GetSmtpID() != "" {
+		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.SmtpID)
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}
@@ -75,8 +75,8 @@ func (ns *notifierService) Consume(message interface{}) error {
 		}
 	}
 
-	if msg.ProfileConfig.SmppID != "" {
-		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.ProfileConfig.SmppID)
+	if msg.GetSmppID() != "" {
+		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.GetSmppID())
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}

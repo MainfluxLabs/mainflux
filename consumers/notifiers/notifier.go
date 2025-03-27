@@ -19,7 +19,7 @@ var ErrNotify = errors.New("failed to send notification")
 type Notifier interface {
 	// Notify method is used to send notification for the
 	// received message to the provided list of receivers.
-	Notify(to []string, msg protomfx.Message) error
+	Notify(to []string, msg protomfx.Notification) error
 
 	// ValidateContacts method is used to validate contacts
 	// to which notifications will be sent.

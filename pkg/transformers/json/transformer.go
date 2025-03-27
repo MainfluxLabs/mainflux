@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
@@ -140,27 +141,11 @@ func filterPayloadFields(payload map[string]interface{}, dataFilters []string) m
 
 	filteredPayload := make(map[string]interface{})
 	for _, key := range dataFilters {
-		value := findByKey(payload, key)
+		value := messaging.FindParam(payload, key)
 		if value != nil {
 			filteredPayload[key] = value
 		}
 	}
 
 	return filteredPayload
-}
-
-func findByKey(payload map[string]interface{}, key string) interface{} {
-	if value, ok := payload[key]; ok {
-		return value
-	}
-
-	for _, v := range payload {
-		if data, ok := v.(map[string]interface{}); ok {
-			if value := findByKey(data, key); value != nil {
-				return value
-			}
-		}
-	}
-
-	return nil
 }

@@ -128,3 +128,19 @@ func CreateSubject(subtopic string) (string, error) {
 
 	return subtopic, nil
 }
+
+func FindParam(payload map[string]interface{}, param string) interface{} {
+	for key, value := range payload {
+		if key == param {
+			return value
+		}
+
+		if data, ok := value.(map[string]interface{}); ok {
+			if value := FindParam(data, param); value != nil {
+				return value
+			}
+		}
+	}
+
+	return nil
+}

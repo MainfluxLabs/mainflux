@@ -17,6 +17,24 @@ message Message {
     Config  profileConfig   = 7;
 }
 
+message Notification {
+    string  publisherID   = 1;
+    string  subtopic      = 2;
+    bytes   payload       = 3;
+    string  protocol      = 4;
+    string  smtpID        = 5;
+    string  smppID        = 6;
+}
+
+message Alarm {
+    string  profileID       = 1;
+    string  publisherID     = 2;
+    string  subtopic        = 3;
+    string  protocol        = 4;
+    bytes   payload         = 5;
+    string  condition       = 6;
+}
+
 service ThingsService {
     rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
     rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
@@ -59,6 +77,7 @@ message Config {
     string      smtpID      = 4;
     string      smppID      = 5;
     Transformer transformer = 6;
+    string      rule        = 7;
 }
 
 message ConfigByThingIDRes{
