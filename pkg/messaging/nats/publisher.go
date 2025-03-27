@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -60,14 +59,21 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		return err
 	}
 
-	var subjects []string
 	subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
 	if msg.ProfileConfig.Write {
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
 
-		subjects = append(subjects, subject)
+		if err := pub.conn.Publish(subject, data); err != nil {
+			return err
+		}
+	}
+
+	if msg.ProfileConfig.Webhook {
+		if err := pub.conn.Publish(subjectWebhook, data); err != nil {
+			return err
+		}
 	}
 
 	if msg.ProfileConfig.GetSmtpID() != "" {
@@ -92,8 +98,8 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		}
 	}
 
-	if msg.ProfileConfig.GetRule() != "" {
-		valid, err := isPayloadValidForRule(data, msg.ProfileConfig.GetRule())
+	if msg.ProfileConfig.GetRule() != nil {
+		valid, err := isPayloadValidForRule(data, *msg.ProfileConfig.GetRule())
 		if err != nil {
 			return err
 		}
@@ -106,16 +112,6 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 			if err := pub.conn.Publish(subjectAlarm, alarm); err != nil {
 				return err
 			}
-		}
-	}
-
-	if msg.ProfileConfig.Webhook {
-		subjects = append(subjects, subjectWebhook)
-	}
-
-	for _, subject := range subjects {
-		if err := pub.conn.Publish(subject, data); err != nil {
-			return err
 		}
 	}
 
@@ -160,12 +156,12 @@ func createNotification(msg protomfx.Message) ([]byte, error) {
 
 func createAlarm(msg protomfx.Message) ([]byte, error) {
 	alarm := protomfx.Alarm{
-		ProfileID:   msg.GetProfileID(),
 		PublisherID: msg.GetPublisher(),
 		Subtopic:    msg.GetSubtopic(),
-		Payload:     msg.GetPayload(),
 		Protocol:    msg.GetProtocol(),
-		Condition:   msg.GetProfileConfig().GetRule(),
+		Payload:     msg.GetPayload(),
+		Rule:        msg.GetProfileConfig().GetRule(),
+		Created:     msg.GetCreated(),
 	}
 
 	data, err := proto.Marshal(&alarm)
@@ -176,9 +172,8 @@ func createAlarm(msg protomfx.Message) ([]byte, error) {
 	return data, nil
 }
 
-func isPayloadValidForRule(payload []byte, rule string) (bool, error) {
+func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 	var (
-		errInvalidRule      = errors.New("invalid rule format")
 		errInvalidValueType = errors.New("invalid value type")
 		payloadMap          map[string]interface{}
 	)
@@ -187,19 +182,7 @@ func isPayloadValidForRule(payload []byte, rule string) (bool, error) {
 		return false, err
 	}
 
-	ruleParts := strings.Fields(rule)
-	if len(ruleParts) != 3 {
-		return false, errInvalidRule
-	}
-
-	param := ruleParts[0]
-	operator := ruleParts[1]
-	ruleValue, err := strconv.ParseFloat(ruleParts[2], 64)
-	if err != nil {
-		return false, err
-	}
-
-	value := messaging.FindParam(payloadMap, param)
+	value := messaging.FindParam(payloadMap, rule.GetField())
 	if value == nil {
 		return false, nil
 	}
@@ -207,17 +190,18 @@ func isPayloadValidForRule(payload []byte, rule string) (bool, error) {
 	var payloadValue float64
 	switch v := value.(type) {
 	case string:
-		payloadValue, err = strconv.ParseFloat(v, 64)
+		val, err := strconv.ParseFloat(v, 64)
 		if err != nil {
 			return false, err
 		}
+		payloadValue = val
 	case float64:
 		payloadValue = v
 	default:
 		return false, errInvalidValueType
 	}
 
-	return isValidValue(operator, payloadValue, ruleValue), nil
+	return isValidValue(rule.GetOperator(), payloadValue, float64(rule.GetValue())), nil
 }
 
 func isValidValue(operator string, val1, val2 float64) bool {

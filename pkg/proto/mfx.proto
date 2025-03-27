@@ -27,12 +27,18 @@ message Notification {
 }
 
 message Alarm {
-    string  profileID       = 1;
-    string  publisherID     = 2;
-    string  subtopic        = 3;
-    string  protocol        = 4;
-    bytes   payload         = 5;
-    string  condition       = 6;
+    string  publisherID   = 1;
+    string  subtopic      = 2;
+    string  protocol      = 3;
+    bytes   payload       = 4;
+    Rule    rule          = 5;
+    int64   created       = 6;
+}
+
+message Rule {
+    string field      = 1;
+    string operator   = 2;
+    float  value      = 3;
 }
 
 service ThingsService {
@@ -77,7 +83,7 @@ message Config {
     string      smtpID      = 4;
     string      smppID      = 5;
     Transformer transformer = 6;
-    string      rule        = 7;
+    Rule        rule        = 7;
 }
 
 message ConfigByThingIDRes{
