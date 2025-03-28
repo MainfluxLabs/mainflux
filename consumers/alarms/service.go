@@ -113,23 +113,25 @@ func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
 	if msg, ok := message.(protomfx.Alarm); ok {
-		var rule map[string]interface{}
+		var rule, payload map[string]interface{}
 
-		if msg.Rule != nil {
-			r, err := proto.Marshal(msg.Rule)
-			if err != nil {
-				return err
-			}
-			if err := json.Unmarshal(r, &rule); err != nil {
-				return err
-			}
+		r, err := proto.Marshal(msg.Rule)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(r, &rule); err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+			return err
 		}
 
 		alarm := Alarm{
 			ThingID:  msg.PublisherID,
 			Subtopic: msg.Subtopic,
 			Protocol: msg.Protocol,
-			Payload:  msg.Payload,
+			Payload:  payload,
 			Rule:     rule,
 			Created:  msg.Created,
 		}

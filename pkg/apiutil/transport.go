@@ -58,6 +58,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingOrgID),
 			errors.Contains(err, ErrMissingWebhookID),
 			errors.Contains(err, ErrMissingNotifierID),
+			errors.Contains(err, ErrMissingAlarmID),
 			errors.Contains(err, ErrMissingUserID),
 			errors.Contains(err, ErrMissingRole),
 			errors.Contains(err, ErrInvalidSubject),
@@ -292,8 +293,10 @@ func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error 
 		return ErrLimitSize
 	}
 
-	if len(pm.Name) > maxNameSize {
-		return ErrNameSize
+	if maxNameSize > 0 {
+		if len(pm.Name) > maxNameSize {
+			return ErrNameSize
+		}
 	}
 
 	if pm.Order != "" &&

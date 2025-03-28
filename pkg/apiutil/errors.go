@@ -36,6 +36,9 @@ var (
 	// ErrMissingNotifierID indicates missing notifier ID.
 	ErrMissingNotifierID = errors.New("missing notifier id")
 
+	// ErrMissingAlarmID indicates missing alarm ID.
+	ErrMissingAlarmID = errors.New("missing alarm id")
+
 	// ErrMissingUserID indicates missing user ID.
 	ErrMissingUserID = errors.New("missing user id")
 

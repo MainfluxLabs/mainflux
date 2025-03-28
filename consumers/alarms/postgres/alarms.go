@@ -179,14 +179,14 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 }
 
 type dbAlarm struct {
-	ID       string          `db:"id"`
-	ThingID  string          `db:"thing_id"`
-	GroupID  string          `db:"group_id"`
-	Subtopic sql.NullString  `db:"subtopic"`
-	Protocol sql.NullString  `db:"protocol"`
-	Payload  json.RawMessage `db:"payload"`
-	Rule     json.RawMessage `db:"rule"`
-	Created  int64           `db:"created"`
+	ID       string `db:"id"`
+	ThingID  string `db:"thing_id"`
+	GroupID  string `db:"group_id"`
+	Subtopic string `db:"subtopic"`
+	Protocol string `db:"protocol"`
+	Payload  []byte `db:"payload"`
+	Rule     []byte `db:"rule"`
+	Created  int64  `db:"created"`
 }
 
 func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
@@ -204,8 +204,8 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 		ID:       alarm.ID,
 		ThingID:  alarm.ThingID,
 		GroupID:  alarm.GroupID,
-		Subtopic: sql.NullString{String: alarm.Subtopic, Valid: alarm.Subtopic != ""},
-		Protocol: sql.NullString{String: alarm.Protocol, Valid: alarm.Protocol != ""},
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
 		Payload:  payload,
 		Rule:     rule,
 		Created:  alarm.Created,
@@ -213,6 +213,11 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 }
 
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal(dbAlarm.Payload, &payload); err != nil {
+		return alarms.Alarm{}, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
 	var rule map[string]interface{}
 	if err := json.Unmarshal(dbAlarm.Rule, &rule); err != nil {
 		return alarms.Alarm{}, errors.Wrap(errors.ErrMalformedEntity, err)
@@ -222,9 +227,9 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		ID:       dbAlarm.ID,
 		ThingID:  dbAlarm.ThingID,
 		GroupID:  dbAlarm.GroupID,
-		Subtopic: dbAlarm.Subtopic.String,
-		Protocol: dbAlarm.Protocol.String,
-		Payload:  dbAlarm.Payload,
+		Subtopic: dbAlarm.Subtopic,
+		Protocol: dbAlarm.Protocol,
+		Payload:  payload,
 		Rule:     rule,
 		Created:  dbAlarm.Created,
 	}, nil
