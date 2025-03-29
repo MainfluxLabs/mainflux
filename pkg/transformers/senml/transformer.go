@@ -27,9 +27,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-type transformer struct {
-	format senml.Format
-}
+type transformer struct{}
 
 // New returns transformer service implementation for SenML messages.
 func New() transformers.Transformer {
@@ -37,7 +35,7 @@ func New() transformers.Transformer {
 }
 
 func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
-	contentFormat := msg.ProfileConfig.ContentType
+	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
 		format = formats[JSON]

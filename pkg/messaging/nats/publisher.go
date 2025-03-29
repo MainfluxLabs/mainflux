@@ -49,7 +49,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(msg protomfx.Message) (err error) {
-	format, err := getFormat(msg.ProfileConfig.ContentType)
+	format, err := getFormat(msg.ContentType)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	}
 
 	subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
-	if msg.ProfileConfig.Write {
+	if msg.WriteEnabled {
 		if msg.Subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
 		}
@@ -70,46 +70,31 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		}
 	}
 
-	if msg.ProfileConfig.Webhook {
+	if msg.WebhookEnabled {
 		if err := pub.conn.Publish(subjectWebhook, data); err != nil {
 			return err
 		}
 	}
 
-	if msg.ProfileConfig.GetSmtpID() != "" {
-		notification, err := createNotification(msg)
-		if err != nil {
-			return err
-		}
-
-		if err := pub.conn.Publish(subjectSMTP, notification); err != nil {
+	if msg.SmtpID != "" {
+		if err := pub.conn.Publish(subjectSMTP, data); err != nil {
 			return err
 		}
 	}
 
-	if msg.ProfileConfig.GetSmppID() != "" {
-		notification, err := createNotification(msg)
-		if err != nil {
-			return err
-		}
-
-		if err := pub.conn.Publish(subjectSMPP, notification); err != nil {
+	if msg.SmppID != "" {
+		if err := pub.conn.Publish(subjectSMPP, data); err != nil {
 			return err
 		}
 	}
 
-	if msg.ProfileConfig.GetRule() != nil {
-		valid, err := isPayloadValidForRule(data, *msg.ProfileConfig.GetRule())
+	if msg.Rule != nil {
+		valid, err := isPayloadValidForRule(data, *msg.Rule)
 		if err != nil {
 			return err
 		}
 		if !valid {
-			alarm, err := createAlarm(msg)
-			if err != nil {
-				return err
-			}
-
-			if err := pub.conn.Publish(subjectAlarm, alarm); err != nil {
+			if err := pub.conn.Publish(subjectAlarm, data); err != nil {
 				return err
 			}
 		}
@@ -134,42 +119,6 @@ func getFormat(ct string) (format string, err error) {
 	default:
 		return messaging.SenMLFormat, nil
 	}
-}
-
-func createNotification(msg protomfx.Message) ([]byte, error) {
-	notification := protomfx.Notification{
-		PublisherID: msg.GetPublisher(),
-		Subtopic:    msg.GetSubtopic(),
-		Payload:     msg.GetPayload(),
-		Protocol:    msg.GetProtocol(),
-		SmtpID:      msg.GetProfileConfig().GetSmtpID(),
-		SmppID:      msg.GetProfileConfig().GetSmppID(),
-	}
-
-	data, err := proto.Marshal(&notification)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func createAlarm(msg protomfx.Message) ([]byte, error) {
-	alarm := protomfx.Alarm{
-		PublisherID: msg.GetPublisher(),
-		Subtopic:    msg.GetSubtopic(),
-		Protocol:    msg.GetProtocol(),
-		Payload:     msg.GetPayload(),
-		Rule:        msg.GetProfileConfig().GetRule(),
-		Created:     msg.GetCreated(),
-	}
-
-	data, err := proto.Marshal(&alarm)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }
 
 func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {

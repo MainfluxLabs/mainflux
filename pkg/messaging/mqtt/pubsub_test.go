@@ -19,7 +19,6 @@ import (
 const (
 	topic            = "topic"
 	profilesPrefix   = "profiles"
-	profile          = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	subtopic         = "engine"
 	anotherSubtopic  = "app"
 	subSubtopic      = "test"
@@ -29,10 +28,7 @@ const (
 	messages         = "messages"
 )
 
-var (
-	data      = []byte("payload")
-	msgConfig = &protomfx.Config{ContentType: senmlContentType, Write: true, Transformer: &protomfx.Transformer{}}
-)
+var data = []byte("payload")
 
 // ErrFailedHandleMessage indicates that the message couldn't be handled.
 var errFailedHandleMessage = errors.New("failed to handle mainflux message")
@@ -98,11 +94,12 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			Publisher:     "clientID11",
-			ProfileID:     profile,
-			Subtopic:      tc.subtopic,
-			Payload:       tc.payload,
-			ProfileConfig: msgConfig,
+			Publisher:    "clientID11",
+			Subtopic:     tc.subtopic,
+			Payload:      tc.payload,
+			ContentType:  senmlContentType,
+			WriteEnabled: true,
+			Transformer:  &protomfx.Transformer{},
 		}
 
 		err := pubsub.Publish(msg)
@@ -192,7 +189,6 @@ func TestSubscribe(t *testing.T) {
 		if tc.err == nil {
 			expectedMsg := protomfx.Message{
 				Publisher: "clientID1",
-				ProfileID: profile,
 				Subtopic:  subtopic,
 				Payload:   data,
 			}
@@ -264,11 +260,12 @@ func TestPubSub(t *testing.T) {
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
 			expectedMsg := protomfx.Message{
-				Publisher:     "clientID",
-				ProfileID:     profile,
-				Subtopic:      subtopic,
-				Payload:       data,
-				ProfileConfig: msgConfig,
+				Publisher:    "clientID",
+				Subtopic:     subtopic,
+				Payload:      data,
+				ContentType:  senmlContentType,
+				WriteEnabled: true,
+				Transformer:  &protomfx.Transformer{},
 			}
 
 			// Publish message, and then receive it on message profile.

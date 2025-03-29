@@ -9,7 +9,6 @@ package coap
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -58,9 +57,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, msg protomfx
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	msg.Publisher = pc.PublisherID
-	msg.ProfileConfig = pc.ProfileConfig
-	msg.Created = time.Now().UnixNano()
+	messaging.FormatMessage(pc, &msg)
 
 	return svc.pubsub.Publish(msg)
 }

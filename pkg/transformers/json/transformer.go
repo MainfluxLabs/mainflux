@@ -52,15 +52,15 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
 	}
-	extractedPayload := extractPayload(payload, msg.ProfileConfig.Transformer.DataField)
+	extractedPayload := extractPayload(payload, msg.Transformer.DataField)
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, msg.ProfileConfig.Transformer.DataFilters)
+		formattedPayload := filterPayloadFields(p, msg.Transformer.DataFilters)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.ProfileConfig.Transformer)
+		ts, err := ts.transformTimeField(p, *msg.Transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -79,11 +79,11 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := filterPayloadFields(v, msg.ProfileConfig.Transformer.DataFilters)
+			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.ProfileConfig.Transformer)
+			ts, err := ts.transformTimeField(v, *msg.Transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}

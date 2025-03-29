@@ -59,7 +59,7 @@ func New(idp uuid.IDProvider, notifier Notifier, notifierRepo NotifierRepository
 func (ns *notifierService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	msg, ok := message.(protomfx.Notification)
+	msg, ok := message.(protomfx.Message)
 	if !ok {
 		return errors.ErrMessage
 	}

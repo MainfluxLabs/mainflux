@@ -59,7 +59,7 @@ func TestConsume(t *testing.T) {
 func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
 	svc := newService()
-	var config, invalidConfig *protomfx.Config
+	var msg, invalidMsg protomfx.Message
 
 	validNotifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 	nfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
@@ -71,19 +71,19 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 
 	if svcName == svcSmtp {
 		invalidNf.Contacts = invalidEmails
-		config = &protomfx.Config{
+		msg = protomfx.Message{
 			SmtpID: nf.ID,
 		}
-		invalidConfig = &protomfx.Config{
+		invalidMsg = protomfx.Message{
 			SmtpID: invalidNf.ID,
 		}
 	}
 	if svcName == svcSmpp {
 		invalidNf.Contacts = invalidPhones
-		config = &protomfx.Config{
+		msg = protomfx.Message{
 			SmppID: nf.ID,
 		}
-		invalidConfig = &protomfx.Config{
+		invalidMsg = protomfx.Message{
 			SmppID: invalidNf.ID,
 		}
 	}
@@ -95,11 +95,11 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	}{
 		{
 			desc: "notify",
-			msg:  protomfx.Message{ProfileConfig: config},
+			msg:  msg,
 		},
 		{
 			desc: "notify with invalid contacts",
-			msg:  protomfx.Message{ProfileConfig: invalidConfig},
+			msg:  invalidMsg,
 			err:  notifiers.ErrNotify,
 		},
 	}

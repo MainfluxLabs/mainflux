@@ -112,7 +112,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	if msg, ok := message.(protomfx.Alarm); ok {
+	if msg, ok := message.(protomfx.Message); ok {
 		var rule, payload map[string]interface{}
 
 		r, err := proto.Marshal(msg.Rule)
@@ -128,7 +128,7 @@ func (as *alarmService) Consume(message interface{}) error {
 		}
 
 		alarm := Alarm{
-			ThingID:  msg.PublisherID,
+			ThingID:  msg.Publisher,
 			Subtopic: msg.Subtopic,
 			Protocol: msg.Protocol,
 			Payload:  payload,

@@ -52,7 +52,7 @@ func New(cfg Config, from string) notifiers.Notifier {
 	return ret
 }
 
-func (n *notifier) Notify(to []string, msg protomfx.Notification) error {
+func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 	send := &smpp.ShortMessage{
 		Src:           n.from,
 		DstList:       to,

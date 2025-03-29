@@ -29,10 +29,10 @@ func New(agent *email.Agent, from string) notifiers.Notifier {
 	return &notifier{agent: agent, from: from}
 }
 
-func (n *notifier) Notify(to []string, msg protomfx.Notification) error {
-	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.PublisherID, msg.Subtopic)
+func (n *notifier) Notify(to []string, msg protomfx.Message) error {
+	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
-	content := fmt.Sprintf(contentTemplate, msg.PublisherID, msg.Protocol, values)
+	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
 
 	return n.agent.Send(to, n.from, subject, "", content, footer)
 }

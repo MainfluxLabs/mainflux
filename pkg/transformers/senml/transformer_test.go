@@ -25,12 +25,11 @@ func TestTransformJSON(t *testing.T) {
 
 	tr := senml.New()
 	msg := protomfx.Message{
-		ProfileID:     "profile",
-		Subtopic:      "subtopic",
-		Publisher:     "publisher",
-		Protocol:      "protocol",
-		Payload:       jsonBytes,
-		ProfileConfig: &protomfx.Config{ContentType: senml.JSON},
+		Subtopic:    "subtopic",
+		Publisher:   "publisher",
+		Protocol:    "protocol",
+		Payload:     jsonBytes,
+		ContentType: senml.JSON,
 	}
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
@@ -93,12 +92,11 @@ func TestTransformCBOR(t *testing.T) {
 
 	tr := senml.New()
 	msg := protomfx.Message{
-		ProfileID:     "profile",
-		Subtopic:      "subtopic",
-		Publisher:     "publisher",
-		Protocol:      "protocol",
-		Payload:       cborBytes,
-		ProfileConfig: &protomfx.Config{ContentType: senml.CBOR},
+		Subtopic:    "subtopic",
+		Publisher:   "publisher",
+		Protocol:    "protocol",
+		Payload:     cborBytes,
+		ContentType: senml.CBOR,
 	}
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
