@@ -1,6 +1,7 @@
 package alarms
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
@@ -10,7 +11,7 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/jsonpb"
 )
 
 type Service interface {
@@ -115,11 +116,12 @@ func (as *alarmService) Consume(message interface{}) error {
 	if msg, ok := message.(protomfx.Message); ok {
 		var rule, payload map[string]interface{}
 
-		r, err := proto.Marshal(msg.Rule)
-		if err != nil {
+		var ruleJSON bytes.Buffer
+		marshaler := &jsonpb.Marshaler{OrigName: true}
+		if err := marshaler.Marshal(&ruleJSON, msg.Rule); err != nil {
 			return err
 		}
-		if err := json.Unmarshal(r, &rule); err != nil {
+		if err := json.Unmarshal(ruleJSON.Bytes(), &rule); err != nil {
 			return err
 		}
 
