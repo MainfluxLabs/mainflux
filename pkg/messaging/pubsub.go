@@ -131,17 +131,17 @@ func CreateSubject(subtopic string) (string, error) {
 }
 
 func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
-	msg.Publisher = pc.GetPublisherID()
+	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
-	if pc.GetProfileConfig() != nil {
-		msg.ContentType = pc.ProfileConfig.GetContentType()
-		msg.WriteEnabled = pc.ProfileConfig.GetWrite()
-		msg.WebhookEnabled = pc.ProfileConfig.GetWebhook()
-		msg.SmtpID = pc.ProfileConfig.GetSmtpID()
-		msg.SmppID = pc.ProfileConfig.GetSmppID()
-		msg.Transformer = pc.ProfileConfig.GetTransformer()
-		msg.Rule = pc.ProfileConfig.GetRule()
+	if pc.ProfileConfig != nil {
+		msg.ContentType = pc.ProfileConfig.ContentType
+		msg.WriteEnabled = pc.ProfileConfig.Write
+		msg.WebhookEnabled = pc.ProfileConfig.Webhook
+		msg.SmtpID = pc.ProfileConfig.SmtpID
+		msg.SmppID = pc.ProfileConfig.SmppID
+		msg.Transformer = pc.ProfileConfig.Transformer
+		msg.Rule = pc.ProfileConfig.Rule
 	}
 }
 

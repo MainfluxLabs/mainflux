@@ -131,7 +131,7 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 		return false, err
 	}
 
-	value := messaging.FindParam(payloadMap, rule.GetField())
+	value := messaging.FindParam(payloadMap, rule.Field)
 	if value == nil {
 		return false, nil
 	}
@@ -150,7 +150,7 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 		return false, errInvalidValueType
 	}
 
-	return !isValidValue(rule.GetOperator(), payloadValue, rule.GetThreshold()), nil
+	return !isValidValue(rule.Operator, payloadValue, rule.Threshold), nil
 }
 
 func isValidValue(operator string, val1, val2 float64) bool {
