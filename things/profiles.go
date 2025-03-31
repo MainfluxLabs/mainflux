@@ -38,9 +38,9 @@ type Transformer struct {
 }
 
 type Rule struct {
-	Field    string  `json:"field"`
-	Operator string  `json:"operator"`
-	Value    float64 `json:"value"`
+	Field     string  `json:"field"`
+	Operator  string  `json:"operator"`
+	Threshold float64 `json:"threshold"`
 }
 
 type Notifier struct {

@@ -222,9 +222,9 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 	}
 
 	rule := &protomfx.Rule{
-		Field:    config.Rule.Field,
-		Operator: config.Rule.Operator,
-		Value:    float32(config.Rule.Value),
+		Field:     config.Rule.Field,
+		Operator:  config.Rule.Operator,
+		Threshold: config.Rule.Threshold,
 	}
 
 	profileConfig := &protomfx.Config{

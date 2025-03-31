@@ -8,24 +8,24 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string      publisher        = 1;
-    string      subtopic         = 2;
-    bytes       payload          = 3;
-    string      contentType      = 4;
-    string      protocol         = 5;
-    int64       created          = 6; // Unix timestamp in nanoseconds
-    bool        writeEnabled     = 7;
-    bool        webhookEnabled   = 8;
-    string      smtpID           = 9;
-    string      smppID           = 10;
-    Rule        rule             = 11;
-    Transformer transformer      = 12;
+    string      publisher      = 1;
+    string      subtopic       = 2;
+    bytes       payload        = 3;
+    string      contentType    = 4;
+    string      protocol       = 5;
+    int64       created        = 6; // Unix timestamp in nanoseconds
+    bool        writeEnabled   = 7;
+    bool        webhookEnabled = 8;
+    string      smtpID         = 9;
+    string      smppID         = 10;
+    Rule        rule           = 11;
+    Transformer transformer    = 12;
 }
 
 message Rule {
-    string field      = 1;
-    string operator   = 2;
-    float  value      = 3;
+    string field     = 1;
+    string operator  = 2;
+    double threshold = 3;
 }
 
 service ThingsService {
@@ -55,12 +55,12 @@ service AuthService {
 }
 
 message PubConfByKeyReq {
-    string key  = 1;
+    string key = 1;
 }
 
 message PubConfByKeyRes {
-    string  publisherID     = 1;
-    Config  profileConfig   = 2;
+    string  publisherID   = 1;
+    Config  profileConfig = 2;
 }
 
 message Config {
@@ -78,11 +78,11 @@ message ConfigByThingIDRes{
 }
 
 message Transformer {
-    repeated string dataFilters  = 1;
-    string dataField             = 2;
-    string timeField             = 3;
-    string timeFormat            = 4;
-    string timeLocation          = 5;
+    repeated string dataFilters = 1;
+    string dataField            = 2;
+    string timeField            = 3;
+    string timeFormat           = 4;
+    string timeLocation         = 5;
 }
 
 message ThingID {
@@ -127,20 +127,20 @@ message AuthorizeReq {
 }
 
 message UserAccessReq {
-    string token   = 1;
-    string id      = 2;
-    string action  = 3;
+    string token  = 1;
+    string id     = 2;
+    string action = 3;
 }
 
 message ThingAccessReq {
-    string key     = 1;
-    string id      = 2;
+    string key = 1;
+    string id  = 2;
 }
 
 message User {
-    string id       = 1;
-    string email    = 2;
-    string status   = 3;
+    string id     = 1;
+    string email  = 2;
+    string status = 3;
 }
 
 message UsersByEmailsReq {

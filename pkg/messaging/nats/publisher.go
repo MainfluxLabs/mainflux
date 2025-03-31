@@ -150,7 +150,7 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 		return false, errInvalidValueType
 	}
 
-	return !isValidValue(rule.GetOperator(), payloadValue, float64(rule.GetValue())), nil
+	return !isValidValue(rule.GetOperator(), payloadValue, rule.GetThreshold()), nil
 }
 
 func isValidValue(operator string, val1, val2 float64) bool {
