@@ -54,7 +54,7 @@ func migrateDB(db *sqlx.DB) error {
 						protocol    TEXT,
 						payload     JSONB,
 						rule        JSONB,
-						created     BIGINT,
+						created     BIGINT
 					)`,
 				},
 				Down: []string{"DROP TABLE alarms"},

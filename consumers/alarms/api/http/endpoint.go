@@ -84,10 +84,11 @@ func buildAlarmsResponse(ap alarms.AlarmsPage) AlarmsPageRes {
 	for _, a := range ap.Alarms {
 		alarm := alarmResponse{
 			ID:       a.ID,
-			GroupID:  a.GroupID,
 			ThingID:  a.ThingID,
-			Protocol: a.Protocol,
+			GroupID:  a.GroupID,
 			Subtopic: a.Subtopic,
+			Protocol: a.Protocol,
+			Rule:     a.Rule,
 			Payload:  a.Payload,
 			Created:  a.Created,
 		}
@@ -100,10 +101,11 @@ func buildAlarmsResponse(ap alarms.AlarmsPage) AlarmsPageRes {
 func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 	return alarmResponse{
 		ID:       alarm.ID,
-		GroupID:  alarm.GroupID,
 		ThingID:  alarm.ThingID,
-		Protocol: alarm.Protocol,
+		GroupID:  alarm.GroupID,
 		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Rule:     alarm.Rule,
 		Payload:  alarm.Payload,
 		Created:  alarm.Created,
 	}

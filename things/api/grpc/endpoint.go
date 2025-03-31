@@ -221,6 +221,12 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		TimeLocation: config.Transformer.TimeLocation,
 	}
 
+	rule := &protomfx.Rule{
+		Field:    config.Rule.Field,
+		Operator: config.Rule.Operator,
+		Value:    float32(config.Rule.Value),
+	}
+
 	profileConfig := &protomfx.Config{
 		ContentType: config.ContentType,
 		Write:       config.Write,
@@ -228,6 +234,7 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		Webhook:     config.Webhook,
 		SmtpID:      config.SmtpID,
 		SmppID:      config.SmppID,
+		Rule:        rule,
 	}
 
 	return profileConfig, nil

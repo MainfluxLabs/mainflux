@@ -89,7 +89,7 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 	}
 
 	if msg.Rule != nil {
-		valid, err := isPayloadValidForRule(data, *msg.Rule)
+		valid, err := isPayloadValidForRule(msg.Payload, *msg.Rule)
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,7 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 		return false, errInvalidValueType
 	}
 
-	return isValidValue(rule.GetOperator(), payloadValue, float64(rule.GetValue())), nil
+	return !isValidValue(rule.GetOperator(), payloadValue, float64(rule.GetValue())), nil
 }
 
 func isValidValue(operator string, val1, val2 float64) bool {
