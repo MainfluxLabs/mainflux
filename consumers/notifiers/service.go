@@ -58,31 +58,34 @@ func New(idp uuid.IDProvider, notifier Notifier, notifierRepo NotifierRepository
 
 func (ns *notifierService) Consume(message interface{}) error {
 	ctx := context.Background()
+	const (
+		smtpType = "smtp"
+		smppType = "smpp"
+	)
 
 	msg, ok := message.(protomfx.Message)
 	if !ok {
 		return errors.ErrMessage
 	}
 
-	if msg.SmtpID != "" {
-		smtp, err := ns.notifierRepo.RetrieveByID(ctx, msg.SmtpID)
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
-
-		if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
-			return err
-		}
-	}
-
-	if msg.SmppID != "" {
-		smpp, err := ns.notifierRepo.RetrieveByID(ctx, msg.GetSmppID())
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
-
-		if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
-			return err
+	for _, action := range msg.Rule.Actions {
+		switch action.Type {
+		case smtpType:
+			smtp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
+			if err != nil {
+				return errors.Wrap(ErrNotify, err)
+			}
+			if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
+				return err
+			}
+		case smppType:
+			smpp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
+			if err != nil {
+				return errors.Wrap(ErrNotify, err)
+			}
+			if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
+				return err
+			}
 		}
 	}
 

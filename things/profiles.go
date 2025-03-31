@@ -25,8 +25,6 @@ type Config struct {
 	Webhook     bool        `json:"webhook"`
 	Transformer Transformer `json:"transformer"`
 	Rule        Rule        `json:"rule"`
-	SmtpID      string      `json:"smtp_id"`
-	SmppID      string      `json:"smpp_id"`
 }
 
 type Transformer struct {
@@ -38,9 +36,15 @@ type Transformer struct {
 }
 
 type Rule struct {
-	Field     string  `json:"field"`
-	Operator  string  `json:"operator"`
-	Threshold float64 `json:"threshold"`
+	Field     string   `json:"field"`
+	Operator  string   `json:"operator"`
+	Threshold float64  `json:"threshold"`
+	Actions   []Action `json:"actions"`
+}
+
+type Action struct {
+	Type string `json:"type"`
+	Id   string `json:"id"`
 }
 
 type Notifier struct {

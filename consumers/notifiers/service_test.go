@@ -56,36 +56,47 @@ func TestConsume(t *testing.T) {
 	runConsumeTest(t, svcSmpp, validPhones)
 }
 
+func createTestMessages(notifier things.Notifier, actionType string, invalidContacts []string, invalidID string) (validMsg, invalidMsg protomfx.Message) {
+	invalidNotifier := notifier
+	invalidNotifier.ID = invalidID
+	invalidNotifier.Contacts = invalidContacts
+
+	createMessage := func(n things.Notifier) protomfx.Message {
+		return protomfx.Message{
+			Rule: &protomfx.Rule{
+				Actions: []*protomfx.Action{
+					{
+						Type: actionType,
+						Id:   n.ID,
+					},
+				},
+			},
+		}
+	}
+
+	return createMessage(notifier), createMessage(invalidNotifier)
+}
+
 func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
 	svc := newService()
 	var msg, invalidMsg protomfx.Message
 
-	validNotifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	validNotifier := things.Notifier{
+		GroupID:  groupID,
+		Name:     notifierName,
+		Contacts: validContacts,
+		Metadata: metadata,
+	}
 	nfs, err := svc.CreateNotifiers(context.Background(), token, validNotifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	nf := nfs[0]
 
-	invalidNf := nf
-	invalidNf.ID = "a63a8bb7-725b-4f34-89a4-857827934b1f"
-
-	if svcName == svcSmtp {
-		invalidNf.Contacts = invalidEmails
-		msg = protomfx.Message{
-			SmtpID: nf.ID,
-		}
-		invalidMsg = protomfx.Message{
-			SmtpID: invalidNf.ID,
-		}
-	}
-	if svcName == svcSmpp {
-		invalidNf.Contacts = invalidPhones
-		msg = protomfx.Message{
-			SmppID: nf.ID,
-		}
-		invalidMsg = protomfx.Message{
-			SmppID: invalidNf.ID,
-		}
+	switch svcName {
+	case svcSmtp:
+		msg, invalidMsg = createTestMessages(nf, "smtp", invalidEmails, "a63a8bb7-725b-4f34-89a4-857827934b1f")
+	case svcSmpp:
+		msg, invalidMsg = createTestMessages(nf, "smpp", invalidPhones, "a63a8bb7-725b-4f34-89a4-857827934b1f")
 	}
 
 	cases := []struct {

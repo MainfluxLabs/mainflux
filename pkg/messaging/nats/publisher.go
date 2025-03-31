@@ -76,30 +76,45 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		}
 	}
 
-	if msg.SmtpID != "" {
-		if err := pub.conn.Publish(subjectSMTP, data); err != nil {
-			return err
-		}
-	}
-
-	if msg.SmppID != "" {
-		if err := pub.conn.Publish(subjectSMPP, data); err != nil {
-			return err
-		}
-	}
-
-	if msg.Rule != nil {
+	if msg.Rule != nil && len(msg.Rule.Actions) > 0 {
 		valid, err := isPayloadValidForRule(msg.Payload, *msg.Rule)
 		if err != nil {
 			return err
 		}
+
 		if !valid {
-			if err := pub.conn.Publish(subjectAlarm, data); err != nil {
+			if err := pub.performRuleActions(msg.Rule.Actions, data); err != nil {
 				return err
 			}
 		}
 	}
 
+	return nil
+}
+
+func (pub *publisher) performRuleActions(actions []*protomfx.Action, data []byte) error {
+	for _, action := range actions {
+		switch action.Type {
+		case "smtp":
+			if action.Id != "" {
+				if err := pub.conn.Publish(subjectSMTP, data); err != nil {
+					return err
+				}
+			}
+		case "smpp":
+			if action.Id != "" {
+				if err := pub.conn.Publish(subjectSMPP, data); err != nil {
+					return err
+				}
+			}
+		case "alarm":
+			if err := pub.conn.Publish(subjectAlarm, data); err != nil {
+				return err
+			}
+		default:
+			return errors.New(fmt.Sprintf("unknown action type: %s", action.Type))
+		}
+	}
 	return nil
 }
 

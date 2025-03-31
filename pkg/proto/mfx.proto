@@ -16,16 +16,20 @@ message Message {
     int64       created        = 6; // Unix timestamp in nanoseconds
     bool        writeEnabled   = 7;
     bool        webhookEnabled = 8;
-    string      smtpID         = 9;
-    string      smppID         = 10;
-    Rule        rule           = 11;
-    Transformer transformer    = 12;
+    Rule        rule           = 9;
+    Transformer transformer    = 10;
 }
 
 message Rule {
-    string field     = 1;
-    string operator  = 2;
-    double threshold = 3;
+    string field            = 1;
+    string operator         = 2;
+    double threshold        = 3;
+    repeated Action actions = 4;
+}
+
+message Action {
+    string type = 1;
+    string id   = 2;
 }
 
 service ThingsService {
@@ -67,10 +71,8 @@ message Config {
     string      contentType = 1;
     bool        write       = 2;
     bool        webhook     = 3;
-    string      smtpID      = 4;
-    string      smppID      = 5;
-    Transformer transformer = 6;
-    Rule        rule        = 7;
+    Transformer transformer = 4;
+    Rule        rule        = 5;
 }
 
 message ConfigByThingIDRes{
