@@ -68,23 +68,25 @@ func (ns *notifierService) Consume(message interface{}) error {
 		return errors.ErrMessage
 	}
 
-	for _, action := range msg.Rule.Actions {
-		switch action.Type {
-		case smtpType:
-			smtp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
-			if err != nil {
-				return errors.Wrap(ErrNotify, err)
-			}
-			if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
-				return err
-			}
-		case smppType:
-			smpp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
-			if err != nil {
-				return errors.Wrap(ErrNotify, err)
-			}
-			if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
-				return err
+	for _, rule := range msg.Rules {
+		for _, action := range rule.Actions {
+			switch action.Type {
+			case smtpType:
+				smtp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
+				if err != nil {
+					return errors.Wrap(ErrNotify, err)
+				}
+				if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
+					return err
+				}
+			case smppType:
+				smpp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
+				if err != nil {
+					return errors.Wrap(ErrNotify, err)
+				}
+				if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -114,31 +114,35 @@ func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
 	if msg, ok := message.(protomfx.Message); ok {
-		var rule, payload map[string]interface{}
-
-		var ruleJSON bytes.Buffer
-		marshaler := &jsonpb.Marshaler{OrigName: true}
-		if err := marshaler.Marshal(&ruleJSON, msg.Rule); err != nil {
-			return err
-		}
-		if err := json.Unmarshal(ruleJSON.Bytes(), &rule); err != nil {
-			return err
-		}
-
+		var payload map[string]interface{}
 		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 			return err
 		}
 
-		alarm := Alarm{
-			ThingID:  msg.Publisher,
-			Subtopic: msg.Subtopic,
-			Protocol: msg.Protocol,
-			Payload:  payload,
-			Rule:     rule,
-			Created:  msg.Created,
-		}
-		if err := as.createAlarm(ctx, &alarm); err != nil {
-			return err
+		for _, r := range msg.Rules {
+			var ruleJSON bytes.Buffer
+			marshaler := &jsonpb.Marshaler{OrigName: true}
+			if err := marshaler.Marshal(&ruleJSON, r); err != nil {
+				return err
+			}
+
+			var rule map[string]interface{}
+			if err := json.Unmarshal(ruleJSON.Bytes(), &rule); err != nil {
+				return err
+			}
+
+			alarm := Alarm{
+				ThingID:  msg.Publisher,
+				Subtopic: msg.Subtopic,
+				Protocol: msg.Protocol,
+				Payload:  payload,
+				Rule:     rule,
+				Created:  msg.Created,
+			}
+
+			if err := as.createAlarm(ctx, &alarm); err != nil {
+				return err
+			}
 		}
 	}
 

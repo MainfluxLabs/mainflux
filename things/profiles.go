@@ -24,7 +24,7 @@ type Config struct {
 	Write       bool        `json:"write"`
 	Webhook     bool        `json:"webhook"`
 	Transformer Transformer `json:"transformer"`
-	Rule        Rule        `json:"rule"`
+	Rules       []Rule      `json:"rules"`
 }
 
 type Transformer struct {

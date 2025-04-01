@@ -139,7 +139,7 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
 		msg.WriteEnabled = pc.ProfileConfig.Write
 		msg.WebhookEnabled = pc.ProfileConfig.Webhook
 		msg.Transformer = pc.ProfileConfig.Transformer
-		msg.Rule = pc.ProfileConfig.Rule
+		msg.Rules = pc.ProfileConfig.Rules
 	}
 }
 

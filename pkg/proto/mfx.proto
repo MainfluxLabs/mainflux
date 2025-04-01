@@ -16,7 +16,7 @@ message Message {
     int64       created        = 6; // Unix timestamp in nanoseconds
     bool        writeEnabled   = 7;
     bool        webhookEnabled = 8;
-    Rule        rule           = 9;
+    repeated Rule rules         = 9;
     Transformer transformer    = 10;
 }
 
@@ -72,7 +72,7 @@ message Config {
     bool        write       = 2;
     bool        webhook     = 3;
     Transformer transformer = 4;
-    Rule        rule        = 5;
+    repeated Rule rules     = 5;
 }
 
 message ConfigByThingIDRes{

@@ -221,19 +221,22 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		TimeLocation: config.Transformer.TimeLocation,
 	}
 
-	var actions []*protomfx.Action
-	for _, action := range config.Rule.Actions {
-		actions = append(actions, &protomfx.Action{
-			Type: action.Type,
-			Id:   action.Id,
-		})
-	}
+	var rules []*protomfx.Rule
+	for _, rule := range config.Rules {
+		var actions []*protomfx.Action
+		for _, action := range rule.Actions {
+			actions = append(actions, &protomfx.Action{
+				Type: action.Type,
+				Id:   action.Id,
+			})
+		}
 
-	rule := &protomfx.Rule{
-		Field:     config.Rule.Field,
-		Operator:  config.Rule.Operator,
-		Threshold: config.Rule.Threshold,
-		Actions:   actions,
+		rules = append(rules, &protomfx.Rule{
+			Field:     rule.Field,
+			Operator:  rule.Operator,
+			Threshold: rule.Threshold,
+			Actions:   actions,
+		})
 	}
 
 	profileConfig := &protomfx.Config{
@@ -241,7 +244,7 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		Write:       config.Write,
 		Webhook:     config.Webhook,
 		Transformer: transformer,
-		Rule:        rule,
+		Rules:       rules,
 	}
 
 	return profileConfig, nil

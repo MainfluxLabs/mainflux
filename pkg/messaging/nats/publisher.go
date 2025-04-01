@@ -21,8 +21,6 @@ import (
 const (
 	maxReconnects  = -1
 	messagesSuffix = "messages"
-	subjectSMTP    = "smtp"
-	subjectSMPP    = "smpp"
 	subjectWebhook = "webhook"
 	subjectAlarm   = "alarm"
 )
@@ -76,64 +74,73 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		}
 	}
 
-	if msg.Rule != nil && len(msg.Rule.Actions) > 0 {
-		valid, err := isPayloadValidForRule(msg.Payload, *msg.Rule)
+	if len(msg.Rules) > 0 {
+		if err := pub.performRuleActions(&msg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
+	var alarmRules []*protomfx.Rule
+	const (
+		actionTypeSMTP  = "smtp"
+		actionTypeSMPP  = "smpp"
+		actionTypeAlarm = "alarm"
+	)
+
+	for _, rule := range msg.Rules {
+		if len(rule.Actions) == 0 {
+			continue
+		}
+
+		valid, err := isPayloadValidForRule(msg.Payload, *rule)
+		if err != nil {
+			return err
+		}
+		if valid {
+			continue
+		}
+
+		for _, action := range rule.Actions {
+			switch action.Type {
+			case actionTypeSMTP, actionTypeSMPP:
+				if action.Id != "" {
+					data, err := proto.Marshal(msg)
+					if err != nil {
+						return err
+					}
+
+					subject := action.Type
+					if err := pub.conn.Publish(subject, data); err != nil {
+						return err
+					}
+				}
+			case actionTypeAlarm:
+				alarmRules = append(alarmRules, rule)
+			default:
+				return fmt.Errorf("unknown action type: %s", action.Type)
+			}
+		}
+	}
+
+	if len(alarmRules) > 0 {
+		alarmMsg := *msg
+		alarmMsg.Rules = alarmRules
+
+		alarmData, err := proto.Marshal(&alarmMsg)
 		if err != nil {
 			return err
 		}
 
-		if !valid {
-			if err := pub.performRuleActions(msg.Rule.Actions, data); err != nil {
-				return err
-			}
+		if err := pub.conn.Publish(subjectAlarm, alarmData); err != nil {
+			return err
 		}
 	}
 
 	return nil
-}
-
-func (pub *publisher) performRuleActions(actions []*protomfx.Action, data []byte) error {
-	for _, action := range actions {
-		switch action.Type {
-		case "smtp":
-			if action.Id != "" {
-				if err := pub.conn.Publish(subjectSMTP, data); err != nil {
-					return err
-				}
-			}
-		case "smpp":
-			if action.Id != "" {
-				if err := pub.conn.Publish(subjectSMPP, data); err != nil {
-					return err
-				}
-			}
-		case "alarm":
-			if err := pub.conn.Publish(subjectAlarm, data); err != nil {
-				return err
-			}
-		default:
-			return errors.New(fmt.Sprintf("unknown action type: %s", action.Type))
-		}
-	}
-	return nil
-}
-
-func (pub *publisher) Close() error {
-	pub.conn.Close()
-	return nil
-}
-
-func getFormat(ct string) (format string, err error) {
-	switch ct {
-	case messaging.JSONContentType:
-		return messaging.JSONFormat, nil
-	case messaging.SenMLContentType:
-		return messaging.SenMLFormat, nil
-	case messaging.CBORContentType:
-		return messaging.CBORFormat, nil
-	default:
-		return messaging.SenMLFormat, nil
-	}
 }
 
 func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
@@ -165,10 +172,10 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 		return false, errInvalidValueType
 	}
 
-	return !isValidValue(rule.Operator, payloadValue, rule.Threshold), nil
+	return !isConditionMet(rule.Operator, payloadValue, rule.Threshold), nil
 }
 
-func isValidValue(operator string, val1, val2 float64) bool {
+func isConditionMet(operator string, val1, val2 float64) bool {
 	switch operator {
 	case "==":
 		return val1 == val2
@@ -183,4 +190,22 @@ func isValidValue(operator string, val1, val2 float64) bool {
 	default:
 		return false
 	}
+}
+
+func getFormat(ct string) (format string, err error) {
+	switch ct {
+	case messaging.JSONContentType:
+		return messaging.JSONFormat, nil
+	case messaging.SenMLContentType:
+		return messaging.SenMLFormat, nil
+	case messaging.CBORContentType:
+		return messaging.CBORFormat, nil
+	default:
+		return messaging.SenMLFormat, nil
+	}
+}
+
+func (pub *publisher) Close() error {
+	pub.conn.Close()
+	return nil
 }
