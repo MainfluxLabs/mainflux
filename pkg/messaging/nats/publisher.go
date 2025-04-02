@@ -84,7 +84,10 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 }
 
 func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
-	var alarmRules []*protomfx.Rule
+	var (
+		errInvalidActionID   = errors.New("invalid action id")
+		errInvalidActionType = errors.New("invalid action type")
+	)
 	const (
 		actionTypeSMTP  = "smtp"
 		actionTypeSMPP  = "smpp"
@@ -96,66 +99,99 @@ func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
 			continue
 		}
 
-		valid, err := isPayloadValidForRule(msg.Payload, *rule)
+		isValid, payloads, err := processPayload(msg.Payload, *rule)
 		if err != nil {
 			return err
 		}
-		if valid {
+		if isValid {
 			continue
 		}
 
 		for _, action := range rule.Actions {
-			switch action.Type {
-			case actionTypeSMTP, actionTypeSMPP:
-				if action.Id != "" {
-					data, err := proto.Marshal(msg)
-					if err != nil {
-						return err
-					}
+			for _, p := range payloads {
+				newMsg := *msg
+				newMsg.Rules = []*protomfx.Rule{rule}
+				newMsg.Payload = p
 
-					subject := action.Type
-					if err := pub.conn.Publish(subject, data); err != nil {
-						return err
-					}
+				data, err := proto.Marshal(&newMsg)
+				if err != nil {
+					return err
 				}
-			case actionTypeAlarm:
-				alarmRules = append(alarmRules, rule)
-			default:
-				return fmt.Errorf("unknown action type: %s", action.Type)
+
+				switch action.Type {
+				case actionTypeSMTP, actionTypeSMPP:
+					if action.Id != "" {
+						if err := pub.conn.Publish(action.Type, data); err != nil {
+							return err
+						}
+					}
+					return errInvalidActionID
+				case actionTypeAlarm:
+					if err := pub.conn.Publish(subjectAlarm, data); err != nil {
+						return err
+					}
+				default:
+					return errInvalidActionType
+				}
 			}
-		}
-	}
-
-	if len(alarmRules) > 0 {
-		alarmMsg := *msg
-		alarmMsg.Rules = alarmRules
-
-		alarmData, err := proto.Marshal(&alarmMsg)
-		if err != nil {
-			return err
-		}
-
-		if err := pub.conn.Publish(subjectAlarm, alarmData); err != nil {
-			return err
 		}
 	}
 
 	return nil
 }
 
-func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
+func processPayload(payload []byte, rule protomfx.Rule) (bool, [][]byte, error) {
 	var (
-		errInvalidValueType = errors.New("invalid value type")
-		payloadMap          map[string]interface{}
+		parsedData       interface{}
+		errInvalidObject = errors.New("invalid JSON object")
 	)
 
-	if err := json.Unmarshal(payload, &payloadMap); err != nil {
-		return false, err
+	if err := json.Unmarshal(payload, &parsedData); err != nil {
+		return false, nil, err
 	}
 
+	switch data := parsedData.(type) {
+	case []interface{}:
+		var invalidPayloads [][]byte
+		for _, item := range data {
+			obj, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			isValid, err := validatePayload(obj, rule)
+			if err != nil {
+				return false, nil, err
+			}
+
+			if !isValid {
+				extractedPayload, _ := json.Marshal(obj)
+				invalidPayloads = append(invalidPayloads, extractedPayload)
+			}
+		}
+
+		return len(invalidPayloads) == 0, invalidPayloads, nil
+	case map[string]interface{}:
+		isValid, err := validatePayload(data, rule)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if !isValid {
+			extractedPayload, _ := json.Marshal(data)
+			return false, [][]byte{extractedPayload}, nil
+		}
+
+		return true, nil, nil
+	default:
+		return false, nil, errInvalidObject
+	}
+}
+
+func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule) (bool, error) {
 	value := messaging.FindParam(payloadMap, rule.Field)
 	if value == nil {
-		return false, nil
+		return true, nil
 	}
 
 	var payloadValue float64
@@ -169,7 +205,7 @@ func isPayloadValidForRule(payload []byte, rule protomfx.Rule) (bool, error) {
 	case float64:
 		payloadValue = v
 	default:
-		return false, errInvalidValueType
+		return false, nil
 	}
 
 	return !isConditionMet(rule.Operator, payloadValue, rule.Threshold), nil
