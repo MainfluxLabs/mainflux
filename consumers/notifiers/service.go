@@ -37,6 +37,11 @@ type Service interface {
 	consumers.Consumer
 }
 
+const (
+	actionTypeSMTP = "smtp"
+	actionTypeSMPP = "smpp"
+)
+
 var _ Service = (*notifierService)(nil)
 
 type notifierService struct {
@@ -58,10 +63,6 @@ func New(idp uuid.IDProvider, notifier Notifier, notifierRepo NotifierRepository
 
 func (ns *notifierService) Consume(message interface{}) error {
 	ctx := context.Background()
-	const (
-		smtpType = "smtp"
-		smppType = "smpp"
-	)
 
 	msg, ok := message.(protomfx.Message)
 	if !ok {
@@ -71,7 +72,7 @@ func (ns *notifierService) Consume(message interface{}) error {
 	for _, rule := range msg.Rules {
 		for _, action := range rule.Actions {
 			switch action.Type {
-			case smtpType:
+			case actionTypeSMTP:
 				smtp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
 				if err != nil {
 					return errors.Wrap(ErrNotify, err)
@@ -79,7 +80,7 @@ func (ns *notifierService) Consume(message interface{}) error {
 				if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
 					return err
 				}
-			case smppType:
+			case actionTypeSMPP:
 				smpp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
 				if err != nil {
 					return errors.Wrap(ErrNotify, err)
