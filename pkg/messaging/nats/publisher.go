@@ -47,16 +47,12 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(msg protomfx.Message) (err error) {
-	format, err := getFormat(msg.ContentType)
-	if err != nil {
-		return err
-	}
-
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
 
+	format := getFormat(msg.ContentType)
 	subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
 	if msg.WriteEnabled {
 		if msg.Subtopic != "" {
@@ -99,7 +95,7 @@ func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
 			continue
 		}
 
-		isValid, payloads, err := processPayload(msg.Payload, *rule)
+		isValid, payloads, err := processPayload(msg.Payload, *rule, msg.ContentType)
 		if err != nil {
 			return err
 		}
@@ -140,7 +136,7 @@ func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
 	return nil
 }
 
-func processPayload(payload []byte, rule protomfx.Rule) (bool, [][]byte, error) {
+func processPayload(payload []byte, rule protomfx.Rule, contentType string) (bool, [][]byte, error) {
 	var (
 		parsedData       interface{}
 		errInvalidObject = errors.New("invalid JSON object")
@@ -159,7 +155,7 @@ func processPayload(payload []byte, rule protomfx.Rule) (bool, [][]byte, error) 
 				continue
 			}
 
-			isValid, err := validatePayload(obj, rule)
+			isValid, err := validatePayload(obj, rule, contentType)
 			if err != nil {
 				return false, nil, err
 			}
@@ -172,7 +168,7 @@ func processPayload(payload []byte, rule protomfx.Rule) (bool, [][]byte, error) 
 
 		return len(invalidPayloads) == 0, invalidPayloads, nil
 	case map[string]interface{}:
-		isValid, err := validatePayload(data, rule)
+		isValid, err := validatePayload(data, rule, contentType)
 		if err != nil {
 			return false, nil, err
 		}
@@ -188,8 +184,8 @@ func processPayload(payload []byte, rule protomfx.Rule) (bool, [][]byte, error) 
 	}
 }
 
-func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule) (bool, error) {
-	value := messaging.FindParam(payloadMap, rule.Field)
+func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule, contentType string) (bool, error) {
+	value := findPayloadParam(payloadMap, rule.Field, contentType)
 	if value == nil {
 		return true, nil
 	}
@@ -228,16 +224,30 @@ func isConditionMet(operator string, val1, val2 float64) bool {
 	}
 }
 
-func getFormat(ct string) (format string, err error) {
+func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
+	if contentType == messaging.SenMLContentType {
+		if name, ok := payload["n"].(string); ok && name == param {
+			if value, exists := payload["v"]; exists {
+				return value
+			}
+		}
+		return nil
+	}
+
+	// if Content-Type is application/json use FindParam
+	return messaging.FindParam(payload, param)
+}
+
+func getFormat(ct string) string {
 	switch ct {
 	case messaging.JSONContentType:
-		return messaging.JSONFormat, nil
+		return messaging.JSONFormat
 	case messaging.SenMLContentType:
-		return messaging.SenMLFormat, nil
+		return messaging.SenMLFormat
 	case messaging.CBORContentType:
-		return messaging.CBORFormat, nil
+		return messaging.CBORFormat
 	default:
-		return messaging.SenMLFormat, nil
+		return messaging.SenMLFormat
 	}
 }
 
