@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -127,4 +128,33 @@ func CreateSubject(subtopic string) (string, error) {
 	subtopic = strings.Join(filteredElems, ".")
 
 	return subtopic, nil
+}
+
+func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
+	msg.Publisher = pc.PublisherID
+	msg.Created = time.Now().UnixNano()
+
+	if pc.ProfileConfig != nil {
+		msg.ContentType = pc.ProfileConfig.ContentType
+		msg.WriteEnabled = pc.ProfileConfig.Write
+		msg.WebhookEnabled = pc.ProfileConfig.Webhook
+		msg.Transformer = pc.ProfileConfig.Transformer
+		msg.Rules = pc.ProfileConfig.Rules
+	}
+}
+
+func FindParam(payload map[string]interface{}, param string) interface{} {
+	for key, value := range payload {
+		if key == param {
+			return value
+		}
+
+		if data, ok := value.(map[string]interface{}); ok {
+			if value := FindParam(data, param); value != nil {
+				return value
+			}
+		}
+	}
+
+	return nil
 }

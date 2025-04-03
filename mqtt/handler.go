@@ -172,13 +172,11 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	msg := protomfx.Message{
-		Protocol:      protocol,
-		Subtopic:      subject,
-		Publisher:     pc.PublisherID,
-		Payload:       *payload,
-		Created:       time.Now().UnixNano(),
-		ProfileConfig: pc.ProfileConfig,
+		Protocol: protocol,
+		Subtopic: subject,
+		Payload:  *payload,
 	}
+	messaging.FormatMessage(pc, &msg)
 
 	for _, pub := range h.publishers {
 		if err := pub.Publish(msg); err != nil {
@@ -224,7 +222,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		if h.service.RemoveSubscription(context.Background(), s); err != nil {
+		if err := h.service.RemoveSubscription(context.Background(), s); err != nil {
 			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
 		}
 	}

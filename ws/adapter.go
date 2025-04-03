@@ -8,7 +8,6 @@ package ws
 
 import (
 	"context"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -69,9 +68,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg pro
 		return ErrFailedMessagePublish
 	}
 
-	msg.Publisher = pc.PublisherID
-	msg.ProfileConfig = pc.ProfileConfig
-	msg.Created = time.Now().UnixNano()
+	messaging.FormatMessage(pc, &msg)
 
 	if err := svc.pubsub.Publish(msg); err != nil {
 		return ErrFailedMessagePublish

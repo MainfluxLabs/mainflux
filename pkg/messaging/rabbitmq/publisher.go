@@ -5,7 +5,6 @@ package rabbitmq
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -47,11 +46,7 @@ func (pub *publisher) Publish(msg protomfx.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := fmt.Sprintf("%s.%s", profilesPrefix, msg.ProfileID)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
-	}
-	subject = formatTopic(subject)
+	subject := formatTopic(msg.Subtopic)
 
 	err = pub.ch.PublishWithContext(
 		context.Background(),

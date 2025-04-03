@@ -7,7 +7,6 @@ package http
 
 import (
 	"context"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -43,9 +42,7 @@ func (as *adapterService) Publish(ctx context.Context, key string, msg protomfx.
 		return protomfx.Message{}, err
 	}
 
-	msg.Publisher = pc.PublisherID
-	msg.ProfileConfig = pc.ProfileConfig
-	msg.Created = time.Now().UnixNano()
+	messaging.FormatMessage(pc, &msg)
 
 	return m, as.publisher.Publish(msg)
 }

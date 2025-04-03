@@ -29,11 +29,11 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 
 func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		destProfile := msg.ProfileID
+		dest := ""
 		if msg.Subtopic != "" {
-			destProfile = fmt.Sprintf("%s.%s", destProfile, msg.Subtopic)
+			dest = fmt.Sprintf("to %s", msg.Subtopic)
 		}
-		message := fmt.Sprintf("Method publish to %s took %s to complete", destProfile, time.Since(begin))
+		message := fmt.Sprintf("Method publish %s took %s to complete", dest, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

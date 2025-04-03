@@ -43,7 +43,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 
 func (pub publisher) Publish(msg protomfx.Message) error {
 	var format string
-	switch msg.ProfileConfig.ContentType {
+	switch msg.ContentType {
 	case messaging.SenMLContentType, messaging.CBORContentType:
 		format = senmlFormat
 	case messaging.JSONContentType:

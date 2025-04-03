@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
@@ -51,15 +52,15 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
 	}
-	extractedPayload := extractPayload(payload, msg.ProfileConfig.Transformer.DataField)
+	extractedPayload := extractPayload(payload, msg.Transformer.DataField)
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, msg.ProfileConfig.Transformer.DataFilters)
+		formattedPayload := filterPayloadFields(p, msg.Transformer.DataFilters)
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.ProfileConfig.Transformer)
+		ts, err := ts.transformTimeField(p, *msg.Transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -78,11 +79,11 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			}
 			newMsg := ret
 
-			formattedPayload := filterPayloadFields(v, msg.ProfileConfig.Transformer.DataFilters)
+			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.ProfileConfig.Transformer)
+			ts, err := ts.transformTimeField(v, *msg.Transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
@@ -140,27 +141,11 @@ func filterPayloadFields(payload map[string]interface{}, dataFilters []string) m
 
 	filteredPayload := make(map[string]interface{})
 	for _, key := range dataFilters {
-		value := findByKey(payload, key)
+		value := messaging.FindParam(payload, key)
 		if value != nil {
 			filteredPayload[key] = value
 		}
 	}
 
 	return filteredPayload
-}
-
-func findByKey(payload map[string]interface{}, key string) interface{} {
-	if value, ok := payload[key]; ok {
-		return value
-	}
-
-	for _, v := range payload {
-		if data, ok := v.(map[string]interface{}); ok {
-			if value := findByKey(data, key); value != nil {
-				return value
-			}
-		}
-	}
-
-	return nil
 }
