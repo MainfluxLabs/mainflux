@@ -19,13 +19,21 @@ import (
 // Value -1 represents an unlimited number of reconnect retries, i.e. the client
 // will never give up on retrying to re-establish connection to NATS server.
 const (
-	maxReconnects  = -1
-	messagesSuffix = "messages"
-	subjectWebhook = "webhook"
-	subjectAlarm   = "alarm"
+	maxReconnects   = -1
+	messagesSuffix  = "messages"
+	subjectWebhook  = "webhook"
+	subjectAlarm    = "alarm"
+	actionTypeSMTP  = "smtp"
+	actionTypeSMPP  = "smpp"
+	actionTypeAlarm = "alarm"
 )
 
-var _ messaging.Publisher = (*publisher)(nil)
+var (
+	_                    messaging.Publisher = (*publisher)(nil)
+	errInvalidActionID                       = errors.New("invalid action id")
+	errInvalidActionType                     = errors.New("invalid action type")
+	errInvalidObject                         = errors.New("invalid JSON object")
+)
 
 type publisher struct {
 	conn *broker.Conn
@@ -80,16 +88,6 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 }
 
 func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
-	var (
-		errInvalidActionID   = errors.New("invalid action id")
-		errInvalidActionType = errors.New("invalid action type")
-	)
-	const (
-		actionTypeSMTP  = "smtp"
-		actionTypeSMPP  = "smpp"
-		actionTypeAlarm = "alarm"
-	)
-
 	for _, rule := range msg.Rules {
 		if len(rule.Actions) == 0 {
 			continue
@@ -104,10 +102,10 @@ func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
 		}
 
 		for _, action := range rule.Actions {
-			for _, p := range payloads {
+			for _, payload := range payloads {
 				newMsg := *msg
 				newMsg.Rules = []*protomfx.Rule{rule}
-				newMsg.Payload = p
+				newMsg.Payload = payload
 
 				data, err := proto.Marshal(&newMsg)
 				if err != nil {
@@ -137,11 +135,7 @@ func (pub *publisher) performRuleActions(msg *protomfx.Message) error {
 }
 
 func processPayload(payload []byte, rule protomfx.Rule, contentType string) (bool, [][]byte, error) {
-	var (
-		parsedData       interface{}
-		errInvalidObject = errors.New("invalid JSON object")
-	)
-
+	var parsedData interface{}
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
 	}
