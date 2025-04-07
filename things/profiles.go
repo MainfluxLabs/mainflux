@@ -24,8 +24,7 @@ type Config struct {
 	Write       bool        `json:"write"`
 	Webhook     bool        `json:"webhook"`
 	Transformer Transformer `json:"transformer"`
-	SmtpID      string      `json:"smtp_id"`
-	SmppID      string      `json:"smpp_id"`
+	Rules       []Rule      `json:"rules"`
 }
 
 type Transformer struct {
@@ -34,6 +33,18 @@ type Transformer struct {
 	TimeField    string   `json:"time_field"`
 	TimeFormat   string   `json:"time_format"`
 	TimeLocation string   `json:"time_location"`
+}
+
+type Rule struct {
+	Field     string   `json:"field"`
+	Operator  string   `json:"operator"`
+	Threshold float64  `json:"threshold"`
+	Actions   []Action `json:"actions"`
+}
+
+type Action struct {
+	Type string `json:"type"`
+	Id   string `json:"id"`
 }
 
 type Notifier struct {

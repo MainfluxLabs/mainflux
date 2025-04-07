@@ -26,7 +26,6 @@ var (
 	msgChan   = make(chan protomfx.Message)
 	data      = []byte("payload")
 	errFailed = errors.New("failed")
-	msgConfig = &protomfx.Config{ContentType: senmlContentType, Write: true}
 )
 
 func TestPublisher(t *testing.T) {
@@ -58,9 +57,10 @@ func TestPublisher(t *testing.T) {
 
 	for _, tc := range cases {
 		expectedMsg := protomfx.Message{
-			Subtopic:      tc.subtopic,
-			Payload:       tc.payload,
-			ProfileConfig: msgConfig,
+			Subtopic:     tc.subtopic,
+			Payload:      tc.payload,
+			ContentType:  senmlContentType,
+			WriteEnabled: true,
 		}
 
 		err = pubsub.Publish(expectedMsg)

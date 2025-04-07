@@ -15,8 +15,6 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-const profilesPrefix = "profiles"
-
 var _ messaging.PubSub = (*pubsub)(nil)
 
 type subscription struct {

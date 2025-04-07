@@ -221,13 +221,30 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		TimeLocation: config.Transformer.TimeLocation,
 	}
 
+	var rules []*protomfx.Rule
+	for _, rule := range config.Rules {
+		var actions []*protomfx.Action
+		for _, action := range rule.Actions {
+			actions = append(actions, &protomfx.Action{
+				Type: action.Type,
+				Id:   action.Id,
+			})
+		}
+
+		rules = append(rules, &protomfx.Rule{
+			Field:     rule.Field,
+			Operator:  rule.Operator,
+			Threshold: rule.Threshold,
+			Actions:   actions,
+		})
+	}
+
 	profileConfig := &protomfx.Config{
 		ContentType: config.ContentType,
 		Write:       config.Write,
-		Transformer: transformer,
 		Webhook:     config.Webhook,
-		SmtpID:      config.SmtpID,
-		SmppID:      config.SmppID,
+		Transformer: transformer,
+		Rules:       rules,
 	}
 
 	return profileConfig, nil

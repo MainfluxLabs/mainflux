@@ -22,6 +22,7 @@ volumes:
   mainfluxlabs-smtp-notifier-db-volume:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
+  mainfluxlabs-alarms-db-volume:
 
 services:
   ui:
@@ -632,5 +633,44 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_CONVERTERS_PORT}:${MF_CONVERTERS_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  alarms-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-alarms-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_ALARMS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_ALARMS_DB_PASS}
+      POSTGRES_DB: ${MF_ALARMS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-alarms-db-volume:/var/lib/postgresql/data
+
+  alarms:
+    image: ${MF_RELEASE_PREFIX}/alarms:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-alarms
+    depends_on:
+      - things
+      - alarms-db
+    restart: on-failure
+    environment:
+      MF_ALARMS_LOG_LEVEL: ${MF_ALARMS_LOG_LEVEL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_ALARMS_DB_HOST: alarms-db
+      MF_ALARMS_DB_PORT: ${MF_ALARMS_DB_PORT}
+      MF_ALARMS_DB_USER: ${MF_ALARMS_DB_USER}
+      MF_ALARMS_DB_PASS: ${MF_ALARMS_DB_PASS}
+      MF_ALARMS_DB: ${MF_ALARMS_DB}
+      MF_ALARMS_HTTP_PORT: ${MF_ALARMS_HTTP_PORT}
+      MF_ALARMS_SERVER_CERT: ${MF_ALARMS_SERVER_CERT}
+      MF_ALARMS_SERVER_KEY: ${MF_ALARMS_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_ALARMS_HTTP_PORT}:${MF_ALARMS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
