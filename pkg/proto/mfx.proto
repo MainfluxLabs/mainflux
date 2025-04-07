@@ -40,7 +40,6 @@ service ThingsService {
     rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
-    rpc GetGroupsByIDs(GroupsReq) returns (GroupsRes) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
 }
 
@@ -155,21 +154,6 @@ message UsersByIDsReq {
 
 message UsersRes {
     repeated User users = 1;
-}
-
-message Group {
-    string id          = 1;
-    string orgID       = 2;
-    string name        = 3;
-    string description = 4;
-}
-
-message GroupsReq {
-    repeated string ids = 1;
-}
-
-message GroupsRes {
-    repeated Group groups = 1;
 }
 
 message AssignRoleReq {

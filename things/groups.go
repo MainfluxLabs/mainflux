@@ -80,9 +80,6 @@ type Groups interface {
 	// ListGroupsByOrg retrieves page of groups that are assigned to an org identified by ID.
 	ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (GroupPage, error)
 
-	// ListGroupsByIDs retrieves groups by their IDs.
-	ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error)
-
 	// ListThingsByGroup retrieves page of things that are assigned to a group identified by ID.
 	ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ThingsPage, error)
 
@@ -221,15 +218,6 @@ func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID strin
 	}
 
 	return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
-}
-
-func (ts *thingsService) ListGroupsByIDs(ctx context.Context, ids []string) ([]Group, error) {
-	page, err := ts.groups.RetrieveByIDs(ctx, ids, apiutil.PageMetadata{})
-	if err != nil {
-		return []Group{}, err
-	}
-
-	return page.Groups, nil
 }
 
 func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...string) error {

@@ -270,10 +270,6 @@ func (es eventStore) ListGroupsByOrg(ctx context.Context, token, orgID string, p
 	return es.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
-func (es eventStore) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
-	return es.svc.ListGroupsByIDs(ctx, groupIDs)
-}
-
 func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	return es.svc.RemoveGroups(ctx, token, ids...)
 }

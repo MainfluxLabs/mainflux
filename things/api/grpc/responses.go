@@ -24,10 +24,6 @@ type emptyRes struct {
 	err error
 }
 
-type getGroupsByIDsRes struct {
-	groups []*protomfx.Group
-}
-
 type groupIDByThingIDRes struct {
 	groupID string
 }

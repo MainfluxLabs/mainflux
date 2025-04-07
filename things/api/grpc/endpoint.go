@@ -158,34 +158,6 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func listGroupsByIDsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getGroupsByIDsReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		groups, err := svc.ListGroupsByIDs(ctx, req.ids)
-		if err != nil {
-			return getGroupsByIDsRes{}, err
-		}
-
-		mgr := []*protomfx.Group{}
-
-		for _, g := range groups {
-			gr := protomfx.Group{
-				Id:          g.ID,
-				OrgID:       g.OrgID,
-				Name:        g.Name,
-				Description: g.Description,
-			}
-			mgr = append(mgr, &gr)
-		}
-
-		return getGroupsByIDsRes{groups: mgr}, nil
-	}
-}
-
 func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupIDByThingIDReq)
