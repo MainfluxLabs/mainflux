@@ -293,10 +293,8 @@ func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error 
 		return ErrLimitSize
 	}
 
-	if maxNameSize > 0 {
-		if len(pm.Name) > maxNameSize {
-			return ErrNameSize
-		}
+	if len(pm.Name) > maxNameSize {
+		return ErrNameSize
 	}
 
 	if pm.Order != "" &&

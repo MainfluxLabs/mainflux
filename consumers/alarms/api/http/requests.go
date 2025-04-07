@@ -18,9 +18,11 @@ func (req *alarmReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if req.id == "" {
 		return apiutil.ErrMissingAlarmID
 	}
+
 	return nil
 }
 
@@ -34,10 +36,16 @@ func (req listAlarmsByGroupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
 	}
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, 0)
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
 }
 
 type listAlarmsByThingReq struct {
@@ -50,10 +58,16 @@ func (req listAlarmsByThingReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if req.thingID == "" {
 		return apiutil.ErrMissingThingID
 	}
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, 0)
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
 }
 
 type removeAlarmsReq struct {
@@ -65,13 +79,16 @@ func (req removeAlarmsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if len(req.AlarmIDs) < minLen {
 		return apiutil.ErrEmptyList
 	}
+
 	for _, alarmID := range req.AlarmIDs {
 		if alarmID == "" {
 			return apiutil.ErrMissingAlarmID
 		}
 	}
+
 	return nil
 }

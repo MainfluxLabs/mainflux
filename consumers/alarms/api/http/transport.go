@@ -137,11 +137,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, apiutil.ErrMalformedEntity),
 		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidOrder,
-		err == apiutil.ErrInvalidDirection,
+		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrMissingAlarmID,
 		err == apiutil.ErrMissingGroupID,
 		err == apiutil.ErrMissingThingID:

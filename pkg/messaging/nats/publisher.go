@@ -28,11 +28,11 @@ const (
 	actionTypeAlarm = "alarm"
 )
 
+var _ messaging.Publisher = (*publisher)(nil)
 var (
-	_                    messaging.Publisher = (*publisher)(nil)
-	errInvalidActionID                       = errors.New("invalid action id")
-	errInvalidActionType                     = errors.New("invalid action type")
-	errInvalidObject                         = errors.New("invalid JSON object")
+	errInvalidActionID   = errors.New("invalid action id")
+	errInvalidActionType = errors.New("invalid action type")
+	errInvalidObject     = errors.New("invalid JSON object")
 )
 
 type publisher struct {
@@ -219,17 +219,19 @@ func isConditionMet(operator string, val1, val2 float64) bool {
 }
 
 func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
-	if contentType == messaging.SenMLContentType {
+	switch contentType {
+	case messaging.SenMLContentType:
 		if name, ok := payload["n"].(string); ok && name == param {
 			if value, exists := payload["v"]; exists {
 				return value
 			}
 		}
 		return nil
+	case messaging.JSONContentType:
+		return messaging.FindParam(payload, param)
+	default:
+		return nil
 	}
-
-	// if Content-Type is application/json use FindParam
-	return messaging.FindParam(payload, param)
 }
 
 func getFormat(ct string) string {
