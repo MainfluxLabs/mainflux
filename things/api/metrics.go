@@ -318,15 +318,6 @@ func (ms *metricsMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID s
 	return ms.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
-func (ms *metricsMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) ([]things.Group, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_groups_by_ids").Add(1)
-		ms.latency.With("method", "list_groups_by_ids").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListGroupsByIDs(ctx, groupIDs)
-}
-
 func (ms *metricsMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (tp things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_things_by_group").Add(1)

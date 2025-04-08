@@ -442,19 +442,6 @@ func (lm *loggingMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID s
 	return lm.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
-func (lm *loggingMiddleware) ListGroupsByIDs(ctx context.Context, groupIDs []string) (g []things.Group, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_groups_by_ids for ids %s took %s to complete", groupIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListGroupsByIDs(ctx, groupIDs)
-}
-
 func (lm *loggingMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (mp things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_group for id %s took %s to complete", groupID, time.Since(begin))

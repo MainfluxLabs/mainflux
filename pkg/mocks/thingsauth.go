@@ -116,17 +116,6 @@ func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, 
 	return nil, errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetGroupsByIDs(_ context.Context, req *protomfx.GroupsReq, _ ...grpc.CallOption) (*protomfx.GroupsRes, error) {
-	var groups []*protomfx.Group
-	for _, id := range req.Ids {
-		if group, ok := svc.groups[id]; ok {
-			groups = append(groups, &protomfx.Group{Id: group.ID, Name: group.Name, Description: group.Description})
-		}
-	}
-
-	return &protomfx.GroupsRes{Groups: groups}, nil
-}
-
 func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: th.GroupID}, nil

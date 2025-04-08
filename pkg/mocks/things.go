@@ -199,10 +199,6 @@ func (svc *mainfluxThings) ListGroupsByOrg(_ context.Context, token, orgID strin
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupsByIDs(_ context.Context, groupIDs []string) ([]things.Group, error) {
-	panic("not implemented")
-}
-
 func (svc *mainfluxThings) RemoveGroups(_ context.Context, token string, ids ...string) error {
 	panic("not implemented")
 }
