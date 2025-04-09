@@ -39,6 +39,9 @@ var (
 	// ErrMissingAlarmID indicates missing alarm ID.
 	ErrMissingAlarmID = errors.New("missing alarm id")
 
+	// ErrMissingRuleID indicates missing rule ID.
+	ErrMissingRuleID = errors.New("missing rule id")
+
 	// ErrMissingUserID indicates missing user ID.
 	ErrMissingUserID = errors.New("missing user id")
 
