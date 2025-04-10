@@ -130,13 +130,7 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 		return protomfx.Message{}, err
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(path)
-	if err != nil {
-		return protomfx.Message{}, messaging.ErrMalformedSubtopic
-
-	}
-
-	subject, err := messaging.CreateSubject(subtopic)
+	subject, err := messaging.CreateSubject(path)
 	if err != nil {
 		return protomfx.Message{}, err
 	}

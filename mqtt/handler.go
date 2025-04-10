@@ -151,16 +151,8 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
-	// Topics are in the format:
-	// messages/<subtopic>/.../ct/<content_type>
 
-	subtopic, err := messaging.ExtractSubtopic(*topic)
-	if err != nil {
-		h.logger.Error(LogErrFailedPublish + (ErrMalformedTopic).Error())
-		return
-	}
-
-	subject, err := messaging.CreateSubject(subtopic)
+	subject, err := messaging.CreateSubject(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -259,15 +251,9 @@ func (h *handler) authAccess(c *session.Client) (protomfx.PubConfByKeyRes, error
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
 	var subs []Subscription
 	for _, t := range *topics {
-
-		subtopic, err := messaging.ExtractSubtopic(t)
-		if err != nil {
-			return nil, err
-		}
-
 		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: c.Username})
 
-		subject, err := messaging.CreateSubject(subtopic)
+		subject, err := messaging.CreateSubject(t)
 		if err != nil {
 			return nil, err
 		}

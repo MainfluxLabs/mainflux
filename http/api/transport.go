@@ -80,12 +80,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	subtopic, err := messaging.ExtractSubtopic(r.URL.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	subject, err := messaging.CreateSubject(subtopic)
+	subject, err := messaging.CreateSubject(r.URL.Path)
 	if err != nil {
 		return nil, err
 	}

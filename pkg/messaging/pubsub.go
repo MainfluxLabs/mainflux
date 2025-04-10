@@ -6,7 +6,6 @@ package messaging
 import (
 	"errors"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,8 +21,6 @@ const (
 	CBORFormat       = "cbor"
 	regExParts       = 2
 )
-
-var subtopicRegExp = regexp.MustCompile(`(?:^/profiles/[\w\-]+)?/messages(/[^?]*)?(\?.*)?$`)
 
 var (
 	// ErrConnect indicates that connection to MQTT broker failed
@@ -89,15 +86,6 @@ type Subscriber interface {
 type PubSub interface {
 	Publisher
 	Subscriber
-}
-
-func ExtractSubtopic(path string) (string, error) {
-	subtopicParts := subtopicRegExp.FindStringSubmatch(path)
-	if len(subtopicParts) < regExParts {
-		return "", ErrMalformedSubtopic
-	}
-
-	return subtopicParts[1], nil
 }
 
 func CreateSubject(subtopic string) (string, error) {
