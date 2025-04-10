@@ -72,10 +72,8 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 		}
 	}
 
-	if msg.WebhookEnabled {
-		if err := pub.conn.Publish(subjectWebhook, data); err != nil {
-			return err
-		}
+	if err := pub.conn.Publish(subjectWebhook, data); err != nil {
+		return err
 	}
 
 	if len(msg.Rules) > 0 {

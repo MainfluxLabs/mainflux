@@ -15,7 +15,6 @@ message Message {
     string        protocol       = 5;
     int64         created        = 6; // Unix timestamp in nanoseconds
     bool          writeEnabled   = 7;
-    bool          webhookEnabled = 8;
     repeated Rule rules          = 9;
     Transformer   transformer    = 10;
 }
