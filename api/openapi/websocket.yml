@@ -4,31 +4,57 @@ info:
   description: WebSocket API for sending messages through communication channels.
   version: "1.0.0"
 paths:
-  /channels/{id}/messages:
+  /messages:
     post:
-      summary: Sends message to the communication channel
+      summary: Sends a message
       description: |
-        Sends message to the communication channel. Messages can be sent as
-        JSON formatted SenML or as blob.
+        Sends a message without a subtopic. Messages can be sent as
+        JSON-formatted SenML or as binary data.
       tags:
         - messages
-      parameters:
-        - $ref: "#/components/parameters/ID"
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
         "202":
           description: Message is accepted for processing.
         "400":
-          description: Message discarded due to its malformed content.
+          description: Message discarded due to malformed content.
         "401":
           description: Missing or invalid access token provided.
-        "404":
-          description: Message discarded due to invalid channel id.
         "415":
-          description: Message discarded due to invalid or missing content type.
-        '500':
+          description: Invalid or missing content type.
+        "500":
           $ref: "#/components/responses/ServiceError"
+
+  /messages/{subtopic}:
+    post:
+      summary: Sends a message to a subtopic (supports nested paths)
+      description: |
+        Sends a message to a specific subtopic (e.g., `notifications/urgent`).
+        Supports nested subtopics with `/`.
+      tags:
+        - messages
+      parameters:
+        - name: subtopic
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Subtopic path (e.g., 'alerts/weather' or 'updates/tech/ai')"
+      requestBody:
+        $ref: "#/components/requestBodies/MessageReq"
+      responses:
+        "202":
+          description: Message is accepted for processing.
+        "400":
+          description: Message discarded due to malformed content.
+        "401":
+          description: Missing or invalid access token provided.
+        "415":
+          description: Invalid or missing content type.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
   /health:
     get:
       summary: Retrieves service health check info.

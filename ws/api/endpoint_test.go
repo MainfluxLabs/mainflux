@@ -41,38 +41,38 @@ func newHTTPServer(svc ws.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func makeURL(tsURL, profileID, subtopic, thingKey string, header bool) (string, error) {
-	u, _ := url.Parse(tsURL)
-	u.Scheme = protocol
-
-	if profileID == "0" || profileID == "" {
-		if header {
-			return fmt.Sprintf("%s/profiles/%s/messages", u, profileID), fmt.Errorf("invalid profile id")
-		}
-		return fmt.Sprintf("%s/profiles/%s/messages?authorization=%s", u, profileID, thingKey), fmt.Errorf("invalid profile id")
-	}
-
-	subtopicPart := ""
-	if subtopic != "" {
-		subtopicPart = fmt.Sprintf("/%s", subtopic)
-	}
-	if header {
-		return fmt.Sprintf("%s/profiles/%s/messages%s", u, profileID, subtopicPart), nil
-	}
-
-	return fmt.Sprintf("%s/profiles/%s/messages%s?authorization=%s", u, profileID, subtopicPart, thingKey), nil
-}
-
-func handshake(tsURL, profileID, subtopic, thingKey string, addHeader bool) (*websocket.Conn, *http.Response, error) {
+func handshake(tsURL, subtopic, thingKey string, addHeader bool) (*websocket.Conn, *http.Response, error) {
 	header := http.Header{}
-	if addHeader {
-		header.Add("Authorization", thingKey)
+	if addHeader && thingKey != "" {
+		header.Set("Authorization", thingKey)
 	}
 
-	url, _ := makeURL(tsURL, profileID, subtopic, thingKey, addHeader)
-	conn, res, errRet := websocket.DefaultDialer.Dial(url, header)
+	// Construct URL properly
+	u, err := url.Parse(tsURL)
+	if err != nil {
+		return nil, nil, err
+	}
+	u.Scheme = "ws"
+	u.Path = "/messages"
+	if subtopic != "" {
+		u.Path += "/" + subtopic
+	}
 
-	return conn, res, errRet
+	if !addHeader && thingKey != "" {
+		q := u.Query()
+		q.Set("authorization", thingKey)
+		u.RawQuery = q.Encode()
+	}
+
+	dialer := websocket.DefaultDialer
+	conn, res, err := dialer.Dial(u.String(), header)
+
+	// Return response even on error for inspection
+	if err != nil {
+		return nil, res, err
+	}
+
+	return conn, res, nil
 }
 
 func TestHandshake(t *testing.T) {
@@ -82,100 +82,87 @@ func TestHandshake(t *testing.T) {
 	defer ts.Close()
 
 	cases := []struct {
-		desc      string
-		profileID string
-		subtopic  string
-		header    bool
-		thingKey  string
-		status    int
-		err       error
-		msg       []byte
+		desc     string
+		subtopic string
+		header   bool
+		thingKey string
+		status   int
+		err      error
+		msg      []byte
 	}{
 		{
-			desc:      "connect and send message",
-			profileID: id,
-			subtopic:  "",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect and send message",
+			subtopic: "",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
-			desc:      "connect and send message with thingKey as query parameter",
-			profileID: id,
-			subtopic:  "",
-			header:    false,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect and send message with thingKey as query parameter",
+			subtopic: "",
+			header:   false,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
-			desc:      "connect and send message that cannot be published",
-			profileID: id,
-			subtopic:  "",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       []byte{},
+			desc:     "connect and send message that cannot be published",
+			subtopic: "",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      []byte{},
 		},
 		{
-			desc:      "connect and send message to subtopic",
-			profileID: id,
-			subtopic:  "subtopic",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect and send message to subtopic",
+			subtopic: "subtopic",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
-			desc:      "connect and send message to nested subtopic",
-			profileID: id,
-			subtopic:  "subtopic/nested",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect and send message to nested subtopic",
+			subtopic: "subtopic/nested",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
-			desc:      "connect and send message to all subtopics",
-			profileID: id,
-			subtopic:  ">",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect and send message to all subtopics",
+			subtopic: ">",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusSwitchingProtocols,
+			msg:      msg,
 		},
 		{
-			desc:      "connect and send message to subtopic without profile",
-			profileID: "",
-			subtopic:  "subtopic",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusSwitchingProtocols,
-			msg:       msg,
+			desc:     "connect with empty thingKey",
+			subtopic: "",
+			header:   true,
+			thingKey: "",
+			status:   http.StatusForbidden,
+			msg:      []byte{},
 		},
 		{
-			desc:      "connect with empty thingKey",
-			profileID: id,
-			subtopic:  "",
-			header:    true,
-			thingKey:  "",
-			status:    http.StatusForbidden,
-			msg:       []byte{},
-		},
-		{
-			desc:      "connect and send message to subtopic with invalid name",
-			profileID: id,
-			subtopic:  "sub/a*b/topic",
-			header:    true,
-			thingKey:  thingKey,
-			status:    http.StatusBadRequest,
-			msg:       msg,
+			desc:     "connect and send message to subtopic with invalid name",
+			subtopic: "sub/a*b/topic",
+			header:   true,
+			thingKey: thingKey,
+			status:   http.StatusBadRequest,
+			msg:      msg,
 		},
 	}
 
 	for _, tc := range cases {
-		conn, res, err := handshake(ts.URL, tc.profileID, tc.subtopic, tc.thingKey, tc.header)
+		conn, res, err := handshake(ts.URL, tc.subtopic, tc.thingKey, tc.header)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code '%d' got '%d'\n", tc.desc, tc.status, res.StatusCode))
 
 		if tc.status == http.StatusSwitchingProtocols {

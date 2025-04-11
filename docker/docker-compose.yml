@@ -39,7 +39,6 @@ services:
       MF_PROXY_AUTH: ${MF_PROXY_AUTH}
       MF_PROXY_LOGOUT_URL: ${MF_PROXY_LOGOUT_URL}
       MF_UI_APP_PREFIX: ${MF_UI_APP_PREFIX}
-    command: /entrypoint.sh
 
   nginx:
     image: nginx:1.20.0-alpine

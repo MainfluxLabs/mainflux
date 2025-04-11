@@ -29,12 +29,8 @@ servers:
         description: Thing Key corresponding to the Thing ID.
 
 channels:
-  profiles/{profileId}/messages/{subtopic}:
+  /messages/{subtopic}:
     parameters:
-      profileId:
-        $ref: '#/components/parameters/profileId'
-      subtopic:
-        $ref: '#/components/parameters/subtopic'
     publish:
       traits:
         - $ref: '#/components/operationTraits/mqtt'
@@ -74,11 +70,6 @@ components:
         ```
 
   parameters:
-    profileId:
-      description: Profile ID assigned to the Thing ID defined in the username.
-      schema:
-        type: string
-        format: uuid
     subtopic:
       description: Arbitrary message subtopic.
       schema:

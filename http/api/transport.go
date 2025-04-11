@@ -38,21 +38,8 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	}
 
 	r := bone.New()
-	r.Post("/profiles/:id/messages", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
-		decodeRequest,
-		encodeResponse,
-		opts...,
-	))
 
 	r.Post("/messages", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
-		decodeRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/profiles/:id/messages/*", kithttp.NewServer(
 		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,

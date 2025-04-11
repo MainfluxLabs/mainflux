@@ -78,12 +78,6 @@ func TestSendMessage(t *testing.T) {
 			auth:      atoken,
 			err:       nil,
 		},
-		"publish message without profile": {
-			profileID: "",
-			msg:       msg,
-			auth:      atoken,
-			err:       nil,
-		},
 		"publish message unable to authorize": {
 			profileID: profileID,
 			msg:       msg,

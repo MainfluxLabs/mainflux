@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/MainfluxLabs/mainflux/ws"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 

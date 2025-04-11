@@ -37,7 +37,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 			return
 		}
 
-		logger.Debug(fmt.Sprintf("Successfully upgraded communication to WS"))
+		logger.Debug("Successfully upgraded communication to WS")
 		msgs := make(chan []byte)
 
 		// Listen for messages and publish them to broker

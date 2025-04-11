@@ -55,7 +55,6 @@ func Benchmark(cfg Config) {
 
 	// Publishers
 	for i := 0; i < cfg.Test.Pubs; i++ {
-		mfChan := mf.Profiles[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -64,7 +63,7 @@ func Benchmark(cfg Config) {
 				log.Fatal(err)
 			}
 		}
-		c, err := makeClient(i, cfg, mfChan, mfThing, startStamp, caByte, cert)
+		c, err := makeClient(i, cfg, mfThing, startStamp, caByte, cert)
 		if err != nil {
 			log.Fatalf("Unable to create message payload %s", err.Error())
 		}
@@ -139,13 +138,13 @@ func getBytePayload(size int, m message) (handler, error) {
 	return ret, nil
 }
 
-func makeClient(i int, cfg Config, mfChan mfProfile, mfThing mfThing, start time.Time, caCert []byte, clientCert tls.Certificate) (*Client, error) {
+func makeClient(i int, cfg Config, mfThing mfThing, start time.Time, caCert []byte, clientCert tls.Certificate) (*Client, error) {
 	c := &Client{
 		ID:         strconv.Itoa(i),
 		BrokerURL:  cfg.MQTT.Broker.URL,
 		BrokerUser: mfThing.ThingID,
 		BrokerPass: mfThing.ThingKey,
-		MsgTopic:   fmt.Sprintf("profiles/%s/messages/%d/test", mfChan.ProfileID, start.UnixNano()),
+		MsgTopic:   fmt.Sprintf("messages/%d/test", start.UnixNano()),
 		MsgSize:    cfg.MQTT.Message.Size,
 		MsgCount:   cfg.Test.Count,
 		MsgQoS:     byte(cfg.MQTT.Message.QoS),

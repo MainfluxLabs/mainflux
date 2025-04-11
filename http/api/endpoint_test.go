@@ -79,7 +79,6 @@ func TestPublish(t *testing.T) {
 	defer ts.Close()
 
 	cases := map[string]struct {
-		profileID   string
 		msg         string
 		contentType string
 		key         string
@@ -87,35 +86,30 @@ func TestPublish(t *testing.T) {
 		basicAuth   bool
 	}{
 		"publish message": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with application/senml+cbor content-type": {
-			profileID:   profileID,
 			msg:         msgCBOR,
 			contentType: ctSenmlCBOR,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with application/json content-type": {
-			profileID:   profileID,
 			msg:         msgJSON,
 			contentType: ctJSON,
 			key:         thingKey,
 			status:      http.StatusAccepted,
 		},
 		"publish message with empty key": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         "",
 			status:      http.StatusUnauthorized,
 		},
 		"publish message with basic auth": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         thingKey,
@@ -123,14 +117,12 @@ func TestPublish(t *testing.T) {
 			status:      http.StatusAccepted,
 		},
 		"publish message with invalid key": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
 			status:      http.StatusUnauthorized,
 		},
 		"publish message with invalid basic auth": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
@@ -138,21 +130,12 @@ func TestPublish(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		"publish message without content type": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: "",
 			key:         thingKey,
 			status:      http.StatusUnsupportedMediaType,
 		},
-		"publish message without profile": {
-			profileID:   "",
-			msg:         msg,
-			contentType: ctSenmlJSON,
-			key:         thingKey,
-			status:      http.StatusAccepted,
-		},
 		"publish message unable to authorize": {
-			profileID:   profileID,
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         ServiceErrToken,
@@ -164,7 +147,7 @@ func TestPublish(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/profiles/%s/messages", ts.URL, tc.profileID),
+			url:         fmt.Sprintf("%s/messages", ts.URL),
 			contentType: tc.contentType,
 			token:       tc.key,
 			body:        strings.NewReader(tc.msg),
