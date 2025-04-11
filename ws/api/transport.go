@@ -22,7 +22,6 @@ const (
 
 var (
 	errUnauthorizedAccess = errors.New("missing or invalid credentials provided")
-	errMalformedSubtopic  = errors.New("malformed subtopic")
 )
 
 var (
@@ -39,8 +38,6 @@ func MakeHandler(svc ws.Service, l log.Logger) http.Handler {
 	logger = l
 
 	mux := bone.New()
-	mux.GetFunc("/profiles/:id/messages", handshake(svc))
-	mux.GetFunc("/profiles/:id/messages/*", handshake(svc))
 	mux.GetFunc("/messages", handshake(svc))
 	mux.GetFunc("/messages/*", handshake(svc))
 	mux.GetFunc("/version", mainflux.Health(protocol))

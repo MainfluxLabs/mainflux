@@ -25,6 +25,36 @@ paths:
           description: Message discarded due to invalid or missing content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+
+  /messages/{subtopic}:
+    post:
+      summary: Sends message to a subtopic
+      description: |
+        Sends message to a specific subtopic (supports nested paths).
+        Messages can be sent as JSON formatted SenML or as blob.
+      tags:
+        - messages
+      parameters:
+        - name: subtopic
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Subtopic path (e.g., 'alerts/weather' or 'updates/tech/ai')"
+      requestBody:
+        $ref: "#/components/requestBodies/MessageReq"
+      responses:
+        "202":
+          description: Message is accepted for processing.
+        "400":
+          description: Message discarded due to its malformed content.
+        "401":
+          description: Missing or invalid access token provided.
+        "415":
+          description: Message discarded due to invalid or missing content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
   /health:
     get:
       summary: Retrieves service health check info.
@@ -145,3 +175,4 @@ components:
 security:
   - bearerAuth: []
   - basicAuth: []
+  

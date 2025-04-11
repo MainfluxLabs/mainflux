@@ -88,19 +88,36 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateSubject(subtopic string) (string, error) {
-	if subtopic == "" {
-		return subtopic, nil
+func CreateSubject(topic string) (string, error) {
+	// Handle cases where full path might be passed (backward compatibility)
+	if strings.HasPrefix(topic, "/messages/") {
+		topic = strings.TrimPrefix(topic, "/messages/")
+	} else if topic == "/messages" {
+		return "", nil
 	}
 
-	subtopic, err := url.QueryUnescape(subtopic)
+	if topic == "" {
+		return topic, nil
+	}
+
+	// Handle wildcards
+	if topic == ">" || strings.Contains(topic, "*") {
+		return topic, nil
+	}
+
+	// URL decode if needed
+	decoded, err := url.QueryUnescape(topic)
 	if err != nil {
 		return "", ErrMalformedSubtopic
 	}
-	subtopic = strings.Replace(subtopic, "/", ".", -1)
 
-	elems := strings.Split(subtopic, ".")
+	// Replace slashes with dots
+	normalized := strings.Replace(decoded, "/", ".", -1)
+
+	// Split and filter empty elements
+	elems := strings.Split(normalized, ".")
 	filteredElems := []string{}
+
 	for _, elem := range elems {
 		if elem == "" {
 			continue
@@ -113,9 +130,7 @@ func CreateSubject(subtopic string) (string, error) {
 		filteredElems = append(filteredElems, elem)
 	}
 
-	subtopic = strings.Join(filteredElems, ".")
-
-	return subtopic, nil
+	return strings.Join(filteredElems, "."), nil
 }
 
 func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
