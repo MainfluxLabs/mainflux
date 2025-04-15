@@ -179,8 +179,7 @@ func filterPayloadFields(payload map[string]interface{}, dataFilters []string) m
 		}
 
 		if value != nil {
-			filteredKey := strings.Join(keys, "-")
-			filteredPayload[filteredKey] = value
+			filteredPayload[key] = value
 		}
 	}
 
