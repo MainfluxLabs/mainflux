@@ -24,6 +24,6 @@ type emptyRes struct {
 	err error
 }
 
-type groupIDByThingIDRes struct {
+type groupIDRes struct {
 	groupID string
 }

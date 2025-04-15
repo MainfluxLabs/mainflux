@@ -167,10 +167,26 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 		groupID, err := svc.GetGroupIDByThingID(ctx, req.thingID)
 		if err != nil {
-			return groupIDByThingIDRes{}, err
+			return groupIDRes{}, err
 		}
 
-		return groupIDByThingIDRes{groupID: groupID}, nil
+		return groupIDRes{groupID: groupID}, nil
+	}
+}
+
+func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(groupIDByProfileIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupID, err := svc.GetGroupIDByProfileID(ctx, req.profileID)
+		if err != nil {
+			return groupIDRes{}, err
+		}
+
+		return groupIDRes{groupID: groupID}, nil
 	}
 }
 

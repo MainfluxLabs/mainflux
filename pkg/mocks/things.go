@@ -156,19 +156,19 @@ func (svc *mainfluxThings) GetPubConfByKey(context.Context, string) (things.PubC
 }
 
 func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string) (map[string]interface{}, error) {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (svc *mainfluxThings) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (svc *mainfluxThings) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (svc *mainfluxThings) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {
@@ -180,7 +180,11 @@ func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
 }
 
 func (svc *mainfluxThings) GetGroupIDByThingID(_ context.Context, thingID string) (string, error) {
-	panic("implement me")
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) GetGroupIDByProfileID(_ context.Context, profileID string) (string, error) {
+	panic("not implemented")
 }
 
 func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {

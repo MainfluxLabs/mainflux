@@ -55,7 +55,7 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Pub
 }
 
 func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -119,6 +119,13 @@ func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, 
 func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: th.GroupID}, nil
+	}
+	return nil, errors.ErrNotFound
+}
+
+func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
+	if pr, ok := svc.profiles[in.GetValue()]; ok {
+		return &protomfx.GroupID{Value: pr.GroupID}, nil
 	}
 	return nil, errors.ErrNotFound
 }

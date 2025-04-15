@@ -250,6 +250,10 @@ func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (s
 	return es.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
+func (es eventStore) GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error) {
+	return es.svc.GetGroupIDByProfileID(ctx, profileID)
+}
+
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }

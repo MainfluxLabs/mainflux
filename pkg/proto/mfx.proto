@@ -40,6 +40,7 @@ service ThingsService {
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
+    rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
 }
 
 service UsersService {
@@ -86,6 +87,10 @@ message Transformer {
 }
 
 message ThingID {
+    string value = 1;
+}
+
+message ProfileID {
     string value = 1;
 }
 

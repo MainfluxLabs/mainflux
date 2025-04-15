@@ -351,6 +351,19 @@ func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID st
 	return lm.svc.GetGroupIDByThingID(ctx, thingID)
 }
 
+func (lm *loggingMiddleware) GetGroupIDByProfileID(ctx context.Context, profileID string) (_ string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_group_id_by_profile_id for profile %s took %s to complete", profileID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetGroupIDByProfileID(ctx, profileID)
+}
+
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
