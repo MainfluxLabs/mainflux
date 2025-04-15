@@ -8,16 +8,16 @@ package ws
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var (
-	// ErrFailedMessagePublish indicates that message publishing failed.
-	ErrFailedMessagePublish = errors.New("failed to publish message")
-
 	// ErrFailedSubscription indicates that client couldn't subscribe.
 	ErrFailedSubscription = errors.New("failed to subscribe")
 
@@ -47,31 +47,52 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things protomfx.ThingsServiceClient
+	rules  protomfx.RulesServiceClient
 	pubsub messaging.PubSub
+	logger logger.Logger
 }
 
 // New instantiates the WS adapter implementation
-func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, pubsub messaging.PubSub, logger logger.Logger) Service {
 	return &adapterService{
 		things: things,
+		rules:  rules,
 		pubsub: pubsub,
+		logger: logger,
 	}
 }
 
-func (svc *adapterService) Publish(ctx context.Context, thingKey string, msg protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, thingKey string, message protomfx.Message) error {
 	pc, err := svc.authorize(ctx, thingKey)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	if len(msg.Payload) == 0 {
-		return ErrFailedMessagePublish
+	if len(message.Payload) == 0 {
+		return messaging.ErrFailedMessagePublish
+	}
+	messaging.FormatMessage(pc, &message)
+
+	if len(pc.GetProfileConfig().GetRules()) > 0 {
+		msg := message
+		go func(m protomfx.Message) {
+			_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+			if err != nil {
+				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+			}
+		}(msg)
 	}
 
-	messaging.FormatMessage(pc, &msg)
+	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	for _, sub := range subjects {
+		msg := message
+		msg.Subject = sub
 
-	if err := svc.pubsub.Publish(msg); err != nil {
-		return ErrFailedMessagePublish
+		go func(m protomfx.Message) {
+			if err := svc.pubsub.Publish(m); err != nil {
+				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+			}
+		}(msg)
 	}
 
 	return nil

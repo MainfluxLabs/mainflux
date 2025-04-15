@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
@@ -44,7 +45,6 @@ const (
 var (
 	ErrMalformedSubtopic         = errors.New("malformed subtopic")
 	ErrClientNotInitialized      = errors.New("client is not initialized")
-	ErrMalformedTopic            = errors.New("malformed topic")
 	ErrMissingClientID           = errors.New("client_id not found")
 	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
@@ -54,22 +54,24 @@ var (
 
 // Event implements events.Event interface
 type handler struct {
-	publishers []messaging.Publisher
-	things     protomfx.ThingsServiceClient
-	logger     logger.Logger
-	es         redis.EventStore
-	service    Service
+	publisher messaging.Publisher
+	things    protomfx.ThingsServiceClient
+	rules     protomfx.RulesServiceClient
+	logger    logger.Logger
+	es        redis.EventStore
+	service   Service
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publishers []messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
+func NewHandler(publisher messaging.Publisher, es redis.EventStore,
+	logger logger.Logger, things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, svc Service) session.Handler {
 	return &handler{
-		es:         es,
-		logger:     logger,
-		publishers: publishers,
-		things:     things,
-		service:    svc,
+		es:        es,
+		logger:    logger,
+		publisher: publisher,
+		things:    things,
+		rules:     rules,
+		service:   svc,
 	}
 }
 
@@ -163,17 +165,33 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
 
-	msg := protomfx.Message{
+	message := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subject,
 		Payload:  *payload,
 	}
-	messaging.FormatMessage(pc, &msg)
+	messaging.FormatMessage(pc, &message)
 
-	for _, pub := range h.publishers {
-		if err := pub.Publish(msg); err != nil {
-			h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
-		}
+	if len(pc.GetProfileConfig().GetRules()) > 0 {
+		msg := message
+		go func(m protomfx.Message) {
+			_, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+			if err != nil {
+				h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+			}
+		}(msg)
+	}
+
+	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	for _, sub := range subjects {
+		msg := message
+		msg.Subject = sub
+
+		go func(m protomfx.Message) {
+			if err := h.publisher.Publish(m); err != nil {
+				h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
+			}
+		}(msg)
 	}
 }
 

@@ -10,8 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
@@ -362,7 +361,8 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	thingsClient := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}}, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}}, nil)
+	rulesClient := pkgmocks.NewRulesServiceClient()
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler([]messaging.Publisher{thmocks.NewPublisher()}, eventStore, logger, thingsClient, newService())
+	return mqtt.NewHandler(pkgmocks.NewPublisher(), eventStore, logger, thingsClient, rulesClient, newService())
 }

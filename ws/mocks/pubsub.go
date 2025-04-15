@@ -38,12 +38,12 @@ func (pubsub *mockPubSub) Publish(msg protomfx.Message) error {
 		data, err := json.Marshal(msg)
 		if err != nil {
 			fmt.Println("can't marshall")
-			return ws.ErrFailedMessagePublish
+			return messaging.ErrFailedMessagePublish
 		}
 		return pubsub.conn.WriteMessage(websocket.BinaryMessage, data)
 	}
 	if pubsub.fail {
-		return ws.ErrFailedMessagePublish
+		return messaging.ErrFailedMessagePublish
 	}
 	return nil
 }

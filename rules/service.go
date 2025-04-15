@@ -5,10 +5,12 @@ package rules
 
 import (
 	"context"
+	"encoding/json"
+	"strconv"
 
-	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -34,22 +36,37 @@ type Service interface {
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
-	consumers.Consumer
+	// Publish publishes messages on a topic related to a certain rule action
+	Publish(ctx context.Context, message protomfx.Message) error
 }
+
+const (
+	actionTypeSMTP  = "smtp"
+	actionTypeSMPP  = "smpp"
+	actionTypeAlarm = "alarm"
+)
+
+var (
+	errInvalidActionID   = errors.New("invalid action id")
+	errInvalidActionType = errors.New("invalid action type")
+	errInvalidObject     = errors.New("invalid JSON object")
+)
 
 type rulesService struct {
 	rules      RuleRepository
 	things     protomfx.ThingsServiceClient
+	publisher  messaging.Publisher
 	idProvider uuid.IDProvider
 }
 
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, idp uuid.IDProvider) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
+		publisher:  publisher,
 		idProvider: idp,
 	}
 }
@@ -166,7 +183,145 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 	return rs.rules.Remove(ctx, ids...)
 }
 
-func (rs *rulesService) Consume(messages interface{}) error {
-	//TODO Implement Consume
-	panic("implement me")
+func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
+	for _, rule := range message.Rules {
+		if len(rule.Actions) == 0 {
+			continue
+		}
+
+		isValid, payloads, err := processPayload(message.Payload, *rule, message.ContentType)
+		if err != nil {
+			return err
+		}
+		if isValid {
+			continue
+		}
+
+		for _, action := range rule.Actions {
+			for _, payload := range payloads {
+				newMsg := message
+				newMsg.Rules = []*protomfx.Rule{rule}
+				newMsg.Payload = payload
+				newMsg.Subject = action.Type
+
+				switch action.Type {
+				case actionTypeSMTP, actionTypeSMPP:
+					if action.Id != "" {
+						if err := rs.publisher.Publish(newMsg); err != nil {
+							return err
+						}
+					}
+					return errInvalidActionID
+				case actionTypeAlarm:
+					if err := rs.publisher.Publish(newMsg); err != nil {
+						return err
+					}
+				default:
+					return errInvalidActionType
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func processPayload(payload []byte, rule protomfx.Rule, contentType string) (bool, [][]byte, error) {
+	var parsedData interface{}
+	if err := json.Unmarshal(payload, &parsedData); err != nil {
+		return false, nil, err
+	}
+
+	switch data := parsedData.(type) {
+	case []interface{}:
+		var invalidPayloads [][]byte
+		for _, item := range data {
+			obj, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			isValid, err := validatePayload(obj, rule, contentType)
+			if err != nil {
+				return false, nil, err
+			}
+
+			if !isValid {
+				extractedPayload, _ := json.Marshal(obj)
+				invalidPayloads = append(invalidPayloads, extractedPayload)
+			}
+		}
+
+		return len(invalidPayloads) == 0, invalidPayloads, nil
+	case map[string]interface{}:
+		isValid, err := validatePayload(data, rule, contentType)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if !isValid {
+			extractedPayload, _ := json.Marshal(data)
+			return false, [][]byte{extractedPayload}, nil
+		}
+
+		return true, nil, nil
+	default:
+		return false, nil, errInvalidObject
+	}
+}
+
+func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule, contentType string) (bool, error) {
+	value := findPayloadParam(payloadMap, rule.Field, contentType)
+	if value == nil {
+		return true, nil
+	}
+
+	var payloadValue float64
+	switch v := value.(type) {
+	case string:
+		val, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return false, err
+		}
+		payloadValue = val
+	case float64:
+		payloadValue = v
+	default:
+		return false, nil
+	}
+
+	return !isConditionMet(rule.Operator, payloadValue, rule.Threshold), nil
+}
+
+func isConditionMet(operator string, val1, val2 float64) bool {
+	switch operator {
+	case "==":
+		return val1 == val2
+	case ">=":
+		return val1 >= val2
+	case "<=":
+		return val1 <= val2
+	case ">":
+		return val1 > val2
+	case "<":
+		return val1 < val2
+	default:
+		return false
+	}
+}
+
+func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
+	switch contentType {
+	case messaging.SenMLContentType:
+		if name, ok := payload["n"].(string); ok && name == param {
+			if value, exists := payload["v"]; exists {
+				return value
+			}
+		}
+		return nil
+	case messaging.JSONContentType:
+		return messaging.FindParam(payload, param)
+	default:
+		return nil
+	}
 }

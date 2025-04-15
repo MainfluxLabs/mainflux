@@ -19,10 +19,12 @@ const (
 	SenMLFormat      = "senml"
 	JSONFormat       = "json"
 	CBORFormat       = "cbor"
-	regExParts       = 2
 )
 
 var (
+	// ErrFailedMessagePublish indicates that message publishing failed.
+	ErrFailedMessagePublish = errors.New("failed to publish message")
+
 	// ErrConnect indicates that connection to MQTT broker failed
 	ErrConnect = errors.New("failed to connect to MQTT broker")
 
@@ -139,7 +141,6 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
-		msg.WriteEnabled = pc.ProfileConfig.Write
 		msg.Transformer = pc.ProfileConfig.Transformer
 		msg.Rules = pc.ProfileConfig.Rules
 	}
