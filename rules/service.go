@@ -91,8 +91,7 @@ func (rs *rulesService) createRule(ctx context.Context, rule *Rule, token string
 		return Rule{}, err
 	}
 
-	//TODO: Replace by GetGroupIDByProfileID
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: rule.ProfileID})
+	grID, err := rs.things.GetGroupIDByProfileID(ctx, &protomfx.ProfileID{Value: rule.ProfileID})
 	if err != nil {
 		return Rule{}, err
 	}
@@ -149,8 +148,8 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 	if err != nil {
 		return Rule{}, err
 	}
-	//TODO Replace by CanUserAccessGroup
-	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Viewer}); err != nil {
+
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -162,8 +161,8 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 	if err != nil {
 		return err
 	}
-	//TODO Replace by CanUserAccessGroup
-	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: r.ProfileID, Action: things.Editor}); err != nil {
+
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}); err != nil {
 		return err
 	}
 
@@ -172,12 +171,12 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 
 func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		webhook, err := rs.rules.RetrieveByID(ctx, id)
+		rule, err := rs.rules.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		//TODO Replace by CanUserAccessGroup
-		if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.ProfileID, Action: things.Editor}); err != nil {
+
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
