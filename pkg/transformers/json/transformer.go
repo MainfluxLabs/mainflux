@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
@@ -52,6 +51,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
 	}
+
 	extractedPayload := extractPayload(payload, msg.Transformer.DataField)
 
 	switch p := extractedPayload.(type) {
@@ -64,21 +64,23 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
+
 		if ts != 0 {
 			ret.Created = ts
 		}
 
 		return Messages{Data: []Message{ret}}, nil
+
 	case []interface{}:
 		res := []Message{}
-		// Make an array of messages from the root array.
+		// Make an array of messages from the root array
 		for _, val := range p {
 			v, ok := val.(map[string]interface{})
 			if !ok {
 				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
-			newMsg := ret
 
+			newMsg := ret
 			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
 			newMsg.Payload = formattedPayload
 
@@ -87,32 +89,46 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
+
 			if ts != 0 {
 				newMsg.Created = ts
 			}
 
 			res = append(res, newMsg)
 		}
+
 		return Messages{Data: res}, nil
+
 	default:
 		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
 }
 
-func (ts *transformerService) transformTimeField(payload map[string]interface{}, transformer protomfx.Transformer) (int64, error) {
+func (ts *transformerService) transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}
 
-	if val, ok := payload[transformer.TimeField]; ok {
-		t, err := parseTimestamp(transformer.TimeFormat, val, transformer.TimeLocation)
-		if err != nil {
-			return 0, err
+	val := payload
+	keys := strings.Split(transformer.TimeField, ".")
+	for _, k := range keys {
+		current, ok := val.(map[string]interface{})
+		if !ok {
+			return 0, nil
 		}
-		return t.UnixNano(), nil
+
+		v, exists := current[k]
+		if !exists {
+			return 0, nil
+		}
+		val = v
 	}
 
-	return 0, nil
+	t, err := parseTimestamp(transformer.TimeFormat, val, transformer.TimeLocation)
+	if err != nil {
+		return 0, err
+	}
+	return t.UnixNano(), nil
 }
 
 func extractPayload(payload interface{}, dataField string) interface{} {
@@ -140,10 +156,31 @@ func filterPayloadFields(payload map[string]interface{}, dataFilters []string) m
 	}
 
 	filteredPayload := make(map[string]interface{})
+
 	for _, key := range dataFilters {
-		value := messaging.FindParam(payload, key)
+		// Split nested path
+		keys := strings.Split(key, ".")
+		var value interface{} = payload
+
+		// Traverse nested structure
+		for _, k := range keys {
+			current, ok := value.(map[string]interface{})
+			if !ok {
+				value = nil
+				break
+			}
+
+			v, exists := current[k]
+			if !exists {
+				value = nil
+				break
+			}
+			value = v
+		}
+
 		if value != nil {
-			filteredPayload[key] = value
+			filteredKey := strings.Join(keys, "-")
+			filteredPayload[filteredKey] = value
 		}
 	}
 
