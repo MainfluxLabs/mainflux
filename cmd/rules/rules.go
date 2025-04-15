@@ -26,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules/api"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
 	"github.com/MainfluxLabs/mainflux/rules/postgres"
+	"github.com/MainfluxLabs/mainflux/rules/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -220,10 +221,9 @@ func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServ
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)
-	//rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
+	rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
 
 	idProvider := uuid.New()
-
 	svc := rules.New(rulesRepo, tc, pub, idProvider)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
