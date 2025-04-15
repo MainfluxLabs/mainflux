@@ -5,6 +5,7 @@ package notifiers
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -38,8 +39,8 @@ type Service interface {
 }
 
 const (
-	actionTypeSMTP = "smtp"
-	actionTypeSMPP = "smpp"
+	notifierSMTP = "smtp"
+	notifierSMPP = "smpp"
 )
 
 var _ Service = (*notifierService)(nil)
@@ -69,26 +70,26 @@ func (ns *notifierService) Consume(message interface{}) error {
 		return errors.ErrMessage
 	}
 
-	for _, rule := range msg.Rules {
-		for _, action := range rule.Actions {
-			switch action.Type {
-			case actionTypeSMTP:
-				smtp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
-				if err != nil {
-					return errors.Wrap(ErrNotify, err)
-				}
-				if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
-					return err
-				}
-			case actionTypeSMPP:
-				smpp, err := ns.notifierRepo.RetrieveByID(ctx, action.Id)
-				if err != nil {
-					return errors.Wrap(ErrNotify, err)
-				}
-				if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
-					return err
-				}
-			}
+	subject := strings.Split(msg.Subject, ".")
+	notifierType := subject[0]
+	notifierID := subject[1]
+
+	switch notifierType {
+	case notifierSMTP:
+		smtp, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
+		if err != nil {
+			return errors.Wrap(ErrNotify, err)
+		}
+		if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
+			return err
+		}
+	case notifierSMPP:
+		smpp, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
+		if err != nil {
+			return errors.Wrap(ErrNotify, err)
+		}
+		if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
+			return err
 		}
 	}
 

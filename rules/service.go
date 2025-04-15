@@ -6,6 +6,7 @@ package rules
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -184,12 +185,13 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	for _, rule := range message.Rules {
-		if len(rule.Actions) == 0 {
-			continue
+	for _, ruleID := range message.Rules {
+		rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+		if err != nil {
+			return err
 		}
 
-		isValid, payloads, err := processPayload(message.Payload, *rule, message.ContentType)
+		isValid, payloads, err := processPayload(message.Payload, rule.Condition, message.ContentType)
 		if err != nil {
 			return err
 		}
@@ -200,19 +202,20 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 		for _, action := range rule.Actions {
 			for _, payload := range payloads {
 				newMsg := message
-				newMsg.Rules = []*protomfx.Rule{rule}
 				newMsg.Payload = payload
-				newMsg.Subject = action.Type
 
 				switch action.Type {
 				case actionTypeSMTP, actionTypeSMPP:
-					if action.Id != "" {
+					if action.ID != "" {
+						newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
 						if err := rs.publisher.Publish(newMsg); err != nil {
 							return err
 						}
 					}
 					return errInvalidActionID
 				case actionTypeAlarm:
+					newMsg.Rules = []string{ruleID}
+					newMsg.Subject = action.Type
 					if err := rs.publisher.Publish(newMsg); err != nil {
 						return err
 					}
@@ -226,7 +229,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	return nil
 }
 
-func processPayload(payload []byte, rule protomfx.Rule, contentType string) (bool, [][]byte, error) {
+func processPayload(payload []byte, condition Condition, contentType string) (bool, [][]byte, error) {
 	var parsedData interface{}
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
@@ -241,7 +244,7 @@ func processPayload(payload []byte, rule protomfx.Rule, contentType string) (boo
 				continue
 			}
 
-			isValid, err := validatePayload(obj, rule, contentType)
+			isValid, err := validatePayload(obj, condition, contentType)
 			if err != nil {
 				return false, nil, err
 			}
@@ -254,7 +257,7 @@ func processPayload(payload []byte, rule protomfx.Rule, contentType string) (boo
 
 		return len(invalidPayloads) == 0, invalidPayloads, nil
 	case map[string]interface{}:
-		isValid, err := validatePayload(data, rule, contentType)
+		isValid, err := validatePayload(data, condition, contentType)
 		if err != nil {
 			return false, nil, err
 		}
@@ -270,8 +273,8 @@ func processPayload(payload []byte, rule protomfx.Rule, contentType string) (boo
 	}
 }
 
-func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule, contentType string) (bool, error) {
-	value := findPayloadParam(payloadMap, rule.Field, contentType)
+func validatePayload(payloadMap map[string]interface{}, condition Condition, contentType string) (bool, error) {
+	value := findPayloadParam(payloadMap, condition.Field, contentType)
 	if value == nil {
 		return true, nil
 	}
@@ -290,7 +293,7 @@ func validatePayload(payloadMap map[string]interface{}, rule protomfx.Rule, cont
 		return false, nil
 	}
 
-	return !isConditionMet(rule.Operator, payloadValue, rule.Threshold), nil
+	return !isConditionMet(condition.Operator, payloadValue, condition.Threshold), nil
 }
 
 func isConditionMet(operator string, val1, val2 float64) bool {

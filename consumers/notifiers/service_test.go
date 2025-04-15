@@ -63,16 +63,7 @@ func createTestMessages(notifier things.Notifier, actionType string, invalidCont
 
 	createMessage := func(n things.Notifier) protomfx.Message {
 		return protomfx.Message{
-			Rules: []*protomfx.Rule{
-				{
-					Actions: []*protomfx.Action{
-						{
-							Type: actionType,
-							Id:   n.ID,
-						},
-					},
-				},
-			},
+			Subject: fmt.Sprintf("%s.%s", actionType, n.ID),
 		}
 	}
 
