@@ -40,7 +40,7 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 
 func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(configByThingIDReq)
+		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -160,7 +160,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 
 func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupIDByThingIDReq)
+		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -176,7 +176,7 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(groupIDByProfileIDReq)
+		req := request.(profileIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 func getProfileIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(profileIDByThingIDReq)
+		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

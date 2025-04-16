@@ -141,7 +141,7 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubC
 func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
-	res, err := client.getConfigByThingID(ctx, configByThingIDReq{thingID: req.GetValue()})
+	res, err := client.getConfigByThingID(ctx, thingIDReq{thingID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (client grpcClient) GetGroupIDByThingID(ctx context.Context, req *protomfx.
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDByThingID(ctx, groupIDByThingIDReq{thingID: req.GetValue()})
+	res, err := client.getGroupIDByThingID(ctx, thingIDReq{thingID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (client grpcClient) GetGroupIDByProfileID(ctx context.Context, req *protomf
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDByProfileID(ctx, groupIDByProfileIDReq{profileID: req.GetValue()})
+	res, err := client.getGroupIDByProfileID(ctx, profileIDReq{profileID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (client grpcClient) GetProfileIDByThingID(ctx context.Context, req *protomf
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getProfileIDByThingID(ctx, profileIDByThingIDReq{thingID: req.GetValue()})
+	res, err := client.getProfileIDByThingID(ctx, thingIDReq{thingID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (inter
 }
 
 func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(configByThingIDReq)
+	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
@@ -281,17 +281,17 @@ func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 }
 
 func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(groupIDByThingIDReq)
+	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
 func encodeGetGroupIDByProfileIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(groupIDByProfileIDReq)
+	req := grpcReq.(profileIDReq)
 	return &protomfx.ProfileID{Value: req.profileID}, nil
 }
 
 func encodeGetProfileIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(profileIDByThingIDReq)
+	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
