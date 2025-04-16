@@ -49,8 +49,8 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS rules (
 						id          UUID PRIMARY KEY,
-						profileID   UUID NOT NULL,
-						groupID     UUID, 
+						profile_id  UUID NOT NULL,
+						group_id    UUID NOT NULL, 
 						name        VARCHAR(254) NOT NULL,
 						description VARCHAR(1024),
 						condition   JSONB NOT NULL,

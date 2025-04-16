@@ -35,7 +35,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 		return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO rules (id, profileID, groupID, name, description, condition, actions) VALUES (:id, :profileID, :groupID, :name, :description, :condition, :actions);`
+	q := `INSERT INTO rules (id, profile_id, group_id, name, description, condition, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :condition, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
@@ -79,7 +79,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	whereClause := dbutil.BuildWhereClause(gq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profileID, groupID, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, gq)
 
 	params := map[string]interface{}{
@@ -104,7 +104,7 @@ func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	whereClause := dbutil.BuildWhereClause(pq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profileID, groupID, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, pq)
 
 	params := map[string]interface{}{
@@ -118,7 +118,7 @@ func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	q := `SELECT id, profileID, groupID, name, description, condition, actions FROM rules WHERE id = $1;`
+	q := `SELECT id, profile_id, group_id, name, description, condition, actions FROM rules WHERE id = $1;`
 
 	var dbr dbRule
 	if err := rr.db.QueryRowxContext(ctx, q, id).StructScan(&dbr); err != nil {
