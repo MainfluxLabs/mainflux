@@ -199,7 +199,7 @@ func getProfileIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 
 		profileID, err := svc.GetProfileIDByThingID(ctx, req.thingID)
 		if err != nil {
-			return groupIDRes{}, err
+			return profileIDRes{}, err
 		}
 
 		return profileIDRes{profileID: profileID}, nil
