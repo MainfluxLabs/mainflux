@@ -29,7 +29,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 		publish: kitot.TraceClient(tracer, "publish")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"publish",
+			"Publish",
 			encodePublishRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
