@@ -140,3 +140,15 @@ func (req groupIDByProfileIDReq) validate() error {
 
 	return nil
 }
+
+type profileIDByThingIDReq struct {
+	thingID string
+}
+
+func (req profileIDByThingIDReq) validate() error {
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return nil
+}

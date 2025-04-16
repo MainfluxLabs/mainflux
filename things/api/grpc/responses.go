@@ -27,3 +27,7 @@ type emptyRes struct {
 type groupIDRes struct {
 	groupID string
 }
+
+type profileIDRes struct {
+	profileID string
+}
