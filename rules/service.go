@@ -42,9 +42,9 @@ type Service interface {
 }
 
 const (
-	actionTypeSMTP  = "smtp"
-	actionTypeSMPP  = "smpp"
-	actionTypeAlarm = "alarm"
+	ActionTypeSMTP  = "smtp"
+	ActionTypeSMPP  = "smpp"
+	ActionTypeAlarm = "alarm"
 )
 
 var (
@@ -204,7 +204,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 				newMsg.Payload = payload
 
 				switch action.Type {
-				case actionTypeSMTP, actionTypeSMPP:
+				case ActionTypeSMTP, ActionTypeSMPP:
 					if action.ID != "" {
 						newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
 						if err := rs.publisher.Publish(newMsg); err != nil {
@@ -212,7 +212,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 						}
 					}
 					return errInvalidActionID
-				case actionTypeAlarm:
+				case ActionTypeAlarm:
 					newMsg.Rules = []string{ruleID}
 					newMsg.Subject = action.Type
 					if err := rs.publisher.Publish(newMsg); err != nil {
@@ -292,7 +292,7 @@ func validatePayload(payloadMap map[string]interface{}, condition Condition, con
 		return false, nil
 	}
 
-	return !isConditionMet(condition.Operator, payloadValue, condition.Threshold), nil
+	return !isConditionMet(condition.Operator, payloadValue, *condition.Threshold), nil
 }
 
 func isConditionMet(operator string, val1, val2 float64) bool {

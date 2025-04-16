@@ -17,9 +17,9 @@ type Rule struct {
 }
 
 type Condition struct {
-	Field     string  `json:"field"`
-	Operator  string  `json:"operator"`
-	Threshold float64 `json:"threshold"`
+	Field     string   `json:"field"`
+	Operator  string   `json:"operator"`
+	Threshold *float64 `json:"threshold"`
 }
 
 type Action struct {

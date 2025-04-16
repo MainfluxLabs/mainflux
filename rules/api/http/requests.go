@@ -5,14 +5,7 @@ package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
-)
-
-var (
-	ErrInvalidConditionField    = errors.New("missing or invalid condition field")
-	ErrInvalidConditionOperator = errors.New("missing or invalid condition operator")
-	ErrInvalidActionType        = errors.New("missing or invalid action type")
 )
 
 const (
@@ -62,22 +55,30 @@ func (req ruleReq) validate() error {
 	}
 
 	if req.Condition.Field == "" {
-		return ErrInvalidConditionField
+		return apiutil.ErrMissingConditionField
 	}
 
 	if req.Condition.Operator == "" {
-		return ErrInvalidConditionOperator
+		return apiutil.ErrMissingConditionOperator
 	}
 
-	//TODO: ADD Condition.Threshold validation
+	if req.Condition.Threshold == nil {
+		return apiutil.ErrMissingConditionThreshold
+	}
 
 	if len(req.Actions) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
 	for _, action := range req.Actions {
-		if action.Type == "" {
-			return ErrInvalidActionType
+		if action.Type != rules.ActionTypeSMTP && action.Type != rules.ActionTypeSMPP && action.Type != rules.ActionTypeAlarm {
+			return apiutil.ErrInvalidActionType
+		}
+
+		if action.Type == rules.ActionTypeSMTP || action.Type == rules.ActionTypeSMPP {
+			if action.ID == "" {
+				return apiutil.ErrMissingActionID
+			}
 		}
 	}
 
