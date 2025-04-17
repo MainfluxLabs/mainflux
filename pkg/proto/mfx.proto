@@ -15,8 +15,7 @@ message Message {
     string          protocol       = 5;
     int64           created        = 6; // Unix timestamp in nanoseconds
     string          subject        = 7;
-    repeated string rules          = 8;
-    Transformer     transformer    = 9;
+    Transformer     transformer    = 8;
 }
 
 service ThingsService {
@@ -68,7 +67,6 @@ message Config {
     bool            write       = 2;
     bool            webhook     = 3;
     Transformer     transformer = 4;
-    repeated string rules       = 5;
 }
 
 message ConfigByThingIDRes{

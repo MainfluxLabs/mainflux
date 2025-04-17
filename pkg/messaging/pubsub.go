@@ -142,7 +142,6 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
 		msg.Transformer = pc.ProfileConfig.Transformer
-		msg.Rules = pc.ProfileConfig.Rules
 	}
 }
 

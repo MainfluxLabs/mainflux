@@ -3,6 +3,7 @@ package alarms
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -112,24 +113,26 @@ func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
 	if msg, ok := message.(protomfx.Message); ok {
+		// alarm subject format: alarm.rule.<rule_id>
+		subject := strings.Split(msg.Subject, ".")
+		ruleID := subject[2]
+
 		var payload map[string]interface{}
 		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 			return err
 		}
 
-		for _, ruleID := range msg.Rules {
-			alarm := Alarm{
-				ThingID:  msg.Publisher,
-				Subtopic: msg.Subtopic,
-				Protocol: msg.Protocol,
-				Payload:  payload,
-				RuleID:   ruleID,
-				Created:  msg.Created,
-			}
+		alarm := Alarm{
+			ThingID:  msg.Publisher,
+			Subtopic: msg.Subtopic,
+			Protocol: msg.Protocol,
+			Payload:  payload,
+			RuleID:   ruleID,
+			Created:  msg.Created,
+		}
 
-			if err := as.createAlarm(ctx, &alarm); err != nil {
-				return err
-			}
+		if err := as.createAlarm(ctx, &alarm); err != nil {
+			return err
 		}
 	}
 
