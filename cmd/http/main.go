@@ -89,7 +89,7 @@ func main() {
 	rConn := clientsgrpc.Connect(cfg.rulesConfig, logger)
 	defer rConn.Close()
 
-	rulesTracer, rulesCloser := jaeger.Init("coap_rules", cfg.jaegerURL, logger)
+	rulesTracer, rulesCloser := jaeger.Init("http_rules", cfg.jaegerURL, logger)
 	defer rulesCloser.Close()
 
 	pub, err := brokers.NewPublisher(cfg.brokerURL)
