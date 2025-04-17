@@ -230,7 +230,6 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 		Write:       config.Write,
 		Webhook:     config.Webhook,
 		Transformer: transformer,
-		Rules:       config.Rules,
 	}
 
 	return profileConfig, nil

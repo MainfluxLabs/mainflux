@@ -50,15 +50,13 @@ func (as *adapterService) Publish(ctx context.Context, key string, message proto
 	}
 	messaging.FormatMessage(pc, &message)
 
-	if len(pc.GetProfileConfig().GetRules()) > 0 {
-		msg := message
-		go func(m protomfx.Message) {
-			_, err := as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-			if err != nil {
-				as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
-			}
-		}(msg)
-	}
+	msg := message
+	go func(m protomfx.Message) {
+		_, err := as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+		if err != nil {
+			as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+		}
+	}(msg)
 
 	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
 	for _, sub := range subjects {

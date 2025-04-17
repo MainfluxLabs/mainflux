@@ -46,6 +46,7 @@ const (
 	ActionTypeSMPP  = "smpp"
 	ActionTypeAlarm = "alarm"
 )
+const ruleKey = "rule"
 
 var (
 	errInvalidActionID   = errors.New("invalid action id")
@@ -184,12 +185,17 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	for _, ruleID := range message.Rules {
-		rule, err := rs.rules.RetrieveByID(ctx, ruleID)
-		if err != nil {
-			return err
-		}
+	profileID, err := rs.things.GetProfileIDByThingID(ctx, &protomfx.ThingID{Value: message.Publisher})
+	if err != nil {
+		return err
+	}
 
+	rp, err := rs.rules.RetrieveByProfile(ctx, profileID.GetValue(), apiutil.PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range rp.Rules {
 		isValid, payloads, err := processPayload(message.Payload, rule.Condition, message.ContentType)
 		if err != nil {
 			return err
@@ -213,8 +219,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 					}
 					return errInvalidActionID
 				case ActionTypeAlarm:
-					newMsg.Rules = []string{ruleID}
-					newMsg.Subject = action.Type
+					newMsg.Subject = fmt.Sprintf("%s.%s.%s", action.Type, ruleKey, rule.ID)
 					if err := rs.publisher.Publish(newMsg); err != nil {
 						return err
 					}
