@@ -65,8 +65,7 @@ message PubConfByKeyRes {
 message Config {
     string          contentType = 1;
     bool            write       = 2;
-    bool            webhook     = 3;
-    Transformer     transformer = 4;
+    Transformer     transformer = 3;
 }
 
 message ConfigByThingIDRes{
