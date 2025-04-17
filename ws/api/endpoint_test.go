@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"testing"
 
-	log "github.com/MainfluxLabs/mainflux/logger"
-	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/logger"
+	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
@@ -23,20 +23,18 @@ import (
 
 const (
 	profileID = "30315311-56ba-484d-b500-c1e08305511f"
-	id        = "1"
 	thingKey  = "c02ff576-ccd5-40f6-ba5f-c85377aad529"
-	protocol  = "ws"
 )
 
 var msg = []byte(`[{"n":"current","t":-1,"v":1.6}]`)
 
-func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
-	return ws.New(tc, pubsub), pubsub
+	return ws.New(tc, rc, pubsub, logger), pubsub
 }
 
 func newHTTPServer(svc ws.Service) *httptest.Server {
-	logger := log.NewMock()
+	logger := logger.NewMock()
 	mux := api.MakeHandler(svc, logger)
 	return httptest.NewServer(mux)
 }
@@ -76,8 +74,10 @@ func handshake(tsURL, subtopic, thingKey string, addHeader bool) (*websocket.Con
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := thmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	svc, _ := newService(thingsClient)
+	thingsClient := pkgmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	rulesClient := pkgmocks.NewRulesServiceClient()
+	logger := logger.NewMock()
+	svc, _ := newService(thingsClient, rulesClient, logger)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 

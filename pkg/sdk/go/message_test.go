@@ -20,9 +20,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newMessageService(tc protomfx.ThingsServiceClient) adapter.Service {
+func newMessageService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) adapter.Service {
 	pub := mocks.NewPublisher()
-	return adapter.New(pub, tc)
+	return adapter.New(pub, tc, rc, logger)
 }
 
 func newMessageServer(svc adapter.Service) *httptest.Server {
@@ -37,7 +37,9 @@ func TestSendMessage(t *testing.T) {
 	invalidToken := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
-	pub := newMessageService(thingsClient)
+	rulesClient := mocks.NewRulesServiceClient()
+	logger := logger.NewMock()
+	pub := newMessageService(thingsClient, rulesClient, logger)
 	ts := newMessageServer(pub)
 	defer ts.Close()
 	sdkConf := sdk.Config{
@@ -95,8 +97,9 @@ func TestValidateContentType(t *testing.T) {
 	profileID := "1"
 	atoken := "auth_token"
 	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
-
-	pub := newMessageService(thingsClient)
+	rulesClient := mocks.NewRulesServiceClient()
+	logger := logger.NewMock()
+	pub := newMessageService(thingsClient, rulesClient, logger)
 	ts := newMessageServer(pub)
 	defer ts.Close()
 

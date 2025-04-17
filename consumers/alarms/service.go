@@ -1,9 +1,9 @@
 package alarms
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -11,7 +11,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/gogo/protobuf/jsonpb"
 )
 
 type Service interface {
@@ -114,35 +113,26 @@ func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
 	if msg, ok := message.(protomfx.Message); ok {
+		// alarm subject format: alarm.rule.<rule_id>
+		subject := strings.Split(msg.Subject, ".")
+		ruleID := subject[2]
+
 		var payload map[string]interface{}
 		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 			return err
 		}
 
-		for _, r := range msg.Rules {
-			var ruleJSON bytes.Buffer
-			marshaler := &jsonpb.Marshaler{OrigName: true}
-			if err := marshaler.Marshal(&ruleJSON, r); err != nil {
-				return err
-			}
+		alarm := Alarm{
+			ThingID:  msg.Publisher,
+			Subtopic: msg.Subtopic,
+			Protocol: msg.Protocol,
+			Payload:  payload,
+			RuleID:   ruleID,
+			Created:  msg.Created,
+		}
 
-			var rule map[string]interface{}
-			if err := json.Unmarshal(ruleJSON.Bytes(), &rule); err != nil {
-				return err
-			}
-
-			alarm := Alarm{
-				ThingID:  msg.Publisher,
-				Subtopic: msg.Subtopic,
-				Protocol: msg.Protocol,
-				Payload:  payload,
-				Rule:     rule,
-				Created:  msg.Created,
-			}
-
-			if err := as.createAlarm(ctx, &alarm); err != nil {
-				return err
-			}
+		if err := as.createAlarm(ctx, &alarm); err != nil {
+			return err
 		}
 	}
 

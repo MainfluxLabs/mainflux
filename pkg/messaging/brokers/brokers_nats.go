@@ -26,7 +26,7 @@ const (
 	// SubjectWebhook represents subject to subscribe for sending the Webhooks.
 	SubjectWebhook = "webhook"
 	// SubjectAlarm represents subject to subscribe for the alarms.
-	SubjectAlarm = "alarm"
+	SubjectAlarm = "alarm.>"
 )
 
 func init() {

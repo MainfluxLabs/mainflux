@@ -94,12 +94,11 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			Publisher:    "clientID11",
-			Subtopic:     tc.subtopic,
-			Payload:      tc.payload,
-			ContentType:  senmlContentType,
-			WriteEnabled: true,
-			Transformer:  &protomfx.Transformer{},
+			Publisher:   "clientID11",
+			Subtopic:    tc.subtopic,
+			Payload:     tc.payload,
+			ContentType: senmlContentType,
+			Transformer: &protomfx.Transformer{},
 		}
 
 		err := pubsub.Publish(msg)
@@ -260,12 +259,11 @@ func TestPubSub(t *testing.T) {
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
 			expectedMsg := protomfx.Message{
-				Publisher:    "clientID",
-				Subtopic:     subtopic,
-				Payload:      data,
-				ContentType:  senmlContentType,
-				WriteEnabled: true,
-				Transformer:  &protomfx.Transformer{},
+				Publisher:   "clientID",
+				Subtopic:    subtopic,
+				Payload:     data,
+				ContentType: senmlContentType,
+				Transformer: &protomfx.Transformer{},
 			}
 
 			// Publish message, and then receive it on message profile.
