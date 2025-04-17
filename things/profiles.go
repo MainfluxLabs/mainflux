@@ -22,9 +22,7 @@ type Profile struct {
 type Config struct {
 	ContentType string      `json:"content_type"`
 	Write       bool        `json:"write"`
-	Webhook     bool        `json:"webhook"`
 	Transformer Transformer `json:"transformer"`
-	Rules       []string    `json:"rules"`
 }
 
 type Transformer struct {
