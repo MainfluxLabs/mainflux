@@ -41,6 +41,7 @@ service ThingsService {
     rpc Identify(Token) returns (ThingID) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
+    rpc GetProfileIDByThingID(ThingID) returns (ProfileID) {}
 }
 
 service UsersService {

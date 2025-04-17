@@ -20,11 +20,11 @@ func (req pubConfByKeyReq) validate() error {
 	return nil
 }
 
-type configByThingIDReq struct {
+type thingIDReq struct {
 	thingID string
 }
 
-func (req configByThingIDReq) validate() error {
+func (req thingIDReq) validate() error {
 	if req.thingID == "" {
 		return apiutil.ErrMissingThingID
 	}
@@ -117,23 +117,11 @@ func (req identifyReq) validate() error {
 	return nil
 }
 
-type groupIDByThingIDReq struct {
-	thingID string
-}
-
-func (req groupIDByThingIDReq) validate() error {
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
-	}
-
-	return nil
-}
-
-type groupIDByProfileIDReq struct {
+type profileIDReq struct {
 	profileID string
 }
 
-func (req groupIDByProfileIDReq) validate() error {
+func (req profileIDReq) validate() error {
 	if req.profileID == "" {
 		return apiutil.ErrMissingProfileID
 	}

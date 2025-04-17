@@ -129,3 +129,10 @@ func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protom
 	}
 	return nil, errors.ErrNotFound
 }
+
+func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileID, error) {
+	if th, ok := svc.things[in.GetValue()]; ok {
+		return &protomfx.ProfileID{Value: th.ProfileID}, nil
+	}
+	return nil, errors.ErrNotFound
+}

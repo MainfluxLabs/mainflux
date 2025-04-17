@@ -30,6 +30,7 @@ type grpcClient struct {
 	identify              endpoint.Endpoint
 	getGroupIDByThingID   endpoint.Endpoint
 	getGroupIDByProfileID endpoint.Endpoint
+	getProfileIDByThingID endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -110,6 +111,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeGetGroupIDResponse,
 			protomfx.GroupID{},
 		).Endpoint()),
+		getProfileIDByThingID: kitot.TraceClient(tracer, "get_profile_id_by_thing_id")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetProfileIDByThingID",
+			encodeGetProfileIDByThingIDRequest,
+			decodeGetProfileIDResponse,
+			protomfx.GroupID{},
+		).Endpoint()),
 	}
 }
 
@@ -132,7 +141,7 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubC
 func (client grpcClient) GetConfigByThingID(ctx context.Context, req *protomfx.ThingID, opts ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
-	res, err := client.getConfigByThingID(ctx, configByThingIDReq{thingID: req.GetValue()})
+	res, err := client.getConfigByThingID(ctx, thingIDReq{thingID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +210,7 @@ func (client grpcClient) GetGroupIDByThingID(ctx context.Context, req *protomfx.
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDByThingID(ctx, groupIDByThingIDReq{thingID: req.GetValue()})
+	res, err := client.getGroupIDByThingID(ctx, thingIDReq{thingID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +223,7 @@ func (client grpcClient) GetGroupIDByProfileID(ctx context.Context, req *protomf
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDByProfileID(ctx, groupIDByProfileIDReq{profileID: req.GetValue()})
+	res, err := client.getGroupIDByProfileID(ctx, profileIDReq{profileID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -223,13 +232,26 @@ func (client grpcClient) GetGroupIDByProfileID(ctx context.Context, req *protomf
 	return &protomfx.GroupID{Value: pg.groupID}, nil
 }
 
+func (client grpcClient) GetProfileIDByThingID(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileID, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getProfileIDByThingID(ctx, thingIDReq{thingID: req.GetValue()})
+	if err != nil {
+		return nil, err
+	}
+
+	tp := res.(profileIDRes)
+	return &protomfx.ProfileID{Value: tp.profileID}, nil
+}
+
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(pubConfByKeyReq)
 	return &protomfx.PubConfByKeyReq{Key: req.key}, nil
 }
 
 func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(configByThingIDReq)
+	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
@@ -259,13 +281,18 @@ func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{},
 }
 
 func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(groupIDByThingIDReq)
+	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
 func encodeGetGroupIDByProfileIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(groupIDByProfileIDReq)
+	req := grpcReq.(profileIDReq)
 	return &protomfx.ProfileID{Value: req.profileID}, nil
+}
+
+func encodeGetProfileIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(thingIDReq)
+	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
@@ -290,4 +317,9 @@ func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) 
 func decodeGetGroupIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.GroupID)
 	return groupIDRes{groupID: res.GetValue()}, nil
+}
+
+func decodeGetProfileIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.ProfileID)
+	return profileIDRes{profileID: res.GetValue()}, nil
 }
