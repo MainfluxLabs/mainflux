@@ -201,7 +201,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: ${MF_RELEASE_PREFIX}/things:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -312,7 +312,7 @@ services:
       - mainfluxlabs-base-net
 
   http-adapter:
-    image: ${MF_RELEASE_PREFIX}/http:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/http:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-http
     depends_on:
       - things
@@ -402,7 +402,7 @@ services:
       - mainfluxlabs-postgres-volume:/var/lib/postgresql/data
 
   postgres-writer:
-    image: ${MF_RELEASE_PREFIX}/postgres-writer:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/postgres-writer:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-writer
     depends_on:
       - postgres
@@ -426,7 +426,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
@@ -514,7 +514,7 @@ services:
       - mainfluxlabs-webhooks-db-volume:/var/lib/postgresql/data
 
   webhooks:
-    image: ${MF_RELEASE_PREFIX}/webhooks:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/webhooks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-webhooks
     depends_on:
       - things
@@ -662,7 +662,7 @@ services:
       - mainfluxlabs-alarms-db-volume:/var/lib/postgresql/data
 
   alarms:
-    image: ${MF_RELEASE_PREFIX}/alarms:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/alarms:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-alarms
     depends_on:
       - things
@@ -701,7 +701,7 @@ services:
       - mainfluxlabs-rules-db-volume:/var/lib/postgresql/data
 
   rules:
-    image: ${MF_RELEASE_PREFIX}/rules:v0.27.1
+    image: ${MF_RELEASE_PREFIX}/rules:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-rules
     depends_on:
       - things
