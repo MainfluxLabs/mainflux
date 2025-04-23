@@ -50,7 +50,6 @@ func migrateDB(db *sqlx.DB) error {
 						id          UUID PRIMARY KEY,
 						thing_id    UUID NOT NULL,
 						group_id    UUID NOT NULL,
-						rule_id     UUID NOT NULL, 						
 						subtopic    VARCHAR(254),
 						protocol    TEXT,
 						payload     JSONB,

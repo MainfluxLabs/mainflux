@@ -24,9 +24,9 @@ const (
 	// SubjectSmpp represents subject to subscribe for the SMPP notifications.
 	SubjectSmpp = "smpp"
 	// SubjectWebhook represents subject to subscribe for sending the Webhooks.
-	SubjectWebhook = "webhook"
+	SubjectWebhook = "webhooks"
 	// SubjectAlarm represents subject to subscribe for the alarms.
-	SubjectAlarm = "alarm.>"
+	SubjectAlarm = "alarms"
 )
 
 func init() {

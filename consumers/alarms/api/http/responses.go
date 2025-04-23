@@ -11,7 +11,6 @@ type alarmResponse struct {
 	ID       string                 `json:"id"`
 	ThingID  string                 `json:"thing_id"`
 	GroupID  string                 `json:"group_id"`
-	RuleID   string                 `json:"rule_id"`
 	Subtopic string                 `json:"subtopic"`
 	Protocol string                 `json:"protocol"`
 	Payload  map[string]interface{} `json:"payload"`

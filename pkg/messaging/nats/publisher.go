@@ -18,7 +18,7 @@ import (
 const (
 	maxReconnects  = -1
 	messagesSuffix = "messages"
-	subjectWebhook = "webhook"
+	subjectWebhook = "webhooks"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)

@@ -46,7 +46,7 @@ const (
 	ActionTypeSMPP  = "smpp"
 	ActionTypeAlarm = "alarm"
 )
-const ruleKey = "rule"
+const subjectAlarm = "alarms"
 
 var (
 	errInvalidActionID   = errors.New("invalid action id")
@@ -219,7 +219,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 					}
 					return errInvalidActionID
 				case ActionTypeAlarm:
-					newMsg.Subject = fmt.Sprintf("%s.%s.%s", action.Type, ruleKey, rule.ID)
+					newMsg.Subject = subjectAlarm
 					if err := rs.publisher.Publish(newMsg); err != nil {
 						return err
 					}
