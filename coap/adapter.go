@@ -69,7 +69,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 	go func(m protomfx.Message) {
 		_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
 		if err != nil {
-			svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+			svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 		}
 	}(msg)
 
@@ -80,7 +80,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 
 		go func(m protomfx.Message) {
 			if err := svc.pubsub.Publish(m); err != nil {
-				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 			}
 		}(msg)
 	}

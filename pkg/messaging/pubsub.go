@@ -22,8 +22,8 @@ const (
 )
 
 var (
-	// ErrFailedMessagePublish indicates that message publishing failed.
-	ErrFailedMessagePublish = errors.New("failed to publish message")
+	// ErrPublishMessage indicates that message publishing failed.
+	ErrPublishMessage = errors.New("failed to publish message")
 
 	// ErrConnect indicates that connection to MQTT broker failed
 	ErrConnect = errors.New("failed to connect to MQTT broker")

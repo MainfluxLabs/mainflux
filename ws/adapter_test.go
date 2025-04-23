@@ -72,7 +72,7 @@ func TestPublish(t *testing.T) {
 			desc:     "publish an empty message with valid thingKey",
 			thingKey: thingKey,
 			msg:      protomfx.Message{},
-			err:      messaging.ErrFailedMessagePublish,
+			err:      messaging.ErrPublishMessage,
 		},
 		{
 			desc:     "publish an empty message with empty thingKey",

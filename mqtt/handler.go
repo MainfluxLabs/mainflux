@@ -176,7 +176,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	go func(m protomfx.Message) {
 		_, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
 		if err != nil {
-			h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrFailedMessagePublish, err))
+			h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 		}
 	}(msg)
 
