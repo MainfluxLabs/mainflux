@@ -7,6 +7,7 @@ const (
 	Things = "things"
 	Auth   = "auth"
 	Users  = "users"
+	Rules  = "rules"
 )
 
 type Config struct {

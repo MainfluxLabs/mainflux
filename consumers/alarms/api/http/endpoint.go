@@ -88,7 +88,6 @@ func buildAlarmsResponse(ap alarms.AlarmsPage) AlarmsPageRes {
 			GroupID:  a.GroupID,
 			Subtopic: a.Subtopic,
 			Protocol: a.Protocol,
-			Rule:     a.Rule,
 			Payload:  a.Payload,
 			Created:  a.Created,
 		}
@@ -105,7 +104,6 @@ func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 		GroupID:  alarm.GroupID,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Rule:     alarm.Rule,
 		Payload:  alarm.Payload,
 		Created:  alarm.Created,
 	}

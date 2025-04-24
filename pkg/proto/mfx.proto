@@ -8,27 +8,14 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string        publisher      = 1;
-    string        subtopic       = 2;
-    bytes         payload        = 3;
-    string        contentType    = 4;
-    string        protocol       = 5;
-    int64         created        = 6; // Unix timestamp in nanoseconds
-    bool          writeEnabled   = 7;
-    repeated Rule rules          = 8;
-    Transformer   transformer    = 9;
-}
-
-message Rule {
-    string field            = 1;
-    string operator         = 2;
-    double threshold        = 3;
-    repeated Action actions = 4;
-}
-
-message Action {
-    string type = 1;
-    string id   = 2;
+    string          publisher      = 1;
+    string          subtopic       = 2;
+    bytes           payload        = 3;
+    string          contentType    = 4;
+    string          protocol       = 5;
+    int64           created        = 6; // Unix timestamp in nanoseconds
+    string          subject        = 7;
+    Transformer     transformer    = 8;
 }
 
 service ThingsService {
@@ -58,6 +45,14 @@ service AuthService {
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
 }
 
+service RulesService {
+    rpc Publish(PublishReq) returns (google.protobuf.Empty) {}
+}
+
+message PublishReq {
+    Message message = 1;
+}
+
 message PubConfByKeyReq {
     string key = 1;
 }
@@ -68,11 +63,9 @@ message PubConfByKeyRes {
 }
 
 message Config {
-    string      contentType = 1;
-    bool        write       = 2;
-    bool        webhook     = 3;
-    Transformer transformer = 4;
-    repeated Rule rules     = 5;
+    string          contentType = 1;
+    bool            write       = 2;
+    Transformer     transformer = 3;
 }
 
 message ConfigByThingIDRes{

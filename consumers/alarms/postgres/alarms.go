@@ -33,8 +33,8 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 		return errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO alarms (id, thing_id, group_id, subtopic, protocol, payload, rule, created)
-	      VALUES (:id, :thing_id, :group_id, :subtopic, :protocol, :payload, :rule, :created);`
+	q := `INSERT INTO alarms (id, thing_id, group_id, subtopic, protocol, payload, created)
+	      VALUES (:id, :thing_id, :group_id, :subtopic, :protocol, :payload, :created);`
 
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
@@ -67,7 +67,7 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 }
 
 func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
-	q := `SELECT id, thing_id, group_id, subtopic, protocol, payload, rule, created FROM alarms WHERE id = $1;`
+	q := `SELECT id, thing_id, group_id, subtopic, protocol, payload, created FROM alarms WHERE id = $1;`
 
 	var dba dbAlarm
 	if err := ar.db.QueryRowxContext(ctx, q, id).StructScan(&dba); err != nil {
@@ -90,7 +90,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, rule, created 
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, created 
 	                  FROM alarms WHERE thing_id = :thing_id ORDER BY %s %s %s;`, oq, dq, olq)
 	qc := `SELECT COUNT(*) FROM alarms WHERE thing_id = :thing_id;`
 
@@ -112,7 +112,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, rule, created 
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, created 
 	                  FROM alarms WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
 	qc := `SELECT COUNT(*) FROM alarms WHERE group_id = :group_id;`
 
@@ -185,17 +185,11 @@ type dbAlarm struct {
 	Subtopic string `db:"subtopic"`
 	Protocol string `db:"protocol"`
 	Payload  []byte `db:"payload"`
-	Rule     []byte `db:"rule"`
 	Created  int64  `db:"created"`
 }
 
 func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 	payload, err := json.Marshal(alarm.Payload)
-	if err != nil {
-		return dbAlarm{}, err
-	}
-
-	rule, err := json.Marshal(alarm.Rule)
 	if err != nil {
 		return dbAlarm{}, err
 	}
@@ -207,7 +201,6 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Payload:  payload,
-		Rule:     rule,
 		Created:  alarm.Created,
 	}, nil
 }
@@ -218,11 +211,6 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		return alarms.Alarm{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	var rule map[string]interface{}
-	if err := json.Unmarshal(dbAlarm.Rule, &rule); err != nil {
-		return alarms.Alarm{}, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
 	return alarms.Alarm{
 		ID:       dbAlarm.ID,
 		ThingID:  dbAlarm.ThingID,
@@ -230,7 +218,6 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		Subtopic: dbAlarm.Subtopic,
 		Protocol: dbAlarm.Protocol,
 		Payload:  payload,
-		Rule:     rule,
 		Created:  dbAlarm.Created,
 	}, nil
 }

@@ -53,7 +53,6 @@ func migrateDB(db *sqlx.DB) error {
 						subtopic    VARCHAR(254),
 						protocol    TEXT,
 						payload     JSONB,
-						rule        JSONB,
 						created     BIGINT
 					)`,
 				},

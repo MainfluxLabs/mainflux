@@ -23,6 +23,7 @@ volumes:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
   mainfluxlabs-alarms-db-volume:
+  mainfluxlabs-rules-db-volume:
 
 services:
   ui:
@@ -273,6 +274,7 @@ services:
     depends_on:
       - vernemq
       - things
+      - rules
       - broker
       - mqtt-db
     restart: on-failure
@@ -292,6 +294,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
+      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
       MF_MQTT_ADAPTER_DB_PORT: ${MF_MQTT_ADAPTER_DB_PORT}
       MF_MQTT_ADAPTER_DB_USER: ${MF_MQTT_ADAPTER_DB_USER}
@@ -312,6 +316,7 @@ services:
     container_name: mainfluxlabs-http
     depends_on:
       - things
+      - rules
       - broker
     restart: on-failure
     environment:
@@ -321,6 +326,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
+      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
@@ -340,6 +347,7 @@ services:
     container_name: mainfluxlabs-coap
     depends_on:
       - things
+      - rules
       - broker
     restart: on-failure
     environment:
@@ -349,6 +357,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
+      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
@@ -360,6 +370,7 @@ services:
     container_name: mainfluxlabs-ws
     depends_on:
       - things
+      - rules
       - broker
     restart: on-failure
     environment:
@@ -369,6 +380,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
+      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_WS_ADAPTER_PORT}:${MF_WS_ADAPTER_PORT}
     networks:
@@ -671,5 +684,46 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_ALARMS_HTTP_PORT}:${MF_ALARMS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  rules-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-rules-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_RULES_DB_USER}
+      POSTGRES_PASSWORD: ${MF_RULES_DB_PASS}
+      POSTGRES_DB: ${MF_RULES_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-rules-db-volume:/var/lib/postgresql/data
+
+  rules:
+    image: ${MF_RELEASE_PREFIX}/rules:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-rules
+    depends_on:
+      - things
+      - rules-db
+    restart: on-failure
+    environment:
+      MF_RULES_LOG_LEVEL: ${MF_RULES_LOG_LEVEL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_RULES_DB_HOST: rules-db
+      MF_RULES_DB_PORT: ${MF_RULES_DB_PORT}
+      MF_RULES_DB_USER: ${MF_RULES_DB_USER}
+      MF_RULES_DB_PASS: ${MF_RULES_DB_PASS}
+      MF_RULES_DB: ${MF_RULES_DB}
+      MF_RULES_HTTP_PORT: ${MF_RULES_HTTP_PORT}
+      MF_RULES_GRPC_PORT: ${MF_RULES_GRPC_PORT}
+      MF_RULES_SERVER_CERT: ${MF_RULES_SERVER_CERT}
+      MF_RULES_SERVER_KEY: ${MF_RULES_SERVER_KEY}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}
+      - ${MF_RULES_GRPC_PORT}:${MF_RULES_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net

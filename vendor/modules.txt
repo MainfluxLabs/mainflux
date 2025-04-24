@@ -139,10 +139,7 @@ github.com/go-zoo/bone
 github.com/gofrs/uuid
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
-github.com/gogo/protobuf/jsonpb
 github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/sortkeys
-github.com/gogo/protobuf/types
 # github.com/golang-jwt/jwt/v4 v4.0.0
 ## explicit; go 1.15
 github.com/golang-jwt/jwt/v4
