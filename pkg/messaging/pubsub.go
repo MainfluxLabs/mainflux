@@ -7,9 +7,10 @@ import (
 	"errors"
 	"net/url"
 	"strings"
-	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (
@@ -135,14 +136,39 @@ func CreateSubject(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
+func FormatMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protomfx.Message, error) {
 	msg.Publisher = pc.PublisherID
-	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
-		msg.Transformer = pc.ProfileConfig.Transformer
+		if pc.ProfileConfig.Transformer != nil {
+			// TODO: Remove Transformer from Message
+			msg.Transformer = pc.ProfileConfig.Transformer
+			var msgs []protomfx.Message
+			var err error
+
+			switch msg.ContentType {
+			case JSONContentType:
+				msgs, err = json.Transform(msg)
+				if err != nil {
+					return nil, err
+				}
+			case SenMLContentType:
+				msgs, err = senml.Transform(msg)
+				if err != nil {
+
+					return nil, err
+				}
+			default:
+				//TODO: Add error
+				return nil, nil
+			}
+
+			return msgs, nil
+		}
 	}
+
+	return []protomfx.Message{msg}, nil
 }
 
 func FindParam(payload map[string]interface{}, param string) interface{} {

@@ -6,6 +6,7 @@ package json
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -21,14 +22,7 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func Transform(msg protomfx.Message) (interface{}, error) {
-	ret := Message{
-		Created:   msg.Created,
-		Subtopic:  msg.Subtopic,
-		Protocol:  msg.Protocol,
-		Publisher: msg.Publisher,
-	}
-
+func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
@@ -39,8 +33,13 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
 		formattedPayload := filterPayloadFields(p, msg.Transformer.DataFilters)
-		ret.Payload = formattedPayload
+		data, err := json.Marshal(formattedPayload)
+		if err != nil {
+			return nil, err
+		}
+		msg.Payload = data
 
+		msg.Created = time.Now().UnixNano()
 		// Apply timestamp transformation rules depending on key/unit pairs
 		ts, err := transformTimeField(p, *msg.Transformer)
 		if err != nil {
@@ -48,13 +47,13 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 		}
 
 		if ts != 0 {
-			ret.Created = ts
+			msg.Created = ts
 		}
 
-		return Messages{Data: []Message{ret}}, nil
+		return []protomfx.Message{msg}, nil
 
 	case []interface{}:
-		res := []Message{}
+		var msgs []protomfx.Message
 		// Make an array of messages from the root array
 		for _, val := range p {
 			v, ok := val.(map[string]interface{})
@@ -62,9 +61,20 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
-			newMsg := ret
 			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
-			newMsg.Payload = formattedPayload
+			data, err := json.Marshal(formattedPayload)
+			if err != nil {
+				return nil, err
+			}
+
+			newMsg := protomfx.Message{
+				Publisher:   msg.Publisher,
+				Subtopic:    msg.Subtopic,
+				Payload:     data,
+				ContentType: msg.ContentType,
+				Protocol:    msg.Protocol,
+				Created:     time.Now().UnixNano(),
+			}
 
 			// Apply timestamp transformation rules depending on key/unit pairs
 			ts, err := transformTimeField(v, *msg.Transformer)
@@ -76,14 +86,29 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 				newMsg.Created = ts
 			}
 
-			res = append(res, newMsg)
+			msgs = append(msgs, newMsg)
 		}
 
-		return Messages{Data: res}, nil
+		return msgs, nil
 
 	default:
 		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
+}
+
+func MapMessageToJSON(msg protomfx.Message) (Message, error) {
+	var payload Payload
+	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+		return Message{}, err
+	}
+
+	return Message{
+		Created:   msg.Created,
+		Subtopic:  msg.Subtopic,
+		Publisher: msg.Publisher,
+		Protocol:  msg.Protocol,
+		Payload:   payload,
+	}, nil
 }
 
 func transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {

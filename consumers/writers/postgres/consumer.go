@@ -9,6 +9,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/jackc/pgerrcode"
@@ -33,19 +35,28 @@ func New(db *sqlx.DB) consumers.Consumer {
 }
 
 func (pr postgresRepo) Consume(message interface{}) (err error) {
-	switch m := message.(type) {
-	case mfjson.Messages:
-		return pr.saveJSON(m)
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
+
+	switch msg.ContentType {
+	case messaging.JSONContentType:
+		mappedMsg, err := mfjson.MapMessageToJSON(msg)
+		if err != nil {
+			return err
+		}
+		return pr.saveJSON(mappedMsg)
 	default:
-		return pr.saveSenml(m)
+		mappedMsg, err := senml.MapMessageToSenML(msg)
+		if err != nil {
+			return err
+		}
+		return pr.saveSenml(mappedMsg)
 	}
 }
 
-func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
-	msgs, ok := messages.([]senml.Message)
-	if !ok {
-		return errors.ErrSaveMessage
-	}
+func (pr postgresRepo) saveSenml(msg senml.Message) (err error) {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -70,28 +81,22 @@ func (pr postgresRepo) saveSenml(messages interface{}) (err error) {
 		}
 	}()
 
-	for _, msg := range msgs {
-		m := senmlMessage{Message: msg}
-		if _, err := tx.NamedExec(q, m); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-				}
+	if _, err := tx.NamedExec(q, msg); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 			}
-
-			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
+
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
+
 	return err
 }
 
-func (pr postgresRepo) saveJSON(messages interface{}) error {
-	msgs, ok := messages.(mfjson.Messages)
-	if !ok {
-		return errors.ErrSaveMessage
-	}
+func (pr postgresRepo) saveJSON(msg mfjson.Message) error {
 	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload)
           VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 
@@ -112,30 +117,25 @@ func (pr postgresRepo) saveJSON(messages interface{}) error {
 		}
 	}()
 
-	for _, m := range msgs.Data {
-		var dbmsg jsonMessage
-		dbmsg, err = toJSONMessage(m)
-		if err != nil {
-			return errors.Wrap(errors.ErrSaveMessage, err)
-		}
-
-		if _, err = tx.NamedExec(q, dbmsg); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-				}
-			}
-
-			return errors.Wrap(errors.ErrSaveMessage, err)
-		}
+	var dbmsg jsonMessage
+	dbmsg, err = toJSONMessage(msg)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
-	return err
-}
 
-type senmlMessage struct {
-	senml.Message
+	if _, err = tx.NamedExec(q, dbmsg); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+			}
+		}
+
+		return errors.Wrap(errors.ErrSaveMessage, err)
+	}
+
+	return err
 }
 
 type jsonMessage struct {

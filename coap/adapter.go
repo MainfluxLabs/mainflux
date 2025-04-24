@@ -63,7 +63,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	messaging.FormatMessage(pc, &message)
+	messaging.FormatMessage(pc, message)
 
 	msg := message
 	go func(m protomfx.Message) {

@@ -40,7 +40,7 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, rul
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) (m protomfx.Message, _ error) {
+func (as *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) (protomfx.Message, error) {
 	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
@@ -48,27 +48,33 @@ func (as *adapterService) Publish(ctx context.Context, key string, message proto
 	if err != nil {
 		return protomfx.Message{}, err
 	}
-	messaging.FormatMessage(pc, &message)
 
-	msg := message
-	go func(m protomfx.Message) {
-		_, err := as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-		if err != nil {
-			as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-		}
-	}(msg)
-
-	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
-	for _, sub := range subjects {
-		msg := message
-		msg.Subject = sub
-
-		go func(m protomfx.Message) {
-			if err := as.publisher.Publish(m); err != nil {
-				as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-			}
-		}(msg)
+	msgs, err := messaging.FormatMessage(pc, message)
+	if err != nil {
+		return protomfx.Message{}, err
 	}
 
-	return m, nil
+	for _, m := range msgs {
+		mr := m
+		go func(m protomfx.Message) {
+			_, err := as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+			if err != nil {
+				as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+			}
+		}(mr)
+
+		subjects := nats.GetSubjects(pc.GetProfileConfig(), m.Subtopic)
+		for _, sub := range subjects {
+			mp := m
+			mp.Subject = sub
+
+			go func(m protomfx.Message) {
+				if err := as.publisher.Publish(m); err != nil {
+					as.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+				}
+			}(mp)
+		}
+	}
+	// TODO: Return nil
+	return protomfx.Message{}, nil
 }

@@ -7,12 +7,12 @@ import (
 
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type Forwarder interface {
 	// Forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message mfjson.Message, wh Webhook) error
+	Forward(ctx context.Context, message protomfx.Message, wh Webhook) error
 }
 
 var _ Forwarder = (*forwarder)(nil)
@@ -23,7 +23,7 @@ func NewForwarder() Forwarder {
 	return &forwarder{}
 }
 
-func (fw *forwarder) Forward(_ context.Context, msg mfjson.Message, wh Webhook) error {
+func (fw *forwarder) Forward(_ context.Context, msg protomfx.Message, wh Webhook) error {
 	body, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return err

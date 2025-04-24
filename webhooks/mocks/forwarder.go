@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -15,6 +15,6 @@ func NewForwarder() webhooks.Forwarder {
 	return &forwarder{}
 }
 
-func (mf *forwarder) Forward(ctx context.Context, message json.Message, wh webhooks.Webhook) error {
+func (mf *forwarder) Forward(context.Context, protomfx.Message, webhooks.Webhook) error {
 	return nil
 }

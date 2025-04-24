@@ -4,6 +4,9 @@
 package senml
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/senml"
@@ -26,7 +29,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-func Transform(msg protomfx.Message) (interface{}, error) {
+func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
@@ -43,19 +46,24 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 		return nil, errors.Wrap(errNormalize, err)
 	}
 
-	msgs := make([]Message, len(normalized.Records))
+	msgs := make([]protomfx.Message, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
 		t := v.Time
 		if t == 0 {
 			// Convert the Unix timestamp in nanoseconds to float64
-			t = float64(msg.Created) / float64(1e9)
+			t = float64(time.Now().UnixNano()) / 1e9
 		}
 
-		msgs[i] = Message{
-			Subtopic:    msg.Subtopic,
+		msgs[i] = protomfx.Message{
 			Publisher:   msg.Publisher,
+			Subtopic:    msg.Subtopic,
+			ContentType: msg.ContentType,
 			Protocol:    msg.Protocol,
+			Created:     int64(t),
+		}
+
+		m := Message{
 			Name:        v.Name,
 			Unit:        v.Unit,
 			Time:        t,
@@ -66,7 +74,28 @@ func Transform(msg protomfx.Message) (interface{}, error) {
 			StringValue: v.StringValue,
 			Sum:         v.Sum,
 		}
+
+		data, err := json.Marshal(m)
+		if err != nil {
+			return nil, err
+		}
+		msgs[i].Payload = data
 	}
 
 	return msgs, nil
+}
+
+func MapMessageToSenML(message protomfx.Message) (Message, error) {
+	var msg Message
+
+	if err := json.Unmarshal(message.Payload, &msg); err != nil {
+		return Message{}, err
+	}
+
+	msg.Publisher = message.Publisher
+	msg.Subtopic = message.Subtopic
+	msg.Protocol = message.Protocol
+	msg.Time = float64(message.Created) / 1e9
+
+	return msg, nil
 }

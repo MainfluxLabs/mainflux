@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -183,19 +182,19 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids
 func (ws *webhooksService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	if v, ok := message.(json.Messages); ok {
-		msgs := v.Data
-		for _, msg := range msgs {
-			whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher, apiutil.PageMetadata{})
-			if err != nil {
-				return err
-			}
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
 
-			for _, wh := range whs.Webhooks {
-				if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
-					return errors.Wrap(ErrForward, err)
-				}
-			}
+	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher, apiutil.PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	for _, wh := range whs.Webhooks {
+		if err := ws.forwarder.Forward(ctx, msg, wh); err != nil {
+			return errors.Wrap(ErrForward, err)
 		}
 	}
 
