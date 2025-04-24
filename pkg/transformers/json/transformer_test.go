@@ -37,7 +37,6 @@ var transformer = &protomfx.Transformer{DataFilters: dataFilters, TimeField: "na
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().Unix()
 
-	tr := json.New()
 	msg := protomfx.Message{
 		Subtopic:    subtopic,
 		Publisher:   "publisher-1",
@@ -194,7 +193,7 @@ func TestTransformJSON(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		m, err := tr.Transform(tc.msg)
+		m, err := json.Transform(tc.msg)
 		assert.Equal(t, tc.json, m, fmt.Sprintf("%s expected %v, got %v", tc.desc, tc.json, m))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}

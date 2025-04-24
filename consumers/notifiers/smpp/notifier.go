@@ -11,8 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/fiorix/go-smpp/smpp"
 	"github.com/fiorix/go-smpp/smpp/pdu/pdufield"
 	"github.com/fiorix/go-smpp/smpp/pdu/pdutext"
@@ -22,7 +20,6 @@ var _ notifiers.Notifier = (*notifier)(nil)
 
 type notifier struct {
 	transmitter   *smpp.Transmitter
-	transformer   transformers.Transformer
 	sourceAddrTON uint8
 	sourceAddrNPI uint8
 	destAddrTON   uint8
@@ -42,7 +39,6 @@ func New(cfg Config, from string) notifiers.Notifier {
 	t.Bind()
 	ret := &notifier{
 		transmitter:   t,
-		transformer:   json.New(),
 		sourceAddrTON: cfg.SourceAddrTON,
 		destAddrTON:   cfg.DestAddrTON,
 		sourceAddrNPI: cfg.SourceAddrNPI,

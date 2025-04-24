@@ -6,7 +6,6 @@ package senml
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/senml"
 )
 
@@ -27,14 +26,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-type transformer struct{}
-
-// New returns transformer service implementation for SenML messages.
-func New() transformers.Transformer {
-	return transformer{}
-}
-
-func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
+func Transform(msg protomfx.Message) (interface{}, error) {
 	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {

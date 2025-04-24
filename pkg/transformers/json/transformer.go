@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
 var (
@@ -22,24 +21,7 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-// TimeField represents the message fields to use as timestamp
-type TimeField struct {
-	Name     string `json:"name"`
-	Format   string `json:"format"`
-	Location string `json:"location"`
-}
-
-type transformerService struct {
-	timeFields []TimeField
-}
-
-// New returns a new JSON transformer.
-func New() transformers.Transformer {
-	return &transformerService{}
-}
-
-// Transform transforms Mainflux message to a list of JSON messages.
-func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, error) {
+func Transform(msg protomfx.Message) (interface{}, error) {
 	ret := Message{
 		Created:   msg.Created,
 		Subtopic:  msg.Subtopic,
@@ -60,7 +42,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 		ret.Payload = formattedPayload
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.Transformer)
+		ts, err := transformTimeField(p, *msg.Transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -85,7 +67,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 			newMsg.Payload = formattedPayload
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.Transformer)
+			ts, err := transformTimeField(v, *msg.Transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}
@@ -104,7 +86,7 @@ func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, erro
 	}
 }
 
-func (ts *transformerService) transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
+func transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}
