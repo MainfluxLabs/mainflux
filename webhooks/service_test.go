@@ -475,9 +475,6 @@ func TestConsume(t *testing.T) {
 	validJson := json.Messages{
 		Data: []json.Message{{
 			Publisher: whs[0].ThingID,
-			ProfileConfig: map[string]interface{}{
-				"webhook": true,
-			},
 			Payload: map[string]interface{}{
 				"key1": "val1",
 				"key2": float64(123),
