@@ -63,26 +63,32 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	messaging.FormatMessage(pc, message)
 
-	msg := message
-	go func(m protomfx.Message) {
-		_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-		if err != nil {
-			svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-		}
-	}(msg)
+	msgs, err := messaging.FormatMessage(pc, message)
+	if err != nil {
+		return err
+	}
 
-	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
-	for _, sub := range subjects {
-		msg := message
-		msg.Subject = sub
-
+	for _, m := range msgs {
+		mr := m
 		go func(m protomfx.Message) {
-			if err := svc.pubsub.Publish(m); err != nil {
+			_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+			if err != nil {
 				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 			}
-		}(msg)
+		}(mr)
+
+		subjects := nats.GetSubjects(pc.GetProfileConfig(), m.Subtopic)
+		for _, sub := range subjects {
+			mp := m
+			mp.Subject = sub
+
+			go func(m protomfx.Message) {
+				if err := svc.pubsub.Publish(m); err != nil {
+					svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+				}
+			}(mp)
+		}
 	}
 
 	return nil
