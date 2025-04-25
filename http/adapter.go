@@ -18,7 +18,7 @@ import (
 // Service specifies coap service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, token string, msg protomfx.Message) (m protomfx.Message, err error)
+	Publish(ctx context.Context, token string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -40,18 +40,18 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, rul
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) (protomfx.Message, error) {
+func (as *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) error {
 	cr := &protomfx.PubConfByKeyReq{
 		Key: key,
 	}
 	pc, err := as.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
-		return protomfx.Message{}, err
+		return err
 	}
 
 	msgs, err := messaging.FormatMessage(pc, message)
 	if err != nil {
-		return protomfx.Message{}, err
+		return err
 	}
 
 	for _, m := range msgs {
@@ -75,6 +75,6 @@ func (as *adapterService) Publish(ctx context.Context, key string, message proto
 			}(mp)
 		}
 	}
-	// TODO: Return nil
-	return protomfx.Message{}, nil
+
+	return nil
 }
