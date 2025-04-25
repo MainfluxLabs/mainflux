@@ -6,7 +6,6 @@ package json
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -22,26 +21,25 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
+func Transform(transformer protomfx.Transformer, msg protomfx.Message) ([]protomfx.Message, error) {
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return nil, errors.Wrap(ErrTransform, err)
 	}
 
-	extractedPayload := extractPayload(payload, msg.Transformer.DataField)
+	extractedPayload := extractPayload(payload, transformer.DataField)
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, msg.Transformer.DataFilters)
+		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
 		data, err := json.Marshal(formattedPayload)
 		if err != nil {
 			return nil, err
 		}
 		msg.Payload = data
 
-		msg.Created = time.Now().UnixNano()
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := transformTimeField(p, *msg.Transformer)
+		ts, err := transformTimeField(p, transformer)
 		if err != nil {
 			return nil, errors.Wrap(ErrInvalidTimeField, err)
 		}
@@ -61,7 +59,7 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
-			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
+			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
 			data, err := json.Marshal(formattedPayload)
 			if err != nil {
 				return nil, err
@@ -73,11 +71,11 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 				Payload:     data,
 				ContentType: msg.ContentType,
 				Protocol:    msg.Protocol,
-				Created:     time.Now().UnixNano(),
+				Created:     msg.Created,
 			}
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := transformTimeField(v, *msg.Transformer)
+			ts, err := transformTimeField(v, transformer)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidTimeField, err)
 			}

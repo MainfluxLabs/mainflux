@@ -98,7 +98,6 @@ func TestPublisher(t *testing.T) {
 			Subtopic:    tc.subtopic,
 			Payload:     tc.payload,
 			ContentType: senmlContentType,
-			Transformer: &protomfx.Transformer{},
 		}
 
 		err := pubsub.Publish(msg)
@@ -263,7 +262,6 @@ func TestPubSub(t *testing.T) {
 				Subtopic:    subtopic,
 				Payload:     data,
 				ContentType: senmlContentType,
-				Transformer: &protomfx.Transformer{},
 			}
 
 			// Publish message, and then receive it on message profile.

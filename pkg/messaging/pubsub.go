@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
@@ -52,6 +53,9 @@ var (
 
 	// ErrEmptyID indicates the absence of ID.
 	ErrEmptyID = errors.New("empty ID")
+
+	// ErrInvalidContentType indicates an invalid Content-Type
+	ErrInvalidContentType = errors.New("invalid content type")
 )
 
 // Publisher specifies message publishing API.
@@ -138,18 +142,17 @@ func CreateSubject(topic string) (string, error) {
 
 func FormatMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protomfx.Message, error) {
 	msg.Publisher = pc.PublisherID
+	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
 		if pc.ProfileConfig.Transformer != nil {
-			// TODO: Remove Transformer from Message
-			msg.Transformer = pc.ProfileConfig.Transformer
 			var msgs []protomfx.Message
 			var err error
 
 			switch msg.ContentType {
 			case JSONContentType:
-				msgs, err = json.Transform(msg)
+				msgs, err = json.Transform(*pc.ProfileConfig.Transformer, msg)
 				if err != nil {
 					return nil, err
 				}
@@ -160,8 +163,7 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protom
 					return nil, err
 				}
 			default:
-				//TODO: Add error
-				return nil, nil
+				return nil, ErrInvalidContentType
 			}
 
 			return msgs, nil

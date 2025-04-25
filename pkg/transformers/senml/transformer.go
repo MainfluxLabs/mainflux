@@ -5,7 +5,6 @@ package senml
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -52,7 +51,7 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 		t := v.Time
 		if t == 0 {
 			// Convert the Unix timestamp in nanoseconds to float64
-			t = float64(time.Now().UnixNano()) / 1e9
+			t = float64(msg.Created) / 1e9
 		}
 
 		msgs[i] = protomfx.Message{
@@ -95,7 +94,6 @@ func MapMessageToSenML(message protomfx.Message) (Message, error) {
 	msg.Publisher = message.Publisher
 	msg.Subtopic = message.Subtopic
 	msg.Protocol = message.Protocol
-	msg.Time = float64(message.Created) / 1e9
 
 	return msg, nil
 }
