@@ -140,7 +140,7 @@ func CreateSubject(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protomfx.Message, error) {
+func SplitMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protomfx.Message, error) {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 

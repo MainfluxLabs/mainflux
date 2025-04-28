@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -42,21 +41,13 @@ func (pr postgresRepo) Consume(message interface{}) (err error) {
 
 	switch msg.ContentType {
 	case messaging.JSONContentType:
-		mappedMsg, err := mfjson.MapMessageToJSON(msg)
-		if err != nil {
-			return err
-		}
-		return pr.saveJSON(mappedMsg)
+		return pr.saveJSON(msg)
 	default:
-		mappedMsg, err := senml.MapMessageToSenML(msg)
-		if err != nil {
-			return err
-		}
-		return pr.saveSenml(mappedMsg)
+		return pr.saveSenML(msg)
 	}
 }
 
-func (pr postgresRepo) saveSenml(msg senml.Message) (err error) {
+func (pr postgresRepo) saveSenML(msg protomfx.Message) (err error) {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -81,7 +72,12 @@ func (pr postgresRepo) saveSenml(msg senml.Message) (err error) {
 		}
 	}()
 
-	if _, err := tx.NamedExec(q, msg); err != nil {
+	dbmsg, err := toSenMLMessage(msg)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessage, err)
+	}
+
+	if _, err := tx.NamedExec(q, dbmsg); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
@@ -96,7 +92,7 @@ func (pr postgresRepo) saveSenml(msg senml.Message) (err error) {
 	return err
 }
 
-func (pr postgresRepo) saveJSON(msg mfjson.Message) error {
+func (pr postgresRepo) saveJSON(msg protomfx.Message) error {
 	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload)
           VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 
@@ -117,12 +113,7 @@ func (pr postgresRepo) saveJSON(msg mfjson.Message) error {
 		}
 	}()
 
-	var dbmsg jsonMessage
-	dbmsg, err = toJSONMessage(msg)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
-	}
-
+	dbmsg := toJSONMessage(msg)
 	if _, err = tx.NamedExec(q, dbmsg); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -146,23 +137,25 @@ type jsonMessage struct {
 	Payload   []byte `db:"payload"`
 }
 
-func toJSONMessage(msg mfjson.Message) (jsonMessage, error) {
-	data := []byte("{}")
-	if msg.Payload != nil {
-		b, err := json.Marshal(msg.Payload)
-		if err != nil {
-			return jsonMessage{}, errors.Wrap(errors.ErrSaveMessage, err)
-		}
-		data = b
+func toJSONMessage(message protomfx.Message) jsonMessage {
+	return jsonMessage{
+		Created:   message.Created,
+		Subtopic:  message.Subtopic,
+		Publisher: message.Publisher,
+		Protocol:  message.Protocol,
+		Payload:   message.Payload,
+	}
+}
+
+func toSenMLMessage(message protomfx.Message) (senml.Message, error) {
+	var msg senml.Message
+	if err := json.Unmarshal(message.Payload, &msg); err != nil {
+		return senml.Message{}, err
 	}
 
-	m := jsonMessage{
-		Created:   msg.Created,
-		Subtopic:  msg.Subtopic,
-		Publisher: msg.Publisher,
-		Protocol:  msg.Protocol,
-		Payload:   data,
-	}
+	msg.Publisher = message.Publisher
+	msg.Subtopic = message.Subtopic
+	msg.Protocol = message.Protocol
 
-	return m, nil
+	return msg, nil
 }

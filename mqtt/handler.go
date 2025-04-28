@@ -171,7 +171,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Payload:  *payload,
 	}
 
-	msgs, err := messaging.FormatMessage(pc, message)
+	msgs, err := messaging.SplitMessage(pc, message)
 	if err != nil {
 		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 	}

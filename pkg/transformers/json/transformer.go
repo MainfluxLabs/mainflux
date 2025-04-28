@@ -94,21 +94,6 @@ func Transform(transformer protomfx.Transformer, msg protomfx.Message) ([]protom
 	}
 }
 
-func MapMessageToJSON(msg protomfx.Message) (Message, error) {
-	var payload Payload
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return Message{}, err
-	}
-
-	return Message{
-		Created:   msg.Created,
-		Subtopic:  msg.Subtopic,
-		Publisher: msg.Publisher,
-		Protocol:  msg.Protocol,
-		Payload:   payload,
-	}, nil
-}
-
 func transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil

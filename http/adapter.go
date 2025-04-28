@@ -49,7 +49,7 @@ func (as *adapterService) Publish(ctx context.Context, key string, message proto
 		return err
 	}
 
-	msgs, err := messaging.FormatMessage(pc, message)
+	msgs, err := messaging.SplitMessage(pc, message)
 	if err != nil {
 		return err
 	}

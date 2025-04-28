@@ -72,7 +72,7 @@ func (svc *adapterService) Publish(ctx context.Context, thingKey string, message
 		return messaging.ErrPublishMessage
 	}
 
-	msgs, err := messaging.FormatMessage(pc, message)
+	msgs, err := messaging.SplitMessage(pc, message)
 	if err != nil {
 		return err
 	}

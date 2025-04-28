@@ -83,17 +83,3 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 
 	return msgs, nil
 }
-
-func MapMessageToSenML(message protomfx.Message) (Message, error) {
-	var msg Message
-
-	if err := json.Unmarshal(message.Payload, &msg); err != nil {
-		return Message{}, err
-	}
-
-	msg.Publisher = message.Publisher
-	msg.Subtopic = message.Subtopic
-	msg.Protocol = message.Protocol
-
-	return msg, nil
-}
