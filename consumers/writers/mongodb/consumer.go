@@ -6,12 +6,12 @@ package mongodb
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (
@@ -31,24 +31,33 @@ func New(db *mongo.Database) consumers.Consumer {
 }
 
 func (repo *mongoRepo) Consume(message interface{}) error {
-	switch m := message.(type) {
-	case json.Messages:
-		return repo.saveJSON(m)
-	default:
-		return repo.saveSenml(m)
+	if msg, ok := message.(protomfx.Message); ok {
+		msgs, err := messaging.SplitMessage(msg)
+		if err != nil {
+			return err
+		}
+
+		switch msg.ContentType {
+		case messaging.JSONContentType:
+			return repo.saveJSON(msgs)
+		default:
+			return repo.saveSenML(msgs)
+		}
 	}
 
+	return errors.ErrMessage
 }
 
-func (repo *mongoRepo) saveSenml(messages interface{}) error {
-	msgs, ok := messages.([]senml.Message)
-	if !ok {
-		return errors.ErrSaveMessage
-	}
+func (repo *mongoRepo) saveSenML(msgs []protomfx.Message) error {
 	coll := repo.db.Collection(senmlCollection)
 	var dbMsgs []interface{}
 	for _, msg := range msgs {
-		dbMsgs = append(dbMsgs, msg)
+		mapped, err := messaging.ToSenMLMessage(msg)
+		if err != nil {
+			return errors.Wrap(errors.ErrSaveMessage, err)
+		}
+
+		dbMsgs = append(dbMsgs, mapped)
 	}
 
 	_, err := coll.InsertMany(context.Background(), dbMsgs)
@@ -59,10 +68,11 @@ func (repo *mongoRepo) saveSenml(messages interface{}) error {
 	return nil
 }
 
-func (repo *mongoRepo) saveJSON(msgs json.Messages) error {
+func (repo *mongoRepo) saveJSON(msgs []protomfx.Message) error {
 	m := []interface{}{}
-	for _, msg := range msgs.Data {
-		m = append(m, msg)
+	for _, msg := range msgs {
+		mapped := messaging.ToJSONMessage(msg)
+		m = append(m, mapped)
 	}
 
 	coll := repo.db.Collection(jsonCollection)

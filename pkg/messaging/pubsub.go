@@ -4,6 +4,7 @@
 package messaging
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -179,4 +180,50 @@ func FindParam(payload map[string]interface{}, param string) interface{} {
 	}
 
 	return nil
+}
+
+func ToJSONMessage(message protomfx.Message) mfjson.Message {
+	return mfjson.Message{
+		Created:   message.Created,
+		Subtopic:  message.Subtopic,
+		Publisher: message.Publisher,
+		Protocol:  message.Protocol,
+		Payload:   message.Payload,
+	}
+}
+
+func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
+	var msg senml.Message
+	if err := json.Unmarshal(message.Payload, &msg); err != nil {
+		return senml.Message{}, err
+	}
+
+	msg.Publisher = message.Publisher
+	msg.Subtopic = message.Subtopic
+	msg.Protocol = message.Protocol
+
+	return msg, nil
+}
+
+func SplitMessage(message protomfx.Message) ([]protomfx.Message, error) {
+	var payload interface{}
+	if err := json.Unmarshal(message.Payload, &payload); err != nil {
+		return nil, err
+	}
+
+	if pyds, ok := payload.([]interface{}); ok {
+		var messages []protomfx.Message
+		for _, pyd := range pyds {
+			data, err := json.Marshal(pyd)
+			if err != nil {
+				return nil, err
+			}
+			newMsg := message
+			newMsg.Payload = data
+			messages = append(messages, newMsg)
+		}
+		return messages, nil
+	}
+
+	return []protomfx.Message{message}, nil
 }
