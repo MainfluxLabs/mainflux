@@ -56,39 +56,34 @@ func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient,
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) error {
-	cr := &protomfx.PubConfByKeyReq{
-		Key: key,
-	}
+	cr := &protomfx.PubConfByKeyReq{Key: key}
 	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	msgs, err := messaging.SplitMessage(pc, message)
-	if err != nil {
+	if err := messaging.FormatMessage(pc, &message); err != nil {
 		return err
 	}
 
-	for _, m := range msgs {
-		mr := m
+	msg := message
+	go func(m protomfx.Message) {
+		_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+		if err != nil {
+			svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+		}
+	}(msg)
+
+	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	for _, sub := range subjects {
+		msg := message
+		msg.Subject = sub
+
 		go func(m protomfx.Message) {
-			_, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-			if err != nil {
+			if err := svc.pubsub.Publish(m); err != nil {
 				svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 			}
-		}(mr)
-
-		subjects := nats.GetSubjects(pc.GetProfileConfig(), m.Subtopic)
-		for _, sub := range subjects {
-			mp := m
-			mp.Subject = sub
-
-			go func(m protomfx.Message) {
-				if err := svc.pubsub.Publish(m); err != nil {
-					svc.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-				}
-			}(mp)
-		}
+		}(msg)
 	}
 
 	return nil

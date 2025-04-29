@@ -21,10 +21,10 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func Transform(transformer protomfx.Transformer, msg protomfx.Message) ([]protomfx.Message, error) {
+func Transform(transformer protomfx.Transformer, msg *protomfx.Message) error {
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return nil, errors.Wrap(ErrTransform, err)
+		return errors.Wrap(ErrTransform, err)
 	}
 
 	extractedPayload := extractPayload(payload, transformer.DataField)
@@ -34,63 +34,53 @@ func Transform(transformer protomfx.Transformer, msg protomfx.Message) ([]protom
 		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
 		data, err := json.Marshal(formattedPayload)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		msg.Payload = data
 
 		// Apply timestamp transformation rules depending on key/unit pairs
 		ts, err := transformTimeField(p, transformer)
 		if err != nil {
-			return nil, errors.Wrap(ErrInvalidTimeField, err)
+			return errors.Wrap(ErrInvalidTimeField, err)
 		}
 
 		if ts != 0 {
 			msg.Created = ts
 		}
 
-		return []protomfx.Message{msg}, nil
-
+		return nil
 	case []interface{}:
-		var msgs []protomfx.Message
+		var payloads []map[string]interface{}
 		// Make an array of messages from the root array
 		for _, val := range p {
 			v, ok := val.(map[string]interface{})
 			if !ok {
-				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
+				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
 			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
-			data, err := json.Marshal(formattedPayload)
-			if err != nil {
-				return nil, err
-			}
-
-			newMsg := protomfx.Message{
-				Publisher:   msg.Publisher,
-				Subtopic:    msg.Subtopic,
-				Payload:     data,
-				ContentType: msg.ContentType,
-				Protocol:    msg.Protocol,
-				Created:     msg.Created,
-			}
+			payloads = append(payloads, formattedPayload)
 
 			// Apply timestamp transformation rules depending on key/unit pairs
 			ts, err := transformTimeField(v, transformer)
 			if err != nil {
-				return nil, errors.Wrap(ErrInvalidTimeField, err)
+				return errors.Wrap(ErrInvalidTimeField, err)
 			}
 
 			if ts != 0 {
-				newMsg.Created = ts
+				msg.Created = ts
 			}
-
-			msgs = append(msgs, newMsg)
 		}
 
-		return msgs, nil
+		data, err := json.Marshal(payloads)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
 
+		return nil
 	default:
-		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
+		return errors.Wrap(ErrTransform, errInvalidFormat)
 	}
 }
 

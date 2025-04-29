@@ -33,21 +33,25 @@ func New(db *sqlx.DB) consumers.Consumer {
 	return &postgresRepo{db: db}
 }
 
-func (pr postgresRepo) Consume(message interface{}) (err error) {
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
+func (pr postgresRepo) Consume(message interface{}) error {
+	if msg, ok := message.(protomfx.Message); ok {
+		msgs, err := splitMessage(msg)
+		if err != nil {
+			return err
+		}
+
+		switch msg.ContentType {
+		case messaging.JSONContentType:
+			return pr.saveJSON(msgs)
+		default:
+			return pr.saveSenML(msgs)
+		}
 	}
 
-	switch msg.ContentType {
-	case messaging.JSONContentType:
-		return pr.saveJSON(msg)
-	default:
-		return pr.saveSenML(msg)
-	}
+	return errors.ErrMessage
 }
 
-func (pr postgresRepo) saveSenML(msg protomfx.Message) (err error) {
+func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -72,27 +76,29 @@ func (pr postgresRepo) saveSenML(msg protomfx.Message) (err error) {
 		}
 	}()
 
-	dbmsg, err := toSenMLMessage(msg)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
-	}
-
-	if _, err := tx.NamedExec(q, dbmsg); err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-			}
+	for _, msg := range msgs {
+		dbmsg, err := toSenMLMessage(msg)
+		if err != nil {
+			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		if _, err := tx.NamedExec(q, dbmsg); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+				}
+			}
+
+			return errors.Wrap(errors.ErrSaveMessage, err)
+		}
 	}
 
 	return err
 }
 
-func (pr postgresRepo) saveJSON(msg protomfx.Message) error {
+func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
 	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload)
           VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
 
@@ -113,17 +119,20 @@ func (pr postgresRepo) saveJSON(msg protomfx.Message) error {
 		}
 	}()
 
-	dbmsg := toJSONMessage(msg)
-	if _, err = tx.NamedExec(q, dbmsg); err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-			}
-		}
+	for _, msg := range msgs {
+		dbmsg := toJSONMessage(msg)
 
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		if _, err := tx.NamedExec(q, dbmsg); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+				}
+			}
+
+			return errors.Wrap(errors.ErrSaveMessage, err)
+		}
 	}
 
 	return err
@@ -158,4 +167,27 @@ func toSenMLMessage(message protomfx.Message) (senml.Message, error) {
 	msg.Protocol = message.Protocol
 
 	return msg, nil
+}
+
+func splitMessage(message protomfx.Message) ([]protomfx.Message, error) {
+	var payload interface{}
+	if err := json.Unmarshal(message.Payload, &payload); err != nil {
+		return nil, err
+	}
+
+	if pyds, ok := payload.([]interface{}); ok {
+		var messages []protomfx.Message
+		for _, pyd := range pyds {
+			data, err := json.Marshal(pyd)
+			if err != nil {
+				return nil, err
+			}
+			newMsg := message
+			newMsg.Payload = data
+			messages = append(messages, newMsg)
+		}
+		return messages, nil
+	}
+
+	return []protomfx.Message{message}, nil
 }

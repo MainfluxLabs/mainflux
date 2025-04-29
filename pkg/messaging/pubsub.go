@@ -10,7 +10,7 @@ import (
 	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
@@ -140,37 +140,29 @@ func CreateSubject(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func SplitMessage(pc *protomfx.PubConfByKeyRes, msg protomfx.Message) ([]protomfx.Message, error) {
+func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
 		if pc.ProfileConfig.Transformer != nil {
-			var msgs []protomfx.Message
-			var err error
-
 			switch msg.ContentType {
 			case JSONContentType:
-				msgs, err = json.Transform(*pc.ProfileConfig.Transformer, msg)
-				if err != nil {
-					return nil, err
+				if err := mfjson.Transform(*pc.ProfileConfig.Transformer, msg); err != nil {
+					return err
 				}
 			case SenMLContentType:
-				msgs, err = senml.Transform(msg)
-				if err != nil {
-
-					return nil, err
+				if err := senml.Transform(msg); err != nil {
+					return err
 				}
 			default:
-				return nil, ErrInvalidContentType
+				return ErrInvalidContentType
 			}
-
-			return msgs, nil
 		}
 	}
 
-	return []protomfx.Message{msg}, nil
+	return nil
 }
 
 func FindParam(payload map[string]interface{}, param string) interface{} {

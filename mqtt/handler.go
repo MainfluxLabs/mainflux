@@ -171,31 +171,28 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Payload:  *payload,
 	}
 
-	msgs, err := messaging.SplitMessage(pc, message)
-	if err != nil {
+	if err := messaging.FormatMessage(pc, &message); err != nil {
 		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 	}
 
-	for _, m := range msgs {
-		mr := m
-		go func(m protomfx.Message) {
-			_, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-			if err != nil {
-				h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-			}
-		}(mr)
-
-		subjects := nats.GetSubjects(pc.GetProfileConfig(), m.Subtopic)
-		for _, sub := range subjects {
-			mp := m
-			mp.Subject = sub
-
-			go func(m protomfx.Message) {
-				if err := h.publisher.Publish(m); err != nil {
-					h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
-				}
-			}(mp)
+	msg := message
+	go func(m protomfx.Message) {
+		_, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
+		if err != nil {
+			h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 		}
+	}(msg)
+
+	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	for _, sub := range subjects {
+		msg := message
+		msg.Subject = sub
+
+		go func(m protomfx.Message) {
+			if err := h.publisher.Publish(m); err != nil {
+				h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
+			}
+		}(msg)
 	}
 }
 

@@ -28,7 +28,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
+func Transform(msg *protomfx.Message) error {
 	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
@@ -37,15 +37,15 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 
 	raw, err := senml.Decode(msg.Payload, format)
 	if err != nil {
-		return nil, errors.Wrap(errDecode, err)
+		return errors.Wrap(errDecode, err)
 	}
 
 	normalized, err := senml.Normalize(raw)
 	if err != nil {
-		return nil, errors.Wrap(errNormalize, err)
+		return errors.Wrap(errNormalize, err)
 	}
 
-	msgs := make([]protomfx.Message, len(normalized.Records))
+	payloads := make([]Message, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
 		t := v.Time
@@ -54,15 +54,7 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 			t = float64(msg.Created) / 1e9
 		}
 
-		msgs[i] = protomfx.Message{
-			Publisher:   msg.Publisher,
-			Subtopic:    msg.Subtopic,
-			ContentType: msg.ContentType,
-			Protocol:    msg.Protocol,
-			Created:     int64(t),
-		}
-
-		m := Message{
+		payloads[i] = Message{
 			Name:        v.Name,
 			Unit:        v.Unit,
 			Time:        t,
@@ -73,13 +65,13 @@ func Transform(msg protomfx.Message) ([]protomfx.Message, error) {
 			StringValue: v.StringValue,
 			Sum:         v.Sum,
 		}
-
-		data, err := json.Marshal(m)
-		if err != nil {
-			return nil, err
-		}
-		msgs[i].Payload = data
 	}
 
-	return msgs, nil
+	data, err := json.Marshal(payloads)
+	if err != nil {
+		return err
+	}
+	msg.Payload = data
+
+	return nil
 }
