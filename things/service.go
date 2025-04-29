@@ -817,6 +817,9 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 }
 
 func (ts *thingsService) getGroupIDByThingID(ctx context.Context, thID string) (string, error) {
+	if thID == "" {
+		return "", errors.ErrAuthorization
+	}
 	grID, err := ts.thingCache.ViewGroup(ctx, thID)
 	if err != nil {
 		th, err := ts.things.RetrieveByID(ctx, thID)
