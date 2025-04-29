@@ -149,11 +149,11 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 		if pc.ProfileConfig.Transformer != nil {
 			switch msg.ContentType {
 			case JSONContentType:
-				if err := mfjson.Transform(*pc.ProfileConfig.Transformer, msg); err != nil {
+				if err := mfjson.TransformPayload(*pc.ProfileConfig.Transformer, msg); err != nil {
 					return err
 				}
 			case SenMLContentType:
-				if err := senml.Transform(msg); err != nil {
+				if err := senml.TransformPayload(msg); err != nil {
 					return err
 				}
 			default:

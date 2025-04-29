@@ -28,7 +28,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-func Transform(msg *protomfx.Message) error {
+func TransformPayload(msg *protomfx.Message) error {
 	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {

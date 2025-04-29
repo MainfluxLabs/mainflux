@@ -21,7 +21,7 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func Transform(transformer protomfx.Transformer, msg *protomfx.Message) error {
+func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) error {
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return errors.Wrap(ErrTransform, err)

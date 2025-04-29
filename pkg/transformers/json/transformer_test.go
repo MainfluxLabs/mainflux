@@ -173,7 +173,7 @@ func TestTransformJSON(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := mfjson.Transform(tc.transformer, &tc.msg)
+		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }

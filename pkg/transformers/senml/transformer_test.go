@@ -74,7 +74,7 @@ func TestTransformJSON(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := senml.Transform(&tc.msg)
+		err := senml.TransformPayload(&tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -150,7 +150,7 @@ func TestTransformCBOR(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := senml.Transform(&tc.msg)
+		err := senml.TransformPayload(&tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }
