@@ -170,7 +170,10 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Subtopic: subject,
 		Payload:  *payload,
 	}
-	messaging.FormatMessage(pc, &message)
+
+	if err := messaging.FormatMessage(pc, &message); err != nil {
+		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+	}
 
 	msg := message
 	go func(m protomfx.Message) {

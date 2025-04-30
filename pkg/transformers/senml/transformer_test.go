@@ -5,6 +5,7 @@ package senml_test
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -23,7 +24,6 @@ func TestTransformJSON(t *testing.T) {
 	jsonBytes, err := hex.DecodeString("5b7b22626e223a22626173652d6e616d65222c226274223a3130302c226275223a22626173652d756e6974222c2262766572223a31302c226276223a31302c226273223a3130302c226e223a226e616d65222c2275223a22756e6974222c2274223a3330302c227574223a3135302c2276223a34322c2273223a31307d5d")
 	require.Nil(t, err, "Decoding JSON expected to succeed")
 
-	tr := senml.New()
 	msg := protomfx.Message{
 		Subtopic:    "subtopic",
 		Publisher:   "publisher",
@@ -34,39 +34,39 @@ func TestTransformJSON(t *testing.T) {
 
 	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
 
-	jsonPld := msg
-	jsonPld.Payload = jsonBytes
-
 	val := 52.0
 	sum := 110.0
-	msgs := []senml.Message{
+
+	m := senml.Message{
+		Name:       "base-namename",
+		Unit:       "unit",
+		Time:       400,
+		UpdateTime: 150,
+		Value:      &val,
+		Sum:        &sum,
+	}
+	payload, err := json.Marshal(m)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msgs := []protomfx.Message{
 		{
-			Subtopic:   "subtopic",
-			Publisher:  "publisher",
-			Protocol:   "protocol",
-			Name:       "base-namename",
-			Unit:       "unit",
-			Time:       400,
-			UpdateTime: 150,
-			Value:      &val,
-			Sum:        &sum,
+			Subtopic:    "subtopic",
+			Publisher:   "publisher",
+			Protocol:    "protocol",
+			Payload:     payload,
+			ContentType: senml.JSON,
+			Created:     400,
 		},
 	}
 
 	cases := []struct {
 		desc string
 		msg  protomfx.Message
-		msgs interface{}
+		msgs []protomfx.Message
 		err  error
 	}{
 		{
 			desc: "test normalize JSON",
-			msg:  jsonPld,
-			msgs: msgs,
-			err:  nil,
-		},
-		{
-			desc: "test normalize defaults to JSON",
 			msg:  msg,
 			msgs: msgs,
 			err:  nil,
@@ -74,8 +74,7 @@ func TestTransformJSON(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		msgs, err := tr.Transform(tc.msg)
-		assert.Equal(t, tc.msgs, msgs, fmt.Sprintf("%s expected %v, got %v", tc.desc, tc.msgs, msgs))
+		err := senml.TransformPayload(&tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -90,7 +89,6 @@ func TestTransformCBOR(t *testing.T) {
 	tooManyBytes, err := hex.DecodeString("82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900")
 	require.Nil(t, err, "Decoding CBOR expected to succeed")
 
-	tr := senml.New()
 	msg := protomfx.Message{
 		Subtopic:    "subtopic",
 		Publisher:   "publisher",
@@ -109,24 +107,32 @@ func TestTransformCBOR(t *testing.T) {
 
 	val := 52.0
 	sum := 110.0
-	msgs := []senml.Message{
+	m := senml.Message{
+		Name:       "base-namename",
+		Unit:       "unit",
+		Time:       400,
+		UpdateTime: 150,
+		Value:      &val,
+		Sum:        &sum,
+	}
+	payload, err := json.Marshal(m)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msgs := []protomfx.Message{
 		{
-			Subtopic:   "subtopic",
-			Publisher:  "publisher",
-			Protocol:   "protocol",
-			Name:       "base-namename",
-			Unit:       "unit",
-			Time:       400,
-			UpdateTime: 150,
-			Value:      &val,
-			Sum:        &sum,
+			Subtopic:    "subtopic",
+			Publisher:   "publisher",
+			Protocol:    "protocol",
+			Payload:     payload,
+			ContentType: senml.CBOR,
+			Created:     400,
 		},
 	}
 
 	cases := []struct {
 		desc string
 		msg  protomfx.Message
-		msgs interface{}
+		msgs []protomfx.Message
 		err  error
 	}{
 		{
@@ -144,8 +150,7 @@ func TestTransformCBOR(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		msgs, err := tr.Transform(tc.msg)
-		assert.Equal(t, tc.msgs, msgs, fmt.Sprintf("%s expected %v, got %v", tc.desc, tc.msgs, msgs))
+		err := senml.TransformPayload(&tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }

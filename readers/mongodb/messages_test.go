@@ -5,19 +5,20 @@ package mongodb_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	mwriter "github.com/MainfluxLabs/mainflux/consumers/writers/mongodb"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
 	mreader "github.com/MainfluxLabs/mainflux/readers/mongodb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -34,6 +35,7 @@ const (
 	udpProt     = "udp"
 	msgName     = "temperature"
 	jsonFormat  = "json"
+	jsonCT      = "application/json"
 )
 
 var (
@@ -65,11 +67,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 	pubID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	m := senml.Message{
-		Publisher: pubID,
-		Protocol:  mqttProt,
-	}
-
 	messages := []senml.Message{}
 	valueMsgs := []senml.Message{}
 	boolMsgs := []senml.Message{}
@@ -80,8 +77,11 @@ func TestListAllMessagesSenML(t *testing.T) {
 
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
-		msg := m
-		msg.Time = float64(now - int64(i))
+		msg := senml.Message{
+			Publisher: pubID,
+			Protocol:  mqttProt,
+			Time:      float64(now - int64(i)),
+		}
 
 		count := i % valueFields
 		switch count {
@@ -107,8 +107,34 @@ func TestListAllMessagesSenML(t *testing.T) {
 		}
 		messages = append(messages, msg)
 	}
-	err = writer.Consume(messages)
-	require.Nil(t, err, fmt.Sprintf("failed to store message to MongoDB: %s", err))
+
+	for _, m := range messages {
+		pyd := senml.Message{
+			Name:        m.Name,
+			Unit:        m.Unit,
+			Time:        m.Time,
+			Value:       m.Value,
+			BoolValue:   m.BoolValue,
+			StringValue: m.StringValue,
+			DataValue:   m.DataValue,
+			Sum:         m.Sum,
+		}
+
+		payload, err := json.Marshal(pyd)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		pm := protomfx.Message{
+			Publisher:   m.Publisher,
+			Subtopic:    m.Subtopic,
+			Protocol:    m.Protocol,
+			ContentType: senml.JSON,
+			Payload:     payload,
+			Subject:     "",
+		}
+
+		err = writer.Consume(pm)
+		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+	}
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -317,64 +343,76 @@ func TestListAllMessagesJSON(t *testing.T) {
 	reader := mreader.New(db)
 	writer := mwriter.New(db)
 
-	id, err := idProvider.ID()
+	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	m := json.Message{
-		Publisher: id,
-		Created:   time.Now().Unix(),
-		Subtopic:  subtopic,
-		Protocol:  coapProt,
-		Payload: map[string]interface{}{
-			"field_2": "value",
-			"field_3": false,
-			"field_4": 12.344,
-			"field_5": map[string]interface{}{
-				"field_1": "value",
-				"field_2": 42.0,
-			},
+
+	pyd := map[string]interface{}{
+		"field_1": 123.0,
+		"field_2": "value",
+		"field_3": false,
+		"field_4": 12.344,
+		"field_5": map[string]interface{}{
+			"field_1": "value",
+			"field_2": 42.0,
 		},
 	}
-	messages1 := json.Messages{}
-	msgs1 := []map[string]interface{}{}
+	payload, err := json.Marshal(pyd)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	m := protomfx.Message{
+		Publisher:   id1,
+		Subtopic:    subtopic,
+		Protocol:    coapProt,
+		Payload:     payload,
+		ContentType: jsonCT,
+	}
+
+	var messages []protomfx.Message
+	created := time.Now().Unix()
 	for i := 0; i < msgsNum; i++ {
 		msg := m
-		messages1.Data = append(messages1.Data, msg)
-		m := toMap(msg)
-		msgs1 = append(msgs1, m)
+		msg.Created = created + int64(i)
+		messages = append(messages, msg)
 	}
-	err = writer.Consume(messages1)
-	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 	id2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	m = json.Message{
-		Publisher: id2,
-		Created:   time.Now().Unix(),
-		Subtopic:  subtopic,
-		Protocol:  udpProt,
-		Payload: map[string]interface{}{
-			"field_2": "other_value",
-			"field_3": false,
-			"field_5": map[string]interface{}{
-				"field_1": "wrong_value",
-				"field_2": 24.5,
-			},
-		},
+	pyd2 := map[string]interface{}{
+		"field_1":     "other_value",
+		"false_value": false,
+		"field_pi":    3.14159265,
 	}
-	messages2 := json.Messages{}
-	httpMsgs := []map[string]interface{}{}
-	for i := 0; i < msgsNum; i++ {
-		msg := m
+	payload2, err := json.Marshal(pyd2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	m2 := protomfx.Message{
+		Publisher:   id2,
+		Subtopic:    subtopic,
+		Protocol:    udpProt,
+		Payload:     payload2,
+		ContentType: jsonCT,
+	}
+
+	for i := 0; i < 3; i++ {
+		msg := m2
+		msg.Created = created + int64(i)
 		if i%2 == 0 {
 			msg.Protocol = httpProt
-			httpMsgs = append(httpMsgs, toMap(msg))
 		}
-
-		messages2.Data = append(messages2.Data, msg)
-		msgs1 = append(msgs1, toMap(msg))
+		messages = append(messages, msg)
 	}
-	err = writer.Consume(messages2)
-	assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+
+	var msgs, httpMsgs []map[string]interface{}
+	for _, m := range messages {
+		err := writer.Consume(m)
+		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+
+		mapped := toMap(m)
+		msgs = append(msgs, mapped)
+		if m.Protocol == httpProt {
+			httpMsgs = append(httpMsgs, mapped)
+		}
+	}
 
 	cases := map[string]struct {
 		pageMeta readers.PageMetadata
@@ -386,8 +424,8 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Limit:  noLimit,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(len(msgs1)),
-				Messages: fromJSON(msgs1),
+				Total:    uint64(len(msgs)),
+				Messages: fromJSON(msgs),
 			},
 		},
 		"read messages with protocol": {
@@ -405,18 +443,18 @@ func TestListAllMessagesJSON(t *testing.T) {
 
 	for desc, tc := range cases {
 		result, err := reader.ListAllMessages(tc.pageMeta)
+		require.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {
-			m := result.Messages[i]
-			// Remove id as it is not sent by the client.
-			delete(m.(map[string]interface{}), "_id")
-			result.Messages[i] = m
+			if msgMap, ok := result.Messages[i].(map[string]interface{}); ok {
+				result.Messages[i] = cleanMap(msgMap)
+			}
 		}
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
 	}
 }
+
 func fromSenml(in []senml.Message) []readers.Message {
 	var ret []readers.Message
 	for _, m := range in {
@@ -433,12 +471,22 @@ func fromJSON(msg []map[string]interface{}) []readers.Message {
 	return ret
 }
 
-func toMap(msg json.Message) map[string]interface{} {
+func toMap(msg protomfx.Message) map[string]interface{} {
 	return map[string]interface{}{
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
 		"protocol":  msg.Protocol,
-		"payload":   map[string]interface{}(msg.Payload),
+		"payload":   msg.Payload,
 	}
+}
+
+func cleanMap(msg map[string]interface{}) map[string]interface{} {
+	delete(msg, "_id")
+
+	if bin, ok := msg["payload"].(primitive.Binary); ok {
+		msg["payload"] = bin.Data
+	}
+
+	return msg
 }

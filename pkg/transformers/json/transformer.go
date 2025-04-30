@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
 var (
@@ -22,89 +21,70 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-// TimeField represents the message fields to use as timestamp
-type TimeField struct {
-	Name     string `json:"name"`
-	Format   string `json:"format"`
-	Location string `json:"location"`
-}
-
-type transformerService struct {
-	timeFields []TimeField
-}
-
-// New returns a new JSON transformer.
-func New() transformers.Transformer {
-	return &transformerService{}
-}
-
-// Transform transforms Mainflux message to a list of JSON messages.
-func (ts *transformerService) Transform(msg protomfx.Message) (interface{}, error) {
-	ret := Message{
-		Created:   msg.Created,
-		Subtopic:  msg.Subtopic,
-		Protocol:  msg.Protocol,
-		Publisher: msg.Publisher,
-	}
-
+func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) error {
 	var payload interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return nil, errors.Wrap(ErrTransform, err)
+		return errors.Wrap(ErrTransform, err)
 	}
 
-	extractedPayload := extractPayload(payload, msg.Transformer.DataField)
+	extractedPayload := extractPayload(payload, transformer.DataField)
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, msg.Transformer.DataFilters)
-		ret.Payload = formattedPayload
+		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
+		data, err := json.Marshal(formattedPayload)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
 
 		// Apply timestamp transformation rules depending on key/unit pairs
-		ts, err := ts.transformTimeField(p, *msg.Transformer)
+		ts, err := transformTimeField(p, transformer)
 		if err != nil {
-			return nil, errors.Wrap(ErrInvalidTimeField, err)
+			return errors.Wrap(ErrInvalidTimeField, err)
 		}
 
 		if ts != 0 {
-			ret.Created = ts
+			msg.Created = ts
 		}
 
-		return Messages{Data: []Message{ret}}, nil
-
+		return nil
 	case []interface{}:
-		res := []Message{}
+		var payloads []map[string]interface{}
 		// Make an array of messages from the root array
 		for _, val := range p {
 			v, ok := val.(map[string]interface{})
 			if !ok {
-				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
+				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
-			newMsg := ret
-			formattedPayload := filterPayloadFields(v, msg.Transformer.DataFilters)
-			newMsg.Payload = formattedPayload
+			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
+			payloads = append(payloads, formattedPayload)
 
 			// Apply timestamp transformation rules depending on key/unit pairs
-			ts, err := ts.transformTimeField(v, *msg.Transformer)
+			ts, err := transformTimeField(v, transformer)
 			if err != nil {
-				return nil, errors.Wrap(ErrInvalidTimeField, err)
+				return errors.Wrap(ErrInvalidTimeField, err)
 			}
 
 			if ts != 0 {
-				newMsg.Created = ts
+				msg.Created = ts
 			}
-
-			res = append(res, newMsg)
 		}
 
-		return Messages{Data: res}, nil
+		data, err := json.Marshal(payloads)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
 
+		return nil
 	default:
-		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
+		return errors.Wrap(ErrTransform, errInvalidFormat)
 	}
 }
 
-func (ts *transformerService) transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
+func transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}

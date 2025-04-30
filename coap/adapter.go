@@ -56,14 +56,15 @@ func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient,
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) error {
-	cr := &protomfx.PubConfByKeyReq{
-		Key: key,
-	}
+	cr := &protomfx.PubConfByKeyReq{Key: key}
 	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
-	messaging.FormatMessage(pc, &message)
+
+	if err := messaging.FormatMessage(pc, &message); err != nil {
+		return err
+	}
 
 	msg := message
 	go func(m protomfx.Message) {

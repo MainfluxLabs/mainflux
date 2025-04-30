@@ -15,7 +15,6 @@ message Message {
     string          protocol       = 5;
     int64           created        = 6; // Unix timestamp in nanoseconds
     string          subject        = 7;
-    Transformer     transformer    = 8;
 }
 
 service ThingsService {

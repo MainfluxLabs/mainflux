@@ -4,9 +4,10 @@
 package senml
 
 import (
+	"encoding/json"
+
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/senml"
 )
 
@@ -27,14 +28,7 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-type transformer struct{}
-
-// New returns transformer service implementation for SenML messages.
-func New() transformers.Transformer {
-	return transformer{}
-}
-
-func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
+func TransformPayload(msg *protomfx.Message) error {
 	contentFormat := msg.ContentType
 	format, ok := formats[contentFormat]
 	if !ok {
@@ -43,27 +37,24 @@ func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
 
 	raw, err := senml.Decode(msg.Payload, format)
 	if err != nil {
-		return nil, errors.Wrap(errDecode, err)
+		return errors.Wrap(errDecode, err)
 	}
 
 	normalized, err := senml.Normalize(raw)
 	if err != nil {
-		return nil, errors.Wrap(errNormalize, err)
+		return errors.Wrap(errNormalize, err)
 	}
 
-	msgs := make([]Message, len(normalized.Records))
+	payloads := make([]Message, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
 		t := v.Time
 		if t == 0 {
 			// Convert the Unix timestamp in nanoseconds to float64
-			t = float64(msg.Created) / float64(1e9)
+			t = float64(msg.Created) / 1e9
 		}
 
-		msgs[i] = Message{
-			Subtopic:    msg.Subtopic,
-			Publisher:   msg.Publisher,
-			Protocol:    msg.Protocol,
+		payloads[i] = Message{
 			Name:        v.Name,
 			Unit:        v.Unit,
 			Time:        t,
@@ -76,5 +67,11 @@ func (t transformer) Transform(msg protomfx.Message) (interface{}, error) {
 		}
 	}
 
-	return msgs, nil
+	data, err := json.Marshal(payloads)
+	if err != nil {
+		return err
+	}
+	msg.Payload = data
+
+	return nil
 }

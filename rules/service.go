@@ -320,8 +320,8 @@ func isConditionMet(operator string, val1, val2 float64) bool {
 func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
 	switch contentType {
 	case messaging.SenMLContentType:
-		if name, ok := payload["n"].(string); ok && name == param {
-			if value, exists := payload["v"]; exists {
+		if name, ok := payload["name"].(string); ok && name == param {
+			if value, exists := payload["value"]; exists {
 				return value
 			}
 		}

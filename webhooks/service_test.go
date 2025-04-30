@@ -2,13 +2,14 @@ package webhooks_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -472,27 +473,26 @@ func TestConsume(t *testing.T) {
 	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	validJson := json.Messages{
-		Data: []json.Message{{
-			Publisher: whs[0].ThingID,
-			ProfileConfig: map[string]interface{}{
-				"webhook": true,
-			},
-			Payload: map[string]interface{}{
-				"key1": "val1",
-				"key2": float64(123),
-			}},
-		},
+	pyd := map[string]interface{}{
+		"key1": "val1",
+		"key2": float64(123),
+	}
+	payload, err := json.Marshal(pyd)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msg := protomfx.Message{
+		Publisher: whs[0].ThingID,
+		Payload:   payload,
 	}
 
 	cases := []struct {
 		desc string
-		msg  json.Messages
+		msg  protomfx.Message
 		err  error
 	}{
 		{
 			desc: "forward message",
-			msg:  validJson,
+			msg:  msg,
 			err:  nil,
 		},
 	}

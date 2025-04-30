@@ -4,12 +4,15 @@
 package messaging
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
 	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (
@@ -51,6 +54,9 @@ var (
 
 	// ErrEmptyID indicates the absence of ID.
 	ErrEmptyID = errors.New("empty ID")
+
+	// ErrInvalidContentType indicates an invalid Content-Type
+	ErrInvalidContentType = errors.New("invalid content type")
 )
 
 // Publisher specifies message publishing API.
@@ -135,14 +141,29 @@ func CreateSubject(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) {
+func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
-		msg.Transformer = pc.ProfileConfig.Transformer
+		if pc.ProfileConfig.Transformer != nil {
+			switch msg.ContentType {
+			case JSONContentType:
+				if err := mfjson.TransformPayload(*pc.ProfileConfig.Transformer, msg); err != nil {
+					return err
+				}
+			case SenMLContentType:
+				if err := senml.TransformPayload(msg); err != nil {
+					return err
+				}
+			default:
+				return ErrInvalidContentType
+			}
+		}
 	}
+
+	return nil
 }
 
 func FindParam(payload map[string]interface{}, param string) interface{} {
@@ -159,4 +180,50 @@ func FindParam(payload map[string]interface{}, param string) interface{} {
 	}
 
 	return nil
+}
+
+func ToJSONMessage(message protomfx.Message) mfjson.Message {
+	return mfjson.Message{
+		Created:   message.Created,
+		Subtopic:  message.Subtopic,
+		Publisher: message.Publisher,
+		Protocol:  message.Protocol,
+		Payload:   message.Payload,
+	}
+}
+
+func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
+	var msg senml.Message
+	if err := json.Unmarshal(message.Payload, &msg); err != nil {
+		return senml.Message{}, err
+	}
+
+	msg.Publisher = message.Publisher
+	msg.Subtopic = message.Subtopic
+	msg.Protocol = message.Protocol
+
+	return msg, nil
+}
+
+func SplitMessage(message protomfx.Message) ([]protomfx.Message, error) {
+	var payload interface{}
+	if err := json.Unmarshal(message.Payload, &payload); err != nil {
+		return nil, err
+	}
+
+	if pyds, ok := payload.([]interface{}); ok {
+		var messages []protomfx.Message
+		for _, pyd := range pyds {
+			data, err := json.Marshal(pyd)
+			if err != nil {
+				return nil, err
+			}
+			newMsg := message
+			newMsg.Payload = data
+			messages = append(messages, newMsg)
+		}
+		return messages, nil
+	}
+
+	return []protomfx.Message{message}, nil
 }

@@ -27,9 +27,9 @@ func LoggingMiddleware(svc http.Service, logger log.Logger) http.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, token string, msg protomfx.Message) (m protomfx.Message, err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, token string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method publish by thing %s took %s to complete", m.Publisher, time.Since(begin))
+		message := fmt.Sprintf("Method publish took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

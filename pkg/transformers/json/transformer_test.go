@@ -4,14 +4,16 @@
 package json_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -32,19 +34,17 @@ var (
 	dataFilters = []string{"key1", "key2", "key3"}
 )
 
-var transformer = &protomfx.Transformer{DataFilters: dataFilters, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
+var transformer = protomfx.Transformer{DataFilters: dataFilters, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
 
 func TestTransformJSON(t *testing.T) {
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 
-	tr := json.New()
 	msg := protomfx.Message{
-		Subtopic:    subtopic,
-		Publisher:   "publisher-1",
-		Protocol:    "protocol",
-		Payload:     []byte(validPayload),
-		Created:     now,
-		Transformer: transformer,
+		Subtopic:  subtopic,
+		Publisher: "publisher-1",
+		Protocol:  "protocol",
+		Payload:   []byte(validPayload),
+		Created:   now,
 	}
 	invalid := msg
 	invalid.Payload = []byte(invalidPayload)
@@ -54,148 +54,126 @@ func TestTransformJSON(t *testing.T) {
 
 	tsMsg := msg
 	tsMsg.Payload = []byte(tsPayload)
-	tsMsg.Transformer.TimeField = timeFieldName
+	tsMsgTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsg.Transformer = &protomfx.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}
+	microsMsgTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
-	invalidTimeField.Transformer.TimeField = timeFieldName
+	invalidTimeFieldTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldName, TimeLocation: timeFieldLocation}
 
-	jsonMsgs := json.Messages{
-		Data: []json.Message{
-			{
-				Subtopic:  subtopic,
-				Publisher: msg.Publisher,
-				Protocol:  msg.Protocol,
-				Created:   msg.Created,
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-					"key3": map[string]interface{}{
-						"key4": "val4",
-					},
-				},
-			},
+	pyd := map[string]interface{}{
+		"key1": "val1",
+		"key2": float64(123),
+		"key3": map[string]interface{}{
+			"key4": "val4",
 		},
 	}
 
-	jsonTsMsgs := json.Messages{
-		Data: []json.Message{
-			{
-				Subtopic:  subtopic,
-				Publisher: msg.Publisher,
-				Protocol:  msg.Protocol,
-				Created:   int64(1638310819000000000),
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-					"key3": map[string]interface{}{
-						"key4": "val4",
-					},
-				},
-			},
+	payload, err := json.Marshal(pyd)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msgs := []protomfx.Message{
+		{
+			Subtopic:  subtopic,
+			Publisher: msg.Publisher,
+			Protocol:  msg.Protocol,
+			Created:   msg.Created,
+			Payload:   payload,
 		},
 	}
 
-	jsonMicrosMsgs := json.Messages{
-		Data: []json.Message{
-			{
-				Subtopic:  subtopic,
-				Publisher: msg.Publisher,
-				Protocol:  msg.Protocol,
-				Created:   int64(1638310819000000000),
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-					"key3": map[string]interface{}{
-						"key4": "val4",
-					},
-				},
-			},
+	tsMsgs := []protomfx.Message{
+		{
+			Subtopic:  subtopic,
+			Publisher: msg.Publisher,
+			Protocol:  msg.Protocol,
+			Created:   int64(1638310819000000000),
+			Payload:   payload,
 		},
 	}
 
-	listJSON := json.Messages{
-		Data: []json.Message{
-			{
-				Subtopic:  subtopic,
-				Publisher: msg.Publisher,
-				Protocol:  msg.Protocol,
-				Created:   msg.Created,
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-					"key3": map[string]interface{}{
-						"key4": "val4",
-					},
-				},
-			},
-			{
-				Subtopic:  subtopic,
-				Publisher: msg.Publisher,
-				Protocol:  msg.Protocol,
-				Created:   msg.Created,
-				Payload: map[string]interface{}{
-					"key1": "val1",
-					"key2": float64(123),
-					"key3": map[string]interface{}{
-						"key4": "val4",
-					},
-				},
-			},
+	microsMsgs := []protomfx.Message{
+		{
+			Subtopic:  subtopic,
+			Publisher: msg.Publisher,
+			Protocol:  msg.Protocol,
+			Created:   int64(1638310819000000000),
+			Payload:   payload,
+		},
+	}
+
+	listMsgs := []protomfx.Message{
+		{
+			Subtopic:  subtopic,
+			Publisher: msg.Publisher,
+			Protocol:  msg.Protocol,
+			Created:   msg.Created,
+			Payload:   payload,
+		},
+		{
+			Subtopic:  subtopic,
+			Publisher: msg.Publisher,
+			Protocol:  msg.Protocol,
+			Created:   msg.Created,
+			Payload:   payload,
 		},
 	}
 
 	cases := []struct {
-		desc string
-		msg  protomfx.Message
-		json interface{}
-		err  error
+		desc        string
+		transformer protomfx.Transformer
+		msg         protomfx.Message
+		msgs        []protomfx.Message
+		err         error
 	}{
 		{
-			desc: "test transform JSON",
-			msg:  msg,
-			json: jsonMsgs,
-			err:  nil,
+			desc:        "test transform JSON",
+			msg:         msg,
+			transformer: transformer,
+			msgs:        msgs,
+			err:         nil,
 		},
 		{
-			desc: "test transform JSON array",
-			msg:  listMsg,
-			json: listJSON,
-			err:  nil,
+			desc:        "test transform JSON array",
+			msg:         listMsg,
+			transformer: transformer,
+			msgs:        listMsgs,
+			err:         nil,
 		},
 		{
 			desc: "test transform JSON with invalid payload",
 			msg:  invalid,
-			json: nil,
-			err:  json.ErrTransform,
+			msgs: nil,
+			err:  mfjson.ErrTransform,
 		},
 		{
-			desc: "test transform JSON with timestamp transformation",
-			msg:  tsMsg,
-			json: jsonTsMsgs,
-			err:  nil,
+			desc:        "test transform JSON with timestamp transformation",
+			msg:         tsMsg,
+			transformer: tsMsgTr,
+			msgs:        tsMsgs,
+			err:         nil,
 		},
 		{
-			desc: "test transform JSON with timestamp transformation in micros",
-			msg:  microsMsg,
-			json: jsonMicrosMsgs,
-			err:  nil,
+			desc:        "test transform JSON with timestamp transformation in micros",
+			transformer: microsMsgTr,
+			msg:         microsMsg,
+			msgs:        microsMsgs,
+			err:         nil,
 		},
 		{
-			desc: "test transform JSON with invalid timestamp transformation in micros",
-			msg:  invalidTimeField,
-			json: nil,
-			err:  json.ErrInvalidTimeField,
+			desc:        "test transform JSON with invalid timestamp transformation in micros",
+			transformer: invalidTimeFieldTr,
+			msg:         invalidTimeField,
+			msgs:        nil,
+			err:         mfjson.ErrInvalidTimeField,
 		},
 	}
 
 	for _, tc := range cases {
-		m, err := tr.Transform(tc.msg)
-		assert.Equal(t, tc.json, m, fmt.Sprintf("%s expected %v, got %v", tc.desc, tc.json, m))
+		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }
