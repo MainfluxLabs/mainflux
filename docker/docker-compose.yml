@@ -607,6 +607,7 @@ services:
     container_name: mainfluxlabs-downlinks
     depends_on:
       - things
+      - rules
       - downlinks-db
     restart: on-failure
     environment:
@@ -623,6 +624,8 @@ services:
       MF_DOWNLINKS_SERVER_KEY: ${MF_DOWNLINKS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
+      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
     networks:
