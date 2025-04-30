@@ -15,10 +15,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
-        $ref: "#/components/requestBodies/WebhooksCreateReq"
+        $ref: "#/components/requestBodies/CreateWebhooksReq"
       responses:
         '201':
-          $ref: "#/components/responses/WebhooksCreateRes"
+          $ref: "#/components/responses/CreateWebhooksRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -38,7 +38,7 @@ paths:
         - $ref: "#/components/parameters/ThingId"
       responses:
         '200':
-          $ref: "#/components/responses/WebhooksListRes"
+          $ref: "#/components/responses/ListWebhooksRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -49,7 +49,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
-/groups/{groupId}/webhooks:
+  /groups/{groupId}/webhooks:
     get:
       summary: Retrieves webhooks by group
       description: Retrieves list of webhooks related to a certain group identified by the provided ID.
@@ -59,7 +59,7 @@ paths:
         - $ref: "#/components/parameters/GroupId"
       responses:
         '200':
-          $ref: "#/components/responses/WebhooksListRes"
+          $ref: "#/components/responses/ListWebhooksRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -98,7 +98,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/WebhookId"
       requestBody:
-        $ref: "#/components/requestBodies/WebhookUpdateReq"
+        $ref: "#/components/requestBodies/UpdateWebhookReq"
       responses:
         '200':
           description: Webhook updated.
@@ -118,10 +118,8 @@ paths:
       description: Removes webhooks with provided identifiers
       tags:
         - webhooks
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/WebhookRemoveReq"
+        $ref: "#/components/requestBodies/RemoveWebhookReq"
       responses:
         '204':
           description: Webhook removed.
@@ -211,7 +209,7 @@ components:
       required: true
 
   requestBodies:
-    WebhooksCreateReq:
+    CreateWebhooksReq:
       description: JSON-formatted document describing the new webhooks.
       required: true
       content:
@@ -223,7 +221,7 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/WebhookReqSchema"
-    WebhookUpdateReq:
+    UpdateWebhookReq:
       description: JSON-formatted document describing the updated webhook info.
       required: true
       content:
@@ -242,7 +240,7 @@ components:
                 description: HTTP headers specified for the webhook.
                 additionalProperties:
                   type: string
-    WebhookRemoveReq:
+    RemoveWebhookReq:
       description: JSON-formatted document describing the identifiers of webhooks for deleting.
       required: true
       content:
@@ -257,7 +255,7 @@ components:
                   format: uuid
 
   responses:
-    WebhooksCreateRes:
+    CreateWebhooksRes:
       description: Webhooks created.
       content:
         application/json:
@@ -271,7 +269,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/WebhookResSchema"
-    WebhooksListRes:
+    ListWebhooksRes:
       description: Webhooks retrieved.
       content:
         application/json:
