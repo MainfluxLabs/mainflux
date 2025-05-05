@@ -1,0 +1,259 @@
+openapi: 3.0.1
+info:
+  title: Mainflux alarms service
+  description: HTTP API for managing platform alarms.
+  version: 1.0.0
+
+paths:
+  /things/{thingId}/alarms:
+    get:
+      summary: List alarms by thing
+      description: Retrieves a list of alarms related to a specific thing.
+      tags:
+        - alarms
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListAlarmsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/alarms:
+    get:
+      summary: List alarms by group
+      description: Retrieves a list of alarms related to a specific group.
+      tags:
+        - alarms
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListAlarmsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /alarms/{alarmId}:
+    get:
+      summary: View a specific alarm
+      description: Retrieves alarm details by its identifier.
+      tags:
+        - alarms
+      parameters:
+        - $ref: "#/components/parameters/AlarmId"
+      responses:
+        '200':
+          $ref: "#/components/responses/AlarmRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Alarm does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /alarms:
+    patch:
+      summary: Remove alarms
+      description: Removes alarms with provided identifiers.
+      tags:
+        - alarms
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveAlarmsReq"
+      responses:
+        '204':
+          description: Alarms removed
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    Alarm:
+      type: object
+      properties:
+        id:
+          type: string
+        thing_id:
+          type: string
+        group_id:
+          type: string
+        subtopic:
+          type: string
+        protocol:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        created:
+          type: integer
+          format: int64
+      required: [id, thing_id, group_id, subtopic, protocol, payload, created]
+
+    AlarmsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        alarms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alarm'
+      required: [total, offset, limit, alarms]
+
+  parameters:
+    AlarmId:
+      name: alarmId
+      in: path
+      required: true
+      description: Unique alarm identifier.
+      schema:
+        type: string
+        format: uuid
+    ThingId:
+      name: thingId
+      in: path
+      required: true
+      description: Thing identifier for which alarms are created.
+      schema:
+        type: string
+        format: uuid
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Group identifier for which alarms are created.
+      schema:
+        type: string
+        format: uuid
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+
+  requestBodies:
+    RemoveAlarmsReq:
+      description: JSON-formatted document describing the identifiers of alarms to delete.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              alarm_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - alarm_ids
+
+  responses:
+    ListAlarmsRes:
+      description: Alarms retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AlarmsPageRes"
+          examples:
+            example1:
+              summary: Example response with two alarms
+              value:
+                total: 2
+                offset: 0
+                limit: 10
+                alarms:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    thing_id: "111e4567-e89b-12d3-a456-426614174000"
+                    group_id: "211e4567-e89b-12d3-a456-426614174000"
+                    subtopic: "temperature"
+                    protocol: "mqtt"
+                    payload:
+                      temperature: 85.2
+                      unit: "C"
+                    created: 1706786130
+                  - id: "223e4567-e89b-12d3-a456-426614174001"
+                    thing_id: "112e4567-e89b-12d3-a456-426614174001"
+                    group_id: "212e4567-e89b-12d3-a456-426614174001"
+                    subtopic: "battery"
+                    protocol: "mqtt"
+                    payload:
+                      voltage: 2.9
+                      unit: "V"
+                    created: 1706789999
+    AlarmRes:
+      description: Alarm details retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Alarm"
+          example:
+            id: "123e4567-e89b-12d3-a456-426614174000"
+            thing_id: "111e4567-e89b-12d3-a456-426614174000"
+            group_id: "211e4567-e89b-12d3-a456-426614174000"
+            subtopic: "temperature"
+            protocol: "mqtt"
+            payload:
+              temperature: 85.2
+              unit: "C"
+            created: 1706786130
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: [ ]
