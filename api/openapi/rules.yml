@@ -1,0 +1,355 @@
+openapi: 3.0.1
+info:
+  title: Mainflux rules service
+  description: HTTP API for managing platform rules.
+  version: 1.0.0
+
+paths:
+  /profiles/{profileId}/rules:
+    post:
+      summary: Adds new rules
+      description: |
+        Adds new rules to the list of rules for certain profile identified by the provided ID
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateRulesReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateRulesRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves rules by profile
+      description: Retrieves list of rules related to a certain profile identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListRulesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/rules:
+    get:
+      summary: Retrieves rules by group
+      description: Retrieves list of rules related to a certain group identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListRulesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /rules/{ruleId}:
+    get:
+      summary: Retrieves rule info
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        '200':
+          $ref: "#/components/responses/RuleRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Rule does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Updates rule info
+      description: |
+        Update is performed by replacing the current resource data with values
+        provided in a request payload.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateRuleReq"
+      responses:
+        '200':
+          description: Rule updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Rule does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /rules:
+    patch:
+      summary: Removes rules
+      description: Removes rules with provided identifiers
+      tags:
+        - rules
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveRulesReq"
+      responses:
+        '204':
+          description: Rule removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    Condition:
+      type: object
+      properties:
+        field:
+          type: string
+        operator:
+          type: string
+        threshold:
+          type: number
+      required:
+        - field
+        - operator
+        - threshold
+    Action:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [ smtp, smpp, alarm ]
+        id:
+          type: string
+          description: Required for smtp and smpp actions.
+      required:
+        - type
+    RuleReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+        description:
+          type: string
+      required:
+        - name
+        - condition
+        - actions
+      example:
+        name: "Temperature Alert"
+        description: "Triggers when temperature exceeds threshold"
+        condition:
+          field: "temperature"
+          operator: ">"
+          threshold: 45
+        actions:
+          - type: "smtp"
+            id: "smtp-notifier-id"
+          - type: "alarm"
+    RuleResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+        group_id:
+          type: string
+        profile_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      required: [ id, group_id, profile_id, name, condition, actions ]
+    RulesPageRes:
+      allOf:
+        - $ref: "#/components/schemas/PageRes"
+        - type: object
+          properties:
+            rules:
+              type: array
+              items:
+                $ref: "#/components/schemas/RuleRes"
+          required: [ rules ]
+    PageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required: [ total, offset, limit ]
+    RuleRes:
+      type: object
+      properties:
+        id:
+          type: string
+        group_id:
+          type: string
+        profile_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      required: [ id, group_id, profile_id, name, condition, actions ]
+
+  parameters:
+    RuleId:
+      name: ruleId
+      description: Unique rule identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    GroupId:
+      name: groupId
+      description: Group identifier refers to the group for which the rules is being created.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    ProfileId:
+      name: profileId
+      description: Profile identifier refers to the profile for which the rule is being created.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+
+  requestBodies:
+    CreateRulesReq:
+      description: JSON-formatted document describing the new rules.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rules:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuleReqSchema"
+            required:
+              - rules
+    UpdateRuleReq:
+      description: JSON-formatted document describing the updated rule.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuleReqSchema"
+    RemoveRulesReq:
+      description: JSON-formatted document describing the identifiers of rules for deleting.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rule_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+
+  responses:
+    CreateRulesRes:
+      description: Rules created.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/RuleResSchema"
+    RuleRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuleResSchema"
+    ListRulesRes:
+      description: Rules retrieved.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rules:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuleResSchema"
+            required:
+              - rules
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: [ ]
