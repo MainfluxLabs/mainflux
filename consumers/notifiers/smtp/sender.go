@@ -17,19 +17,19 @@ const (
 	contentTemplate = "A publisher with an id %s sent the message over %s with the following values \n %s"
 )
 
-var _ notifiers.Notifier = (*notifier)(nil)
+var _ notifiers.Sender = (*sender)(nil)
 
-type notifier struct {
+type sender struct {
 	agent *email.Agent
 	from  string
 }
 
-// New instantiates SMTP message notifier.
-func New(agent *email.Agent, from string) notifiers.Notifier {
-	return &notifier{agent: agent, from: from}
+// New instantiates SMTP message sender.
+func New(agent *email.Agent, from string) notifiers.Sender {
+	return &sender{agent: agent, from: from}
 }
 
-func (n *notifier) Notify(to []string, msg protomfx.Message) error {
+func (n *sender) Send(to []string, msg protomfx.Message) error {
 	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
 	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
@@ -37,7 +37,7 @@ func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 	return n.agent.Send(to, n.from, subject, "", content, footer)
 }
 
-func (n *notifier) ValidateContacts(contacts []string) error {
+func (n *sender) ValidateContacts(contacts []string) error {
 	for _, c := range contacts {
 		if !email.IsEmail(c) {
 			return apiutil.ErrInvalidContact

@@ -18,18 +18,18 @@ import (
 // Service represents a notification service.
 type Service interface {
 	// CreateNotifiers creates notifiers for certain group identified by the provided ID
-	CreateNotifiers(ctx context.Context, token string, notifiers ...things.Notifier) ([]things.Notifier, error)
+	CreateNotifiers(ctx context.Context, token string, notifiers ...Notifier) ([]Notifier, error)
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group identified by the provided ID.
-	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error)
+	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
 
 	// ViewNotifier retrieves data about the notifier identified with the provided ID
-	ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error)
+	ViewNotifier(ctx context.Context, token, id string) (Notifier, error)
 
 	// UpdateNotifier updates the notifier identified by the provided ID, that
 	// belongs to the user identified by the provided key.
-	UpdateNotifier(ctx context.Context, token string, notifier things.Notifier) error
+	UpdateNotifier(ctx context.Context, token string, notifier Notifier) error
 
 	// RemoveNotifiers removes the notifiers identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -47,16 +47,16 @@ var _ Service = (*notifierService)(nil)
 
 type notifierService struct {
 	idp          uuid.IDProvider
-	notifier     Notifier
+	sender       Sender
 	notifierRepo NotifierRepository
 	things       protomfx.ThingsServiceClient
 }
 
 // New instantiates the subscriptions service implementation.
-func New(idp uuid.IDProvider, notifier Notifier, notifierRepo NotifierRepository, things protomfx.ThingsServiceClient) Service {
+func New(idp uuid.IDProvider, sender Sender, notifierRepo NotifierRepository, things protomfx.ThingsServiceClient) Service {
 	return &notifierService{
 		idp:          idp,
-		notifier:     notifier,
+		sender:       sender,
 		notifierRepo: notifierRepo,
 		things:       things,
 	}
@@ -80,7 +80,7 @@ func (ns *notifierService) Consume(message interface{}) error {
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}
-		if err = ns.notifier.Notify(smtp.Contacts, msg); err != nil {
+		if err = ns.sender.Send(smtp.Contacts, msg); err != nil {
 			return err
 		}
 	case notifierSMPP:
@@ -88,7 +88,7 @@ func (ns *notifierService) Consume(message interface{}) error {
 		if err != nil {
 			return errors.Wrap(ErrNotify, err)
 		}
-		if err = ns.notifier.Notify(smpp.Contacts, msg); err != nil {
+		if err = ns.sender.Send(smpp.Contacts, msg); err != nil {
 			return err
 		}
 	}
@@ -96,16 +96,16 @@ func (ns *notifierService) Consume(message interface{}) error {
 	return nil
 }
 
-func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, notifiers ...things.Notifier) ([]things.Notifier, error) {
-	nfs := []things.Notifier{}
+func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, notifiers ...Notifier) ([]Notifier, error) {
+	nfs := []Notifier{}
 	for _, notifier := range notifiers {
-		if err := ns.notifier.ValidateContacts(notifier.Contacts); err != nil {
-			return []things.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		if err := ns.sender.ValidateContacts(notifier.Contacts); err != nil {
+			return []Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
 
 		nf, err := ns.createNotifier(ctx, &notifier, token)
 		if err != nil {
-			return []things.Notifier{}, err
+			return []Notifier{}, err
 		}
 		nfs = append(nfs, nf)
 	}
@@ -113,58 +113,58 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, no
 	return nfs, nil
 }
 
-func (ns *notifierService) createNotifier(ctx context.Context, notifier *things.Notifier, token string) (things.Notifier, error) {
+func (ns *notifierService) createNotifier(ctx context.Context, notifier *Notifier, token string) (Notifier, error) {
 	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: things.Editor})
 	if err != nil {
-		return things.Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
+		return Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	id, err := ns.idp.ID()
 	if err != nil {
-		return things.Notifier{}, err
+		return Notifier{}, err
 	}
 	notifier.ID = id
 
 	nfs, err := ns.notifierRepo.Save(ctx, *notifier)
 	if err != nil {
-		return things.Notifier{}, err
+		return Notifier{}, err
 	}
 
 	if len(nfs) == 0 {
-		return things.Notifier{}, errors.ErrCreateEntity
+		return Notifier{}, errors.ErrCreateEntity
 	}
 
 	return nfs[0], nil
 }
 
-func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error) {
+func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error) {
 	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
-		return things.NotifiersPage{}, err
+		return NotifiersPage{}, err
 	}
 
 	notifiers, err := ns.notifierRepo.RetrieveByGroupID(ctx, groupID, pm)
 	if err != nil {
-		return things.NotifiersPage{}, err
+		return NotifiersPage{}, err
 	}
 
 	return notifiers, nil
 }
 
-func (ns *notifierService) ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error) {
+func (ns *notifierService) ViewNotifier(ctx context.Context, token, id string) (Notifier, error) {
 	notifier, err := ns.notifierRepo.RetrieveByID(ctx, id)
 	if err != nil {
-		return things.Notifier{}, err
+		return Notifier{}, err
 	}
 
 	if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: things.Viewer}); err != nil {
-		return things.Notifier{}, err
+		return Notifier{}, err
 	}
 
 	return notifier, nil
 }
 
-func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, notifier things.Notifier) error {
+func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, notifier Notifier) error {
 	nf, err := ns.notifierRepo.RetrieveByID(ctx, notifier.ID)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 		return err
 	}
 
-	if err := ns.notifier.ValidateContacts(notifier.Contacts); err != nil {
+	if err := ns.sender.ValidateContacts(notifier.Contacts); err != nil {
 		return errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 

@@ -33,19 +33,6 @@ type Transformer struct {
 	TimeLocation string   `json:"time_location"`
 }
 
-type Notifier struct {
-	ID       string
-	GroupID  string
-	Name     string
-	Contacts []string
-	Metadata Metadata
-}
-
-type NotifiersPage struct {
-	apiutil.PageMetadata
-	Notifiers []Notifier
-}
-
 // ProfilesPage contains page related metadata as well as list of profiles that
 // belong to this page.
 type ProfilesPage struct {

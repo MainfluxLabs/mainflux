@@ -56,12 +56,12 @@ func TestConsume(t *testing.T) {
 	runConsumeTest(t, svcSmpp, validPhones)
 }
 
-func createTestMessages(notifier things.Notifier, actionType string, invalidContacts []string, invalidID string) (validMsg, invalidMsg protomfx.Message) {
+func createTestMessages(notifier notifiers.Notifier, actionType string, invalidContacts []string, invalidID string) (validMsg, invalidMsg protomfx.Message) {
 	invalidNotifier := notifier
 	invalidNotifier.ID = invalidID
 	invalidNotifier.Contacts = invalidContacts
 
-	createMessage := func(n things.Notifier) protomfx.Message {
+	createMessage := func(n notifiers.Notifier) protomfx.Message {
 		return protomfx.Message{
 			Subject: fmt.Sprintf("%s.%s", actionType, n.ID),
 		}
@@ -75,7 +75,7 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	svc := newService()
 	var msg, invalidMsg protomfx.Message
 
-	validNotifier := things.Notifier{
+	validNotifier := notifiers.Notifier{
 		GroupID:  groupID,
 		Name:     notifierName,
 		Contacts: validContacts,
@@ -122,9 +122,9 @@ func TestCreateNotifiers(t *testing.T) {
 func runCreateNotifiersTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
 	svc := newService()
-	validNf := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	validNf := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 
-	var nfs []things.Notifier
+	var nfs []notifiers.Notifier
 	for i := 0; i < 3; i++ {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
 		name := fmt.Sprintf("%s%012d", prefixName, i+1)
@@ -150,7 +150,7 @@ func runCreateNotifiersTest(t *testing.T, svcName string, validContacts []string
 
 	cases := []struct {
 		desc      string
-		notifiers []things.Notifier
+		notifiers []notifiers.Notifier
 		token     string
 		err       error
 	}{
@@ -168,19 +168,19 @@ func runCreateNotifiersTest(t *testing.T, svcName string, validContacts []string
 		},
 		{
 			desc:      "create notifier with invalid contacts",
-			notifiers: []things.Notifier{invalidContactsNf},
+			notifiers: []notifiers.Notifier{invalidContactsNf},
 			token:     token,
 			err:       errors.ErrMalformedEntity,
 		},
 		{
 			desc:      "create notifier with invalid group id",
-			notifiers: []things.Notifier{invalidGroupNf},
+			notifiers: []notifiers.Notifier{invalidGroupNf},
 			token:     token,
 			err:       errors.ErrAuthorization,
 		},
 		{
 			desc:      "create notifier with invalid name",
-			notifiers: []things.Notifier{invalidNameNf},
+			notifiers: []notifiers.Notifier{invalidNameNf},
 			token:     token,
 			err:       nil,
 		},
@@ -199,8 +199,8 @@ func TestListNotifiersByGroup(t *testing.T) {
 
 func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 	svc := newService()
-	validNf := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
-	var nfs []things.Notifier
+	validNf := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	var nfs []notifiers.Notifier
 	for i := 0; i < 10; i++ {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
 		name := fmt.Sprintf("%s%012d", prefixName, i+1)
@@ -328,7 +328,7 @@ func TestUpdateNotifier(t *testing.T) {
 
 func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string) {
 	svc := newService()
-	validNf := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	validNf := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 	nfs, err := svc.CreateNotifiers(context.Background(), token, validNf)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	nf := nfs[0]
@@ -350,7 +350,7 @@ func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string)
 
 	cases := []struct {
 		desc     string
-		notifier things.Notifier
+		notifier notifiers.Notifier
 		token    string
 		err      error
 	}{
@@ -400,7 +400,7 @@ func TestViewNotifier(t *testing.T) {
 func runViewNotifierTest(t *testing.T, validContacts []string) {
 	t.Helper()
 	svc := newService()
-	validNf := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	validNf := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 	nfs, err := svc.CreateNotifiers(context.Background(), token, validNf)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	nf := nfs[0]
@@ -440,7 +440,7 @@ func TestRemoveNotifiers(t *testing.T) {
 
 func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 	svc := newService()
-	validNf := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	validNf := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 	nfs, err := svc.CreateNotifiers(context.Background(), token, validNf)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	nf := nfs[0]
