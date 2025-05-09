@@ -15,10 +15,10 @@ import (
 	"github.com/fiorix/go-smpp/smpp/pdu/pdutext"
 )
 
+var _ notifiers.Sender = (*sender)(nil)
+
 // phoneRegexp represent regex pattern to validate E.164 phone numbers
 var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
-
-var _ notifiers.Sender = (*sender)(nil)
 
 type sender struct {
 	transmitter   *smpp.Transmitter
