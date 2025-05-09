@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -18,9 +17,9 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		nfs := []things.Notifier{}
+		var nfs []notifiers.Notifier
 		for _, nReq := range req.Notifiers {
-			nf := things.Notifier{
+			nf := notifiers.Notifier{
 				GroupID:  req.groupID,
 				Name:     nReq.Name,
 				Contacts: nReq.Contacts,
@@ -77,7 +76,7 @@ func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		notifier := things.Notifier{
+		notifier := notifiers.Notifier{
 			ID:       req.id,
 			Name:     req.Name,
 			Contacts: req.Contacts,
@@ -107,7 +106,7 @@ func removeNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 	}
 }
 
-func buildNotifiersByGroupResponse(nf things.NotifiersPage) NotifiersPageRes {
+func buildNotifiersByGroupResponse(nf notifiers.NotifiersPage) NotifiersPageRes {
 	res := NotifiersPageRes{
 		pageRes: pageRes{
 			Total:  nf.Total,
@@ -131,7 +130,7 @@ func buildNotifiersByGroupResponse(nf things.NotifiersPage) NotifiersPageRes {
 	return res
 }
 
-func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiersRes {
+func buildNotifiersResponse(notifiers []notifiers.Notifier, created bool) notifiersRes {
 	res := notifiersRes{Notifiers: []notifierResponse{}, created: created}
 	for _, nf := range notifiers {
 		notifier := notifierResponse{
@@ -147,7 +146,7 @@ func buildNotifiersResponse(notifiers []things.Notifier, created bool) notifiers
 	return res
 }
 
-func buildNotifierResponse(notifier things.Notifier, updated bool) notifierResponse {
+func buildNotifierResponse(notifier notifiers.Notifier, updated bool) notifierResponse {
 	res := notifierResponse{
 		ID:       notifier.ID,
 		GroupID:  notifier.GroupID,

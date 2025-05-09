@@ -9,9 +9,8 @@ import (
 	"context"
 	"time"
 
-	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -32,7 +31,7 @@ func MetricsMiddleware(svc notifiers.Service, counter metrics.Counter, latency m
 	}
 }
 
-func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...things.Notifier) ([]things.Notifier, error) {
+func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_notifiers").Add(1)
 		ms.latency.With("method", "create_notifiers").Observe(time.Since(begin).Seconds())
@@ -41,7 +40,7 @@ func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token string, 
 	return ms.svc.CreateNotifiers(ctx, token, notifiers...)
 }
 
-func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res things.NotifiersPage, err error) {
+func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_notifiers_by_group").Add(1)
 		ms.latency.With("method", "list_notifiers_by_group").Observe(time.Since(begin).Seconds())
@@ -50,7 +49,7 @@ func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 	return ms.svc.ListNotifiersByGroup(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) ViewNotifier(ctx context.Context, token, id string) (things.Notifier, error) {
+func (ms *metricsMiddleware) ViewNotifier(ctx context.Context, token, id string) (notifiers.Notifier, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_notifier").Add(1)
 		ms.latency.With("method", "view_notifier").Observe(time.Since(begin).Seconds())
@@ -59,7 +58,7 @@ func (ms *metricsMiddleware) ViewNotifier(ctx context.Context, token, id string)
 	return ms.svc.ViewNotifier(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) UpdateNotifier(ctx context.Context, token string, notifier things.Notifier) error {
+func (ms *metricsMiddleware) UpdateNotifier(ctx context.Context, token string, notifier notifiers.Notifier) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_notifier").Add(1)
 		ms.latency.With("method", "update_notifier").Observe(time.Since(begin).Seconds())

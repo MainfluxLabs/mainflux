@@ -5,7 +5,6 @@ package smpp
 
 import (
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
@@ -16,9 +15,12 @@ import (
 	"github.com/fiorix/go-smpp/smpp/pdu/pdutext"
 )
 
-var _ notifiers.Notifier = (*notifier)(nil)
+var _ notifiers.Sender = (*sender)(nil)
 
-type notifier struct {
+// phoneRegexp represent regex pattern to validate E.164 phone numbers
+var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
+
+type sender struct {
 	transmitter   *smpp.Transmitter
 	sourceAddrTON uint8
 	sourceAddrNPI uint8
@@ -27,8 +29,8 @@ type notifier struct {
 	from          string
 }
 
-// New instantiates SMTP message notifier.
-func New(cfg Config, from string) notifiers.Notifier {
+// New instantiates SMTP message sender.
+func New(cfg Config, from string) notifiers.Sender {
 	t := &smpp.Transmitter{
 		Addr:        cfg.Address,
 		User:        cfg.Username,
@@ -37,7 +39,7 @@ func New(cfg Config, from string) notifiers.Notifier {
 		RespTimeout: 3 * time.Second,
 	}
 	t.Bind()
-	ret := &notifier{
+	ret := &sender{
 		transmitter:   t,
 		sourceAddrTON: cfg.SourceAddrTON,
 		destAddrTON:   cfg.DestAddrTON,
@@ -48,7 +50,7 @@ func New(cfg Config, from string) notifiers.Notifier {
 	return ret
 }
 
-func (n *notifier) Notify(to []string, msg protomfx.Message) error {
+func (n *sender) Send(to []string, msg protomfx.Message) error {
 	send := &smpp.ShortMessage{
 		Src:           n.from,
 		DstList:       to,
@@ -67,19 +69,12 @@ func (n *notifier) Notify(to []string, msg protomfx.Message) error {
 	return nil
 }
 
-func (n *notifier) ValidateContacts(contacts []string) error {
+func (n *sender) ValidateContacts(contacts []string) error {
 	for _, c := range contacts {
-		if !isPhoneNumber(c) {
+		if !phoneRegexp.MatchString(c) {
 			return apiutil.ErrInvalidContact
 		}
 	}
+
 	return nil
-}
-
-func isPhoneNumber(phoneNumber string) bool {
-	// phoneRegexp represent regex pattern to validate E.164 phone numbers
-	var phoneRegexp = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
-	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
-
-	return phoneRegexp.MatchString(phoneNumber)
 }

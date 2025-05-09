@@ -257,7 +257,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 	defer ts.Close()
 
 	var data []notifierRes
-	notifier := things.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
+	notifier := notifiers.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
 
 	for i := 0; i < 10; i++ {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
@@ -456,7 +456,7 @@ func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	notifier := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 	data := toJSON(notifier)
 
 	nfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
@@ -590,7 +590,7 @@ func runViewNotifierTest(t *testing.T, validContacts []string) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
-	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	notifier := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 
 	nfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -661,7 +661,7 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
-	notifier := things.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
+	notifier := notifiers.Notifier{GroupID: groupID, Name: notifierName, Contacts: validContacts, Metadata: metadata}
 
 	grNfs, err := svc.CreateNotifiers(context.Background(), token, notifier)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))

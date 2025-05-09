@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -30,7 +29,7 @@ func NotifierRepositoryMiddleware(tracer opentracing.Tracer, repo notifiers.Noti
 	}
 }
 
-func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error) {
+func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	span := createSpan(ctx, n.tracer, "save_notifiers")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -38,7 +37,7 @@ func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...things.No
 	return n.repo.Save(ctx, nfs...)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error) {
+func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
 	span := createSpan(ctx, n.tracer, "retrieve_by_group_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -46,7 +45,7 @@ func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, gro
 	return n.repo.RetrieveByGroupID(ctx, groupID, pm)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
+func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (notifiers.Notifier, error) {
 	span := createSpan(ctx, n.tracer, "retrieve_notifier_by_id")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -54,7 +53,7 @@ func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id strin
 	return n.repo.RetrieveByID(ctx, id)
 }
 
-func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf things.Notifier) error {
+func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf notifiers.Notifier) error {
 	span := createSpan(ctx, n.tracer, "update_notifier")
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -13,7 +13,6 @@ import (
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var _ notifiers.Service = (*loggingMiddleware)(nil)
@@ -28,7 +27,7 @@ func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Servi
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...things.Notifier) (response []things.Notifier, err error) {
+func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_notifiers for notifiers %s took %s to complete", response, time.Since(begin))
 		if err != nil {
@@ -41,7 +40,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, 
 	return lm.svc.CreateNotifiers(ctx, token, notifiers...)
 }
 
-func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res things.NotifiersPage, err error) {
+func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -54,7 +53,7 @@ func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 	return lm.svc.ListNotifiersByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (response things.Notifier, err error) {
+func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (response notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_notifier for id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -67,7 +66,7 @@ func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string)
 	return lm.svc.ViewNotifier(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, notifier things.Notifier) (err error) {
+func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, notifier notifiers.Notifier) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_notifier for id %s took %s to complete", notifier.ID, time.Since(begin))
 		if err != nil {

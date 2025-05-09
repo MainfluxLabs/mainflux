@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -30,10 +29,10 @@ func NewNotifierRepository(db dbutil.Database) notifiers.NotifierRepository {
 	}
 }
 
-func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) ([]things.Notifier, error) {
+func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	tx, err := nr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO notifiers (id, group_id, name, contacts, metadata) VALUES (:id, :group_id, :name, :contacts, :metadata);`
@@ -41,7 +40,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) (
 	for _, notifier := range nfs {
 		dbNf, err := toDBNotifier(notifier)
 		if err != nil {
-			return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbNf); err != nil {
@@ -50,27 +49,27 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...things.Notifier) (
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []things.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []things.Notifier{}, errors.Wrap(errors.ErrConflict, err)
+					return []notifiers.Notifier{}, errors.Wrap(errors.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationWarning:
-					return []things.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
 				}
 			}
 
-			return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []things.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 	return nfs, nil
 }
 
-func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.NotifiersPage, error) {
+func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return things.NotifiersPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -88,19 +87,19 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 
 	rows, err := nr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var items []things.Notifier
+	var items []notifiers.Notifier
 	for rows.Next() {
 		dbNf := dbNotifier{}
 		if err := rows.StructScan(&dbNf); err != nil {
-			return things.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 		notifier, err := toNotifier(dbNf)
 		if err != nil {
-			return things.NotifiersPage{}, err
+			return notifiers.NotifiersPage{}, err
 		}
 
 		items = append(items, notifier)
@@ -108,10 +107,10 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 
 	var total uint64
 	if err := nr.db.GetContext(ctx, &total, qc, groupID); err != nil {
-		return things.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	page := things.NotifiersPage{
+	page := notifiers.NotifiersPage{
 		Notifiers: items,
 		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
@@ -122,22 +121,22 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	return page, nil
 }
 
-func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (things.Notifier, error) {
+func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (notifiers.Notifier, error) {
 	q := `SELECT group_id, name, contacts, metadata FROM notifiers WHERE id = $1;`
 
 	dbNf := dbNotifier{ID: id}
 	if err := nr.db.QueryRowxContext(ctx, q, id).StructScan(&dbNf); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return things.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
+			return notifiers.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
 		}
-		return things.Notifier{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.Notifier{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	return toNotifier(dbNf)
 }
 
-func (nr notifierRepository) Update(ctx context.Context, n things.Notifier) error {
+func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) error {
 	q := `UPDATE notifiers SET name = :name, contacts = :contacts, metadata = :metadata WHERE id = :id;`
 
 	dbNf, err := toDBNotifier(n)
@@ -194,7 +193,7 @@ type dbNotifier struct {
 	Metadata []byte `db:"metadata"`
 }
 
-func toDBNotifier(nf things.Notifier) (dbNotifier, error) {
+func toDBNotifier(nf notifiers.Notifier) (dbNotifier, error) {
 	contacts := strings.Join(nf.Contacts, ",")
 	metadata := []byte("{}")
 	if len(nf.Metadata) > 0 {
@@ -214,15 +213,15 @@ func toDBNotifier(nf things.Notifier) (dbNotifier, error) {
 	}, nil
 }
 
-func toNotifier(dbN dbNotifier) (things.Notifier, error) {
+func toNotifier(dbN dbNotifier) (notifiers.Notifier, error) {
 	var metadata map[string]interface{}
 	contacts := strings.Split(dbN.Contacts, ",")
 
 	if err := json.Unmarshal([]byte(dbN.Metadata), &metadata); err != nil {
-		return things.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	return things.Notifier{
+	return notifiers.Notifier{
 		ID:       dbN.ID,
 		GroupID:  dbN.GroupID,
 		Name:     dbN.Name,

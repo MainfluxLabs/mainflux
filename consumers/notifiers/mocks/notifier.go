@@ -7,15 +7,14 @@ import (
 	"context"
 	"sync"
 
-	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
-var _ notifiers.Notifier = (*notifier)(nil)
+var _ notifiers.Sender = (*notifier)(nil)
 var _ notifiers.NotifierRepository = (*notifierRepositoryMock)(nil)
 
 const (
@@ -25,21 +24,21 @@ const (
 
 type notifier struct{}
 
-// NewNotifier returns a new Notifier mock.
-func NewNotifier() notifiers.Notifier {
+// NewNotifier returns a new Sender mock.
+func NewNotifier() notifiers.Sender {
 	return notifier{}
 }
 
 type notifierRepositoryMock struct {
 	mu        sync.Mutex
-	notifiers map[string]things.Notifier
+	notifiers map[string]notifiers.Notifier
 }
 
 func NewNotifierRepository() notifiers.NotifierRepository {
-	return &notifierRepositoryMock{notifiers: make(map[string]things.Notifier)}
+	return &notifierRepositoryMock{notifiers: make(map[string]notifiers.Notifier)}
 }
 
-func (n notifier) Notify(to []string, _ protomfx.Message) error {
+func (n notifier) Send(to []string, _ protomfx.Message) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}
@@ -63,14 +62,14 @@ func (n notifier) ValidateContacts(contacts []string) error {
 	return nil
 }
 
-func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...things.Notifier) ([]things.Notifier, error) {
+func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 
 	for _, nf := range nfs {
 		for _, n := range nrm.notifiers {
 			if n.GroupID == nf.GroupID && n.Name == nf.Name {
-				return []things.Notifier{}, errors.ErrConflict
+				return []notifiers.Notifier{}, errors.ErrConflict
 			}
 		}
 
@@ -80,10 +79,10 @@ func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...things.Notifie
 	return nfs, nil
 }
 
-func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm apiutil.PageMetadata) (res things.NotifiersPage, err error) {
+func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
-	var items []things.Notifier
+	var items []notifiers.Notifier
 
 	first := uint64(pm.Offset) + 1
 	last := first + uint64(pm.Limit)
@@ -97,7 +96,7 @@ func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID 
 		}
 	}
 
-	return things.NotifiersPage{
+	return notifiers.NotifiersPage{
 		Notifiers: items,
 		PageMetadata: apiutil.PageMetadata{
 			Total:  uint64(len(items)),
@@ -107,7 +106,7 @@ func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID 
 	}, nil
 }
 
-func (nrm *notifierRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Notifier, error) {
+func (nrm *notifierRepositoryMock) RetrieveByID(_ context.Context, id string) (notifiers.Notifier, error) {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 
@@ -117,10 +116,10 @@ func (nrm *notifierRepositoryMock) RetrieveByID(_ context.Context, id string) (t
 		}
 	}
 
-	return things.Notifier{}, errors.ErrNotFound
+	return notifiers.Notifier{}, errors.ErrNotFound
 }
 
-func (nrm *notifierRepositoryMock) Update(_ context.Context, nf things.Notifier) error {
+func (nrm *notifierRepositoryMock) Update(_ context.Context, nf notifiers.Notifier) error {
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 
