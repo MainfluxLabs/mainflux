@@ -14,13 +14,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx" // required for DB access
+	"github.com/jmoiron/sqlx"
 )
 
 const (
-	// Table for SenML messages
-	defTable = "messages"
-	// Table for JSON messages
+	defTable  = "messages"
 	jsonTable = "json"
 )
 
@@ -35,7 +33,6 @@ type postgresRepository struct {
 	db *sqlx.DB
 }
 
-// New returns new PostgreSQL writer.
 func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
 		db: db,
@@ -80,13 +77,9 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 		m := senmlMessage{Message: msg}
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
-				}
+			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
 			}
-
 			return errors.Wrap(errors.ErrSaveMessage, err)
 		}
 	}
@@ -98,13 +91,39 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	order := "time"
 	format := defTable
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	interval := rpm.Interval
 
 	if rpm.Format == jsonTable {
 		order = "created"
 		format = rpm.Format
 	}
 
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(rpm), order, olq)
+	var q string
+	condition := fmtCondition(rpm)
+
+	if interval != "" {
+		switch format {
+		case defTable:
+			q = fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', %[2]s)) *
+					FROM %[3]s %[4]s
+					ORDER BY date_trunc('%[1]s', %[2]s), %[2]s ASC
+				) sub
+				%[5]s;`, interval, order, format, condition, olq)
+
+		case jsonTable:
+			q = fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
+					FROM %[2]s %[3]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created ASC
+				) sub
+				%[4]s;`, interval, format, condition, olq)
+		}
+	} else {
+		q = fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
+	}
 
 	params := map[string]interface{}{
 		"limit":        rpm.Limit,
@@ -136,6 +155,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		PageMetadata: rpm,
 		Messages:     []readers.Message{},
 	}
+
 	switch format {
 	case defTable:
 		for rows.Next() {
@@ -143,7 +163,6 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 			if err := rows.StructScan(&msg); err != nil {
 				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 			}
-
 			page.Messages = append(page.Messages, msg.Message)
 		}
 	default:
@@ -158,10 +177,28 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 			}
 			page.Messages = append(page.Messages, m)
 		}
-
 	}
 
-	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(rpm))
+	// Count total for pagination
+	if interval != "" {
+		switch format {
+		case defTable:
+			q = fmt.Sprintf(`
+				SELECT COUNT(*) FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', %[2]s)) *
+					FROM %[3]s %[4]s
+				) sub;`, interval, order, format, condition)
+		case jsonTable:
+			q = fmt.Sprintf(`
+				SELECT COUNT(*) FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
+					FROM %[2]s %[3]s
+				) sub;`, interval, format, condition)
+		}
+	} else {
+		q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
+	}
+
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {
 		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
@@ -191,11 +228,7 @@ func fmtCondition(rpm readers.PageMetadata) string {
 	op := "WHERE"
 	for name := range query {
 		switch name {
-		case
-			"subtopic",
-			"publisher",
-			"name",
-			"protocol":
+		case "subtopic", "publisher", "name", "protocol":
 			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
 			op = "AND"
 		case "v":

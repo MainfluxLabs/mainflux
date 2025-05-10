@@ -32,6 +32,7 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
+	intervalKey            = "interval"
 	toKey                  = "to"
 	defFormat              = "messages"
 )
@@ -137,6 +138,11 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
+	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listAllMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
@@ -153,6 +159,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 			DataValue:   vd,
 			From:        from,
 			To:          to,
+			Interval:    i,
 		},
 	}
 
