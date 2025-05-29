@@ -369,12 +369,12 @@ func TestChangePassword(t *testing.T) {
 		err         error
 	}{
 		"valid user change password ":                    {userToken, "", "newpassword", registerUser.Password, nil},
-		"valid user change password with wrong password": {userToken, "","newpassword", "wrongpassword", errors.ErrAuthentication},
-		"valid user change password invalid token":       {"", "","newpassword", registerUser.Password, errors.ErrAuthentication},
+		"valid user change password with wrong password": {userToken, "", "newpassword", "wrongpassword", errors.ErrAuthentication},
+		"valid user change password invalid token":       {"", "", "newpassword", registerUser.Password, errors.ErrAuthentication},
 
-		"valid admin change user password ":              {adminToken, registerUser.Email, "newpassword", "", nil},
-		"valid admin change password with wrong email": 	  {adminToken, "wrongemail@example.com","newpassword", "", errors.ErrNotFound},
-		"valid admin change password invalid token":       {"", registerUser.Email,"newpassword", "", errors.ErrAuthentication},
+		"valid admin change user password ":            {adminToken, registerUser.Email, "newpassword", "", nil},
+		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", errors.ErrNotFound},
+		"valid admin change password invalid token":    {"", registerUser.Email, "newpassword", "", errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {

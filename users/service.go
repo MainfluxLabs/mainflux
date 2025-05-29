@@ -462,8 +462,8 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return svc.users.UpdatePassword(ctx, email, hashedPassword)
 	}
 	if oldPassword == "" {
-        return apiutil.ErrMissingPass
-    }
+		return apiutil.ErrMissingPass
+	}
 	u := User{
 		Email:    ir.email,
 		ID:       ir.id,
@@ -477,7 +477,6 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return errors.ErrNotFound
 	}
 
-	
 	return svc.users.UpdatePassword(ctx, ir.email, hashedPassword)
 }
 

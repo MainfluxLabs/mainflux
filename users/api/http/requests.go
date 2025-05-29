@@ -143,7 +143,7 @@ type passwChangeReq struct {
 	token       string
 	Password    string `json:"password"`
 	OldPassword string `json:"old_password,omitempty"`
-	Email   string `json:"email,omitempty"`
+	Email       string `json:"email,omitempty"`
 }
 
 func (req passwChangeReq) validate() error {
