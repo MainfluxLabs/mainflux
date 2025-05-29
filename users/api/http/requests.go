@@ -150,6 +150,9 @@ func (req passwChangeReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+	if req.Email == "" && req.OldPassword == "" {
+		return apiutil.ErrMissingPass
+	}
 	return nil
 }
 

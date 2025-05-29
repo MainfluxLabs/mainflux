@@ -461,9 +461,6 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	if err := svc.isAdmin(ctx, token); err == nil && email != "" {
 		return svc.users.UpdatePassword(ctx, email, hashedPassword)
 	}
-	if oldPassword == "" {
-		return apiutil.ErrMissingPass
-	}
 	u := User{
 		Email:    ir.email,
 		ID:       ir.id,
