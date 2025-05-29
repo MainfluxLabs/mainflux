@@ -362,17 +362,18 @@ func TestChangePassword(t *testing.T) {
 
 	cases := map[string]struct {
 		token       string
+		email       string
 		password    string
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {token, "newpassword", registerUser.Password, nil},
-		"valid user change password with wrong password": {token, "newpassword", "wrongpassword", errors.ErrAuthentication},
-		"valid user change password invalid token":       {"", "newpassword", registerUser.Password, errors.ErrAuthentication},
+		"valid user change password ":                    {token, registerUser.Email, "newpassword", registerUser.Password, nil},
+		"valid user change password with wrong password": {token, registerUser.Email,"newpassword", "wrongpassword", errors.ErrAuthentication},
+		"valid user change password invalid token":       {"", registerUser.Email,"newpassword", registerUser.Password, errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {
-		err := svc.ChangePassword(context.Background(), tc.token, tc.password, tc.oldPassword)
+		err := svc.ChangePassword(context.Background(), tc.token, tc.email, tc.password, tc.oldPassword)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}
