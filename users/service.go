@@ -81,7 +81,7 @@ type Service interface {
 	GenerateResetToken(ctx context.Context, email, host string) error
 
 	// ChangePassword change users password for authenticated user.
-	ChangePassword(ctx context.Context, authToken, email, password, oldPassword string) error
+	ChangePassword(ctx context.Context, token, email, password, oldPassword string) error
 
 	// ResetPassword change users password in reset flow.
 	// token can be authentication token or password reset token.
@@ -446,11 +446,11 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	return svc.users.UpdatePassword(ctx, ir.email, password)
 }
 
-func (svc usersService) ChangePassword(ctx context.Context, authToken, email, password, oldPassword string) error {
+func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
 	if !svc.passRegex.MatchString(password) {
 		return ErrPasswordFormat
 	}
-	ir, err := svc.identify(ctx, authToken)
+	ir, err := svc.identify(ctx, token)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -458,7 +458,7 @@ func (svc usersService) ChangePassword(ctx context.Context, authToken, email, pa
 	if err != nil {
 		return err
 	}
-	if err := svc.isAdmin(ctx, authToken); err == nil && email != "" {
+	if err := svc.isAdmin(ctx, token); err == nil && email != "" {
 		return svc.users.UpdatePassword(ctx, email, hashedPassword)
 	}
 	if oldPassword == "" {
