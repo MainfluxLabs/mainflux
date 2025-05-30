@@ -143,9 +143,10 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	}
 	q := `SELECT id, name, owner_id, description, metadata, created_at, updated_at FROM orgs WHERE id = $1`
 	if err := or.db.QueryRowxContext(ctx, q, id).StructScan(&dbo); err != nil {
-		if err == sql.ErrNoRows {
+		pgErr, ok := err.(*pgconn.PgError)
+		//  If there is no result or ID is in an invalid format, return ErrNotFound.
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return auth.Org{}, errors.Wrap(errors.ErrNotFound, err)
-
 		}
 		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
