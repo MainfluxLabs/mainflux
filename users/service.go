@@ -469,7 +469,6 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	case oldPassword != "" && email == "":
 		u := User{
 			Email:    ir.email,
-			ID:       ir.id,
 			Password: oldPassword,
 		}
 		if _, err := svc.Login(ctx, u); err != nil {
@@ -479,11 +478,6 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 
 	default:
 		return errors.ErrAuthentication
-	}
-
-	u, err := svc.users.RetrieveByID(ctx, ir.id)
-	if err != nil || u.Email == "" {
-		return errors.ErrNotFound
 	}
 
 	hashedPassword, err := svc.hasher.Hash(password)
