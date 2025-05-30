@@ -192,9 +192,10 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 	}
 	q := `SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups WHERE id = $1`
 	if err := gr.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
-		if err == sql.ErrNoRows {
+		pgErr, ok := err.(*pgconn.PgError)
+		//  If there is no result or ID is in an invalid format, return ErrNotFound.
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return things.Group{}, errors.Wrap(errors.ErrNotFound, err)
-
 		}
 		return things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
