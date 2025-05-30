@@ -142,14 +142,15 @@ func (req resetTokenReq) validate() error {
 type passwChangeReq struct {
 	token       string
 	Password    string `json:"password"`
-	OldPassword string `json:"old_password"`
+	OldPassword string `json:"old_password,omitempty"`
+	Email       string `json:"email,omitempty"`
 }
 
 func (req passwChangeReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.OldPassword == "" {
+	if req.Email == "" && req.OldPassword == "" {
 		return apiutil.ErrMissingPass
 	}
 	return nil

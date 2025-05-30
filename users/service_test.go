@@ -358,21 +358,27 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	token, _ := svc.Login(context.Background(), registerUser)
+	userToken, _ := svc.Login(context.Background(), registerUser)
+	adminToken, _ := svc.Login(context.Background(), admin)
 
 	cases := map[string]struct {
 		token       string
+		email       string
 		password    string
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {token, "newpassword", registerUser.Password, nil},
-		"valid user change password with wrong password": {token, "newpassword", "wrongpassword", errors.ErrAuthentication},
-		"valid user change password invalid token":       {"", "newpassword", registerUser.Password, errors.ErrAuthentication},
+		"valid user change password ":                    {userToken, "", "newpassword", registerUser.Password, nil},
+		"valid user change password with wrong password": {userToken, "", "newpassword", "wrongpassword", errors.ErrAuthentication},
+		"valid user change password invalid token":       {"", "", "newpassword", registerUser.Password, errors.ErrAuthentication},
+
+		"valid admin change user password ":            {adminToken, registerUser.Email, "newpassword", "", nil},
+		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", errors.ErrNotFound},
+		"valid admin change password invalid token":    {"", registerUser.Email, "newpassword", "", errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {
-		err := svc.ChangePassword(context.Background(), tc.token, tc.password, tc.oldPassword)
+		err := svc.ChangePassword(context.Background(), tc.token, tc.email, tc.password, tc.oldPassword)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 	}

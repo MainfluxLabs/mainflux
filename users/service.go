@@ -81,7 +81,7 @@ type Service interface {
 	GenerateResetToken(ctx context.Context, email, host string) error
 
 	// ChangePassword change users password for authenticated user.
-	ChangePassword(ctx context.Context, authToken, password, oldPassword string) error
+	ChangePassword(ctx context.Context, token, email, password, oldPassword string) error
 
 	// ResetPassword change users password in reset flow.
 	// token can be authentication token or password reset token.
@@ -446,32 +446,46 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	return svc.users.UpdatePassword(ctx, ir.email, password)
 }
 
-func (svc usersService) ChangePassword(ctx context.Context, authToken, password, oldPassword string) error {
-	ir, err := svc.identify(ctx, authToken)
-	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
-	}
+func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
 	if !svc.passRegex.MatchString(password) {
 		return ErrPasswordFormat
 	}
-	u := User{
-		Email:    ir.email,
-		ID:       ir.id,
-		Password: oldPassword,
-	}
-	if _, err := svc.Login(ctx, u); err != nil {
-		return errors.ErrAuthentication
-	}
-	u, err = svc.users.RetrieveByID(ctx, ir.id)
-	if err != nil || u.Email == "" {
-		return errors.ErrNotFound
+	ir, err := svc.identify(ctx, token)
+	if err != nil {
+		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	password, err = svc.hasher.Hash(password)
+	var userEmail string
+
+	switch {
+	// Admin changes password for another user
+	case oldPassword == "" && email != "":
+		if err := svc.isAdmin(ctx, token); err != nil {
+			return errors.ErrAuthentication
+		}
+		userEmail = email
+
+	// User changes their own password
+	case oldPassword != "" && email == "":
+		u := User{
+			Email:    ir.email,
+			Password: oldPassword,
+		}
+		if _, err := svc.Login(ctx, u); err != nil {
+			return errors.ErrAuthentication
+		}
+		userEmail = ir.email
+
+	default:
+		return errors.ErrAuthentication
+	}
+
+	hashedPassword, err := svc.hasher.Hash(password)
 	if err != nil {
 		return err
 	}
-	return svc.users.UpdatePassword(ctx, ir.email, password)
+
+	return svc.users.UpdatePassword(ctx, userEmail, hashedPassword)
 }
 
 func (svc usersService) SendPasswordReset(_ context.Context, host, email, token string) error {

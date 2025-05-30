@@ -177,7 +177,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		res := passwChangeRes{}
-		if err := svc.ChangePassword(ctx, req.token, req.Password, req.OldPassword); err != nil {
+		if err := svc.ChangePassword(ctx, req.token, req.Email, req.Password, req.OldPassword); err != nil {
 			return nil, err
 		}
 		return res, nil
