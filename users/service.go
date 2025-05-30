@@ -458,14 +458,14 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	var userEmail string
 
 	switch {
-	// Case 1: Admin changes password for another user
+	// Admin changes password for another user
 	case oldPassword == "" && email != "":
 		if err := svc.isAdmin(ctx, token); err != nil {
 			return errors.ErrAuthentication
 		}
 		userEmail = email
 
-	// Case 2: User changes their own password
+	// User changes their own password
 	case oldPassword != "" && email == "":
 		u := User{
 			Email:    ir.email,
@@ -477,7 +477,6 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		}
 		userEmail = ir.email
 
-	// Invalid case: missing required values or invalid privilege
 	default:
 		return errors.ErrAuthentication
 	}
