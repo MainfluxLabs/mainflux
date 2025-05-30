@@ -275,12 +275,12 @@ func TestRetrieveByID(t *testing.T) {
 		{
 			desc:  "retrieve org with invalid org id",
 			orgID: invalidID,
-			err:   errors.ErrRetrieveEntity,
+			err:   errors.ErrNotFound,
 		},
 		{
 			desc:  "retrieve org without org id",
 			orgID: "",
-			err:   errors.ErrRetrieveEntity,
+			err:   errors.ErrNotFound,
 		},
 	}
 
