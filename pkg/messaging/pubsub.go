@@ -183,8 +183,22 @@ func FindParam(payload map[string]interface{}, param string) interface{} {
 }
 
 func ToJSONMessage(message protomfx.Message) mfjson.Message {
+	created := message.Created
+	var payload map[string]interface{}
+
+	if len(message.Payload) > 0 {
+		if err := json.Unmarshal(message.Payload, &payload); err == nil {
+			if payloadCreated, ok := payload["Created"].(float64); ok {
+				created = int64(payloadCreated)
+				delete(payload, "Created")
+
+				message.Payload, _ = json.Marshal(payload)
+			}
+		}
+	}
+
 	return mfjson.Message{
-		Created:   message.Created,
+		Created:   created,
 		Subtopic:  message.Subtopic,
 		Publisher: message.Publisher,
 		Protocol:  message.Protocol,
