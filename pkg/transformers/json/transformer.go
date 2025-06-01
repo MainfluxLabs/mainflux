@@ -31,14 +31,6 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 
 	switch p := extractedPayload.(type) {
 	case map[string]interface{}:
-		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
-		data, err := json.Marshal(formattedPayload)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-
-		// Apply timestamp transformation rules depending on key/unit pairs
 		ts, err := transformTimeField(p, transformer)
 		if err != nil {
 			return errors.Wrap(ErrInvalidTimeField, err)
@@ -48,28 +40,33 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 			msg.Created = ts
 		}
 
+		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
+		data, err := json.Marshal(formattedPayload)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
 		return nil
+
 	case []interface{}:
 		var payloads []map[string]interface{}
-		// Make an array of messages from the root array
 		for _, val := range p {
 			v, ok := val.(map[string]interface{})
 			if !ok {
 				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
-			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
-			payloads = append(payloads, formattedPayload)
-
-			// Apply timestamp transformation rules depending on key/unit pairs
 			ts, err := transformTimeField(v, transformer)
 			if err != nil {
 				return errors.Wrap(ErrInvalidTimeField, err)
 			}
 
 			if ts != 0 {
-				msg.Created = ts
+				v["Created"] = ts
 			}
+
+			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
+			payloads = append(payloads, formattedPayload)
 		}
 
 		data, err := json.Marshal(payloads)
@@ -77,8 +74,8 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 			return err
 		}
 		msg.Payload = data
-
 		return nil
+
 	default:
 		return errors.Wrap(ErrTransform, errInvalidFormat)
 	}
@@ -91,17 +88,33 @@ func transformTimeField(payload interface{}, transformer protomfx.Transformer) (
 
 	val := payload
 	keys := strings.Split(transformer.TimeField, ".")
-	for _, k := range keys {
-		current, ok := val.(map[string]interface{})
-		if !ok {
-			return 0, nil
-		}
 
-		v, exists := current[k]
-		if !exists {
+	for _, k := range keys {
+		switch v := val.(type) {
+		case map[string]interface{}:
+			current, exists := v[k]
+			if !exists {
+				return 0, nil
+			}
+			val = current
+
+		case []interface{}:
+			if len(v) == 0 {
+				return 0, nil
+			}
+			firstItem, ok := v[0].(map[string]interface{})
+			if !ok {
+				return 0, nil
+			}
+			current, exists := firstItem[k]
+			if !exists {
+				return 0, nil
+			}
+			val = current
+
+		default:
 			return 0, nil
 		}
-		val = v
 	}
 
 	t, err := parseTimestamp(transformer.TimeFormat, val, transformer.TimeLocation)
@@ -112,22 +125,42 @@ func transformTimeField(payload interface{}, transformer protomfx.Transformer) (
 }
 
 func extractPayload(payload interface{}, dataField string) interface{} {
-	if dataField != "" {
-		p := payload
-		keys := strings.Split(dataField, ".")
-
-		for _, k := range keys {
-			if pv, ok := p.(map[string]interface{}); ok {
-				if val, exists := pv[k]; exists {
-					p = val
-				}
-			}
-		}
-
-		return p
+	if dataField == "" {
+		return payload
 	}
 
-	return payload
+	value := payload
+	keys := strings.Split(dataField, ".")
+
+	for _, k := range keys {
+		switch v := value.(type) {
+		case map[string]interface{}:
+			current, exists := v[k]
+			if !exists {
+				return nil
+			}
+			value = current
+
+		case []interface{}:
+			if len(v) == 0 {
+				return nil
+			}
+			firstItem, ok := v[0].(map[string]interface{})
+			if !ok {
+				return nil
+			}
+			current, exists := firstItem[k]
+			if !exists {
+				return nil
+			}
+			value = current
+
+		default:
+			return nil
+		}
+	}
+
+	return value
 }
 
 func filterPayloadFields(payload map[string]interface{}, dataFilters []string) map[string]interface{} {
