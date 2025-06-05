@@ -74,6 +74,29 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
+func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(deleteMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		// this if statement could be deleted, owner shold also be able to delete messages
+		if err := isAdmin(ctx, req.Token); err != nil {
+			return nil, err
+		}
+
+		deletecCount = svc.DeleteMEssages(ctx, req.publisherID, req.from, req.to)
+		if err != nil {
+			return nil, err
+		}
+
+		return deleteMessagesRes {
+			DeletecCount: deletedCount
+		}, nil
+	}
+}
+
 func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listAllMessagesReq)
