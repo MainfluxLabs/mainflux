@@ -58,6 +58,14 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
+
+	mux.Delete("/messages/:publisherID", kithttp.NewServer(
+		deleteMessagesEndpoint(svc),
+		decodeDeleteAllMessages,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Post("/restore", kithttp.NewServer(
 		restoreEndpoint(svc),
 		decodeRestore,
