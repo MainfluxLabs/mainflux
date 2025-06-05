@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -43,8 +44,62 @@ func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+func (tr postgresRepository) DeleteMessages(ctx context.Context, publisherID string, from, to float64) (uint64, error) {
+	if publisherID == "" {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, erros.New("publisher ID cannot be empty"))
+	}
+
+	if from < 0 || to < 0 || from >= to {
+		return 0, erros.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
+	}
+
+	tx, err := tr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, errors.Wrap(errors.ErrSaveMessage, err)
+	}
+
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = erros.Wrap(err, errors.Wrap(errTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrDeleteMessage, err)
+		}
+	}()
+
+	q := `DELETE FROM messages WHERE publisher = :publisherID and time >= :from and time <= :to`
+	params := map[string]interface{}{
+		"publisher": publisherID,
+		"from":      from,
+		"to":        "to",
+	}
+
+	result, err := tx.NamedExecContext(ctx, q, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+				case pgerrcode.UndefinedTable:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
+				case pgerrcode.InvalidTextRepresentation:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
+				default:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+			}
+		}
+		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+	}
+
+	rowAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+	}
+
+	return uint64(rowAffected), err
 }
 
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
