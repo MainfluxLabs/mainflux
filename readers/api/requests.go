@@ -58,3 +58,26 @@ func (req restoreMessagesReq) validate() error {
 
 	return nil
 }
+
+type deleteAllMessagesReq struct {
+	token       string
+	publisherID string
+	from        float64
+	to          float64
+}
+
+func (req deleteAllMessagesReq) validate() error {
+	if req.token == "" {
+		return api.ErrBearerToken
+	}
+
+	if req.pageMeta.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMeta.Offset < 0 {
+		return apiutil.ErrOffsetSize
+	}
+
+	return nil
+}
