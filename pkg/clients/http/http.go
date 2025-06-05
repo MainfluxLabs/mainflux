@@ -99,7 +99,6 @@ func getRetryDelay(resp *http.Response) time.Duration {
 		}
 
 		if seconds > 1e9 {
-			// Unix timestamp
 			delay := time.Duration(seconds-time.Now().Unix()) * time.Second
 			if delay > 0 && delay <= maxRetryDelay {
 				return delay
@@ -107,7 +106,6 @@ func getRetryDelay(resp *http.Response) time.Duration {
 			continue
 		}
 
-		// Seconds value
 		delay := time.Duration(seconds) * time.Second
 		if delay <= maxRetryDelay {
 			return delay
