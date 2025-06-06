@@ -18,7 +18,6 @@ import (
 	preader "github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo/description"
 )
 
 const (
