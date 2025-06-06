@@ -18,6 +18,7 @@ import (
 	preader "github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo/description"
 )
 
 const (
@@ -325,115 +326,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 }
 
-func TestDeleteMessagesJSON(t *testing.T) {
-	reader := preader.New(db)
-	writer := pwriter.New(db)
-
-	id1, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	pyd := map[string]interface{}{
-		"field_1": 123.0,
-		"field_2": "value",
-		"field_3": false,
-		"field_4": 12.344,
-		"field_5": map[string]interface{}{
-			"field_1": "value",
-			"field_2": 42.0,
-		},
-	}
-
-	payload, err := json.Marshal(pyd)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	m := protomfx.Message{
-		Publisher:   id1,
-		Subtopic:    subtopic,
-		Protocol:    payload,
-		ContentType: jsonCT,
-	}
-
-	var messages []protomfx.Message
-	created := time.Now().Unix()
-	for i := 0; i < msgsNum; i++ {
-		msg := m
-		msg.Created = created + int64(i)
-		messages = append(messages, msg)
-	}
-
-	id2, err := idProvider.ID()
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pyd2 := map[string]interface{}{
-		"field_1":     "other_value",
-		"false_value": false,
-		"field_pi":    3.14159265,
-	}
-	payload2, err := json.Marshal(pyd2)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	m2 := protomfx.Message{
-		Publisher:   id2,
-		Subtopic:    subtopic,
-		Protocol:    udpProt,
-		Payload:     payload2,
-		ContentType: jsonCT,
-	}
-
-	var httpMsgCount int
-	for i := 0; i < msgsNum; i++ {
-		msg := m2
-		msg.Created = created + int64(i)
-		if i%2 == 0 {
-			msg.Protocol = httpProt
-			httpMsgCount++
-		}
-
-		messages = append(messages, msg)
-	}
-
-	cases := map[string]struct {
-		pageMeta      readers.PageMetadata
-		expectedCount uint64
-		description   string
-	}{
-		"delete JSON messages with specific publisher": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
-				Limit:     noLimit,
-				Publisher: id1,
-			},
-			expectedCount: msgsNum,
-			description:   "should delete JSON messages from specific publisher",
-		},
-		"delete JSON messages with non-existent publisher": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
-				Limit:     noLimit,
-				Publisher: "non-existent-id",
-			},
-			expectedCount: 0,
-			description:   "should delete 0 messages with non-existent publisher",
-		},
-	}
-
-	for desc, tc := range cases {
-		t.Run(desc, func(t *testing.T) {
-			for _, m := range messages {
-				err := writer.Consume(m)
-				require.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
-			}
-
-			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
-			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
-
-			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Format: jsonFormat, Limit: noLimit})
-			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s, err"))
-
-		})
-	}
-}
-
 func TestListAllMessagesJSON(t *testing.T) {
 	reader := preader.New(db)
 	writer := pwriter.New(db)
@@ -543,6 +435,289 @@ func TestListAllMessagesJSON(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
+	}
+}
+
+func TestDeleteMessagesSenML(t *testing.T) {
+	reader := preader.New(db)
+	writer := pwriter.New(db)
+
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	pubID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	m := senml.Message{
+		Publisher: pubID,
+		Protocol:  mqttProt,
+	}
+
+	messages := []senml.Message{}
+	valueMsgs := []senml.Message{}
+	boolMsgs := []senml.Message{}
+	stringMsgs := []senml.Message{}
+	dataMsgs := []senml.Message{}
+	queryMsgs := []senml.Message{}
+
+	now := float64(time.Now().Unix())
+	for i := 0; i < msgsNum; i++ {
+		// Mix possible values as well as value sum.
+		msg := m
+		msg.Time = now - float64(i)
+
+		count := i % valueFields
+		switch count {
+		case 0:
+			msg.Value = &v
+			valueMsgs = append(valueMsgs, msg)
+		case 1:
+			msg.BoolValue = &vb
+			boolMsgs = append(boolMsgs, msg)
+		case 2:
+			msg.StringValue = &vs
+			stringMsgs = append(stringMsgs, msg)
+		case 3:
+			msg.DataValue = &vd
+			dataMsgs = append(dataMsgs, msg)
+		case 4:
+			msg.Sum = &sum
+			msg.Subtopic = subtopic
+			msg.Protocol = httpProt
+			msg.Publisher = pubID2
+			msg.Name = msgName
+			queryMsgs = append(queryMsgs, msg)
+		}
+
+		messages = append(messages, msg)
+	}
+
+	for _, m := range messages {
+		pyd := senml.Message{
+			Name:        m.Name,
+			Unit:        m.Unit,
+			Time:        m.Time,
+			Value:       m.Value,
+			BoolValue:   m.BoolValue,
+			StringValue: m.StringValue,
+			DataValue:   m.DataValue,
+			Sum:         m.Sum,
+		}
+
+		payload, err := json.Marshal(pyd)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		pm := protomfx.Message{
+			Publisher:   m.Publisher,
+			Subtopic:    m.Subtopic,
+			Protocol:    m.Protocol,
+			ContentType: senml.JSON,
+			Payload:     payload,
+		}
+
+		err = writer.Consume(pm)
+		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+	}
+
+	cases := map[string]struct {
+		pageMeta      readers.PageMetadata
+		expectedCount uint64
+		description   string
+	}{
+		"delete messages with publisher": {
+			pageMeta: readers.PageMetadata{
+				Limit:     noLimit,
+				Publisher: pubID,
+			},
+			expectedCount: uint64(msgsNum - len(queryMsgs)),
+			description:   "should delete messages from specific publisher",
+		},
+		"delete messages with time range (from)": {
+			pageMeta: readers.PageMetadata{
+				Publisher: pubID,
+				Limit:     noLimit,
+				From:      messages[20].Time,
+				To:        now + 1,
+			},
+			expectedCount: uint64(len(messages[0:21])),
+			description:   "should delete messages from specific time",
+		},
+		"delete messages with time range (to)": {
+			pageMeta: readers.PageMetadata{
+				Publisher: pubID,
+				Limit:     noLimit,
+				From:      0,
+				To:        messages[80].Time,
+			},
+			expectedCount: uint64(len(messages[81:])),
+			description:   "should delete messages to specific time",
+		},
+		"delete messages with time range (from/to)": {
+			pageMeta: readers.PageMetadata{
+				Publisher: pubID,
+				Limit:     noLimit,
+				From:      messages[15].Time,
+				To:        messages[10].Time,
+			},
+			expectedCount: 5,
+			description:   "should delete messages within time range",
+		},
+		"delete all messages": {
+			pageMeta: readers.PageMetadata{
+				Publisher: pubID,
+				Limit:     noLimit,
+			},
+			expectedCount: uint64(msgsNum - len(queryMsgs)), // only messages with pubID
+			description:   "should delete all messages for specific publisher",
+		},
+	}
+
+	for desc, tc := range cases {
+		t.Run(desc, func(t *testing.T) {
+			for _, m := range messages {
+				pyd := senml.Message{
+					Name:        m.Name,
+					Unit:        m.Unit,
+					Time:        m.Time,
+					Value:       m.Value,
+					BoolValue:   m.BoolValue,
+					StringValue: m.StringValue,
+					DataValue:   m.DataValue,
+					Sum:         m.Sum,
+				}
+
+				payload, err := json.Marshal(pyd)
+				require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+				pm := protomfx.Message{
+					Publisher:   m.Publisher,
+					Subtopic:    m.Subtopic,
+					Protocol:    m.Protocol,
+					ContentType: senml.JSON,
+					Payload:     payload,
+				}
+
+				err = writer.Consume(pm)
+				require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+			}
+
+			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprint("%s: %s - expected %s deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
+			
+
+			// cleanup
+			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Limit: noLimit})
+			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s", err))
+		})
+	}
+}
+
+func TestDeleteMessagesJSON(t *testing.T) {
+	reader := preader.New(db)
+	writer := pwriter.New(db)
+
+	id1, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	pyd := map[string]interface{}{
+		"field_1": 123.0,
+		"field_2": "value",
+		"field_3": false,
+		"field_4": 12.344,
+		"field_5": map[string]interface{}{
+			"field_1": "value",
+			"field_2": 42.0,
+		},
+	}
+
+	payload, err := json.Marshal(pyd)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	m := protomfx.Message{
+		Publisher:   id1,
+		Subtopic:    subtopic,
+		Protocol:    payload,
+		ContentType: jsonCT,
+	}
+
+	var messages []protomfx.Message
+	created := time.Now().Unix()
+	for i := 0; i < msgsNum; i++ {
+		msg := m
+		msg.Created = created + int64(i)
+		messages = append(messages, msg)
+	}
+
+	id2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	pyd2 := map[string]interface{}{
+		"field_1":     "other_value",
+		"false_value": false,
+		"field_pi":    3.14159265,
+	}
+	payload2, err := json.Marshal(pyd2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	m2 := protomfx.Message{
+		Publisher:   id2,
+		Subtopic:    subtopic,
+		Protocol:    udpProt,
+		Payload:     payload2,
+		ContentType: jsonCT,
+	}
+
+	var httpMsgCount int
+	for i := 0; i < msgsNum; i++ {
+		msg := m2
+		msg.Created = created + int64(i)
+		if i%2 == 0 {
+			msg.Protocol = httpProt
+			httpMsgCount++
+		}
+
+		messages = append(messages, msg)
+	}
+
+	cases := map[string]struct {
+		pageMeta      readers.PageMetadata
+		expectedCount uint64
+		description   string
+	}{
+		"delete JSON messages with specific publisher": {
+			pageMeta: readers.PageMetadata{
+				Format:    jsonFormat,
+				Limit:     noLimit,
+				Publisher: id1,
+			},
+			expectedCount: msgsNum,
+			description:   "should delete JSON messages from specific publisher",
+		},
+		"delete JSON messages with non-existent publisher": {
+			pageMeta: readers.PageMetadata{
+				Format:    jsonFormat,
+				Limit:     noLimit,
+				Publisher: "non-existent-id",
+			},
+			expectedCount: 0,
+			description:   "should delete 0 messages with non-existent publisher",
+		},
+	}
+
+	for desc, tc := range cases {
+		t.Run(desc, func(t *testing.T) {
+			for _, m := range messages {
+				err := writer.Consume(m)
+				require.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
+			}
+
+			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
+
+			// cleanup
+			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Format: jsonFormat, Limit: noLimit})
+			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s, err"))
+		})
 	}
 }
 
