@@ -44,13 +44,13 @@ func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) DeleteMessages(ctx context.Context, publisherID string, from, to float64) (uint64, error) {
-	if publisherID == "" {
-		return 0, errors.Wrap(errors.ErrDeleteMessage, erros.New("publisher ID cannot be empty"))
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
+	if rpm.Publisher == "" {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
 	}
 
-	if from < 0 || to < 0 || from >= to {
-		return 0, erros.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
+	if rpm.From < 0 || rpm.To < 0 || rpm.From >= rpm.To {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
 	}
 
 	tx, err := tr.db.BeginTxx(ctx, nil)
@@ -61,7 +61,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, publisherID str
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = erros.Wrap(err, errors.Wrap(errTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
 			}
 			return
 		}
@@ -71,11 +71,27 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, publisherID str
 		}
 	}()
 
-	q := `DELETE FROM messages WHERE publisher = :publisherID and time >= :from and time <= :to`
+	format := defTable
+	if rpm.Format == jsonTable {
+		format = rpm.Format
+	}
+
+	condition := fmtCondition(rpm)
+	q := fmt.Sprintf("DELETE FROM %s %s", format, condition)
+	
 	params := map[string]interface{}{
-		"publisher": publisherID,
-		"from":      from,
-		"to":        "to",
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
 	}
 
 	result, err := tx.NamedExecContext(ctx, q, params)
