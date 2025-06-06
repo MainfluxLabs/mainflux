@@ -43,6 +43,10 @@ func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return tr.readAll(rpm)
 }
 
+func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+
 func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
 	if rpm.Publisher == "" {
 		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
