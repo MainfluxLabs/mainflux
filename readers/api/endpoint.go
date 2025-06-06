@@ -86,7 +86,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		deletecCount = svc.DeleteMEssages(ctx, req.publisherID, req.from, req.to)
+		deletecCount = svc.DeleteMEssages(ctx, req.PageMetadata)
 		if err != nil {
 			return nil, err
 		}
