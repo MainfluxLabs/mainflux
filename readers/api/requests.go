@@ -60,7 +60,7 @@ func (req restoreMessagesReq) validate() error {
 }
 
 type deleteAllMessagesReq struct {
-	token       string
+	token    string
 	pageMeta readers.PageMetadata
 }
 
