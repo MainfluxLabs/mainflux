@@ -62,3 +62,20 @@ func (res backupFileRes) Headers() map[string]string {
 func (res backupFileRes) Empty() bool {
 	return false
 }
+
+type deleteMessagesRes struct {
+	DeletedCount uint64 `json:"deleted_count"`
+} 
+
+func (res deleteMessagesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+
+func (res deleteMessagesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res deleteMessagesRes) Empty() bool {
+	return false
+}

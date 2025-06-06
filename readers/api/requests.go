@@ -58,3 +58,20 @@ func (req restoreMessagesReq) validate() error {
 
 	return nil
 }
+
+type deleteAllMessagesReq struct {
+	token    string
+	pageMeta readers.PageMetadata
+}
+
+func (req deleteAllMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Publisher == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	return nil
+}

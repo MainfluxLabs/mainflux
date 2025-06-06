@@ -47,6 +47,80 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 	return tr.readAll(rpm)
 }
 
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
+	if rpm.Publisher == "" {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
+	}
+
+	if rpm.From < 0 || rpm.To < 0 || rpm.From >= rpm.To {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
+	}
+
+	tx, err := tr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, errors.Wrap(errors.ErrSaveMessage, err)
+	}
+
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrDeleteMessage, err)
+		}
+	}()
+
+	format := defTable
+	if rpm.Format == jsonTable {
+		format = rpm.Format
+	}
+
+	condition := fmtCondition(rpm)
+	q := fmt.Sprintf("DELETE FROM %s %s", format, condition)
+	
+	params := map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	result, err := tx.NamedExecContext(ctx, q, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+				case pgerrcode.UndefinedTable:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
+				case pgerrcode.InvalidTextRepresentation:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
+				default:
+					return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+			}
+		}
+		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+	}
+
+	rowAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+	}
+
+	return uint64(rowAffected), err
+}
+
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
