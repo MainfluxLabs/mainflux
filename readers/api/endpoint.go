@@ -92,7 +92,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		return deleteMessagesRes {
-			DeletecCount: deletedCount
+			DeletedCount: deletedCount
 		}, nil
 	}
 }
