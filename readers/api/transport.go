@@ -65,7 +65,6 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
-
 	mux.Post("/restore", kithttp.NewServer(
 		restoreEndpoint(svc),
 		decodeRestore,
