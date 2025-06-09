@@ -49,7 +49,7 @@ define make_docker_dev
 	docker build \
 		--no-cache \
 		--build-arg SVC=$(svc) \
-		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc) \
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
 		-f docker/Dockerfile.dev ./build
 endef
 
