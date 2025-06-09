@@ -82,18 +82,16 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		// this if statement could be deleted, owner shold also be able to delete messages
-		if err := isAdmin(ctx, req.Token); err != nil {
+		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
-		deletecCount = svc.DeleteMessages(ctx, req.PageMetadata)
+		deletedCount, err := svc.DeleteMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return deleteMessagesRes {
-			DeletedCount: deletedCount
-		}, nil
+		return deleteMessagesRes { DeletedCount: deletedCount }, nil
 	}
 }
 
