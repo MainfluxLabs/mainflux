@@ -32,8 +32,118 @@ func NewMessageRepository(profileID string, messages []readers.Message) readers.
 		messages: repo,
 	}
 }
+
 func (repo *messageRepositoryMock) ListProfileMessages(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll(profileID, rpm)
+}
+
+func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	var query map[string]interface{}
+	meta, _ := json.Marshal(rpm)
+	json.Unmarshal(meta, &query)
+
+	var deletedCount uint64 = 0
+
+	for profileID, messages := range repo.messages {
+		var remainingMessages []readers.Message
+		
+		for _, m := range messages {
+			senml := m.(senml.Message)
+			shouldDelete := true
+
+			for name := range query {
+				switch name {
+				case "subtopic":
+					if rpm.Subtopic != senml.Subtopic {
+						shouldDelete = false
+					}
+				case "publisher":
+					if rpm.Publisher != senml.Publisher {
+						shouldDelete = false
+					}
+				case "name":
+					if rpm.Name != senml.Name {
+						shouldDelete = false
+					}
+				case "protocol":
+					if rpm.Protocol != senml.Protocol {
+						shouldDelete = false
+					}
+				case "v":
+					if senml.Value == nil {
+						shouldDelete = false
+					}
+
+					val, okQuery := query["comparator"]
+					if okQuery {
+						switch val.(string) {
+						case readers.LowerThanKey:
+							if senml.Value != nil && *senml.Value >= rpm.Value {
+								shouldDelete = false
+							}
+						case readers.LowerThanEqualKey:
+							if senml.Value != nil && *senml.Value > rpm.Value {
+								shouldDelete = false
+							}
+						case readers.GreaterThanKey:
+							if senml.Value != nil && *senml.Value <= rpm.Value {
+								shouldDelete = false
+							}
+						case readers.GreaterThanEqualKey:
+							if senml.Value != nil && *senml.Value < rpm.Value {
+								shouldDelete = false
+							}
+						case readers.EqualKey:
+						default:
+							if senml.Value != nil && *senml.Value != rpm.Value {
+								shouldDelete = false
+							}
+						}
+					}
+				case "vb":
+					if senml.BoolValue == nil ||
+						(senml.BoolValue != nil && *senml.BoolValue != rpm.BoolValue) {
+						shouldDelete = false
+					}
+				case "vs":
+					if senml.StringValue == nil ||
+						(senml.StringValue != nil && *senml.StringValue != rpm.StringValue) {
+						shouldDelete = false
+					}
+				case "vd":
+					if senml.DataValue == nil ||
+						(senml.DataValue != nil && *senml.DataValue != rpm.DataValue) {
+						shouldDelete = false
+					}
+				case "from":
+					if senml.Time < rpm.From {
+						shouldDelete = false
+					}
+				case "to":
+					if senml.Time >= rpm.To {
+						shouldDelete = false
+					}
+				}
+
+				if !shouldDelete {
+					break
+				}
+			}
+
+			if shouldDelete {
+				deletedCount++
+			} else {
+				remainingMessages = append(remainingMessages, m)
+			}
+		}
+
+		repo.messages[profileID] = remainingMessages
+	}
+
+	return deletedCount, nil
 }
 
 func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
