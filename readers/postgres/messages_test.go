@@ -601,7 +601,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 
 			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
 			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprint("%s: %s - expected %s deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
+			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
 			
 
 			// cleanup
@@ -716,7 +716,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 
 			// cleanup
 			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Format: jsonFormat, Limit: noLimit})
-			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s, err"))
+			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s", err))
 		})
 	}
 }
