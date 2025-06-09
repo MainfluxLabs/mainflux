@@ -58,7 +58,7 @@ var (
 	missingPassRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
 	invalidRestPassRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
 	idProvider         = uuid.New()
-	passRegex          = regexp.MustCompile("^.{8,}$")
+	passRegex          = regexp.MustCompile(`^\S{8,}$`)
 )
 
 type testRequest struct {
