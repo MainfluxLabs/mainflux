@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -58,10 +59,9 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
-
 	mux.Delete("/messages/:publisherID", kithttp.NewServer(
 		deleteMessagesEndpoint(svc),
-		decodeDeleteAllMessages,
+		decodeDeleteMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -177,6 +177,34 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	}
 	if err == nil {
 		req.pageMeta.BoolValue = vb
+	}
+
+	return req, nil
+}
+
+func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisherID := bone.GetValue(r, "publisherID")
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+
+	from, err := strconv.ParseUint(fromStr, 10, 64)
+	if err != nil {
+		return  nil, apiutil.ErrInvalidQueryParams
+	}
+
+	to, err := strconv.ParseUint(toStr, 10, 64)
+	if err != nil {
+		return nil, apiutil.ErrInvalidQueryParams
+	}
+
+	req := deleteMessagesReq {
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.PageMetadata{
+			Publisher: publisherID,
+			From: from,
+			To: to,
+		},
+		
 	}
 
 	return req, nil
