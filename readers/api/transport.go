@@ -186,12 +186,12 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 	fromStr := r.URL.Query().Get("from")
 	toStr := r.URL.Query().Get("to")
 
-	from, err := strconv.ParseUint(fromStr, 10, 64)
+	from, err := strconv.ParseFloat(fromStr, 64)
 	if err != nil {
 		return  nil, apiutil.ErrInvalidQueryParams
 	}
 
-	to, err := strconv.ParseUint(toStr, 10, 64)
+	to, err := strconv.ParseFloat(toStr, 64)
 	if err != nil {
 		return nil, apiutil.ErrInvalidQueryParams
 	}
