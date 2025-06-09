@@ -1,4 +1,4 @@
 FROM scratch
 ARG SVC
-COPY mainflux-$SVC /exe
+COPY mainfluxlabs-$SVC /exe
 ENTRYPOINT ["/exe"]
