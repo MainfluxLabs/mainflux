@@ -635,7 +635,8 @@ func TestDeleteMessagesJSON(t *testing.T) {
 	m := protomfx.Message{
 		Publisher:   id1,
 		Subtopic:    subtopic,
-		Protocol:    payload,
+		Protocol:    udpProt,
+		Payload: 	payload,
 		ContentType: jsonCT,
 	}
 
