@@ -59,12 +59,12 @@ func (req restoreMessagesReq) validate() error {
 	return nil
 }
 
-type deleteAllMessagesReq struct {
+type deleteMessagesReq struct {
 	token    string
 	pageMeta readers.PageMetadata
 }
 
-func (req deleteAllMessagesReq) validate() error {
+func (req deleteMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
