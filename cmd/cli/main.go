@@ -20,7 +20,7 @@ func main() {
 		AuthURL:         fmt.Sprintf("%s/svcauth", defURL),
 		ThingsURL:       fmt.Sprintf("%s/svcthings", defURL),
 		WebhooksURL:     fmt.Sprintf("%s/svcwebhooks", defURL),
-		UsersURL:        fmt.Sprintf("%s/svcthings", defURL),
+		UsersURL:        fmt.Sprintf("%s/svcusers", defURL),
 		ReaderURL:       fmt.Sprintf("%s/reader", defURL),
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
 		BootstrapURL:    defURL,
