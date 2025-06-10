@@ -17,11 +17,11 @@ const defURL string = "http://localhost"
 func main() {
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
-		AuthURL:         defURL,
-		ThingsURL:       defURL,
+		AuthURL:         fmt.Sprintf("%s/svcauth", defURL),
+		ThingsURL:       fmt.Sprintf("%s/svcthings", defURL),
 		WebhooksURL:     fmt.Sprintf("%s/svcwebhooks", defURL),
-		UsersURL:        defURL,
-		ReaderURL:       defURL,
+		UsersURL:        fmt.Sprintf("%s/svcthings", defURL),
+		ReaderURL:       fmt.Sprintf("%s/reader", defURL),
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
 		BootstrapURL:    defURL,
 		CertsURL:        defURL,
