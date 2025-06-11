@@ -43,41 +43,34 @@ var cmdGroups = []cobra.Command{
 	{
 		Use:   "get <all | group_id> <user_token>",
 		Short: "Get group",
-		Long: `Get all users groups or group by id.
+		Long: `Get all groups or group by id.
 		all - lists all groups
 		group_id - shows group with provided <group_id>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 {
+			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 			if args[0] == "all" {
-				if len(args) > 2 {
-					logUsage(cmd.Use)
-					return
-				}
 				meta := mfxsdk.PageMetadata{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				l, err := sdk.Groups(meta, args[1])
+				gp, err := sdk.Groups(meta, args[1])
 				if err != nil {
 					logError(err)
 					return
 				}
-				logJSON(l)
+				logJSON(gp)
 				return
 			}
-			if len(args) > 2 {
-				logUsage(cmd.Use)
-				return
-			}
-			t, err := sdk.Group(args[0], args[1])
+
+			g, err := sdk.Group(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
 			}
-			logJSON(t)
+			logJSON(g)
 		},
 	},
 	{

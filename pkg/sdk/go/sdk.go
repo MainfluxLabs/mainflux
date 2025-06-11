@@ -276,16 +276,16 @@ type SDK interface {
 	// ViewGroupByProfile retrieves a group that the specified profile is a member of.
 	ViewGroupByProfile(profileID, token string) (Group, error)
 
-	// CreateGroupMembers creates new roles by group.
-	CreateGroupMembers(roles []GroupMember, groupID, token string) error
+	// CreateGroupMembers creates group members.
+	CreateGroupMembers(members []GroupMember, groupID, token string) error
 
-	// UpdateGroupMembers updates existing group roles.
-	UpdateGroupMembers(roles []GroupMember, groupID, token string) error
+	// UpdateGroupMembers updates existing group members.
+	UpdateGroupMembers(members []GroupMember, groupID, token string) error
 
-	// RemoveGroupMembers removes existing group roles.
+	// RemoveGroupMembers removes existing group members.
 	RemoveGroupMembers(ids []string, groupID, token string) error
 
-	// ListGroupMembers lists roles that are specified for a certain group.
+	// ListGroupMembers lists members that are specified for a certain group.
 	ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
 
 	// CreateOrg registers new org.
@@ -304,22 +304,19 @@ type SDK interface {
 	Orgs(meta PageMetadata, token string) (OrgsPage, error)
 
 	// ViewMember retrieves a member belonging to the specified org.
-	ViewMember(orgID, memberID, token string) (Member, error)
+	ViewMember(memberID, orgID, token string) (Member, error)
 
 	// AssignMembers assigns a members to the specified org.
 	AssignMembers(om []OrgMember, orgID, token string) error
 
 	// UnassignMembers unassigns a members from the specified org.
-	UnassignMembers(token, orgID string, memberIDs ...string) error
+	UnassignMembers(memberIDs []string, orgID, token string) error
 
 	// UpdateMembers updates existing member.
 	UpdateMembers(members []OrgMember, orgID, token string) error
 
 	// ListMembersByOrg lists members who belong to a specified org.
 	ListMembersByOrg(orgID, token string, offset, limit uint64) (MembersPage, error)
-
-	// ListOrgsByMember lists orgs to which the specified member belongs.
-	ListOrgsByMember(memberID, token string, offset, limit uint64) (OrgsPage, error)
 
 	// CreateWebhooks creates new webhooks.
 	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
