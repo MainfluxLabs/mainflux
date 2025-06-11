@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	passRegex = regexp.MustCompile("^.{8,}$")
+	passRegex = regexp.MustCompile(`^\S{8,}$`)
 	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Role: auth.Owner}
 	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass, Role: auth.Editor}
 	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Role: auth.RootSub}

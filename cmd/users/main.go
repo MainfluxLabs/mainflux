@@ -67,7 +67,7 @@ const (
 	defEmailTemplate    = "email.tmpl"
 	defAdminEmail       = ""
 	defAdminPassword    = ""
-	defPassRegex        = "^.{8,}$"
+	defPassRegex        = `^\S{8,}$`
 
 	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
 

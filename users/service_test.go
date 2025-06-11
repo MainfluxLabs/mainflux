@@ -35,7 +35,7 @@ var (
 	host            = "example.com"
 
 	idProvider = uuid.New()
-	passRegex  = regexp.MustCompile("^.{8,}$")
+	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
 
 func newService() users.Service {
