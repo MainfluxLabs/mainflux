@@ -106,9 +106,9 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		case defTable:
 			q = fmt.Sprintf(`
 				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', %[2]s)) *
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
 					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', %[2]s), %[2]s ASC
+					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
 				) sub
 				%[5]s;`, interval, order, format, condition, olq)
 
@@ -117,7 +117,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 				SELECT * FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
 					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created ASC
+					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
 				) sub
 				%[4]s;`, interval, format, condition, olq)
 		}
@@ -185,14 +185,16 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		case defTable:
 			q = fmt.Sprintf(`
 				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', %[2]s)) *
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
 					FROM %[3]s %[4]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
 				) sub;`, interval, order, format, condition)
 		case jsonTable:
 			q = fmt.Sprintf(`
 				SELECT COUNT(*) FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
 					FROM %[2]s %[3]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
 				) sub;`, interval, format, condition)
 		}
 	} else {
