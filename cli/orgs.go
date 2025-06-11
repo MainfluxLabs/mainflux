@@ -118,137 +118,14 @@ var cmdOrgs = []cobra.Command{
 			logOK()
 		},
 	},
-	{
-		Use:   "member <org_id> <member_id> <user_token>",
-		Short: "View member",
-		Long:  `View member by specified org`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-			up, err := sdk.ViewMember(args[0], args[1], args[2])
-			if err != nil {
-				logError(err)
-				return
-			}
-			logJSON(up)
-		},
-	},
-	{
-		Use:   "assign <JSON_members> <org_id> <user_token>",
-		Short: "Assign a member to org",
-		Long:  `Assign a member to org`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var members []mfxsdk.OrgMember
-			if err := json.Unmarshal([]byte(args[0]), &members); err != nil {
-				logError(err)
-				return
-			}
-
-			if err := sdk.AssignMembers(members, args[1], args[2]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "unassign <JSON_members> <org_id> <user_token>",
-		Short: "Unassign a member from org",
-		Long:  `Unassign a member from org`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var ids []string
-			if err := json.Unmarshal([]byte(args[0]), &ids); err != nil {
-				logError(err)
-				return
-			}
-
-			if err := sdk.UnassignMembers(args[2], args[1], ids...); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "update-members <JSON_members> <org_id> <user_token>",
-		Short: "Update members",
-		Long:  `Update members by org`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 3 {
-				logUsage(cmd.Use)
-				return
-			}
-
-			var members []mfxsdk.OrgMember
-			if err := json.Unmarshal([]byte(args[0]), &members); err != nil {
-				logError(err)
-				return
-			}
-
-			if err := sdk.UpdateMembers(members, args[1], args[2]); err != nil {
-				logError(err)
-				return
-			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "members <org_id> <user_token>",
-		Short: "Members by org",
-		Long:  `Lists members by org.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-			up, err := sdk.ListMembersByOrg(args[0], args[1], uint64(Offset), uint64(Limit))
-			if err != nil {
-				logError(err)
-				return
-			}
-			logJSON(up)
-		},
-	},
-	{
-		Use:   "memberships <member_id> <user_token>",
-		Short: "Orgs by member",
-		Long:  `Lists orgs by member.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
-				logUsage(cmd.Use)
-				return
-			}
-			up, err := sdk.ListOrgsByMember(args[0], args[1], uint64(Offset), uint64(Limit))
-			if err != nil {
-				logError(err)
-				return
-			}
-			logJSON(up)
-		},
-	},
 }
 
 // NewOrgsCmd returns users command.
 func NewOrgsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "orgs [create | get | delete | update | member | membership | assign | unassign | update-members | members | memberships]",
+		Use:   "orgs [create | get | delete | update]",
 		Short: "Orgs management",
-		Long:  `Orgs management: create, get, update or delete Org, get list of members by org and list of orgs by member, assigns members to org"`,
+		Long:  `Orgs management: create, get, update or delete org"`,
 	}
 
 	for i := range cmdOrgs {

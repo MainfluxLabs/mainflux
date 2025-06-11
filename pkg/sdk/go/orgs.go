@@ -163,7 +163,7 @@ func (sdk mfSDK) getOrgs(token, url string) (OrgsPage, error) {
 	return op, nil
 }
 
-func (sdk mfSDK) ViewMember(orgID, memberID, token string) (Member, error) {
+func (sdk mfSDK) ViewMember(memberID, orgID, token string) (Member, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membersEndpoint, memberID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -222,7 +222,7 @@ func (sdk mfSDK) AssignMembers(om []OrgMember, orgID string, token string) error
 	return nil
 }
 
-func (sdk mfSDK) UnassignMembers(token, orgID string, memberIDs ...string) error {
+func (sdk mfSDK) UnassignMembers(memberIDs []string, orgID, token string) error {
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membersEndpoint)
 	ids = append(ids, memberIDs...)
@@ -305,36 +305,6 @@ func (sdk mfSDK) ListMembersByOrg(orgID, token string, offset, limit uint64) (Me
 	var mp MembersPage
 	if err := json.Unmarshal(body, &mp); err != nil {
 		return MembersPage{}, err
-	}
-
-	return mp, nil
-}
-
-func (sdk mfSDK) ListOrgsByMember(memberID, token string, offset, limit uint64) (OrgsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/orgs?offset=%d&limit=%d", sdk.authURL, membersEndpoint, memberID, offset, limit)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return OrgsPage{}, err
-	}
-
-	resp, err := sdk.sendRequest(req, token, string(CTJSON))
-	if err != nil {
-		return OrgsPage{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return OrgsPage{}, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return OrgsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
-	}
-
-	var mp OrgsPage
-	if err := json.Unmarshal(body, &mp); err != nil {
-		return OrgsPage{}, err
 	}
 
 	return mp, nil

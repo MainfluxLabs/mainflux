@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdGroupRoles = []cobra.Command{
+var cmdGroupMembers = []cobra.Command{
 	{
-		Use:   "create <JSON_roles> <group_id> <user_token>",
-		Short: "Create roles by group ",
-		Long:  `Creates new roles by group.`,
+		Use:   "create <JSON_members> <group_id> <user_token>",
+		Short: "Create group members",
+		Long:  `Creates group members.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -32,8 +32,8 @@ var cmdGroupRoles = []cobra.Command{
 	},
 	{
 		Use:   "get <group_id> <user_token>",
-		Short: "Roles by group",
-		Long:  `Lists all roles of a group.`,
+		Short: "Members by group",
+		Long:  `Lists all members of a group.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -48,22 +48,22 @@ var cmdGroupRoles = []cobra.Command{
 		},
 	},
 	{
-		Use:   "update <JSON_role> <group_id> <user_token>",
-		Short: "Update roles by group",
-		Long:  `Update group roles record`,
+		Use:   "update <JSON_member> <group_id> <user_token>",
+		Short: "Update group member",
+		Long:  `Update group member record`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			var roles []mfxsdk.GroupMember
-			if err := json.Unmarshal([]byte(args[0]), &roles); err != nil {
+			var members []mfxsdk.GroupMember
+			if err := json.Unmarshal([]byte(args[0]), &members); err != nil {
 				logError(err)
 				return
 			}
 
-			if err := sdk.UpdateGroupMembers(roles, args[1], args[2]); err != nil {
+			if err := sdk.UpdateGroupMembers(members, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -72,9 +72,9 @@ var cmdGroupRoles = []cobra.Command{
 		},
 	},
 	{
-		Use:   "delete <JSON_roles> <group_id> <user_token>",
-		Short: "Delete roles by group",
-		Long:  `Delete roles by group.`,
+		Use:   "delete <JSON_members> <group_id> <user_token>",
+		Short: "Delete members from group",
+		Long:  `Delete members from group.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -94,16 +94,16 @@ var cmdGroupRoles = []cobra.Command{
 	},
 }
 
-// NewGroupRolesCmd returns users command.
-func NewGroupRolesCmd() *cobra.Command {
+// NewGroupMembersCmd returns users command.
+func NewGroupMembersCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "group_roles [create | get | update | delete]",
-		Short: "Group roles management",
-		Long:  `Group roles management: create, update, remove and list group roles"`,
+		Use:   "group_members [create | get | update | delete]",
+		Short: "Group members management",
+		Long:  `Group members management: create, update, remove and list group members"`,
 	}
 
-	for i := range cmdGroupRoles {
-		cmd.AddCommand(&cmdGroupRoles[i])
+	for i := range cmdGroupMembers {
+		cmd.AddCommand(&cmdGroupMembers[i])
 	}
 
 	return &cmd
