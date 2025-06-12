@@ -63,8 +63,8 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		deleteMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
-		opts...,
-	))
+		opts...
+		))
 	mux.Post("/restore", kithttp.NewServer(
 		restoreEndpoint(svc),
 		decodeRestore,
@@ -198,6 +198,7 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 
 	req := deleteMessagesReq {
 		token: apiutil.ExtractBearerToken(r),
+		key: apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
 			Publisher: publisherID,
 			From: from,
