@@ -74,51 +74,54 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	format := defTable
-	if rpm.Format == jsonTable {
-		format = rpm.Format
-	}
+	var rowsAffected int64
 
-	condition := fmtCondition(rpm)
-	q := fmt.Sprintf("DELETE FROM %s %s", format, condition)
-	
-	params := map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
+	tables := []string{defTable, jsonTable}
+	for _, table := range tables {
 
-	result, err := tx.NamedExecContext(ctx, q, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
+		condition := fmtCondition(rpm, table)
+		q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
+
+		params := map[string]interface{}{
+			"limit":        rpm.Limit,
+			"offset":       rpm.Offset,
+			"subtopic":     rpm.Subtopic,
+			"publisher":    rpm.Publisher,
+			"name":         rpm.Name,
+			"protocol":     rpm.Protocol,
+			"value":        rpm.Value,
+			"bool_value":   rpm.BoolValue,
+			"string_value": rpm.StringValue,
+			"data_value":   rpm.DataValue,
+			"from":         rpm.From,
+			"to":           rpm.To,
+		}
+
+		result, err := tx.NamedExecContext(ctx, q, params)
+		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
 				case pgerrcode.UndefinedTable:
 					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
 				case pgerrcode.InvalidTextRepresentation:
 					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
 				default:
 					return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+				}
 			}
+			return 0, errors.Wrap(errors.ErrDeleteMessage, err)
 		}
-		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+
+		rowsChanged, err := result.RowsAffected()
+		if err != nil {
+			return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+		}
+
+		rowsAffected = rowsAffected + rowsChanged
 	}
 
-	rowAffected, err := result.RowsAffected()
-	if err != nil {
-		return 0, errors.Wrap(errors.ErrDeleteMessage, err)
-	}
-
-	return uint64(rowAffected), err
+	return uint64(rowsAffected), err
 }
 
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
@@ -290,7 +293,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	return page, nil
 }
 
-func fmtCondition(rpm readers.PageMetadata) string {
+func fmtCondition(rpm readers.PageMetadata, table ...string) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -300,6 +303,12 @@ func fmtCondition(rpm readers.PageMetadata) string {
 
 	condition := ""
 	op := "WHERE"
+	timeColumn := "time"
+	
+	if len(table) > 0 && table[0] == jsonTable {
+		timeColumn = "created"
+	}
+
 	for name := range query {
 		switch name {
 		case "subtopic", "publisher", "name", "protocol":
@@ -319,10 +328,10 @@ func fmtCondition(rpm readers.PageMetadata) string {
 			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
 			op = "AND"
 		case "from":
-			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
+			condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
+			condition = fmt.Sprintf(`%s %s %s < :to`, condition, op, timeColumn)
 			op = "AND"
 		}
 	}
