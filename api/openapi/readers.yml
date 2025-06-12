@@ -63,7 +63,7 @@ paths:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
-        '204':
+        '200':
           description: Messages successfully deleted.
         '400':
           description: Invalid or missing parameters.
