@@ -95,7 +95,7 @@ func newService() users.Service {
 }
 
 func newServer(svc users.Service) *httptest.Server {
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger.NewMock())
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger.NewMock(), passRegex)
 	return httptest.NewServer(mux)
 }
 
