@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -27,8 +28,12 @@ const (
 	statusKey = "status"
 )
 
+var userPasswordRegex *regexp.Regexp
+
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
+func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Logger, userPasswordRegexTemplate *regexp.Regexp) http.Handler {
+	userPasswordRegex = userPasswordRegexTemplate
+
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
