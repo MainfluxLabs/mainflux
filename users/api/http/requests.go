@@ -19,7 +19,7 @@ type userReq struct {
 }
 
 func (req userReq) validate() error {
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type selfRegisterUserReq struct {
@@ -27,7 +27,7 @@ type selfRegisterUserReq struct {
 }
 
 func (req selfRegisterUserReq) validate() error {
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type registerUserReq struct {
@@ -39,7 +39,7 @@ func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type viewUserReq struct {
