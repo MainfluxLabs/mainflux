@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -81,10 +82,23 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		// this if statement could be deleted, owner shold also be able to delete messages
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
+		if req.key != "" {
+			pc ,err := getPubConfByKey(ctx, req.key)
+			if err != nil {
+				return nil, errors.Wrap(errors.ErrAuthentication, err)
+			}
+
+			if pc.PublisherID != req.pageMeta.Publisher {
+				return nil, errors.ErrAuthentication
+			}
+		} else if req.token != "" {
+			if err := isAdmin(ctx, req.token); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.ErrAuthentication
 		}
+
 
 		deletedCount, err := svc.DeleteMessages(ctx, req.pageMeta)
 		if err != nil {
