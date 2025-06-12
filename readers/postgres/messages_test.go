@@ -437,6 +437,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 }
 
+
 func TestDeleteMessagesSenML(t *testing.T) {
 	reader := preader.New(db)
 	writer := pwriter.New(db)
@@ -460,7 +461,6 @@ func TestDeleteMessagesSenML(t *testing.T) {
 
 	now := float64(time.Now().Unix())
 	for i := 0; i < msgsNum; i++ {
-		// Mix possible values as well as value sum.
 		msg := m
 		msg.Time = now - float64(i)
 
@@ -522,92 +522,106 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		expectedCount uint64
 		description   string
 	}{
-		"delete messages with publisher": {
+		"delete messages with subtopic": {
 			pageMeta: readers.PageMetadata{
-				Limit:     noLimit,
-				Publisher: pubID,
+				Publisher: pubID2,
+				Subtopic:  subtopic,
+				From:      0,
+				To:        now + 1,
 			},
-			expectedCount: uint64(msgsNum - len(queryMsgs)),
-			description:   "should delete messages from specific publisher",
+			expectedCount: uint64(len(queryMsgs)),
+			description:   "should delete messages with specific subtopic",
 		},
-		"delete messages with time range (from)": {
+		"delete messages with protocol": {
+			pageMeta: readers.PageMetadata{
+				Publisher: pubID2,
+				Protocol:  httpProt,
+				From:      0,
+				To:        now + 1,
+			},
+			expectedCount: uint64(len(queryMsgs)),
+			description:   "should delete messages with specific protocol",
+		},
+		"delete messages with time range from": {
 			pageMeta: readers.PageMetadata{
 				Publisher: pubID,
-				Limit:     noLimit,
 				From:      messages[20].Time,
 				To:        now + 1,
 			},
-			expectedCount: uint64(len(messages[0:21])),
+			expectedCount: 17, 
 			description:   "should delete messages from specific time",
 		},
-		"delete messages with time range (to)": {
+		"delete messages with time range to": {
 			pageMeta: readers.PageMetadata{
 				Publisher: pubID,
-				Limit:     noLimit,
 				From:      0,
-				To:        messages[80].Time,
+				To:        messages[20].Time,
 			},
-			expectedCount: uint64(len(messages[81:])),
+			expectedCount: 64, 
 			description:   "should delete messages to specific time",
 		},
-		"delete messages with time range (from/to)": {
+		"delete messages with time range from/to": {
 			pageMeta: readers.PageMetadata{
 				Publisher: pubID,
-				Limit:     noLimit,
-				From:      messages[15].Time,
-				To:        messages[10].Time,
+				From:      messages[50].Time,
+				To:        messages[20].Time,
 			},
-			expectedCount: 5,
+			expectedCount: 24, 
 			description:   "should delete messages within time range",
 		},
-		"delete all messages": {
+		"delete all messages for publisher": {
 			pageMeta: readers.PageMetadata{
 				Publisher: pubID,
-				Limit:     noLimit,
+				From:      0,
+				To:        now + 1,
 			},
-			expectedCount: uint64(msgsNum - len(queryMsgs)), // only messages with pubID
+			expectedCount: uint64(msgsNum - len(queryMsgs)), 
 			description:   "should delete all messages for specific publisher",
 		},
 	}
 
 	for desc, tc := range cases {
-		t.Run(desc, func(t *testing.T) {
-			for _, m := range messages {
-				pyd := senml.Message{
-					Name:        m.Name,
-					Unit:        m.Unit,
-					Time:        m.Time,
-					Value:       m.Value,
-					BoolValue:   m.BoolValue,
-					StringValue: m.StringValue,
-					DataValue:   m.DataValue,
-					Sum:         m.Sum,
-				}
+		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+			Publisher: pubID,
+			From:      0,
+			To:        now + 1,
+		})
+		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+			Publisher: pubID2,
+			From:      0,
+			To:        now + 1,
+		})
 
-				payload, err := json.Marshal(pyd)
-				require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-				pm := protomfx.Message{
-					Publisher:   m.Publisher,
-					Subtopic:    m.Subtopic,
-					Protocol:    m.Protocol,
-					ContentType: senml.JSON,
-					Payload:     payload,
-				}
-
-				err = writer.Consume(pm)
-				require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+		for _, m := range messages {
+			pyd := senml.Message{
+				Name:        m.Name,
+				Unit:        m.Unit,
+				Time:        m.Time,
+				Value:       m.Value,
+				BoolValue:   m.BoolValue,
+				StringValue: m.StringValue,
+				DataValue:   m.DataValue,
+				Sum:         m.Sum,
 			}
 
-			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
-			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
-			
+			payload, err := json.Marshal(pyd)
+			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-			// cleanup
-			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Limit: noLimit})
-			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s", err))
-		})
+			pm := protomfx.Message{
+				Publisher:   m.Publisher,
+				Subtopic:    m.Subtopic,
+				Protocol:    m.Protocol,
+				ContentType: senml.JSON,
+				Payload:     payload,
+			}
+
+			err = writer.Consume(pm)
+			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+		}
+
+		deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+		assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
 	}
 }
 
@@ -617,7 +631,6 @@ func TestDeleteMessagesJSON(t *testing.T) {
 
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
 	pyd := map[string]interface{}{
 		"field_1": 123.0,
 		"field_2": "value",
@@ -628,15 +641,14 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			"field_2": 42.0,
 		},
 	}
-
 	payload, err := json.Marshal(pyd)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m := protomfx.Message{
 		Publisher:   id1,
 		Subtopic:    subtopic,
-		Protocol:    udpProt,
-		Payload: 	payload,
+		Protocol:    coapProt,
+		Payload:     payload,
 		ContentType: jsonCT,
 	}
 
@@ -674,8 +686,12 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			msg.Protocol = httpProt
 			httpMsgCount++
 		}
-
 		messages = append(messages, msg)
+	}
+
+	for _, m := range messages {
+		err := writer.Consume(m)
+		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
 	cases := map[string]struct {
@@ -683,41 +699,82 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		expectedCount uint64
 		description   string
 	}{
-		"delete JSON messages with specific publisher": {
+		"delete JSON messages with publisher id1": {
 			pageMeta: readers.PageMetadata{
 				Format:    jsonFormat,
-				Limit:     noLimit,
 				Publisher: id1,
+				From:      0,
+				To:        float64(created + int64(msgsNum)),
 			},
-			expectedCount: msgsNum,
-			description:   "should delete JSON messages from specific publisher",
+			expectedCount: uint64(msgsNum),
+			description:   "should delete JSON messages from specific publisher id1",
 		},
-		"delete JSON messages with non-existent publisher": {
+		"delete JSON messages with publisher id2": {
 			pageMeta: readers.PageMetadata{
 				Format:    jsonFormat,
-				Limit:     noLimit,
-				Publisher: "non-existent-id",
+				Publisher: id2,
+				From:      0,
+				To:        float64(created + int64(msgsNum)),
 			},
-			expectedCount: 0,
-			description:   "should delete 0 messages with non-existent publisher",
+			expectedCount: uint64(msgsNum),
+			description:   "should delete JSON messages from specific publisher id2",
+		},
+		"delete JSON messages with protocol": {
+			pageMeta: readers.PageMetadata{
+				Format:    jsonFormat,
+				Publisher: id2,
+				Protocol:  httpProt,
+				From:      0,
+				To:        float64(created + int64(msgsNum)),
+			},
+			expectedCount: uint64(httpMsgCount),
+			description:   "should delete JSON messages with HTTP protocol",
+		},
+		"delete JSON messages with subtopic": {
+			pageMeta: readers.PageMetadata{
+				Format:    jsonFormat,
+				Publisher: id1,
+				Subtopic:  subtopic,
+				From:      0,
+				To:        float64(created + int64(msgsNum)),
+			},
+			expectedCount: uint64(msgsNum),
+			description:   "should delete JSON messages with specific subtopic",
+		},
+		"delete JSON messages with time range": {
+			pageMeta: readers.PageMetadata{
+				Format:    jsonFormat,
+				Publisher: id1,
+				From:      float64(created + 20),
+				To:        float64(created + 50),
+			},
+			expectedCount: 30,
+			description:   "should delete JSON messages within time range",
 		},
 	}
 
 	for desc, tc := range cases {
-		t.Run(desc, func(t *testing.T) {
-			for _, m := range messages {
-				err := writer.Consume(m)
-				require.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
-			}
-
-			deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
-			assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-			assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
-
-			// cleanup
-			_, err = reader.DeleteMessages(context.Background(), readers.PageMetadata{Format: jsonFormat, Limit: noLimit})
-			require.Nil(t, err, fmt.Sprintf("cleanup failed: %s", err))
+		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+			Format:    jsonFormat,
+			Publisher: id1,
+			From:      0,
+			To:        float64(created + int64(msgsNum)),
 		})
+		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+			Format:    jsonFormat,
+			Publisher: id2,
+			From:      0,
+			To:        float64(created + int64(msgsNum)),
+		})
+
+		for _, m := range messages {
+			err := writer.Consume(m)
+			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+		}
+
+		deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+		assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
 	}
 }
 
