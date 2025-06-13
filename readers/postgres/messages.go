@@ -47,18 +47,18 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	if rpm.Publisher == "" {
-		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
+		return errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
 	}
 
 	if rpm.From < 0 || rpm.To < 0 || rpm.From >= rpm.To {
-		return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
+		return errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
 	}
 
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return 0, errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessage, err)
 	}
 
 	defer func() {
@@ -73,8 +73,6 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			err = errors.Wrap(errors.ErrDeleteMessage, err)
 		}
 	}()
-
-	var rowsAffected int64
 
 	tables := []string{defTable, jsonTable}
 	for _, table := range tables {
@@ -97,31 +95,29 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			"to":           rpm.To,
 		}
 
-		result, err := tx.NamedExecContext(ctx, q, params)
+		_, err := tx.NamedExecContext(ctx, q, params)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.UndefinedTable:
-					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
+					return errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
 				case pgerrcode.InvalidTextRepresentation:
-					return 0, errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
+					return errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
 				default:
-					return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+					return errors.Wrap(errors.ErrDeleteMessage, err)
 				}
 			}
-			return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+			return errors.Wrap(errors.ErrDeleteMessage, err)
 		}
 
-		rowsChanged, err := result.RowsAffected()
 		if err != nil {
-			return 0, errors.Wrap(errors.ErrDeleteMessage, err)
+			return errors.Wrap(errors.ErrDeleteMessage, err)
 		}
 
-		rowsAffected = rowsAffected + rowsChanged
 	}
 
-	return uint64(rowsAffected), err
+	return nil
 }
 
 func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
@@ -176,7 +172,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	}
 
 	var q string
-	condition := fmtCondition(rpm)
+	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
