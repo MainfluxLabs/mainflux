@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -26,13 +27,13 @@ type User struct {
 }
 
 // Validate returns an error if user representation is invalid.
-func (u User) Validate() error {
+func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
 		return errors.ErrMalformedEntity
 	}
 
-	if u.Password == "" {
-		return errors.ErrMalformedEntity
+	if !passRegex.MatchString(u.Password) {
+		return ErrPasswordFormat
 	}
 
 	return nil

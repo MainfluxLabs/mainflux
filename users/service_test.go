@@ -44,7 +44,7 @@ func newService() users.Service {
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
-	return users.New(userRepo, hasher, authSvc, e, idProvider, passRegex)
+	return users.New(userRepo, hasher, authSvc, e, idProvider)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -77,15 +77,6 @@ func TestSelfRegister(t *testing.T) {
 			user:  registerUser,
 			token: admin.Email,
 			err:   errors.ErrConflict,
-		},
-		{
-			desc: "register new user with weak password",
-			user: users.User{
-				Email:    registerUser.Email,
-				Password: "weak",
-			},
-			token: admin.Email,
-			err:   users.ErrPasswordFormat,
 		},
 	}
 

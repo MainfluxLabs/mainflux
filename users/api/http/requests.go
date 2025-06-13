@@ -4,6 +4,8 @@
 package http
 
 import (
+	"regexp"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -14,12 +16,14 @@ const (
 	maxEmailSize = 1024
 )
 
+var userPasswordRegex *regexp.Regexp
+
 type userReq struct {
 	user users.User
 }
 
 func (req userReq) validate() error {
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type selfRegisterUserReq struct {
@@ -27,7 +31,7 @@ type selfRegisterUserReq struct {
 }
 
 func (req selfRegisterUserReq) validate() error {
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type registerUserReq struct {
@@ -39,7 +43,7 @@ func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return req.user.Validate()
+	return req.user.Validate(userPasswordRegex)
 }
 
 type viewUserReq struct {
@@ -124,6 +128,10 @@ func (req resetTokenReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
+	if !userPasswordRegex.MatchString(req.Password) {
+		return users.ErrPasswordFormat
+	}
+
 	if req.ConfPass == "" {
 		return apiutil.ErrMissingConfPass
 	}
@@ -153,6 +161,11 @@ func (req passwChangeReq) validate() error {
 	if req.Email == "" && req.OldPassword == "" {
 		return apiutil.ErrMissingPass
 	}
+
+	if !userPasswordRegex.MatchString(req.Password) {
+		return users.ErrPasswordFormat
+	}
+
 	return nil
 }
 

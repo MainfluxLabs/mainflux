@@ -165,7 +165,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -290,7 +290,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, hasher, ac, emailer, idProvider, c.passRegex)
+	svc := users.New(userRepo, hasher, ac, emailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

@@ -138,7 +138,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		err := tc.user.Validate()
+		err := tc.user.Validate(passRegex)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

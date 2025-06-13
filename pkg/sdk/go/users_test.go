@@ -49,12 +49,12 @@ func newUserService() users.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 
-	return users.New(usersRepo, hasher, auth, emailer, idProvider, passRegex)
+	return users.New(usersRepo, hasher, auth, emailer, idProvider)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger, passRegex)
 	return httptest.NewServer(mux)
 }
 
