@@ -143,10 +143,6 @@ func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e
 }
 
 func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
-	if !svc.passRegex.MatchString(user.Password) {
-		return "", ErrPasswordFormat
-	}
-
 	uid, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
@@ -192,10 +188,6 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return nil
 	}
 
-	if !svc.passRegex.MatchString(user.Password) {
-		return ErrPasswordFormat
-	}
-
 	uid, err := svc.idProvider.ID()
 	if err != nil {
 		return err
@@ -229,10 +221,6 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return "", err
-	}
-
-	if !svc.passRegex.MatchString(user.Password) {
-		return "", ErrPasswordFormat
 	}
 
 	uid, err := svc.idProvider.ID()
@@ -436,9 +424,7 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	if u.Email == "" {
 		return errors.ErrNotFound
 	}
-	if !svc.passRegex.MatchString(password) {
-		return ErrPasswordFormat
-	}
+
 	password, err = svc.hasher.Hash(password)
 	if err != nil {
 		return err
@@ -447,9 +433,6 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
-	if !svc.passRegex.MatchString(password) {
-		return ErrPasswordFormat
-	}
 	ir, err := svc.identify(ctx, token)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)

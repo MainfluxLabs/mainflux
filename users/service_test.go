@@ -78,15 +78,6 @@ func TestSelfRegister(t *testing.T) {
 			token: admin.Email,
 			err:   errors.ErrConflict,
 		},
-		{
-			desc: "register new user with weak password",
-			user: users.User{
-				Email:    registerUser.Email,
-				Password: "weak",
-			},
-			token: admin.Email,
-			err:   users.ErrPasswordFormat,
-		},
 	}
 
 	for _, tc := range cases {

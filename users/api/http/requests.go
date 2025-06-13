@@ -124,6 +124,10 @@ func (req resetTokenReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
+	if !userPasswordRegex.MatchString(req.Password) {
+		return users.ErrPasswordFormat
+	}
+
 	if req.ConfPass == "" {
 		return apiutil.ErrMissingConfPass
 	}
@@ -153,6 +157,11 @@ func (req passwChangeReq) validate() error {
 	if req.Email == "" && req.OldPassword == "" {
 		return apiutil.ErrMissingPass
 	}
+
+	if !userPasswordRegex.MatchString(req.Password) {
+		return users.ErrPasswordFormat
+	}
+
 	return nil
 }
 
