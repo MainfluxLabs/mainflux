@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -36,6 +35,7 @@ const (
 	intervalKey            = "interval"
 	toKey                  = "to"
 	defFormat              = "messages"
+	publisherID            = "publisherID"
 )
 
 var (
@@ -63,8 +63,8 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		deleteMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
-		opts...
-		))
+		opts...,
+	))
 	mux.Post("/restore", kithttp.NewServer(
 		restoreEndpoint(svc),
 		decodeRestore,
@@ -182,29 +182,26 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	publisherID := bone.GetValue(r, "publisherID")
-	fromStr := r.URL.Query().Get("from")
-	toStr := r.URL.Query().Get("to")
+	publisherID := bone.GetValue(r, publisherID)
 
-	from, err := strconv.ParseFloat(fromStr, 64)
+	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
 	if err != nil {
-		return  nil, apiutil.ErrInvalidQueryParams
+		return nil, err
 	}
 
-	to, err := strconv.ParseFloat(toStr, 64)
+	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
 	if err != nil {
-		return nil, apiutil.ErrInvalidQueryParams
+		return nil, err
 	}
 
-	req := deleteMessagesReq {
+	req := deleteMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
-		key: apiutil.ExtractThingKey(r),
+		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
 			Publisher: publisherID,
-			From: from,
-			To: to,
+			From:      from,
+			To:        to,
 		},
-		
 	}
 
 	return req, nil
