@@ -44,8 +44,8 @@ func (repo mongoRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPa
 	return repo.readAll("", rpm)
 }
 
-func (repo mongoRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
-	return 0, nil
+func (repo mongoRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
 }
 
 func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Message) error {

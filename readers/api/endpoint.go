@@ -100,12 +100,12 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 
-		deletedCount, err := svc.DeleteMessages(ctx, req.pageMeta)
+		err := svc.DeleteMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return deleteMessagesRes { DeletedCount: deletedCount }, nil
+		return nil, nil
 	}
 }
 

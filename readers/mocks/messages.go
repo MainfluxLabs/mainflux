@@ -37,7 +37,7 @@ func (repo *messageRepositoryMock) ListProfileMessages(profileID string, rpm rea
 	return repo.readAll(profileID, rpm)
 }
 
-func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (uint64, error) {
+func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -143,7 +143,7 @@ func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm reade
 		repo.messages[profileID] = remainingMessages
 	}
 
-	return deletedCount, nil
+	return nil
 }
 
 func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
