@@ -581,12 +581,12 @@ func TestDeleteMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID,
 			From:      0,
 			To:        now + 1,
 		})
-		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now + 1,
@@ -619,9 +619,34 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+			Publisher: tc.pageMeta.Publisher,
+			Subtopic:  tc.pageMeta.Subtopic,
+			Protocol:  tc.pageMeta.Protocol,
+			From:      tc.pageMeta.From,
+			To:        tc.pageMeta.To,
+			Limit:     noLimit,
+		})
+
+		require.Nil(t, err)
+		beforeCount := beforePage.Total
+
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-		assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
+
+		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+			Publisher: tc.pageMeta.Publisher,
+			Subtopic:  tc.pageMeta.Subtopic,
+			Protocol:  tc.pageMeta.Protocol,
+			From:      tc.pageMeta.From,
+			To:        tc.pageMeta.To,
+			Limit:     noLimit,
+		})
+		require.Nil(t, err)
+		afterCount := afterPage.Total
+
+		actualDeleted := beforeCount - afterCount
+		assert.Equal(t, tc.expectedCount, actualDeleted, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, actualDeleted))
 	}
 }
 
@@ -754,13 +779,13 @@ func TestDeleteMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Format:    jsonFormat,
 			Publisher: id1,
 			From:      0,
 			To:        float64(created + int64(msgsNum)),
 		})
-		_, _ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Format:    jsonFormat,
 			Publisher: id2,
 			From:      0,
@@ -772,9 +797,35 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		deletedCount, err := reader.DeleteMessages(context.Background(), tc.pageMeta)
+		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+			Format:    tc.pageMeta.Format,
+			Publisher: tc.pageMeta.Publisher,
+			Subtopic:  tc.pageMeta.Subtopic,
+			Protocol:  tc.pageMeta.Protocol,
+			From:      tc.pageMeta.From,
+			To:        tc.pageMeta.To,
+			Limit:     noLimit,
+		})
+		require.Nil(t, err)
+		beforeCount := beforePage.Total
+
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
-		assert.Equal(t, tc.expectedCount, deletedCount, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, deletedCount))
+
+		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+			Format:    tc.pageMeta.Format,
+			Publisher: tc.pageMeta.Publisher,
+			Subtopic:  tc.pageMeta.Subtopic,
+			Protocol:  tc.pageMeta.Protocol,
+			From:      tc.pageMeta.From,
+			To:        tc.pageMeta.To,
+			Limit:     noLimit,
+		})
+		require.Nil(t, err)
+		afterCount := afterPage.Total
+
+		actualDeleted := beforeCount - afterCount
+		assert.Equal(t, tc.expectedCount, actualDeleted, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, actualDeleted))
 	}
 }
 
