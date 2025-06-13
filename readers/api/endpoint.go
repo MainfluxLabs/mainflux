@@ -82,8 +82,9 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if req.key != "" {
-			pc ,err := getPubConfByKey(ctx, req.key)
+		switch {
+		case req.key != "":
+			pc, err := getPubConfByKey(ctx, req.key)
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
@@ -91,16 +92,15 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			if pc.PublisherID != req.pageMeta.Publisher {
 				return nil, errors.ErrAuthentication
 			}
-		} else if req.token != "" {
+		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
 			}
-		} else {
+		default:
 			return nil, errors.ErrAuthentication
 		}
 
-
-		err := svc.DeleteMessages(ctx, req.pageMeta)
+		err :=  svc.DeleteMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
