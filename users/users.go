@@ -33,7 +33,7 @@ func (u User) Validate(passRegex *regexp.Regexp) error {
 	}
 
 	if !passRegex.MatchString(u.Password) {
-		return errors.ErrMalformedEntity
+		return ErrPasswordFormat
 	}
 
 	return nil
