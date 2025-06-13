@@ -40,6 +40,15 @@ func (mm *metricsMiddleware) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return mm.svc.ListAllMessages(rpm)
 }
 
+func (mm *metricsMiddleware) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "delete_messages").Add(1)
+		mm.latency.With("method", "delete_messages").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DeleteMessages(ctx, rpm)
+}
+
 func (mm *metricsMiddleware) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "backup").Add(1)
