@@ -4,6 +4,8 @@
 package http
 
 import (
+	"regexp"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -13,6 +15,8 @@ const (
 	maxLimitSize = 100
 	maxEmailSize = 1024
 )
+
+var userPasswordRegex *regexp.Regexp
 
 type userReq struct {
 	user users.User

@@ -28,8 +28,6 @@ const (
 	statusKey = "status"
 )
 
-var userPasswordRegex *regexp.Regexp
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) http.Handler {
 	userPasswordRegex = passwordRegex
