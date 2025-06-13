@@ -48,13 +48,6 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 }
 
 func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	if rpm.Publisher == "" {
-		return errors.Wrap(errors.ErrDeleteMessage, errors.New("publisher ID cannot be empty"))
-	}
-
-	if rpm.From < 0 || rpm.To < 0 || rpm.From >= rpm.To {
-		return errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid time range"))
-	}
 
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -81,8 +74,6 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
 
 		params := map[string]interface{}{
-			"limit":        rpm.Limit,
-			"offset":       rpm.Offset,
 			"subtopic":     rpm.Subtopic,
 			"publisher":    rpm.Publisher,
 			"name":         rpm.Name,
