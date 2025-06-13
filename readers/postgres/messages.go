@@ -25,8 +25,8 @@ const (
 var _ readers.MessageRepository = (*postgresRepository)(nil)
 
 var (
-	errInvalidMessage = errors.New("invalid message representation")
-	errTransRollback  = errors.New("failed to rollback transaction")
+	errInvalidMessage         = errors.New("invalid message representation")
+	errTransRollback          = errors.New("failed to rollback transaction")
 )
 
 type postgresRepository struct {
@@ -92,9 +92,9 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.UndefinedTable:
-					return errors.Wrap(errors.ErrDeleteMessage, errors.New("messages table does not exist"))
+					return errors.Wrap(errors.ErrDeleteMessage, err)
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrDeleteMessage, errors.New("invalid parameter format"))
+					return errors.Wrap(errors.ErrDeleteMessage, errInvalidMessage)
 				default:
 					return errors.Wrap(errors.ErrDeleteMessage, err)
 				}
@@ -291,7 +291,7 @@ func fmtCondition(rpm readers.PageMetadata, table ...string) string {
 	condition := ""
 	op := "WHERE"
 	timeColumn := "time"
-	
+
 	if len(table) > 0 && table[0] == jsonTable {
 		timeColumn = "created"
 	}
