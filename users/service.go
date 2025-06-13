@@ -5,7 +5,6 @@ package users
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -127,18 +126,16 @@ type usersService struct {
 	email      Emailer
 	auth       protomfx.AuthServiceClient
 	idProvider uuid.IDProvider
-	passRegex  *regexp.Regexp
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, passRegex *regexp.Regexp) Service {
+func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
 		users:      users,
 		hasher:     hasher,
 		auth:       auth,
 		email:      e,
 		idProvider: idp,
-		passRegex:  passRegex,
 	}
 }
 
