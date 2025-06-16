@@ -78,7 +78,7 @@ var cmdGroups = []cobra.Command{
 					return
 				}
 
-				res, err := sdk.GroupsByOrg(
+				res, err := sdk.ListGroupsByOrg(
 					mfxsdk.PageMetadata{Offset: uint64(Offset), Limit: uint64(Limit)},
 					args[1],
 					args[2],

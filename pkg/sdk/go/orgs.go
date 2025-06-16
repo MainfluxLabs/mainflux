@@ -310,7 +310,7 @@ func (sdk mfSDK) ListMembersByOrg(orgID, token string, offset, limit uint64) (Me
 	return mp, nil
 }
 
-func (sdk mfSDK) GroupsByOrg(meta PageMetadata, orgID, token string) (GroupsPage, error) {
+func (sdk mfSDK) ListGroupsByOrg(meta PageMetadata, orgID, token string) (GroupsPage, error) {
 	apiUrl := fmt.Sprintf("%s/%s/%s/groups?offset=%d&limit=%d", sdk.thingsURL, orgsEndpoint, orgID, meta.Offset, meta.Limit)
 
 	req, err := http.NewRequest(http.MethodGet, apiUrl, nil)
