@@ -309,3 +309,35 @@ func (sdk mfSDK) ListMembersByOrg(orgID, token string, offset, limit uint64) (Me
 
 	return mp, nil
 }
+
+func (sdk mfSDK) GroupsByOrg(meta PageMetadata, orgID, token string) (GroupsPage, error) {
+	apiUrl := fmt.Sprintf("%s/%s/%s/groups?offset=%d&limit=%d", sdk.thingsURL, orgsEndpoint, orgID, meta.Offset, meta.Limit)
+
+	req, err := http.NewRequest(http.MethodGet, apiUrl, nil)
+	if err != nil {
+		return GroupsPage{}, err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return GroupsPage{}, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return GroupsPage{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return GroupsPage{}, errors.Wrap(ErrFailedFetch, errors.New(resp.Status))
+	}
+
+	var gp GroupsPage
+	if err := json.Unmarshal(body, &gp); err != nil {
+		return GroupsPage{}, err
+	}
+
+	return gp, nil
+}

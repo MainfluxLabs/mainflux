@@ -234,6 +234,9 @@ type SDK interface {
 	// Groups returns page of groups.
 	Groups(meta PageMetadata, token string) (GroupsPage, error)
 
+	// GroupsByOrg returns a page of all Groups belonging to the spcified Org.
+	GroupsByOrg(meta PageMetadata, orgID string, token string) (GroupsPage, error)
+
 	// Group returns users group object by id.
 	Group(id, token string) (Group, error)
 
