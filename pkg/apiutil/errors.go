@@ -155,4 +155,7 @@ var (
 
 	// ErrMissingActionID indicates a missing action id
 	ErrMissingActionID = errors.New("missing action id")
+
+	// ErrInvalidPassword indicates that current password is invalid.
+	ErrInvalidPassword = errors.New("invalid current password")
 )

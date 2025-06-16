@@ -686,7 +686,7 @@ func TestPasswordChange(t *testing.T) {
 	}{
 		{"password change with valid token", dataResExisting, contentType, http.StatusCreated, "{}", token},
 		{"password change with empty token", reqNoExist, contentType, http.StatusUnauthorized, missingTokRes, ""},
-		{"password change with invalid old password", reqWrongPass, contentType, http.StatusInternalServerError, invalidCurrentPassRes, token},
+		{"password change with invalid old password", reqWrongPass, contentType, http.StatusBadRequest, invalidCurrentPassRes, token},
 		{"password change with invalid new password", reqWeakPass, contentType, http.StatusBadRequest, weakPassword, token},
 		{"password change with empty JSON request", "{}", contentType, http.StatusBadRequest, missingPassRes, token},
 		{"password change empty request", "", contentType, http.StatusBadRequest, malformedRes, token},
