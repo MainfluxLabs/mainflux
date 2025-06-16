@@ -76,7 +76,10 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 	nq := ""
 	if t.Name != "" {
-		nq = "name = :name,"
+		nq += "name = :name,"
+	}
+	if t.ProfileID != "" {
+		nq += "profile_id = :profile_id,"
 	}
 	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
 
