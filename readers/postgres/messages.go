@@ -22,6 +22,16 @@ const (
 	jsonTable = "json"
 )
 
+type AggregationType string
+
+const (
+	AggregationNone  AggregationType = ""
+	AggregationMin   AggregationType = "min"
+	AggregationMax   AggregationType = "max"
+	AggregationAvg   AggregationType = "avg"
+	AggregationCount AggregationType = "count"
+)
+
 var _ readers.MessageRepository = (*postgresRepository)(nil)
 
 var (
@@ -37,10 +47,6 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
 		db: db,
 	}
-}
-
-func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
 }
 
 func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
@@ -138,6 +144,22 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		"data_value":   rpm.DataValue,
 		"from":         rpm.From,
 		"to":           rpm.To,
+	}
+
+	if rpm.Aggregation != "" {
+		aggregationType := AggregationType(rpm.Aggregation)
+		if aggregationType != AggregationMin && aggregationType != AggregationMax && aggregationType != AggregationCount && aggregationType != AggregationAvg {
+			return readers.MessagesPage{}, errors.New("invalid aggregation type")
+		}
+
+		aggregateField := rpm.AggregateField
+		if aggregateField == "" {
+			if format == jsonTable {
+				aggregateField ="created"
+			} else {
+				aggregateField ="value"
+			}
+		}
 	}
 
 	rows, err := tr.db.NamedQuery(q, params)
