@@ -134,6 +134,7 @@ func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm reade
 			if !shouldDelete {
 				remainingMessages = append(remainingMessages, m)
 			}
+		}
 
 		repo.messages[profileID] = remainingMessages
 	}
