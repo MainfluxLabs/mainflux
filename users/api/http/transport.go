@@ -348,7 +348,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrEmailSize,
 		err == apiutil.ErrInvalidResetPass,
 		err == apiutil.ErrInvalidStatus,
-		err == apiutil.ErrInvalidPassword:
+		err == errors.ErrInvalidPassword:
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
