@@ -238,6 +238,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 			Total:  omp.Total,
 			Offset: omp.Offset,
 			Limit:  omp.Limit,
+			Email:  omp.Email,
 		},
 	}
 

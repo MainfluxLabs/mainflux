@@ -44,6 +44,7 @@ type PageMetadata struct {
 	Order    string                 `json:"order,omitempty"`
 	Dir      string                 `json:"dir,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Email    string                 `json:"email,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
