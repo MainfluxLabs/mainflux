@@ -111,8 +111,8 @@ func (sdk mfSDK) DeleteGroups(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ListThingsByGroup(groupID, token string, offset, limit uint64) (ThingsPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/things?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
+func (sdk mfSDK) GetThingsByGroup(groupID string, pm PageMetadata, token string) (ThingsPage, error) {
+	url := fmt.Sprintf("%s/%s/%s/things?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, pm.Offset, pm.Limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return ThingsPage{}, err
@@ -141,8 +141,8 @@ func (sdk mfSDK) ListThingsByGroup(groupID, token string, offset, limit uint64) 
 	return gtp, nil
 }
 
-func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64) (ProfilesPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/profiles?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
+func (sdk mfSDK) GetProfilesByGroup(groupID string, meta PageMetadata, token string) (ProfilesPage, error) {
+	url := fmt.Sprintf("%s/%s/%s/profiles?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, meta.Offset, meta.Limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return ProfilesPage{}, err
@@ -171,7 +171,7 @@ func (sdk mfSDK) ListProfilesByGroup(groupID, token string, offset, limit uint64
 	return gcp, nil
 }
 
-func (sdk mfSDK) Groups(meta PageMetadata, token string) (GroupsPage, error) {
+func (sdk mfSDK) GetGroups(meta PageMetadata, token string) (GroupsPage, error) {
 	u, err := url.Parse(sdk.thingsURL)
 	if err != nil {
 		return GroupsPage{}, err
@@ -217,7 +217,7 @@ func (sdk mfSDK) getGroups(token, url string) (GroupsPage, error) {
 	return tp, nil
 }
 
-func (sdk mfSDK) Group(id, token string) (Group, error) {
+func (sdk mfSDK) GetGroup(id, token string) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, groupsEndpoint, id)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -271,7 +271,7 @@ func (sdk mfSDK) UpdateGroup(g Group, groupID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ViewGroupByThing(thingID, token string) (Group, error) {
+func (sdk mfSDK) GetGroupByThing(thingID, token string) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, thingsEndpoint, thingID, groupsEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -301,7 +301,7 @@ func (sdk mfSDK) ViewGroupByThing(thingID, token string) (Group, error) {
 	return g, nil
 }
 
-func (sdk mfSDK) ViewGroupByProfile(profileID, token string) (Group, error) {
+func (sdk mfSDK) GetGroupByProfile(profileID, token string) (Group, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.thingsURL, profilesEndpoint, profileID, groupsEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -407,8 +407,8 @@ func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error) {
-	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, offset, limit)
+func (sdk mfSDK) GetGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error) {
+	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, pm.Offset, pm.Limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return GroupMembersPage{}, err

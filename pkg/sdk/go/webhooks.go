@@ -47,7 +47,7 @@ func (sdk mfSDK) CreateWebhooks(whs []Webhook, thingID, token string) ([]Webhook
 	return ws.Webhooks, nil
 }
 
-func (sdk mfSDK) ListWebhooksByGroup(groupID, token string) (Webhooks, error) {
+func (sdk mfSDK) GetWebhooksByGroup(groupID, token string) (Webhooks, error) {
 	url := fmt.Sprintf("%s/groups/%s/%s", sdk.webhooksURL, groupID, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -77,7 +77,7 @@ func (sdk mfSDK) ListWebhooksByGroup(groupID, token string) (Webhooks, error) {
 	return ws, nil
 }
 
-func (sdk mfSDK) ListWebhooksByThing(thingID, token string) (Webhooks, error) {
+func (sdk mfSDK) GetWebhooksByThing(thingID, token string) (Webhooks, error) {
 	url := fmt.Sprintf("%s/things/%s/%s", sdk.webhooksURL, thingID, webhooksEndpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -107,7 +107,7 @@ func (sdk mfSDK) ListWebhooksByThing(thingID, token string) (Webhooks, error) {
 	return ws, nil
 }
 
-func (sdk mfSDK) Webhook(webhookID, token string) (Webhook, error) {
+func (sdk mfSDK) GetWebhook(webhookID, token string) (Webhook, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.webhooksURL, webhooksEndpoint, webhookID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

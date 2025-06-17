@@ -46,7 +46,7 @@ var cmdMessages = []cobra.Command{
 			}
 			switch len(args) {
 			case 1:
-				m, err := sdk.ReadMessages(pm, false, args[0])
+				m, err := sdk.ReadMessages(false, pm, args[0])
 				if err != nil {
 					logError(err)
 					return
@@ -54,7 +54,7 @@ var cmdMessages = []cobra.Command{
 
 				logJSON(m)
 			case 2:
-				m, err := sdk.ReadMessages(pm, true, args[1])
+				m, err := sdk.ReadMessages(true, pm, args[1])
 				if err != nil {
 					logError(err)
 					return

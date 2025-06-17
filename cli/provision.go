@@ -122,7 +122,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			gr, err := sdk.Group(grID, ut)
+			gr, err := sdk.GetGroup(grID, ut)
 			if err != nil {
 				logError(err)
 				return

@@ -36,7 +36,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(pm PageMetadata, isAdmin bool, token string) (map[string]interface{}, error) {
+func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[string]interface{}, error) {
 	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
 	if err != nil {
 		return nil, err

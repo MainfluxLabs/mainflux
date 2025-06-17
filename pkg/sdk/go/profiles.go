@@ -63,7 +63,7 @@ func (sdk mfSDK) CreateProfiles(prs []Profile, groupID, token string) ([]Profile
 	return ccr.Profiles, nil
 }
 
-func (sdk mfSDK) Profiles(token string, pm PageMetadata) (ProfilesPage, error) {
+func (sdk mfSDK) GetProfiles(pm PageMetadata, token string) (ProfilesPage, error) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, profilesEndpoint, pm)
 	if err != nil {
 		return ProfilesPage{}, err
@@ -96,7 +96,7 @@ func (sdk mfSDK) Profiles(token string, pm PageMetadata) (ProfilesPage, error) {
 	return cp, nil
 }
 
-func (sdk mfSDK) ViewProfileByThing(thingID, token string) (Profile, error) {
+func (sdk mfSDK) GetProfileByThing(thingID, token string) (Profile, error) {
 	url := fmt.Sprintf("%s/things/%s/profiles", sdk.thingsURL, thingID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -126,7 +126,7 @@ func (sdk mfSDK) ViewProfileByThing(thingID, token string) (Profile, error) {
 	return pr, nil
 }
 
-func (sdk mfSDK) Profile(id, token string) (Profile, error) {
+func (sdk mfSDK) GetProfile(id, token string) (Profile, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, profilesEndpoint, id)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

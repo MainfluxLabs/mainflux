@@ -111,7 +111,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, err
 	}
 
-	thing, err := cs.sdk.Thing(thingID, token)
+	thing, err := cs.sdk.GetThing(thingID, token)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
@@ -143,7 +143,7 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, thingID string) (
 	if err != nil {
 		return revoke, err
 	}
-	thing, err := cs.sdk.Thing(thingID, token)
+	thing, err := cs.sdk.GetThing(thingID, token)
 	if err != nil {
 		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
 	}
