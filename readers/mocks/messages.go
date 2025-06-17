@@ -45,8 +45,6 @@ func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm reade
 	meta, _ := json.Marshal(rpm)
 	json.Unmarshal(meta, &query)
 
-	var deletedCount uint64 = 0
-
 	for profileID, messages := range repo.messages {
 		var remainingMessages []readers.Message
 		

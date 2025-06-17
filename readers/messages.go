@@ -37,7 +37,7 @@ type MessageRepository interface {
 	// Backup retrieves all messages from database.
 	Backup(rpm PageMetadata) (MessagesPage, error)
 
-	// Deletes messages for a specific publisher within a time range. Returns number of deleted messages.
+	// Deletes messages for a specific publisher within a time range.
 	DeleteMessages(ctx context.Context, rpm PageMetadata) error
 }
 

@@ -25,8 +25,8 @@ const (
 var _ readers.MessageRepository = (*postgresRepository)(nil)
 
 var (
-	errInvalidMessage         = errors.New("invalid message representation")
-	errTransRollback          = errors.New("failed to rollback transaction")
+	errInvalidMessage = errors.New("invalid message representation")
+	errTransRollback  = errors.New("failed to rollback transaction")
 )
 
 type postgresRepository struct {
@@ -48,7 +48,6 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 }
 
 func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
-
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessage, err)
@@ -101,11 +100,6 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			}
 			return errors.Wrap(errors.ErrDeleteMessage, err)
 		}
-
-		if err != nil {
-			return errors.Wrap(errors.ErrDeleteMessage, err)
-		}
-
 	}
 
 	return nil
