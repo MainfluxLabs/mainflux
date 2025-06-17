@@ -24,6 +24,7 @@ const (
 	DirKey      = "dir"
 	MetadataKey = "metadata"
 	IDKey       = "id"
+	EmailKey    = "email"
 
 	NameOrder       = "name"
 	IDOrder         = "id"
@@ -279,6 +280,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
+	e, err := ReadStringQuery(r, EmailKey, "")
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
 	return PageMetadata{
 		Offset:   o,
 		Limit:    l,
@@ -286,6 +292,7 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Order:    or,
 		Dir:      d,
 		Metadata: m,
+		Email:    e,
 	}, nil
 }
 

@@ -22,6 +22,17 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
+func GetEmailQuery(email string) (string, string) {
+	if email == "" {
+		return "", ""
+	}
+
+	email = fmt.Sprintf(`%%%s%%`, strings.ToLower(email))
+	nq := `email LIKE :email`
+
+	return nq, email
+}
+
 func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
