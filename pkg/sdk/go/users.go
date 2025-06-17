@@ -73,7 +73,7 @@ func (sdk mfSDK) RegisterUser(u User) (string, error) {
 }
 
 func (sdk mfSDK) User(userID, token string) (User, error) {
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersEndpoint)
+	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, userID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return User{}, err
