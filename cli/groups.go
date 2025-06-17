@@ -59,14 +59,14 @@ var cmdGroups = []cobra.Command{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				gp, err := sdk.Groups(meta, args[1])
+				gp, err := sdk.GetGroups(meta, args[1])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(gp)
 			case "group-id":
-				g, err := sdk.Group(args[1], args[2])
+				g, err := sdk.GetGroup(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -78,9 +78,9 @@ var cmdGroups = []cobra.Command{
 					return
 				}
 
-				res, err := sdk.ListGroupsByOrg(
-					mfxsdk.PageMetadata{Offset: uint64(Offset), Limit: uint64(Limit)},
+				res, err := sdk.GetGroupsByOrg(
 					args[1],
+					mfxsdk.PageMetadata{Offset: uint64(Offset), Limit: uint64(Limit)},
 					args[2],
 				)
 
@@ -140,7 +140,13 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListThingsByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
+			up, err := sdk.GetThingsByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -157,7 +163,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ViewGroupByThing(args[0], args[1])
+			up, err := sdk.GetGroupByThing(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -174,7 +180,13 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListProfilesByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
+			up, err := sdk.GetProfilesByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -191,7 +203,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ViewGroupByProfile(args[0], args[1])
+			up, err := sdk.GetGroupByProfile(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return

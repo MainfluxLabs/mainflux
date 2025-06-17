@@ -44,21 +44,21 @@ var cmdWebhooks = []cobra.Command{
 
 			switch args[0] {
 			case "by-group":
-				l, err := sdk.ListWebhooksByGroup(args[1], args[2])
+				l, err := sdk.GetWebhooksByGroup(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(l)
 			case "by-thing":
-				l, err := sdk.ListWebhooksByThing(args[1], args[2])
+				l, err := sdk.GetWebhooksByThing(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(l)
 			case "by-id":
-				w, err := sdk.Webhook(args[1], args[2])
+				w, err := sdk.GetWebhook(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return

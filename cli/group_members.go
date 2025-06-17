@@ -39,7 +39,13 @@ var cmdGroupMembers = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListGroupMembers(args[0], args[1], uint64(Offset), uint64(Limit))
+
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
+			up, err := sdk.GetGroupMembers(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return

@@ -44,8 +44,13 @@ var cmdOrgMembers = []cobra.Command{
 				return
 			}
 
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
 			if args[0] == "all" {
-				mbs, err := sdk.ListMembersByOrg(args[1], args[2], uint64(Offset), uint64(Limit))
+				mbs, err := sdk.GetMembersByOrg(args[1], meta, args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -54,7 +59,7 @@ var cmdOrgMembers = []cobra.Command{
 				return
 			}
 
-			mb, err := sdk.ViewMember(args[0], args[1], args[2])
+			mb, err := sdk.GetMember(args[0], args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
