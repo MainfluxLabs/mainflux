@@ -62,7 +62,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrDeleteMessage, err)
+			err = errors.Wrap(errors.ErrDeleteMessages, err)
 		}
 	}()
 
@@ -91,14 +91,14 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.UndefinedTable:
-					return errors.Wrap(errors.ErrDeleteMessage, err)
+					return errors.Wrap(errors.ErrDeleteMessages, err)
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrDeleteMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrDeleteMessages, errInvalidMessage)
 				default:
-					return errors.Wrap(errors.ErrDeleteMessage, err)
+					return errors.Wrap(errors.ErrDeleteMessages, err)
 				}
 			}
-			return errors.Wrap(errors.ErrDeleteMessage, err)
+			return errors.Wrap(errors.ErrDeleteMessages, err)
 		}
 	}
 
