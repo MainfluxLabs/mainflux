@@ -99,6 +99,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			Condition:   req.Condition,
 			Actions:     req.Actions,
 			Description: req.Description,
+			ProfileID:   req.ProfileID,
 		}
 
 		if err := svc.UpdateRule(ctx, req.token, rule); err != nil {
