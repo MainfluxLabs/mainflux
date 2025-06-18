@@ -75,14 +75,19 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	nq, name := dbutil.GetNameQuery(pm.Name)
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM notifiers WHERE group_id = $1;`
+	groupFilter := "group_id = :group_id"
+	whereClause := dbutil.BuildWhereClause(groupFilter, nq)
+
+	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM notifiers %s;`, whereClause)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
+		"name":     name,
 	}
 
 	rows, err := nr.db.NamedQueryContext(ctx, q, params)
@@ -105,8 +110,8 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 		items = append(items, notifier)
 	}
 
-	var total uint64
-	if err := nr.db.GetContext(ctx, &total, qc, groupID); err != nil {
+	total, err := dbutil.Total(ctx, nr.db, qc, params)
+	if err != nil {
 		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
@@ -116,6 +121,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Name:   pm.Name,
 		},
 	}
 	return page, nil
