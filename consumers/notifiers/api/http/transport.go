@@ -22,6 +22,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	nameKey = "name"
+)
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Logger) http.Handler {
 
@@ -92,6 +96,12 @@ func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
+
+	n, err := apiutil.ReadStringQuery(r, nameKey, "")
+	if err != nil {
+		return nil, err
+	}
+	pm.Name = n
 
 	req := listNotifiersReq{
 		token:        apiutil.ExtractBearerToken(r),
