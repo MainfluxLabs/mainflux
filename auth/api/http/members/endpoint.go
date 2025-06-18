@@ -2,7 +2,6 @@ package members
 
 import (
 	"context"
-	"log"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -89,12 +88,12 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			Limit:  req.limit,
 			Email:  req.email,
 		}
-		log.Println("PageMetadata:", pm)
+
 		page, err := svc.ListMembersByOrg(ctx, req.token, req.id, pm)
 		if err != nil {
 			return nil, err
 		}
-		log.Println("Received page:", page)
+
 		return buildMembersResponse(page), nil
 	}
 }
