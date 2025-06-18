@@ -78,18 +78,12 @@ func (mr membersRepository) RetrieveRole(ctx context.Context, gp things.GroupMem
 
 func (mr membersRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	groupFilter := "group_id = :group_id"
-	eq, email := dbutil.GetEmailQuery(pm.Email)
-
-	whereClause := dbutil.BuildWhereClause(groupFilter, eq)
-
-	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles %s %s;`, whereClause, olq)
+	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles WHERE group_id = :group_id %s;`, olq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-		"email":    email,
 	}
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
@@ -109,7 +103,7 @@ func (mr membersRepository) RetrieveByGroup(ctx context.Context, groupID string,
 		items = append(items, gp)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_roles %s;`, whereClause)
+	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
@@ -122,7 +116,6 @@ func (mr membersRepository) RetrieveByGroup(ctx context.Context, groupID string,
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Email:  pm.Email,
 		},
 	}
 

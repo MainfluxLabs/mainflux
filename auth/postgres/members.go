@@ -34,16 +34,13 @@ func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
 
 func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	orgFilter := "org_id = :org_id"
-	eq, email := dbutil.GetEmailQuery(pm.Email)
-	whereClause := dbutil.BuildWhereClause(orgFilter, eq)
-	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations %s %s`, whereClause, olq)
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations 
+					  WHERE org_id = :org_id %s`, olq)
 
 	params := map[string]interface{}{
 		"org_id": orgID,
 		"limit":  pm.Limit,
 		"offset": pm.Offset,
-		"email":  email,
 	}
 
 	rows, err := or.db.NamedQueryContext(ctx, q, params)
@@ -67,7 +64,7 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 		oms = append(oms, om)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations %s;`, whereClause)
+	cq := `SELECT COUNT(*) FROM member_relations WHERE org_id = :org_id;`
 
 	total, err := dbutil.Total(ctx, or.db, cq, params)
 	if err != nil {
@@ -80,7 +77,6 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Email:  pm.Email,
 		},
 	}
 
