@@ -89,15 +89,23 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	p, pq, err := dbutil.GetPayloadQuery("", pm.Payload)
+	if err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	thingFilter := "thing_id = :thing_id"
+	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, created 
-	                  FROM alarms WHERE thing_id = :thing_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM alarms WHERE thing_id = :thing_id;`
+	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]interface{}{
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
+		"payload":  p,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -112,14 +120,23 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
+	p, pq, err := dbutil.GetPayloadQuery("", pm.Payload)
+	if err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	groupFilter := "group_id = :group_id"
+	whereClause := dbutil.BuildWhereClause(groupFilter, pq)
+
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, created 
-	                  FROM alarms WHERE group_id = :group_id ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM alarms WHERE group_id = :group_id;`
+	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
+		"payload":  p,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
