@@ -39,4 +39,7 @@ var (
 
 	// ErrMessage indicates an error converting a message to Mainflux message.
 	ErrMessage = New("failed to convert to Mainflux message")
+
+	// ErrInvalidPassword indicates that current password is invalid.
+	ErrInvalidPassword = New("invalid current password")
 )

@@ -43,22 +43,23 @@ const (
 )
 
 var (
-	user               = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin              = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
-	newUser            = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
-	usersList          = []users.User{admin, user}
-	metadata           = map[string]interface{}{"key": "value"}
-	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
-	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword       = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
-	malformedRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
-	unsupportedRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
-	missingTokRes      = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	missingEmailRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
-	missingPassRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
-	invalidRestPassRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
-	idProvider         = uuid.New()
-	passRegex          = regexp.MustCompile(`^\S{8,}$`)
+	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
+	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
+	usersList             = []users.User{admin, user}
+	metadata              = map[string]interface{}{"key": "value"}
+	notFoundRes           = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
+	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
+	malformedRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
+	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
+	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	missingEmailRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
+	missingPassRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
+	invalidRestPassRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
+	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
+	idProvider            = uuid.New()
+	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 )
 
 type testRequest struct {
@@ -685,7 +686,7 @@ func TestPasswordChange(t *testing.T) {
 	}{
 		{"password change with valid token", dataResExisting, contentType, http.StatusCreated, "{}", token},
 		{"password change with empty token", reqNoExist, contentType, http.StatusUnauthorized, missingTokRes, ""},
-		{"password change with invalid old password", reqWrongPass, contentType, http.StatusUnauthorized, unauthRes, token},
+		{"password change with invalid old password", reqWrongPass, contentType, http.StatusBadRequest, invalidCurrentPassRes, token},
 		{"password change with invalid new password", reqWeakPass, contentType, http.StatusBadRequest, weakPassword, token},
 		{"password change with empty JSON request", "{}", contentType, http.StatusBadRequest, missingPassRes, token},
 		{"password change empty request", "", contentType, http.StatusBadRequest, malformedRes, token},
