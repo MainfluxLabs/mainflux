@@ -21,6 +21,10 @@ const (
 	Owner  = "owner"
 )
 
+var (
+	ErrProfileInUse = errors.New("profile currently assigned to thing(s)")
+)
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -574,8 +578,21 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			ID:     id,
 			Action: Editor,
 		}
+
 		if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 			return err
+		}
+
+		// Check whether Profile is currently tied to at least one Thing
+		thingsWithProfile, err := ts.things.RetrieveByProfile(ctx, id, apiutil.PageMetadata{Offset: 0, Limit: 1, Dir: "id"})
+
+		if err != nil {
+			return err
+		}
+
+		// Profile currently assigned to at least one thing
+		if thingsWithProfile.Total != 0 {
+			return ErrProfileInUse
 		}
 
 		if err := ts.profileCache.RemoveGroup(ctx, id); err != nil {
