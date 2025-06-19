@@ -17,8 +17,9 @@ var (
 
 type listMessagesRes struct {
 	readers.PageMetadata
-	Total    uint64            `json:"total"`
-	Messages []readers.Message `json:"messages,omitempty"`
+	Total       uint64                     `json:"total"`
+	Messages    []readers.Message          `json:"messages,omitempty"`
+	Aggregation *readers.AggregationResult `json:"aggregation,omitempty"`
 }
 
 func (res listMessagesRes) Headers() map[string]string {
