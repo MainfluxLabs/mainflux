@@ -70,6 +70,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			PageMetadata: page.PageMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,
+			Aggregation:  page.Aggregation,
 		}, nil
 	}
 }
