@@ -72,11 +72,12 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 		return nil, err
 	}
 
+	pm.Email = e
+
 	req := listByGroupReq{
 		token:        apiutil.ExtractBearerToken(r),
 		id:           bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
-		email:        e,
 	}
 
 	return req, nil

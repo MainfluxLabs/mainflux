@@ -15,7 +15,6 @@ type listByGroupReq struct {
 	token        string
 	id           string
 	pageMetadata apiutil.PageMetadata
-	email        string
 }
 
 func (req listByGroupReq) validate() error {

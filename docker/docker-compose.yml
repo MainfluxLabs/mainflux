@@ -93,7 +93,7 @@ services:
       - mainfluxlabs-auth-db-volume:/var/lib/postgresql/data
 
   auth:
-    image: ${MF_RELEASE_PREFIX}/auth:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/auth:v0.28.5
     container_name: mainfluxlabs-auth
     depends_on:
       - auth-db
@@ -139,7 +139,7 @@ services:
       - mainfluxlabs-users-db-volume:/var/lib/postgresql/data
 
   users:
-    image: ${MF_RELEASE_PREFIX}/users:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/users:v0.28.5
     container_name: mainfluxlabs-users
     volumes:
       - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
@@ -201,7 +201,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/things:v0.28.5
     container_name: mainfluxlabs-things
     depends_on:
       - things-db

@@ -117,7 +117,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 		for _, gp := range gpp.GroupMembers {
 			email, ok := emails[gp.MemberID]
 			if !ok {
-				return GroupMembersPage{}, err
+				continue
 			}
 
 			gm := GroupMember{
@@ -133,7 +133,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 	page := GroupMembersPage{
 		GroupMembers: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  gpp.Total,
+			Total:  uint64(len(gms)),
 			Offset: gpp.Offset,
 			Limit:  gpp.Limit,
 		},
