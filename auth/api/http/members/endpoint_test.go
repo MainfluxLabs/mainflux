@@ -520,6 +520,26 @@ func TestListMembers(t *testing.T) {
 			status: http.StatusOK,
 			res:    data,
 		},
+		{
+			desc:   "list org members filtered by email",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/orgs/%s/members?email=%s", ts.URL, or.ID, viewerEmail),
+			res: []viewMemberRes{
+				{
+					ID:    viewerID,
+					Email: viewerEmail,
+					Role:  auth.Viewer,
+				},
+			},
+		},
+		{
+			desc:   "list org members filtered by email that doesn't match",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/orgs/%s/members?email=%s", ts.URL, or.ID, "xyz"),
+			res:    []viewMemberRes{},
+		},
 	}
 
 	for _, tc := range cases {

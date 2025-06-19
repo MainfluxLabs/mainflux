@@ -46,6 +46,7 @@ func listGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
+
 		return buildGroupMembersResponse(gpp), nil
 	}
 }

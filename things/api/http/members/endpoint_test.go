@@ -532,6 +532,26 @@ func TestListGroupMembers(t *testing.T) {
 			status: http.StatusOK,
 			res:    data,
 		},
+		{
+			desc:   "list group members filtered by email",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, viewerEmail),
+			res: []groupMember{
+				{
+					ID:    viewer.ID,
+					Email: viewer.Email,
+					Role:  things.Viewer,
+				},
+			},
+		},
+		{
+			desc:   "list group members filtered by email that doesn't match",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, "xyz"),
+			res:    []groupMember{},
+		},
 	}
 
 	for _, tc := range cases {
