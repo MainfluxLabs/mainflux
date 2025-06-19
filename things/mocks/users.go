@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"strings"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -23,6 +24,9 @@ func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, req *protomf
 	var users []*protomfx.User
 	for _, id := range req.Ids {
 		if user, ok := svc.usersByID[id]; ok {
+			if req.Email != "" && !strings.Contains(user.Email, req.Email) {
+				continue
+			}
 			users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
 		}
 	}

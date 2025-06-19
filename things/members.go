@@ -103,7 +103,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 
 	var gms []GroupMember
 	if len(gpp.GroupMembers) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembersPage{}, err
@@ -117,7 +117,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 		for _, gp := range gpp.GroupMembers {
 			email, ok := emails[gp.MemberID]
 			if !ok {
-				return GroupMembersPage{}, err
+				continue
 			}
 
 			gm := GroupMember{
@@ -133,7 +133,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 	page := GroupMembersPage{
 		GroupMembers: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  gpp.Total,
+			Total:  uint64(len(gms)),
 			Offset: gpp.Offset,
 			Limit:  gpp.Limit,
 		},

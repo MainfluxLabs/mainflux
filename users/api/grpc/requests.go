@@ -6,7 +6,8 @@ package grpc
 import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
 type getUsersByIDsReq struct {
-	ids []string
+	ids   []string
+	email string
 }
 
 func (req getUsersByIDsReq) validate() error {
