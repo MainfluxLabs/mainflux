@@ -35,6 +35,8 @@ const (
 	intervalKey            = "interval"
 	toKey                  = "to"
 	defFormat              = "messages"
+	aggregationKey         = "aggregation"
+	aggregateFieldKey      = "aggregate_field"
 )
 
 var (
@@ -143,23 +145,35 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
+	aggregation, err := apiutil.ReadStringQuery(r, aggregationKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	aggregateField, err := apiutil.ReadStringQuery(r, aggregateFieldKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listAllMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			Offset:      offset,
-			Limit:       limit,
-			Format:      format,
-			Subtopic:    subtopic,
-			Protocol:    protocol,
-			Name:        name,
-			Value:       v,
-			Comparator:  comparator,
-			StringValue: vs,
-			DataValue:   vd,
-			From:        from,
-			To:          to,
-			Interval:    i,
+			Offset:         offset,
+			Limit:          limit,
+			Format:         format,
+			Subtopic:       subtopic,
+			Protocol:       protocol,
+			Name:           name,
+			Value:          v,
+			Comparator:     comparator,
+			StringValue:    vs,
+			DataValue:      vd,
+			From:           from,
+			To:             to,
+			Interval:       i,
+			Aggregation:    aggregation,
+			AggregateField: aggregateField,
 		},
 	}
 
