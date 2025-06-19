@@ -49,6 +49,10 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
+func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+
 func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return tr.readAll(rpm)
 }
@@ -255,9 +259,9 @@ func (tr postgresRepository) readWithAggregation(rpm readers.PageMetadata) (read
 
 	switch aggregationType {
 	case AggregationMin:
-		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
+		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
 	case AggregationMax:
-		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
+		aggFunc = fmt.Sprintf("MAX(%s)", aggregateField)
 	case AggregationAvg:
 		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
 	case AggregationCount:
