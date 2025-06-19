@@ -147,6 +147,7 @@ message UsersByEmailsReq {
 
 message UsersByIDsReq {
     repeated string ids = 1;
+    string email = 2;
 }
 
 message UsersRes {

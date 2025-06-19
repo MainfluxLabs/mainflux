@@ -208,6 +208,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 	}
 
 	var oms []OrgMember
+	var page *protomfx.UsersRes
 	if len(omp.OrgMembers) > 0 {
 		var memberIDs []string
 		var roleByEmail = make(map[string]string)
@@ -216,8 +217,8 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs}
-		page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email}
+		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembersPage{}, err
 		}
@@ -235,7 +236,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 	mpg := OrgMembersPage{
 		OrgMembers: oms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  omp.Total,
+			Total:  uint64(len(page.Users)),
 			Offset: omp.Offset,
 			Limit:  omp.Limit,
 			Email:  omp.Email,
