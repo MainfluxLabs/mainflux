@@ -583,18 +583,6 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			return err
 		}
 
-		// Check whether Profile is currently tied to at least one Thing
-		thingsWithProfile, err := ts.things.RetrieveByProfile(ctx, id, apiutil.PageMetadata{Offset: 0, Limit: 1, Dir: "id"})
-
-		if err != nil {
-			return err
-		}
-
-		// Profile currently assigned to at least one thing
-		if thingsWithProfile.Total != 0 {
-			return ErrProfileInUse
-		}
-
 		if err := ts.profileCache.RemoveGroup(ctx, id); err != nil {
 			return err
 		}

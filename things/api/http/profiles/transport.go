@@ -244,7 +244,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
-	case err == things.ErrProfileInUse:
+	case errors.Contains(err, things.ErrProfileInUse):
 		w.WriteHeader(http.StatusConflict)
 	default:
 		apiutil.EncodeError(err, w)
