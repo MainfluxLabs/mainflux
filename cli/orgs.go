@@ -30,7 +30,7 @@ var cmdOrgs = []cobra.Command{
 				return
 			}
 
-			err := sdk.CreateOrg(org, args[1])
+			_, err := sdk.CreateOrg(org, args[1])
 			if err != nil {
 				logError(err)
 				return

@@ -291,8 +291,8 @@ type SDK interface {
 	// ListGroupMembers lists members that are specified for a certain group.
 	ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
 
-	// CreateOrg registers new org.
-	CreateOrg(org Org, token string) error
+	// CreateOrg registers a new Org and returns its ID.
+	CreateOrg(org Org, token string) (string, error)
 
 	// Org returns org data by id.
 	Org(id, token string) (Org, error)
