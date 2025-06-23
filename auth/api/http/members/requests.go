@@ -12,6 +12,8 @@ type listMembersByOrgReq struct {
 	id     string
 	offset uint64
 	limit  uint64
+	order  string
+	dir    string
 }
 
 func (req listMembersByOrgReq) validate() error {

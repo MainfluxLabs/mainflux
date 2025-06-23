@@ -67,7 +67,7 @@ type Service interface {
 	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByIDs retrieves users list for the given IDs.
-	ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error)
+	ListUsersByIDs(ctx context.Context, ids []string, order string, dir string) (UserPage, error)
 
 	// ListUsersByEmails retrieves users list for the given emails.
 	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
@@ -315,8 +315,8 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
-func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
-	pm := PageMetadata{Status: EnabledStatusKey}
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, order string, dir string) (UserPage, error) {
+	pm := PageMetadata{Status: EnabledStatusKey, Order: order, Dir: dir}
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
