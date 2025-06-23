@@ -135,7 +135,7 @@ var cmdProvision = []cobra.Command{
 
 			// Create profiles
 			for i := 0; i < numProfs; i++ {
-				n := fmt.Sprintf("c%d", i)
+				n := fmt.Sprintf("p%d", i)
 
 				c := mfxsdk.Profile{
 					Name:    n,
