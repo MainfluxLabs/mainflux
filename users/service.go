@@ -110,6 +110,8 @@ type PageMetadata struct {
 	Email    string
 	Status   string
 	Metadata Metadata
+	Order    string
+	Dir      string
 }
 
 // UserPage contains a page of users.

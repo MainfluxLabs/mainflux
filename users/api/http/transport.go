@@ -182,6 +182,17 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listUsersReq{
 		token:    apiutil.ExtractBearerToken(r),
 		status:   s,
@@ -189,6 +200,8 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		limit:    l,
 		email:    e,
 		metadata: m,
+		order:    or,
+		dir:      d,
 	}
 	return req, nil
 }

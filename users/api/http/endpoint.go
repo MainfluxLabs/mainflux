@@ -144,6 +144,8 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 			Email:    req.email,
 			Status:   req.status,
 			Metadata: req.metadata,
+			Order:    req.order,
+			Dir:      req.dir,
 		}
 		up, err := svc.ListUsers(ctx, req.token, pm)
 		if err != nil {
