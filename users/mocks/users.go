@@ -5,10 +5,10 @@ package mocks
 
 import (
 	"context"
-	"sort"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -118,8 +118,16 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 		return up, nil
 	}
 
-	sortedUsers := sortUsers(urm.usersByEmail)
-	for _, u := range sortedUsers {
+	allUsers := make([]users.User, 0, len(urm.usersByEmail))
+	for _, u := range urm.usersByEmail {
+		allUsers = append(allUsers, u)
+	}
+
+	allUsers = mocks.SortItems(pm.Order, pm.Dir, allUsers, func(i int) (string, string) {
+		return allUsers[i].Email, allUsers[i].ID
+	})
+
+	for _, u := range allUsers {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit || pm.Limit == 0 {
 			switch pm.Status {
 			case users.DisabledStatusKey,
@@ -175,19 +183,4 @@ func (urm *userRepositoryMock) ChangeStatus(ctx context.Context, id, status stri
 	urm.usersByID[id] = u
 	urm.usersByEmail[u.Email] = u
 	return nil
-}
-
-func sortUsers(us map[string]users.User) []users.User {
-	users := []users.User{}
-	ids := make([]string, 0, len(us))
-	for k := range us {
-		ids = append(ids, k)
-	}
-
-	sort.Strings(ids)
-	for _, id := range ids {
-		users = append(users, us[id])
-	}
-
-	return users
 }

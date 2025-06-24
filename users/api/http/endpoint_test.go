@@ -40,6 +40,10 @@ const (
 	invalidPass  = "wrong"
 	prefix       = "fe6b4e92-cc98-425e-b0aa-"
 	userNum      = 101
+	emailKey     = "email"
+	idKey        = "id"
+	ascKey       = "asc"
+	descKey      = "desc"
 )
 
 var (
@@ -324,7 +328,25 @@ func TestListUsers(t *testing.T) {
 	}
 
 	sort.Slice(data, func(i, j int) bool {
-		return data[i].Email < data[j].Email
+		return data[i].ID > data[j].ID
+	})
+
+	dataByEmailAsc := make([]viewUserRes, len(data))
+	copy(dataByEmailAsc, data)
+	sort.Slice(dataByEmailAsc, func(i, j int) bool {
+		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
+	})
+
+	dataByEmailDesc := make([]viewUserRes, len(data))
+	copy(dataByEmailDesc, data)
+	sort.Slice(dataByEmailDesc, func(i, j int) bool {
+		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
+	})
+
+	dataByIDAsc := make([]viewUserRes, len(data))
+	copy(dataByIDAsc, data)
+	sort.Slice(dataByIDAsc, func(i, j int) bool {
+		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
 	})
 
 	cases := []struct {
@@ -354,13 +376,6 @@ func TestListUsers(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			res:    data,
-		},
-		{
-			desc:   "get list of users with limit ordered by name descendent",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=name&dir=desc", ts.URL, 0, 5),
-			token:  token,
-			status: http.StatusOK,
-			res:    data[0:5],
 		},
 		{
 			desc:   "get list of users with invalid token",
@@ -438,6 +453,34 @@ func TestListUsers(t *testing.T) {
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
+		},
+		{
+			desc:   "get list of users sorted by email ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, emailKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByEmailAsc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by email descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, emailKey, descKey),
+			status: http.StatusOK,
+			res:    dataByEmailDesc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by id ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, idKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByIDAsc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by id descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, idKey, descKey),
+			status: http.StatusOK,
+			res:    data[0:10],
 		},
 	}
 	for _, tc := range cases {
