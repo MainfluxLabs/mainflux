@@ -437,7 +437,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:   "get a list of notifiers by group filtered by name that doesn't match",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers?name=%s", ts.URL, groupID, "xyz"),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?name=%s", ts.URL, groupID, wrongValue),
 			res:    []notifierRes{},
 		},
 	}
