@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	ErrProfileInUse = errors.New("profile currently assigned to thing(s)")
+	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
