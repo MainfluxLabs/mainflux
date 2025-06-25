@@ -45,7 +45,7 @@ func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, e
 		return []Thing{}, err
 	}
 
-	url := fmt.Sprintf("%s/groups/%s/%s", sdk.thingsURL, groupID, thingsEndpoint)
+	url := fmt.Sprintf("%s/%s", sdk.thingsURL, thingsEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
