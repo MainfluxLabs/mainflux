@@ -59,7 +59,7 @@ func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 	defer func() {
 		if err != nil {
@@ -70,14 +70,14 @@ func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}()
 
 	for _, msg := range msgs {
 		dbmsg, err := messaging.ToSenMLMessage(msg)
 		if err != nil {
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 
 		if _, err := tx.NamedExec(q, dbmsg); err != nil {
@@ -85,11 +85,11 @@ func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}
 
@@ -102,7 +102,7 @@ func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 	defer func() {
 		if err != nil {
@@ -113,7 +113,7 @@ func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}()
 
@@ -125,11 +125,11 @@ func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}
 

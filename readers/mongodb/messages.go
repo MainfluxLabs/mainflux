@@ -53,7 +53,7 @@ func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Messa
 
 	_, err := coll.InsertMany(context.Background(), dbMsgs)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return nil
