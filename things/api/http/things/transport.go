@@ -35,14 +35,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	// TODO: will eventually become obsolete, remove
-	mux.Post("/groups/:id/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
-		decodeCreateThings,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing")(viewThingEndpoint(svc)),
 		decodeRequest,
