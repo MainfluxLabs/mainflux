@@ -241,7 +241,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, grID),
+			url:         fmt.Sprintf("%s/things", ts.URL),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
