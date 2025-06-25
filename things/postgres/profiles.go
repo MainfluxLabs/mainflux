@@ -203,7 +203,7 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
-				if pgErr.Code == pgerrcode.ForeignKeyViolation && pgErr.ConstraintName == "fk_things_profile_id" {
+				if pgErr.Code == pgerrcode.ForeignKeyViolation {
 					return errors.Wrap(things.ErrProfileAssigned, err)
 				}
 			}
