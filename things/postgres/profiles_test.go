@@ -430,7 +430,7 @@ func TestRemoveProfile(t *testing.T) {
 		},
 		"remove assigned profile": {
 			prID: prID2,
-			err:  errors.ErrRemoveEntity,
+			err:  things.ErrProfileAssigned,
 		},
 	}
 

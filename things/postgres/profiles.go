@@ -201,6 +201,13 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 		q := `DELETE FROM profiles WHERE id = :id`
 		_, err := cr.db.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				if pgErr.Code == pgerrcode.ForeignKeyViolation {
+					return errors.Wrap(things.ErrProfileAssigned, err)
+				}
+			}
+
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
 	}
