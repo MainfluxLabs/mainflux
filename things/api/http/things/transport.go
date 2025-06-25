@@ -28,6 +28,14 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
+	mux.Post("/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
+		decodeCreateThings,
+		encodeResponse,
+		opts...,
+	))
+
+	// TODO: will eventually become obsolete, remove
 	mux.Post("/groups/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
 		decodeCreateThings,
@@ -152,9 +160,9 @@ func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error)
 	}
 
 	req := createThingsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
