@@ -83,7 +83,7 @@ func (sdk mfSDK) Revoke(id, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) RetrieveKey(token, id string) (retrieveKeyRes, error) {
+func (sdk mfSDK) RetrieveKey(id, token string) (retrieveKeyRes, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.authURL, keysEndpoint, id)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
