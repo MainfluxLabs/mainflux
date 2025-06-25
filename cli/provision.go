@@ -111,7 +111,7 @@ var cmdProvision = []cobra.Command{
 			}
 
 			// Create test Organization
-			orgId, err := sdk.CreateOrg(mfxsdk.Org{Name: namesgenerator.GetRandomName(0)}, ut)
+			orgID, err := sdk.CreateOrg(mfxsdk.Org{Name: namesgenerator.GetRandomName(0)}, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -121,7 +121,7 @@ var cmdProvision = []cobra.Command{
 				Name: "gr",
 			}
 
-			grID, err := sdk.CreateGroup(g, orgId, ut)
+			grID, err := sdk.CreateGroup(g, orgID, ut)
 			if err != nil {
 				logError(err)
 				return
