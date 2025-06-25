@@ -26,8 +26,8 @@ type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
 
-func (sdk mfSDK) CreateThing(t Thing, groupID, token string) (string, error) {
-	things, err := sdk.CreateThings([]Thing{t}, groupID, token)
+func (sdk mfSDK) CreateThing(t Thing, token string) (string, error) {
+	things, err := sdk.CreateThings([]Thing{t}, token)
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +39,7 @@ func (sdk mfSDK) CreateThing(t Thing, groupID, token string) (string, error) {
 	return things[0].ID, nil
 }
 
-func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, error) {
+func (sdk mfSDK) CreateThings(things []Thing, token string) ([]Thing, error) {
 	data, err := json.Marshal(things)
 	if err != nil {
 		return []Thing{}, err

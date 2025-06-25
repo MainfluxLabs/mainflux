@@ -193,10 +193,10 @@ type SDK interface {
 	UpdatePassword(oldPass, newPass, token string) error
 
 	// CreateThing registers new thing and returns its id.
-	CreateThing(thing Thing, groupID, token string) (string, error)
+	CreateThing(thing Thing, token string) (string, error)
 
 	// CreateThings registers new things and returns their ids.
-	CreateThings(things []Thing, groupID, token string) ([]Thing, error)
+	CreateThings(things []Thing, token string) ([]Thing, error)
 
 	// Things returns page of things.
 	Things(token string, pm PageMetadata) (ThingsPage, error)
