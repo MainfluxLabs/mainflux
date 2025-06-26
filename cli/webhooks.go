@@ -58,7 +58,7 @@ var cmdWebhooks = []cobra.Command{
 				}
 				logJSON(l)
 			case "by-id":
-				w, err := sdk.Webhook(args[1], args[2])
+				w, err := sdk.GetWebhook(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return

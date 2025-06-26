@@ -172,13 +172,13 @@ type Metadata map[string]interface{}
 // SDK contains Mainflux API.
 type SDK interface {
 	// CreateUser creates mainflux user.
-	CreateUser(token string, user User) (string, error)
+	CreateUser(user User, token string) (string, error)
 
-	// User returns user object by id.
-	User(token, id string) (User, error)
+	// GetUser returns user object by id.
+	GetUser(id, token string) (User, error)
 
-	// Users returns list of users.
-	Users(token string, pm PageMetadata) (UsersPage, error)
+	// ListUsers returns list of users.
+	ListUsers(pm PageMetadata, token string) (UsersPage, error)
 
 	// CreateToken receives credentials and returns user token.
 	CreateToken(user User) (string, error)
@@ -198,17 +198,17 @@ type SDK interface {
 	// CreateThings registers new things and returns their ids.
 	CreateThings(things []Thing, groupID, token string) ([]Thing, error)
 
-	// Things returns page of things.
-	Things(token string, pm PageMetadata) (ThingsPage, error)
+	// ListThings returns page of things.
+	ListThings(pm PageMetadata, token string) (ThingsPage, error)
 
-	// ThingsByProfile returns page of things assigned to the specified profile.
-	ThingsByProfile(profileID, token string, pm PageMetadata) (ThingsPage, error)
+	// ListThingsByProfile returns page of things assigned to the specified profile.
+	ListThingsByProfile(profileID string, pm PageMetadata, token string) (ThingsPage, error)
 
-	// Thing returns thing object by id.
-	Thing(id, token string) (Thing, error)
+	// GetThing returns thing object by id.
+	GetThing(id, token string) (Thing, error)
 
-	// MetadataByKey retrieves metadata about the thing identified by the given key.
-	MetadataByKey(thingKey string) (Metadata, error)
+	// GetThingMetadataByKey retrieves metadata about the thing identified by the given key.
+	GetThingMetadataByKey(thingKey string) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error
@@ -231,20 +231,20 @@ type SDK interface {
 	// DeleteGroups delete users groups.
 	DeleteGroups(ids []string, token string) error
 
-	// Groups returns page of groups.
-	Groups(meta PageMetadata, token string) (GroupsPage, error)
+	// ListGroups returns page of groups.
+	ListGroups(meta PageMetadata, token string) (GroupsPage, error)
 
 	// ListGroupsByOrg returns a page of all Groups belonging to the spcified Org.
-	ListGroupsByOrg(meta PageMetadata, orgID string, token string) (GroupsPage, error)
+	ListGroupsByOrg(orgID string, meta PageMetadata, token string) (GroupsPage, error)
 
-	// Group returns users group object by id.
-	Group(id, token string) (Group, error)
+	// GetGroup returns users group object by id.
+	GetGroup(id, token string) (Group, error)
 
 	// ListThingsByGroup lists things that are members of specified group.
-	ListThingsByGroup(groupID, token string, offset, limit uint64) (ThingsPage, error)
+	ListThingsByGroup(groupID string, meta PageMetadata, token string) (ThingsPage, error)
 
-	// ViewGroupByThing retrieves a group that the specified thing is a member of.
-	ViewGroupByThing(thingID, token string) (Group, error)
+	// GetGroupByThing retrieves a group that the specified thing is a member of.
+	GetGroupByThing(thingID, token string) (Group, error)
 
 	// UpdateGroup updates existing group.
 	UpdateGroup(group Group, groupID, token string) error
@@ -255,14 +255,14 @@ type SDK interface {
 	// CreateProfiles registers new profiles and returns their ids.
 	CreateProfiles(profiles []Profile, groupID, token string) ([]Profile, error)
 
-	// Profiles returns page of profiles.
-	Profiles(token string, pm PageMetadata) (ProfilesPage, error)
+	// ListProfiles returns page of profiles.
+	ListProfiles(pm PageMetadata, token string) (ProfilesPage, error)
 
-	// ViewProfileByThing returns profile that are assigned to specified thing.
-	ViewProfileByThing(thingID, token string) (Profile, error)
+	// GetProfileByThing returns profile that are assigned to specified thing.
+	GetProfileByThing(thingID, token string) (Profile, error)
 
-	// Profile returns profile data by id.
-	Profile(id, token string) (Profile, error)
+	// GetProfile returns profile data by id.
+	GetProfile(id, token string) (Profile, error)
 
 	// UpdateProfile updates existing profile.
 	UpdateProfile(profile Profile, profileID, token string) error
@@ -274,10 +274,10 @@ type SDK interface {
 	DeleteProfiles(ids []string, token string) error
 
 	// ListProfilesByGroup lists profiles that are members of specified group.
-	ListProfilesByGroup(groupID, token string, offset, limit uint64) (ProfilesPage, error)
+	ListProfilesByGroup(groupID string, pm PageMetadata, token string) (ProfilesPage, error)
 
-	// ViewGroupByProfile retrieves a group that the specified profile is a member of.
-	ViewGroupByProfile(profileID, token string) (Group, error)
+	// GetGroupByProfile retrieves a group that the specified profile is a member of.
+	GetGroupByProfile(profileID, token string) (Group, error)
 
 	// CreateGroupMembers creates group members.
 	CreateGroupMembers(members []GroupMember, groupID, token string) error
@@ -289,13 +289,13 @@ type SDK interface {
 	RemoveGroupMembers(ids []string, groupID, token string) error
 
 	// ListGroupMembers lists members that are specified for a certain group.
-	ListGroupMembers(groupID, token string, offset, limit uint64) (GroupMembersPage, error)
+	ListGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error)
 
 	// CreateOrg registers new org.
 	CreateOrg(org Org, token string) error
 
-	// Org returns org data by id.
-	Org(id, token string) (Org, error)
+	// GetOrg returns org data by id.
+	GetOrg(id, token string) (Org, error)
 
 	// UpdateOrg updates existing org.
 	UpdateOrg(o Org, orgID, token string) error
@@ -303,11 +303,11 @@ type SDK interface {
 	// DeleteOrg removes existing org.
 	DeleteOrg(id, token string) error
 
-	// Orgs returns page of orgs.
-	Orgs(meta PageMetadata, token string) (OrgsPage, error)
+	// ListOrgs returns page of orgs.
+	ListOrgs(meta PageMetadata, token string) (OrgsPage, error)
 
-	// ViewMember retrieves a member belonging to the specified org.
-	ViewMember(memberID, orgID, token string) (Member, error)
+	// GetMember retrieves a member belonging to the specified org.
+	GetMember(memberID, orgID, token string) (Member, error)
 
 	// AssignMembers assigns a members to the specified org.
 	AssignMembers(om []OrgMember, orgID, token string) error
@@ -319,7 +319,7 @@ type SDK interface {
 	UpdateMembers(members []OrgMember, orgID, token string) error
 
 	// ListMembersByOrg lists members who belong to a specified org.
-	ListMembersByOrg(orgID, token string, offset, limit uint64) (MembersPage, error)
+	ListMembersByOrg(orgID string, meta PageMetadata, token string) (MembersPage, error)
 
 	// CreateWebhooks creates new webhooks.
 	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
@@ -330,8 +330,8 @@ type SDK interface {
 	// ListWebhooksByThing lists webhooks who belong to a specified tthing.
 	ListWebhooksByThing(thingID, token string) (Webhooks, error)
 
-	// Webhook returns webhook data by id.
-	Webhook(webhookID, token string) (Webhook, error)
+	// GetWebhook returns webhook data by id.
+	GetWebhook(webhookID, token string) (Webhook, error)
 
 	// UpdateWebhook updates existing webhook.
 	UpdateWebhook(wh Webhook, webhookID, token string) error
@@ -343,7 +343,7 @@ type SDK interface {
 	SendMessage(subtopic, msg, token string) error
 
 	// ReadMessages read messages.
-	ReadMessages(pm PageMetadata, isAdmin bool, token string) (map[string]interface{}, error)
+	ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[string]interface{}, error)
 
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error
@@ -361,13 +361,13 @@ type SDK interface {
 	RevokeCert(thingID, certID, token string) error
 
 	// Issue issues a new key, returning its token value alongside.
-	Issue(token string, duration time.Duration) (KeyRes, error)
+	Issue(duration time.Duration, token string) (KeyRes, error)
 
 	// Revoke removes the key with the provided ID that is issued by the user identified by the provided key.
-	Revoke(token, id string) error
+	Revoke(id, token string) error
 
 	// RetrieveKey retrieves data for the key identified by the provided ID, that is issued by the user identified by the provided key.
-	RetrieveKey(token, id string) (retrieveKeyRes, error)
+	RetrieveKey(id, token string) (retrieveKeyRes, error)
 }
 
 type mfSDK struct {
