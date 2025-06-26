@@ -22,6 +22,16 @@ const (
 	jsonTable = "json"
 )
 
+type AggregationType string
+
+const (
+	AggregationNone  AggregationType = ""
+	AggregationMin   AggregationType = "min"
+	AggregationMax   AggregationType = "max"
+	AggregationAvg   AggregationType = "avg"
+	AggregationCount AggregationType = "count"
+)
+
 var _ readers.MessageRepository = (*postgresRepository)(nil)
 
 var (
@@ -88,6 +98,10 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 }
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	if rpm.Aggregation != "" {
+		return tr.readWithAggregation(rpm)
+	}
+
 	order := "time"
 	format := defTable
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
@@ -214,6 +228,98 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		}
 	}
 	page.Total = total
+
+	return page, nil
+}
+
+func (tr postgresRepository) readWithAggregation(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	aggregationType := AggregationType(rpm.Aggregation)
+	if aggregationType != AggregationMin && aggregationType != AggregationMax && aggregationType != AggregationCount && aggregationType != AggregationAvg {
+		return readers.MessagesPage{}, errors.New("invalid aggregation type")
+	}
+
+	format := defTable
+	if rpm.Format == jsonTable {
+		format = rpm.Format
+	}
+
+	aggregateField := rpm.AggregateField
+	if aggregateField == "" {
+		if format == jsonTable {
+			aggregateField = "created"
+		} else {
+			aggregateField = "value"
+		}
+	}
+
+	condition := fmtCondition(rpm)
+
+	var q string
+	var aggFunc string
+
+	switch aggregationType {
+	case AggregationMin:
+		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
+	case AggregationMax:
+		aggFunc = fmt.Sprintf("MAX(%s)", aggregateField)
+	case AggregationAvg:
+		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
+	case AggregationCount:
+		aggFunc = "COUNT(*)"
+	}
+
+	q = fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM %s %s;`, aggFunc, format, condition)
+
+	params := map[string]interface{}{
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	rows, err := tr.db.NamedQuery(q, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
+				return readers.MessagesPage{}, nil
+			}
+		}
+		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	var result interface{}
+	var count uint64
+
+	if rows.Next() {
+		if aggregationType == AggregationCount {
+			if err := rows.Scan(&count, &count); err != nil {
+				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			result = count
+		} else {
+			if err := rows.Scan(&result, &count); err != nil {
+				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+			}
+		}
+	}
+
+	page := readers.MessagesPage{
+		PageMetadata: rpm,
+		Messages:     []readers.Message{},
+		Total:        count,
+		Aggregation: &readers.AggregationResult{
+			Field: aggregateField,
+			Value: result,
+			Count: count,
+		},
+	}
 
 	return page, nil
 }
