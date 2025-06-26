@@ -50,7 +50,7 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	defer func() {
