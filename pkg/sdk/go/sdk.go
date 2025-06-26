@@ -288,8 +288,8 @@ type SDK interface {
 	// RemoveGroupMembers removes existing group members.
 	RemoveGroupMembers(ids []string, groupID, token string) error
 
-	// GetGroupMembers lists members that are specified for a certain group.
-	GetGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error)
+	// ListGroupMembers lists members that are specified for a certain group.
+	ListGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error)
 
 	// CreateOrg registers new org.
 	CreateOrg(org Org, token string) error

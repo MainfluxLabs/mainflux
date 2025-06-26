@@ -45,7 +45,7 @@ var cmdGroupMembers = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.GetGroupMembers(args[0], meta, args[1])
+			up, err := sdk.ListGroupMembers(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return

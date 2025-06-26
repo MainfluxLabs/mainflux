@@ -407,7 +407,7 @@ func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) GetGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error) {
+func (sdk mfSDK) ListGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.thingsURL, groupsEndpoint, groupID, pm.Offset, pm.Limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
