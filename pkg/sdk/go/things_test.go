@@ -456,7 +456,7 @@ func TestThings(t *testing.T) {
 			Dir:      tc.dir,
 			Metadata: tc.metadata,
 		}
-		page, err := mainfluxSDK.GetThings(filter, tc.token)
+		page, err := mainfluxSDK.ListThings(filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}
@@ -584,7 +584,7 @@ func TestThingsByProfile(t *testing.T) {
 			Limit:  tc.limit,
 			Dir:    tc.dir,
 		}
-		page, err := mainfluxSDK.GetThingsByProfile(tc.profile, filter, tc.token)
+		page, err := mainfluxSDK.ListThingsByProfile(tc.profile, filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}

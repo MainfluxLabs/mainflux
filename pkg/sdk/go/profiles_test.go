@@ -327,7 +327,7 @@ func TestProfiles(t *testing.T) {
 			Metadata: tc.metadata,
 		}
 
-		page, err := mainfluxSDK.GetProfiles(filter, tc.token)
+		page, err := mainfluxSDK.ListProfiles(filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Profiles, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Profiles))
 	}

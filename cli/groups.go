@@ -59,7 +59,7 @@ var cmdGroups = []cobra.Command{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				gp, err := sdk.GetGroups(meta, args[1])
+				gp, err := sdk.ListGroups(meta, args[1])
 				if err != nil {
 					logError(err)
 					return
@@ -78,7 +78,7 @@ var cmdGroups = []cobra.Command{
 					return
 				}
 
-				res, err := sdk.GetGroupsByOrg(
+				res, err := sdk.ListGroupsByOrg(
 					args[1],
 					mfxsdk.PageMetadata{Offset: uint64(Offset), Limit: uint64(Limit)},
 					args[2],
@@ -146,7 +146,7 @@ var cmdGroups = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.GetThingsByGroup(args[0], meta, args[1])
+			up, err := sdk.ListThingsByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -186,7 +186,7 @@ var cmdGroups = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.GetProfilesByGroup(args[0], meta, args[1])
+			up, err := sdk.ListProfilesByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return

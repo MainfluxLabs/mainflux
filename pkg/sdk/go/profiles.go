@@ -63,7 +63,7 @@ func (sdk mfSDK) CreateProfiles(prs []Profile, groupID, token string) ([]Profile
 	return ccr.Profiles, nil
 }
 
-func (sdk mfSDK) GetProfiles(pm PageMetadata, token string) (ProfilesPage, error) {
+func (sdk mfSDK) ListProfiles(pm PageMetadata, token string) (ProfilesPage, error) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, profilesEndpoint, pm)
 	if err != nil {
 		return ProfilesPage{}, err

@@ -50,7 +50,7 @@ var cmdOrgMembers = []cobra.Command{
 			}
 
 			if args[0] == "all" {
-				mbs, err := sdk.GetMembersByOrg(args[1], meta, args[2])
+				mbs, err := sdk.ListMembersByOrg(args[1], meta, args[2])
 				if err != nil {
 					logError(err)
 					return

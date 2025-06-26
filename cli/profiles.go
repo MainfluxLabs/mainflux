@@ -63,7 +63,7 @@ var cmdProfiles = []cobra.Command{
 
 			switch args[0] {
 			case "all":
-				l, err := sdk.GetProfiles(pageMetadata, args[1])
+				l, err := sdk.ListProfiles(pageMetadata, args[1])
 				if err != nil {
 					logError(err)
 					return

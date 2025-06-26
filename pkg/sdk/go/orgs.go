@@ -116,7 +116,7 @@ func (sdk mfSDK) DeleteOrg(id, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) GetOrgs(meta PageMetadata, token string) (OrgsPage, error) {
+func (sdk mfSDK) ListOrgs(meta PageMetadata, token string) (OrgsPage, error) {
 	u, err := url.Parse(sdk.authURL)
 	if err != nil {
 		return OrgsPage{}, err
@@ -280,7 +280,7 @@ func (sdk mfSDK) UpdateMembers(oms []OrgMember, orgID, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) GetMembersByOrg(orgID string, pm PageMetadata, token string) (MembersPage, error) {
+func (sdk mfSDK) ListMembersByOrg(orgID string, pm PageMetadata, token string) (MembersPage, error) {
 	url := fmt.Sprintf("%s/%s/%s/members?offset=%d&limit=%d", sdk.authURL, orgsEndpoint, orgID, pm.Offset, pm.Limit)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -310,7 +310,7 @@ func (sdk mfSDK) GetMembersByOrg(orgID string, pm PageMetadata, token string) (M
 	return mp, nil
 }
 
-func (sdk mfSDK) GetGroupsByOrg(orgID string, meta PageMetadata, token string) (GroupsPage, error) {
+func (sdk mfSDK) ListGroupsByOrg(orgID string, meta PageMetadata, token string) (GroupsPage, error) {
 	apiUrl := fmt.Sprintf("%s/%s/%s/groups?offset=%d&limit=%d", sdk.thingsURL, orgsEndpoint, orgID, meta.Offset, meta.Limit)
 
 	req, err := http.NewRequest(http.MethodGet, apiUrl, nil)

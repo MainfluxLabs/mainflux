@@ -60,7 +60,7 @@ var cmdUsers = []cobra.Command{
 				Metadata: metadata,
 			}
 			if args[0] == "all" {
-				l, err := sdk.GetUsers(pageMetadata, args[1])
+				l, err := sdk.ListUsers(pageMetadata, args[1])
 				if err != nil {
 					logError(err)
 					return

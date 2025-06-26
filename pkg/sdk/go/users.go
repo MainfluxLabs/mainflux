@@ -102,7 +102,7 @@ func (sdk mfSDK) GetUser(userID, token string) (User, error) {
 	return u, nil
 }
 
-func (sdk mfSDK) GetUsers(pm PageMetadata, token string) (UsersPage, error) {
+func (sdk mfSDK) ListUsers(pm PageMetadata, token string) (UsersPage, error) {
 	url, err := sdk.withQueryParams(sdk.usersURL, usersEndpoint, pm)
 	if err != nil {
 		return UsersPage{}, err

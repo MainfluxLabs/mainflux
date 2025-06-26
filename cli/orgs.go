@@ -58,7 +58,7 @@ var cmdOrgs = []cobra.Command{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				l, err := sdk.GetOrgs(meta, args[1])
+				l, err := sdk.ListOrgs(meta, args[1])
 				if err != nil {
 					logError(err)
 					return

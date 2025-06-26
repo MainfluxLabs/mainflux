@@ -177,8 +177,8 @@ type SDK interface {
 	// GetUser returns user object by id.
 	GetUser(id, token string) (User, error)
 
-	// GetUsers returns list of users.
-	GetUsers(pm PageMetadata, token string) (UsersPage, error)
+	// ListUsers returns list of users.
+	ListUsers(pm PageMetadata, token string) (UsersPage, error)
 
 	// CreateToken receives credentials and returns user token.
 	CreateToken(user User) (string, error)
@@ -198,11 +198,11 @@ type SDK interface {
 	// CreateThings registers new things and returns their ids.
 	CreateThings(things []Thing, groupID, token string) ([]Thing, error)
 
-	// GetThings returns page of things.
-	GetThings(pm PageMetadata, token string) (ThingsPage, error)
+	// ListThings returns page of things.
+	ListThings(pm PageMetadata, token string) (ThingsPage, error)
 
-	// GetThingsByProfile returns page of things assigned to the specified profile.
-	GetThingsByProfile(profileID string, pm PageMetadata, token string) (ThingsPage, error)
+	// ListThingsByProfile returns page of things assigned to the specified profile.
+	ListThingsByProfile(profileID string, pm PageMetadata, token string) (ThingsPage, error)
 
 	// GetThing returns thing object by id.
 	GetThing(id, token string) (Thing, error)
@@ -231,17 +231,17 @@ type SDK interface {
 	// DeleteGroups delete users groups.
 	DeleteGroups(ids []string, token string) error
 
-	// GetGroups returns page of groups.
-	GetGroups(meta PageMetadata, token string) (GroupsPage, error)
+	// ListGroups returns page of groups.
+	ListGroups(meta PageMetadata, token string) (GroupsPage, error)
 
-	// GetGroupsByOrg returns a page of all Groups belonging to the spcified Org.
-	GetGroupsByOrg(orgID string, meta PageMetadata, token string) (GroupsPage, error)
+	// ListGroupsByOrg returns a page of all Groups belonging to the spcified Org.
+	ListGroupsByOrg(orgID string, meta PageMetadata, token string) (GroupsPage, error)
 
 	// GetGroup returns users group object by id.
 	GetGroup(id, token string) (Group, error)
 
-	// GetThingsByGroup lists things that are members of specified group.
-	GetThingsByGroup(groupID string, meta PageMetadata, token string) (ThingsPage, error)
+	// ListThingsByGroup lists things that are members of specified group.
+	ListThingsByGroup(groupID string, meta PageMetadata, token string) (ThingsPage, error)
 
 	// GetGroupByThing retrieves a group that the specified thing is a member of.
 	GetGroupByThing(thingID, token string) (Group, error)
@@ -255,8 +255,8 @@ type SDK interface {
 	// CreateProfiles registers new profiles and returns their ids.
 	CreateProfiles(profiles []Profile, groupID, token string) ([]Profile, error)
 
-	// GetProfiles returns page of profiles.
-	GetProfiles(pm PageMetadata, token string) (ProfilesPage, error)
+	// ListProfiles returns page of profiles.
+	ListProfiles(pm PageMetadata, token string) (ProfilesPage, error)
 
 	// GetProfileByThing returns profile that are assigned to specified thing.
 	GetProfileByThing(thingID, token string) (Profile, error)
@@ -273,8 +273,8 @@ type SDK interface {
 	// DeleteProfiles removes existing profile.
 	DeleteProfiles(ids []string, token string) error
 
-	// GetProfilesByGroup lists profiles that are members of specified group.
-	GetProfilesByGroup(groupID string, pm PageMetadata, token string) (ProfilesPage, error)
+	// ListProfilesByGroup lists profiles that are members of specified group.
+	ListProfilesByGroup(groupID string, pm PageMetadata, token string) (ProfilesPage, error)
 
 	// GetGroupByProfile retrieves a group that the specified profile is a member of.
 	GetGroupByProfile(profileID, token string) (Group, error)
@@ -303,8 +303,8 @@ type SDK interface {
 	// DeleteOrg removes existing org.
 	DeleteOrg(id, token string) error
 
-	// GetOrgs returns page of orgs.
-	GetOrgs(meta PageMetadata, token string) (OrgsPage, error)
+	// ListOrgs returns page of orgs.
+	ListOrgs(meta PageMetadata, token string) (OrgsPage, error)
 
 	// GetMember retrieves a member belonging to the specified org.
 	GetMember(memberID, orgID, token string) (Member, error)
@@ -318,17 +318,17 @@ type SDK interface {
 	// UpdateMembers updates existing member.
 	UpdateMembers(members []OrgMember, orgID, token string) error
 
-	// GetMembersByOrg lists members who belong to a specified org.
-	GetMembersByOrg(orgID string, meta PageMetadata, token string) (MembersPage, error)
+	// ListMembersByOrg lists members who belong to a specified org.
+	ListMembersByOrg(orgID string, meta PageMetadata, token string) (MembersPage, error)
 
 	// CreateWebhooks creates new webhooks.
 	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
 
-	// GetWebhooksByGroup lists webhooks who belong to a specified group.
-	GetWebhooksByGroup(groupID, token string) (Webhooks, error)
+	// ListWebhooksByGroup lists webhooks who belong to a specified group.
+	ListWebhooksByGroup(groupID, token string) (Webhooks, error)
 
-	// GetWebhooksByThing lists webhooks who belong to a specified tthing.
-	GetWebhooksByThing(thingID, token string) (Webhooks, error)
+	// ListWebhooksByThing lists webhooks who belong to a specified tthing.
+	ListWebhooksByThing(thingID, token string) (Webhooks, error)
 
 	// GetWebhook returns webhook data by id.
 	GetWebhook(webhookID, token string) (Webhook, error)

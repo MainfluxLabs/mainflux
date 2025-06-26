@@ -75,7 +75,7 @@ func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, e
 	return ctr.Things, nil
 }
 
-func (sdk mfSDK) GetThings(pm PageMetadata, token string) (ThingsPage, error) {
+func (sdk mfSDK) ListThings(pm PageMetadata, token string) (ThingsPage, error) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, thingsEndpoint, pm)
 	if err != nil {
 		return ThingsPage{}, err
@@ -109,7 +109,7 @@ func (sdk mfSDK) GetThings(pm PageMetadata, token string) (ThingsPage, error) {
 	return tp, nil
 }
 
-func (sdk mfSDK) GetThingsByProfile(prID string, pm PageMetadata, token string) (ThingsPage, error) {
+func (sdk mfSDK) ListThingsByProfile(prID string, pm PageMetadata, token string) (ThingsPage, error) {
 	url := fmt.Sprintf("%s/profiles/%s/things?offset=%d&limit=%d&dir=%s", sdk.thingsURL, prID, pm.Offset, pm.Limit, pm.Dir)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
