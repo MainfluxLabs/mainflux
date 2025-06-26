@@ -274,7 +274,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	return page, nil
 }
 
-func fmtCondition(rpm readers.PageMetadata, table ...string) string {
+func fmtCondition(rpm readers.PageMetadata, table string) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -286,7 +286,7 @@ func fmtCondition(rpm readers.PageMetadata, table ...string) string {
 	op := "WHERE"
 	timeColumn := "time"
 
-	if len(table) > 0 && table[0] == jsonTable {
+	if table != "" && table == jsonTable {
 		timeColumn = "created"
 	}
 
