@@ -549,7 +549,7 @@ func TestListGroupMembers(t *testing.T) {
 			desc:   "list group members filtered by email that doesn't match",
 			token:  token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, "xyz"),
+			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, wrongValue),
 			res:    []groupMember{},
 		},
 	}

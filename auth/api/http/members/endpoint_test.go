@@ -537,7 +537,7 @@ func TestListMembers(t *testing.T) {
 			desc:   "list org members filtered by email that doesn't match",
 			token:  token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/orgs/%s/members?email=%s", ts.URL, or.ID, "xyz"),
+			url:    fmt.Sprintf("%s/orgs/%s/members?email=%s", ts.URL, or.ID, wrongValue),
 			res:    []viewMemberRes{},
 		},
 	}
