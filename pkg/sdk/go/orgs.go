@@ -41,7 +41,8 @@ func (sdk mfSDK) CreateOrg(o Org, token string) (string, error) {
 		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	return strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", orgsEndpoint)), nil
+	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", orgsEndpoint))
+	return id, nil
 }
 
 func (sdk mfSDK) Org(id, token string) (Org, error) {
