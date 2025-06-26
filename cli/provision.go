@@ -9,10 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -81,22 +79,22 @@ var cmdProvision = []cobra.Command{
 	{
 		Use:   "test",
 		Short: "test",
-		Long:  `Provisions test setup: one test user, two things and two profiles.`,
+		Long:  `Provisions test setup: one test user, three things and two profiles.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			numThings := 3
 			numProfs := 2
+
 			things := []mfxsdk.Thing{}
 			profiles := []mfxsdk.Profile{}
-			orgID := "1"
 
 			if len(args) != 0 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			rand.Seed(time.Now().UnixNano())
 			un := fmt.Sprintf("%s@email.com", namesgenerator.GetRandomName(0))
-			// Create test user
+
+			// Create test User
 			user := mfxsdk.User{
 				Email:    un,
 				Password: "12345678",
@@ -107,6 +105,13 @@ var cmdProvision = []cobra.Command{
 			}
 
 			ut, err := sdk.CreateToken(user)
+			if err != nil {
+				logError(err)
+				return
+			}
+
+			// Create test Organization
+			orgID, err := sdk.CreateOrg(mfxsdk.Org{Name: namesgenerator.GetRandomName(0)}, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -130,7 +135,7 @@ var cmdProvision = []cobra.Command{
 
 			// Create profiles
 			for i := 0; i < numProfs; i++ {
-				n := fmt.Sprintf("c%d", i)
+				n := fmt.Sprintf("p%d", i)
 
 				c := mfxsdk.Profile{
 					Name:    n,
@@ -143,11 +148,6 @@ var cmdProvision = []cobra.Command{
 			if err != nil {
 				logError(err)
 				return
-			}
-
-			var prIDs []string
-			for _, ch := range profiles {
-				prIDs = append(prIDs, ch.ID)
 			}
 
 			// Create things
@@ -166,11 +166,6 @@ var cmdProvision = []cobra.Command{
 			if err != nil {
 				logError(err)
 				return
-			}
-
-			var thIDs []string
-			for _, th := range things {
-				thIDs = append(thIDs, th.ID)
 			}
 
 			logJSON(user, ut, gr, things, profiles)

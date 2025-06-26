@@ -11,36 +11,38 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const orgsEndpoint = "orgs"
 
-func (sdk mfSDK) CreateOrg(o Org, token string) error {
+func (sdk mfSDK) CreateOrg(o Org, token string) (string, error) {
 	data, err := json.Marshal(o)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.authURL, orgsEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	resp, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+		return "", errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
-	return nil
+	id := strings.TrimPrefix(resp.Header.Get("Location"), fmt.Sprintf("/%s/", orgsEndpoint))
+	return id, nil
 }
 
 func (sdk mfSDK) GetOrg(id, token string) (Org, error) {

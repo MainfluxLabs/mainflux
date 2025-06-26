@@ -291,8 +291,8 @@ type SDK interface {
 	// ListGroupMembers lists members that are specified for a certain group.
 	ListGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error)
 
-	// CreateOrg registers new org.
-	CreateOrg(org Org, token string) error
+	// CreateOrg registers a new Org and returns its ID.
+	CreateOrg(org Org, token string) (string, error)
 
 	// GetOrg returns org data by id.
 	GetOrg(id, token string) (Org, error)
