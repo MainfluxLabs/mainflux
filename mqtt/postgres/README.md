@@ -1,4 +1,4 @@
-MQTT - DB Schema
+# MQTT - DB Schema
 
 ```sql
 CREATE TABLE IF NOT EXISTS subscriptions (
