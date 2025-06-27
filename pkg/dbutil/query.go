@@ -42,9 +42,6 @@ func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string
 func GetPayloadQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `payload @> :payload`
-		if db != "" {
-			mq = db + "." + mq
-		}
 
 		b, err := json.Marshal(m)
 		if err != nil {
