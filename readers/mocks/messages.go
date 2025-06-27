@@ -37,111 +37,6 @@ func (repo *messageRepositoryMock) ListProfileMessages(profileID string, rpm rea
 	return repo.readAll(profileID, rpm)
 }
 
-func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	repo.mutex.Lock()
-	defer repo.mutex.Unlock()
-
-	var query map[string]interface{}
-	meta, _ := json.Marshal(rpm)
-	json.Unmarshal(meta, &query)
-
-	for profileID, messages := range repo.messages {
-		var remainingMessages []readers.Message
-		
-		for _, m := range messages {
-			senml := m.(senml.Message)
-			shouldDelete := true
-
-			for name := range query {
-				switch name {
-				case "subtopic":
-					if rpm.Subtopic != senml.Subtopic {
-						shouldDelete = false
-					}
-				case "publisher":
-					if rpm.Publisher != senml.Publisher {
-						shouldDelete = false
-					}
-				case "name":
-					if rpm.Name != senml.Name {
-						shouldDelete = false
-					}
-				case "protocol":
-					if rpm.Protocol != senml.Protocol {
-						shouldDelete = false
-					}
-				case "v":
-					if senml.Value == nil {
-						shouldDelete = false
-					}
-
-					val, okQuery := query["comparator"]
-					if okQuery {
-						switch val.(string) {
-						case readers.LowerThanKey:
-							if senml.Value != nil && *senml.Value >= rpm.Value {
-								shouldDelete = false
-							}
-						case readers.LowerThanEqualKey:
-							if senml.Value != nil && *senml.Value > rpm.Value {
-								shouldDelete = false
-							}
-						case readers.GreaterThanKey:
-							if senml.Value != nil && *senml.Value <= rpm.Value {
-								shouldDelete = false
-							}
-						case readers.GreaterThanEqualKey:
-							if senml.Value != nil && *senml.Value < rpm.Value {
-								shouldDelete = false
-							}
-						case readers.EqualKey:
-						default:
-							if senml.Value != nil && *senml.Value != rpm.Value {
-								shouldDelete = false
-							}
-						}
-					}
-				case "vb":
-					if senml.BoolValue == nil ||
-						(senml.BoolValue != nil && *senml.BoolValue != rpm.BoolValue) {
-						shouldDelete = false
-					}
-				case "vs":
-					if senml.StringValue == nil ||
-						(senml.StringValue != nil && *senml.StringValue != rpm.StringValue) {
-						shouldDelete = false
-					}
-				case "vd":
-					if senml.DataValue == nil ||
-						(senml.DataValue != nil && *senml.DataValue != rpm.DataValue) {
-						shouldDelete = false
-					}
-				case "from":
-					if senml.Time < rpm.From {
-						shouldDelete = false
-					}
-				case "to":
-					if senml.Time >= rpm.To {
-						shouldDelete = false
-					}
-				}
-
-				if !shouldDelete {
-					break
-				}
-			}
-
-			if !shouldDelete {
-				remainingMessages = append(remainingMessages, m)
-			}
-		}
-
-		repo.messages[profileID] = remainingMessages
-	}
-
-	return nil
-}
-
 func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
 }
@@ -168,98 +63,8 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 
 	var msgs []readers.Message
 	for _, m := range repo.messages[profileID] {
-		senml := m.(senml.Message)
-
-		ok := true
-
-		for name := range query {
-			switch name {
-			case "subtopic":
-				if rpm.Subtopic != senml.Subtopic {
-					ok = false
-				}
-			case "publisher":
-				if rpm.Publisher != senml.Publisher {
-					ok = false
-				}
-			case "name":
-				if rpm.Name != senml.Name {
-					ok = false
-				}
-			case "protocol":
-				if rpm.Protocol != senml.Protocol {
-					ok = false
-				}
-			case "v":
-				if senml.Value == nil {
-					ok = false
-				}
-
-				val, okQuery := query["comparator"]
-				if okQuery {
-					switch val.(string) {
-					case readers.LowerThanKey:
-						if senml.Value != nil &&
-							*senml.Value >= rpm.Value {
-							ok = false
-						}
-					case readers.LowerThanEqualKey:
-						if senml.Value != nil &&
-							*senml.Value > rpm.Value {
-							ok = false
-						}
-					case readers.GreaterThanKey:
-						if senml.Value != nil &&
-							*senml.Value <= rpm.Value {
-							ok = false
-						}
-					case readers.GreaterThanEqualKey:
-						if senml.Value != nil &&
-							*senml.Value < rpm.Value {
-							ok = false
-						}
-					case readers.EqualKey:
-					default:
-						if senml.Value != nil &&
-							*senml.Value != rpm.Value {
-							ok = false
-						}
-					}
-				}
-			case "vb":
-				if senml.BoolValue == nil ||
-					(senml.BoolValue != nil &&
-						*senml.BoolValue != rpm.BoolValue) {
-					ok = false
-				}
-			case "vs":
-				if senml.StringValue == nil ||
-					(senml.StringValue != nil &&
-						*senml.StringValue != rpm.StringValue) {
-					ok = false
-				}
-			case "vd":
-				if senml.DataValue == nil ||
-					(senml.DataValue != nil &&
-						*senml.DataValue != rpm.DataValue) {
-					ok = false
-				}
-			case "from":
-				if senml.Time < rpm.From {
-					ok = false
-				}
-			case "to":
-				if senml.Time >= rpm.To {
-					ok = false
-				}
-			}
-
-			if !ok {
-				break
-			}
-		}
-
-		if ok {
+		senmlMsg := m.(senml.Message)
+		if repo.messageMatchesFilter(senmlMsg, query, rpm) {
 			msgs = append(msgs, m)
 		}
 	}
@@ -283,4 +88,102 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 		Total:        uint64(len(msgs)),
 		Messages:     msgs[rpm.Offset:end],
 	}, nil
+}
+
+func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	var query map[string]interface{}
+	meta, _ := json.Marshal(rpm)
+	json.Unmarshal(meta, &query)
+
+	for profileID, messages := range repo.messages {
+		var remainingMessages []readers.Message
+
+		for _, m := range messages {
+			senmlMsg := m.(senml.Message)
+
+			// Keep the messages if they don't match the filter
+			if !repo.messageMatchesFilter(senmlMsg, query, rpm) {
+				remainingMessages = append(remainingMessages, m)
+			}
+		}
+
+		repo.messages[profileID] = remainingMessages
+	}
+
+	return nil
+}
+
+func (repo *messageRepositoryMock) messageMatchesFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.PageMetadata) bool {
+	for name := range query {
+		if !repo.checkFilterCondition(senmlMsg, name, query, rpm) {
+			return false
+		}
+	}
+	return true
+}
+
+func (repo *messageRepositoryMock) checkFilterCondition(senmlMsg senml.Message, filterName string, query map[string]interface{}, rpm readers.PageMetadata) bool {
+	switch filterName {
+	case "subtopic":
+		return rpm.Subtopic == senmlMsg.Subtopic
+	case "publisher":
+		return rpm.Publisher == senmlMsg.Publisher
+	case "name":
+		return rpm.Name == senmlMsg.Name
+	case "protocol":
+		return rpm.Protocol == senmlMsg.Protocol
+	case "v":
+		return repo.checkValueFilter(senmlMsg, query, rpm)
+	case "vb":
+		return repo.checkBoolValueFilter(senmlMsg, rpm)
+	case "vs":
+		return repo.checkStringValueFilter(senmlMsg, rpm)
+	case "vd":
+		return repo.checkDataValueFilter(senmlMsg, rpm)
+	case "from":
+		return senmlMsg.Time >= rpm.From
+	case "to":
+		return senmlMsg.Time < rpm.To
+	default:
+		return true
+	}
+}
+
+func (repo *messageRepositoryMock) checkValueFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.PageMetadata) bool {
+	if senmlMsg.Value == nil {
+		return false
+	}
+
+	comparator, ok := query["comparator"]
+	if !ok {
+		return *senmlMsg.Value == rpm.Value
+	}
+
+	switch comparator.(string) {
+	case readers.LowerThanKey:
+		return *senmlMsg.Value < rpm.Value
+	case readers.LowerThanEqualKey:
+		return *senmlMsg.Value <= rpm.Value
+	case readers.GreaterThanKey:
+		return *senmlMsg.Value > rpm.Value
+	case readers.GreaterThanEqualKey:
+		return *senmlMsg.Value >= rpm.Value
+	case readers.EqualKey:
+		return *senmlMsg.Value == rpm.Value
+	}
+}
+
+func (repo *messageRepositoryMock) checkBoolValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
+	return senmlMsg.BoolValue != nil && *senmlMsg.BoolValue == rpm.BoolValue
+}
+
+func (repo *messageRepositoryMock) checkStringValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
+	return senmlMsg.StringValue != nil && *&senmlMsg.StringValue == &rpm.StringValue
+}
+
+func (repo *messageRepositoryMock) checkDataValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
+	return senmlMsg.DataValue != nil && *&senmlMsg.DataValue == &rpm.DataValue
 }
