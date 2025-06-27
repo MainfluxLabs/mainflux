@@ -46,6 +46,32 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /messages/{publisherID}:
+    delete:
+      summary: Delete messages for a publisher in a time range.
+      description: |
+        Deletes all JSON or SenML messages for a given publisher within the specified time range.
+      tags:
+        - messages
+      parameters:
+        - name: publisherID
+          in: path
+          required: true
+          description: Publisher's unique identifier.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          description: Messages successfully deleted.
+        '400':
+          description: Invalid or missing parameters.
+        '401':
+          description: Unauthorized access token or thing key.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
 components:
   schemas:
     MessagesPage:
