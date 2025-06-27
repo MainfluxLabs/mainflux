@@ -22,7 +22,7 @@ const csvExt = ".csv"
 
 var cmdProvision = []cobra.Command{
 	{
-		Use:   "things <things_file> <group_id> <user_token>",
+		Use:   "things <things_file> <user_token>",
 		Short: "Provision things",
 		Long:  `Bulk create things`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -42,7 +42,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			things, err = sdk.CreateThings(things, args[1], args[2])
+			things, err = sdk.CreateThings(things, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -162,7 +162,7 @@ var cmdProvision = []cobra.Command{
 
 				things = append(things, t)
 			}
-			things, err = sdk.CreateThings(things, grID, ut)
+			things, err = sdk.CreateThings(things, ut)
 			if err != nil {
 				logError(err)
 				return

@@ -21,18 +21,13 @@ type createThingReq struct {
 }
 
 type createThingsReq struct {
-	token   string
-	groupID string
-	Things  []createThingReq
+	token  string
+	Things []createThingReq
 }
 
 func (req createThingsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.Things) <= 0 {

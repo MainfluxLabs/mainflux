@@ -138,7 +138,7 @@ func Provision(conf Config) {
 		gID = profiles[i].GroupID
 	}
 
-	things, err = s.CreateThings(things, gID, token)
+	things, err = s.CreateThings(things, token)
 	if err != nil {
 		log.Fatalf("Failed to create the things: %s", err.Error())
 	}
