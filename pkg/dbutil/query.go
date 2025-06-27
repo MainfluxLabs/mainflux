@@ -10,6 +10,7 @@ import (
 )
 
 var errCreateMetadataQuery = errors.New("failed to create query for metadata")
+var errCreatePayloadQuery = errors.New("failed to create query for payload")
 
 func GetNameQuery(name string) (string, string) {
 	if name == "" {
@@ -43,6 +44,19 @@ func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string
 		b, err := json.Marshal(m)
 		if err != nil {
 			return nil, "", errors.Wrap(err, errCreateMetadataQuery)
+		}
+		mb = b
+	}
+	return mb, mq, nil
+}
+
+func GetPayloadQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
+	if len(m) > 0 {
+		mq = `payload @> :payload`
+
+		b, err := json.Marshal(m)
+		if err != nil {
+			return nil, "", errors.Wrap(err, errCreatePayloadQuery)
 		}
 		mb = b
 	}

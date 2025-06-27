@@ -25,6 +25,7 @@ const (
 	MetadataKey = "metadata"
 	IDKey       = "id"
 	EmailKey    = "email"
+	PayloadKey  = "payload"
 
 	NameOrder       = "name"
 	IDOrder         = "id"
@@ -46,6 +47,7 @@ type PageMetadata struct {
 	Dir      string                 `json:"dir,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	Email    string                 `json:"email,omitempty"`
+	Payload  map[string]interface{} `json:"payload,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -285,6 +287,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
+	p, err := ReadMetadataQuery(r, PayloadKey, nil)
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
 	return PageMetadata{
 		Offset:   o,
 		Limit:    l,
@@ -293,6 +300,7 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Dir:      d,
 		Metadata: m,
 		Email:    e,
+		Payload:  p,
 	}, nil
 }
 

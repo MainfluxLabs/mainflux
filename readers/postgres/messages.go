@@ -57,7 +57,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	defer func() {
@@ -69,7 +69,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}()
 
@@ -78,9 +78,9 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
-				return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+				return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
 			}
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}
 
