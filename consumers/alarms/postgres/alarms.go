@@ -89,7 +89,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	p, pq, err := dbutil.GetPayloadQuery("", pm.Payload)
+	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -120,7 +120,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	p, pq, err := dbutil.GetPayloadQuery("", pm.Payload)
+	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

@@ -39,7 +39,7 @@ func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string
 	return mb, mq, nil
 }
 
-func GetPayloadQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetPayloadQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `payload @> :payload`
 
