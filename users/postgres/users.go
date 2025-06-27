@@ -147,7 +147,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 
-	mp, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

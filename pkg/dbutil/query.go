@@ -23,12 +23,9 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
-func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
-		if db != "" {
-			mq = db + "." + mq
-		}
 
 		b, err := json.Marshal(m)
 		if err != nil {

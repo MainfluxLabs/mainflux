@@ -191,7 +191,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -235,7 +235,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

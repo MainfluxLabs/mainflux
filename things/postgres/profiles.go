@@ -142,7 +142,7 @@ func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, 
 func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -223,7 +223,7 @@ func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []s
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
