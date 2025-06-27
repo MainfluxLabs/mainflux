@@ -236,7 +236,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 	mpg := OrgMembersPage{
 		OrgMembers: oms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(page.Users)),
+			Total:  omp.Total,
 			Offset: omp.Offset,
 			Limit:  omp.Limit,
 			Email:  omp.Email,

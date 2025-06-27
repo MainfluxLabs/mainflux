@@ -96,9 +96,9 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 		return GroupMembersPage{}, err
 	}
 
-	var memberIDs []string
-	for _, gp := range gpp.GroupMembers {
-		memberIDs = append(memberIDs, gp.MemberID)
+	memberIDs := make([]string, len(gpp.GroupMembers))
+	for i, gp := range gpp.GroupMembers {
+		memberIDs[i] = gp.MemberID
 	}
 
 	var gms []GroupMember
@@ -133,7 +133,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 	page := GroupMembersPage{
 		GroupMembers: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(gms)),
+			Total:  gpp.Total,
 			Offset: gpp.Offset,
 			Limit:  gpp.Limit,
 		},
