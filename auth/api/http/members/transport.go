@@ -75,11 +75,23 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
+	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listMembersByOrgReq{
 		token:  apiutil.ExtractBearerToken(r),
 		id:     bone.GetValue(r, apiutil.IDKey),
 		offset: o,
 		limit:  l,
+		order:  or,
+		dir:    d,
 	}
 	return req, nil
 }

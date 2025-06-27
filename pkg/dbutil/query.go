@@ -56,6 +56,8 @@ func GetOrderQuery(order string) string {
 	switch order {
 	case "name":
 		return "name"
+	case "email":
+		return "email"
 	default:
 		return "id"
 	}

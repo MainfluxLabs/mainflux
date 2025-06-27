@@ -86,6 +86,8 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 		pm := apiutil.PageMetadata{
 			Offset: req.offset,
 			Limit:  req.limit,
+			Order:  req.order,
+			Dir:    req.dir,
 		}
 
 		page, err := svc.ListMembersByOrg(ctx, req.token, req.id, pm)

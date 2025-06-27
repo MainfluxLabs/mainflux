@@ -97,33 +97,30 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 	}
 
 	var memberIDs []string
+	roles := make(map[string]string)
 	for _, gp := range gpp.GroupMembers {
 		memberIDs = append(memberIDs, gp.MemberID)
+		roles[gp.MemberID] = gp.Role
 	}
 
 	var gms []GroupMember
 	if len(gpp.GroupMembers) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Order: pm.Order, Dir: pm.Dir}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembersPage{}, err
 		}
 
-		emails := make(map[string]string)
 		for _, user := range up.Users {
-			emails[user.Id] = user.GetEmail()
-		}
-
-		for _, gp := range gpp.GroupMembers {
-			email, ok := emails[gp.MemberID]
+			role, ok := roles[user.Id]
 			if !ok {
-				return GroupMembersPage{}, err
+				return GroupMembersPage{}, errors.ErrRetrieveEntity
 			}
 
 			gm := GroupMember{
-				MemberID: gp.MemberID,
-				Email:    email,
-				Role:     gp.Role,
+				MemberID: user.Id,
+				Email:    user.Email,
+				Role:     role,
 			}
 
 			gms = append(gms, gm)
