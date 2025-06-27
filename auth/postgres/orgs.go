@@ -156,7 +156,7 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -200,10 +200,11 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	meta, mq, err := dbutil.GetMetadataQuery("o", pm.Metadata)
+	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
+	mq = "o." + mq
 
 	moq, miq := "mr.org_id = o.id", "mr.member_id = :member_id"
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
