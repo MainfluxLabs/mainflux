@@ -183,9 +183,9 @@ func (repo *messageRepositoryMock) checkBoolValueFilter(senmlMsg senml.Message, 
 }
 
 func (repo *messageRepositoryMock) checkStringValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
-	return senmlMsg.StringValue != nil && *&senmlMsg.StringValue == &rpm.StringValue
+	return senmlMsg.StringValue != nil && *senmlMsg.StringValue == rpm.StringValue
 }
 
 func (repo *messageRepositoryMock) checkDataValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
-	return senmlMsg.DataValue != nil && *&senmlMsg.DataValue == &rpm.DataValue
+	return senmlMsg.DataValue != nil && *senmlMsg.DataValue == rpm.DataValue
 }
