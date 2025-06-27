@@ -204,7 +204,10 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
 	}
-	mq = "o." + mq
+
+	if mq != "" {
+		mq = "o." + mq
+	}
 
 	moq, miq := "mr.org_id = o.id", "mr.member_id = :member_id"
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
