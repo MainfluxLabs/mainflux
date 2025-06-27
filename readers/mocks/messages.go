@@ -173,6 +173,8 @@ func (repo *messageRepositoryMock) checkValueFilter(senmlMsg senml.Message, quer
 		return *senmlMsg.Value >= rpm.Value
 	case readers.EqualKey:
 		return *senmlMsg.Value == rpm.Value
+	default: 
+		return *senmlMsg.Value == rpm.Value
 	}
 }
 
