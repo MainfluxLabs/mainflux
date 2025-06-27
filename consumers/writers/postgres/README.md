@@ -1,3 +1,30 @@
+# Consumers - Writers - DB Schema
+
+```sql
+CREATE TABLE public."json" (
+    created bigint,
+    subtopic character varying(254),
+    publisher character varying(254),
+    protocol text,
+    payload jsonb
+);
+
+CREATE TABLE public.messages (
+    subtopic character varying(254) NOT NULL,
+    publisher uuid NOT NULL,
+    protocol text,
+    name text NOT NULL,
+    unit text,
+    value double precision,
+    string_value text,
+    bool_value boolean,
+    data_value bytea,
+    sum double precision,
+    "time" double precision NOT NULL,
+    update_time double precision
+);
+```
+
 # Postgres writer
 
 Postgres writer provides message repository implementation for Postgres.
