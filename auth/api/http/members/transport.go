@@ -77,6 +77,12 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 	}
 
 	e, err := apiutil.ReadStringQuery(r, emailKey, "")
+	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +93,8 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 		email:  e,
 		offset: o,
 		limit:  l,
+		order:  or,
+		dir:    d,
 	}
 	return req, nil
 }

@@ -148,6 +148,8 @@ message UsersByEmailsReq {
 message UsersByIDsReq {
     repeated string ids = 1;
     string email = 2;
+    string order = 3;
+    string dir = 4;
 }
 
 message UsersRes {

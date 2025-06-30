@@ -37,6 +37,9 @@ var (
 	// ErrSaveMessages indicates failure occurred while saving messages to database.
 	ErrSaveMessages = New("failed to save messages to database")
 
+	// ErrDeleteMessage indicated failure occurred while deleting messages in the database.
+	ErrDeleteMessages = New("failed to delete messages")
+
 	// ErrMessage indicates an error converting a message to Mainflux message.
 	ErrMessage = New("failed to convert to Mainflux message")
 

@@ -34,12 +34,9 @@ func GetEmailQuery(email string) (string, string) {
 	return nq, email
 }
 
-func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
-		if db != "" {
-			mq = db + "." + mq
-		}
 
 		b, err := json.Marshal(m)
 		if err != nil {
@@ -67,6 +64,8 @@ func GetOrderQuery(order string) string {
 	switch order {
 	case "name":
 		return "name"
+	case "email":
+		return "email"
 	default:
 		return "id"
 	}

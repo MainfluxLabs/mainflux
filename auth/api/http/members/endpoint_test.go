@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -41,6 +42,10 @@ const (
 	description   = "testDesc"
 	n             = 10
 	loginDuration = 30 * time.Minute
+	emailKey      = "email"
+	idKey         = "id"
+	ascKey        = "asc"
+	descKey       = "desc"
 )
 
 var (
@@ -429,6 +434,30 @@ func TestListMembers(t *testing.T) {
 
 	data = append(data, owner)
 
+	dataByEmailAsc := make([]viewMemberRes, len(data))
+	copy(dataByEmailAsc, data)
+	sort.Slice(dataByEmailAsc, func(i, j int) bool {
+		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
+	})
+
+	dataByEmailDesc := make([]viewMemberRes, len(data))
+	copy(dataByEmailDesc, data)
+	sort.Slice(dataByEmailDesc, func(i, j int) bool {
+		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
+	})
+
+	dataByIDAsc := make([]viewMemberRes, len(data))
+	copy(dataByIDAsc, data)
+	sort.Slice(dataByIDAsc, func(i, j int) bool {
+		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
+	})
+
+	dataByIDDesc := make([]viewMemberRes, len(data))
+	copy(dataByIDDesc, data)
+	sort.Slice(dataByIDDesc, func(i, j int) bool {
+		return dataByIDDesc[i].ID > dataByIDDesc[j].ID
+	})
+
 	cases := []struct {
 		desc   string
 		token  string
@@ -539,6 +568,34 @@ func TestListMembers(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/orgs/%s/members?email=%s", ts.URL, or.ID, wrongValue),
 			res:    []viewMemberRes{},
+		},
+		{
+			desc:   "list group members sorted by email ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/orgs/%s/members?order=%s&dir=%s", ts.URL, or.ID, emailKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByEmailAsc,
+		},
+		{
+			desc:   "list group members sorted by email descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/orgs/%s/members?order=%s&dir=%s", ts.URL, or.ID, emailKey, descKey),
+			status: http.StatusOK,
+			res:    dataByEmailDesc,
+		},
+		{
+			desc:   "list group members sorted by id ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/orgs/%s/members?order=%s&dir=%s", ts.URL, or.ID, idKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByIDAsc,
+		},
+		{
+			desc:   "list group members sorted by id descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/orgs/%s/members?order=%s&dir=%s", ts.URL, or.ID, idKey, descKey),
+			status: http.StatusOK,
+			res:    dataByIDDesc,
 		},
 	}
 

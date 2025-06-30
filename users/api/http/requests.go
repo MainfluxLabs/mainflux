@@ -65,6 +65,8 @@ type listUsersReq struct {
 	limit    uint64
 	email    string
 	metadata users.Metadata
+	order    string
+	dir      string
 }
 
 func (req listUsersReq) validate() error {

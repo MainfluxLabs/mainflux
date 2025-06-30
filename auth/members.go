@@ -217,7 +217,7 @@ func (svc service) ListMembersByOrg(ctx context.Context, token string, orgID str
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
 		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembersPage{}, err

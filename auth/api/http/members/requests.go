@@ -13,6 +13,8 @@ type listMembersByOrgReq struct {
 	offset uint64
 	limit  uint64
 	email  string
+	order  string
+	dir    string
 }
 
 func (req listMembersByOrgReq) validate() error {

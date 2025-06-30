@@ -23,6 +23,11 @@ func sortByMeta(order, dir string, getFields func(i int) (string, string)) func(
 				return nameI < nameJ
 			}
 			return nameI > nameJ
+		case "email":
+			if dir == "asc" {
+				return nameI < nameJ
+			}
+			return nameI > nameJ
 		case "id":
 			if dir == "asc" {
 				return idI < idJ
