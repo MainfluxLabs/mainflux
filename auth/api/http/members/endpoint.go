@@ -86,6 +86,7 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 		pm := apiutil.PageMetadata{
 			Offset: req.offset,
 			Limit:  req.limit,
+			Email:  req.email,
 			Order:  req.order,
 			Dir:    req.dir,
 		}

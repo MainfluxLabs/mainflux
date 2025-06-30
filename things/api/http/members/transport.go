@@ -20,6 +20,10 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+const (
+	emailKey = "email"
+)
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
@@ -62,6 +66,13 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	e, err := apiutil.ReadStringQuery(r, emailKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pm.Email = e
 
 	req := listByGroupReq{
 		token:        apiutil.ExtractBearerToken(r),

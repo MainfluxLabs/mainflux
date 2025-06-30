@@ -12,6 +12,7 @@ type listMembersByOrgReq struct {
 	id     string
 	offset uint64
 	limit  uint64
+	email  string
 	order  string
 	dir    string
 }

@@ -105,7 +105,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 
 	var gms []GroupMember
 	if len(gpp.GroupMembers) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Order: pm.Order, Dir: pm.Dir}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembersPage{}, err
@@ -114,7 +114,7 @@ func (ts *thingsService) ListGroupMembers(ctx context.Context, token, groupID st
 		for _, user := range up.Users {
 			role, ok := roles[user.Id]
 			if !ok {
-				return GroupMembersPage{}, errors.ErrRetrieveEntity
+				continue
 			}
 
 			gm := GroupMember{

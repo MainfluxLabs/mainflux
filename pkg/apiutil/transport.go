@@ -24,6 +24,7 @@ const (
 	DirKey      = "dir"
 	MetadataKey = "metadata"
 	IDKey       = "id"
+	EmailKey    = "email"
 	PayloadKey  = "payload"
 
 	NameOrder       = "name"
@@ -45,6 +46,7 @@ type PageMetadata struct {
 	Order    string                 `json:"order,omitempty"`
 	Dir      string                 `json:"dir,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Email    string                 `json:"email,omitempty"`
 	Payload  map[string]interface{} `json:"payload,omitempty"`
 }
 
@@ -280,6 +282,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
+	e, err := ReadStringQuery(r, EmailKey, "")
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
 	p, err := ReadMetadataQuery(r, PayloadKey, nil)
 	if err != nil {
 		return PageMetadata{}, err
@@ -292,6 +299,7 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Order:    or,
 		Dir:      d,
 		Metadata: m,
+		Email:    e,
 		Payload:  p,
 	}, nil
 }
