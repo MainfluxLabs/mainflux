@@ -2,40 +2,40 @@
 
 ```sql
 CREATE TABLE keys (
-    id character varying(254) NOT NULL,
-    type smallint,
-    subject character varying(254) NOT NULL,
-    issuer_id uuid NOT NULL,
-    issued_at timestamp without time zone NOT NULL,
-    expires_at timestamp without time zone,
+    id         VARCHAR(254) NOT NULL,
+    type       SMALLINT,
+    subject    VARCHAR(254) NOT NULL,
+    issuer_id  UUID NOT NULL,
+    issued_at  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    expires_at TIMESTAMP WITHOUT TIME ZONE,
     CONSTRAINT keys_pkey PRIMARY KEY (id, issuer_id)
 );
 
 CREATE TABLE member_relations (
-    member_id uuid NOT NULL,
-    org_id uuid NOT NULL,
-    role character varying(10) NOT NULL,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    member_id  UUID NOT NULL,
+    org_id     UUID NOT NULL,
+    role       VARCHAR(10) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TOME ZONE,
     CONSTRAINT member_relations_pkey PRIMARY KEY (member_id, org_id),
     CONSTRAINT member_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE
 );
 
 CREATE TABLE orgs (
-    id uuid NOT NULL,
-    owner_id uuid NOT NULL,
-    name character varying(254) NOT NULL,
-    description character varying(1024),
-    metadata jsonb,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
-    CONSTRAINT orgs_id_key UNIQUE (id),
-    CONSTRAINT orgs_pkey PRIMARY KEY (id, owner_id)
+    id          UUID NOT NULL,
+    owner_id    UUID NOT NULL,
+    name        VARCHAR(254) NOT NULL,
+    description VARCHAR(1024),
+    metadata    JSONB,
+    created_at  TIMESTAMP WITH TOME ZONE,
+    updated_at  TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT  orgs_id_key UNIQUE (id),
+    CONSTRAINT  orgs_pkey PRIMARY KEY (id, owner_id)
 );
 
 CREATE TABLE users_roles (
-    role character varying(12) CHECK (role IN ('root', 'admin')),
-    user_id uuid NOT NULL,
+    role       VARCHAR(12) CHECK (role IN ('root', 'admin')),
+    user_id    UUID NOT NULL,
     CONSTRAINT users_roles_pkey PRIMARY KEY (user_id),
 );
 ```

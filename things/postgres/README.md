@@ -2,33 +2,33 @@
 
 ```sql
 CREATE TABLE group_roles (
-    group_id uuid NOT NULL,
-    member_id uuid NOT NULL,
-    role character varying(15),
+    group_id   UUID NOT NULL,
+    member_id  UUID NOT NULL,
+    role       VARCHAR(15),
 
     CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id),
     CONSTRAINT group_policies_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE groups (
-    id uuid UNIQUE NOT NULL,
-    org_id uuid NOT NULL,
-    name character varying(254) NOT NULL,
-    description character varying(1024),
-    metadata jsonb,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    id          UUID UNIQUE NOT NULL,
+    org_id      UUID NOT NULL,
+    name        VARCHAR(254) NOT NULL,
+    description VARCHAR(1024),
+    metadata    JSONB,
+    created_at  TIMESTAMP WITH TIME ZONE,
+    updated_at  TIMESTAMP WITH TIME ZONE,
 
-    CONSTRAINT groups_pkey PRIMARY KEY (id),
-    CONSTRAINT org_name UNIQUE (org_id, name)
+    CONSTRAINT  groups_pkey PRIMARY KEY (id),
+    CONSTRAINT  org_name UNIQUE (org_id, name)
 );
 
 CREATE TABLE profiles (
-    id uuid UNIQUE NOT NULL,
-    group_id uuid NOT NULL,
-    name character varying(1024) NOT NULL,
-    config jsonb,
-    metadata jsonb,
+    id         UUID UNIQUE NOT NULL,
+    group_id   UUID NOT NULL,
+    name       VARCHAR(1024) NOT NULL,
+    config     JSONB,
+    metadata   JSONB,
 
     CONSTRAINT group_name_prs UNIQUE (group_id, name),
     CONSTRAINT profiles_pkey PRIMARY KEY (id),
@@ -36,12 +36,12 @@ CREATE TABLE profiles (
 );
 
 CREATE TABLE things (
-    id uuid UNIQUE NOT NULL,
-    group_id uuid NOT NULL,
-    key character varying(4096) UNIQUE NOT NULL,
-    name character varying(1024) NOT NULL,
-    metadata jsonb,
-    profile_id uuid NOT NULL,
+    id         UUID UNIQUE NOT NULL,
+    group_id   UUID NOT NULL,
+    key        VARCHAR(4096) UNIQUE NOT NULL,
+    name       VARCHAR(1024) NOT NULL,
+    metadata   JSONB,
+    profile_id UUID NOT NULL,
 
     CONSTRAINT group_name_ths UNIQUE (group_id, name),
     CONSTRAINT things_pkey PRIMARY KEY (id),
