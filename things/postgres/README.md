@@ -24,11 +24,11 @@ CREATE TABLE groups (
 );
 
 CREATE TABLE profiles (
-    id         UUID UNIQUE NOT NULL,
-    group_id   UUID NOT NULL,
-    name       VARCHAR(1024) NOT NULL,
-    config     JSONB,
-    metadata   JSONB,
+    id        UUID UNIQUE NOT NULL,
+    group_id  UUID NOT NULL,
+    name      VARCHAR(1024) NOT NULL,
+    config    JSONB,
+    metadata  JSONB,
 
     CONSTRAINT group_name_prs UNIQUE (group_id, name),
     CONSTRAINT profiles_pkey PRIMARY KEY (id),
