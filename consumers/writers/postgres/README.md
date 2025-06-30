@@ -2,26 +2,26 @@
 
 ```sql
 CREATE TABLE json (
-    created bigint,
-    subtopic character varying(254),
-    publisher character varying(254),
-    protocol text,
-    payload jsonb
+    created   BIGINT,
+    subtopic  VARCHAR(254),
+    publisher VARCHAR(254),
+    protocol  TEXT,
+    payload   JSONB
 );
 
 CREATE TABLE messages (
-    subtopic character varying(254) NOT NULL,
-    publisher uuid NOT NULL,
-    protocol text,
-    name text NOT NULL,
-    unit text,
-    value double precision,
-    string_value text,
-    bool_value boolean,
-    data_value bytea,
-    sum double precision,
-    time double precision NOT NULL,
-    update_time double precision
+    subtopic     VARCHAR(254) NOT NULL,
+    publisher    UUID NOT NULL,
+    protocol     TEXT,
+    name         TEXT NOT NULL,
+    unit         TEXT,
+    value        DOUBLE PRECISION,
+    string_value TEXT,
+    bool_value   BOOLEAN,
+    data_value   BYTEA,
+    sum          DOUBLE PRECISION,
+    time         DOUBLE PRECISION NOT NULL,
+    update_time  DOUBLE PRECISION
 );
 ```
 
