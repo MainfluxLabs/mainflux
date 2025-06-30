@@ -1,16 +1,16 @@
 # Things - DB Schema
 
 ```sql
-CREATE TABLE public.group_roles (
+CREATE TABLE group_roles (
     group_id uuid NOT NULL,
     member_id uuid NOT NULL,
     role character varying(15),
 
     CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id),
-    CONSTRAINT group_policies_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE
+    CONSTRAINT group_policies_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
-CREATE TABLE public.groups (
+CREATE TABLE groups (
     id uuid UNIQUE NOT NULL,
     org_id uuid NOT NULL,
     name character varying(254) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE public.groups (
     CONSTRAINT org_name UNIQUE (org_id, name)
 );
 
-CREATE TABLE public.profiles (
+CREATE TABLE profiles (
     id uuid UNIQUE NOT NULL,
     group_id uuid NOT NULL,
     name character varying(1024) NOT NULL,
@@ -32,10 +32,10 @@ CREATE TABLE public.profiles (
 
     CONSTRAINT group_name_prs UNIQUE (group_id, name),
     CONSTRAINT profiles_pkey PRIMARY KEY (id),
-    CONSTRAINT channels_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    CONSTRAINT channels_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE public.things (
+CREATE TABLE things (
     id uuid UNIQUE NOT NULL,
     group_id uuid NOT NULL,
     key character varying(4096) UNIQUE NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE public.things (
 
     CONSTRAINT group_name_ths UNIQUE (group_id, name),
     CONSTRAINT things_pkey PRIMARY KEY (id),
-    CONSTRAINT fk_things_profile_id FOREIGN KEY (profile_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT things_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    CONSTRAINT fk_things_profile_id FOREIGN KEY (profile_id) REFERENCES profiles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT things_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 ```

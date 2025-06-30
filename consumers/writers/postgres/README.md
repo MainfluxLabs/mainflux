@@ -1,7 +1,7 @@
 # Consumers - Writers - DB Schema
 
 ```sql
-CREATE TABLE public."json" (
+CREATE TABLE json (
     created bigint,
     subtopic character varying(254),
     publisher character varying(254),
@@ -9,7 +9,7 @@ CREATE TABLE public."json" (
     payload jsonb
 );
 
-CREATE TABLE public.messages (
+CREATE TABLE messages (
     subtopic character varying(254) NOT NULL,
     publisher uuid NOT NULL,
     protocol text,
@@ -20,7 +20,7 @@ CREATE TABLE public.messages (
     bool_value boolean,
     data_value bytea,
     sum double precision,
-    "time" double precision NOT NULL,
+    time double precision NOT NULL,
     update_time double precision
 );
 ```
