@@ -20,13 +20,32 @@ import (
 const jsonExt = ".json"
 const csvExt = ".csv"
 
+const CSV_THINGS_FIELD_COUNT = 4
+
+// These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
+const (
+	CSV_THINGS_FIELD_ID_IDX = iota
+	CSV_THINGS_FIELD_NAME_IDX
+	CSV_THINGS_FIELD_GROUP_ID_IDX
+	CSV_THINGS_FIELD_PROFILE_ID_IDX
+)
+
+const CSV_PROFILES_FIELD_COUNT = 3
+
+// These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
+const (
+	CSV_PROFILES_FIELD_ID_IDX = iota
+	CSV_PROFILES_FIELD_NAME_IDX
+	CSV_PROFILES_FIELD_GROUP_ID_IDX
+)
+
 var cmdProvision = []cobra.Command{
 	{
 		Use:   "things <things_file> <group_id> <user_token>",
 		Short: "Provision things",
 		Long:  `Bulk create things`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -56,7 +75,7 @@ var cmdProvision = []cobra.Command{
 		Short: "Provision profiles",
 		Long:  `Bulk create profiles`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -205,7 +224,7 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 		reader := csv.NewReader(file)
 
 		for {
-			l, err := reader.Read()
+			record, err := reader.Read()
 			if err == io.EOF {
 				break
 			}
@@ -213,12 +232,15 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 				return []mfxsdk.Thing{}, err
 			}
 
-			if len(l) < 1 {
-				return []mfxsdk.Thing{}, errors.New("empty line found in file")
+			if len(record) < CSV_THINGS_FIELD_COUNT {
+				return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
 			}
 
 			thing := mfxsdk.Thing{
-				Name: l[0],
+				Name:      record[CSV_THINGS_FIELD_NAME_IDX],
+				ID:        record[CSV_THINGS_FIELD_ID_IDX],
+				ProfileID: record[CSV_THINGS_FIELD_PROFILE_ID_IDX],
+				GroupID:   record[CSV_THINGS_FIELD_GROUP_ID_IDX],
 			}
 
 			things = append(things, thing)
@@ -252,7 +274,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 		reader := csv.NewReader(file)
 
 		for {
-			l, err := reader.Read()
+			record, err := reader.Read()
 			if err == io.EOF {
 				break
 			}
@@ -260,12 +282,14 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, err
 			}
 
-			if len(l) < 1 {
-				return []mfxsdk.Profile{}, errors.New("empty line found in file")
+			if len(record) < CSV_PROFILES_FIELD_COUNT {
+				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
 			}
 
 			profile := mfxsdk.Profile{
-				Name: l[0],
+				Name:    record[CSV_PROFILES_FIELD_NAME_IDX],
+				ID:      record[CSV_PROFILES_FIELD_ID_IDX],
+				GroupID: record[CSV_PROFILES_FIELD_GROUP_ID_IDX],
 			}
 
 			profiles = append(profiles, profile)
