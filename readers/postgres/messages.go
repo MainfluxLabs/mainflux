@@ -106,10 +106,6 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 }
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	var query string
-	var err error
-	isAggregation := false
-
 	format, order := tr.getFormatAndOrder(rpm)
 	params := tr.buildQueryParams(rpm)
 
@@ -118,19 +114,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		Messages:     []readers.Message{},
 	}
 
-	if rpm.Aggregation != "" {
-		isAggregation = true
-	}
-
-	if isAggregation {
-		query, err = tr.buildAggregationQuery(rpm, format)
-		if err != nil {
-			return page, err
-		}
-	} else {
-		query = tr.buildRegularQuery(rpm, format, order)
-	}
-
+	query := tr.buildRegularQuery(rpm, format, order)
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
 		return page, err
@@ -138,165 +122,62 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	if rows == nil {
 		return page, nil
 	}
-
 	defer rows.Close()
 
-	if isAggregation {
+	messages, err := tr.scanMessages(rows, format)
+	if err != nil {
+		return page, nil
+	}
+	page.Messages = messages
+
+	countQuery := tr.buildCountQuery(rpm, format, order)
+	countRows, err := tr.executeQuery(countQuery, params)
+	if err != nil {
+		return page, nil
+	}
+	defer countRows.Close()
+
+	if countRows.Next() {
+		if err := countRows.Scan(&page.Total); err != nil {
+			return page, err
+		}
+	}
+
+	if rpm.Aggregation != "" {
+		aggQuery := tr.buildAggregationQuery(rpm, format, order)
+		aggRows, err := tr.executeQuery(aggQuery, params)
+		if err != nil {
+			return page, err
+		}
+		defer aggRows.Close()
+
 		var result interface{}
 		var count uint64
 
 		aggregationType := AggregationType(rpm.Aggregation)
-		if rows.Next() {
+		if aggRows.Next() {
 			if aggregationType == AggregationCount {
-				if err := rows.Scan(&count, &count); err != nil {
+				if err := aggRows.Scan(&count, &count); err != nil {
 					return page, errors.Wrap(readers.ErrReadMessages, err)
 				}
 				result = count
 			} else {
-				if err := rows.Scan(&result, &count); err != nil {
+				if err := aggRows.Scan(&result, &count); err != nil {
 					return page, errors.Wrap(readers.ErrReadMessages, err)
 				}
 			}
 		}
-		aggregateField := rpm.AggregateField
-		if aggregateField == "" {
-			if format == jsonTable {
-				aggregateField = "created"
-			} else {
-				aggregateField = "value"
-			}
-		}
 
-		page.Total = count
+		aggregateField := tr.getAggregateField(rpm, format)
 		page.Aggregation = &readers.AggregationResult{
 			Field: aggregateField,
 			Value: result,
 			Count: count,
 		}
-	} else {
-		messages, err := tr.scanMessages(rows, format)
-		if err != nil {
-			return page, err
-		}
-
-		page.Messages = messages
-
-		countQuery := tr.buildCountQuery(rpm, format, order)
-		countRows, err := tr.executeQuery(countQuery, params)
-		if err != nil {
-			return page, err
-		}
-		defer countRows.Close()
-
-		if countRows.Next() {
-			if err := countRows.Scan(&page.Total); err != nil {
-				return page, err
-			}
-		}
 	}
 
 	return page, nil
 }
-
-// func (tr postgresRepository) readAllWithAggregation(rpm readers.PageMetadata) (readers.MessagesPage, error)  {
-// 	format, _ := tr.getFormatAndOrder(rpm)
-// 	params := tr.buildQueryParams(rpm)
-//
-// 	query, err := tr.buildAggregationQuery(rpm, format)
-// 	if err != nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-//
-// 	rows, err := tr.executeQuery(query, params)
-// 	if err != nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-// 	if rows == nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-// 	defer rows.Close()
-//
-// 	var result interface{}
-// 	var count uint64
-// 	aggregationType := AggregationType(rpm.Aggregation)
-//
-// 	if rows.Next() {
-// 		if aggregationType == AggregationCount {
-// 			if err := rows.Scan(&count, &count); err != nil {
-// 				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-// 			}
-// 			result = count
-// 		} else {
-// 			if err := rows.Scan(&result, &count); err != nil {
-// 				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-// 			}
-// 		}
-// 	}
-//
-// 	aggregateField := rpm.AggregateField
-// 	if aggregateField == "" {
-// 		// might be changed for future json patches
-// 		if format == jsonTable {
-// 			aggregateField = "created"
-// 		} else {
-// 			aggregateField = "value"
-// 		}
-// 	}
-//
-// 	return readers.MessagesPage{
-// 		PageMetadata: rpm,
-// 		Messages:     []readers.Message{},
-// 		Total:        count,
-// 		Aggregation: &readers.AggregationResult{
-// 			Field: aggregateField,
-// 			Value: result,
-// 			Count: count,
-// 		},
-// 	}, nil
-//
-// }
-
-// func (tr postgresRepository) readAllWithNoAggregatio(rpm readers.PageMetadata) (readers.MessagesPage, error)  {
-// 	format, order := tr.getFormatAndOrder(rpm)
-// 	params := tr.buildQueryParams(rpm)
-//
-// 	query := tr.buildRegularQuery(rpm, format, order)
-// 	rows, err := tr.executeQuery(query, params)
-// 	if err != nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-// 	if rows == nil {
-// 		return readers.MessagesPage{}, nil
-// 	}
-// 	defer rows.Close()
-//
-// 	messages, err := tr.scanMessages(rows, format)
-// 	if err != nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-//
-// 	page := readers.MessagesPage{
-// 		PageMetadata: rpm,
-// 		Messages:     messages,
-// 	}
-//
-// 	countQuery := tr.buildCountQuery(rpm, format, order)
-// 	rows, err = tr.executeQuery(countQuery, params)
-// 	if err != nil {
-// 		return readers.MessagesPage{}, err
-// 	}
-// 	defer rows.Close()
-//
-// 	total := uint64(0)
-// 	if rows.Next() {
-// 		if err := rows.Scan(&total); err != nil {
-// 			return page, err
-// 		}
-// 	}
-// 	page.Total = total
-// 	return page, nil
-//
-// }
 
 func (tr postgresRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
 	rows, err := tr.db.NamedQuery(query, params)
@@ -321,6 +202,19 @@ func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format
 	}
 
 	return format, order
+}
+
+func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format string) string {
+	switch rpm.AggregateField {
+	case "":
+		if format == jsonTable {
+			return "created"
+		} else {
+			return "value"
+		}
+	default:
+		return rpm.AggregateField
+	}
 }
 
 func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
@@ -379,7 +273,7 @@ func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, o
 	return fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
 }
 
-func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format string) (string, error) {
+func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format, order string) string {
 	aggregateField := rpm.AggregateField
 	aggregationType := AggregationType(rpm.Aggregation)
 
@@ -403,8 +297,36 @@ func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, for
 		aggFunc = "COUNT(*)"
 	}
 
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	interval := rpm.Interval
 	condition := fmtCondition(rpm)
-	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM %s %s;`, aggFunc, format, condition), nil
+
+	var subQuery string
+	if interval != "" {
+		switch format {
+		case defTable:
+			subQuery = fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
+					FROM %[3]s %[4]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
+				) sub
+				%[5]s`, interval, order, format, condition, olq)
+
+		case jsonTable:
+			subQuery = fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
+					FROM %[2]s %[3]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
+				) sub
+				%[4]s`, interval, format, condition, olq)
+		}
+	} else {
+		subQuery = fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s`, format, condition, order, olq)
+	}
+
+	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM (%s) as paginated_results;`, aggFunc, subQuery)
 }
 
 func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
