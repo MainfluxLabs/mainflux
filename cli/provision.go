@@ -243,6 +243,23 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 				GroupID:   record[CSV_THINGS_FIELD_GROUP_ID_IDX],
 			}
 
+			recordMetadata := record[CSV_THINGS_FIELD_COUNT:]
+
+			// Thing record includes metadata variables
+			if len(recordMetadata) > 0 {
+				// Un-paired metadata fields present, abort
+				if len(recordMetadata)%2 != 0 {
+					return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
+				}
+
+				thing.Metadata = make(map[string]any)
+
+				// Consume all key-value metadata pairs from current Thing record and save them to map
+				for i := 0; i < len(recordMetadata); i += 2 {
+					thing.Metadata[recordMetadata[i]] = recordMetadata[i+1]
+				}
+			}
+
 			things = append(things, thing)
 		}
 	case jsonExt:
