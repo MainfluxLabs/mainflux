@@ -253,7 +253,7 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 					return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
 				}
 
-				thing.Metadata = make(map[string]any)
+				thing.Metadata = make(map[string]any, len(recordMetadata)/2)
 
 				// Consume all key-value metadata pairs from current Thing record and save them to map
 				for i := 0; i < len(recordMetadata); i += 2 {
