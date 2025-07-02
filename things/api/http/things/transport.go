@@ -153,7 +153,7 @@ func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error)
 
 	req := createThingsReq{
 		token:     apiutil.ExtractBearerToken(r),
-		profileId: bone.GetValue(r, apiutil.IDKey),
+		profileID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {

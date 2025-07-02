@@ -21,7 +21,7 @@ type createThingReq struct {
 
 type createThingsReq struct {
 	token     string
-	profileId string
+	profileID string
 	Things    []createThingReq
 }
 
@@ -30,7 +30,7 @@ func (req createThingsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.profileId == "" {
+	if req.profileID == "" {
 		return apiutil.ErrMissingProfileID
 	}
 

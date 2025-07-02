@@ -26,8 +26,8 @@ type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
 
-func (sdk mfSDK) CreateThing(t Thing, profileId, token string) (string, error) {
-	things, err := sdk.CreateThings([]Thing{t}, profileId, token)
+func (sdk mfSDK) CreateThing(t Thing, profileID, token string) (string, error) {
+	things, err := sdk.CreateThings([]Thing{t}, profileID, token)
 	if err != nil {
 		return "", err
 	}
@@ -39,13 +39,13 @@ func (sdk mfSDK) CreateThing(t Thing, profileId, token string) (string, error) {
 	return things[0].ID, nil
 }
 
-func (sdk mfSDK) CreateThings(things []Thing, profileId, token string) ([]Thing, error) {
+func (sdk mfSDK) CreateThings(things []Thing, profileID, token string) ([]Thing, error) {
 	data, err := json.Marshal(things)
 	if err != nil {
 		return []Thing{}, err
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/things", sdk.thingsURL, profilesEndpoint, profileId)
+	url := fmt.Sprintf("%s/%s/%s/things", sdk.thingsURL, profilesEndpoint, profileID)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {

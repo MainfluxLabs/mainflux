@@ -19,7 +19,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		// Obtain the new Things' Group ID based on the Profile ID from the request
-		groupId, err := svc.GetGroupIDByProfileID(ctx, req.profileId)
+		groupId, err := svc.GetGroupIDByProfileID(ctx, req.profileID)
 		if err != nil {
 			return nil, err
 		}
@@ -30,7 +30,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			th := things.Thing{
 				ID:        t.ID,
 				GroupID:   groupId,
-				ProfileID: req.profileId,
+				ProfileID: req.profileID,
 				Name:      t.Name,
 				Key:       t.Key,
 				Metadata:  t.Metadata,
