@@ -283,7 +283,7 @@ func (tr postgresRepository) executeQuery(query string, params map[string]interf
 func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	interval := rpm.Interval
-	condition := fmtCondition(rpm)
+	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
@@ -312,7 +312,7 @@ func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format,
 
 func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, order string) string {
 	interval := rpm.Interval
-	condition := fmtCondition(rpm)
+	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
@@ -347,7 +347,7 @@ func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, for
 func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	interval := rpm.Interval
-	condition := fmtCondition(rpm)
+	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
 		return tr.buildIntervalSubQuery(interval, format, order, condition, olq)
