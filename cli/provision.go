@@ -24,11 +24,11 @@ const csvExt = ".csv"
 
 var cmdProvision = []cobra.Command{
 	{
-		Use:   "things <things_file> <user_token>",
+		Use:   "things <things_file> <profile_id> <user_token>",
 		Short: "Provision things",
 		Long:  `Bulk create things`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -44,7 +44,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			things, err = sdk.CreateThings(things, args[1])
+			things, err = sdk.CreateThings(things, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -155,14 +155,12 @@ var cmdProvision = []cobra.Command{
 				n := fmt.Sprintf("d%d", i)
 
 				t := mfxsdk.Thing{
-					Name:      n,
-					GroupID:   grID,
-					ProfileID: profiles[0].ID,
+					Name: n,
 				}
 
 				things = append(things, t)
 			}
-			things, err = sdk.CreateThings(things, ut)
+			things, err = sdk.CreateThings(things, profiles[0].ID, ut)
 			if err != nil {
 				logError(err)
 				return
