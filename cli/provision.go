@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -30,13 +31,22 @@ const (
 	CSV_THINGS_FIELD_PROFILE_ID_IDX
 )
 
-const CSV_PROFILES_FIELD_COUNT = 3
+const CSV_PROFILES_FIELD_COUNT = 12
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
 	CSV_PROFILES_FIELD_ID_IDX = iota
 	CSV_PROFILES_FIELD_NAME_IDX
 	CSV_PROFILES_FIELD_GROUP_ID_IDX
+	CSV_PROFILES_FIELD_CONFIG_CONTENTTYPE_IDX
+	CSV_PROFILES_FIELD_CONFIG_WRITE_IDX
+	CSV_PROFILES_FIELD_CONFIG_WEBHOOK_IDX
+	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX
+	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX
+	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX
+	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX
+	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX
+	CSV_PROFILES_FIELD_CONFIG_SMTP_ID_IDX
 )
 
 var cmdProvision = []cobra.Command{
@@ -308,6 +318,54 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				Name:    record[CSV_PROFILES_FIELD_NAME_IDX],
 				ID:      record[CSV_PROFILES_FIELD_ID_IDX],
 				GroupID: record[CSV_PROFILES_FIELD_GROUP_ID_IDX],
+			}
+
+			// Populate profile's config object
+			profile.Config = make(map[string]any)
+			profile.Config["content_type"] = record[CSV_PROFILES_FIELD_CONFIG_CONTENTTYPE_IDX]
+
+			switch record[CSV_PROFILES_FIELD_CONFIG_WRITE_IDX] {
+			case "true":
+				profile.Config["write"] = true
+			case "false":
+				profile.Config["write"] = false
+			default:
+				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+			}
+
+			switch record[CSV_PROFILES_FIELD_CONFIG_WEBHOOK_IDX] {
+			case "true":
+				profile.Config["webhook"] = true
+			case "false":
+				profile.Config["webhook"] = false
+			default:
+				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+			}
+
+			profile.Config["smpt_id"] = record[CSV_PROFILES_FIELD_CONFIG_SMTP_ID_IDX]
+
+			profile.Config["transformer"] = map[string]any{}
+			profile.Config["transformer"].(map[string]any)["data_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX]
+			profile.Config["transformer"].(map[string]any)["time_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX]
+			profile.Config["transformer"].(map[string]any)["time_location"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX]
+			profile.Config["transformer"].(map[string]any)["time_format"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX]
+			profile.Config["transformer"].(map[string]any)["data_filters"] = strings.Split(record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX], ",")
+
+			recordMetadata := record[CSV_PROFILES_FIELD_COUNT:]
+
+			// Profile record includes metadata variables
+			if len(recordMetadata) > 0 {
+				// Un-paired metadata fields present, abort
+				if len(recordMetadata)%2 != 0 {
+					return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+				}
+
+				profile.Metadata = make(map[string]any, len(recordMetadata)/2)
+
+				// Consume all key-value metadata pairs from current Thing record and save them to map
+				for i := 0; i < len(recordMetadata); i += 2 {
+					profile.Metadata[recordMetadata[i]] = recordMetadata[i+1]
+				}
 			}
 
 			profiles = append(profiles, profile)
