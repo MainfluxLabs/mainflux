@@ -18,18 +18,19 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		// Obtain the new Things' Group ID based on the Profile ID from the request
+		groupId, err := svc.GetGroupIDByProfileID(ctx, req.profileId)
+		if err != nil {
+			return nil, err
+		}
+
 		ths := []things.Thing{}
 		for _, t := range req.Things {
-			// Obtain the new Thing's Group ID based on the assigned Profile's belonging Group
-			groupId, err := svc.GetGroupIDByProfileID(ctx, t.ProfileID)
-			if err != nil {
-				return nil, err
-			}
 
 			th := things.Thing{
 				ID:        t.ID,
 				GroupID:   groupId,
-				ProfileID: t.ProfileID,
+				ProfileID: req.profileId,
 				Name:      t.Name,
 				Key:       t.Key,
 				Metadata:  t.Metadata,

@@ -13,16 +13,16 @@ const (
 )
 
 type createThingReq struct {
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Key      string                 `json:"key,omitempty"`
+	ID       string                 `json:"id,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
-	token  string
-	Things []createThingReq
+	token     string
+	profileId string
+	Things    []createThingReq
 }
 
 func (req createThingsReq) validate() error {
@@ -30,14 +30,15 @@ func (req createThingsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	if req.profileId == "" {
+		return apiutil.ErrMissingProfileID
+	}
+
 	if len(req.Things) <= 0 {
 		return apiutil.ErrEmptyList
 	}
 
 	for _, thing := range req.Things {
-		if thing.ProfileID == "" {
-			return apiutil.ErrMissingProfileID
-		}
 		if thing.ID != "" {
 			if err := apiutil.ValidateUUID(thing.ID); err != nil {
 				return err
