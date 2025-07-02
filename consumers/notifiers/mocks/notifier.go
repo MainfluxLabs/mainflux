@@ -83,6 +83,7 @@ func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID 
 	nrm.mu.Lock()
 	defer nrm.mu.Unlock()
 	var items []notifiers.Notifier
+	filteredItems := make([]notifiers.Notifier, 0)
 
 	first := uint64(pm.Offset) + 1
 	last := first + uint64(pm.Limit)
@@ -94,6 +95,15 @@ func (nrm *notifierRepositoryMock) RetrieveByGroupID(_ context.Context, groupID 
 				items = append(items, nf)
 			}
 		}
+	}
+
+	if pm.Name != "" {
+		for _, v := range items {
+			if v.Name == pm.Name {
+				filteredItems = append(filteredItems, v)
+			}
+		}
+		items = filteredItems
 	}
 
 	return notifiers.NotifiersPage{

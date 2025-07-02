@@ -40,25 +40,30 @@ const (
 	invalidPass  = "wrong"
 	prefix       = "fe6b4e92-cc98-425e-b0aa-"
 	userNum      = 101
+	emailKey     = "email"
+	idKey        = "id"
+	ascKey       = "asc"
+	descKey      = "desc"
 )
 
 var (
-	user               = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin              = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
-	newUser            = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
-	usersList          = []users.User{admin, user}
-	metadata           = map[string]interface{}{"key": "value"}
-	notFoundRes        = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
-	unauthRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword       = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
-	malformedRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
-	unsupportedRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
-	missingTokRes      = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	missingEmailRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
-	missingPassRes     = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
-	invalidRestPassRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
-	idProvider         = uuid.New()
-	passRegex          = regexp.MustCompile(`^\S{8,}$`)
+	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
+	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
+	usersList             = []users.User{admin, user}
+	metadata              = map[string]interface{}{"key": "value"}
+	notFoundRes           = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
+	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
+	malformedRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
+	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
+	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	missingEmailRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
+	missingPassRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingPass.Error()})
+	invalidRestPassRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
+	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
+	idProvider            = uuid.New()
+	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 )
 
 type testRequest struct {
@@ -324,7 +329,25 @@ func TestListUsers(t *testing.T) {
 	}
 
 	sort.Slice(data, func(i, j int) bool {
-		return data[i].Email < data[j].Email
+		return data[i].ID > data[j].ID
+	})
+
+	dataByEmailAsc := make([]viewUserRes, len(data))
+	copy(dataByEmailAsc, data)
+	sort.Slice(dataByEmailAsc, func(i, j int) bool {
+		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
+	})
+
+	dataByEmailDesc := make([]viewUserRes, len(data))
+	copy(dataByEmailDesc, data)
+	sort.Slice(dataByEmailDesc, func(i, j int) bool {
+		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
+	})
+
+	dataByIDAsc := make([]viewUserRes, len(data))
+	copy(dataByIDAsc, data)
+	sort.Slice(dataByIDAsc, func(i, j int) bool {
+		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
 	})
 
 	cases := []struct {
@@ -354,13 +377,6 @@ func TestListUsers(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			res:    data,
-		},
-		{
-			desc:   "get list of users with limit ordered by name descendent",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=name&dir=desc", ts.URL, 0, 5),
-			token:  token,
-			status: http.StatusOK,
-			res:    data[0:5],
 		},
 		{
 			desc:   "get list of users with invalid token",
@@ -438,6 +454,34 @@ func TestListUsers(t *testing.T) {
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
+		},
+		{
+			desc:   "get list of users sorted by email ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, emailKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByEmailAsc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by email descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, emailKey, descKey),
+			status: http.StatusOK,
+			res:    dataByEmailDesc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by id ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, idKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByIDAsc[0:10],
+		},
+		{
+			desc:   "get list of users sorted by id descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/users?order=%s&dir=%s", ts.URL, idKey, descKey),
+			status: http.StatusOK,
+			res:    data[0:10],
 		},
 	}
 	for _, tc := range cases {
@@ -685,7 +729,7 @@ func TestPasswordChange(t *testing.T) {
 	}{
 		{"password change with valid token", dataResExisting, contentType, http.StatusCreated, "{}", token},
 		{"password change with empty token", reqNoExist, contentType, http.StatusUnauthorized, missingTokRes, ""},
-		{"password change with invalid old password", reqWrongPass, contentType, http.StatusUnauthorized, unauthRes, token},
+		{"password change with invalid old password", reqWrongPass, contentType, http.StatusBadRequest, invalidCurrentPassRes, token},
 		{"password change with invalid new password", reqWeakPass, contentType, http.StatusBadRequest, weakPassword, token},
 		{"password change with empty JSON request", "{}", contentType, http.StatusBadRequest, missingPassRes, token},
 		{"password change empty request", "", contentType, http.StatusBadRequest, malformedRes, token},

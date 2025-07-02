@@ -21,6 +21,10 @@ const (
 	Owner  = "owner"
 )
 
+var (
+	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
+)
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -574,6 +578,7 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 			ID:     id,
 			Action: Editor,
 		}
+
 		if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
 			return err
 		}

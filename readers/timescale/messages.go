@@ -45,6 +45,10 @@ func (tr timescaleRepository) ListAllMessages(rpm readers.PageMetadata) (readers
 	return tr.readAll(rpm)
 }
 
+func (tr timescaleRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}
+
 func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return tr.readAll(rpm)
 }
@@ -59,7 +63,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Mes
 
 	tx, err := tr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	defer func() {
@@ -71,7 +75,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Mes
 		}
 
 		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessage, err)
+			err = errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}()
 
@@ -82,11 +86,11 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Mes
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessage, errInvalidMessage)
+					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
 				}
 			}
 
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}
 

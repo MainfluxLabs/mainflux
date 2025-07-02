@@ -22,7 +22,7 @@ const (
 	membersEndpoint      = "members"
 )
 
-func (sdk mfSDK) CreateUser(token string, u User) (string, error) {
+func (sdk mfSDK) CreateUser(u User, token string) (string, error) {
 	data, err := json.Marshal(u)
 	if err != nil {
 		return "", err
@@ -72,8 +72,8 @@ func (sdk mfSDK) RegisterUser(u User) (string, error) {
 	return id, nil
 }
 
-func (sdk mfSDK) User(userID, token string) (User, error) {
-	url := fmt.Sprintf("%s/%s", sdk.usersURL, usersEndpoint)
+func (sdk mfSDK) GetUser(userID, token string) (User, error) {
+	url := fmt.Sprintf("%s/%s/%s", sdk.usersURL, usersEndpoint, userID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return User{}, err
@@ -102,7 +102,7 @@ func (sdk mfSDK) User(userID, token string) (User, error) {
 	return u, nil
 }
 
-func (sdk mfSDK) Users(token string, pm PageMetadata) (UsersPage, error) {
+func (sdk mfSDK) ListUsers(pm PageMetadata, token string) (UsersPage, error) {
 	url, err := sdk.withQueryParams(sdk.usersURL, usersEndpoint, pm)
 	if err != nil {
 		return UsersPage{}, err

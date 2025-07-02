@@ -142,7 +142,7 @@ func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, 
 func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -201,6 +201,13 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 		q := `DELETE FROM profiles WHERE id = :id`
 		_, err := cr.db.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				if pgErr.Code == pgerrcode.ForeignKeyViolation {
+					return errors.Wrap(things.ErrProfileAssigned, err)
+				}
+			}
+
 			return errors.Wrap(errors.ErrRemoveEntity, err)
 		}
 	}
@@ -216,7 +223,7 @@ func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []s
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

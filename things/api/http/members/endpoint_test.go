@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 
@@ -39,6 +40,10 @@ const (
 	password       = "password"
 	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
 	n              = 5
+	emailKey       = "email"
+	idKey          = "id"
+	ascKey         = "asc"
+	descKey        = "desc"
 )
 
 var (
@@ -441,6 +446,30 @@ func TestListGroupMembers(t *testing.T) {
 	}
 	data = append(data, owner)
 
+	dataByEmailAsc := make([]groupMember, len(data))
+	copy(dataByEmailAsc, data)
+	sort.Slice(dataByEmailAsc, func(i, j int) bool {
+		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
+	})
+
+	dataByEmailDesc := make([]groupMember, len(data))
+	copy(dataByEmailDesc, data)
+	sort.Slice(dataByEmailDesc, func(i, j int) bool {
+		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
+	})
+
+	dataByIDAsc := make([]groupMember, len(data))
+	copy(dataByIDAsc, data)
+	sort.Slice(dataByIDAsc, func(i, j int) bool {
+		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
+	})
+
+	dataByIDDesc := make([]groupMember, len(data))
+	copy(dataByIDDesc, data)
+	sort.Slice(dataByIDDesc, func(i, j int) bool {
+		return dataByIDDesc[i].ID > dataByIDDesc[j].ID
+	})
+
 	cases := []struct {
 		desc   string
 		token  string
@@ -531,6 +560,54 @@ func TestListGroupMembers(t *testing.T) {
 			url:    fmt.Sprintf("%s/groups/%s/members", ts.URL, gr.ID),
 			status: http.StatusOK,
 			res:    data,
+		},
+		{
+			desc:   "list group members filtered by email",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, viewerEmail),
+			res: []groupMember{
+				{
+					ID:    viewer.ID,
+					Email: viewer.Email,
+					Role:  things.Viewer,
+				},
+			},
+		},
+		{
+			desc:   "list group members filtered by email that doesn't match",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, wrongValue),
+			res:    []groupMember{},
+		},
+		{
+			desc:   "list group members sorted by email ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, emailKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByEmailAsc,
+		},
+		{
+			desc:   "list group members sorted by email descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, emailKey, descKey),
+			status: http.StatusOK,
+			res:    dataByEmailDesc,
+		},
+		{
+			desc:   "list group members sorted by id ascendant",
+			token:  token,
+			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, idKey, ascKey),
+			status: http.StatusOK,
+			res:    dataByIDAsc,
+		},
+		{
+			desc:   "list group members sorted by id descendent",
+			token:  token,
+			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, idKey, descKey),
+			status: http.StatusOK,
+			res:    dataByIDDesc,
 		},
 	}
 

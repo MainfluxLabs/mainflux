@@ -34,9 +34,15 @@ var (
 	// ErrScanMetadata indicates problem with metadata in db.
 	ErrScanMetadata = New("failed to scan metadata in db")
 
-	// ErrSaveMessage indicates failure occurred while saving message to database.
-	ErrSaveMessage = New("failed to save message to database")
+	// ErrSaveMessages indicates failure occurred while saving messages to database.
+	ErrSaveMessages = New("failed to save messages to database")
+
+	// ErrDeleteMessage indicated failure occurred while deleting messages in the database.
+	ErrDeleteMessages = New("failed to delete messages")
 
 	// ErrMessage indicates an error converting a message to Mainflux message.
 	ErrMessage = New("failed to convert to Mainflux message")
+
+	// ErrInvalidPassword indicates that current password is invalid.
+	ErrInvalidPassword = New("invalid current password")
 )

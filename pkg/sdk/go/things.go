@@ -75,7 +75,7 @@ func (sdk mfSDK) CreateThings(things []Thing, groupID, token string) ([]Thing, e
 	return ctr.Things, nil
 }
 
-func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
+func (sdk mfSDK) ListThings(pm PageMetadata, token string) (ThingsPage, error) {
 	url, err := sdk.withQueryParams(sdk.thingsURL, thingsEndpoint, pm)
 	if err != nil {
 		return ThingsPage{}, err
@@ -109,7 +109,7 @@ func (sdk mfSDK) Things(token string, pm PageMetadata) (ThingsPage, error) {
 	return tp, nil
 }
 
-func (sdk mfSDK) ThingsByProfile(prID, token string, pm PageMetadata) (ThingsPage, error) {
+func (sdk mfSDK) ListThingsByProfile(prID string, pm PageMetadata, token string) (ThingsPage, error) {
 	url := fmt.Sprintf("%s/profiles/%s/things?offset=%d&limit=%d&dir=%s", sdk.thingsURL, prID, pm.Offset, pm.Limit, pm.Dir)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -139,7 +139,7 @@ func (sdk mfSDK) ThingsByProfile(prID, token string, pm PageMetadata) (ThingsPag
 	return tp, nil
 }
 
-func (sdk mfSDK) Thing(id, token string) (Thing, error) {
+func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.thingsURL, thingsEndpoint, id)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -170,7 +170,7 @@ func (sdk mfSDK) Thing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) MetadataByKey(thingKey string) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(thingKey string) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

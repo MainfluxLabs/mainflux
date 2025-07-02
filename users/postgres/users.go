@@ -144,8 +144,10 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 
-	mp, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -173,7 +175,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 		emq = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
 
-	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY email %s;`, emq, olq)
+	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY %s %s %s;`, emq, oq, dq, olq)
 
 	params := map[string]interface{}{
 		"limit":    pm.Limit,

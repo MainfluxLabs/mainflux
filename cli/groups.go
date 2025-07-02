@@ -41,36 +41,56 @@ var cmdGroups = []cobra.Command{
 		},
 	},
 	{
-		Use:   "get <all | group_id> <user_token>",
-		Short: "Get group",
-		Long: `Get all groups or group by id.
+		Use:   "get <all | group-id | by-org> <id> <user_token>",
+		Short: "Get group(s)",
+		Long: `Get all groups, a specific group by ID, or all groups belonging to a specific Org.
 		all - lists all groups
-		group_id - shows group with provided <group_id>`,
+		group-id - shows group with provided <group-id>
+		by-org - lists all groups belonging to Org with provided <org-id>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) < 2 {
 				logUsage(cmd.Use)
 				return
 			}
-			if args[0] == "all" {
+
+			switch args[0] {
+			case "all":
 				meta := mfxsdk.PageMetadata{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				gp, err := sdk.Groups(meta, args[1])
+				gp, err := sdk.ListGroups(meta, args[1])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(gp)
-				return
-			}
+			case "group-id":
+				g, err := sdk.GetGroup(args[1], args[2])
+				if err != nil {
+					logError(err)
+					return
+				}
+				logJSON(g)
+			case "by-org":
+				if len(args) < 3 {
+					logUsage(cmd.Use)
+					return
+				}
 
-			g, err := sdk.Group(args[0], args[1])
-			if err != nil {
-				logError(err)
-				return
+				res, err := sdk.ListGroupsByOrg(
+					args[1],
+					mfxsdk.PageMetadata{Offset: uint64(Offset), Limit: uint64(Limit)},
+					args[2],
+				)
+
+				if err != nil {
+					logError(err)
+					return
+				}
+
+				logJSON(res)
 			}
-			logJSON(g)
 		},
 	},
 	{
@@ -120,7 +140,13 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListThingsByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
+			up, err := sdk.ListThingsByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -137,7 +163,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ViewGroupByThing(args[0], args[1])
+			up, err := sdk.GetGroupByThing(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -154,7 +180,13 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ListProfilesByGroup(args[0], args[1], uint64(Offset), uint64(Limit))
+
+			meta := mfxsdk.PageMetadata{
+				Offset: uint64(Offset),
+				Limit:  uint64(Limit),
+			}
+
+			up, err := sdk.ListProfilesByGroup(args[0], meta, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -171,7 +203,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.ViewGroupByProfile(args[0], args[1])
+			up, err := sdk.GetGroupByProfile(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -186,7 +218,7 @@ func NewGroupsCmd() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "groups [create | get | delete | things | thing | profiles | profile]",
 		Short: "Groups management",
-		Long:  `Groups management: create, update, remove; get lists of: all groups, things by group, profiles by group; get group by thing and by profile`,
+		Long:  `Groups management: create, update, remove; get lists of: all groups, groups by org, things by group, profiles by group; get group by thing and by profile`,
 	}
 
 	for i := range cmdGroups {

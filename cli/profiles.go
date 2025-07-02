@@ -63,7 +63,7 @@ var cmdProfiles = []cobra.Command{
 
 			switch args[0] {
 			case "all":
-				l, err := sdk.Profiles(args[1], pageMetadata)
+				l, err := sdk.ListProfiles(pageMetadata, args[1])
 				if err != nil {
 					logError(err)
 					return
@@ -72,7 +72,7 @@ var cmdProfiles = []cobra.Command{
 				logJSON(l)
 				return
 			case "by-thing":
-				pbt, err := sdk.ViewProfileByThing(args[1], args[2])
+				pbt, err := sdk.GetProfileByThing(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -81,7 +81,7 @@ var cmdProfiles = []cobra.Command{
 				logJSON(pbt)
 				return
 			case "by-id":
-				c, err := sdk.Profile(args[1], args[2])
+				c, err := sdk.GetProfile(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
