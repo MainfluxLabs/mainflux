@@ -140,7 +140,7 @@ func Provision(conf Config) {
 
 	profiles, err = s.CreateProfiles(profiles, gID, token)
 	if err != nil {
-		log.Fatalf("Failed to create the chennels: %s", err.Error())
+		log.Fatalf("Failed to create the profiles: %s", err.Error())
 	}
 
 	for _, c := range profiles {
