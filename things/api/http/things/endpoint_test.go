@@ -145,7 +145,6 @@ func TestCreateThings(t *testing.T) {
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
 	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
-	invalidProfileData := `[{"name": "test", "key": "1"}]`
 
 	cases := []struct {
 		desc        string
@@ -182,14 +181,6 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid name",
 			data:        invalidNameData,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusBadRequest,
-			response:    emptyValue,
-		},
-		{
-			desc:        "create thing without profile id",
-			data:        invalidProfileData,
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -241,7 +232,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/things", ts.URL),
+			url:         fmt.Sprintf("%s/profiles/%s/things", ts.URL, prID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
