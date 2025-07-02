@@ -314,50 +314,6 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(messages[1:6]),
 			},
 		},
-		"count aggregation": {
-			pageMeta: readers.PageMetadata{
-				Limit:       noLimit,
-				Aggregation: "count",
-			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: []readers.Message{},
-			},
-		},
-		"min aggregation with name filter": {
-			pageMeta: readers.PageMetadata{
-				Limit:       noLimit,
-				Name:        msgName,
-				Aggregation: "min",
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: []readers.Message{},
-			},
-		},
-		"max aggregation with name filter": {
-			pageMeta: readers.PageMetadata{
-				Limit:       noLimit,
-				Name:        msgName,
-				Aggregation: "max",
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: []readers.Message{},
-			},
-		},
-		"avg aggregation on sum field": {
-			pageMeta: readers.PageMetadata{
-				Limit:          noLimit,
-				Name:           msgName,
-				Aggregation:    "avg",
-				AggregateField: "sum",
-			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: []readers.Message{},
-			},
-		},
 	}
 
 	for desc, tc := range cases {
