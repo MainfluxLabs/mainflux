@@ -28,6 +28,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
+	mux.Post("/profiles/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
+		decodeCreateThings,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_thing")(viewThingEndpoint(svc)),
 		decodeRequest,
@@ -52,13 +59,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/profiles/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_things_by_profile")(listThingsByProfileEndpoint(svc)),
 		decodeListByProfile,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/profiles/:id/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
-		decodeCreateThings,
 		encodeResponse,
 		opts...,
 	))
