@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 )
 
 var _ auth.MembersRepository = (*membersRepositoryMock)(nil)
@@ -104,9 +105,15 @@ func (mrm *membersRepositoryMock) RetrieveByOrgID(ctx context.Context, orgID str
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
+	allMembers := mrm.membersByOrgID[orgID]
+
+	sortedMembers := mocks.SortItems(pm.Order, pm.Dir, allMembers, func(i int) (string, string) {
+		return allMembers[i].Email, allMembers[i].MemberID
+	})
+
 	oms := []auth.OrgMember{}
 	i := uint64(0)
-	for _, m := range mrm.membersByOrgID[orgID] {
+	for _, m := range sortedMembers {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			oms = append(oms, m)
 		}

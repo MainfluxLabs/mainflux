@@ -107,7 +107,7 @@ func (sdk mfSDK) ListWebhooksByThing(thingID, token string) (Webhooks, error) {
 	return ws, nil
 }
 
-func (sdk mfSDK) Webhook(webhookID, token string) (Webhook, error) {
+func (sdk mfSDK) GetWebhook(webhookID, token string) (Webhook, error) {
 	url := fmt.Sprintf("%s/%s/%s", sdk.webhooksURL, webhooksEndpoint, webhookID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

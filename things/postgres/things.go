@@ -76,7 +76,10 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 	nq := ""
 	if t.Name != "" {
-		nq = "name = :name,"
+		nq += "name = :name,"
+	}
+	if t.ProfileID != "" {
+		nq += "profile_id = :profile_id,"
 	}
 	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
 
@@ -188,7 +191,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -232,7 +235,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	m, mq, err := dbutil.GetMetadataQuery("", pm.Metadata)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

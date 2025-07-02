@@ -219,7 +219,7 @@ func TestProfile(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		respPr, err := mainfluxSDK.Profile(tc.profileID, tc.token)
+		respPr, err := mainfluxSDK.GetProfile(tc.profileID, tc.token)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, respPr, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, respPr))
@@ -327,7 +327,7 @@ func TestProfiles(t *testing.T) {
 			Metadata: tc.metadata,
 		}
 
-		page, err := mainfluxSDK.Profiles(tc.token, filter)
+		page, err := mainfluxSDK.ListProfiles(filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Profiles, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Profiles))
 	}
@@ -406,7 +406,7 @@ func TestViewProfileByThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		pr, err := mainfluxSDK.ViewProfileByThing(tc.thing, tc.token)
+		pr, err := mainfluxSDK.GetProfileByThing(tc.thing, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, pr, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, pr))
 	}

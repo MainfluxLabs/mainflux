@@ -182,6 +182,17 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return nil, err
+	}
+
 	req := listUsersReq{
 		token:    apiutil.ExtractBearerToken(r),
 		status:   s,
@@ -189,6 +200,8 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		limit:    l,
 		email:    e,
 		metadata: m,
+		order:    or,
+		dir:      d,
 	}
 	return req, nil
 }
@@ -337,6 +350,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
 		errors.Contains(err, apiutil.ErrMalformedEntity),
 		errors.Contains(err, users.ErrPasswordFormat),
+		errors.Contains(err, errors.ErrInvalidPassword),
 		err == apiutil.ErrMissingEmail,
 		err == apiutil.ErrMissingHost,
 		err == apiutil.ErrMissingPass,
@@ -346,7 +360,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrEmailSize,
 		err == apiutil.ErrInvalidResetPass,
-		err == apiutil.ErrInvalidStatus:
+		err == apiutil.ErrInvalidStatus,
+		err == errors.ErrInvalidPassword:
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)

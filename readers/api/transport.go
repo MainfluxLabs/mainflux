@@ -37,6 +37,7 @@ const (
 	defFormat              = "messages"
 	aggregationKey         = "aggregation"
 	aggregateFieldKey      = "aggregate_field"
+	publisherID            = "publisherID"
 )
 
 var (
@@ -57,6 +58,12 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	mux.Get("/messages", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
 		decodeListAllMessages,
+		encodeResponse,
+		opts...,
+	))
+	mux.Delete("/messages/:publisherID", kithttp.NewServer(
+		deleteMessagesEndpoint(svc),
+		decodeDeleteMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -183,6 +190,32 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	}
 	if err == nil {
 		req.pageMeta.BoolValue = vb
+	}
+
+	return req, nil
+}
+
+func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisherID := bone.GetValue(r, publisherID)
+
+	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		key:   apiutil.ExtractThingKey(r),
+		pageMeta: readers.PageMetadata{
+			Publisher: publisherID,
+			From:      from,
+			To:        to,
+		},
 	}
 
 	return req, nil

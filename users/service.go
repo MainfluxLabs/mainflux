@@ -67,7 +67,7 @@ type Service interface {
 	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByIDs retrieves users list for the given IDs.
-	ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error)
+	ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string) (UserPage, error)
 
 	// ListUsersByEmails retrieves users list for the given emails.
 	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
@@ -110,6 +110,8 @@ type PageMetadata struct {
 	Email    string
 	Status   string
 	Metadata Metadata
+	Order    string
+	Dir      string
 }
 
 // UserPage contains a page of users.
@@ -313,8 +315,8 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
-func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string) (UserPage, error) {
-	pm := PageMetadata{Status: EnabledStatusKey}
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string) (UserPage, error) {
+	pm := PageMetadata{Status: EnabledStatusKey, Email: email, Order: order, Dir: dir}
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
@@ -441,7 +443,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	// Admin changes password for another user
 	case oldPassword == "" && email != "":
 		if err := svc.isAdmin(ctx, token); err != nil {
-			return errors.ErrAuthentication
+			return err
 		}
 		userEmail = email
 
@@ -452,7 +454,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 			Password: oldPassword,
 		}
 		if _, err := svc.Login(ctx, u); err != nil {
-			return errors.ErrAuthentication
+			return errors.ErrInvalidPassword
 		}
 		userEmail = ir.email
 

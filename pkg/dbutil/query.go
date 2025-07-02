@@ -10,6 +10,7 @@ import (
 )
 
 var errCreateMetadataQuery = errors.New("failed to create query for metadata")
+var errCreatePayloadQuery = errors.New("failed to create query for payload")
 
 func GetNameQuery(name string) (string, string) {
 	if name == "" {
@@ -22,12 +23,20 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
-func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetEmailQuery(email string) (string, string) {
+	if email == "" {
+		return "", ""
+	}
+
+	email = fmt.Sprintf(`%%%s%%`, strings.ToLower(email))
+	nq := `email LIKE :email`
+
+	return nq, email
+}
+
+func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
-		if db != "" {
-			mq = db + "." + mq
-		}
 
 		b, err := json.Marshal(m)
 		if err != nil {
@@ -38,10 +47,25 @@ func GetMetadataQuery(db string, m map[string]interface{}) (mb []byte, mq string
 	return mb, mq, nil
 }
 
+func GetPayloadQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
+	if len(m) > 0 {
+		mq = `payload @> :payload`
+
+		b, err := json.Marshal(m)
+		if err != nil {
+			return nil, "", errors.Wrap(err, errCreatePayloadQuery)
+		}
+		mb = b
+	}
+	return mb, mq, nil
+}
+
 func GetOrderQuery(order string) string {
 	switch order {
 	case "name":
 		return "name"
+	case "email":
+		return "email"
 	default:
 		return "id"
 	}

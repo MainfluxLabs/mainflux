@@ -54,7 +54,7 @@ func (repo *mongoRepo) saveSenML(msgs []protomfx.Message) error {
 	for _, msg := range msgs {
 		mapped, err := messaging.ToSenMLMessage(msg)
 		if err != nil {
-			return errors.Wrap(errors.ErrSaveMessage, err)
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 
 		dbMsgs = append(dbMsgs, mapped)
@@ -62,7 +62,7 @@ func (repo *mongoRepo) saveSenML(msgs []protomfx.Message) error {
 
 	_, err := coll.InsertMany(context.Background(), dbMsgs)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func (repo *mongoRepo) saveJSON(msgs []protomfx.Message) error {
 
 	_, err := coll.InsertMany(context.Background(), m)
 	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessage, err)
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return nil

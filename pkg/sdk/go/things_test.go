@@ -282,7 +282,7 @@ func TestThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		respTh, err := mainfluxSDK.Thing(tc.thID, tc.token)
+		respTh, err := mainfluxSDK.GetThing(tc.thID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, respTh, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, respTh))
 	}
@@ -345,7 +345,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.MetadataByKey(tc.key)
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(tc.key)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
@@ -456,7 +456,7 @@ func TestThings(t *testing.T) {
 			Dir:      tc.dir,
 			Metadata: tc.metadata,
 		}
-		page, err := mainfluxSDK.Things(tc.token, filter)
+		page, err := mainfluxSDK.ListThings(filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}
@@ -584,7 +584,7 @@ func TestThingsByProfile(t *testing.T) {
 			Limit:  tc.limit,
 			Dir:    tc.dir,
 		}
-		page, err := mainfluxSDK.ThingsByProfile(tc.profile, tc.token, filter)
+		page, err := mainfluxSDK.ListThingsByProfile(tc.profile, filter, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, page.Things, fmt.Sprintf("%s: expected response profile %s, got %s", tc.desc, tc.response, page.Things))
 	}
@@ -857,7 +857,7 @@ func TestIdentifyThing(t *testing.T) {
 	th.ProfileID = prID
 	id, err := mainfluxSDK.CreateThing(th, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	thing, err := mainfluxSDK.Thing(th.ID, token)
+	thing, err := mainfluxSDK.GetThing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {

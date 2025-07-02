@@ -6,6 +6,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -51,9 +52,15 @@ func (mrm *groupMembersRepositoryMock) RetrieveByGroup(_ context.Context, groupI
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
+	allMembers := mrm.groupMembers[groupID]
+
+	sortedMembers := mocks.SortItems(pm.Order, pm.Dir, allMembers, func(i int) (string, string) {
+		return allMembers[i].Email, allMembers[i].MemberID
+	})
+
 	gms := []things.GroupMember{}
 	i := uint64(0)
-	for _, m := range mrm.groupMembers[groupID] {
+	for _, m := range sortedMembers {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			gms = append(gms, m)
 		}

@@ -134,7 +134,7 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 }
 
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
-	q := `UPDATE rules SET name = :name, description = :description, condition = :condition, actions = :actions WHERE id = :id;`
+	q := `UPDATE rules SET name = :name, description = :description, condition = :condition, actions = :actions, profile_id = :profile_id WHERE id = :id;`
 
 	dbr, err := toDBRule(r)
 	if err != nil {

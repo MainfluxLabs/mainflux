@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -72,6 +73,40 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			Messages:     page.Messages,
 			Aggregation:  page.Aggregation,
 		}, nil
+	}
+}
+
+func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(deleteMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		switch {
+		case req.key != "":
+			pc, err := getPubConfByKey(ctx, req.key)
+			if err != nil {
+				return nil, errors.Wrap(errors.ErrAuthentication, err)
+			}
+
+			if pc.PublisherID != req.pageMeta.Publisher {
+				return nil, errors.ErrAuthentication
+			}
+		case req.token != "":
+			if err := isAdmin(ctx, req.token); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, errors.ErrAuthentication
+		}
+
+		err :=  svc.DeleteMessages(ctx, req.pageMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 }
 

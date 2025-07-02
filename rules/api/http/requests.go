@@ -19,6 +19,7 @@ type ruleReq struct {
 	Condition   rules.Condition `json:"condition"`
 	Actions     []rules.Action  `json:"actions"`
 	Description string          `json:"description,omitempty"`
+	ProfileID   string          `json:"profile_id"`
 }
 
 type createRulesReq struct {
@@ -64,6 +65,10 @@ func (req ruleReq) validate() error {
 
 	if req.Condition.Threshold == nil {
 		return apiutil.ErrMissingConditionThreshold
+	}
+
+	if req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
 	}
 
 	if len(req.Actions) < minLen {

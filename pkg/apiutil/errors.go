@@ -155,4 +155,7 @@ var (
 
 	// ErrMissingActionID indicates a missing action id
 	ErrMissingActionID = errors.New("missing action id")
+
+	// ErrMissingPublisherID indicated a missing publisher id
+	ErrMissingPublisherID = errors.New("missing publisher id")
 )

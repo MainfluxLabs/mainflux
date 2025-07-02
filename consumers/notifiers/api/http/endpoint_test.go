@@ -426,6 +426,20 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d&order=%s&dir=%s", ts.URL, groupID, 0, 5, nameKey, wrongValue),
 			res:    nil,
 		},
+		{
+			desc:   "get a list of notifiers by group filtered by name",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?name=%s", ts.URL, groupID, data[0].Name),
+			res:    data[0:1],
+		},
+		{
+			desc:   "get a list of notifiers by group filtered by name that doesn't match",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?name=%s", ts.URL, groupID, wrongValue),
+			res:    []notifierRes{},
+		},
 	}
 
 	for _, tc := range cases {
