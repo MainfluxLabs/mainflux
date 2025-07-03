@@ -89,19 +89,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 
 		condition := fmtCondition(rpm, table)
 		q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
-
-		params := map[string]interface{}{
-			"subtopic":     rpm.Subtopic,
-			"publisher":    rpm.Publisher,
-			"name":         rpm.Name,
-			"protocol":     rpm.Protocol,
-			"value":        rpm.Value,
-			"bool_value":   rpm.BoolValue,
-			"string_value": rpm.StringValue,
-			"data_value":   rpm.DataValue,
-			"from":         rpm.From,
-			"to":           rpm.To,
-		}
+		params := tr.buildDeleteQueryParams(rpm)
 
 		_, err := tx.NamedExecContext(ctx, q, params)
 		if err != nil {
@@ -353,8 +341,7 @@ func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, ord
 	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s`, format, condition, order, olq)
 }
 
-func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string {
-	switch format {
+func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string { switch format {
 	case defTable:
 		return fmt.Sprintf(`
 				SELECT * FROM (
@@ -523,5 +510,20 @@ func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[stri
 		"data_value":   rpm.DataValue,
 		"from":         rpm.From,
 		"to":           rpm.To,
+	}
+}
+
+func (tr postgresRepository) buildDeleteQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+	return map[string]interface{}{
+			"subtopic":     rpm.Subtopic,
+			"publisher":    rpm.Publisher,
+			"name":         rpm.Name,
+			"protocol":     rpm.Protocol,
+			"value":        rpm.Value,
+			"bool_value":   rpm.BoolValue,
+			"string_value": rpm.StringValue,
+			"data_value":   rpm.DataValue,
+			"from":         rpm.From,
+			"to":           rpm.To,
 	}
 }
