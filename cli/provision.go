@@ -21,32 +21,32 @@ import (
 const jsonExt = ".json"
 const csvExt = ".csv"
 
-const CSV_THINGS_FIELD_COUNT = 4
+const csvThingsFieldCount = 4
 
 // These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
 const (
-	CSV_THINGS_FIELD_ID_IDX = iota
-	CSV_THINGS_FIELD_NAME_IDX
-	CSV_THINGS_FIELD_GROUP_ID_IDX
-	CSV_THINGS_FIELD_PROFILE_ID_IDX
+	csvThingsFieldID = iota
+	csvThingsFieldName
+	csvThingsFieldGroupID
+	csvThingsFieldProfileID
 )
 
-const CSV_PROFILES_FIELD_COUNT = 12
+const csvProfilesFieldCount = 12
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
-	CSV_PROFILES_FIELD_ID_IDX = iota
-	CSV_PROFILES_FIELD_NAME_IDX
-	CSV_PROFILES_FIELD_GROUP_ID_IDX
-	CSV_PROFILES_FIELD_CONFIG_CONTENTTYPE_IDX
-	CSV_PROFILES_FIELD_CONFIG_WRITE_IDX
-	CSV_PROFILES_FIELD_CONFIG_WEBHOOK_IDX
-	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX
-	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX
-	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX
-	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX
-	CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX
-	CSV_PROFILES_FIELD_CONFIG_SMTP_ID_IDX
+	csvProfilesFieldID = iota
+	csvProfilesFieldName
+	csvProfilesFieldGroupID
+	csvProfilesFieldConfigContentType
+	csvProfilesFieldConfigWrite
+	csvProfilesFieldConfigWebhook
+	csvProfilesFieldConfigTransformerDataFilters
+	csvProfilesFieldConfigTransformerDataField
+	csvProfilesFieldConfigTransformerTimeField
+	csvProfilesFieldConfigTransformerTimeFormat
+	csvProfilesFieldConfigTransformerTimeLocation
+	csvProfilesFieldConfigSMTPID
 )
 
 var cmdProvision = []cobra.Command{
@@ -243,18 +243,18 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 				return []mfxsdk.Thing{}, err
 			}
 
-			if len(record) < CSV_THINGS_FIELD_COUNT {
+			if len(record) < csvThingsFieldCount {
 				return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
 			}
 
 			thing := mfxsdk.Thing{
-				Name:      record[CSV_THINGS_FIELD_NAME_IDX],
-				ID:        record[CSV_THINGS_FIELD_ID_IDX],
-				ProfileID: record[CSV_THINGS_FIELD_PROFILE_ID_IDX],
-				GroupID:   record[CSV_THINGS_FIELD_GROUP_ID_IDX],
+				Name:      record[csvThingsFieldName],
+				ID:        record[csvThingsFieldID],
+				ProfileID: record[csvThingsFieldProfileID],
+				GroupID:   record[csvThingsFieldGroupID],
 			}
 
-			recordMetadata := record[CSV_THINGS_FIELD_COUNT:]
+			recordMetadata := record[csvThingsFieldCount:]
 
 			// Thing record includes metadata variables
 			if len(recordMetadata) > 0 {
@@ -311,21 +311,21 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, err
 			}
 
-			if len(record) < CSV_PROFILES_FIELD_COUNT {
+			if len(record) < csvProfilesFieldCount {
 				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
 			}
 
 			profile := mfxsdk.Profile{
-				Name:    record[CSV_PROFILES_FIELD_NAME_IDX],
-				ID:      record[CSV_PROFILES_FIELD_ID_IDX],
-				GroupID: record[CSV_PROFILES_FIELD_GROUP_ID_IDX],
+				Name:    record[csvProfilesFieldName],
+				ID:      record[csvProfilesFieldID],
+				GroupID: record[csvProfilesFieldGroupID],
 			}
 
 			// Populate profile's config object
 			profile.Config = make(map[string]any)
-			profile.Config["content_type"] = record[CSV_PROFILES_FIELD_CONFIG_CONTENTTYPE_IDX]
+			profile.Config["content_type"] = record[csvProfilesFieldConfigContentType]
 
-			switch record[CSV_PROFILES_FIELD_CONFIG_WRITE_IDX] {
+			switch record[csvProfilesFieldConfigWrite] {
 			case "true":
 				profile.Config["write"] = true
 			case "false":
@@ -334,7 +334,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
 			}
 
-			switch record[CSV_PROFILES_FIELD_CONFIG_WEBHOOK_IDX] {
+			switch record[csvProfilesFieldConfigWebhook] {
 			case "true":
 				profile.Config["webhook"] = true
 			case "false":
@@ -343,18 +343,18 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
 			}
 
-			profile.Config["smpt_id"] = record[CSV_PROFILES_FIELD_CONFIG_SMTP_ID_IDX]
+			profile.Config["smpt_id"] = record[csvProfilesFieldConfigSMTPID]
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
 
-			transformer["data_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX]
-			transformer["time_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX]
-			transformer["time_location"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX]
-			transformer["time_format"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX]
-			transformer["data_filters"] = strings.Split(record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX], ",")
+			transformer["data_field"] = record[csvProfilesFieldConfigTransformerDataField]
+			transformer["time_field"] = record[csvProfilesFieldConfigTransformerTimeField]
+			transformer["time_location"] = record[csvProfilesFieldConfigTransformerTimeLocation]
+			transformer["time_format"] = record[csvProfilesFieldConfigTransformerTimeFormat]
+			transformer["data_filters"] = strings.Split(record[csvProfilesFieldConfigTransformerDataFilters], ",")
 
-			recordMetadata := record[CSV_PROFILES_FIELD_COUNT:]
+			recordMetadata := record[csvProfilesFieldCount:]
 
 			// Profile record includes metadata variables
 			if len(recordMetadata) > 0 {
