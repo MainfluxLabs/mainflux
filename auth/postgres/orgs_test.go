@@ -339,7 +339,7 @@ func TestRetrieveAll(t *testing.T) {
 func TestRetrieveOrgsByMember(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembersRepo(dbMiddleware)
+	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -363,7 +363,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		err = repoOrg.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		orgMember := auth.OrgMember{
+		orgMember := auth.OrgMembership{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.Editor,

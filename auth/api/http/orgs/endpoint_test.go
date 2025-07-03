@@ -51,9 +51,9 @@ var (
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
 	idProvider    = uuid.New()
-	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
-	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
-	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
+	viewer        = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
+	editor        = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
+	admin         = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 )
@@ -86,7 +86,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	membsRepo := mocks.NewMembersRepository()
+	membsRepo := mocks.NewMembershipsRepository()
 	orgsRepo := mocks.NewOrgRepository(membsRepo)
 	rolesRepo := mocks.NewRolesRepository()
 
@@ -613,8 +613,8 @@ func TestBackup(t *testing.T) {
 	o, err := svc.CreateOrg(context.Background(), adminToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	members := []auth.OrgMember{viewerMember, editorMember, adminMember}
-	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
+	memberships := []auth.OrgMembership{viewer, editor, admin}
+	err = svc.CreateMemberships(context.Background(), adminToken, o.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)

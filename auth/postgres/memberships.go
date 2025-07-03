@@ -17,22 +17,22 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ auth.MembersRepository = (*membersRepository)(nil)
+var _ auth.MembershipsRepository = (*membershipsRepository)(nil)
 
-type membersRepository struct {
+type membershipsRepository struct {
 	db dbutil.Database
 }
 
 var membersIDFkey = "member_relations_org_id_fkey"
 
-// NewMembersRepo instantiates a PostgreSQL implementation of members repository.
-func NewMembersRepo(db dbutil.Database) auth.MembersRepository {
-	return &membersRepository{
+// NewMembershipsRepo instantiates a PostgreSQL implementation of membership repository.
+func NewMembershipsRepo(db dbutil.Database) auth.MembershipsRepository {
+	return &membershipsRepository{
 		db: db,
 	}
 }
 
-func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
+func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations 
 					  WHERE org_id = :org_id %s`, olq)
@@ -43,36 +43,31 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 		"offset": pm.Offset,
 	}
 
-	rows, err := or.db.NamedQueryContext(ctx, q, params)
+	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
+		return auth.OrgMembershipsPage{}, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
 	}
 	defer rows.Close()
 
-	var oms []auth.OrgMember
+	var oms []auth.OrgMembership
 	for rows.Next() {
-		dbm := dbMember{}
+		dbm := dbMembership{}
 		if err := rows.StructScan(&dbm); err != nil {
-			return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
+			return auth.OrgMembershipsPage{}, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
 		}
 
-		om, err := toMember(dbm)
-		if err != nil {
-			return auth.OrgMembersPage{}, err
-		}
-
-		oms = append(oms, om)
+		oms = append(oms, toMembership(dbm))
 	}
 
 	cq := `SELECT COUNT(*) FROM member_relations WHERE org_id = :org_id;`
 
-	total, err := dbutil.Total(ctx, or.db, cq, params)
+	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
-		return auth.OrgMembersPage{}, errors.Wrap(auth.ErrRetrieveMembersByOrg, err)
+		return auth.OrgMembershipsPage{}, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
 	}
 
-	page := auth.OrgMembersPage{
-		OrgMembers: oms,
+	page := auth.OrgMembershipsPage{
+		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
 			Total:  total,
 			Offset: pm.Offset,
@@ -83,18 +78,11 @@ func (or membersRepository) RetrieveByOrgID(ctx context.Context, orgID string, p
 	return page, nil
 }
 
-func toMember(dbmb dbMember) (auth.OrgMember, error) {
-	return auth.OrgMember{
-		MemberID: dbmb.MemberID,
-		Role:     dbmb.Role,
-	}, nil
-}
-
-func (or membersRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+func (mr membershipsRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
 	q := `SELECT role FROM member_relations WHERE member_id = $1 AND org_id = $2`
 
-	member := auth.OrgMember{}
-	if err := or.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&member); err != nil {
+	membership := auth.OrgMembership{}
+	if err := mr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&membership); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return "", errors.Wrap(errors.ErrNotFound, err)
@@ -103,20 +91,20 @@ func (or membersRepository) RetrieveRole(ctx context.Context, memberID, orgID st
 		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
-	return member.Role, nil
+	return membership.Role, nil
 }
 
-func (or membersRepository) Save(ctx context.Context, oms ...auth.OrgMember) error {
-	tx, err := or.db.BeginTxx(ctx, nil)
+func (mr membershipsRepository) Save(ctx context.Context, oms ...auth.OrgMembership) error {
+	tx, err := mr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrAssignMember, err)
+		return errors.Wrap(auth.ErrCreateMembership, err)
 	}
 
 	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, om := range oms {
-		dbom := toDBOrgMember(om)
+		dbom := toDBMembership(om)
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbom); err != nil {
 			tx.Rollback()
@@ -128,35 +116,35 @@ func (or membersRepository) Save(ctx context.Context, oms ...auth.OrgMember) err
 				case pgerrcode.ForeignKeyViolation:
 					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrOrgMemberAlreadyAssigned, errors.New(pgErr.Detail))
+					return errors.Wrap(auth.ErrMembershipExists, errors.New(pgErr.Detail))
 				}
 			}
 
-			return errors.Wrap(auth.ErrAssignMember, err)
+			return errors.Wrap(auth.ErrCreateMembership, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignMember, err)
+		return errors.Wrap(auth.ErrCreateMembership, err)
 	}
 
 	return nil
 }
 
-func (or membersRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
-	tx, err := or.db.BeginTxx(ctx, nil)
+func (mr membershipsRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
+	tx, err := mr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(auth.ErrUnassignMember, err)
+		return errors.Wrap(auth.ErrRemoveMembership, err)
 	}
 
 	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
-		om := auth.OrgMember{
+		om := auth.OrgMembership{
 			OrgID:    orgID,
 			MemberID: id,
 		}
-		dbom := toDBOrgMember(om)
+		dbom := toDBMembership(om)
 
 		if _, err := tx.NamedExecContext(ctx, qDel, dbom); err != nil {
 			tx.Rollback()
@@ -170,25 +158,25 @@ func (or membersRepository) Remove(ctx context.Context, orgID string, ids ...str
 				}
 			}
 
-			return errors.Wrap(auth.ErrUnassignMember, err)
+			return errors.Wrap(auth.ErrRemoveMembership, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrUnassignMember, err)
+		return errors.Wrap(auth.ErrRemoveMembership, err)
 	}
 
 	return nil
 }
 
-func (or membersRepository) Update(ctx context.Context, oms ...auth.OrgMember) error {
+func (mr membershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembership) error {
 	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, om := range oms {
-		dbom := toDBOrgMember(om)
+		dbm := toDBMembership(om)
 
-		row, err := or.db.NamedExecContext(ctx, qUpd, dbom)
+		row, err := mr.db.NamedExecContext(ctx, qUpd, dbm)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -216,29 +204,29 @@ func (or membersRepository) Update(ctx context.Context, oms ...auth.OrgMember) e
 	return nil
 }
 
-func (or membersRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
+func (mr membershipsRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
-	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return []auth.OrgMember{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
-	var oms []auth.OrgMember
+	var oms []auth.OrgMembership
 	for rows.Next() {
-		dbom := dbOrgMember{}
+		dbom := dbMembership{}
 		if err := rows.StructScan(&dbom); err != nil {
-			return []auth.OrgMember{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
-		oms = append(oms, toMemberRelation(dbom))
+		oms = append(oms, toMembership(dbom))
 	}
 
 	return oms, nil
 }
 
-type dbMember struct {
+type dbMembership struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`
 	Role      string    `db:"role"`
@@ -246,16 +234,8 @@ type dbMember struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-type dbOrgMember struct {
-	OrgID     string    `db:"org_id"`
-	MemberID  string    `db:"member_id"`
-	Role      string    `db:"role"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-}
-
-func toDBOrgMember(om auth.OrgMember) dbOrgMember {
-	return dbOrgMember{
+func toDBMembership(om auth.OrgMembership) dbMembership {
+	return dbMembership{
 		OrgID:     om.OrgID,
 		MemberID:  om.MemberID,
 		Role:      om.Role,
@@ -264,8 +244,8 @@ func toDBOrgMember(om auth.OrgMember) dbOrgMember {
 	}
 }
 
-func toMemberRelation(dbom dbOrgMember) auth.OrgMember {
-	return auth.OrgMember{
+func toMembership(dbom dbMembership) auth.OrgMembership {
+	return auth.OrgMembership{
 		OrgID:     dbom.OrgID,
 		MemberID:  dbom.MemberID,
 		Role:      dbom.Role,
