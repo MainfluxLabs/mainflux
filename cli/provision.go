@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -325,23 +326,17 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			profile.Config = make(map[string]any)
 			profile.Config["content_type"] = record[csvProfilesFieldConfigContentType]
 
-			switch record[csvProfilesFieldConfigWrite] {
-			case "true":
-				profile.Config["write"] = true
-			case "false":
-				profile.Config["write"] = false
-			default:
-				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+			writeBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWrite])
+			if err != nil {
+				return []mfxsdk.Profile{}, err
 			}
+			profile.Config["write"] = writeBool
 
-			switch record[csvProfilesFieldConfigWebhook] {
-			case "true":
-				profile.Config["webhook"] = true
-			case "false":
-				profile.Config["webhook"] = false
-			default:
-				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+			webhookBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWebhook])
+			if err != nil {
+				return []mfxsdk.Profile{}, err
 			}
+			profile.Config["webhook"] = webhookBool
 
 			profile.Config["smpt_id"] = record[csvProfilesFieldConfigSMTPID]
 
