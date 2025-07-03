@@ -338,7 +338,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			}
 			profile.Config["webhook"] = webhookBool
 
-			profile.Config["smpt_id"] = record[csvProfilesFieldConfigSMTPID]
+			profile.Config["smtp_id"] = record[csvProfilesFieldConfigSMTPID]
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
