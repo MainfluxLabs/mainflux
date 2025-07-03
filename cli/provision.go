@@ -346,11 +346,13 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			profile.Config["smpt_id"] = record[CSV_PROFILES_FIELD_CONFIG_SMTP_ID_IDX]
 
 			profile.Config["transformer"] = map[string]any{}
-			profile.Config["transformer"].(map[string]any)["data_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX]
-			profile.Config["transformer"].(map[string]any)["time_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX]
-			profile.Config["transformer"].(map[string]any)["time_location"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX]
-			profile.Config["transformer"].(map[string]any)["time_format"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX]
-			profile.Config["transformer"].(map[string]any)["data_filters"] = strings.Split(record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX], ",")
+			transformer := profile.Config["transformer"].(map[string]any)
+
+			transformer["data_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FIELD_IDX]
+			transformer["time_field"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FIELD_IDX]
+			transformer["time_location"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_LOCATION_IDX]
+			transformer["time_format"] = record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_TIME_FORMAT_IDX]
+			transformer["data_filters"] = strings.Split(record[CSV_PROFILES_FIELD_CONFIG_TRANSFORMER_DATA_FILTERS_IDX], ",")
 
 			recordMetadata := record[CSV_PROFILES_FIELD_COUNT:]
 
