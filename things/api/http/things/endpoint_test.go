@@ -141,12 +141,10 @@ func TestCreateThings(t *testing.T) {
 	profile1.GroupID = grID1
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID, prID1 := prs[0].ID, prs[1].ID
+	prID := prs[0].ID
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
 	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
-	invalidProfileData := `[{"name": "test", "key": "1"}]`
-	invalidGroupData := fmt.Sprintf(`[{"name": "test", "key": "10","profile_id":"%s"}]`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -186,22 +184,6 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    emptyValue,
-		},
-		{
-			desc:        "create thing without profile id",
-			data:        invalidProfileData,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusBadRequest,
-			response:    emptyValue,
-		},
-		{
-			desc:        "create thing with profile from different group",
-			data:        invalidGroupData,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusForbidden,
 			response:    emptyValue,
 		},
 		{
@@ -250,7 +232,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, grID),
+			url:         fmt.Sprintf("%s/profiles/%s/things", ts.URL, prID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -278,7 +260,7 @@ func TestUpdateThing(t *testing.T) {
 	profile.GroupID = grID
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID, prID1 := prs[0].ID, prs[1].ID
+	prID := prs[0].ID
 
 	thing.GroupID = grID
 	thing.ProfileID = prID
@@ -289,7 +271,6 @@ func TestUpdateThing(t *testing.T) {
 	data := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID)
 	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
 	invalidProfileData := `{"name": "test"}`
-	invalidGroupData := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -385,14 +366,6 @@ func TestUpdateThing(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update thing with profile from different group",
-			req:         invalidGroupData,
-			id:          th.ID,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusForbidden,
 		},
 	}
 

@@ -124,7 +124,7 @@ func TestCreateThing(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		loc, err := mainfluxSDK.CreateThing(tc.thing, tc.groupID, tc.token)
+		loc, err := mainfluxSDK.CreateThing(tc.thing, prID, tc.token)
 
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.location, loc, fmt.Sprintf("%s: expected location %s got %s", tc.desc, tc.location, loc))
@@ -217,7 +217,7 @@ func TestCreateThings(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		res, err := mainfluxSDK.CreateThings(tc.things, grID, tc.token)
+		res, err := mainfluxSDK.CreateThings(tc.things, prID, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 
 		for idx := range tc.res {
@@ -248,7 +248,7 @@ func TestThing(t *testing.T) {
 	th1.ProfileID = prID
 	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 2)
 	th1.GroupID = grID
-	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	id, err := mainfluxSDK.CreateThing(th1, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -309,7 +309,7 @@ func TestMetadataByKey(t *testing.T) {
 	th1.ProfileID = prID
 	th1.GroupID = grID
 	th1.Key = fmt.Sprintf("%s%012d", uuid.Prefix, 1)
-	_, err = mainfluxSDK.CreateThing(th1, grID, token)
+	_, err = mainfluxSDK.CreateThing(th1, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	otherKey := fmt.Sprintf("%s%012d", uuid.Prefix, 2)
@@ -374,7 +374,7 @@ func TestThings(t *testing.T) {
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
 		th := sdk.Thing{GroupID: grID, ID: id, ProfileID: prID, Name: name, Key: key, Metadata: metadata}
-		_, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
+		_, err := mainfluxSDK.CreateThing(th, prID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		things = append(things, th)
@@ -494,7 +494,7 @@ func TestThingsByProfile(t *testing.T) {
 			Metadata:  metadata,
 			Key:       fmt.Sprintf("%s%012d", uuid.Prefix, 2*i+1),
 		}
-		_, err := mainfluxSDK.CreateThing(th, th.GroupID, token)
+		_, err := mainfluxSDK.CreateThing(th, prID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		ths = append(ths, th)
@@ -609,7 +609,7 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	th1.ProfileID = prID
-	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	id, err := mainfluxSDK.CreateThing(th1, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th1.Name = "test2"
 
@@ -701,7 +701,7 @@ func TestDeleteThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	th1.ProfileID = prID
-	id, err := mainfluxSDK.CreateThing(th1, grID, token)
+	id, err := mainfluxSDK.CreateThing(th1, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -773,7 +773,7 @@ func TestDeleteThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	th1.ProfileID = prID
-	id1, err := mainfluxSDK.CreateThing(th1, grID, token)
+	id1, err := mainfluxSDK.CreateThing(th1, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thIDs := []string{id1}
 
@@ -855,7 +855,7 @@ func TestIdentifyThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	th.ProfileID = prID
-	id, err := mainfluxSDK.CreateThing(th, grID, token)
+	id, err := mainfluxSDK.CreateThing(th, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	thing, err := mainfluxSDK.GetThing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

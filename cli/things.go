@@ -12,9 +12,9 @@ import (
 
 var cmdThings = []cobra.Command{
 	{
-		Use:   "create <JSON_thing> <group_id> <user_token>",
+		Use:   "create <JSON_thing> <profile_id> <user_token>",
 		Short: "Create thing",
-		Long:  `Create new thing, generate his UUID and store it`,
+		Long:  `Create new thing, generate its UUID and store it`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
