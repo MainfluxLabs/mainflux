@@ -27,7 +27,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			id, err := sdk.CreateThing(thing, args[1], args[1])
+			id, err := sdk.CreateThing(thing, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
