@@ -11,6 +11,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/docker/docker/pkg/namesgenerator"
@@ -20,13 +22,41 @@ import (
 const jsonExt = ".json"
 const csvExt = ".csv"
 
+const csvThingsFieldCount = 4
+
+// These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
+const (
+	csvThingsFieldID = iota
+	csvThingsFieldName
+	csvThingsFieldGroupID
+	csvThingsFieldProfileID
+)
+
+const csvProfilesFieldCount = 12
+
+// These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
+const (
+	csvProfilesFieldID = iota
+	csvProfilesFieldName
+	csvProfilesFieldGroupID
+	csvProfilesFieldConfigContentType
+	csvProfilesFieldConfigWrite
+	csvProfilesFieldConfigWebhook
+	csvProfilesFieldConfigTransformerDataFilters
+	csvProfilesFieldConfigTransformerDataField
+	csvProfilesFieldConfigTransformerTimeField
+	csvProfilesFieldConfigTransformerTimeFormat
+	csvProfilesFieldConfigTransformerTimeLocation
+	csvProfilesFieldConfigSMTPID
+)
+
 var cmdProvision = []cobra.Command{
 	{
 		Use:   "things <things_file> <group_id> <user_token>",
 		Short: "Provision things",
 		Long:  `Bulk create things`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -56,7 +86,7 @@ var cmdProvision = []cobra.Command{
 		Short: "Provision profiles",
 		Long:  `Bulk create profiles`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 3 {
 				logUsage(cmd.Use)
 				return
 			}
@@ -203,9 +233,10 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 	switch filepath.Ext(path) {
 	case csvExt:
 		reader := csv.NewReader(file)
+		reader.FieldsPerRecord = -1
 
 		for {
-			l, err := reader.Read()
+			record, err := reader.Read()
 			if err == io.EOF {
 				break
 			}
@@ -213,12 +244,32 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 				return []mfxsdk.Thing{}, err
 			}
 
-			if len(l) < 1 {
-				return []mfxsdk.Thing{}, errors.New("empty line found in file")
+			if len(record) < csvThingsFieldCount {
+				return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
 			}
 
 			thing := mfxsdk.Thing{
-				Name: l[0],
+				Name:      record[csvThingsFieldName],
+				ID:        record[csvThingsFieldID],
+				ProfileID: record[csvThingsFieldProfileID],
+				GroupID:   record[csvThingsFieldGroupID],
+			}
+
+			recordMetadata := record[csvThingsFieldCount:]
+
+			// Thing record includes metadata variables
+			if len(recordMetadata) > 0 {
+				// Un-paired metadata fields present, abort
+				if len(recordMetadata)%2 != 0 {
+					return []mfxsdk.Thing{}, errors.New("malformed record in csv file")
+				}
+
+				thing.Metadata = make(map[string]any, len(recordMetadata)/2)
+
+				// Consume all key-value metadata pairs from current Thing record and save them to map
+				for i := 0; i < len(recordMetadata); i += 2 {
+					thing.Metadata[recordMetadata[i]] = recordMetadata[i+1]
+				}
 			}
 
 			things = append(things, thing)
@@ -250,9 +301,10 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	switch filepath.Ext(path) {
 	case csvExt:
 		reader := csv.NewReader(file)
+		reader.FieldsPerRecord = -1
 
 		for {
-			l, err := reader.Read()
+			record, err := reader.Read()
 			if err == io.EOF {
 				break
 			}
@@ -260,12 +312,58 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, err
 			}
 
-			if len(l) < 1 {
-				return []mfxsdk.Profile{}, errors.New("empty line found in file")
+			if len(record) < csvProfilesFieldCount {
+				return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
 			}
 
 			profile := mfxsdk.Profile{
-				Name: l[0],
+				Name:    record[csvProfilesFieldName],
+				ID:      record[csvProfilesFieldID],
+				GroupID: record[csvProfilesFieldGroupID],
+			}
+
+			// Populate profile's config object
+			profile.Config = make(map[string]any)
+			profile.Config["content_type"] = record[csvProfilesFieldConfigContentType]
+
+			writeBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWrite])
+			if err != nil {
+				return []mfxsdk.Profile{}, err
+			}
+			profile.Config["write"] = writeBool
+
+			webhookBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWebhook])
+			if err != nil {
+				return []mfxsdk.Profile{}, err
+			}
+			profile.Config["webhook"] = webhookBool
+
+			profile.Config["smtp_id"] = record[csvProfilesFieldConfigSMTPID]
+
+			profile.Config["transformer"] = map[string]any{}
+			transformer := profile.Config["transformer"].(map[string]any)
+
+			transformer["data_field"] = record[csvProfilesFieldConfigTransformerDataField]
+			transformer["time_field"] = record[csvProfilesFieldConfigTransformerTimeField]
+			transformer["time_location"] = record[csvProfilesFieldConfigTransformerTimeLocation]
+			transformer["time_format"] = record[csvProfilesFieldConfigTransformerTimeFormat]
+			transformer["data_filters"] = strings.Split(record[csvProfilesFieldConfigTransformerDataFilters], ",")
+
+			recordMetadata := record[csvProfilesFieldCount:]
+
+			// Profile record includes metadata variables
+			if len(recordMetadata) > 0 {
+				// Un-paired metadata fields present, abort
+				if len(recordMetadata)%2 != 0 {
+					return []mfxsdk.Profile{}, errors.New("malformed record in csv file")
+				}
+
+				profile.Metadata = make(map[string]any, len(recordMetadata)/2)
+
+				// Consume all key-value metadata pairs from current Thing record and save them to map
+				for i := 0; i < len(recordMetadata); i += 2 {
+					profile.Metadata[recordMetadata[i]] = recordMetadata[i+1]
+				}
 			}
 
 			profiles = append(profiles, profile)
