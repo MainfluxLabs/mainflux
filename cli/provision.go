@@ -300,6 +300,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	switch filepath.Ext(path) {
 	case csvExt:
 		reader := csv.NewReader(file)
+		reader.FieldsPerRecord = -1
 
 		for {
 			record, err := reader.Read()
