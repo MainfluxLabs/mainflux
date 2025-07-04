@@ -304,6 +304,68 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 	}, nil
 }
 
+func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
+	var body struct {
+		Offset   *int64                 `json:"offset"`
+		Limit    *int64                 `json:"limit"`
+		Name     *string                `json:"name"`
+		Order    *string                `json:"order"`
+		Dir      *string                `json:"dir"`
+		Metadata map[string]interface{} `json:"metadata"`
+		Email    *string                `json:"email"`
+		Payload  map[string]interface{} `json:"payload"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	pm := PageMetadata{
+		Offset:   DefOffset,
+		Limit:    DefLimit,
+		Order:    IDOrder,
+		Dir:      DescDir,
+		Metadata: body.Metadata,
+		Payload:  body.Payload,
+	}
+
+	if body.Offset != nil {
+		if *body.Offset < 0 {
+			return PageMetadata{}, ErrOffsetSize
+		}
+		pm.Offset = uint64(*body.Offset)
+	}
+
+	switch {
+	case body.Limit == nil:
+		pm.Limit = DefLimit
+	case *body.Limit == -1:
+		pm.Limit = 0
+	case *body.Limit <= 0:
+		return PageMetadata{}, ErrLimitSize
+	default:
+		pm.Limit = uint64(*body.Limit)
+	}
+
+	if body.Name != nil {
+		pm.Name = *body.Name
+	}
+
+	if body.Order != nil {
+		pm.Order = *body.Order
+	}
+
+	if body.Dir != nil {
+		pm.Dir = *body.Dir
+	}
+
+	if body.Email != nil {
+		pm.Email = *body.Email
+	}
+
+	return pm, nil
+}
+
 func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize

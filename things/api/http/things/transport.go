@@ -226,10 +226,14 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req.pageMetadata); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
 	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm}
 
 	return req, nil
 }
