@@ -72,6 +72,12 @@ type GroupMembersPage struct {
 	pageRes
 }
 
+// OrgMembershipsPage contains org memberships in a page with proper metadata.
+type OrgMembershipsPage struct {
+	OrgMemberships []OrgMembership `json:"org_memberships"`
+	pageRes
+}
+
 // UsersPage contains list of users in a page with proper metadata.
 type UsersPage struct {
 	Users []User `json:"users"`
@@ -119,16 +125,4 @@ func (res retrieveKeyRes) Headers() map[string]string {
 
 func (res retrieveKeyRes) Empty() bool {
 	return false
-}
-
-type Member struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
-}
-
-// MembersPage contains list of members in a page with proper metadata.
-type MembersPage struct {
-	Members []Member `json:"members"`
-	pageRes
 }
