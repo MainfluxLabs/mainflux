@@ -455,6 +455,81 @@ func TestListAllMessages(t *testing.T) {
 				Messages: messages[5:15],
 			},
 		},
+
+		{
+			desc:   "read page with count aggregation",
+			url:    fmt.Sprintf("%s/messages?aggregation=count", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10], 
+			},
+		},
+		{
+			desc:   "read page with count aggregation and limit",
+			url:    fmt.Sprintf("%s/messages?aggregation=count&limit=-1", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages, 
+			},
+		},
+		{
+			desc:   "read page with min aggregation",
+			url:    fmt.Sprintf("%s/messages?aggregation=min&name=%s&limit=-1", ts.URL, msgName),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs, 
+			},
+		},
+		{
+			desc:   "read page with max aggregation",
+			url:    fmt.Sprintf("%s/messages?aggregation=max&name=%s&limit=-1", ts.URL, msgName),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs, 
+			},
+		},
+		{
+			desc:   "read page with avg aggregation on sum field",
+			url:    fmt.Sprintf("%s/messages?aggregation=avg&aggregate_field=sum&name=%s&limit=-1", ts.URL, msgName),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(queryMsgs)),
+				Messages: queryMsgs, 
+			},
+		},
+		{
+			desc:   "read page with aggregation as non-admin",
+			url:    fmt.Sprintf("%s/messages?aggregation=count", ts.URL),
+			token:  userToken,
+			status: http.StatusForbidden,
+			res:    pageRes{},
+		},
+		{
+			desc:   "read page with invalid aggregation type",
+			url:    fmt.Sprintf("%s/messages?aggregation=invalid", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+			res:    pageRes{},
+		},
+		{
+			desc:   "read page with aggregation and pagination",
+			url:    fmt.Sprintf("%s/messages?aggregation=count&offset=10&limit=5", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[10:15], 
+			},
+		},
 	}
 
 	for _, tc := range cases {
