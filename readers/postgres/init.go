@@ -41,7 +41,6 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 
 	return db, nil
 }
-
 func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
@@ -90,9 +89,17 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_pkey`,
 				},
 			},
+			{
+				Id: "messages_4",
+				Up: []string{
+					`ALTER TABLE messages ALTER COLUMN time TYPE BIGINT USING CAST(time AS BIGINT);`,
+				},
+				Down: []string{
+					`ALTER TABLE messages ALTER COLUMN time TYPE FLOAT USING CAST(time AS FLOAT);`,
+				},
+			},
 		},
 	}
-
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }

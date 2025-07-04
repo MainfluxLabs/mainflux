@@ -110,7 +110,7 @@ func TestListAllMessages(t *testing.T) {
 		msg := senml.Message{
 			Publisher: pubID,
 			Protocol:  mqttProt,
-			Time:      float64(now - int64(i)),
+			Time:      int64(now - int64(i)),
 			Name:      "name",
 		}
 
@@ -447,7 +447,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with from/to ",
-			url:    fmt.Sprintf("%s/messages?from=%f&to=%f", ts.URL, messages[19].Time, messages[4].Time),
+			url:    fmt.Sprintf("%s/messages?from=%d&to=%d", ts.URL, messages[19].Time, messages[4].Time),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
