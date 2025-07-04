@@ -9,8 +9,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	senmlTransformer "github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
-	jsonTransformer "github.com/MainfluxLabs/mainflux/pkg/transformers/json" 
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json" 
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -20,11 +20,11 @@ import (
 type AggregationType string
 
 type senmlMessage struct {
-	senmlTransformer.Message
+	senml.Message
 }
 
 type jsonMessage struct {
-	jsonTransformer.Message
+	mfjson.Message
 }
 
 const (
@@ -108,7 +108,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 	return nil
 }
 
-func (tr postgresRepository) Restore(ctx context.Context, messages ...senmlTransformer.Message) error {
+func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -384,7 +384,7 @@ func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]rea
 	switch format {
 	case defTable:
 		for rows.Next() {
-			msg := senmlMessage{Message: senmlTransformer.Message{}}
+			msg := senmlMessage{Message: senml.Message{}}
 			if err := rows.StructScan(&msg); err != nil {
 				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
