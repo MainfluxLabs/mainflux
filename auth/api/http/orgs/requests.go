@@ -108,9 +108,9 @@ func (req backupReq) validate() error {
 }
 
 type restoreReq struct {
-	token      string
-	Orgs       []viewOrgRes     `json:"orgs"`
-	OrgMembers []viewOrgMembers `json:"org_members"`
+	token          string
+	Orgs           []viewOrgRes         `json:"orgs"`
+	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
 }
 
 func (req restoreReq) validate() error {
@@ -118,7 +118,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Orgs) == 0 && len(req.OrgMembers) == 0 {
+	if len(req.Orgs) == 0 && len(req.OrgMemberships) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

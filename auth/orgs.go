@@ -41,8 +41,8 @@ type User struct {
 }
 
 type Backup struct {
-	Orgs       []Org
-	OrgMembers []OrgMember
+	Orgs           []Org
+	OrgMemberships []OrgMembership
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -66,10 +66,10 @@ type Orgs interface {
 	// GetOwnerIDByOrgID returns an owner ID for a given org ID.
 	GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error)
 
-	// Backup retrieves all orgs and org members. Only accessible by admin.
+	// Backup retrieves all orgs and org memberships. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs and org members from a backup. Only accessible by admin.
+	// Restore adds orgs and org memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -124,7 +124,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	om := OrgMember{
+	om := OrgMembership{
 		OrgID:     id,
 		MemberID:  user.ID,
 		Role:      Owner,
@@ -132,7 +132,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.members.Save(ctx, om); err != nil {
+	if err := svc.memberships.Save(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -223,7 +223,7 @@ func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string
 		return err
 	}
 
-	role, err := svc.members.RetrieveRole(ctx, user.ID, orgID)
+	role, err := svc.memberships.RetrieveRole(ctx, user.ID, orgID)
 	if err != nil {
 		return err
 	}

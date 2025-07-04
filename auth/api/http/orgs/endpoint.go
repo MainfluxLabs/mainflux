@@ -171,8 +171,8 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
-		Orgs:       []viewOrgRes{},
-		OrgMembers: []viewOrgMembers{},
+		Orgs:           []viewOrgRes{},
+		OrgMemberships: []viewOrgMemberships{},
 	}
 
 	for _, org := range b.Orgs {
@@ -188,15 +188,15 @@ func buildBackupResponse(b auth.Backup) backupRes {
 		res.Orgs = append(res.Orgs, view)
 	}
 
-	for _, mRel := range b.OrgMembers {
-		view := viewOrgMembers{
-			OrgID:     mRel.OrgID,
-			MemberID:  mRel.MemberID,
-			Role:      mRel.Role,
-			CreatedAt: mRel.CreatedAt,
-			UpdatedAt: mRel.UpdatedAt,
+	for _, om := range b.OrgMemberships {
+		view := viewOrgMemberships{
+			OrgID:     om.OrgID,
+			MemberID:  om.MemberID,
+			Role:      om.Role,
+			CreatedAt: om.CreatedAt,
+			UpdatedAt: om.UpdatedAt,
 		}
-		res.OrgMembers = append(res.OrgMembers, view)
+		res.OrgMemberships = append(res.OrgMemberships, view)
 	}
 
 	return res
@@ -216,15 +216,15 @@ func buildRestoreReq(req restoreReq) (b auth.Backup) {
 		b.Orgs = append(b.Orgs, o)
 	}
 
-	for _, om := range req.OrgMembers {
-		m := auth.OrgMember{
+	for _, om := range req.OrgMemberships {
+		m := auth.OrgMembership{
 			OrgID:     om.OrgID,
 			MemberID:  om.MemberID,
 			Role:      om.Role,
 			CreatedAt: om.CreatedAt,
 			UpdatedAt: om.UpdatedAt,
 		}
-		b.OrgMembers = append(b.OrgMembers, m)
+		b.OrgMemberships = append(b.OrgMemberships, m)
 	}
 
 	return b

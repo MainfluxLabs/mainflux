@@ -51,9 +51,9 @@ var (
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
 	idProvider    = uuid.New()
-	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
-	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
-	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
+	viewer        = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
+	editor        = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
+	admin         = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 )
@@ -86,7 +86,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	membsRepo := mocks.NewMembersRepository()
+	membsRepo := mocks.NewOrgMembershipsRepository()
 	orgsRepo := mocks.NewOrgRepository(membsRepo)
 	rolesRepo := mocks.NewRolesRepository()
 
@@ -613,8 +613,8 @@ func TestBackup(t *testing.T) {
 	o, err := svc.CreateOrg(context.Background(), adminToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	members := []auth.OrgMember{viewerMember, editorMember, adminMember}
-	err = svc.AssignMembers(context.Background(), adminToken, o.ID, members...)
+	memberships := []auth.OrgMembership{viewer, editor, admin}
+	err = svc.CreateOrgMemberships(context.Background(), adminToken, o.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
@@ -630,7 +630,7 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	m := []viewOrgMembers{
+	m := []viewOrgMemberships{
 		{
 			MemberID: id,
 			OrgID:    o.ID,
@@ -699,8 +699,8 @@ func TestBackup(t *testing.T) {
 		var data backup
 		err = json.NewDecoder(res.Body).Decode(&data)
 
-		sort.Slice(data.OrgMembers, func(i, j int) bool {
-			return data.OrgMembers[i].MemberID < data.OrgMembers[j].MemberID
+		sort.Slice(data.OrgMemberships, func(i, j int) bool {
+			return data.OrgMemberships[i].MemberID < data.OrgMemberships[j].MemberID
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
@@ -736,7 +736,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	m := []viewOrgMembers{
+	m := []viewOrgMemberships{
 		{
 			MemberID: viewerID,
 			OrgID:    orgID,
@@ -755,8 +755,8 @@ func TestRestore(t *testing.T) {
 	}
 
 	data := toJSON(backup{
-		Orgs:       or,
-		OrgMembers: m,
+		Orgs:           or,
+		OrgMemberships: m,
 	})
 
 	cases := []struct {
@@ -838,12 +838,12 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type viewOrgMembers struct {
+type viewOrgMemberships struct {
 	MemberID string `json:"member_id"`
 	OrgID    string `json:"org_id"`
 	Role     string `json:"role"`
 }
 type backup struct {
-	Orgs       []orgRes         `json:"orgs"`
-	OrgMembers []viewOrgMembers `json:"org_members"`
+	Orgs           []orgRes             `json:"orgs"`
+	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
 }
