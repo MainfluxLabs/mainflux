@@ -19,10 +19,10 @@ const (
 	memberRelationsTable = "member_relations"
 )
 
-func TestCreateMemberships(t *testing.T) {
+func TestSaveOrgMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -93,7 +93,7 @@ func TestCreateMemberships(t *testing.T) {
 		{
 			desc:           "create org memberships that already exist",
 			orgMemberships: orgMemberships,
-			err:            auth.ErrMembershipExists,
+			err:            auth.ErrOrgMembershipExists,
 		},
 		{
 			desc:           "create org memberships with invalid org id",
@@ -123,10 +123,10 @@ func TestCreateMemberships(t *testing.T) {
 	}
 }
 
-func TestRemoveMemberships(t *testing.T) {
+func TestRemoveOrgMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -219,7 +219,7 @@ func TestRemoveMemberships(t *testing.T) {
 func TestRetrieveRole(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -299,10 +299,10 @@ func TestRetrieveRole(t *testing.T) {
 	}
 }
 
-func TestUpdateMemberships(t *testing.T) {
+func TestUpdateOrgMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -417,10 +417,10 @@ func TestUpdateMemberships(t *testing.T) {
 	}
 }
 
-func TestRetrieveMembershipsByOrg(t *testing.T) {
+func TestRetrieveOrgMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -522,7 +522,7 @@ func TestRetrieveMembershipsByOrg(t *testing.T) {
 func TestRetrieveAllMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", memberRelationsTable))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))

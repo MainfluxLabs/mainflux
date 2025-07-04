@@ -7,43 +7,43 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*membershipPageRes)(nil)
+	_ apiutil.Response = (*orgMembershipPageRes)(nil)
 	_ apiutil.Response = (*createRes)(nil)
 	_ apiutil.Response = (*removeRes)(nil)
 )
 
-type viewMembershipRes struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type viewOrgMembershipRes struct {
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
-func (res viewMembershipRes) Code() int {
+func (res viewOrgMembershipRes) Code() int {
 	return http.StatusOK
 }
 
-func (res viewMembershipRes) Headers() map[string]string {
+func (res viewOrgMembershipRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res viewMembershipRes) Empty() bool {
+func (res viewOrgMembershipRes) Empty() bool {
 	return false
 }
 
-type membershipPageRes struct {
+type orgMembershipPageRes struct {
 	pageRes
-	Memberships []viewMembershipRes `json:"memberships"`
+	OrgMemberships []viewOrgMembershipRes `json:"org_memberships"`
 }
 
-func (res membershipPageRes) Code() int {
+func (res orgMembershipPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res membershipPageRes) Headers() map[string]string {
+func (res orgMembershipPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res membershipPageRes) Empty() bool {
+func (res orgMembershipPageRes) Empty() bool {
 	return false
 }
 

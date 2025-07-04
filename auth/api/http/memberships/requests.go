@@ -7,9 +7,9 @@ import (
 
 const maxLimitSize = 100
 
-type listMembershipsReq struct {
+type listOrgMembershipsReq struct {
 	token  string
-	id     string
+	orgID  string
 	offset uint64
 	limit  uint64
 	email  string
@@ -17,12 +17,12 @@ type listMembershipsReq struct {
 	dir    string
 }
 
-func (req listMembershipsReq) validate() error {
+func (req listOrgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}
 
@@ -33,13 +33,13 @@ func (req listMembershipsReq) validate() error {
 	return nil
 }
 
-type membershipReq struct {
+type orgMembershipReq struct {
 	token    string
 	orgID    string
 	memberID string
 }
 
-func (req membershipReq) validate() error {
+func (req orgMembershipReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -55,13 +55,13 @@ func (req membershipReq) validate() error {
 	return nil
 }
 
-type membershipsReq struct {
+type orgMembershipsReq struct {
 	token          string
 	orgID          string
 	OrgMemberships []auth.OrgMembership `json:"org_memberships"`
 }
 
-func (req membershipsReq) validate() error {
+func (req orgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -83,13 +83,13 @@ func (req membershipsReq) validate() error {
 	return nil
 }
 
-type removeMembershipsReq struct {
+type removeOrgMembershipsReq struct {
 	token     string
 	orgID     string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req removeMembershipsReq) validate() error {
+func (req removeOrgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

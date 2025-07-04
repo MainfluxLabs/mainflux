@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	// ErrCreateMembership indicates failure to create org membership.
-	ErrCreateMembership = errors.New("failed to create org membership")
+	// ErrCreateOrgMembership indicates failure to create org membership.
+	ErrCreateOrgMembership = errors.New("failed to create org membership")
 
-	// ErrRemoveMembership indicates failure to remove org membership.
-	ErrRemoveMembership = errors.New("failed to remove org membership")
+	// ErrRemoveOrgMembership indicates failure to remove org membership.
+	ErrRemoveOrgMembership = errors.New("failed to remove org membership")
 
-	// ErrMembershipExists indicates that membership already exists.
-	ErrMembershipExists = errors.New("membership already exists")
+	// ErrOrgMembershipExists indicates that membership already exists.
+	ErrOrgMembershipExists = errors.New("org membership already exists")
 )
 
 type OrgMembership struct {
@@ -36,7 +36,7 @@ type OrgMembershipsPage struct {
 	OrgMemberships []OrgMembership
 }
 
-type MembershipsRepository interface {
+type OrgMembershipsRepository interface {
 	// Save saves memberships.
 	Save(ctx context.Context, oms ...OrgMembership) error
 
@@ -56,26 +56,26 @@ type MembershipsRepository interface {
 	RetrieveAll(ctx context.Context) ([]OrgMembership, error)
 }
 
-// Memberships specify an API that must be fulfilled by the domain service
+// OrgMemberships specify an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
-type Memberships interface {
-	// CreateMemberships adds memberships with member emails into the org identified by orgID.
-	CreateMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
+type OrgMemberships interface {
+	// CreateOrgMemberships adds memberships with member emails into the org identified by orgID.
+	CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
 
-	// RemoveMemberships removes memberships with member ids from org identified by orgID.
-	RemoveMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error
+	// RemoveOrgMemberships removes memberships with member ids from org identified by orgID.
+	RemoveOrgMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error
 
-	// UpdateMemberships updates membership roles in an org.
-	UpdateMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
+	// UpdateOrgMemberships updates membership roles in an org.
+	UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
 
-	// ListMembershipsByOrg retrieves memberships created for an org identified by orgID.
-	ListMembershipsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
+	// ListOrgMemberships retrieves memberships created for an org identified by orgID.
+	ListOrgMemberships(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
 
-	// ViewMembership retrieves membership identified by memberID and orgID.
-	ViewMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
+	// ViewOrgMembership retrieves membership identified by memberID and orgID.
+	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
 }
 
-func (svc service) CreateMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
+func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (svc service) CreateMemberships(ctx context.Context, token, orgID string, o
 	return nil
 }
 
-func (svc service) ViewMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error) {
+func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembership{}, err
 	}
@@ -139,7 +139,7 @@ func (svc service) ViewMembership(ctx context.Context, token, orgID, memberID st
 	return membership, nil
 }
 
-func (svc service) ListMembershipsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error) {
+func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembershipsPage{}, err
 	}
@@ -188,7 +188,7 @@ func (svc service) ListMembershipsByOrg(ctx context.Context, token string, orgID
 	return mpg, nil
 }
 
-func (svc service) UpdateMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {
+func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (svc service) UpdateMemberships(ctx context.Context, token, orgID string, m
 	return nil
 }
 
-func (svc service) RemoveMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error {
+func (svc service) RemoveOrgMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error {
 	if err := svc.canRemoveMemberships(ctx, token, orgID, memberIDs...); err != nil {
 		return err
 	}

@@ -28,36 +28,36 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	}
 
 	mux.Post("/orgs/:id/memberships", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_memberships")(createMembershipsEndpoint(svc)),
-		decodeMembershipsRequest,
+		kitot.TraceServer(tracer, "create_org_memberships")(createOrgMembershipsEndpoint(svc)),
+		decodeOrgMembershipsRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_membership")(viewMembershipEndpoint(svc)),
-		decodeMembershipRequest,
+		kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
+		decodeOrgMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:id/memberships", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_memberships_by_org")(listMembershipsByOrgEndpoint(svc)),
-		decodeListMemberships,
+		kitot.TraceServer(tracer, "list_org_memberships")(listOrgMembershipsEndpoint(svc)),
+		decodeListOrgMemberships,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Put("/orgs/:id/memberships", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_memberships")(updateMembershipsEndpoint(svc)),
-		decodeMembershipsRequest,
+		kitot.TraceServer(tracer, "update_org_memberships")(updateOrgMembershipsEndpoint(svc)),
+		decodeOrgMembershipsRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Patch("/orgs/:id/memberships", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_memberships")(removeMembershipsEndpoint(svc)),
-		decodeRemoveMemberships,
+		kitot.TraceServer(tracer, "remove_org_memberships")(removeOrgMembershipsEndpoint(svc)),
+		decodeRemoveOrgMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -65,7 +65,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeListMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -87,9 +87,9 @@ func decodeListMemberships(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	req := listMembershipsReq{
+	req := listOrgMembershipsReq{
 		token:  apiutil.ExtractBearerToken(r),
-		id:     bone.GetValue(r, apiutil.IDKey),
+		orgID:  bone.GetValue(r, apiutil.IDKey),
 		email:  e,
 		offset: o,
 		limit:  l,
@@ -99,8 +99,8 @@ func decodeListMemberships(_ context.Context, r *http.Request) (interface{}, err
 	return req, nil
 }
 
-func decodeMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := membershipsReq{
+func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := orgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -122,8 +122,8 @@ func decodeMembershipsRequest(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := membershipReq{
+func decodeOrgMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := orgMembershipReq{
 		token:    apiutil.ExtractBearerToken(r),
 		orgID:    bone.GetValue(r, orgIDKey),
 		memberID: bone.GetValue(r, memberKey),
@@ -132,8 +132,8 @@ func decodeMembershipRequest(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeRemoveMemberships(_ context.Context, r *http.Request) (interface{}, error) {
-	req := removeMembershipsReq{
+func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+	req := removeOrgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -176,7 +176,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, auth.ErrMembershipExists):
+	case errors.Contains(err, auth.ErrOrgMembershipExists):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

@@ -18,11 +18,11 @@ var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 type orgRepositoryMock struct {
 	mu          sync.Mutex
 	orgs        map[string]auth.Org
-	memberships auth.MembershipsRepository
+	memberships auth.OrgMembershipsRepository
 }
 
 // NewOrgRepository returns mock of org repository
-func NewOrgRepository(mr auth.MembershipsRepository) auth.OrgRepository {
+func NewOrgRepository(mr auth.OrgMembershipsRepository) auth.OrgRepository {
 	return &orgRepositoryMock{
 		orgs:        make(map[string]auth.Org),
 		memberships: mr,

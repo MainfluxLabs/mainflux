@@ -88,7 +88,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() auth.Service {
-	membershipsRepo := mocks.NewMembershipsRepository()
+	membershipsRepo := mocks.NewOrgMembershipsRepository()
 	orgsRepo := mocks.NewOrgRepository(membershipsRepo)
 	rolesRepo := mocks.NewRolesRepository()
 
@@ -111,7 +111,7 @@ func toJSON(data interface{}) string {
 	return string(jsonData)
 }
 
-func TestCreateMemberships(t *testing.T) {
+func TestCreateOrgMemberships(t *testing.T) {
 	svc := newService()
 	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -126,8 +126,8 @@ func TestCreateMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(membershipsReq{OrgMemberships: []auth.OrgMembership{editor}})
-	invalidData := toJSON(membershipsReq{OrgMemberships: []auth.OrgMembership{invalidMembership}})
+	data := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{editor}})
+	invalidData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{invalidMembership}})
 
 	cases := []struct {
 		desc   string
@@ -202,7 +202,7 @@ func TestCreateMemberships(t *testing.T) {
 	}
 }
 
-func TestRemoveMemberships(t *testing.T) {
+func TestRemoveOrgMemberships(t *testing.T) {
 	svc := newService()
 	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -216,10 +216,10 @@ func TestRemoveMemberships(t *testing.T) {
 
 	memberships := []auth.OrgMembership{editor, viewer}
 
-	err = svc.CreateMemberships(context.Background(), token, or.ID, memberships...)
+	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(removeMembershipsReq{MemberIDs: []string{viewer.MemberID, editor.MemberID}})
+	data := toJSON(removeOrgMembershipsReq{MemberIDs: []string{viewer.MemberID, editor.MemberID}})
 
 	cases := []struct {
 		desc   string
@@ -294,7 +294,7 @@ func TestRemoveMemberships(t *testing.T) {
 	}
 }
 
-func TestUpdateMembers(t *testing.T) {
+func TestUpdateOrgMemberships(t *testing.T) {
 	svc := newService()
 	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -312,11 +312,11 @@ func TestUpdateMembers(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateMemberships(context.Background(), token, or.ID, viewer)
+	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, viewer)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	viewerRoleData := toJSON(membershipsReq{OrgMemberships: []auth.OrgMembership{viewerToEditor}})
-	ownerRoleData := toJSON(membershipsReq{OrgMemberships: []auth.OrgMembership{viewerToOwner}})
+	viewerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{viewerToEditor}})
+	ownerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{viewerToOwner}})
 
 	cases := []struct {
 		desc   string
@@ -329,35 +329,35 @@ func TestUpdateMembers(t *testing.T) {
 			desc:   "update org membership",
 			token:  token,
 			id:     or.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusOK,
 		},
 		{
 			desc:   "update org membership with invalid auth token",
 			token:  wrongValue,
 			id:     or.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "update org membership with empty token",
 			token:  "",
 			id:     or.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "update org membership with non-existing org",
 			token:  token,
 			id:     wrongValue,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusNotFound,
 		},
 		{
 			desc:   "update org membership without org id",
 			token:  token,
 			id:     "",
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -378,7 +378,7 @@ func TestUpdateMembers(t *testing.T) {
 			desc:   "update org member role to owner",
 			token:  token,
 			id:     or.ID,
-			req:    ownerRoleData,
+			req:    ownerData,
 			status: http.StatusBadRequest,
 		},
 	}
@@ -398,7 +398,7 @@ func TestUpdateMembers(t *testing.T) {
 	}
 }
 
-func TestListMembershipsByOrg(t *testing.T) {
+func TestListOrgMemberships(t *testing.T) {
 	svc := newService()
 	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -412,48 +412,48 @@ func TestListMembershipsByOrg(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateMemberships(context.Background(), token, or.ID, memberships...)
+	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	var data []viewMembershipRes
+	var data []viewOrgMembershipRes
 	for _, m := range memberships {
-		data = append(data, viewMembershipRes{
-			ID:    m.MemberID,
-			Email: m.Email,
-			Role:  m.Role,
+		data = append(data, viewOrgMembershipRes{
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
 		})
 	}
 
-	owner := viewMembershipRes{
-		ID:    id,
-		Email: email,
-		Role:  auth.Owner,
+	owner := viewOrgMembershipRes{
+		MemberID: id,
+		Email:    email,
+		Role:     auth.Owner,
 	}
 
 	data = append(data, owner)
 
-	dataByEmailAsc := make([]viewMembershipRes, len(data))
+	dataByEmailAsc := make([]viewOrgMembershipRes, len(data))
 	copy(dataByEmailAsc, data)
 	sort.Slice(dataByEmailAsc, func(i, j int) bool {
 		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
 	})
 
-	dataByEmailDesc := make([]viewMembershipRes, len(data))
+	dataByEmailDesc := make([]viewOrgMembershipRes, len(data))
 	copy(dataByEmailDesc, data)
 	sort.Slice(dataByEmailDesc, func(i, j int) bool {
 		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
 	})
 
-	dataByIDAsc := make([]viewMembershipRes, len(data))
+	dataByIDAsc := make([]viewOrgMembershipRes, len(data))
 	copy(dataByIDAsc, data)
 	sort.Slice(dataByIDAsc, func(i, j int) bool {
-		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
+		return dataByIDAsc[i].MemberID < dataByIDAsc[j].MemberID
 	})
 
-	dataByIDDesc := make([]viewMembershipRes, len(data))
+	dataByIDDesc := make([]viewOrgMembershipRes, len(data))
 	copy(dataByIDDesc, data)
 	sort.Slice(dataByIDDesc, func(i, j int) bool {
-		return dataByIDDesc[i].ID > dataByIDDesc[j].ID
+		return dataByIDDesc[i].MemberID > dataByIDDesc[j].MemberID
 	})
 
 	cases := []struct {
@@ -461,7 +461,7 @@ func TestListMembershipsByOrg(t *testing.T) {
 		token  string
 		url    string
 		status int
-		res    []viewMembershipRes
+		res    []viewOrgMembershipRes
 	}{
 		{
 			desc:   "list org memberships",
@@ -552,11 +552,11 @@ func TestListMembershipsByOrg(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/orgs/%s/memberships?email=%s", ts.URL, or.ID, viewerEmail),
-			res: []viewMembershipRes{
+			res: []viewOrgMembershipRes{
 				{
-					ID:    viewerID,
-					Email: viewerEmail,
-					Role:  auth.Viewer,
+					MemberID: viewerID,
+					Email:    viewerEmail,
+					Role:     auth.Viewer,
 				},
 			},
 		},
@@ -565,7 +565,7 @@ func TestListMembershipsByOrg(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/orgs/%s/memberships?email=%s", ts.URL, or.ID, wrongValue),
-			res:    []viewMembershipRes{},
+			res:    []viewOrgMembershipRes{},
 		},
 		{
 			desc:   "list group memberships sorted by email ascendant",
@@ -606,10 +606,10 @@ func TestListMembershipsByOrg(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data membershipPageRes
+		var data orgMembershipPageRes
 		err = json.NewDecoder(res.Body).Decode(&data)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.ElementsMatch(t, tc.res, data.Memberships, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Memberships))
+		assert.ElementsMatch(t, tc.res, data.OrgMemberships, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.OrgMemberships))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
@@ -621,21 +621,21 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type membershipsReq struct {
+type orgMembershipsReq struct {
 	OrgMemberships []auth.OrgMembership `json:"org_memberships"`
 }
 
-type removeMembershipsReq struct {
+type removeOrgMembershipsReq struct {
 	MemberIDs []string `json:"member_ids"`
 }
 
-type viewMembershipRes struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type viewOrgMembershipRes struct {
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
-type membershipPageRes struct {
+type orgMembershipPageRes struct {
 	pageRes
-	Memberships []viewMembershipRes `json:"memberships"`
+	OrgMemberships []viewOrgMembershipRes `json:"org_memberships"`
 }

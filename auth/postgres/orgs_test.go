@@ -339,7 +339,7 @@ func TestRetrieveAll(t *testing.T) {
 func TestRetrieveOrgsByMember(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembershipsRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))

@@ -10,23 +10,23 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 )
 
-var _ auth.MembershipsRepository = (*membershipsRepositoryMock)(nil)
+var _ auth.OrgMembershipsRepository = (*orgMembershipsRepositoryMock)(nil)
 
-type membershipsRepositoryMock struct {
+type orgMembershipsRepositoryMock struct {
 	mu                 sync.Mutex
 	memberships        map[string][]auth.OrgMembership
 	membershipsByOrgID map[string][]auth.OrgMembership
 }
 
-// NewMembershipsRepository returns mock of membership repository
-func NewMembershipsRepository() auth.MembershipsRepository {
-	return &membershipsRepositoryMock{
+// NewOrgMembershipsRepository returns mock of org memberships repository
+func NewOrgMembershipsRepository() auth.OrgMembershipsRepository {
+	return &orgMembershipsRepositoryMock{
 		memberships:        make(map[string][]auth.OrgMembership),
 		membershipsByOrgID: make(map[string][]auth.OrgMembership),
 	}
 }
 
-func (mrm *membershipsRepositoryMock) Save(_ context.Context, oms ...auth.OrgMembership) error {
+func (mrm *orgMembershipsRepositoryMock) Save(_ context.Context, oms ...auth.OrgMembership) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -48,7 +48,7 @@ func (mrm *membershipsRepositoryMock) Save(_ context.Context, oms ...auth.OrgMem
 	return nil
 }
 
-func (mrm *membershipsRepositoryMock) Remove(_ context.Context, orgID string, memberIDs ...string) error {
+func (mrm *orgMembershipsRepositoryMock) Remove(_ context.Context, orgID string, memberIDs ...string) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -67,7 +67,7 @@ func (mrm *membershipsRepositoryMock) Remove(_ context.Context, orgID string, me
 	return nil
 }
 
-func (mrm *membershipsRepositoryMock) Update(_ context.Context, oms ...auth.OrgMembership) error {
+func (mrm *orgMembershipsRepositoryMock) Update(_ context.Context, oms ...auth.OrgMembership) error {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -86,7 +86,7 @@ func (mrm *membershipsRepositoryMock) Update(_ context.Context, oms ...auth.OrgM
 	return nil
 }
 
-func (mrm *membershipsRepositoryMock) RetrieveRole(_ context.Context, memberID, orgID string) (string, error) {
+func (mrm *orgMembershipsRepositoryMock) RetrieveRole(_ context.Context, memberID, orgID string) (string, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -101,7 +101,7 @@ func (mrm *membershipsRepositoryMock) RetrieveRole(_ context.Context, memberID, 
 	return "", errors.ErrNotFound
 }
 
-func (mrm *membershipsRepositoryMock) RetrieveByOrgID(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (mrm *orgMembershipsRepositoryMock) RetrieveByOrgID(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
@@ -130,7 +130,7 @@ func (mrm *membershipsRepositoryMock) RetrieveByOrgID(_ context.Context, orgID s
 	}, nil
 }
 
-func (mrm *membershipsRepositoryMock) RetrieveAll(_ context.Context) ([]auth.OrgMembership, error) {
+func (mrm *orgMembershipsRepositoryMock) RetrieveAll(_ context.Context) ([]auth.OrgMembership, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
