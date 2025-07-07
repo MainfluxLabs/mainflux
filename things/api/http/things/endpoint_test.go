@@ -52,6 +52,15 @@ const (
 	noLimit        = -1
 )
 
+type SearchThingsRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
 var (
 	thing = things.Thing{
 		Name:     "test_app",
@@ -62,7 +71,7 @@ var (
 		Metadata: metadata,
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
-	searchThingReq = apiutil.PageMetadata{
+	searchThingReq = SearchThingsRequest{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -923,6 +932,7 @@ func TestSearchThings(t *testing.T) {
 	str.Order = "wrong"
 	invalidOrderData := toJSON(str)
 
+	str = searchThingReq
 	str.Limit = 0
 	zeroLimitData := toJSON(str)
 
