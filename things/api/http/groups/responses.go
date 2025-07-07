@@ -108,12 +108,6 @@ func (res groupPageRes) Empty() bool {
 	return false
 }
 
-type viewGroupMembers struct {
-	MemberID string `json:"member_id"`
-	GroupID  string `json:"group_id"`
-	Role     string `json:"role"`
-}
-
 type backupGroupsRes struct {
 	Groups []viewGroupRes `json:"groups"`
 }

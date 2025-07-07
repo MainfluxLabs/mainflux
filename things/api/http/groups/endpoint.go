@@ -163,7 +163,7 @@ func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func backupEndpoint(svc things.Service) endpoint.Endpoint {
+func backupGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
 		if err := req.validate(); err != nil {
