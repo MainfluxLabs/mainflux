@@ -306,7 +306,7 @@ type SDK interface {
 	// ListOrgs returns page of orgs.
 	ListOrgs(meta PageMetadata, token string) (OrgsPage, error)
 
-	// CreateOrgMemberships created a memberships to the specified org.
+	// CreateOrgMemberships creates a memberships to the specified org.
 	CreateOrgMemberships(oms []OrgMembership, orgID, token string) error
 
 	// GetOrgMembership retrieves a membership for the specified org and member.
