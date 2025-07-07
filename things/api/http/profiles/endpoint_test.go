@@ -38,6 +38,7 @@ const (
 	adminToken     = adminEmail
 	wrongValue     = "wrong_value"
 	emptyValue     = ""
+	emptyJson      = "{}"
 	wrongID        = 0
 	password       = "password"
 	maxNameSize    = 1024
@@ -59,6 +60,10 @@ var (
 	profile = things.Profile{
 		Name:     "test",
 		Metadata: metadata,
+	}
+	searchProfileReq = SearchProfilesRequest{
+		Limit:  5,
+		Offset: 0,
 	}
 	profile1 = things.Profile{
 		Name:     "test1",
@@ -839,6 +844,543 @@ func TestListProfilesByOrg(t *testing.T) {
 	}
 }
 
+func TestSearchProfiles(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchProfileReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchProfileReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchProfileReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profiles := []profileRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("name_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		profiles = append(profiles, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []profileRes
+	}{
+		{
+			desc:   "search profiles",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    profiles[0:10],
+		},
+		{
+			desc:   "search profiles with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    profiles[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/profiles/search", ts.URL),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body profilesPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
+func TestSearchProfilesByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchProfileReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchProfileReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchProfileReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profiles := []profileRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("name_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		profiles = append(profiles, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []profileRes
+	}{
+		{
+			desc:   "search profiles by group",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by group ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by group ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by group with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by group with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    profiles[0:10],
+		},
+		{
+			desc:   "search profiles by group with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    profiles[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/groups/%s/profiles/search", ts.URL, gr.ID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body profilesPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
+func TestSearchProfilesByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchProfileReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchProfileReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchProfileReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchProfileReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profiles := []profileRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("name_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		profiles = append(profiles, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []profileRes
+	}{
+		{
+			desc:   "search profiles by org",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by org ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by org ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    profiles[0:5],
+		},
+		{
+			desc:   "search profiles by org with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search profiles by org with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    profiles[0:10],
+		},
+		{
+			desc:   "search profiles by org with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    profiles[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/orgs/%s/profiles/search", ts.URL, orgID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body profilesPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
 func TestViewProfileByThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -1114,4 +1656,13 @@ type profilesPageRes struct {
 	Total    uint64       `json:"total"`
 	Offset   uint64       `json:"offset"`
 	Limit    uint64       `json:"limit"`
+}
+
+type SearchProfilesRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
