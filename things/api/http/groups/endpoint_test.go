@@ -35,15 +35,29 @@ const (
 	emptyValue     = ""
 	password       = "password"
 	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
+	prefix         = "fe6b4e92-cc98-425e-b0aa-"
+	n              = 101
+	noLimit        = -1
+	emptyJson      = "{}"
+	maxNameSize    = 1024
+	nameKey        = "name"
+	ascKey         = "asc"
+	descKey        = "desc"
 )
 
 var (
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Owner}
-	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Editor}
-	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
-	group     = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
-	usersList = []users.User{admin, user, otherUser}
-	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	user           = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Owner}
+	otherUser      = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Editor}
+	admin          = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
+	group          = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
+	usersList      = []users.User{admin, user, otherUser}
+	orgsList       = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	searchGroupReq = SearchGroupsRequest{
+		Limit:  5,
+		Offset: 0,
+	}
+	metadata    = map[string]interface{}{"test": "data"}
+	invalidName = strings.Repeat("m", maxNameSize+1)
 )
 
 type testRequest struct {
@@ -831,6 +845,356 @@ func TestListGroupsByOrg(t *testing.T) {
 	}
 }
 
+func TestSearchGroups(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchGroupReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchGroupReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchGroupReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchGroupReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchGroupReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	groups := []groupRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("group_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
+
+		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		group := grs[0]
+
+		groups = append(groups, groupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OrgID:       group.OrgID,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []groupRes
+	}{
+		{
+			desc:   "search groups",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    groups[0:10],
+		},
+		{
+			desc:   "search groups with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    groups[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/groups/search", ts.URL),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body groupsPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Groups))
+	}
+}
+
+func TestSearchGroupsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchGroupReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchGroupReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchGroupReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchGroupReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchGroupReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	groups := []groupRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("group_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
+
+		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		group := grs[0]
+
+		groups = append(groups, groupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OrgID:       group.OrgID,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []groupRes
+	}{
+		{
+			desc:   "search groups by org",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups by org ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups by org ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    groups[0:5],
+		},
+		{
+			desc:   "search groups by org with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search groups by org with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    groups[0:10],
+		},
+		{
+			desc:   "search groups by org with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    groups[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/orgs/%s/groups/search", ts.URL, orgID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body groupsPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Groups))
+	}
+}
+
 func TestRemoveGroups(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -945,4 +1309,13 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
+}
+
+type SearchGroupsRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

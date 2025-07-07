@@ -68,6 +68,20 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Post("/groups/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_groups")(listGroupsEndpoint(svc)),
+		decodeListByMetadata,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/groups/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_groups_by_org")(listGroupsByOrgEndpoint(svc)),
+		decodeListByOrgMetadata,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
 		decodeUpdateGroup,
@@ -151,6 +165,34 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByOrgReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm}
+
+	return req, nil
+}
+
+func decodeListByOrgMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
