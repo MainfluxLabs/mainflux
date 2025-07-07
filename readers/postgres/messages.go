@@ -19,14 +19,6 @@ import (
 
 type AggregationType string
 
-type senmlMessage struct {
-	senml.Message
-}
-
-type jsonMessage struct {
-	mfjson.Message
-}
-
 const (
 	defTable                         = "messages"
 	jsonTable                        = "json"
@@ -135,7 +127,8 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	}()
 
 	for _, msg := range messages {
-		m := senmlMessage{Message: msg}
+		m := msg
+
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
@@ -384,20 +377,20 @@ func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]rea
 	switch format {
 	case defTable:
 		for rows.Next() {
-			msg := senmlMessage{Message: senml.Message{}}
+			msg := senml.Message{}
 			if err := rows.StructScan(&msg); err != nil {
 				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			messages = append(messages, msg.Message)
+			messages = append(messages, msg)
 		}
 	default:
 		for rows.Next() {
-			msg := jsonMessage{}
+			msg := mfjson.Message{}
 			if err := rows.StructScan(&msg); err != nil {
 				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
 
-			m, err := msg.toMap()
+			m, err := msg.ToMap()
 			if err != nil {
 				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
@@ -477,21 +470,6 @@ func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format 
 	}
 }
 
-func (msg jsonMessage) toMap() (map[string]interface{}, error) {
-	ret := map[string]interface{}{
-		"created":   msg.Created,
-		"subtopic":  msg.Subtopic,
-		"publisher": msg.Publisher,
-		"protocol":  msg.Protocol,
-		"payload":   map[string]interface{}{},
-	}
-	pld := make(map[string]interface{})
-	if err := json.Unmarshal(msg.Payload, &pld); err != nil {
-		return nil, err
-	}
-	ret["payload"] = pld
-	return ret, nil
-}
 
 func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
 	return map[string]interface{}{
