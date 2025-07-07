@@ -36,7 +36,7 @@ const (
 	toKey                  = "to"
 	defFormat              = "messages"
 	aggregationKey         = "aggregation"
-	aggregateFieldKey      = "aggregate_field"
+	aggregationFieldKey    = "aggregation_field"
 	publisherID            = "publisherID"
 )
 
@@ -157,7 +157,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	aggregateField, err := apiutil.ReadStringQuery(r, aggregateFieldKey, "")
+	aggregationField, err := apiutil.ReadStringQuery(r, aggregationFieldKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 			To:             to,
 			Interval:       i,
 			Aggregation:    aggregation,
-			AggregateField: aggregateField,
+			AggregationField: aggregationField,
 		},
 	}
 

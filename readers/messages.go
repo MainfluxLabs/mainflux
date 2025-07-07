@@ -44,7 +44,7 @@ type MessageRepository interface {
 // Message represents any message format.
 type Message interface{}
 
-type AggregationResult struct {
+type Aggregation struct {
 	Field string      `json:"field"`
 	Value interface{} `json:"value"`
 	Count uint64      `json:"count, omitempty`
@@ -56,7 +56,7 @@ type MessagesPage struct {
 	PageMetadata
 	Total       uint64
 	Messages    []Message
-	Aggregation *AggregationResult `json:"aggregation,omitempty`
+	Aggregation Aggregation `json:"aggregation,omitempty`
 }
 
 // PageMetadata represents the parameters used to create database queries
@@ -77,7 +77,7 @@ type PageMetadata struct {
 	Format         string  `json:"format,omitempty"`
 	Interval       string  `json:"interval,omitempty"`
 	Aggregation    string  `json:"aggregation,omitempty"`
-	AggregateField string  `json:"aggregate_field,omitempty"`
+	AggregationField string  `json:"aggregation_field,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation

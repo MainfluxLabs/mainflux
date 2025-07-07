@@ -9,8 +9,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
-	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json" 
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -207,14 +207,14 @@ func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order s
 	return total, nil
 }
 
-func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (*readers.AggregationResult, error) {
+func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (readers.Aggregation, error) {
 	query := tr.buildAggregationQuery(rpm, format, order)
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
-		return nil, err
+		return readers.Aggregation{}, err
 	}
 	if rows == nil {
-		return nil, nil
+		return readers.Aggregation{}, nil
 	}
 	defer rows.Close()
 
@@ -225,18 +225,18 @@ func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, o
 	if rows.Next() {
 		if aggregationType == AggregationCount {
 			if err := rows.Scan(&count, &count); err != nil {
-				return nil, errors.Wrap(readers.ErrReadMessages, err)
+				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
 			}
 			result = count
 		} else {
 			if err := rows.Scan(&result, &count); err != nil {
-				return nil, errors.Wrap(readers.ErrReadMessages, err)
+				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
 			}
 		}
 	}
 
 	aggregateField := tr.getAggregateField(rpm, format)
-	return &readers.AggregationResult{
+	return readers.Aggregation{
 		Field: aggregateField,
 		Value: result,
 		Count: count,
@@ -331,7 +331,8 @@ func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, ord
 	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s`, format, condition, order, olq)
 }
 
-func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string { switch format {
+func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string {
+	switch format {
 	case defTable:
 		return fmt.Sprintf(`
 				SELECT * FROM (
@@ -458,7 +459,7 @@ func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format
 }
 
 func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format string) string {
-	switch rpm.AggregateField {
+	switch rpm.AggregationField {
 	case "":
 		if format == jsonTable {
 			return "created"
@@ -466,10 +467,9 @@ func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format 
 			return "value"
 		}
 	default:
-		return rpm.AggregateField
+		return rpm.AggregationField
 	}
 }
-
 
 func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
 	return map[string]interface{}{
@@ -490,15 +490,15 @@ func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[stri
 
 func (tr postgresRepository) buildDeleteQueryParams(rpm readers.PageMetadata) map[string]interface{} {
 	return map[string]interface{}{
-			"subtopic":     rpm.Subtopic,
-			"publisher":    rpm.Publisher,
-			"name":         rpm.Name,
-			"protocol":     rpm.Protocol,
-			"value":        rpm.Value,
-			"bool_value":   rpm.BoolValue,
-			"string_value": rpm.StringValue,
-			"data_value":   rpm.DataValue,
-			"from":         rpm.From,
-			"to":           rpm.To,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
 	}
 }
