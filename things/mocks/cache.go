@@ -146,7 +146,7 @@ func (gcm *groupCacheMock) RemoveGroupEntities(_ context.Context, groupID string
 	return nil
 }
 
-func (gcm *groupCacheMock) SaveGroupMember(_ context.Context, groupID, memberID, role string) error {
+func (gcm *groupCacheMock) SaveGroupMembership(_ context.Context, groupID, memberID, role string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
@@ -168,7 +168,7 @@ func (gcm *groupCacheMock) ViewRole(_ context.Context, groupID, memberID string)
 	return role, nil
 }
 
-func (gcm *groupCacheMock) RemoveGroupMember(_ context.Context, groupID, memberID string) error {
+func (gcm *groupCacheMock) RemoveGroupMembership(_ context.Context, groupID, memberID string) error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 

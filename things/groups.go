@@ -101,14 +101,14 @@ type GroupCache interface {
 	// RemoveGroupEntities removes all entities related to the group identified by ID.
 	RemoveGroupEntities(context.Context, string) error
 
-	// SaveGroupMember stores member's role for given group ID.
-	SaveGroupMember(context.Context, string, string, string) error
+	// SaveGroupMembership stores member's role for given group ID.
+	SaveGroupMembership(context.Context, string, string, string) error
 
 	// ViewRole returns a group member role by given groupID and memberID.
 	ViewRole(context.Context, string, string) (string, error)
 
-	// RemoveGroupMember removes a group member from cache.
-	RemoveGroupMember(context.Context, string, string) error
+	// RemoveGroupMembership removes a group membership from cache.
+	RemoveGroupMembership(context.Context, string, string) error
 
 	// GroupMemberships returns the IDs of the groups the member belongs to.
 	GroupMemberships(context.Context, string) ([]string, error)
@@ -129,12 +129,12 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 		}
 		ownerID := oid.GetValue()
 
-		members := []GroupMember{{MemberID: ownerID, Role: Owner}}
+		memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
 		if ownerID != userID {
 			if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Editor); err != nil {
 				return nil, err
 			}
-			members = append(members, GroupMember{MemberID: userID, Role: Admin})
+			memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})
 		}
 
 		gr, err := ts.createGroup(ctx, group)
@@ -142,13 +142,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 			return []Group{}, err
 		}
 
-		for i := range members {
-			members[i].GroupID = gr.ID
-			if err := ts.groupMembers.Save(ctx, members[i]); err != nil {
+		for i := range memberships {
+			memberships[i].GroupID = gr.ID
+			if err := ts.groupMemberships.Save(ctx, memberships[i]); err != nil {
 				return []Group{}, err
 			}
 
-			if err := ts.groupCache.SaveGroupMember(ctx, gr.ID, members[i].MemberID, members[i].Role); err != nil {
+			if err := ts.groupCache.SaveGroupMembership(ctx, gr.ID, memberships[i].MemberID, memberships[i].Role); err != nil {
 				return []Group{}, err
 			}
 		}
@@ -327,20 +327,20 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
-	gm := GroupMember{
+	gm := GroupMembership{
 		MemberID: user.Id,
 		GroupID:  groupID,
 	}
 
 	role, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
 	if err != nil {
-		r, err := ts.groupMembers.RetrieveRole(ctx, gm)
+		r, err := ts.groupMemberships.RetrieveRole(ctx, gm)
 		if err != nil {
 			return err
 		}
 		role = r
 
-		if err := ts.groupCache.SaveGroupMember(ctx, gm.GroupID, gm.MemberID, r); err != nil {
+		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, r); err != nil {
 			return err
 		}
 	}

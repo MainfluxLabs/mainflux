@@ -17,7 +17,7 @@ import (
 func TestSave(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -31,7 +31,7 @@ func TestSave(t *testing.T) {
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
 
-	gms := []things.GroupMember{
+	gms := []things.GroupMembership{
 		{
 			MemberID: memberID,
 			GroupID:  group.ID,
@@ -44,7 +44,7 @@ func TestSave(t *testing.T) {
 		},
 	}
 
-	gmsWithoutMemberIDs := []things.GroupMember{
+	gmsWithoutMemberIDs := []things.GroupMembership{
 		{
 			MemberID: "",
 			GroupID:  group.ID,
@@ -57,7 +57,7 @@ func TestSave(t *testing.T) {
 		},
 	}
 
-	gmsWithoutGroupIDs := []things.GroupMember{
+	gmsWithoutGroupIDs := []things.GroupMembership{
 		{
 			MemberID: memberID,
 			GroupID:  "",
@@ -72,33 +72,33 @@ func TestSave(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		gms  []things.GroupMember
+		gms  []things.GroupMembership
 		err  error
 	}{
 		{
-			desc: "save group members",
+			desc: "save group memberships",
 			gms:  gms,
 			err:  nil,
 		},
 		{
-			desc: "save group members without group ids",
+			desc: "save group memberships without group ids",
 			gms:  gmsWithoutGroupIDs,
 			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save group members without member id",
+			desc: "save group memberships without member id",
 			gms:  gmsWithoutMemberIDs,
 			err:  errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save existing group members",
+			desc: "save existing group memberships",
 			gms:  gms,
 			err:  errors.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := groupMembersRepo.Save(context.Background(), tc.gms...)
+		err := groupMembershipsRepo.Save(context.Background(), tc.gms...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -106,7 +106,7 @@ func TestSave(t *testing.T) {
 func TestRetrieveRole(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -119,30 +119,30 @@ func TestRetrieveRole(t *testing.T) {
 
 	memberID := generateUUID(t)
 
-	gm := things.GroupMember{
+	gm := things.GroupMembership{
 		GroupID:  group.ID,
 		Role:     things.Viewer,
 		MemberID: memberID,
 	}
 
-	err = groupMembersRepo.Save(context.Background(), gm)
+	err = groupMembershipsRepo.Save(context.Background(), gm)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc string
-		gp   things.GroupMember
+		gp   things.GroupMembership
 		role string
 		err  error
 	}{
 		{
-			desc: "retrieve group role",
+			desc: "retrieve member role",
 			gp:   gm,
 			role: things.Viewer,
 			err:  nil,
 		},
 		{
-			desc: "retrieve group role without group id",
-			gp: things.GroupMember{
+			desc: "retrieve member role without group id",
+			gp: things.GroupMembership{
 				GroupID:  "",
 				MemberID: memberID,
 			},
@@ -150,8 +150,8 @@ func TestRetrieveRole(t *testing.T) {
 			err:  errors.ErrNotFound,
 		},
 		{
-			desc: "retrieve group role without member id",
-			gp: things.GroupMember{
+			desc: "retrieve member role without member id",
+			gp: things.GroupMembership{
 				GroupID:  group.ID,
 				MemberID: "",
 			},
@@ -161,7 +161,7 @@ func TestRetrieveRole(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		role, err := groupMembersRepo.RetrieveRole(context.Background(), tc.gp)
+		role, err := groupMembershipsRepo.RetrieveRole(context.Background(), tc.gp)
 		assert.Equal(t, tc.role, role, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.role, role))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
@@ -170,7 +170,7 @@ func TestRetrieveRole(t *testing.T) {
 func TestRetrieveByGroup(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -184,12 +184,12 @@ func TestRetrieveByGroup(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		gm := things.GroupMember{
+		gm := things.GroupMembership{
 			MemberID: memberID,
 			GroupID:  gr.ID,
 			Role:     things.Viewer,
 		}
-		err = groupMembersRepo.Save(context.Background(), gm)
+		err = groupMembershipsRepo.Save(context.Background(), gm)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -201,7 +201,7 @@ func TestRetrieveByGroup(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "retrieve group members",
+			desc:    "retrieve group memberships",
 			groupID: group.ID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -212,7 +212,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve last group member",
+			desc:    "retrieve last group membership",
 			groupID: group.ID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: n - 1,
@@ -223,7 +223,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "retrieve group members with invalid group id",
+			desc:    "retrieve group memberships with invalid group id",
 			groupID: invalidID,
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -233,7 +233,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			err: errors.ErrRetrieveEntity,
 		},
 		{
-			desc:    "retrieve group members without group id",
+			desc:    "retrieve group memberships without group id",
 			groupID: "",
 			pageMeta: apiutil.PageMetadata{
 				Offset: 0,
@@ -247,17 +247,17 @@ func TestRetrieveByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gpp, err := groupMembersRepo.RetrieveByGroup(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(gpp.GroupMembers)
+		gpp, err := groupMembershipsRepo.RetrieveByGroup(context.Background(), tc.groupID, tc.pageMeta)
+		size := len(gpp.GroupMemberships)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRemoveGroupMembers(t *testing.T) {
+func TestRemoveGroupMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(dbMiddleware)
 
 	gr := things.Group{
 		ID:    generateUUID(t),
@@ -273,13 +273,13 @@ func TestRemoveGroupMembers(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		gp := things.GroupMember{
+		gp := things.GroupMembership{
 			MemberID: memberID,
 			GroupID:  group.ID,
 			Role:     things.Viewer,
 		}
 
-		err = groupMembersRepo.Save(context.Background(), gp)
+		err = groupMembershipsRepo.Save(context.Background(), gp)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -292,19 +292,19 @@ func TestRemoveGroupMembers(t *testing.T) {
 		err       error
 	}{
 		{
-			desc:      "remove group members without group id",
+			desc:      "remove group memberships without group id",
 			groupID:   "",
 			memberIDs: memberIDs,
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group members without member ids",
+			desc:      "remove group memberships without member ids",
 			groupID:   group.ID,
 			memberIDs: []string{""},
 			err:       errors.ErrRemoveEntity,
 		},
 		{
-			desc:      "remove group members",
+			desc:      "remove group memberships",
 			groupID:   group.ID,
 			memberIDs: memberIDs,
 			err:       nil,
@@ -312,15 +312,15 @@ func TestRemoveGroupMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := groupMembersRepo.Remove(context.Background(), tc.groupID, tc.memberIDs...)
+		err := groupMembershipsRepo.Remove(context.Background(), tc.groupID, tc.memberIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdateGroupMembers(t *testing.T) {
+func TestUpdateGroupMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
-	groupMembersRepo := postgres.NewGroupMembersRepository(dbMiddleware)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(dbMiddleware)
 
 	memberID := generateUUID(t)
 	memberID1 := generateUUID(t)
@@ -334,7 +334,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 	group, err := groupRepo.Save(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	gpByIDs := []things.GroupMember{
+	gpByIDs := []things.GroupMembership{
 		{
 			MemberID: memberID,
 			GroupID:  gr.ID,
@@ -347,17 +347,17 @@ func TestUpdateGroupMembers(t *testing.T) {
 		},
 	}
 
-	err = groupMembersRepo.Save(context.Background(), gpByIDs...)
+	err = groupMembershipsRepo.Save(context.Background(), gpByIDs...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
 		desc   string
-		gpByID things.GroupMember
+		gpByID things.GroupMembership
 		err    error
 	}{
 		{
-			desc: "update group members without group id",
-			gpByID: things.GroupMember{
+			desc: "update group memberships without group id",
+			gpByID: things.GroupMembership{
 				MemberID: memberID,
 				GroupID:  "",
 				Role:     things.Viewer,
@@ -365,8 +365,8 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group members without member id",
-			gpByID: things.GroupMember{
+			desc: "update group memberships without member id",
+			gpByID: things.GroupMembership{
 				MemberID: "",
 				GroupID:  group.ID,
 				Role:     things.Viewer,
@@ -374,8 +374,8 @@ func TestUpdateGroupMembers(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group members",
-			gpByID: things.GroupMember{
+			desc: "update group memberships",
+			gpByID: things.GroupMembership{
 				MemberID: memberID,
 				GroupID:  group.ID,
 				Role:     things.Viewer,
@@ -385,7 +385,7 @@ func TestUpdateGroupMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := groupMembersRepo.Update(context.Background(), tc.gpByID)
+		err := groupMembershipsRepo.Update(context.Background(), tc.gpByID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

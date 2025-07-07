@@ -21,7 +21,7 @@ var _ things.GroupRepository = (*groupRepositoryMock)(nil)
 type groupRepositoryMock struct {
 	mu sync.Mutex
 	// Map of groups, group id as a key.
-	// groups      map[GroupID]auth.Group
+	// groups map[GroupID]auth.Group
 	groups map[string]things.Group
 	// Map of group thing membership where thing id is a key and group id is a value.
 	thingMembership map[string]string
@@ -30,19 +30,19 @@ type groupRepositoryMock struct {
 	// Map of group profile membership where profile id is a key and group id is a value.
 	profileMembership map[string]string
 	// Map of group profile where group id is a key and profile ids are values.
-	profiles map[string][]string
-	members  things.GroupMembersRepository
+	profiles             map[string][]string
+	groupMembershipsRepo things.GroupMembershipsRepository
 }
 
 // NewGroupRepository creates in-memory user repository
-func NewGroupRepository(members things.GroupMembersRepository) things.GroupRepository {
+func NewGroupRepository(groupMembershipsRepo things.GroupMembershipsRepository) things.GroupRepository {
 	return &groupRepositoryMock{
-		groups:            make(map[string]things.Group),
-		thingMembership:   make(map[string]string),
-		things:            make(map[string][]string),
-		profileMembership: make(map[string]string),
-		profiles:          make(map[string][]string),
-		members:           members,
+		groups:               make(map[string]things.Group),
+		thingMembership:      make(map[string]string),
+		things:               make(map[string][]string),
+		profileMembership:    make(map[string]string),
+		profiles:             make(map[string][]string),
+		groupMembershipsRepo: groupMembershipsRepo,
 	}
 }
 
@@ -114,7 +114,7 @@ func (grm *groupRepositoryMock) RetrieveIDsByOrgMember(ctx context.Context, orgI
 	defer grm.mu.Unlock()
 
 	var grIDs []string
-	ids, _ := grm.members.RetrieveGroupIDsByMember(ctx, memberID)
+	ids, _ := grm.groupMembershipsRepo.RetrieveGroupIDsByMember(ctx, memberID)
 	for _, gr := range grm.groups {
 		for _, id := range ids {
 			if gr.OrgID == orgID && gr.ID == id {
