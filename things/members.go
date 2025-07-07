@@ -23,10 +23,6 @@ type GroupMembersPage struct {
 	GroupMembers []GroupMember
 }
 
-type BackupGroupMembers struct {
-	GroupMembers []GroupMember
-}
-
 type GroupMembersRepository interface {
 	// Save saves group members.
 	Save(ctx context.Context, gms ...GroupMember) error
@@ -39,6 +35,9 @@ type GroupMembersRepository interface {
 
 	// RetrieveAll retrieves all group members. This is used for backup.
 	RetrieveAll(ctx context.Context) ([]GroupMember, error)
+
+	// RetrieveAll retrieves all group members by group ID. This is used for backup.
+	RetrieveAllByGroup(ctx context.Context, groupID string) ([]GroupMember, error)
 
 	// RetrieveGroupIDsByMember retrieves the IDs of the groups to which the member belongs
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)

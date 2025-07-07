@@ -145,6 +145,31 @@ func (mr membersRepository) RetrieveAll(ctx context.Context) ([]things.GroupMemb
 	return items, nil
 }
 
+func (mr membersRepository) RetrieveAllByGroup(ctx context.Context, groupID string) ([]things.GroupMember, error) {
+	q := `SELECT member_id, group_id, role FROM group_roles WHERE group_id = :group_id;`
+
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{
+		"group_id": groupID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []things.GroupMember
+	for rows.Next() {
+		dbgp := dbGroupMembers{}
+		if err := rows.StructScan(&dbgp); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gp := toGroupMembers(dbgp)
+		items = append(items, gp)
+	}
+
+	return items, nil
+}
+
 func (mr membersRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	var groupIDs []string
 

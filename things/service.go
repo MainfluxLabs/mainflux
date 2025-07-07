@@ -145,6 +145,10 @@ type Backup struct {
 	GroupMembers []GroupMember
 }
 
+type BackupGroupMembers struct {
+	GroupMembers []GroupMember
+}
+
 type UserAccessReq struct {
 	Token  string
 	ID     string
@@ -728,6 +732,36 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		Things:       things,
 		Profiles:     profiles,
 		Groups:       groups,
+		GroupMembers: groupMembers,
+	}, nil
+}
+
+func (ts *thingsService) BackupGroupMembers(ctx context.Context, token string, groupID string) (BackupGroupMembers, error) {
+	groupMembers, err := ts.groupMembers.RetrieveAllByGroup(ctx, groupID)
+	if err != nil {
+		return BackupGroupMembers{}, err
+	}
+
+	var memberIDs []string
+	for _, gm := range groupMembers {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
+
+	usersResp, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
+	if err != nil {
+		return BackupGroupMembers{}, err
+	}
+
+	emailMap := make(map[string]string)
+	for _, user := range usersResp.Users {
+		emailMap[user.Id] = user.Email
+	}
+
+	for i := range groupMembers {
+		groupMembers[i].Email = emailMap[groupMembers[i].MemberID]
+	}
+
+	return BackupGroupMembers{
 		GroupMembers: groupMembers,
 	}, nil
 }

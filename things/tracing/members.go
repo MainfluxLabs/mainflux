@@ -20,6 +20,7 @@ const (
 	retrieveByGroup          = "retrieve_by_group"
 	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
 	retrieveAll              = "retrieve_all"
+	retrieveAllByGroupID     = "retrieve_all_by_group_id"
 )
 
 var _ things.GroupMembersRepository = (*groupMembersRepositoryMiddleware)(nil)
@@ -75,6 +76,14 @@ func (prm groupMembersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return prm.repo.RetrieveAll(ctx)
+}
+
+func (grm groupMembersRepositoryMiddleware) RetrieveAllByGroup(ctx context.Context, groupID string) ([]things.GroupMember, error) {
+	span := createSpan(ctx, grm.tracer, retrieveAllByGroupID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveAllByGroup(ctx, groupID)
 }
 
 func (prm groupMembersRepositoryMiddleware) Update(ctx context.Context, gms ...things.GroupMember) error {
