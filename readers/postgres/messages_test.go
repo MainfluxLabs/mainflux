@@ -352,7 +352,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:          noLimit,
 				Name:           msgName,
 				Aggregation:    "avg",
-				AggregateField: "sum",
+				AggregationField: "sum",
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
