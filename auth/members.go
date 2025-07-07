@@ -36,6 +36,10 @@ type OrgMembersPage struct {
 	OrgMembers []OrgMember
 }
 
+type BackupOrgMembers struct {
+	OrgMembers []OrgMember
+}
+
 type MembersRepository interface {
 	// Save saves membershipa.
 	Save(ctx context.Context, oms ...OrgMember) error
@@ -54,6 +58,9 @@ type MembersRepository interface {
 
 	// RetrieveAll retrieves all members.
 	RetrieveAll(ctx context.Context) ([]OrgMember, error)
+
+	// RetrieveAll retrieves all members by org ID.
+	RetrieveAllByOrg(ctx context.Context, orgID string) ([]OrgMember, error)
 }
 
 // Memberships specifies an API that must be fullfiled by the domain service
@@ -73,6 +80,9 @@ type Members interface {
 
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
+
+	// BackupOrgMembers retrieves all org members for given org ID.
+	BackupOrgMembers(ctx context.Context, token string, orgID string) (BackupOrgMembers, error)
 }
 
 func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error {
@@ -263,4 +273,34 @@ func (svc service) canAssignMembers(ctx context.Context, token, orgID string, me
 	}
 
 	return nil
+}
+
+func (svc service) BackupOrgMembers(ctx context.Context, token string, orgID string) (BackupOrgMembers, error) {
+	orgMembers, err := svc.members.RetrieveAllByOrg(ctx, orgID)
+	if err != nil {
+		return BackupOrgMembers{}, err
+	}
+
+	var memberIDs []string
+	for _, gm := range orgMembers {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
+
+	usersResp, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
+	if err != nil {
+		return BackupOrgMembers{}, err
+	}
+
+	emailMap := make(map[string]string)
+	for _, user := range usersResp.Users {
+		emailMap[user.Id] = user.Email
+	}
+
+	for i := range orgMembers {
+		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
+	}
+
+	return BackupOrgMembers{
+		OrgMembers: orgMembers,
+	}, nil
 }

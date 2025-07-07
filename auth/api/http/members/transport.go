@@ -27,6 +27,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
+	mux.Get("/orgs/:id/members/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_members_by_org")(backupMembersEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_member")(viewMemberEndpoint(svc)),
 		decodeMemberRequest,
@@ -77,6 +84,10 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 	}
 
 	e, err := apiutil.ReadStringQuery(r, emailKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
 	if err != nil {
 		return nil, err
@@ -142,6 +153,14 @@ func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, err
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
+	return req, nil
+}
+
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
 	return req, nil
 }
 

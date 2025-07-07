@@ -141,3 +141,19 @@ func (mrm *membersRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.OrgMe
 
 	return oms, nil
 }
+
+func (mrm *membersRepositoryMock) RetrieveAllByOrg(ctx context.Context, orgID string) ([]auth.OrgMember, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var oms []auth.OrgMember
+	for _, members := range mrm.members {
+		for _, mb := range members {
+			if mb.OrgID == orgID {
+				oms = append(oms, mb)
+			}
+		}
+	}
+
+	return oms, nil
+}

@@ -238,6 +238,30 @@ func (or membersRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMember, 
 	return oms, nil
 }
 
+func (or membersRepository) RetrieveAllByOrg(ctx context.Context, orgID string) ([]auth.OrgMember, error) {
+	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations WHERE org_id = :org_id;`
+
+	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{
+		"org_id": orgID,
+	})
+	if err != nil {
+		return []auth.OrgMember{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var oms []auth.OrgMember
+	for rows.Next() {
+		dbom := dbOrgMember{}
+		if err := rows.StructScan(&dbom); err != nil {
+			return []auth.OrgMember{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		oms = append(oms, toMemberRelation(dbom))
+	}
+
+	return oms, nil
+}
+
 type dbMember struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`

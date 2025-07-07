@@ -82,3 +82,11 @@ func (orm membersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.
 
 	return orm.repo.RetrieveAll(ctx)
 }
+
+func (orm membersRepositoryMiddleware) RetrieveAllByOrg(ctx context.Context, orgID string) ([]auth.OrgMember, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllMembersByOrg)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveAllByOrg(ctx, orgID)
+}

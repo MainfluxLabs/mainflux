@@ -180,6 +180,15 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Bac
 	return ms.svc.Backup(ctx, token)
 }
 
+func (ms *metricsMiddleware) BackupOrgMembers(ctx context.Context, token string, orgID string) (auth.BackupOrgMembers, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup_org_members").Add(1)
+		ms.latency.With("method", "backup_org_members").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.BackupOrgMembers(ctx, token, orgID)
+}
+
 func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "restore").Add(1)
