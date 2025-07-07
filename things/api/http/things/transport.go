@@ -84,6 +84,27 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Post("/profiles/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_profile")(listThingsByProfileEndpoint(svc)),
+		decodeListByProfileMetadata,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/groups/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_group")(listThingsByGroupEndpoint(svc)),
+		decodeListByGroupMetadata,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_org")(listThingsByOrgEndpoint(svc)),
+		decodeListByOrgMetadata,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_thing")(updateThingEndpoint(svc)),
 		decodeUpdateThing,
@@ -225,19 +246,6 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listReq{
-		token:        apiutil.ExtractBearerToken(r),
-		pageMetadata: pm}
-
-	return req, nil
-}
-
 func decodeListByProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
@@ -270,6 +278,64 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 
 func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByOrgReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm}
+
+	return req, nil
+}
+
+func decodeListByProfileMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByProfileReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListByGroupMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByGroupReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListByOrgMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

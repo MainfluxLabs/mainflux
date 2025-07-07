@@ -39,6 +39,7 @@ const (
 	adminToken     = adminEmail
 	wrongValue     = "wrong_value"
 	emptyValue     = ""
+	emptyJson      = "{}"
 	wrongID        = 0
 	password       = "password"
 	maxNameSize    = 1024
@@ -51,15 +52,6 @@ const (
 	n              = 101
 	noLimit        = -1
 )
-
-type SearchThingsRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
 
 var (
 	thing = things.Thing{
@@ -1125,6 +1117,574 @@ func TestSearchThings(t *testing.T) {
 	}
 }
 
+func TestSearchThingsByProfile(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchThingReq
+	validData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "asc"
+	str.Order = "name"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchThingReq
+	str.Order = "name"
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchThingReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []thingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, thingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []thingRes
+	}{
+		{
+			desc:   "search things by profile",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by profile ordered by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by profile ordered by name descendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by profile with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by profile with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search things by profile with empty body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/profiles/%s/things/search", ts.URL, pr.ID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data thingsPageRes
+		json.NewDecoder(res.Body).Decode(&data)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, data.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Things))
+	}
+}
+
+func TestSearchThingsByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchThingReq
+	validData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "asc"
+	str.Order = "name"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchThingReq
+	str.Order = "name"
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchThingReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []thingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, thingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []thingRes
+	}{
+		{
+			desc:   "search things by group",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by group ordered by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by group ordered by name descendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by group with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by group with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search things by group with empty body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/groups/%s/things/search", ts.URL, gr.ID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data thingsPageRes
+		err = json.NewDecoder(res.Body).Decode(&data)
+		require.Nil(t, err, fmt.Sprintf("%s: failed to decode response: %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, data.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Things))
+	}
+}
+
+func TestSearchThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchThingReq
+	validData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str = searchThingReq
+	str.Dir = "asc"
+	str.Order = "name"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchThingReq
+	str.Order = "name"
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchThingReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchThingReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []thingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, thingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []thingRes
+	}{
+		{
+			desc:   "search things by organization",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by organization ordered by name ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by organization ordered by name descendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search things by organization with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search things by organization with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search things by organization with empty body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/orgs/%s/things/search", ts.URL, orgID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var data thingsPageRes
+		err = json.NewDecoder(res.Body).Decode(&data)
+		require.Nil(t, err, fmt.Sprintf("%s: failed to decode response: %s", tc.desc, err))
+		assert.ElementsMatch(t, tc.res, data.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Things))
+	}
+}
+
 func TestListThingsByProfile(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -2151,4 +2711,13 @@ type restoreReq struct {
 	Things   []restoreThingReq   `json:"things"`
 	Profiles []restoreProfileReq `json:"profiles"`
 	Groups   []restoreGroupReq   `json:"groups"`
+}
+
+type SearchThingsRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

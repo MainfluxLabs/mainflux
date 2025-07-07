@@ -305,6 +305,17 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 }
 
 func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
+	pm := PageMetadata{
+		Offset: DefOffset,
+		Limit:  DefLimit,
+		Order:  IDOrder,
+		Dir:    DescDir,
+	}
+
+	if r.Body == nil || r.ContentLength == 0 {
+		return pm, nil
+	}
+
 	var body struct {
 		Offset   *int64                 `json:"offset"`
 		Limit    *int64                 `json:"limit"`
@@ -320,14 +331,8 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
 	}
 
-	pm := PageMetadata{
-		Offset:   DefOffset,
-		Limit:    DefLimit,
-		Order:    IDOrder,
-		Dir:      DescDir,
-		Metadata: body.Metadata,
-		Payload:  body.Payload,
-	}
+	pm.Metadata = body.Metadata
+	pm.Payload = body.Payload
 
 	if body.Offset != nil {
 		if *body.Offset < 0 {
