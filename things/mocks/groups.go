@@ -109,6 +109,20 @@ func (grm *groupRepositoryMock) RetrieveAll(_ context.Context) ([]things.Group, 
 	return items, nil
 }
 
+func (grm *groupRepositoryMock) RetrieveAllByOrg(_ context.Context, orgID string) ([]things.Group, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var items []things.Group
+	for _, g := range grm.groups {
+		if g.OrgID == orgID {
+			items = append(items, g)
+		}
+	}
+
+	return items, nil
+}
+
 func (grm *groupRepositoryMock) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
