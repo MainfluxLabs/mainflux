@@ -51,6 +51,20 @@ func listGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupMembersEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupGroupMembers(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupResponse(backup), nil
+	}
+}
+
 func updateGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(groupMembersReq)
@@ -110,5 +124,23 @@ func buildGroupMembersResponse(gpp things.GroupMembersPage) listGroupMembersRes 
 		res.GroupMembers = append(res.GroupMembers, gp)
 	}
 
+	return res
+}
+
+func buildBackupResponse(b things.BackupGroupMembers) backupGroupMembersRes {
+	res := backupGroupMembersRes{
+		GroupMembers: []viewGroupMembersRes{},
+	}
+	for _, member := range b.GroupMembers {
+		view := viewGroupMembersRes{
+			MemberID:  member.MemberID,
+			GroupID:   member.GroupID,
+			Email:     member.Email,
+			Role:      member.Role,
+			CreatedAt: member.CreatedAt,
+			UpdatedAt: member.UpdatedAt,
+		}
+		res.GroupMembers = append(res.GroupMembers, view)
+	}
 	return res
 }

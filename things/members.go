@@ -2,6 +2,7 @@ package things
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -9,14 +10,20 @@ import (
 )
 
 type GroupMember struct {
-	GroupID  string
-	MemberID string
-	Email    string
-	Role     string
+	GroupID   string
+	MemberID  string
+	Email     string
+	Role      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type GroupMembersPage struct {
 	apiutil.PageMetadata
+	GroupMembers []GroupMember
+}
+
+type BackupGroupMembers struct {
 	GroupMembers []GroupMember
 }
 

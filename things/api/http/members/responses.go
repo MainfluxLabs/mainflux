@@ -5,6 +5,7 @@ package members
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -40,6 +41,15 @@ type groupMember struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
 	Role  string `json:"role"`
+}
+
+type viewGroupMembersRes struct {
+	MemberID  string    `json:"member_id"`
+	GroupID   string    `json:"group_id"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type createGroupMembersRes struct{}
@@ -84,5 +94,19 @@ func (res listGroupMembersRes) Headers() map[string]string {
 }
 
 func (res listGroupMembersRes) Empty() bool {
+	return false
+}
+
+type backupGroupMembersRes struct {
+	GroupMembers []viewGroupMembersRes `json:"group_members"`
+}
+
+func (res backupGroupMembersRes) Code() int {
+	return http.StatusOK
+}
+func (res backupGroupMembersRes) Headers() map[string]string {
+	return map[string]string{}
+}
+func (res backupGroupMembersRes) Empty() bool {
 	return false
 }

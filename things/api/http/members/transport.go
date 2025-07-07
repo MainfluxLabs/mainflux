@@ -44,6 +44,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Get("/groups/:id/members/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_members_by_group")(backupMembersEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/groups/:id/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group_members")(updateGroupMembersEndpoint(svc)),
 		decodeGroupMembers,
@@ -114,6 +121,14 @@ func decodeRemoveGroupMembers(_ context.Context, r *http.Request) (interface{}, 
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
+	return req, nil
+}
+
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
 	return req, nil
 }
 

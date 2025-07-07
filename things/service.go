@@ -127,6 +127,9 @@ type Service interface {
 	// Backup retrieves all things, profiles, groups, and groups members for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
+	// BackupGroupMembers retrieves all group members for given group ID.
+	BackupGroupMembers(ctx context.Context, token string, groupID string) (BackupGroupMembers, error)
+
 	// Restore adds things, profiles, groups, and groups members from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
