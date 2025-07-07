@@ -117,7 +117,7 @@ func (or orgRepository) Remove(ctx context.Context, owner, orgID string) error {
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
 				switch pqErr.ConstraintName {
-				case membersIDFkey:
+				case membershipsIDFkey:
 					return errors.Wrap(auth.ErrOrgNotEmpty, err)
 				}
 				return errors.Wrap(errors.ErrConflict, err)
@@ -209,12 +209,12 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 		mq = "o." + mq
 	}
 
-	moq, miq := "mr.org_id = o.id", "mr.member_id = :member_id"
+	moq, miq := "om.org_id = o.id", "om.member_id = :member_id"
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
 	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
-				FROM member_relations mr, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
-	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations mr, orgs o %s`, whereClause)
+				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships om, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{
 		"member_id": memberID,

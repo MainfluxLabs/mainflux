@@ -16,7 +16,7 @@ func (sdk mfSDK) CreateOrgMemberships(om []OrgMembership, orgID string, token st
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membershipsEndpoint)
 
 	omr := orgMembershipsReq{
-		OrgMembers: om,
+		OrgMemberships: om,
 	}
 
 	data, err := json.Marshal(omr)
@@ -104,7 +104,7 @@ func (sdk mfSDK) ListOrgMemberships(orgID string, pm PageMetadata, token string)
 func (sdk mfSDK) UpdateOrgMemberships(oms []OrgMembership, orgID, token string) error {
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membershipsEndpoint)
 	omr := orgMembershipsReq{
-		OrgMembers: oms,
+		OrgMemberships: oms,
 	}
 
 	data, err := json.Marshal(omr)

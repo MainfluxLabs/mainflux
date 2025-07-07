@@ -363,7 +363,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		err = repoOrg.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		orgMember := auth.OrgMembership{
+		orgMembership := auth.OrgMembership{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.Editor,
@@ -371,7 +371,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = repoMembs.Save(context.Background(), orgMember)
+		err = repoMembs.Save(context.Background(), orgMembership)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 

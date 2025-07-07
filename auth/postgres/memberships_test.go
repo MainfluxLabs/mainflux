@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	memberRelationsTable = "member_relations"
+	membershipsTable = "org_memberships"
 )
 
 func TestSaveOrgMemberships(t *testing.T) {
@@ -524,7 +524,7 @@ func TestRetrieveAllMemberships(t *testing.T) {
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
 	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", memberRelationsTable))
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", membershipsTable))
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	orgID, err := idProvider.ID()

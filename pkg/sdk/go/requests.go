@@ -31,7 +31,7 @@ type deleteWebhooksReq struct {
 
 // orgMembershipsReq contains org memberships to be created or updated
 type orgMembershipsReq struct {
-	OrgMembers []OrgMembership `json:"org_memberships"`
+	OrgMemberships []OrgMembership `json:"org_memberships"`
 }
 
 // removeMembershipReq contains IDs of members to be removed

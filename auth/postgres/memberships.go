@@ -23,7 +23,7 @@ type membershipsRepository struct {
 	db dbutil.Database
 }
 
-var membersIDFkey = "member_relations_org_id_fkey"
+var membershipsIDFkey = "org_memberships_org_id_fkey"
 
 // NewOrgMembershipsRepo instantiates a PostgreSQL implementation of membership repository.
 func NewOrgMembershipsRepo(db dbutil.Database) auth.OrgMembershipsRepository {
@@ -34,7 +34,7 @@ func NewOrgMembershipsRepo(db dbutil.Database) auth.OrgMembershipsRepository {
 
 func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM member_relations 
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships 
 					  WHERE org_id = :org_id %s`, olq)
 
 	params := map[string]interface{}{
@@ -59,7 +59,7 @@ func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID strin
 		oms = append(oms, toOrgMembership(dbm))
 	}
 
-	cq := `SELECT COUNT(*) FROM member_relations WHERE org_id = :org_id;`
+	cq := `SELECT COUNT(*) FROM org_memberships WHERE org_id = :org_id;`
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
@@ -79,7 +79,7 @@ func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID strin
 }
 
 func (mr membershipsRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
-	q := `SELECT role FROM member_relations WHERE member_id = $1 AND org_id = $2`
+	q := `SELECT role FROM org_memberships WHERE member_id = $1 AND org_id = $2`
 
 	membership := auth.OrgMembership{}
 	if err := mr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&membership); err != nil {
@@ -100,7 +100,7 @@ func (mr membershipsRepository) Save(ctx context.Context, oms ...auth.OrgMembers
 		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
 
-	qIns := `INSERT INTO member_relations (org_id, member_id, role, created_at, updated_at)
+	qIns := `INSERT INTO org_memberships (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
 	for _, om := range oms {
@@ -137,7 +137,7 @@ func (mr membershipsRepository) Remove(ctx context.Context, orgID string, ids ..
 		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 	}
 
-	qDel := `DELETE from member_relations WHERE org_id = :org_id AND member_id = :member_id`
+	qDel := `DELETE from org_memberships WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, id := range ids {
 		om := auth.OrgMembership{
@@ -170,7 +170,7 @@ func (mr membershipsRepository) Remove(ctx context.Context, orgID string, ids ..
 }
 
 func (mr membershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembership) error {
-	qUpd := `UPDATE member_relations SET role = :role, updated_at = :updated_at
+	qUpd := `UPDATE org_memberships SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, om := range oms {
@@ -205,7 +205,7 @@ func (mr membershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembe
 }
 
 func (mr membershipsRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
-	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
+	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_memberships;`
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
