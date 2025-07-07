@@ -303,11 +303,11 @@ func TestUpdateOrgMemberships(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	viewerToEditor := viewer
-	viewerToEditor.Role = auth.Editor
+	editor := viewer
+	editor.Role = auth.Editor
 
-	viewerToOwner := viewer
-	viewerToOwner.Role = auth.Owner
+	owner := viewer
+	owner.Role = auth.Owner
 
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -315,8 +315,8 @@ func TestUpdateOrgMemberships(t *testing.T) {
 	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, viewer)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	viewerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{viewerToEditor}})
-	ownerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{viewerToOwner}})
+	viewerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{editor}})
+	ownerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{owner}})
 
 	cases := []struct {
 		desc   string

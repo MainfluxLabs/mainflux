@@ -17,9 +17,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var _ auth.OrgMembershipsRepository = (*membershipsRepository)(nil)
+var _ auth.OrgMembershipsRepository = (*orgMembershipsRepository)(nil)
 
-type membershipsRepository struct {
+type orgMembershipsRepository struct {
 	db dbutil.Database
 }
 
@@ -27,12 +27,12 @@ var membershipsIDFkey = "org_memberships_org_id_fkey"
 
 // NewOrgMembershipsRepo instantiates a PostgreSQL implementation of membership repository.
 func NewOrgMembershipsRepo(db dbutil.Database) auth.OrgMembershipsRepository {
-	return &membershipsRepository{
+	return &orgMembershipsRepository{
 		db: db,
 	}
 }
 
-func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (omr orgMembershipsRepository) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships 
 					  WHERE org_id = :org_id %s`, olq)
@@ -43,7 +43,7 @@ func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID strin
 		"offset": pm.Offset,
 	}
 
-	rows, err := mr.db.NamedQueryContext(ctx, q, params)
+	rows, err := omr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return auth.OrgMembershipsPage{}, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
 	}
@@ -61,7 +61,7 @@ func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID strin
 
 	cq := `SELECT COUNT(*) FROM org_memberships WHERE org_id = :org_id;`
 
-	total, err := dbutil.Total(ctx, mr.db, cq, params)
+	total, err := dbutil.Total(ctx, omr.db, cq, params)
 	if err != nil {
 		return auth.OrgMembershipsPage{}, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
 	}
@@ -78,11 +78,11 @@ func (mr membershipsRepository) RetrieveByOrgID(ctx context.Context, orgID strin
 	return page, nil
 }
 
-func (mr membershipsRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
+func (omr orgMembershipsRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
 	q := `SELECT role FROM org_memberships WHERE member_id = $1 AND org_id = $2`
 
 	membership := auth.OrgMembership{}
-	if err := mr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&membership); err != nil {
+	if err := omr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&membership); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return "", errors.Wrap(errors.ErrNotFound, err)
@@ -94,8 +94,8 @@ func (mr membershipsRepository) RetrieveRole(ctx context.Context, memberID, orgI
 	return membership.Role, nil
 }
 
-func (mr membershipsRepository) Save(ctx context.Context, oms ...auth.OrgMembership) error {
-	tx, err := mr.db.BeginTxx(ctx, nil)
+func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMembership) error {
+	tx, err := omr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
@@ -131,8 +131,8 @@ func (mr membershipsRepository) Save(ctx context.Context, oms ...auth.OrgMembers
 	return nil
 }
 
-func (mr membershipsRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
-	tx, err := mr.db.BeginTxx(ctx, nil)
+func (omr orgMembershipsRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
+	tx, err := omr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 	}
@@ -169,14 +169,14 @@ func (mr membershipsRepository) Remove(ctx context.Context, orgID string, ids ..
 	return nil
 }
 
-func (mr membershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembership) error {
+func (omr orgMembershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembership) error {
 	qUpd := `UPDATE org_memberships SET role = :role, updated_at = :updated_at
 			 WHERE org_id = :org_id AND member_id = :member_id`
 
 	for _, om := range oms {
 		dbm := toDBOrgMembership(om)
 
-		row, err := mr.db.NamedExecContext(ctx, qUpd, dbm)
+		row, err := omr.db.NamedExecContext(ctx, qUpd, dbm)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -204,10 +204,10 @@ func (mr membershipsRepository) Update(ctx context.Context, oms ...auth.OrgMembe
 	return nil
 }
 
-func (mr membershipsRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
+func (omr orgMembershipsRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_memberships;`
 
-	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := omr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
 		return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
