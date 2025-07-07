@@ -306,7 +306,7 @@ type SDK interface {
 	// ListOrgs returns page of orgs.
 	ListOrgs(meta PageMetadata, token string) (OrgsPage, error)
 
-	// CreateOrgMemberships creates a memberships to the specified org.
+	// CreateOrgMemberships creates memberships to the specified org.
 	CreateOrgMemberships(oms []OrgMembership, orgID, token string) error
 
 	// GetOrgMembership retrieves a membership for the specified org and member.
@@ -315,10 +315,10 @@ type SDK interface {
 	// ListOrgMemberships lists memberships created for a specified org.
 	ListOrgMemberships(orgID string, meta PageMetadata, token string) (OrgMembershipsPage, error)
 
-	// UpdateOrgMemberships updates existing membership.
+	// UpdateOrgMemberships updates existing memberships.
 	UpdateOrgMemberships(oms []OrgMembership, orgID, token string) error
 
-	// RemoveOrgMemberships removes a memberships from the specified org.
+	// RemoveOrgMemberships removes memberships from the specified org.
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// CreateWebhooks creates new webhooks.
