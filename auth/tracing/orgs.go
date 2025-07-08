@@ -20,7 +20,7 @@ const (
 	retrieveByOwner         = "retrieve_by_owner"
 	retrieveOrgsByMember    = "retrieve_orgs_by_member"
 	retrieveAll             = "retrieve_all_orgs"
-	backupAll               = "backup_all_orgs"
+	backupAllOrgs           = "backup_all_orgs"
 	retrieveAllMembersByOrg = "retrieve_all_members_by_org"
 )
 
@@ -72,7 +72,7 @@ func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) 
 }
 
 func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, backupAll)
+	span := createSpan(ctx, orm.tracer, backupAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
