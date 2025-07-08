@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	save = "save"
+	save   = "save"
+	remove = "remove"
 )
 
 var _ auth.InvitesRepository = (*invitesRepositoryMiddleware)(nil)
@@ -35,4 +36,20 @@ func (irm invitesRepositoryMiddleware) Save(ctx context.Context, invites ...auth
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return irm.repo.Save(ctx, invites...)
+}
+
+func (irm invitesRepositoryMiddleware) RetrieveByID(ctx context.Context, inviteID string) (auth.Invite, error) {
+	span := createSpan(ctx, irm.tracer, retrieveByID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.RetrieveByID(ctx, inviteID)
+}
+
+func (irm invitesRepositoryMiddleware) Remove(ctx context.Context, inviteID string) error {
+	span := createSpan(ctx, irm.tracer, remove)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.Remove(ctx, inviteID)
 }

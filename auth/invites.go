@@ -29,11 +29,21 @@ type Invites interface {
 	// InviteMembers creates pending invitations on behalf of the User authenticated by `token`,
 	// towards all members in `oms`, to join the Org identified by `orgID` with an appropriate role.
 	InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error
+
+	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
+	// by its original inviter (creator).
+	RevokeInvite(ctx context.Context, token string, inviteID string) error
 }
 
 type InvitesRepository interface {
-	// Save saves one or more pending invites to the repository
+	// Save saves one or more pending invites to the repository.
 	Save(ctx context.Context, invites ...Invite) error
+
+	// RetrieveByID retrieves a specific Invite by its ID.
+	RetrieveByID(ctx context.Context, inviteID string) (Invite, error)
+
+	// Remove removes a specific pending Invite
+	Remove(ctx context.Context, inviteID string) error
 }
 
 func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error {
@@ -86,15 +96,41 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 			InviterID:   inviterUserID,
 			OrgID:       orgID,
 			InviteeRole: orgMember.Role,
-			// TODO: Make invite expiry time configurable (env. var + default value in service)
-			CreatedAt: createdAt,
-			ExpiresAt: createdAt.Add(7 * 24 * time.Hour),
+			CreatedAt:   createdAt,
+			ExpiresAt:   createdAt.Add(7 * 24 * time.Hour),
 		}
 
 		invites = append(invites, invite)
 	}
 
 	if err := svc.invites.Save(ctx, invites...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) RevokeInvite(ctx context.Context, token string, inviteID string) error {
+	// Identify User attempting to revoke invite
+	currentUser, err := svc.identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	currentUserID := currentUser.ID
+
+	// Obtain full invite from db based on inviteID
+	invite, err := svc.invites.RetrieveByID(ctx, inviteID)
+	if err != nil {
+		return err
+	}
+
+	// An Invite can only be revoked by its issuer
+	if invite.InviterID != currentUserID {
+		return errors.ErrAuthorization
+	}
+
+	if err := svc.invites.Remove(ctx, inviteID); err != nil {
 		return err
 	}
 

@@ -301,3 +301,17 @@ func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, or
 
 	return lm.svc.InviteMembers(ctx, token, orgID, oms...)
 }
+
+func (lm *loggingMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeInvite(ctx, token, inviteID)
+}

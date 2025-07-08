@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"time"
 
@@ -63,6 +64,57 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 	return nil
 }
 
+func (ir invitesRepository) RetrieveByID(ctx context.Context, inviteID string) (auth.Invite, error) {
+	q := `
+		SELECT invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at
+		FROM invites
+		WHERE id = $1
+	`
+
+	dbI := dbInvite{ID: inviteID}
+
+	if err := ir.db.QueryRowxContext(ctx, q, inviteID).StructScan(&dbI); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+			return auth.Invite{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		return auth.Invite{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	return toInvite(dbI), nil
+}
+
+func (ir invitesRepository) Remove(ctx context.Context, inviteID string) error {
+	qDel := `DELETE FROM invites WHERE id = :id`
+	invite := dbInvite{
+		ID: inviteID,
+	}
+
+	res, err := ir.db.NamedExecContext(ctx, qDel, invite)
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pqErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			}
+		}
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func toDBInvite(invite auth.Invite) dbInvite {
 	return dbInvite{
 		ID:          invite.ID,
@@ -72,6 +124,18 @@ func toDBInvite(invite auth.Invite) dbInvite {
 		InviteeRole: invite.InviteeRole,
 		CreatedAt:   invite.CreatedAt,
 		ExpiresAt:   invite.ExpiresAt,
+	}
+}
+
+func toInvite(dbI dbInvite) auth.Invite {
+	return auth.Invite{
+		ID:          dbI.ID,
+		InviteeID:   dbI.InviteeID,
+		InviterID:   dbI.InviterID,
+		OrgID:       dbI.OrgID,
+		InviteeRole: dbI.InviteeRole,
+		CreatedAt:   dbI.CreatedAt,
+		ExpiresAt:   dbI.ExpiresAt,
 	}
 }
 
