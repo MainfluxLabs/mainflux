@@ -352,7 +352,7 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, thingKey string)
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.things.RetrieveByAdmin(ctx, pm)
+		return ts.things.RetrieveAlll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
@@ -711,7 +711,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	things, err := ts.things.RetrieveAll(ctx)
+	things, err := ts.things.BackupThings(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

@@ -23,6 +23,7 @@ const (
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
 	retrieveAllThingsOp        = "retrieve_all_things"
+	backupThingsOp             = "backup_things"
 	saveGroupIDByThingIDOp     = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingIDOp = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingIDOp   = "remove_group_id_by_thing_id"
@@ -111,20 +112,20 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) 
 	return trm.repo.Remove(ctx, ids...)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things.Thing, error) {
+	span := createSpan(ctx, trm.tracer, backupThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveAll(ctx)
+	return trm.repo.BackupThings(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveAlll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByAdmin(ctx, pm)
+	return trm.repo.RetrieveAlll(ctx, pm)
 }
 
 type thingCacheMiddleware struct {

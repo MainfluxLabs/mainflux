@@ -552,7 +552,7 @@ func TestRetrieveThingsByGroupIDs(t *testing.T) {
 	}
 }
 
-func TestRetrieveAllThings(t *testing.T) {
+func TestBackupThings(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	err := cleanTestTable(context.Background(), "things", dbMiddleware)
 	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
@@ -614,7 +614,7 @@ func TestRetrieveAllThings(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		things, err := thingRepo.RetrieveAll(context.Background())
+		things, err := thingRepo.BackupThings(context.Background())
 		size := uint64(len(things))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
