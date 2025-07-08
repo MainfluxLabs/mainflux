@@ -34,7 +34,7 @@ type orgMembershipsReq struct {
 	OrgMemberships []OrgMembership `json:"org_memberships"`
 }
 
-// removeMembershipReq contains IDs of members to be removed
-type removeMembershipReq struct {
+// removeMembershipsReq contains IDs of members to be removed
+type removeMembershipsReq struct {
 	MemberIDs []string `json:"member_ids"`
 }

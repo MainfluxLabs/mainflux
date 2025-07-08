@@ -133,7 +133,7 @@ func (sdk mfSDK) RemoveOrgMemberships(memberIDs []string, orgID, token string) e
 	var ids []string
 	url := fmt.Sprintf("%s/%s/%s/%s", sdk.authURL, orgsEndpoint, orgID, membershipsEndpoint)
 	ids = append(ids, memberIDs...)
-	rmr := removeMembershipReq{
+	rmr := removeMembershipsReq{
 		MemberIDs: ids,
 	}
 
