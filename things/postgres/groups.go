@@ -228,7 +228,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	return gr.retrieve(ctx, query, cquery, params)
 }
 
-func (gr groupRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)

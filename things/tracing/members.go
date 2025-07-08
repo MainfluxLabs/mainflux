@@ -19,7 +19,7 @@ const (
 	retrieveRole             = "retrieve_role"
 	retrieveByGroup          = "retrieve_by_group"
 	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
-	backupAll                = "backup"
+	backupAll                = "backup_all"
 )
 
 var _ things.GroupMembersRepository = (*groupMembersRepositoryMiddleware)(nil)

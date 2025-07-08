@@ -79,12 +79,12 @@ func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, e
 	return orm.repo.BackupAll(ctx)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveByAdmin(ctx, pm)
+	return orm.repo.RetrieveAll(ctx, pm)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {

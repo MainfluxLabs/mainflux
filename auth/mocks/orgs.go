@@ -163,7 +163,7 @@ func (orm *orgRepositoryMock) BackupAll(ctx context.Context) ([]auth.Org, error)
 	return orgs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 

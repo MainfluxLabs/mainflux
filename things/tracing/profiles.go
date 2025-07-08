@@ -99,12 +99,12 @@ func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.
 	return crm.repo.BackupAll(ctx)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	span := createSpan(ctx, crm.tracer, retrieveAllProfilesOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByAdmin(ctx, pm)
+	return crm.repo.RetrieveAll(ctx, pm)
 }
 
 type profileCacheMiddleware struct {

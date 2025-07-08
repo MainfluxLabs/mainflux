@@ -512,7 +512,7 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 
 func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.profiles.RetrieveByAdmin(ctx, pm)
+		return ts.profiles.RetrieveAll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})

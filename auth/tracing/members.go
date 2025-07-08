@@ -17,7 +17,7 @@ const (
 	unassignMembers      = "unassign_members"
 	updateMembers        = "update_members"
 	retrieveMembersByOrg = "retrieve_members_by_org"
-	backupAllMembers     = "backup"
+	backupAllMembers     = "backup_all"
 )
 
 var _ auth.MembersRepository = (*membersRepositoryMiddleware)(nil)

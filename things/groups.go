@@ -60,8 +60,8 @@ type GroupRepository interface {
 	// RetrieveIDsByOrg retrieves all group IDs by org
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)
 
-	// RetrieveByAdmin retrieves all groups with pagination.
-	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (GroupPage, error)
+	// RetrieveAll retrieves all groups with pagination.
+	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (GroupPage, error)
 }
 
 type Groups interface {
@@ -179,7 +179,7 @@ func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, e
 
 func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.groups.RetrieveByAdmin(ctx, pm)
+		return ts.groups.RetrieveAll(ctx, pm)
 	}
 
 	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})

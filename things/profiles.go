@@ -65,8 +65,8 @@ type ProfileRepository interface {
 	// BackupAll retrieves all profiles for all users.
 	BackupAll(ctx context.Context) ([]Profile, error)
 
-	// RetrieveByAdmin retrieves all profiles for all users with pagination.
-	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
+	// RetrieveAll retrieves all profiles for all users with pagination.
+	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
 
 	// RetrieveByGroupIDs retrieves the subset of profiles specified by given group ids.
 	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)

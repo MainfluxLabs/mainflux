@@ -203,7 +203,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(_ context.Context, ids []string, p
 	return page, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
