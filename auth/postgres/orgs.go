@@ -202,7 +202,7 @@ func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string,
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMembership, err)
 	}
 
 	if mq != "" {

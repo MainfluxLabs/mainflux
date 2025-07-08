@@ -68,16 +68,16 @@ func TestSaveOrgMemberships(t *testing.T) {
 		emptyOrgData = append(emptyOrgData, m)
 	}
 
-	var noMemberData []auth.OrgMembership
+	var noMembershipData []auth.OrgMembership
 	for _, m := range orgMemberships {
 		m.MemberID = ""
-		noMemberData = append(noMemberData, m)
+		noMembershipData = append(noMembershipData, m)
 	}
 
-	var invalidMemberData []auth.OrgMembership
+	var invalidMembershipData []auth.OrgMembership
 	for _, m := range orgMemberships {
 		m.MemberID = invalidID
-		invalidMemberData = append(invalidMemberData, m)
+		invalidMembershipData = append(invalidMembershipData, m)
 	}
 
 	cases := []struct {
@@ -107,12 +107,12 @@ func TestSaveOrgMemberships(t *testing.T) {
 		},
 		{
 			desc:           "create org memberships with empty member ids",
-			orgMemberships: noMemberData,
+			orgMemberships: noMembershipData,
 			err:            errors.ErrMalformedEntity,
 		},
 		{
 			desc:           "create org memberships with invalid member ids",
-			orgMemberships: invalidMemberData,
+			orgMemberships: invalidMembershipData,
 			err:            errors.ErrMalformedEntity,
 		},
 	}
@@ -184,7 +184,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 			err:       errors.ErrMalformedEntity,
 		},
 		{
-			desc:      "remove org memberships without members",
+			desc:      "remove org memberships without member IDs",
 			orgID:     orgID,
 			memberIDs: []string{},
 			err:       nil,
@@ -357,19 +357,19 @@ func TestUpdateOrgMemberships(t *testing.T) {
 		Role:     auth.Viewer,
 	}
 
-	invalidMemberData := auth.OrgMembership{
+	invalidMembershipData := auth.OrgMembership{
 		OrgID:    org.ID,
 		MemberID: invalidID,
 		Role:     auth.Viewer,
 	}
 
-	unknownMemberData := auth.OrgMembership{
+	unknownMembershipData := auth.OrgMembership{
 		OrgID:    org.ID,
 		MemberID: unknownID,
 		Role:     auth.Viewer,
 	}
 
-	emptyMemberData := auth.OrgMembership{
+	emptyMembershipData := auth.OrgMembership{
 		OrgID:    org.ID,
 		MemberID: "",
 		Role:     auth.Viewer,
@@ -398,15 +398,15 @@ func TestUpdateOrgMemberships(t *testing.T) {
 			err:           errors.ErrMalformedEntity,
 		}, {
 			desc:          "update membership with invalid member id",
-			orgMembership: invalidMemberData,
+			orgMembership: invalidMembershipData,
 			err:           errors.ErrMalformedEntity,
 		}, {
 			desc:          "update membership with unknown member id",
-			orgMembership: unknownMemberData,
+			orgMembership: unknownMembershipData,
 			err:           errors.ErrNotFound,
 		}, {
 			desc:          "update membership with empty member",
-			orgMembership: emptyMemberData,
+			orgMembership: emptyMembershipData,
 			err:           errors.ErrMalformedEntity,
 		},
 	}

@@ -23,11 +23,11 @@ const (
 )
 
 var (
-	// ErrRetrieveMembershipsByOrg failed to retrieve memberships by org.
+	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
 	ErrRetrieveMembershipsByOrg = errors.New("failed to retrieve memberships by org")
 
-	// ErrRetrieveOrgsByMember failed to retrieve orgs by member
-	ErrRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
+	// ErrRetrieveOrgsByMembership indicates that retrieving orgs by membership failed.
+	ErrRetrieveOrgsByMembership = errors.New("failed to retrieve orgs by membership")
 
 	errIssueUser      = errors.New("failed to issue new login key")
 	errIssueTmp       = errors.New("failed to issue new temporary key")
