@@ -54,8 +54,8 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
-	// RetrieveAllByOrg retrieves all groups by organization ID.
-	RetrieveAllByOrg(ctx context.Context, orgID string) ([]Group, error)
+	// BackupByOrg retrieves all groups by organization ID.
+	BackupByOrg(ctx context.Context, orgID string) ([]Group, error)
 
 	// RetrieveIDsByOrgMember retrieves org group IDs the member belongs to
 	RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error)

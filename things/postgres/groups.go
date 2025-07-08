@@ -164,7 +164,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, erro
 	return groups, nil
 }
 
-func (gr groupRepository) RetrieveAllByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
+func (gr groupRepository) BackupByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
 	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups WHERE org_id = $1"
 
 	var items []dbGroup

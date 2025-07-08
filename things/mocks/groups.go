@@ -109,7 +109,7 @@ func (grm *groupRepositoryMock) RetrieveAll(_ context.Context) ([]things.Group, 
 	return items, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveAllByOrg(_ context.Context, orgID string) ([]things.Group, error) {
+func (grm *groupRepositoryMock) BackupByOrg(_ context.Context, orgID string) ([]things.Group, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 

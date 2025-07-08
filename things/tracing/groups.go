@@ -13,7 +13,7 @@ const (
 	updateGroupOp                 = "update_group"
 	removeGroupOp                 = "remove_group"
 	retrieveAllOp                 = "retrieve_all"
-	retrieveAllByOrgIDOp          = "retrieve_all_by_org_id"
+	backupByOrgIDOp               = "backup_all_by_org_id"
 	retrieveGroupByIDOp           = "retrieve_group_by_id"
 	retrieveGroupByIDsOp          = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrgOp       = "retrieve_group_ids_by_org"
@@ -71,12 +71,12 @@ func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.
 	return grm.repo.RetrieveAll(ctx)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveAllByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAllByOrgIDOp)
+func (grm groupRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
+	span := createSpan(ctx, grm.tracer, backupByOrgIDOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.RetrieveAllByOrg(ctx, orgID)
+	return grm.repo.BackupByOrg(ctx, orgID)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
