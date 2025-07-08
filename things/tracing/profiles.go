@@ -91,12 +91,12 @@ func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 	return crm.repo.Remove(ctx, ids...)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveAllProfilesOp)
+func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
+	span := createSpan(ctx, crm.tracer, backupAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveAll(ctx)
+	return crm.repo.BackupAll(ctx)
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {

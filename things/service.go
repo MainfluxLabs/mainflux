@@ -701,12 +701,12 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groups, err := ts.groups.RetrieveAll(ctx)
+	groups, err := ts.groups.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	groupMembers, err := ts.groupMembers.RetrieveAll(ctx)
+	groupMembers, err := ts.groupMembers.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -716,7 +716,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	profiles, err := ts.profiles.RetrieveAll(ctx)
+	profiles, err := ts.profiles.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

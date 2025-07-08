@@ -52,8 +52,8 @@ type MembersRepository interface {
 	// RetrieveByOrgID retrieves members assigned to an org identified by orgID.
 	RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembersPage, error)
 
-	// RetrieveAll retrieves all members.
-	RetrieveAll(ctx context.Context) ([]OrgMember, error)
+	// BackupAll retrieves all members.
+	BackupAll(ctx context.Context) ([]OrgMember, error)
 }
 
 // Memberships specifies an API that must be fullfiled by the domain service

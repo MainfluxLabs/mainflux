@@ -19,7 +19,7 @@ const (
 	retrieveRole             = "retrieve_role"
 	retrieveByGroup          = "retrieve_by_group"
 	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
-	retrieveAll              = "retrieve_all"
+	backupAll                = "backup"
 )
 
 var _ things.GroupMembersRepository = (*groupMembersRepositoryMiddleware)(nil)
@@ -69,12 +69,12 @@ func (prm groupMembersRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context
 	return prm.repo.RetrieveGroupIDsByMember(ctx, memberID)
 }
 
-func (prm groupMembersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
-	span := createSpan(ctx, prm.tracer, retrieveAll)
+func (prm groupMembersRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.GroupMember, error) {
+	span := createSpan(ctx, prm.tracer, backupAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return prm.repo.RetrieveAll(ctx)
+	return prm.repo.BackupAll(ctx)
 }
 
 func (prm groupMembersRepositoryMiddleware) Update(ctx context.Context, gms ...things.GroupMember) error {

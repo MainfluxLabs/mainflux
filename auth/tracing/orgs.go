@@ -20,6 +20,7 @@ const (
 	retrieveByOwner         = "retrieve_by_owner"
 	retrieveOrgsByMember    = "retrieve_orgs_by_member"
 	retrieveAll             = "retrieve_all_orgs"
+	backupAll               = "backup_all_orgs"
 	retrieveAllMembersByOrg = "retrieve_all_members_by_org"
 )
 
@@ -70,12 +71,12 @@ func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) 
 	return orm.repo.RetrieveByID(ctx, id)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAll)
+func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, error) {
+	span := createSpan(ctx, orm.tracer, backupAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAll(ctx)
+	return orm.repo.BackupAll(ctx)
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {

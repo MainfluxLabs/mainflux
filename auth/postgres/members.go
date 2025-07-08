@@ -216,7 +216,7 @@ func (or membersRepository) Update(ctx context.Context, oms ...auth.OrgMember) e
 	return nil
 }
 
-func (or membersRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
+func (or membersRepository) BackupAll(ctx context.Context) ([]auth.OrgMember, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{})

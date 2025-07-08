@@ -175,7 +175,7 @@ func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMeta
 	return or.retrieve(ctx, query, cquery, params)
 }
 
-func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 	query := "SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs"
 
 	var items []dbOrg

@@ -176,12 +176,12 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	orgs, err := svc.orgs.RetrieveAll(ctx)
+	orgs, err := svc.orgs.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.members.RetrieveAll(ctx)
+	mrs, err := svc.members.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

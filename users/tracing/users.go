@@ -19,6 +19,7 @@ const (
 	retrieveByIDOp    = "retrieve_by_id"
 	retrieveByIDsOp   = "retrieve_by_ids"
 	retrieveAllOp     = "retrieve_all"
+	backupAllOp       = "backup_all"
 	updatePasswordOp  = "update_password"
 	changeStatusOp    = "change_status"
 )
@@ -87,12 +88,12 @@ func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, ids []str
 	return urm.repo.RetrieveByIDs(ctx, ids, pm)
 }
 
-func (urm userRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveAllOp)
+func (urm userRepositoryMiddleware) BackupAll(ctx context.Context) ([]users.User, error) {
+	span := createSpan(ctx, urm.tracer, backupAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.RetrieveAll(ctx)
+	return urm.repo.BackupAll(ctx)
 }
 
 func (urm userRepositoryMiddleware) ChangeStatus(ctx context.Context, id, status string) error {

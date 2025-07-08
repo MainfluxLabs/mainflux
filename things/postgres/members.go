@@ -122,7 +122,7 @@ func (mr membersRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	return page, nil
 }
 
-func (mr membersRepository) RetrieveAll(ctx context.Context) ([]things.GroupMember, error) {
+func (mr membersRepository) BackupAll(ctx context.Context) ([]things.GroupMember, error) {
 	q := `SELECT member_id, group_id, role FROM group_roles;`
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

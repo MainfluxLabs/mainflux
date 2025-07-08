@@ -97,7 +97,7 @@ func (grm *groupRepositoryMock) Remove(_ context.Context, ids ...string) error {
 
 }
 
-func (grm *groupRepositoryMock) RetrieveAll(_ context.Context) ([]things.Group, error) {
+func (grm *groupRepositoryMock) BackupAll(_ context.Context) ([]things.Group, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 

@@ -30,8 +30,8 @@ type GroupMembersRepository interface {
 	// RetrieveByGroup retrieves page of group members by group ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembersPage, error)
 
-	// RetrieveAll retrieves all group members. This is used for backup.
-	RetrieveAll(ctx context.Context) ([]GroupMember, error)
+	// BackupAll retrieves all group members. This is used for backup.
+	BackupAll(ctx context.Context) ([]GroupMember, error)
 
 	// RetrieveGroupIDsByMember retrieves the IDs of the groups to which the member belongs
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)

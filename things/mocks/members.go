@@ -95,7 +95,7 @@ func (mrm *groupMembersRepositoryMock) RetrieveGroupIDsByMember(_ context.Contex
 	return grIDs, nil
 }
 
-func (mrm *groupMembersRepositoryMock) RetrieveAll(_ context.Context) ([]things.GroupMember, error) {
+func (mrm *groupMembersRepositoryMock) BackupAll(_ context.Context) ([]things.GroupMember, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 

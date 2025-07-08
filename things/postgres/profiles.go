@@ -122,7 +122,7 @@ func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 	return toProfile(dbpr), nil
 }
 
-func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
+func (cr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
 	query := "SELECT id, group_id, name, metadata, config FROM profiles"
 
 	var items []dbProfile

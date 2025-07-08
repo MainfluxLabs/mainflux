@@ -62,8 +62,8 @@ type ProfileRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, id ...string) error
 
-	// RetrieveAll retrieves all profiles for all users.
-	RetrieveAll(ctx context.Context) ([]Profile, error)
+	// BackupAll retrieves all profiles for all users.
+	BackupAll(ctx context.Context) ([]Profile, error)
 
 	// RetrieveByAdmin retrieves all profiles for all users with pagination.
 	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)

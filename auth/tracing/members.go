@@ -17,7 +17,7 @@ const (
 	unassignMembers      = "unassign_members"
 	updateMembers        = "update_members"
 	retrieveMembersByOrg = "retrieve_members_by_org"
-	retrieveAllMembers   = "retrieve_all_members"
+	backupAllMembers     = "backup"
 )
 
 var _ auth.MembersRepository = (*membersRepositoryMiddleware)(nil)
@@ -75,10 +75,10 @@ func (orm membersRepositoryMiddleware) RetrieveByOrgID(ctx context.Context, orgI
 	return orm.repo.RetrieveByOrgID(ctx, orgID, pm)
 }
 
-func (orm membersRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.OrgMember, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAllMembers)
+func (orm membersRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.OrgMember, error) {
+	span := createSpan(ctx, orm.tracer, backupAllMembers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAll(ctx)
+	return orm.repo.BackupAll(ctx)
 }

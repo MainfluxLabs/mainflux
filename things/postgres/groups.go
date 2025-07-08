@@ -142,7 +142,7 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 	return nil
 }
 
-func (gr groupRepository) RetrieveAll(ctx context.Context) ([]things.Group, error) {
+func (gr groupRepository) BackupAll(ctx context.Context) ([]things.Group, error) {
 	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups"
 
 	var items []dbGroup

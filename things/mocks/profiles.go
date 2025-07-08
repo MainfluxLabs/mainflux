@@ -177,7 +177,7 @@ func (crm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error
 	return nil
 }
 
-func (crm *profileRepositoryMock) RetrieveAll(_ context.Context) ([]things.Profile, error) {
+func (crm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
