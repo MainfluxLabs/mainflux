@@ -42,6 +42,12 @@ const (
 	description   = "testDesc"
 	n             = 10
 	loginDuration = 30 * time.Minute
+	maxNameSize   = 1024
+	nameKey       = "name"
+	ascKey        = "asc"
+	descKey       = "desc"
+	emptyValue    = ""
+	emptyJson     = "{}"
 )
 
 var (
@@ -56,6 +62,12 @@ var (
 	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
+	searchOrgReq  = SearchOrgsRequest{
+		Limit:  5,
+		Offset: 0,
+	}
+	metadata    = map[string]interface{}{"test": "data"}
+	invalidName = strings.Repeat("m", maxNameSize+1)
 )
 
 type testRequest struct {
@@ -599,6 +611,184 @@ func TestListOrgs(t *testing.T) {
 	}
 }
 
+func TestSearchOrgs(t *testing.T) {
+	svc := newService()
+	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	str := searchOrgReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	str.Order = "name"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchOrgReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchOrgReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchOrgReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchOrgReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	str.Name = invalidName
+	invalidData := toJSON(str)
+
+	orgs := []orgRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("org_%03d", i+1)
+		description := fmt.Sprintf("description for %s", name)
+		org := auth.Org{Name: name, Description: description, Metadata: metadata}
+
+		or, err := svc.CreateOrg(context.Background(), token, org)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		orgs = append(orgs, orgRes{
+			ID:          or.ID,
+			OwnerID:     or.OwnerID,
+			Name:        or.Name,
+			Description: or.Description,
+			Metadata:    or.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []orgRes
+	}{
+		{
+			desc:   "search orgs",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    orgs[0:10],
+		},
+		{
+			desc:   "search orgs with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    orgs[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/orgs/search", ts.URL),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body orgsPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Orgs, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Orgs))
+	}
+}
+
 func TestBackup(t *testing.T) {
 	svc := newService()
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
@@ -846,4 +1036,13 @@ type viewOrgMembers struct {
 type backup struct {
 	Orgs       []orgRes         `json:"orgs"`
 	OrgMembers []viewOrgMembers `json:"org_members"`
+}
+
+type SearchOrgsRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
