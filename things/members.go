@@ -2,7 +2,6 @@ package things
 
 import (
 	"context"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -10,12 +9,10 @@ import (
 )
 
 type GroupMember struct {
-	GroupID   string
-	MemberID  string
-	Email     string
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	GroupID  string
+	MemberID string
+	Email    string
+	Role     string
 }
 
 type GroupMembersPage struct {
@@ -36,8 +33,8 @@ type GroupMembersRepository interface {
 	// RetrieveAll retrieves all group members. This is used for backup.
 	RetrieveAll(ctx context.Context) ([]GroupMember, error)
 
-	// RetrieveAll retrieves all group members by group ID. This is used for backup.
-	RetrieveAllByGroup(ctx context.Context, groupID string) ([]GroupMember, error)
+	// BackupByGroup retrieves all group members by group ID. This is used for backup.
+	BackupByGroup(ctx context.Context, groupID string) ([]GroupMember, error)
 
 	// RetrieveGroupIDsByMember retrieves the IDs of the groups to which the member belongs
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)

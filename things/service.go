@@ -737,7 +737,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) BackupGroupMembers(ctx context.Context, token string, groupID string) (BackupGroupMembers, error) {
-	groupMembers, err := ts.groupMembers.RetrieveAllByGroup(ctx, groupID)
+	groupMembers, err := ts.groupMembers.BackupByGroup(ctx, groupID)
 	if err != nil {
 		return BackupGroupMembers{}, err
 	}

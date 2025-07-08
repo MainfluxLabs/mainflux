@@ -5,7 +5,6 @@ package members
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -44,12 +43,10 @@ type groupMember struct {
 }
 
 type ViewGroupMembersRes struct {
-	MemberID  string    `json:"member_id"`
-	GroupID   string    `json:"group_id"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	MemberID string `json:"member_id"`
+	GroupID  string `json:"group_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
 type createGroupMembersRes struct{}

@@ -133,12 +133,10 @@ func buildBackupResponse(b things.BackupGroupMembers) backupGroupMembersRes {
 	}
 	for _, member := range b.GroupMembers {
 		view := ViewGroupMembersRes{
-			MemberID:  member.MemberID,
-			GroupID:   member.GroupID,
-			Email:     member.Email,
-			Role:      member.Role,
-			CreatedAt: member.CreatedAt,
-			UpdatedAt: member.UpdatedAt,
+			MemberID: member.MemberID,
+			GroupID:  member.GroupID,
+			Email:    member.Email,
+			Role:     member.Role,
 		}
 		res.GroupMembers = append(res.GroupMembers, view)
 	}
