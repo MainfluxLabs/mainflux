@@ -94,9 +94,6 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`ALTER TABLE messages ALTER COLUMN time TYPE BIGINT USING CAST(time AS BIGINT);`,
 				},
-				Down: []string{
-					`ALTER TABLE messages ALTER COLUMN time TYPE FLOAT USING CAST(time AS FLOAT);`,
-				},
 			},
 		},
 	}
