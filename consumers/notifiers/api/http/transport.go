@@ -47,6 +47,13 @@ func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Lo
 		encodeResponse,
 		opts...,
 	))
+	r.Post("/groups/:id/notifiers/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_notifiers_by_group")(listNotifiersByGroupEndpoint(svc)),
+		decodeListNotifiersByMetadata,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/notifiers/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_notifier")(viewNotifierEndpoint(svc)),
 		decodeRequest,
@@ -102,6 +109,21 @@ func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error
 		return nil, err
 	}
 	pm.Name = n
+
+	req := listNotifiersReq{
+		token:        apiutil.ExtractBearerToken(r),
+		id:           bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeListNotifiersByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
 
 	req := listNotifiersReq{
 		token:        apiutil.ExtractBearerToken(r),

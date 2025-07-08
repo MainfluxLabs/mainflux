@@ -39,6 +39,10 @@ const (
 	nameKey      = "name"
 	ascKey       = "asc"
 	descKey      = "desc"
+	n            = 101
+	maxNameSize  = 254
+	emptyJson    = "{}"
+	invalidData  = `{"limit": "invalid"}`
 )
 
 var (
@@ -49,6 +53,11 @@ var (
 	metadata        = map[string]interface{}{"test": "data"}
 	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	searchReq       = SearchNotifiersRequest{
+		Limit:  5,
+		Offset: 0,
+	}
+	invalidName = strings.Repeat("m", maxNameSize+1)
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {
@@ -459,6 +468,192 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 	}
 }
 
+func TestSearchNotifiersByGroup(t *testing.T) {
+	runSearchNotifiersByGroupTest(t, validEmails)
+	runSearchNotifiersByGroupTest(t, validPhones)
+}
+
+func runSearchNotifiersByGroupTest(t *testing.T, validContacts []string) {
+	t.Helper()
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	str := searchReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	var data []notifierRes
+	notifier := notifiers.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		notifier1 := notifier
+		notifier1.ID = id
+		notifier1.Name = name
+
+		nfs, err := svc.CreateNotifiers(context.Background(), token, notifier1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		n := nfs[0]
+		nfRes := notifierRes{
+			ID:       n.ID,
+			GroupID:  n.GroupID,
+			Name:     n.Name,
+			Contacts: n.Contacts,
+			Metadata: n.Metadata,
+		}
+		data = append(data, nfRes)
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []notifierRes
+	}{
+		{
+			desc:   "search notifiers by group",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group filtering by invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search notifiers by group with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			req := testRequest{
+				client: ts.Client(),
+				method: http.MethodPost,
+				url:    fmt.Sprintf("%s/groups/%s/notifiers/search", ts.URL, groupID),
+				token:  tc.auth,
+				body:   strings.NewReader(tc.req),
+			}
+
+			res, err := req.make()
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+			var body notifiersPageRes
+			err = json.NewDecoder(res.Body).Decode(&body)
+			assert.Nil(t, err, fmt.Sprintf("%s: failed decoding body: %s", tc.desc, err))
+
+			assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d, got %d", tc.desc, tc.status, res.StatusCode))
+			assert.ElementsMatch(t, tc.res, body.Notifiers, fmt.Sprintf("%s: expected response %v, got %v", tc.desc, tc.res, body.Notifiers))
+		})
+	}
+}
+
 func TestUpdateNotifier(t *testing.T) {
 	runUpdateNotifierTest(t, svcSmtp, validEmails)
 	runUpdateNotifierTest(t, svcSmpp, validPhones)
@@ -743,4 +938,13 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
+}
+
+type SearchNotifiersRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
