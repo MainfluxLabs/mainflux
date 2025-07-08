@@ -54,6 +54,9 @@ var (
 	// ErrMissingKeyID indicates missing ID of key.
 	ErrMissingKeyID = errors.New("missing key ID")
 
+	// ErrMissingInviteID incidates missing ID of Invite.
+	ErrMissingInviteID = errors.New("missing invite ID")
+
 	// ErrInvalidSubject indicates invalid subject.
 	ErrInvalidSubject = errors.New("invalid subject")
 

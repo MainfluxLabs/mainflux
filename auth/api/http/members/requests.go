@@ -104,3 +104,25 @@ func (req unassignMembersReq) validate() error {
 
 	return nil
 }
+
+type revokeInviteReq struct {
+	token    string
+	orgID    string
+	inviteID string
+}
+
+func (req revokeInviteReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}

@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	orgIDKey  = "orgID"
-	memberKey = "memberID"
-	emailKey  = "email"
+	orgIDKey    = "orgID"
+	inviteIDKey = "inviteID"
+	memberKey   = "memberID"
+	emailKey    = "email"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -44,6 +45,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	mux.Post("/orgs/:id/invite", kithttp.NewServer(
 		kitot.TraceServer(tracer, "invite_members")(inviteMembersEndpoint(svc)),
 		decodeMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/orgs/:orgID/invite/:inviteID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "revoke_invite")(revokeInviteEndpoint(svc)),
+		decodeRevokeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -147,6 +155,16 @@ func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, err
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRevokeInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := revokeInviteReq{
+		token:    apiutil.ExtractBearerToken(r),
+		orgID:    bone.GetValue(r, orgIDKey),
+		inviteID: bone.GetValue(r, inviteIDKey),
 	}
 
 	return req, nil

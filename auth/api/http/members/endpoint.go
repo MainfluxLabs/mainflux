@@ -64,6 +64,21 @@ func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(revokeInviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RevokeInvite(ctx, req.token, req.inviteID); err != nil {
+			return revokeInviteRes{}, err
+		}
+
+		return revokeInviteRes{}, nil
+	}
+}
+
 func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(unassignMembersReq)
