@@ -32,7 +32,7 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 		return err
 	}
 
-	q := `INSERT INTO group_roles (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
+	q := `INSERT INTO group_memberships (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
@@ -61,7 +61,7 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 }
 
 func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things.GroupMembership) (string, error) {
-	q := `SELECT role FROM group_roles WHERE member_id = $1 AND group_id = $2;`
+	q := `SELECT role FROM group_memberships WHERE member_id = $1 AND group_id = $2;`
 
 	var role string
 	if err := mr.db.QueryRowxContext(ctx, q, gm.MemberID, gm.GroupID).Scan(&role); err != nil {
@@ -78,7 +78,7 @@ func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things
 
 func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	q := fmt.Sprintf(`SELECT member_id, role FROM group_roles WHERE group_id = :group_id %s;`, olq)
+	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships WHERE group_id = :group_id %s;`, olq)
 
 	params := map[string]interface{}{
 		"group_id": groupID,
@@ -103,7 +103,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 		items = append(items, gm)
 	}
 
-	cq := `SELECT COUNT(*) FROM group_roles WHERE group_id = :group_id;`
+	cq := `SELECT COUNT(*) FROM group_memberships WHERE group_id = :group_id;`
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
@@ -123,7 +123,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 }
 
 func (mr groupMembershipsRepository) RetrieveAll(ctx context.Context) ([]things.GroupMembership, error) {
-	q := `SELECT member_id, group_id, role FROM group_roles;`
+	q := `SELECT member_id, group_id, role FROM group_memberships;`
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -148,7 +148,7 @@ func (mr groupMembershipsRepository) RetrieveAll(ctx context.Context) ([]things.
 func (mr groupMembershipsRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	var groupIDs []string
 
-	q := `SELECT group_id FROM group_roles WHERE member_id = $1;`
+	q := `SELECT group_id FROM group_memberships WHERE member_id = $1;`
 
 	if err := mr.db.SelectContext(ctx, &groupIDs, q, memberID); err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (mr groupMembershipsRepository) RetrieveGroupIDsByMember(ctx context.Contex
 }
 
 func (mr groupMembershipsRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
-	q := `DELETE FROM group_roles WHERE member_id = :member_id AND group_id = :group_id;`
+	q := `DELETE FROM group_memberships WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, memberID := range memberIDs {
 		dbgm := dbGroupMembership{
@@ -174,7 +174,7 @@ func (mr groupMembershipsRepository) Remove(ctx context.Context, groupID string,
 }
 
 func (mr groupMembershipsRepository) Update(ctx context.Context, gms ...things.GroupMembership) error {
-	q := `UPDATE group_roles SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
+	q := `UPDATE group_memberships SET role = :role WHERE member_id = :member_id AND group_id = :group_id;`
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
