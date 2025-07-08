@@ -5,6 +5,7 @@ package things
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things/api/http/members"
 )
 
 const (
@@ -264,10 +265,10 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token        string
-	Things       []viewThingRes      `json:"things"`
-	Profiles     []backupProfile     `json:"profiles"`
-	Groups       []backupGroup       `json:"groups"`
-	GroupMembers []backupGroupMember `json:"group_members"`
+	Things       []viewThingRes                `json:"things"`
+	Profiles     []backupProfile               `json:"profiles"`
+	Groups       []backupGroup                 `json:"groups"`
+	GroupMembers []members.ViewGroupMembersRes `json:"group_members"`
 }
 
 func (req restoreReq) validate() error {

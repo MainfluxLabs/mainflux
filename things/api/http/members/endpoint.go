@@ -129,10 +129,10 @@ func buildGroupMembersResponse(gpp things.GroupMembersPage) listGroupMembersRes 
 
 func buildBackupResponse(b things.BackupGroupMembers) backupGroupMembersRes {
 	res := backupGroupMembersRes{
-		GroupMembers: []viewGroupMembersRes{},
+		GroupMembers: []ViewGroupMembersRes{},
 	}
 	for _, member := range b.GroupMembers {
-		view := viewGroupMembersRes{
+		view := ViewGroupMembersRes{
 			MemberID:  member.MemberID,
 			GroupID:   member.GroupID,
 			Email:     member.Email,

@@ -43,7 +43,7 @@ type groupMember struct {
 	Role  string `json:"role"`
 }
 
-type viewGroupMembersRes struct {
+type ViewGroupMembersRes struct {
 	MemberID  string    `json:"member_id"`
 	GroupID   string    `json:"group_id"`
 	Email     string    `json:"email"`
@@ -98,7 +98,7 @@ func (res listGroupMembersRes) Empty() bool {
 }
 
 type backupGroupMembersRes struct {
-	GroupMembers []viewGroupMembersRes `json:"group_members"`
+	GroupMembers []ViewGroupMembersRes `json:"group_members"`
 }
 
 func (res backupGroupMembersRes) Code() int {
