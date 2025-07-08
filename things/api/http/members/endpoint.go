@@ -57,7 +57,7 @@ func backupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		backup, err := svc.BackupGroupMembers(ctx, req.token, req.id)
+		backup, err := svc.BackupGroupMemberships(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -127,18 +127,18 @@ func buildGroupMembersResponse(gpp things.GroupMembersPage) listGroupMembersRes 
 	return res
 }
 
-func buildBackupResponse(b things.BackupGroupMembers) backupGroupMembersRes {
-	res := backupGroupMembersRes{
-		GroupMembers: []ViewGroupMembersRes{},
+func buildBackupResponse(b things.BackupGroupMemberships) backupGroupMembershipsRes {
+	res := backupGroupMembershipsRes{
+		BackupGroupMemberships: []ViewGroupMembershipsRes{},
 	}
-	for _, member := range b.GroupMembers {
-		view := ViewGroupMembersRes{
+	for _, member := range b.BackupGroupMemberships {
+		view := ViewGroupMembershipsRes{
 			MemberID: member.MemberID,
 			GroupID:  member.GroupID,
 			Email:    member.Email,
 			Role:     member.Role,
 		}
-		res.GroupMembers = append(res.GroupMembers, view)
+		res.BackupGroupMemberships = append(res.BackupGroupMemberships, view)
 	}
 	return res
 }

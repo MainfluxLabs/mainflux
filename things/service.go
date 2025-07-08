@@ -127,8 +127,8 @@ type Service interface {
 	// Backup retrieves all things, profiles, groups, and groups members for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// BackupGroupMembers retrieves all group members for given group ID.
-	BackupGroupMembers(ctx context.Context, token string, groupID string) (BackupGroupMembers, error)
+	// BackupGroupMemberships retrieves all group memberships for given group ID.
+	BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error)
 
 	// Restore adds things, profiles, groups, and groups members from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
@@ -145,8 +145,8 @@ type Backup struct {
 	GroupMembers []GroupMember
 }
 
-type BackupGroupMembers struct {
-	GroupMembers []GroupMember
+type BackupGroupMemberships struct {
+	BackupGroupMemberships []GroupMember
 }
 
 type UserAccessReq struct {
@@ -736,10 +736,10 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}, nil
 }
 
-func (ts *thingsService) BackupGroupMembers(ctx context.Context, token string, groupID string) (BackupGroupMembers, error) {
+func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error) {
 	groupMembers, err := ts.groupMembers.BackupByGroup(ctx, groupID)
 	if err != nil {
-		return BackupGroupMembers{}, err
+		return BackupGroupMemberships{}, err
 	}
 
 	var memberIDs []string
@@ -749,7 +749,7 @@ func (ts *thingsService) BackupGroupMembers(ctx context.Context, token string, g
 
 	usersResp, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
 	if err != nil {
-		return BackupGroupMembers{}, err
+		return BackupGroupMemberships{}, err
 	}
 
 	emailMap := make(map[string]string)
@@ -761,8 +761,8 @@ func (ts *thingsService) BackupGroupMembers(ctx context.Context, token string, g
 		groupMembers[i].Email = emailMap[groupMembers[i].MemberID]
 	}
 
-	return BackupGroupMembers{
-		GroupMembers: groupMembers,
+	return BackupGroupMemberships{
+		BackupGroupMemberships: groupMembers,
 	}, nil
 }
 

@@ -390,9 +390,9 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk thing
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) BackupGroupMembers(ctx context.Context, token string, groupID string) (bk things.BackupGroupMembers, err error) {
+func (lm *loggingMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.BackupGroupMemberships, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup group members took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method backup group memberships took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -400,7 +400,7 @@ func (lm *loggingMiddleware) BackupGroupMembers(ctx context.Context, token strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.BackupGroupMembers(ctx, token, groupID)
+	return lm.svc.BackupGroupMemberships(ctx, token, groupID)
 }
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup things.Backup) (err error) {
