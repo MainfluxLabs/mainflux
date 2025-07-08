@@ -27,8 +27,8 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
-	mux.Get("/orgs/:id/members/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_members_by_org")(backupMembersEndpoint(svc)),
+	mux.Get("/orgs/:id/memberships/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_memberships_by_org")(backupMembershipsEndpoint(svc)),
 		decodeBackup,
 		encodeResponse,
 		opts...,

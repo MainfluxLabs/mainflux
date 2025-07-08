@@ -238,7 +238,7 @@ func (or membersRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMember, 
 	return oms, nil
 }
 
-func (or membersRepository) RetrieveAllByOrg(ctx context.Context, orgID string) ([]auth.OrgMember, error) {
+func (or membersRepository) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMember, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM member_relations WHERE org_id = :org_id;`
 
 	rows, err := or.db.NamedQueryContext(ctx, q, map[string]interface{}{

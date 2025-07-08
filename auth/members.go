@@ -36,8 +36,8 @@ type OrgMembersPage struct {
 	OrgMembers []OrgMember
 }
 
-type BackupOrgMembers struct {
-	OrgMembers []OrgMember
+type BackupOrgMemberships struct {
+	OrgMemberships []OrgMember
 }
 
 type MembersRepository interface {
@@ -59,8 +59,8 @@ type MembersRepository interface {
 	// RetrieveAll retrieves all members.
 	RetrieveAll(ctx context.Context) ([]OrgMember, error)
 
-	// RetrieveAll retrieves all members by org ID.
-	RetrieveAllByOrg(ctx context.Context, orgID string) ([]OrgMember, error)
+	// BackupByOrg retrieves all memberships by org ID.
+	BackupByOrg(ctx context.Context, orgID string) ([]OrgMember, error)
 }
 
 // Memberships specifies an API that must be fullfiled by the domain service
@@ -81,8 +81,8 @@ type Members interface {
 	// ViewMember retrieves member identified by memberID in org identified by orgID.
 	ViewMember(ctx context.Context, token, orgID, memberID string) (OrgMember, error)
 
-	// BackupOrgMembers retrieves all org members for given org ID.
-	BackupOrgMembers(ctx context.Context, token string, orgID string) (BackupOrgMembers, error)
+	// BackupOrgMemberships retrieves all org memberships for given org ID.
+	BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error)
 }
 
 func (svc service) AssignMembers(ctx context.Context, token, orgID string, oms ...OrgMember) error {
@@ -275,10 +275,10 @@ func (svc service) canAssignMembers(ctx context.Context, token, orgID string, me
 	return nil
 }
 
-func (svc service) BackupOrgMembers(ctx context.Context, token string, orgID string) (BackupOrgMembers, error) {
-	orgMembers, err := svc.members.RetrieveAllByOrg(ctx, orgID)
+func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
+	orgMembers, err := svc.members.BackupByOrg(ctx, orgID)
 	if err != nil {
-		return BackupOrgMembers{}, err
+		return BackupOrgMemberships{}, err
 	}
 
 	var memberIDs []string
@@ -288,7 +288,7 @@ func (svc service) BackupOrgMembers(ctx context.Context, token string, orgID str
 
 	usersResp, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
 	if err != nil {
-		return BackupOrgMembers{}, err
+		return BackupOrgMemberships{}, err
 	}
 
 	emailMap := make(map[string]string)
@@ -300,7 +300,7 @@ func (svc service) BackupOrgMembers(ctx context.Context, token string, orgID str
 		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
 	}
 
-	return BackupOrgMembers{
-		OrgMembers: orgMembers,
+	return BackupOrgMemberships{
+		OrgMemberships: orgMembers,
 	}, nil
 }

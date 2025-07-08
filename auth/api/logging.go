@@ -251,7 +251,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup a
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) BackupOrgMembers(ctx context.Context, token string, orgID string) (backup auth.BackupOrgMembers, err error) {
+func (lm *loggingMiddleware) BackupOrgMemberships(ctx context.Context, token string, orgID string) (backup auth.BackupOrgMemberships, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
 		if err != nil {
@@ -261,7 +261,7 @@ func (lm *loggingMiddleware) BackupOrgMembers(ctx context.Context, token string,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.BackupOrgMembers(ctx, token, orgID)
+	return lm.svc.BackupOrgMemberships(ctx, token, orgID)
 }
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) (err error) {

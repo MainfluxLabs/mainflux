@@ -83,7 +83,7 @@ func (res unassignRes) Empty() bool {
 	return true
 }
 
-type viewOrgMembersRes struct {
+type viewOrgMembershipsRes struct {
 	MemberID  string    `json:"member_id"`
 	OrgID     string    `json:"org_id"`
 	Email     string    `json:"email"`
@@ -92,16 +92,16 @@ type viewOrgMembersRes struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type backupOrgMembersRes struct {
-	OrgMembers []viewOrgMembersRes `json:"org_members"`
+type backupOrgMembershipsRes struct {
+	OrgMemberships []viewOrgMembershipsRes `json:"org_memberships"`
 }
 
-func (res backupOrgMembersRes) Code() int {
+func (res backupOrgMembershipsRes) Code() int {
 	return http.StatusOK
 }
-func (res backupOrgMembersRes) Headers() map[string]string {
+func (res backupOrgMembershipsRes) Headers() map[string]string {
 	return map[string]string{}
 }
-func (res backupOrgMembersRes) Empty() bool {
+func (res backupOrgMembershipsRes) Empty() bool {
 	return false
 }
