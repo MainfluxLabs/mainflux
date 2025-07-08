@@ -130,19 +130,19 @@ func TestRetrieveRole(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		gp   things.GroupMembership
+		gm   things.GroupMembership
 		role string
 		err  error
 	}{
 		{
 			desc: "retrieve member role",
-			gp:   gm,
+			gm:   gm,
 			role: things.Viewer,
 			err:  nil,
 		},
 		{
 			desc: "retrieve member role without group id",
-			gp: things.GroupMembership{
+			gm: things.GroupMembership{
 				GroupID:  "",
 				MemberID: memberID,
 			},
@@ -151,7 +151,7 @@ func TestRetrieveRole(t *testing.T) {
 		},
 		{
 			desc: "retrieve member role without member id",
-			gp: things.GroupMembership{
+			gm: things.GroupMembership{
 				GroupID:  group.ID,
 				MemberID: "",
 			},
@@ -161,7 +161,7 @@ func TestRetrieveRole(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		role, err := groupMembershipsRepo.RetrieveRole(context.Background(), tc.gp)
+		role, err := groupMembershipsRepo.RetrieveRole(context.Background(), tc.gm)
 		assert.Equal(t, tc.role, role, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.role, role))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
@@ -247,8 +247,8 @@ func TestRetrieveByGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gpp, err := groupMembershipsRepo.RetrieveByGroup(context.Background(), tc.groupID, tc.pageMeta)
-		size := len(gpp.GroupMemberships)
+		gmp, err := groupMembershipsRepo.RetrieveByGroup(context.Background(), tc.groupID, tc.pageMeta)
+		size := len(gmp.GroupMemberships)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %v got %v\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
@@ -273,13 +273,13 @@ func TestRemoveGroupMemberships(t *testing.T) {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		gp := things.GroupMembership{
+		gm := things.GroupMembership{
 			MemberID: memberID,
 			GroupID:  group.ID,
 			Role:     things.Viewer,
 		}
 
-		err = groupMembershipsRepo.Save(context.Background(), gp)
+		err = groupMembershipsRepo.Save(context.Background(), gm)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		memberIDs = append(memberIDs, memberID)
@@ -334,7 +334,7 @@ func TestUpdateGroupMemberships(t *testing.T) {
 	group, err := groupRepo.Save(context.Background(), gr)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
-	gpByIDs := []things.GroupMembership{
+	gms := []things.GroupMembership{
 		{
 			MemberID: memberID,
 			GroupID:  gr.ID,
@@ -347,17 +347,17 @@ func TestUpdateGroupMemberships(t *testing.T) {
 		},
 	}
 
-	err = groupMembershipsRepo.Save(context.Background(), gpByIDs...)
+	err = groupMembershipsRepo.Save(context.Background(), gms...)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc   string
-		gpByID things.GroupMembership
-		err    error
+		desc string
+		gm   things.GroupMembership
+		err  error
 	}{
 		{
-			desc: "update group memberships without group id",
-			gpByID: things.GroupMembership{
+			desc: "update group membership without group id",
+			gm: things.GroupMembership{
 				MemberID: memberID,
 				GroupID:  "",
 				Role:     things.Viewer,
@@ -365,8 +365,8 @@ func TestUpdateGroupMemberships(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group memberships without member id",
-			gpByID: things.GroupMembership{
+			desc: "update group membership without member id",
+			gm: things.GroupMembership{
 				MemberID: "",
 				GroupID:  group.ID,
 				Role:     things.Viewer,
@@ -374,8 +374,8 @@ func TestUpdateGroupMemberships(t *testing.T) {
 			err: errors.ErrMalformedEntity,
 		},
 		{
-			desc: "update group memberships",
-			gpByID: things.GroupMembership{
+			desc: "update group membership",
+			gm: things.GroupMembership{
 				MemberID: memberID,
 				GroupID:  group.ID,
 				Role:     things.Viewer,
@@ -385,7 +385,7 @@ func TestUpdateGroupMemberships(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := groupMembershipsRepo.Update(context.Background(), tc.gpByID)
+		err := groupMembershipsRepo.Update(context.Background(), tc.gm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

@@ -20,8 +20,7 @@ var _ things.GroupRepository = (*groupRepositoryMock)(nil)
 
 type groupRepositoryMock struct {
 	mu sync.Mutex
-	// Map of groups, group id as a key.
-	// groups map[GroupID]auth.Group
+	// Map of groups where group id is a key and group is a value.
 	groups map[string]things.Group
 	// Map of group thing membership where thing id is a key and group id is a value.
 	thingMembership map[string]string
