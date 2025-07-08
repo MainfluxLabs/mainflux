@@ -137,10 +137,10 @@ type backupGroup struct {
 }
 
 type backupRes struct {
-	Things       []viewThingRes                `json:"things"`
-	Profiles     []backupProfile               `json:"profiles"`
-	Groups       []backupGroup                 `json:"groups"`
-	GroupMembers []members.ViewGroupMembersRes `json:"group_members"`
+	Things       []viewThingRes                    `json:"things"`
+	Profiles     []backupProfile                   `json:"profiles"`
+	Groups       []backupGroup                     `json:"groups"`
+	GroupMembers []members.ViewGroupMembershipsRes `json:"group_memberships"`
 }
 
 func (res backupRes) Code() int {

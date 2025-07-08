@@ -51,7 +51,7 @@ func listGroupMembersEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func backupMembersEndpoint(svc things.Service) endpoint.Endpoint {
+func backupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
 		if err := req.validate(); err != nil {

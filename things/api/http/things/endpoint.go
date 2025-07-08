@@ -357,7 +357,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		Things:       []viewThingRes{},
 		Profiles:     []backupProfile{},
 		Groups:       []backupGroup{},
-		GroupMembers: []members.ViewGroupMembersRes{},
+		GroupMembers: []members.ViewGroupMembershipsRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -397,7 +397,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, member := range backup.GroupMembers {
-		view := members.ViewGroupMembersRes{
+		view := members.ViewGroupMembershipsRes{
 			MemberID: member.MemberID,
 			GroupID:  member.GroupID,
 			Email:    member.Email,
