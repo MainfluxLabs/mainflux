@@ -25,7 +25,6 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 		ths := []things.Thing{}
 		for _, t := range req.Things {
-
 			th := things.Thing{
 				ID:        t.ID,
 				GroupID:   groupID,
