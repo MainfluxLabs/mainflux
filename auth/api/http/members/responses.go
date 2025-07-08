@@ -81,3 +81,17 @@ func (res unassignRes) Headers() map[string]string {
 func (res unassignRes) Empty() bool {
 	return true
 }
+
+type inviteRes struct{}
+
+func (res inviteRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res inviteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res inviteRes) Empty() bool {
+	return true
+}

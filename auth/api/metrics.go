@@ -206,3 +206,12 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 
 	return ms.svc.RetrieveRole(ctx, id)
 }
+
+func (ms *metricsMiddleware) InviteMembers(ctx context.Context, token string, orgID string, oms ...auth.OrgMember) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "invite_members").Add(1)
+		ms.latency.With("method", "invite_members").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.InviteMembers(ctx, token, orgID, oms...)
+}

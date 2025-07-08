@@ -72,6 +72,7 @@ type Service interface {
 	Roles
 	Orgs
 	Members
+	Invites
 	Keys
 }
 
@@ -84,6 +85,7 @@ type service struct {
 	keys          KeyRepository
 	roles         RolesRepository
 	members       MembersRepository
+	invites       InvitesRepository
 	idProvider    uuid.IDProvider
 	tokenizer     Tokenizer
 	loginDuration time.Duration
@@ -91,7 +93,7 @@ type service struct {
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
-	members MembersRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+	members MembersRepository, invites InvitesRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
 	return &service{
 		tokenizer:     tokenizer,
 		things:        tc,
@@ -100,6 +102,7 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		keys:          keys,
 		roles:         roles,
 		members:       members,
+		invites:       invites,
 		idProvider:    idp,
 		loginDuration: duration,
 	}

@@ -2,6 +2,7 @@ package members
 
 import (
 	"context"
+	"log"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -43,6 +44,23 @@ func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return assignRes{}, nil
+	}
+}
+
+func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(membersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		log.Printf("inviteMembersEndpoint: %+v\n", req)
+
+		if err := svc.InviteMembers(ctx, req.token, req.orgID, req.OrgMembers...); err != nil {
+			return nil, err
+		}
+
+		return inviteRes{}, nil
 	}
 }
 

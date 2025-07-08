@@ -41,6 +41,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Post("/orgs/:id/invite", kithttp.NewServer(
+		kitot.TraceServer(tracer, "invite_members")(inviteMembersEndpoint(svc)),
+		decodeMembersRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Patch("/orgs/:id/members", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
 		decodeUnassignMembers,

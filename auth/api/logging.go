@@ -287,3 +287,17 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 
 	return lm.svc.RetrieveRole(ctx, id)
 }
+
+func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, orgID string, oms ...auth.OrgMember) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method invite_members took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.InviteMembers(ctx, token, orgID, oms...)
+}
