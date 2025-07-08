@@ -214,7 +214,7 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key string) (st
 	return "", errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) BackupThings(_ context.Context) ([]things.Thing, error) {
+func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 	var ths []things.Thing

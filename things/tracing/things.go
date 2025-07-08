@@ -23,7 +23,7 @@ const (
 	removeThingOp              = "remove_thing"
 	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
 	retrieveAllThingsOp        = "retrieve_all_things"
-	backupThingsOp             = "backup_things"
+	backupAllOp                = "backup_all"
 	saveGroupIDByThingIDOp     = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingIDOp = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingIDOp   = "remove_group_id_by_thing_id"
@@ -112,12 +112,12 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) 
 	return trm.repo.Remove(ctx, ids...)
 }
 
-func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, backupThingsOp)
+func (trm thingRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Thing, error) {
+	span := createSpan(ctx, trm.tracer, backupAllOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.BackupThings(ctx)
+	return trm.repo.BackupAll(ctx)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {

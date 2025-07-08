@@ -711,7 +711,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	things, err := ts.things.BackupThings(ctx)
+	things, err := ts.things.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

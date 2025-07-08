@@ -210,7 +210,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 	return tr.retrieve(ctx, query, cquery, params)
 }
 
-func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, error) {
+func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
 	query := "SELECT id, group_id, profile_id, name, key, metadata FROM things"
 
 	var items []dbThing

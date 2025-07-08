@@ -63,8 +63,8 @@ type ThingRepository interface {
 	// by the specified user.
 	Remove(ctx context.Context, ids ...string) error
 
-	// BackupThings retrieves all things for all users.
-	BackupThings(ctx context.Context) ([]Thing, error)
+	// BackupAll retrieves all things for all users.
+	BackupAll(ctx context.Context) ([]Thing, error)
 
 	// RetrieveAll retrieves all things for all users with pagination.
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
