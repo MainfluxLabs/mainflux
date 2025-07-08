@@ -38,6 +38,10 @@ const (
 	nameKey     = "name"
 	ascKey      = "asc"
 	descKey     = "desc"
+	emptyJson   = "{}"
+	n           = 101
+	maxNameSize = 1024
+	invalidData = `{"limit": "invalid"}`
 )
 
 var (
@@ -45,6 +49,11 @@ var (
 	webhook       = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
 	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	searchReq     = SearchWebhooksRequest{
+		Limit:  5,
+		Offset: 0,
+	}
+	invalidName = strings.Repeat("m", maxNameSize+1)
 )
 
 func newHTTPServer(svc webhooks.Service) *httptest.Server {
@@ -440,6 +449,358 @@ func TestListWebhooksByGroup(t *testing.T) {
 	}
 }
 
+func TestSearchWebhooksByThing(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	str := searchReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	webhooks := []webhookRes{}
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		wh := webhook
+		wh.ID = id
+		wh.Name = name
+
+		whs, err := svc.CreateWebhooks(context.Background(), token, wh)
+		require.Nil(t, err, fmt.Sprintf("unexpected error creating webhook: %s", err))
+		w := whs[0]
+
+		webhooks = append(webhooks, webhookRes{
+			ID:         w.ID,
+			GroupID:    w.GroupID,
+			ThingID:    w.ThingID,
+			Name:       w.Name,
+			Url:        w.Url,
+			ResHeaders: w.Headers,
+			Metadata:   w.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []webhookRes
+	}{
+		{
+			desc:   "search webhooks by thing",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by thing ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by thing ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by thing with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with invalid token",
+			auth:   "wrong-token",
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with empty token",
+			auth:   "",
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by thing with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    webhooks[0:10],
+		},
+		{
+			desc:   "search webhooks by thing with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    webhooks[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/things/%s/webhooks/search", ts.URL, thingID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body webhooksPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Webhooks, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Webhooks))
+	}
+}
+
+func TestSearchWebhooksByGroup(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	str := searchReq
+	validData := toJSON(str)
+
+	str.Dir = "desc"
+	str.Order = "name"
+	descData := toJSON(str)
+
+	str.Dir = "asc"
+	ascData := toJSON(str)
+
+	str.Order = "wrong"
+	invalidOrderData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 0
+	zeroLimitData := toJSON(str)
+
+	str = searchReq
+	str.Dir = "wrong"
+	invalidDirData := toJSON(str)
+
+	str = searchReq
+	str.Limit = 110
+	limitMaxData := toJSON(str)
+
+	str = searchReq
+	str.Name = invalidName
+	invalidNameData := toJSON(str)
+
+	webhooks := []webhookRes{}
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		wh := webhook
+		wh.ID = id
+		wh.Name = name
+
+		whs, err := svc.CreateWebhooks(context.Background(), token, wh)
+		require.Nil(t, err, fmt.Sprintf("unexpected error creating webhook: %s", err))
+		w := whs[0]
+
+		webhooks = append(webhooks, webhookRes{
+			ID:         w.ID,
+			GroupID:    w.GroupID,
+			ThingID:    w.ThingID,
+			Name:       w.Name,
+			Url:        w.Url,
+			ResHeaders: w.Headers,
+			Metadata:   w.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []webhookRes
+	}{
+		{
+			desc:   "search webhooks by group",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by group ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by group ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    webhooks[0:5],
+		},
+		{
+			desc:   "search webhooks by group with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with invalid token",
+			auth:   "wrong-token",
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with empty token",
+			auth:   "",
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with zero limit",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    zeroLimitData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search webhooks by group with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    webhooks[0:10],
+		},
+		{
+			desc:   "search webhooks by group with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    webhooks[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/groups/%s/webhooks/search", ts.URL, groupID),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body webhooksPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Webhooks, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Webhooks))
+	}
+}
+
 func TestUpdateWebhook(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
@@ -692,4 +1053,13 @@ func TestRemoveWebhooks(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
+}
+
+type SearchWebhooksRequest struct {
+	Limit    uint64                 `json:"limit"`
+	Offset   uint64                 `json:"offset,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Order    string                 `json:"order,omitempty"`
+	Dir      string                 `json:"dir,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
