@@ -120,12 +120,12 @@ func (trm thingRepositoryMiddleware) BackupThings(ctx context.Context) ([]things
 	return trm.repo.BackupThings(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAlll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveAlll(ctx, pm)
+	return trm.repo.RetrieveAll(ctx, pm)
 }
 
 type thingCacheMiddleware struct {

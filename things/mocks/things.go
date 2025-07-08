@@ -226,7 +226,7 @@ func (trm *thingRepositoryMock) BackupThings(_ context.Context) ([]things.Thing,
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveAlll(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

@@ -67,7 +67,7 @@ type ThingRepository interface {
 	BackupThings(ctx context.Context) ([]Thing, error)
 
 	// RetrieveAll retrieves all things for all users with pagination.
-	RetrieveAlll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
+	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
 }
 
 // ThingCache contains thing caching interface.

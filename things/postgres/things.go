@@ -232,7 +232,7 @@ func (tr thingRepository) BackupThings(ctx context.Context) ([]things.Thing, err
 	return ths, nil
 }
 
-func (tr thingRepository) RetrieveAlll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
