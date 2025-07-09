@@ -6,7 +6,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -39,7 +38,6 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 
 	for _, invite := range invites {
 		dbInvite := toDBInvite(invite)
-		log.Printf("dbInvite: %+v\n", dbInvite)
 		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
 			tx.Rollback()
 

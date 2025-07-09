@@ -2,7 +2,6 @@ package invites
 
 import (
 	"context"
-	"log"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/go-kit/kit/endpoint"
@@ -14,8 +13,6 @@ func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-
-		log.Printf("inviteMembersEndpoint: %+v\n", req)
 
 		if err := svc.InviteMembers(ctx, req.token, req.orgID, req.OrgMembers...); err != nil {
 			return nil, err

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -53,7 +52,6 @@ type InvitesRepository interface {
 }
 
 func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error {
-	log.Printf("InviteMembers: orgID: %s, token: %s\n", orgID, token)
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return err
