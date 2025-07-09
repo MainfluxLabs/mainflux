@@ -8,6 +8,15 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+const (
+	saveWebhooks              = "save_webhooks"
+	retrieveWebhooksByGroupID = "retrieve_webhooks_by_group_id"
+	retrieveWebhooksByThingID = "retrieve_webhooks_by_thing_id"
+	retrieveWebhookByID       = "retrieve_webhook_by_id"
+	updateWebhook             = "update_webhook"
+	removeWebhooks            = "remove_webhooks"
+)
+
 var (
 	_ webhooks.WebhookRepository = (*webhookRepositoryMiddleware)(nil)
 )
@@ -27,7 +36,7 @@ func WebhookRepositoryMiddleware(tracer opentracing.Tracer, repo webhooks.Webhoo
 }
 
 func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks.Webhook) ([]webhooks.Webhook, error) {
-	span := createSpan(ctx, wrm.tracer, "save_webhooks")
+	span := createSpan(ctx, wrm.tracer, saveWebhooks)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -35,7 +44,7 @@ func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks
 }
 
 func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
-	span := createSpan(ctx, wrm.tracer, "retrieve_by_group_id")
+	span := createSpan(ctx, wrm.tracer, retrieveWebhooksByGroupID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -43,7 +52,7 @@ func (wrm webhookRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, gr
 }
 
 func (wrm webhookRepositoryMiddleware) RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
-	span := createSpan(ctx, wrm.tracer, "retrieve_by_thing_id")
+	span := createSpan(ctx, wrm.tracer, retrieveWebhooksByThingID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -51,7 +60,7 @@ func (wrm webhookRepositoryMiddleware) RetrieveByThingID(ctx context.Context, th
 }
 
 func (wrm webhookRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (webhooks.Webhook, error) {
-	span := createSpan(ctx, wrm.tracer, "retrieve_webhook_by_id")
+	span := createSpan(ctx, wrm.tracer, retrieveWebhookByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -59,7 +68,7 @@ func (wrm webhookRepositoryMiddleware) RetrieveByID(ctx context.Context, id stri
 }
 
 func (wrm webhookRepositoryMiddleware) Update(ctx context.Context, w webhooks.Webhook) error {
-	span := createSpan(ctx, wrm.tracer, "update_webhook")
+	span := createSpan(ctx, wrm.tracer, updateWebhook)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -67,7 +76,7 @@ func (wrm webhookRepositoryMiddleware) Update(ctx context.Context, w webhooks.We
 }
 
 func (wrm webhookRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, wrm.tracer, "remove_webhooks")
+	span := createSpan(ctx, wrm.tracer, removeWebhooks)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

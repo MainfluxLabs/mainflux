@@ -12,7 +12,8 @@ const (
 	saveGroup                   = "save_group"
 	updateGroup                 = "update_group"
 	removeGroup                 = "remove_group"
-	retrieveAll                 = "retrieve_all"
+	retrieveAllGroups           = "retrieve_all_groups"
+	backupAllGroups             = "backup_all_groups"
 	retrieveGroupByID           = "retrieve_group_by_id"
 	retrieveGroupByIDs          = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrg       = "retrieve_group_ids_by_org"
@@ -63,7 +64,7 @@ func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...str
 }
 
 func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Group, error) {
-	span := createSpan(ctx, grm.tracer, backupAll)
+	span := createSpan(ctx, grm.tracer, backupAllGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -71,7 +72,7 @@ func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Gr
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAll)
+	span := createSpan(ctx, grm.tracer, retrieveAllGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

@@ -23,7 +23,7 @@ const (
 	removeThing              = "remove_thing"
 	retrieveThingIDByKey     = "retrieve_id_by_key"
 	retrieveAllThings        = "retrieve_all_things"
-	backupAll                = "backup_all"
+	backupAllThings          = "backup_all_things"
 	saveGroupIDByThingID     = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
@@ -113,7 +113,7 @@ func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) 
 }
 
 func (trm thingRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, backupAll)
+	span := createSpan(ctx, trm.tracer, backupAllThings)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

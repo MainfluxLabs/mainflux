@@ -16,11 +16,12 @@ const (
 	saveProfiles               = "save_profiles"
 	updateProfile              = "update_profile"
 	retrieveProfileByID        = "retrieve_profile_by_id"
-	retrieveByThing            = "retrieve_by_thing"
+	retrieveProfileByThing     = "retrieve_profile_by_thing"
 	retrieveProfilesByGroupIDs = "retrieve_profiles_by_group_ids"
 	removeProfile              = "remove_profile"
 	removeGroupIDByProfileID   = "remove_group_id_by_profile_id"
 	retrieveAllProfiles        = "retrieve_all_profiles"
+	backupAllProfiles          = "backup_all_profiles"
 	retrieveGroupIDByProfileID = "retrieve_group_id_by_profile_id"
 )
 
@@ -76,7 +77,7 @@ func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, i
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveByThing)
+	span := createSpan(ctx, crm.tracer, retrieveProfileByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -92,7 +93,7 @@ func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 }
 
 func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, backupAll)
+	span := createSpan(ctx, crm.tracer, backupAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

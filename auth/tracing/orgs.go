@@ -16,9 +16,9 @@ const (
 	saveOrg              = "save_org"
 	deleteOrg            = "delete_org"
 	updateOrg            = "update_org"
-	retrieveByID         = "retrieve_by_id"
+	retrieveOrgByID      = "retrieve_org_by_id"
 	retrieveOrgsByMember = "retrieve_orgs_by_member"
-	retrieveAll          = "retrieve_all_orgs"
+	retrieveAllOrgs      = "retrieve_all_orgs"
 	backupAllOrgs        = "backup_all_orgs"
 )
 
@@ -62,7 +62,7 @@ func (orm orgRepositoryMiddleware) Remove(ctx context.Context, owner, orgID stri
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, retrieveByID)
+	span := createSpan(ctx, orm.tracer, retrieveOrgByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -78,7 +78,7 @@ func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, e
 }
 
 func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAll)
+	span := createSpan(ctx, orm.tracer, retrieveAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
