@@ -43,6 +43,7 @@ const (
 	nameKey        = "name"
 	ascKey         = "asc"
 	descKey        = "desc"
+	invalidData    = `{"limit": "invalid"}`
 )
 
 var (
@@ -52,7 +53,7 @@ var (
 	group          = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	usersList      = []users.User{admin, user, otherUser}
 	orgsList       = []auth.Org{{ID: orgID, OwnerID: user.ID}}
-	searchGroupReq = SearchGroupsRequest{
+	searchGroupReq = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -879,9 +880,6 @@ func TestSearchGroups(t *testing.T) {
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
 
-	str.Name = invalidName
-	invalidData := toJSON(str)
-
 	groups := []groupRes{}
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("group_%03d", i+1)
@@ -967,9 +965,9 @@ func TestSearchGroups(t *testing.T) {
 		{
 			desc:   "search groups with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    groups[0:10],
 		},
 		{
 			desc:   "search groups with limit greater than max",
@@ -1053,9 +1051,6 @@ func TestSearchGroupsByOrg(t *testing.T) {
 	str = searchGroupReq
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	groups := []groupRes{}
 	for i := 0; i < n; i++ {
@@ -1142,9 +1137,9 @@ func TestSearchGroupsByOrg(t *testing.T) {
 		{
 			desc:   "search groups by org with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    groups[0:10],
 		},
 		{
 			desc:   "search groups by org with limit greater than max",
@@ -1309,13 +1304,4 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
-}
-
-type SearchGroupsRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

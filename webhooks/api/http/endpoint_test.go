@@ -49,7 +49,7 @@ var (
 	webhook       = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
 	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	searchReq     = SearchWebhooksRequest{
+	searchReq     = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -572,9 +572,9 @@ func TestSearchWebhooksByThing(t *testing.T) {
 		{
 			desc:   "search webhooks by thing with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    webhooks[0:10],
 		},
 		{
 			desc:   "search webhooks by thing with limit greater than max",
@@ -748,9 +748,9 @@ func TestSearchWebhooksByGroup(t *testing.T) {
 		{
 			desc:   "search webhooks by group with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    webhooks[0:10],
 		},
 		{
 			desc:   "search webhooks by group with limit greater than max",
@@ -1053,13 +1053,4 @@ func TestRemoveWebhooks(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
-}
-
-type SearchWebhooksRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

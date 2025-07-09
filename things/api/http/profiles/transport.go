@@ -231,7 +231,8 @@ func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, erro
 
 	req := listReq{
 		token:        apiutil.ExtractBearerToken(r),
-		pageMetadata: pm}
+		pageMetadata: pm,
+	}
 
 	return req, nil
 }

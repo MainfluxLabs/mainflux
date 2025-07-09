@@ -569,9 +569,9 @@ func runSearchNotifiersByGroupTest(t *testing.T, validContacts []string) {
 		{
 			desc:   "search notifiers by group with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    data[0:10],
 		},
 		{
 			desc:   "search notifiers by group with limit greater than max",

@@ -51,6 +51,7 @@ const (
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
 	noLimit        = -1
+	invalidData    = `{"limit": "invalid"}`
 )
 
 var (
@@ -63,7 +64,7 @@ var (
 		Metadata: metadata,
 	}
 	invalidName    = strings.Repeat("m", maxNameSize+1)
-	searchThingReq = SearchThingsRequest{
+	searchThingReq = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -940,9 +941,6 @@ func TestSearchThings(t *testing.T) {
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
 
-	str.Name = invalidName
-	invalidData := toJSON(str)
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
@@ -1038,9 +1036,9 @@ func TestSearchThings(t *testing.T) {
 		{
 			desc:   "search things with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    data[0:10],
 		},
 		{
 			desc:   "search things without offset",
@@ -1155,9 +1153,6 @@ func TestSearchThingsByProfile(t *testing.T) {
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
 
-	str.Name = invalidName
-	invalidData := toJSON(str)
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
@@ -1256,9 +1251,9 @@ func TestSearchThingsByProfile(t *testing.T) {
 		{
 			desc:   "search things by profile with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    data[0:10],
 		},
 		{
 			desc:   "search things by profile with limit greater than max",
@@ -1343,9 +1338,6 @@ func TestSearchThingsByGroup(t *testing.T) {
 	str = searchThingReq
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1445,9 +1437,9 @@ func TestSearchThingsByGroup(t *testing.T) {
 		{
 			desc:   "search things by group with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    data[0:10],
 		},
 		{
 			desc:   "search things by group with limit greater than max",
@@ -1533,9 +1525,6 @@ func TestSearchThingsByOrg(t *testing.T) {
 	str = searchThingReq
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1635,9 +1624,9 @@ func TestSearchThingsByOrg(t *testing.T) {
 		{
 			desc:   "search things by organization with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    data[0:10],
 		},
 		{
 			desc:   "search things by organization with limit greater than max",
@@ -2711,13 +2700,4 @@ type restoreReq struct {
 	Things   []restoreThingReq   `json:"things"`
 	Profiles []restoreProfileReq `json:"profiles"`
 	Groups   []restoreGroupReq   `json:"groups"`
-}
-
-type SearchThingsRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

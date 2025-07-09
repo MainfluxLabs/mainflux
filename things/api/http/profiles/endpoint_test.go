@@ -50,6 +50,7 @@ const (
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
 	noLimit        = -1
+	invalidData    = `{"limit": "invalid"}`
 )
 
 var (
@@ -61,7 +62,7 @@ var (
 		Name:     "test",
 		Metadata: metadata,
 	}
-	searchProfileReq = SearchProfilesRequest{
+	searchProfileReq = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -878,9 +879,6 @@ func TestSearchProfiles(t *testing.T) {
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
 
-	str.Name = invalidName
-	invalidData := toJSON(str)
-
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
@@ -970,9 +968,9 @@ func TestSearchProfiles(t *testing.T) {
 		{
 			desc:   "search profiles with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    profiles[0:10],
 		},
 		{
 			desc:   "search profiles with limit greater than max",
@@ -1056,9 +1054,6 @@ func TestSearchProfilesByGroup(t *testing.T) {
 	str = searchProfileReq
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1149,9 +1144,9 @@ func TestSearchProfilesByGroup(t *testing.T) {
 		{
 			desc:   "search profiles by group with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    profiles[0:10],
 		},
 		{
 			desc:   "search profiles by group with limit greater than max",
@@ -1235,9 +1230,6 @@ func TestSearchProfilesByOrg(t *testing.T) {
 	str = searchProfileReq
 	str.Name = invalidName
 	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1328,9 +1320,9 @@ func TestSearchProfilesByOrg(t *testing.T) {
 		{
 			desc:   "search profiles by org with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    profiles[0:10],
 		},
 		{
 			desc:   "search profiles by org with limit greater than max",
@@ -1656,13 +1648,4 @@ type profilesPageRes struct {
 	Total    uint64       `json:"total"`
 	Offset   uint64       `json:"offset"`
 	Limit    uint64       `json:"limit"`
-}
-
-type SearchProfilesRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

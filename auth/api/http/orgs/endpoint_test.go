@@ -48,6 +48,7 @@ const (
 	descKey       = "desc"
 	emptyValue    = ""
 	emptyJson     = "{}"
+	invalidData   = `{"limit": "invalid"}`
 )
 
 var (
@@ -62,7 +63,7 @@ var (
 	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
-	searchOrgReq  = SearchOrgsRequest{
+	searchOrgReq  = apiutil.PageMetadata{
 		Limit:  5,
 		Offset: 0,
 	}
@@ -736,9 +737,9 @@ func TestSearchOrgs(t *testing.T) {
 		{
 			desc:   "search orgs with zero limit",
 			auth:   token,
-			status: http.StatusBadRequest,
+			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    nil,
+			res:    orgs[0:10],
 		},
 		{
 			desc:   "search orgs with limit greater than max",
@@ -1036,13 +1037,4 @@ type viewOrgMembers struct {
 type backup struct {
 	Orgs       []orgRes         `json:"orgs"`
 	OrgMembers []viewOrgMembers `json:"org_members"`
-}
-
-type SearchOrgsRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

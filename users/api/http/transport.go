@@ -214,7 +214,6 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 }
 
 func decodeListUsersFromBody(_ context.Context, r *http.Request) (interface{}, error) {
-
 	req := listUsersReq{
 		token:  apiutil.ExtractBearerToken(r),
 		status: users.EnabledStatusKey,
@@ -249,17 +248,12 @@ func decodeListUsersFromBody(_ context.Context, r *http.Request) (interface{}, e
 		req.dir = pm.Dir
 	}
 
-	if pm.Email != "" {
-		req.email = pm.Email
-	}
-
 	if pm.Status != "" {
 		req.status = pm.Status
 	}
 
-	if pm.Metadata != nil {
-		req.metadata = pm.Metadata
-	}
+	req.email = pm.Email
+	req.metadata = pm.Metadata
 
 	return req, nil
 }
