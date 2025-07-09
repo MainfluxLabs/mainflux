@@ -13,15 +13,13 @@ import (
 )
 
 const (
-	saveOrg                 = "save_org"
-	deleteOrg               = "delete_org"
-	updateOrg               = "update_org"
-	retrieveByID            = "retrieve_by_id"
-	retrieveByOwner         = "retrieve_by_owner"
-	retrieveOrgsByMember    = "retrieve_orgs_by_member"
-	retrieveAll             = "retrieve_all_orgs"
-	backupAllOrgs           = "backup_all_orgs"
-	retrieveAllMembersByOrg = "retrieve_all_members_by_org"
+	saveOrg              = "save_org"
+	deleteOrg            = "delete_org"
+	updateOrg            = "update_org"
+	retrieveByID         = "retrieve_by_id"
+	retrieveOrgsByMember = "retrieve_orgs_by_member"
+	retrieveAll          = "retrieve_all_orgs"
+	backupAllOrgs        = "backup_all_orgs"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
