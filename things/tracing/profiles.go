@@ -12,16 +12,16 @@ import (
 )
 
 const (
-	saveGroupIDByProfileIDOp     = "save_group_id_by_profile_id"
-	saveProfilesOp               = "save_profiles"
-	updateProfileOp              = "update_profile"
-	retrieveProfileByIDOp        = "retrieve_profile_by_id"
-	retrieveByThingOp            = "retrieve_by_thing"
-	retrieveProfilesByGroupIDsOp = "retrieve_profiles_by_group_ids"
-	removeProfileOp              = "remove_profile"
-	removeGroupIDByProfileIDOp   = "remove_group_id_by_profile_id"
-	retrieveAllProfilesOp        = "retrieve_all_profiles"
-	retrieveGroupIDByProfileIDOp = "retrieve_group_id_by_profile_id"
+	saveGroupIDByProfileID     = "save_group_id_by_profile_id"
+	saveProfiles               = "save_profiles"
+	updateProfile              = "update_profile"
+	retrieveProfileByID        = "retrieve_profile_by_id"
+	retrieveByThing            = "retrieve_by_thing"
+	retrieveProfilesByGroupIDs = "retrieve_profiles_by_group_ids"
+	removeProfile              = "remove_profile"
+	removeGroupIDByProfileID   = "remove_group_id_by_profile_id"
+	retrieveAllProfiles        = "retrieve_all_profiles"
+	retrieveGroupIDByProfileID = "retrieve_group_id_by_profile_id"
 )
 
 var (
@@ -44,7 +44,7 @@ func ProfileRepositoryMiddleware(tracer opentracing.Tracer, repo things.ProfileR
 }
 
 func (crm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, saveProfilesOp)
+	span := createSpan(ctx, crm.tracer, saveProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -52,7 +52,7 @@ func (crm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...thi
 }
 
 func (crm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Profile) error {
-	span := createSpan(ctx, crm.tracer, updateProfileOp)
+	span := createSpan(ctx, crm.tracer, updateProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -60,7 +60,7 @@ func (crm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Pro
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveProfileByIDOp)
+	span := createSpan(ctx, crm.tracer, retrieveProfileByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -68,7 +68,7 @@ func (crm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id stri
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, crm.tracer, retrieveProfilesByGroupIDsOp)
+	span := createSpan(ctx, crm.tracer, retrieveProfilesByGroupIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -76,7 +76,7 @@ func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, i
 }
 
 func (crm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveByThingOp)
+	span := createSpan(ctx, crm.tracer, retrieveByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -84,7 +84,7 @@ func (crm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID
 }
 
 func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, crm.tracer, removeProfileOp)
+	span := createSpan(ctx, crm.tracer, removeProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -92,7 +92,7 @@ func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 }
 
 func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, backupAllOp)
+	span := createSpan(ctx, crm.tracer, backupAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -100,7 +100,7 @@ func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.
 }
 
 func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, crm.tracer, retrieveAllProfilesOp)
+	span := createSpan(ctx, crm.tracer, retrieveAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -122,7 +122,7 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 }
 
 func (ccm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
-	span := createSpan(ctx, ccm.tracer, saveGroupIDByProfileIDOp)
+	span := createSpan(ctx, ccm.tracer, saveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -130,7 +130,7 @@ func (ccm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, grou
 }
 
 func (ccm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
-	span := createSpan(ctx, ccm.tracer, retrieveGroupIDByProfileIDOp)
+	span := createSpan(ctx, ccm.tracer, retrieveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -138,7 +138,7 @@ func (ccm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID strin
 }
 
 func (ccm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
-	span := createSpan(ctx, ccm.tracer, removeGroupIDByProfileIDOp)
+	span := createSpan(ctx, ccm.tracer, removeGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

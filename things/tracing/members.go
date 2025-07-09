@@ -13,13 +13,10 @@ import (
 )
 
 const (
-	saveGroupMembers         = "save_group_members"
-	updateGroupMembers       = "update_group_members"
-	removeGroupMembers       = "remove_group_members"
-	retrieveRole             = "retrieve_role"
-	retrieveByGroup          = "retrieve_by_group"
-	retrieveGroupIDsByMember = "retrieve_group_ids_by_member"
-	backupAll                = "backup_all"
+	saveGroupMembers   = "save_group_members"
+	updateGroupMembers = "update_group_members"
+	removeGroupMembers = "remove_group_members"
+	retrieveByGroup    = "retrieve_by_group"
 )
 
 var _ things.GroupMembersRepository = (*groupMembersRepositoryMiddleware)(nil)

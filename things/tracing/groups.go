@@ -9,19 +9,18 @@ import (
 )
 
 const (
-	saveGroupOp                   = "save_group"
-	updateGroupOp                 = "update_group"
-	removeGroupOp                 = "remove_group"
-	retrieveAllOp                 = "retrieve_all"
-	BackupAllOp                   = "backup_all"
-	retrieveGroupByIDOp           = "retrieve_group_by_id"
-	retrieveGroupByIDsOp          = "retrieve_group_by_ids"
-	retrieveGroupIDsByOrgOp       = "retrieve_group_ids_by_org"
-	saveRoleOp                    = "save_role"
-	retrieveRoleOp                = "retrieve_role"
-	removeRoleOp                  = "remove_role"
-	retrieveGroupIDsByMemberOp    = "retrieve_group_ids_by_member"
-	retrieveGroupIDsByOrgMemberOp = "retrieve_group_ids_by_org_member"
+	saveGroup                   = "save_group"
+	updateGroup                 = "update_group"
+	removeGroup                 = "remove_group"
+	retrieveAll                 = "retrieve_all"
+	retrieveGroupByID           = "retrieve_group_by_id"
+	retrieveGroupByIDs          = "retrieve_group_by_ids"
+	retrieveGroupIDsByOrg       = "retrieve_group_ids_by_org"
+	saveRole                    = "save_role"
+	retrieveRole                = "retrieve_role"
+	removeRole                  = "remove_role"
+	retrieveGroupIDsByMember    = "retrieve_group_ids_by_member"
+	retrieveGroupIDsByOrgMember = "retrieve_group_ids_by_org_member"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -40,7 +39,7 @@ func GroupRepositoryMiddleware(tracer opentracing.Tracer, repo things.GroupRepos
 }
 
 func (grm groupRepositoryMiddleware) Save(ctx context.Context, g things.Group) (things.Group, error) {
-	span := createSpan(ctx, grm.tracer, saveGroupOp)
+	span := createSpan(ctx, grm.tracer, saveGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -48,7 +47,7 @@ func (grm groupRepositoryMiddleware) Save(ctx context.Context, g things.Group) (
 }
 
 func (grm groupRepositoryMiddleware) Update(ctx context.Context, g things.Group) (things.Group, error) {
-	span := createSpan(ctx, grm.tracer, updateGroupOp)
+	span := createSpan(ctx, grm.tracer, updateGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -56,7 +55,7 @@ func (grm groupRepositoryMiddleware) Update(ctx context.Context, g things.Group)
 }
 
 func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...string) error {
-	span := createSpan(ctx, grm.tracer, removeGroupOp)
+	span := createSpan(ctx, grm.tracer, removeGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -64,7 +63,7 @@ func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...str
 }
 
 func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Group, error) {
-	span := createSpan(ctx, grm.tracer, BackupAllOp)
+	span := createSpan(ctx, grm.tracer, backupAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -72,7 +71,7 @@ func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Gr
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveAllOp)
+	span := createSpan(ctx, grm.tracer, retrieveAll)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -80,14 +79,14 @@ func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil
 }
 
 func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Group, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupByIDOp)
+	span := createSpan(ctx, grm.tracer, retrieveGroupByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveByID(ctx, id)
 }
 func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.GroupPage, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupByIDsOp)
+	span := createSpan(ctx, grm.tracer, retrieveGroupByIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -95,7 +94,7 @@ func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs
 }
 
 func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrgOp)
+	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -103,7 +102,7 @@ func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID
 }
 
 func (grm groupRepositoryMiddleware) RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error) {
-	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrgMemberOp)
+	span := createSpan(ctx, grm.tracer, retrieveGroupIDsByOrgMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -125,7 +124,7 @@ func GroupCacheMiddleware(tracer opentracing.Tracer, cache things.GroupCache) th
 }
 
 func (gcm groupCacheMiddleware) RemoveGroupEntities(ctx context.Context, groupID string) error {
-	span := createSpan(ctx, gcm.tracer, removeGroupOp)
+	span := createSpan(ctx, gcm.tracer, removeGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -133,7 +132,7 @@ func (gcm groupCacheMiddleware) RemoveGroupEntities(ctx context.Context, groupID
 }
 
 func (gcm groupCacheMiddleware) SaveGroupMember(ctx context.Context, groupID, memberID, role string) error {
-	span := createSpan(ctx, gcm.tracer, saveRoleOp)
+	span := createSpan(ctx, gcm.tracer, saveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -141,7 +140,7 @@ func (gcm groupCacheMiddleware) SaveGroupMember(ctx context.Context, groupID, me
 }
 
 func (gcm groupCacheMiddleware) ViewRole(ctx context.Context, groupID, memberID string) (string, error) {
-	span := createSpan(ctx, gcm.tracer, retrieveRoleOp)
+	span := createSpan(ctx, gcm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -149,7 +148,7 @@ func (gcm groupCacheMiddleware) ViewRole(ctx context.Context, groupID, memberID 
 }
 
 func (gcm groupCacheMiddleware) RemoveGroupMember(ctx context.Context, groupID, memberID string) error {
-	span := createSpan(ctx, gcm.tracer, removeRoleOp)
+	span := createSpan(ctx, gcm.tracer, removeRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -157,7 +156,7 @@ func (gcm groupCacheMiddleware) RemoveGroupMember(ctx context.Context, groupID, 
 }
 
 func (gcm groupCacheMiddleware) GroupMemberships(ctx context.Context, memberID string) ([]string, error) {
-	span := createSpan(ctx, gcm.tracer, retrieveGroupIDsByMemberOp)
+	span := createSpan(ctx, gcm.tracer, retrieveGroupIDsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

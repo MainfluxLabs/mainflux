@@ -151,7 +151,7 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 	}, nil
 }
 
-func (orm *orgRepositoryMock) BackupAll(ctx context.Context) ([]auth.Org, error) {
+func (orm *orgRepositoryMock) BackupAll(_ context.Context) ([]auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -163,7 +163,7 @@ func (orm *orgRepositoryMock) BackupAll(ctx context.Context) ([]auth.Org, error)
 	return orgs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
