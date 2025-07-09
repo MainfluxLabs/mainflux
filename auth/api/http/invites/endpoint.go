@@ -33,7 +33,7 @@ func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		if err := svc.RevokeInvite(ctx, req.token, req.inviteID); err != nil {
-			return revokeInviteRes{}, err
+			return nil, err
 		}
 
 		return revokeInviteRes{}, nil
