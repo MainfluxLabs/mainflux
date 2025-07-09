@@ -1,4 +1,4 @@
-package members
+package memberships
 
 import (
 	"context"
@@ -8,77 +8,47 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func viewMemberEndpoint(svc auth.Service) endpoint.Endpoint {
+func createOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(memberReq)
+		req := request.(orgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		mb, err := svc.ViewMember(ctx, req.token, req.orgID, req.memberID)
+		if err := svc.CreateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...); err != nil {
+			return nil, err
+		}
+
+		return createRes{}, nil
+	}
+}
+
+func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(orgMembershipReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		mb, err := svc.ViewOrgMembership(ctx, req.token, req.orgID, req.memberID)
 		if err != nil {
 			return nil, err
 
 		}
 
-		member := viewMemberRes{
-			ID:    mb.MemberID,
-			Email: mb.Email,
-			Role:  mb.Role,
+		om := viewOrgMembershipRes{
+			MemberID: mb.MemberID,
+			Email:    mb.Email,
+			Role:     mb.Role,
 		}
 
-		return member, nil
+		return om, nil
 	}
 }
 
-func assignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.AssignMembers(ctx, req.token, req.orgID, req.OrgMembers...); err != nil {
-			return nil, err
-		}
-
-		return assignRes{}, nil
-	}
-}
-
-func unassignMembersEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(unassignMembersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.UnassignMembers(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
-			return nil, err
-		}
-
-		return unassignRes{}, nil
-	}
-}
-
-func updateMembersEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(membersReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.UpdateMembers(ctx, req.token, req.orgID, req.OrgMembers...); err != nil {
-			return nil, err
-		}
-
-		return assignRes{}, nil
-	}
-}
-
-func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMembersByOrgReq)
+		req := request.(listOrgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -91,12 +61,42 @@ func listMembersByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			Dir:    req.dir,
 		}
 
-		page, err := svc.ListMembersByOrg(ctx, req.token, req.id, pm)
+		page, err := svc.ListOrgMemberships(ctx, req.token, req.orgID, pm)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildMembersResponse(page), nil
+		return buildOrgMembershipsResponse(page), nil
+	}
+}
+
+func updateOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(orgMembershipsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UpdateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...); err != nil {
+			return nil, err
+		}
+
+		return createRes{}, nil
+	}
+}
+
+func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(removeOrgMembershipsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveOrgMemberships(ctx, req.token, req.orgID, req.MemberIDs...); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
 	}
 }
 
@@ -114,23 +114,23 @@ func backupMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildMembersResponse(omp auth.OrgMembersPage) memberPageRes {
-	res := memberPageRes{
+func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageRes {
+	res := orgMembershipPageRes{
 		pageRes: pageRes{
 			Total:  omp.Total,
 			Offset: omp.Offset,
 			Limit:  omp.Limit,
 		},
-		Members: []viewMemberRes{},
+		OrgMemberships: []viewOrgMembershipRes{},
 	}
 
-	for _, memb := range omp.OrgMembers {
-		m := viewMemberRes{
-			ID:    memb.MemberID,
-			Email: memb.Email,
-			Role:  memb.Role,
+	for _, om := range omp.OrgMemberships {
+		m := viewOrgMembershipRes{
+			MemberID: om.MemberID,
+			Email:    om.Email,
+			Role:     om.Role,
 		}
-		res.Members = append(res.Members, m)
+		res.OrgMemberships = append(res.OrgMemberships, m)
 	}
 
 	return res

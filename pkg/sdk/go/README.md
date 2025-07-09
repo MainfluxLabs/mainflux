@@ -151,23 +151,20 @@ func (sdk mfSDK) DeleteOrg(id, token string) error
 func (sdk mfSDK) Orgs(meta PageMetadata, token string) (OrgsPage, error)
     Orgs - returns page of orgs
 
-func (sdk mfSDK) ViewMember(orgID, memberID, token string) (Member, error)
-    ViewMember - retrieves a member belonging to the specified org
+func (sdk mfSDK) GetOrgMembership(memberID, orgID, token string) (OrgMembership, error)
+    GetOrgMembership - retrieves a member belonging to the specified org
 	
-func (sdk mfSDK) AssignMembers(om []OrgMember, orgID, token string) error
-    AssignMembers - assigns a members to the org
+func (sdk mfSDK) CreateOrgMemberships(oms []OrgMembership, orgID, token string) error
+    CreateOrgMemberships - creates a memberships for the specified org
 	
-func (sdk mfSDK) UnassignMembers(token, orgID string, memberIDs ...string) error
-    UnassignMembers - unassigns a members from the specified org
+func (sdk mfSDK) RemoveOrgMemberships(token, orgID string, memberIDs ...string) error
+    RemoveOrgMemberships - removes a memberships from the specified org
     
-func (sdk mfSDK) UpdateMember(member OrgMember, token string) error
-    UpdateMember - updates existing member
+func (sdk mfSDK) UpdateOrgMemberships(oms []OrgMembership, orgID, token string) error
+    UpdateOrgMemberships - updates existing memberships
 
-func (sdk mfSDK) ListMembersByOrg(orgID, token string, offset, limit uint64) (MembersPage, error)
-    ListMembersByOrg - lists members by org
-	
-func (sdk mfSDK) ListOrgsByMember(memberID, token string, offset, limit uint64) (OrgsPage, error)
-    ListOrgsByMember - lists orgs by member
+func (sdk mfSDK) ListOrgMemberships(orgID string, meta PageMetadata, token string) (OrgMembershipsPage, error)
+    ListOrgMemberships - lists memberships created for a specified org
 	
 func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
     CreateWebhooks - creates new webhooks

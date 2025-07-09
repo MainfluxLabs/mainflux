@@ -382,7 +382,7 @@ func (sdk mfSDK) UpdateGroupMembers(roles []GroupMember, groupID, token string) 
 }
 
 func (sdk mfSDK) RemoveGroupMembers(ids []string, groupID, token string) error {
-	delReq := unassignMemberReq{MemberIDs: ids}
+	delReq := removeMembershipsReq{MemberIDs: ids}
 	data, err := json.Marshal(delReq)
 	if err != nil {
 		return err

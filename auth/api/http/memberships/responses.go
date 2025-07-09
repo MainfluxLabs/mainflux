@@ -1,4 +1,4 @@
-package members
+package memberships
 
 import (
 	"net/http"
@@ -8,43 +8,43 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*memberPageRes)(nil)
-	_ apiutil.Response = (*assignRes)(nil)
-	_ apiutil.Response = (*unassignRes)(nil)
+	_ apiutil.Response = (*orgMembershipPageRes)(nil)
+	_ apiutil.Response = (*createRes)(nil)
+	_ apiutil.Response = (*removeRes)(nil)
 )
 
-type viewMemberRes struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type viewOrgMembershipRes struct {
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
-func (res viewMemberRes) Code() int {
+func (res viewOrgMembershipRes) Code() int {
 	return http.StatusOK
 }
 
-func (res viewMemberRes) Headers() map[string]string {
+func (res viewOrgMembershipRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res viewMemberRes) Empty() bool {
+func (res viewOrgMembershipRes) Empty() bool {
 	return false
 }
 
-type memberPageRes struct {
+type orgMembershipPageRes struct {
 	pageRes
-	Members []viewMemberRes `json:"members"`
+	OrgMemberships []viewOrgMembershipRes `json:"org_memberships"`
 }
 
-func (res memberPageRes) Code() int {
+func (res orgMembershipPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res memberPageRes) Headers() map[string]string {
+func (res orgMembershipPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res memberPageRes) Empty() bool {
+func (res orgMembershipPageRes) Empty() bool {
 	return false
 }
 
@@ -55,31 +55,31 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type assignRes struct{}
+type createRes struct{}
 
-func (res assignRes) Code() int {
+func (res createRes) Code() int {
 	return http.StatusOK
 }
 
-func (res assignRes) Headers() map[string]string {
+func (res createRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res assignRes) Empty() bool {
+func (res createRes) Empty() bool {
 	return true
 }
 
-type unassignRes struct{}
+type removeRes struct{}
 
-func (res unassignRes) Code() int {
+func (res removeRes) Code() int {
 	return http.StatusNoContent
 }
 
-func (res unassignRes) Headers() map[string]string {
+func (res removeRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res unassignRes) Empty() bool {
+func (res removeRes) Empty() bool {
 	return true
 }
 
@@ -99,9 +99,11 @@ type backupOrgMembershipsRes struct {
 func (res backupOrgMembershipsRes) Code() int {
 	return http.StatusOK
 }
+
 func (res backupOrgMembershipsRes) Headers() map[string]string {
 	return map[string]string{}
 }
+
 func (res backupOrgMembershipsRes) Empty() bool {
 	return false
 }
