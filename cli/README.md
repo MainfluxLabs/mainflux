@@ -222,34 +222,29 @@ mainfluxlabs-cli orgs update '{"name":"<new_name>"}' <org_id> <user_token>
 mainfluxlabs-cli orgs delete <org_id> <user_token>
 ```
 
-#### Assign Member to Org
+#### Create Org Membership
 ```bash
-mainfluxlabs-cli orgs assign '[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]' <org_id> <user_token>
+mainfluxlabs-cli org_memberships create '[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]' <org_id> <user_token>
 ```
 
-#### Unassign Member from Org
+#### Remove Org Membership
 ```bash
-mainfluxlabs-cli orgs unassign '["<member_id>"]' <org_id> <user_token>
+mainfluxlabs-cli org_memberships remove '["<member_id>"]' <org_id> <user_token>
 ```
 
-#### Get Member from Org
+#### Get Org Membership
 ```bash
-mainfluxlabs-cli orgs member <org_id> <member_id> <user_token>
+mainfluxlabs-cli org_memberships get <all | member_id> <org_id> <user_token>
 ```
 
-#### Update Members
+#### Update Org Membership
 ```bash
-mainfluxlabs-cli orgs update-members '[{"member_id":"<member_id>","role":"<new_role>"}]' <org_id> <user_token>
+mainfluxlabs-cli org_memberships update '[{"member_id":"<member_id>","role":"<new_role>"}]' <org_id> <user_token>
 ```
 
-#### List Members by Org
+#### List Org Membership
 ```bash
-mainfluxlabs-cli orgs members <org_id> <user_token>
-```
-
-#### List Orgs that Member belongs to
-```bash
-mainfluxlabs-cli orgs memberships <member_id> <user_token>
+mainfluxlabs-cli org_memberships members <org_id> <user_token>
 ```
 
 ### Webhooks
