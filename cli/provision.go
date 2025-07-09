@@ -26,28 +26,28 @@ const csvThingsFieldCount = 4
 
 // These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
 const (
-	csvThingsFieldID = iota
-	csvThingsFieldName
-	csvThingsFieldGroupID
-	csvThingsFieldProfileID
+	thingID = iota
+	thingName
+	thingGroupID
+	thingProfileID
 )
 
 const csvProfilesFieldCount = 12
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
-	csvProfilesFieldID = iota
-	csvProfilesFieldName
-	csvProfilesFieldGroupID
-	csvProfilesFieldConfigContentType
-	csvProfilesFieldConfigWrite
-	csvProfilesFieldConfigWebhook
-	csvProfilesFieldConfigTransformerDataFilters
-	csvProfilesFieldConfigTransformerDataField
-	csvProfilesFieldConfigTransformerTimeField
-	csvProfilesFieldConfigTransformerTimeFormat
-	csvProfilesFieldConfigTransformerTimeLocation
-	csvProfilesFieldConfigSMTPID
+	profileID = iota
+	profileName
+	profileGroupID
+	profileConfContentType
+	profileConfWrite
+	profileConfWebhook
+	profileConfTransformerDataFilters
+	profileConfTransformerDataField
+	profileConfTransformerTimeField
+	profileConfTransformerTimeFormat
+	profileConfTransformerTimeLocation
+	profileConfSMTPID
 )
 
 var cmdProvision = []cobra.Command{
@@ -249,10 +249,10 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 			}
 
 			thing := mfxsdk.Thing{
-				Name:      record[csvThingsFieldName],
-				ID:        record[csvThingsFieldID],
-				ProfileID: record[csvThingsFieldProfileID],
-				GroupID:   record[csvThingsFieldGroupID],
+				Name:      record[thingName],
+				ID:        record[thingID],
+				ProfileID: record[thingProfileID],
+				GroupID:   record[thingGroupID],
 			}
 
 			recordMetadata := record[csvThingsFieldCount:]
@@ -317,37 +317,37 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			}
 
 			profile := mfxsdk.Profile{
-				Name:    record[csvProfilesFieldName],
-				ID:      record[csvProfilesFieldID],
-				GroupID: record[csvProfilesFieldGroupID],
+				Name:    record[profileName],
+				ID:      record[profileID],
+				GroupID: record[profileGroupID],
 			}
 
 			// Populate profile's config object
 			profile.Config = make(map[string]any)
-			profile.Config["content_type"] = record[csvProfilesFieldConfigContentType]
+			profile.Config["content_type"] = record[profileConfContentType]
 
-			writeBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWrite])
+			writeBool, err := strconv.ParseBool(record[profileConfWrite])
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
 			profile.Config["write"] = writeBool
 
-			webhookBool, err := strconv.ParseBool(record[csvProfilesFieldConfigWebhook])
+			webhookBool, err := strconv.ParseBool(record[profileConfWebhook])
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
 			profile.Config["webhook"] = webhookBool
 
-			profile.Config["smtp_id"] = record[csvProfilesFieldConfigSMTPID]
+			profile.Config["smtp_id"] = record[profileConfSMTPID]
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
 
-			transformer["data_field"] = record[csvProfilesFieldConfigTransformerDataField]
-			transformer["time_field"] = record[csvProfilesFieldConfigTransformerTimeField]
-			transformer["time_location"] = record[csvProfilesFieldConfigTransformerTimeLocation]
-			transformer["time_format"] = record[csvProfilesFieldConfigTransformerTimeFormat]
-			transformer["data_filters"] = strings.Split(record[csvProfilesFieldConfigTransformerDataFilters], ",")
+			transformer["data_field"] = record[profileConfTransformerDataField]
+			transformer["time_field"] = record[profileConfTransformerTimeField]
+			transformer["time_location"] = record[profileConfTransformerTimeLocation]
+			transformer["time_format"] = record[profileConfTransformerTimeFormat]
+			transformer["data_filters"] = strings.Split(record[profileConfTransformerDataFilters], ",")
 
 			recordMetadata := record[csvProfilesFieldCount:]
 
