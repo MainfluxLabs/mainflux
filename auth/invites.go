@@ -9,10 +9,14 @@ import (
 )
 
 var (
-	// ErrCreateInvite indicates failure to create a new invite
-	ErrCreateInvite       = errors.New("error creating invite")
+	// ErrCreateInvite indicates failure to create a new Invite
+	ErrCreateInvite = errors.New("error creating invite")
+
+	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
-	ErrInviteExpired      = errors.New("invite has expired")
+
+	// ErrInviteExpired indicates that the Invite has expired and cannot be responded to
+	ErrInviteExpired = errors.New("invite has expired")
 )
 
 type Invite struct {
@@ -163,6 +167,11 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 
 	// Make sure the Invite hasn't expired
 	if time.Now().After(invite.ExpiresAt) {
+		// If a response to an expired Invite has been attempted, remove it from the database
+		if err := svc.invites.Remove(ctx, inviteID); err != nil {
+			return err
+		}
+
 		return ErrInviteExpired
 	}
 
