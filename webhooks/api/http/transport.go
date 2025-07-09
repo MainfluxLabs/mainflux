@@ -50,13 +50,13 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, logger log.Log
 	))
 	r.Post("/things/:id/webhooks/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_webhooks_by_thing")(listWebhooksByThingEndpoint(svc)),
-		decodeListThingWebhooksByMetadata,
+		decodeSearchThingWebhooks,
 		encodeResponse,
 		opts...,
 	))
 	r.Post("/groups/:id/webhooks/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_webhooks_by_group")(listWebhooksByGroupEndpoint(svc)),
-		decodeListGroupWebhooksByMetadata,
+		decodeSearchGroupWebhooks,
 		encodeResponse,
 		opts...,
 	))
@@ -134,7 +134,7 @@ func decodeListThingWebhooks(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
-func decodeListGroupWebhooksByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchGroupWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func decodeListGroupWebhooksByMetadata(_ context.Context, r *http.Request) (inte
 	return req, nil
 }
 
-func decodeListThingWebhooksByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchThingWebhooks(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err

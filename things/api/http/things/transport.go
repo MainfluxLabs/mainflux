@@ -79,28 +79,28 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Post("/things/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_things")(listThingsEndpoint(svc)),
-		decodeListByMetadata,
+		decodeSearch,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/profiles/:id/things/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_things_by_profile")(listThingsByProfileEndpoint(svc)),
-		decodeListByProfileMetadata,
+		decodeSearchByProfile,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/groups/:id/things/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_things_by_group")(listThingsByGroupEndpoint(svc)),
-		decodeListByGroupMetadata,
+		decodeSearchByGroup,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/orgs/:id/things/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_things_by_org")(listThingsByOrgEndpoint(svc)),
-		decodeListByOrgMetadata,
+		decodeSearchByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -291,7 +291,7 @@ func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -305,7 +305,7 @@ func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListByProfileMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -320,7 +320,7 @@ func decodeListByProfileMetadata(_ context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
-func decodeListByGroupMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -335,7 +335,7 @@ func decodeListByGroupMetadata(_ context.Context, r *http.Request) (interface{},
 	return req, nil
 }
 
-func decodeListByOrgMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err

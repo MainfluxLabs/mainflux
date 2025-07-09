@@ -70,21 +70,21 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Post("/profiles/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_profiles")(listProfilesEndpoint(svc)),
-		decodeListByMetadata,
+		decodeSearch,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/groups/:id/profiles/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_profiles_by_group")(listProfilesByGroupEndpoint(svc)),
-		decodeListByGroupMetadata,
+		decodeSearchByGroup,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/orgs/:id/profiles/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_profiles_by_org")(listProfilesByOrgEndpoint(svc)),
-		decodeListByOrgMetadata,
+		decodeSearchByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -223,7 +223,7 @@ func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeListByGroupMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -252,7 +252,7 @@ func decodeListByGroupMetadata(_ context.Context, r *http.Request) (interface{},
 	return req, nil
 }
 
-func decodeListByOrgMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err

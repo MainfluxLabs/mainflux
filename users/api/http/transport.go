@@ -75,7 +75,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 
 	mux.Post("/users/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_users")(listUsersEndpoint(svc)),
-		decodeListUsersFromBody,
+		decodeSearchUsers,
 		encodeResponse,
 		opts...,
 	))
@@ -213,7 +213,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListUsersFromBody(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchUsers(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listUsersReq{
 		token:  apiutil.ExtractBearerToken(r),
 		status: users.EnabledStatusKey,

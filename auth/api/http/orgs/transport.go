@@ -59,7 +59,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Post("/orgs/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_orgs")(listOrgsEndpoint(svc)),
-		decodeListOrgsByMetadata,
+		decodeSearchOrgs,
 		encodeResponse,
 		opts...,
 	))
@@ -95,7 +95,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListOrgsByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
