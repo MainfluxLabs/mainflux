@@ -52,7 +52,7 @@ type GroupMemberships interface {
 	// ListGroupMemberships retrieves a paginated list of group memberships for the given group.
 	ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
 
-	// UpdateGroupMemberships updates roles of members in the specified group.
+	// UpdateGroupMemberships updates roles of a specific group membership.
 	UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
 
 	// RemoveGroupMemberships removes memberships from the given group.

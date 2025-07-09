@@ -178,7 +178,7 @@ func (gcm *groupCacheMock) RemoveGroupMembership(_ context.Context, groupID, mem
 	return nil
 }
 
-func (gcm *groupCacheMock) GroupMemberships(_ context.Context, memberID string) ([]string, error) {
+func (gcm *groupCacheMock) RetrieveGroupIDsByMember(_ context.Context, memberID string) ([]string, error) {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 

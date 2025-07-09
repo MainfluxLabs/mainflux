@@ -54,8 +54,8 @@ type GroupRepository interface {
 	// RetrieveAll retrieves all groups.
 	RetrieveAll(ctx context.Context) ([]Group, error)
 
-	// RetrieveIDsByOrgMember retrieves org group IDs the member belongs to
-	RetrieveIDsByOrgMember(ctx context.Context, orgID, memberID string) ([]string, error)
+	// RetrieveIDsByOrgMembership retrieves group IDs by org membership
+	RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error)
 
 	// RetrieveIDsByOrg retrieves all group IDs by org
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)
@@ -98,20 +98,20 @@ type Groups interface {
 
 // GroupCache contains group caching interface.
 type GroupCache interface {
-	// RemoveGroupEntities removes all entities related to the group identified by ID.
+	// RemoveGroupEntities removes all entities related to the group identified by groupID.
 	RemoveGroupEntities(context.Context, string) error
 
-	// SaveGroupMembership stores member's role for given group ID.
+	// SaveGroupMembership stores role for given groupID and memberID.
 	SaveGroupMembership(context.Context, string, string, string) error
 
-	// ViewRole returns a group member role by given groupID and memberID.
+	// ViewRole returns role for given groupID and memberID.
 	ViewRole(context.Context, string, string) (string, error)
 
-	// RemoveGroupMembership removes a group membership from cache.
+	// RemoveGroupMembership removes group membership for given groupID and memberID.
 	RemoveGroupMembership(context.Context, string, string) error
 
-	// GroupMemberships returns the IDs of the groups the member belongs to.
-	GroupMemberships(context.Context, string) ([]string, error)
+	// RetrieveGroupIDsByMember returns group IDs for given memberID.
+	RetrieveGroupIDsByMember(context.Context, string) ([]string, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
@@ -212,7 +212,7 @@ func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID strin
 		return GroupPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByOrgMember(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 	if err != nil {
 		return GroupPage{}, err
 	}

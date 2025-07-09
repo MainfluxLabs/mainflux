@@ -388,7 +388,7 @@ func TestUpdateMemberships(t *testing.T) {
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "update group member role to owner",
+			desc:   "update group membership role to owner",
 			token:  token,
 			id:     gr.ID,
 			req:    ownerData,

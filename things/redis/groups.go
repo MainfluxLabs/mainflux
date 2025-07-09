@@ -116,7 +116,7 @@ func (gc *groupCache) RemoveGroupMembership(ctx context.Context, groupID, member
 	return nil
 }
 
-func (gc *groupCache) GroupMemberships(ctx context.Context, memberID string) ([]string, error) {
+func (gc *groupCache) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	gk := groupsByMemberIDKey(memberID)
 	groups, err := gc.client.HKeys(ctx, gk).Result()
 	if err != nil {
