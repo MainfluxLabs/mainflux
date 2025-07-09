@@ -27,7 +27,7 @@ func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(revokeInviteReq)
+		req := request.(inviteRevokeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -37,5 +37,22 @@ func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return revokeInviteRes{}, nil
+	}
+}
+
+func respondInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(inviteResponseReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.InviteRespond(ctx, req.token, req.inviteID, req.inviteAccepted); err != nil {
+			return nil, err
+		}
+
+		// TODO: perhaps this endpoint should return the ID of the org the user has just been assigned
+		// to or something?
+		return respondInviteRes{}, nil
 	}
 }

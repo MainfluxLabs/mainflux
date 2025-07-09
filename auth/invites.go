@@ -13,6 +13,7 @@ var (
 	// ErrCreateInvite indicates failure to create a new invite
 	ErrCreateInvite       = errors.New("error creating invite")
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
+	ErrInviteExpired      = errors.New("invite has expired")
 )
 
 type Invite struct {
@@ -33,6 +34,11 @@ type Invites interface {
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
 	RevokeInvite(ctx context.Context, token string, inviteID string) error
+
+	// InviteRespond responds to a specific invite, either accepting it (after which the invitee
+	// is assigned as a member of the appropriate Org), or declining it. In both cases the existing
+	// pending Invite is removed.
+	InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error
 }
 
 type InvitesRepository interface {
@@ -130,6 +136,57 @@ func (svc service) RevokeInvite(ctx context.Context, token string, inviteID stri
 		return errors.ErrAuthorization
 	}
 
+	if err := svc.invites.Remove(ctx, inviteID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc service) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error {
+	// Identify User attempting to respond to Invite
+	currentUser, err := svc.identify(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	currentUserID := currentUser.ID
+
+	// Obtain detailed information about the Invite
+	invite, err := svc.invites.RetrieveByID(ctx, inviteID)
+	if err != nil {
+		return err
+	}
+
+	// An Invite can only be responded to by the invitee
+	if currentUserID != invite.InviteeID {
+		return errors.ErrAuthorization
+	}
+
+	// Make sure the Invite hasn't expired
+	if time.Now().After(invite.ExpiresAt) {
+		return ErrInviteExpired
+	}
+
+	if accept {
+		// User has accepted the Invite, assign them as a member of the appropriate Org
+		// with the appropriate role
+		ts := getTimestmap()
+
+		newOrgMember := OrgMember{
+			MemberID:  currentUserID,
+			OrgID:     invite.OrgID,
+			Role:      invite.InviteeRole,
+			CreatedAt: ts,
+			UpdatedAt: ts,
+		}
+
+		if err := svc.members.Save(ctx, newOrgMember); err != nil {
+			return err
+		}
+	}
+
+	// Remove Invite from database
 	if err := svc.invites.Remove(ctx, inviteID); err != nil {
 		return err
 	}

@@ -33,13 +33,36 @@ func (req invitesReq) validate() error {
 	return nil
 }
 
-type revokeInviteReq struct {
+type inviteRevokeReq struct {
 	token    string
 	orgID    string
 	inviteID string
 }
 
-func (req revokeInviteReq) validate() error {
+func (req inviteRevokeReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
+type inviteResponseReq struct {
+	token          string
+	orgID          string
+	inviteID       string
+	inviteAccepted bool
+}
+
+func (req inviteResponseReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

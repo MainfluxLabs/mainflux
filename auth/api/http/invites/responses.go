@@ -29,3 +29,17 @@ func (res revokeInviteRes) Headers() map[string]string {
 func (res revokeInviteRes) Empty() bool {
 	return true
 }
+
+type respondInviteRes struct{}
+
+func (res respondInviteRes) Code() int {
+	return http.StatusOK
+}
+
+func (res respondInviteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res respondInviteRes) Empty() bool {
+	return true
+}

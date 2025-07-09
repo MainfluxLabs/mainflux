@@ -224,3 +224,12 @@ func (ms *metricsMiddleware) RevokeInvite(ctx context.Context, token string, inv
 
 	return ms.svc.RevokeInvite(ctx, token, inviteID)
 }
+
+func (ms *metricsMiddleware) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "invite_respond").Add(1)
+		ms.latency.With("method", "invite_respond").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.InviteRespond(ctx, token, inviteID, accept)
+}
