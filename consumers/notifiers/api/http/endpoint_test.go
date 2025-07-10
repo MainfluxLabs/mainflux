@@ -26,23 +26,30 @@ import (
 )
 
 const (
-	token        = "admin@example.com"
-	wrongValue   = "wrong-value"
-	contentType  = "application/json"
-	emptyValue   = ""
-	groupID      = "50e6b371-60ff-45cf-bb52-8200e7cde536"
-	prefixID     = "fe6b4e92-cc98-425e-b0aa-"
-	prefixName   = "test-notifier-"
-	notifierName = "notifier-test"
-	svcSmtp      = "smtp-notifier"
-	svcSmpp      = "smpp-notifier"
-	nameKey      = "name"
-	ascKey       = "asc"
-	descKey      = "desc"
-	n            = 101
-	maxNameSize  = 254
-	emptyJson    = "{}"
-	invalidData  = `{"limit": "invalid"}`
+	token            = "admin@example.com"
+	wrongValue       = "wrong-value"
+	contentType      = "application/json"
+	emptyValue       = ""
+	groupID          = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	prefixID         = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName       = "test-notifier-"
+	notifierName     = "notifier-test"
+	svcSmtp          = "smtp-notifier"
+	svcSmpp          = "smpp-notifier"
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	n                = 101
+	maxNameSize      = 254
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -53,11 +60,8 @@ var (
 	metadata        = map[string]interface{}{"test": "data"}
 	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	searchReq       = SearchNotifiersRequest{
-		Limit:  5,
-		Offset: 0,
-	}
-	invalidName = strings.Repeat("m", maxNameSize+1)
+	invalidName     = strings.Repeat("m", maxNameSize+1)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {
@@ -478,35 +482,6 @@ func runSearchNotifiersByGroupTest(t *testing.T, validContacts []string) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
-
-	str := searchReq
-	validData := toJSON(str)
-
-	str.Dir = "desc"
-	str.Order = "name"
-	descData := toJSON(str)
-
-	str.Dir = "asc"
-	ascData := toJSON(str)
-
-	str.Order = "wrong"
-	invalidOrderData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 0
-	zeroLimitData := toJSON(str)
-
-	str = searchReq
-	str.Dir = "wrong"
-	invalidDirData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 110
-	limitMaxData := toJSON(str)
-
-	str = searchReq
-	str.Name = invalidName
-	invalidNameData := toJSON(str)
 
 	var data []notifierRes
 	notifier := notifiers.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
@@ -938,13 +913,4 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
-}
-
-type SearchNotifiersRequest struct {
-	Limit    uint64                 `json:"limit"`
-	Offset   uint64                 `json:"offset,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

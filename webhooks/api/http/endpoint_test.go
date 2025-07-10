@@ -26,34 +26,38 @@ import (
 )
 
 const (
-	token       = "admin@example.com"
-	wrongValue  = "wrong-value"
-	invalidUrl  = "invalid-url"
-	contentType = "application/json"
-	emptyValue  = ""
-	groupID     = "50e6b371-60ff-45cf-bb52-8200e7cde536"
-	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
-	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
-	prefixName  = "test-webhook-"
-	nameKey     = "name"
-	ascKey      = "asc"
-	descKey     = "desc"
-	emptyJson   = "{}"
-	n           = 101
-	maxNameSize = 1024
-	invalidData = `{"limit": "invalid"}`
+	token            = "admin@example.com"
+	wrongValue       = "wrong-value"
+	invalidUrl       = "invalid-url"
+	contentType      = "application/json"
+	emptyValue       = ""
+	groupID          = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	thingID          = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	prefixID         = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName       = "test-webhook-"
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	emptyJson        = "{}"
+	n                = 101
+	maxNameSize      = 1024
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
-	headers       = map[string]string{"Content-Type:": "application/json"}
-	webhook       = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
-	invalidIDRes  = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
-	missingTokRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	searchReq     = apiutil.PageMetadata{
-		Limit:  5,
-		Offset: 0,
-	}
-	invalidName = strings.Repeat("m", maxNameSize+1)
+	headers         = map[string]string{"Content-Type:": "application/json"}
+	webhook         = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
+	invalidIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
+	missingTokRes   = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	invalidName     = strings.Repeat("m", maxNameSize+1)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
 )
 
 func newHTTPServer(svc webhooks.Service) *httptest.Server {
@@ -454,35 +458,6 @@ func TestSearchWebhooksByThing(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	str := searchReq
-	validData := toJSON(str)
-
-	str.Dir = "desc"
-	str.Order = "name"
-	descData := toJSON(str)
-
-	str.Dir = "asc"
-	ascData := toJSON(str)
-
-	str.Order = "wrong"
-	invalidOrderData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 0
-	zeroLimitData := toJSON(str)
-
-	str = searchReq
-	str.Dir = "wrong"
-	invalidDirData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 110
-	limitMaxData := toJSON(str)
-
-	str = searchReq
-	str.Name = invalidName
-	invalidNameData := toJSON(str)
-
 	webhooks := []webhookRes{}
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefixID, i+1)
@@ -629,35 +604,6 @@ func TestSearchWebhooksByGroup(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
-
-	str := searchReq
-	validData := toJSON(str)
-
-	str.Dir = "desc"
-	str.Order = "name"
-	descData := toJSON(str)
-
-	str.Dir = "asc"
-	ascData := toJSON(str)
-
-	str.Order = "wrong"
-	invalidOrderData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 0
-	zeroLimitData := toJSON(str)
-
-	str = searchReq
-	str.Dir = "wrong"
-	invalidDirData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 110
-	limitMaxData := toJSON(str)
-
-	str = searchReq
-	str.Name = invalidName
-	invalidNameData := toJSON(str)
 
 	webhooks := []webhookRes{}
 	for i := 0; i < n; i++ {

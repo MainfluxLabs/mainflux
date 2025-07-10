@@ -27,28 +27,35 @@ import (
 )
 
 const (
-	secret        = "secret"
-	contentType   = "application/json"
-	id            = "123e4567-e89b-12d3-a456-000000000022"
-	adminID       = "adminID"
-	editorID      = "editorID"
-	viewerID      = "viewerID"
-	email         = "user@example.com"
-	adminEmail    = "admin@example.com"
-	editorEmail   = "editor@example.com"
-	viewerEmail   = "viewer@example.com"
-	wrongValue    = "wrong_value"
-	name          = "testName"
-	description   = "testDesc"
-	n             = 10
-	loginDuration = 30 * time.Minute
-	maxNameSize   = 1024
-	nameKey       = "name"
-	ascKey        = "asc"
-	descKey       = "desc"
-	emptyValue    = ""
-	emptyJson     = "{}"
-	invalidData   = `{"limit": "invalid"}`
+	secret           = "secret"
+	contentType      = "application/json"
+	id               = "123e4567-e89b-12d3-a456-000000000022"
+	adminID          = "adminID"
+	editorID         = "editorID"
+	viewerID         = "viewerID"
+	email            = "user@example.com"
+	adminEmail       = "admin@example.com"
+	editorEmail      = "editor@example.com"
+	viewerEmail      = "viewer@example.com"
+	wrongValue       = "wrong_value"
+	name             = "testName"
+	description      = "testDesc"
+	n                = 10
+	loginDuration    = 30 * time.Minute
+	maxNameSize      = 1024
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	emptyValue       = ""
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -57,18 +64,15 @@ var (
 		Description: description,
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
-	idProvider    = uuid.New()
-	viewerMember  = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
-	editorMember  = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
-	adminMember   = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
-	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
-	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
-	searchOrgReq  = apiutil.PageMetadata{
-		Limit:  5,
-		Offset: 0,
-	}
-	metadata    = map[string]interface{}{"test": "data"}
-	invalidName = strings.Repeat("m", maxNameSize+1)
+	idProvider      = uuid.New()
+	viewerMember    = auth.OrgMember{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
+	editorMember    = auth.OrgMember{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
+	adminMember     = auth.OrgMember{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
+	usersByEmails   = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
+	usersByIDs      = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
+	metadata        = map[string]interface{}{"test": "data"}
+	invalidName     = strings.Repeat("m", maxNameSize+1)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
 )
 
 type testRequest struct {
@@ -619,39 +623,6 @@ func TestSearchOrgs(t *testing.T) {
 
 	ts := newServer(svc)
 	defer ts.Close()
-
-	str := searchOrgReq
-	validData := toJSON(str)
-
-	str.Dir = "desc"
-	str.Order = "name"
-	descData := toJSON(str)
-
-	str.Dir = "asc"
-	str.Order = "name"
-	ascData := toJSON(str)
-
-	str.Order = "wrong"
-	invalidOrderData := toJSON(str)
-
-	str = searchOrgReq
-	str.Limit = 0
-	zeroLimitData := toJSON(str)
-
-	str = searchOrgReq
-	str.Dir = "wrong"
-	invalidDirData := toJSON(str)
-
-	str = searchOrgReq
-	str.Limit = 110
-	limitMaxData := toJSON(str)
-
-	str = searchOrgReq
-	str.Name = invalidName
-	invalidNameData := toJSON(str)
-
-	str.Name = invalidName
-	invalidData := toJSON(str)
 
 	orgs := []orgRes{}
 	for i := 0; i < n; i++ {

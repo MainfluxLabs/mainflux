@@ -31,23 +31,31 @@ import (
 )
 
 const (
-	contentType  = "application/json"
-	validEmail   = "user@example.com"
-	adminEmail   = "admin@example.com"
-	invalidEmail = "userexample.com"
-	validPass    = "password"
-	invalidToken = "invalid"
-	invalidPass  = "wrong"
-	prefix       = "fe6b4e92-cc98-425e-b0aa-"
-	userNum      = 101
-	emailKey     = "email"
-	idKey        = "id"
-	ascKey       = "asc"
-	descKey      = "desc"
-	wrongValue   = "wrong_value"
-	emptyValue   = ""
-	emptyJson    = "{}"
-	invalidData  = `{"limit": "invalid"}`
+	contentType      = "application/json"
+	validEmail       = "user@example.com"
+	adminEmail       = "admin@example.com"
+	invalidEmail     = "userexample.com"
+	validPass        = "password"
+	invalidToken     = "invalid"
+	invalidPass      = "wrong"
+	prefix           = "fe6b4e92-cc98-425e-b0aa-"
+	userNum          = 101
+	emailKey         = "email"
+	idKey            = "id"
+	ascKey           = "asc"
+	descKey          = "desc"
+	wrongValue       = "wrong_value"
+	maxEmailSize     = 1024
+	emptyValue       = ""
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"email"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"email"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -68,7 +76,8 @@ var (
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
 	passRegex             = regexp.MustCompile(`^\S{8,}$`)
-	searchReq             = users.PageMetadata{Limit: 5, Offset: 0}
+	invalidEmailSize      = strings.Repeat("a", maxEmailSize+1) + "@example.com"
+	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, invalidEmailSize)
 )
 
 type testRequest struct {
@@ -511,34 +520,6 @@ func TestSearchUsers(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
-
-	str := searchReq
-	validData := toJSON(str)
-
-	str.Dir = "desc"
-	str.Order = "email"
-	descData := toJSON(str)
-
-	str.Dir = "asc"
-	ascData := toJSON(str)
-
-	str.Order = "wrong"
-	invalidOrderData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 0
-	zeroLimitData := toJSON(str)
-
-	str = searchReq
-	str.Dir = "wrong"
-	invalidDirData := toJSON(str)
-
-	str = searchReq
-	str.Limit = 110
-	limitMaxData := toJSON(str)
-
-	str.Email = invalidEmail
-	invalidEmailData := toJSON(str)
 
 	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
