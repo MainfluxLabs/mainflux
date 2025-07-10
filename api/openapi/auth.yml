@@ -97,6 +97,26 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/search:
+    post:
+      summary: Search and retrieve organizations.
+      description: |
+        Retrieves a list of organizations with optional name and metadata filtering.
+      tags:
+        - auth
+      requestBody:
+        $ref: '#/components/requestBodies/SearchOrgsReq'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrgsPageRes'
+        '400':
+          description: Malformed JSON or parameters.
+        '401':
+          description: Missing or invalid access token.
+        '404':
+          description: No matching organizations found.
+        '500':
+          $ref: '#/components/responses/ServiceError'
   /orgs/{orgId}:
     get:
       summary: Retrieves organization details.
@@ -345,6 +365,40 @@ components:
           example: "2019-11-26 13:31:52"
           description: Time when the Key expires. If this field is missing,
             that means that Key is valid indefinitely.
+    SearchOrgsReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed matching the parameter with metadata on top level. Parameter is json.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
     OrgResSchema:
       type: object
       properties:
@@ -663,6 +717,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgSchema"
+    SearchOrgsReq:
+      description: JSON-formatted document describing organization search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchOrgsReqSchema"
     OrgMembershipsReq:
       description: JSON-formatted document describing a request to create and update memberships.
       required: true

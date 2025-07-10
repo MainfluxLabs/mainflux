@@ -70,6 +70,62 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /things/{thingId}/webhooks/search:
+    post:
+      summary: Search and retrieve webhooks by thing.
+      description: |
+        Retrieves a list of webhooks associated with a specific thing, with optional filtering by name and metadata.
+      tags:
+        - webhooks
+      parameters:
+        - name: thingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/SearchWebhooksReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/WebhooksPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing thing or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/webhooks/search:
+    post:
+      summary: Search and retrieve webhooks by group.
+      description: |
+        Retrieves a list of webhooks associated with a specific group, with optional filtering by name and metadata.
+      tags:
+        - webhooks
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/SearchWebhooksReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/WebhooksPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /webhooks/{webhookId}:
     get:
       summary: Retrieves webhook info
@@ -149,6 +205,40 @@ components:
       required:
         - name
         - url
+    SearchWebhooksReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
     WebhookResSchema:
       type: object
       properties:
@@ -181,6 +271,26 @@ components:
         - name
         - url
         - headers
+    WebhooksPage:
+      type: object
+      properties:
+        webhooks:
+          type: array
+          minItems: 0
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/WebhookResSchema"
+        total:
+          type: integer
+          description: Total number of items.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+        limit:
+          type: integer
+          description: Maximum number of items to return in one page.
+      required:
+        - webhooks
 
   parameters:
     WebhookId:
@@ -221,6 +331,13 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/WebhookReqSchema"
+    SearchWebhooksReq:
+      description: JSON-formatted document describing webhook search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchWebhooksReqSchema"
     UpdateWebhookReq:
       description: JSON-formatted document describing the updated webhook info.
       required: true
@@ -269,6 +386,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/WebhookResSchema"
+    WebhooksPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WebhooksPage"
     ListWebhooksRes:
       description: Webhooks retrieved.
       content:
