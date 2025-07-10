@@ -16,9 +16,9 @@ const (
 	retrieveGroupByIDOp               = "retrieve_group_by_id"
 	retrieveGroupByIDsOp              = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrgOp           = "retrieve_group_ids_by_org"
-	saveRoleOp                        = "save_role"
+	saveGroupMembershipOp             = "save_group_membership"
 	retrieveRoleOp                    = "retrieve_role"
-	removeRoleOp                      = "remove_role"
+	removeGroupMembershipOp           = "remove_group_membership"
 	retrieveGroupIDsByMemberOp        = "retrieve_group_ids_by_member"
 	retrieveGroupIDsByOrgMembershipOp = "retrieve_group_ids_by_org_membership"
 )
@@ -132,7 +132,7 @@ func (gcm groupCacheMiddleware) RemoveGroupEntities(ctx context.Context, groupID
 }
 
 func (gcm groupCacheMiddleware) SaveGroupMembership(ctx context.Context, groupID, memberID, role string) error {
-	span := createSpan(ctx, gcm.tracer, saveRoleOp)
+	span := createSpan(ctx, gcm.tracer, saveGroupMembershipOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -148,7 +148,7 @@ func (gcm groupCacheMiddleware) ViewRole(ctx context.Context, groupID, memberID 
 }
 
 func (gcm groupCacheMiddleware) RemoveGroupMembership(ctx context.Context, groupID, memberID string) error {
-	span := createSpan(ctx, gcm.tracer, removeRoleOp)
+	span := createSpan(ctx, gcm.tracer, removeGroupMembershipOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
